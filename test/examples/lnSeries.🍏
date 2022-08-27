@@ -1,0 +1,10 @@
+-- ln(1+x) by x - x^2/2 + x^3/3 - x^4/4 + ...
+-- converges -1≤x≤1
+--
+-- not very good.
+λN.λx.
+{
+  iix ← irange 1 N 1;
+  mkIx ← λn. (_((_ x)^n))%(𝑖n);
+  (+)/1 0 (mkIx'1 iix)
+}

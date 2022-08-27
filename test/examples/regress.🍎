@@ -1,0 +1,13 @@
+\xs.\ys.
+{
+  Σ ← [(+)/1 0 x];
+  n ⟜ 𝑖(:xs);
+  xbar ⟜ (Σ xs) % n;
+  ybar ⟜ (Σ ys) % n;
+  xy ⟜ Σ ((*)`2 1 xs ys);
+  x2 ⟜ Σ ((^2)'1 xs);
+  denom ⟜ (x2-n*(xbar^2));
+  a ← ((ybar*x2)-(xbar*xy))%denom;
+  b ← (xy-(n*xbar*ybar))%denom;
+  (a,b)
+}

@@ -1,0 +1,7 @@
+λN.λx.
+{
+  sumi ← λn.λN.λf. (+)/1 0 (f'1 (irange n N 1));
+  fact ← [(*)/1 1 (frange 1 x (⌊x))];
+  mkIx ← λn. (x^n)%(fact (𝑖n));
+  sumi 0 N mkIx
+}

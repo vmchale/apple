@@ -1,0 +1,12 @@
+-- of aid in computing erf
+λz.
+{
+  -- frange (say) 1 99 99: go from 1 to 99 in 99 steps
+  -- (can't be as nice as ints...)
+  rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))];
+  iix ← irange 1 99 1;
+  ix ← frange 1 99 99;
+  nums ← ((z^2)^)'1 iix;
+  denoms ← (rf 1.5)'1 ix;
+  (+)/1 0 ((%) `2 1 nums denoms)
+}

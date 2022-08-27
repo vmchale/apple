@@ -1,0 +1,124 @@
+module Main (main) where
+
+import           Asm.X86.Byte
+import           Control.Exception     (Exception, throw)
+import           Criterion.Main
+import qualified Data.ByteString.Lazy  as BSL
+import           Data.Functor          (($>))
+import           Data.Number.Erf       (erf)
+import           Foreign.Marshal.Alloc (free, mallocBytes)
+import           Foreign.Ptr           (FunPtr, Ptr)
+import           Foreign.Storable      (Storable (..))
+import           Hs.A
+import           I
+import qualified Math.Hypergeometric   as Hyper
+import qualified Math.SpecialFunction  as Math
+import           P
+import           Ty
+
+risingFactorial :: Integral a => a -> a -> a
+risingFactorial x n = product [x..(x+n-1)]
+{-# SPECIALIZE risingFactorial :: Int -> Int -> Int #-}
+
+hsEntropy :: Floating a => [a] -> a
+hsEntropy xs = sum [ x * log x | x <- xs ]
+
+kl :: Floating a => [a] -> [a] -> a
+kl xs ys = sum [ x * log (x/y) | x <- xs, y <- ys ]
+
+aA :: Storable a => Apple a -> IO (Ptr (Apple a))
+aA x = do
+    p <- mallocBytes (sizeOf x)
+    poke p x $> p
+
+main :: IO ()
+main = do
+    -- this sucks but using env segfaults so...
+    xsPtr <- aA (AA 1 [500] xs)
+    ysPtr <- aA (AA 1 [500] ys)
+    iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int)))
+#ifdef x86_64_HOST_ARCH
+    fp <- fmap iii . funP =<< BSL.readFile "test/examples/risingFactorial.🍎"
+    erfFp <- fmap ff . funP =<< BSL.readFile "test/examples/erf.🍏"
+    entropyFp <- fmap af . funP =<< BSL.readFile "test/examples/entropy.🍏"
+    klFp <- fmap aaf . funP =<< BSL.readFile "test/examples/kl.🍎"
+    gammaFp <- fmap ff . funP =<< BSL.readFile "test/examples/gammaln.🍏"
+    scanFp <- fmap aa . funP =<< BSL.readFile "bench/apple/scanmax.🍏"
+#endif
+    defaultMain [ env files $ \ ~(he, e, f, 𝛾) ->
+                  bgroup "pipeline"
+                      [ bench "tyParse (erf)" $ nf tyParse he
+                      , bench "tyParse" $ nf tyParse e
+                      -- , bench "expanded" $ nf opt he
+                      , bench "bytes (erf)" $ nf bytes he
+                      , bench "bytes" $ nf bytes f
+                      , bench "bytes (gammaln)" $ nf bytes 𝛾
+                      ]
+                      -- TODO: thunks after type checking?
+                , env rfx86 $ \asm ->
+                  bgroup "asm"
+                      [ bench "risingFactorial" $ nf assemble asm
+                      ]
+                , env (fmap yeet erfParsed) $ \ast ->
+                  bgroup "ty"
+                      [ bench "tyClosed" $ nf (\(e, m) -> tyClosed m e) ast
+                      ]
+                , env (fmap yeet erfTy) $ \e ->
+                  bgroup "inline"
+                      [ bench "inline" $ nf (\(ast, i) -> fst (inline i ast)) e
+                      ]
+                , bgroup "erf"
+                      [ bench "erf (libm)" $ nf erf (1 :: Double)
+                      , bench "erf (hypergeometric)" $ nf Hyper.erf (1 :: Double)
+#ifdef x86_64_HOST_ARCH
+                      , bench "erf (jit)" $ nfIO (pure $ erfFp 1)
+#endif
+                      ]
+                , bgroup "risingFactorial"
+                      [ bench "hs" $ nf (risingFactorial 5) (15 :: Int)
+#ifdef x86_64_HOST_ARCH
+                      , bench "jit" $ nfIO (pure $ fp 5 15)
+#endif
+                      ]
+                , bgroup "entropy"
+                      [ bench "hs" $ nf hsEntropy xs
+#ifdef x86_64_HOST_ARCH
+                      , bench "jit" $ nfIO $ (pure $ entropyFp xsPtr)
+#endif
+                      ]
+                , bgroup "k-l"
+                      [ bench "hs" $ nf (kl xs) ys
+#ifdef x86_64_HOST_ARCH
+                      , bench "jit" $ nfIO (pure $ klFp xsPtr ysPtr)
+#endif
+                      ]
+                , bgroup "Γ"
+                      [ bench "hs" $ nf Math.gammaln (1.5 :: Double)
+#ifdef x86_64_HOST_ARCH
+                      , bench "jit" $ nfIO (pure $ gammaFp 1.5)
+#endif
+                      ]
+#ifdef x86_64_HOST_ARCH
+                , bgroup "scanmax"
+                      [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
+                      ]
+#endif
+                ]
+    where erfSrc = BSL.readFile "test/examples/erf.🍏"
+          rf = BSL.readFile "test/examples/risingFactorial.🍎"
+          expApple = BSL.readFile "test/examples/exp.🍏"
+          gamma = BSL.readFile "test/examples/gammaln.🍏"
+          rfx86 = yeet . x86 <$> rf
+          files = (,,,) <$> erfSrc <*> expApple <*> rf <*> gamma
+          erfParsed = parseRename <$> erfSrc
+          erfTy = tyParse <$> erfSrc
+          yeet :: (Exception e) => Either e a -> a
+          yeet = either throw id
+          xs = replicate 500 (0.002 :: Double)
+          ys = replicate 500 (0.002 :: Double)
+
+foreign import ccall "dynamic" iii :: FunPtr (Int -> Int -> Int) -> Int -> Int -> Int
+foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
+foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
+foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
+foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> IO (Ptr (Apple a))) -> Ptr (Apple a) -> IO (Ptr (Apple a))

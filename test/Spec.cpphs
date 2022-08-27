@@ -1,0 +1,190 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+module Main (main) where
+
+import           Control.Exception     (throw)
+import qualified Data.ByteString       as BS
+import qualified Data.ByteString.Lazy  as BSL
+import           Data.Int              (Int64)
+import           Foreign.Marshal.Alloc (allocaBytes)
+import           Foreign.Ptr           (FunPtr, Ptr)
+import           Foreign.Storable      (Storable (..))
+import           Hs.A
+import           Hs.FFI
+import           Math.Hypergeometric   (erf, hypergeometric, ncdf)
+import           Math.SpecialFunction  (gammaln)
+import           P
+import           Test.Tasty
+import           Test.Tasty.HUnit
+
+hsEntropy :: Floating a => [a] -> a
+hsEntropy xs = sum [ x * log x | x <- xs ]
+
+kl :: Floating a => [a] -> [a] -> a
+kl xs ys = sum [ x * log (x/y) | x <- xs, y <- ys ]
+
+infixl 1 .?=
+
+(.?=) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
+x .?= y = assertBool ("expected " ++ show y ++ ", got " ++ show x) (x-y<1e-15&&y-x<1e-15)
+
+main :: IO ()
+main = defaultMain $ testGroup "All" $ rTy:
+#ifdef x86_64_HOST_ARCH
+    [x64T]
+#else
+    [tyT]
+#endif
+
+rTy :: TestTree
+rTy = testGroup "Regression tests"
+    [ tyF "test/data/polymorphic.🍎"
+    , tyF "test/examples/gammaln.🍏"
+    , tyF "test/examples/regress.🍎"
+    , tyF "test/data/rank.🍎"
+    , tyF "test/examples/weekMean.🍎"
+    , tyF "test/examples/convolve.🍎"
+    ]
+
+tyT :: TestTree
+tyT = testGroup "Type system"
+    [ tyF "test/examples/erfSum.🍏"
+    , tyF "test/examples/kl.🍎"
+    , tyS "[(+)/\\ 0 (irange 0 x 1)]"
+    , tyS "((-)\\~)"
+    ]
+
+x64T :: TestTree
+x64T = testGroup "x64"
+    [ rfTest
+    , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
+    , testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
+    , testCase "f11" $ do { res <- f11 1 ; res @?= hypergeometric [1] [3/2] 1 }
+    , testCase "erf" $ do { res <- erfJit 1 ; res .?= erf 1 }
+    , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
+    , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
+    , testCase "entropy" $ do { res <- jitEntropy [0.25, 0.25, 0.5] ; res @?= hsEntropy [0.25, 0.25, 0.5] }
+    , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
+    , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
+    , testCase "gammaln" $ do { res <- gammaJit 1.5 ; res @?= gammaln 1.5 }
+    , testCase "avg" $ do { res <- fpAf "test/examples/avg.🍎" [1,2,3] ; res @?= 2 }
+    , testCase "twoSum" $ do { res <- fpAaf "test/data/twoSum.🍎" [1,2,3] [2,4,5] ; res @?= 17 }
+    , testCase "dotprod" $ do { res <- fpAaf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
+    , testCase "euclidean" $ do { res <- fpAaf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
+    , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
+    , testCase "map/alloc" $ do { res <- sSq 25 ; res @?= [ i^(2::Int) | i <- [0..25] ] }
+    , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
+    , testCase "scan" $ do { res <- scan 5 ; res @?= [0,1,3,6,10] }
+    , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4,6,1] ; res @?= [0,4,6,6] }
+    ]
+
+scan i = do
+    f <- ia <$> funP "[(+) /\\ 0 (irange 1 x 1)]"
+    asI (f i)
+
+sSq i = do
+    f <- ia <$> funP "[(^2)'1 (irange 0 x 1)]"
+    asI (f i)
+
+asI :: Ptr (Apple Int) -> IO [Int]
+asI = fmap (\(AA _ _ xs) -> xs) . peek
+
+aaFp fp xs =
+    let xA = AA 1 [fromIntegral(length xs)] xs in
+    wA xA $ \p -> do
+        f <- fmap aa . funP =<< BSL.readFile fp
+        asI (f p)
+
+tyS :: BSL.ByteString -> TestTree
+tyS s = testCase "(expr)" $
+    case tyExpr s of
+        Left err -> assertFailure(show err)
+        Right{} -> assertBool "passed" True
+
+tyF :: FilePath -> TestTree
+tyF fp = testCase fp $ do
+    res <- tyExpr <$> BSL.readFile fp
+    case res of
+        Left err -> assertFailure (show err)
+        Right{}  -> assertBool "Passes" True
+
+rfTest :: TestTree
+rfTest = testCase "rising factorial" $ do
+    res <- jitRF 5 15
+    res @?= 5068545850368000
+
+fpAf :: FilePath -> [Double] -> IO Double
+fpAf fp xs = do
+    f <- bytesE <$> BSL.readFile fp
+    jitAf f xs
+
+jitEntropy = fpAf "test/examples/entropy.🍏"
+jitKl = fpAaf "test/examples/kl.🍎"
+jitB = fpAaf "test/examples/b.🍎"
+
+fpAaf :: FilePath -> [Double] -> [Double] -> IO Double
+fpAaf fp xs ys = do
+    f <- bytesE <$> BSL.readFile fp
+    jitAaf f xs ys
+
+jitAaf :: BS.ByteString -> [Double] -> [Double] -> IO Double
+jitAaf code xs ys =
+    let a = AA 1 [fromIntegral(length xs)] xs
+        b = AA 1 [fromIntegral(length ys)] ys in
+    wA a $ \p -> wA b $ \q -> do
+        (fp,_) <- bsFp code
+        pure $ aaf fp p q
+
+jitAf :: BS.ByteString -> [Double] -> IO Double
+jitAf code xs =
+    let a = AA 1 [fromIntegral(length xs)] xs in
+    wA a $ \p -> do
+        (fp,_) <- bsFp code
+        pure $ af fp p
+
+jitE :: Double -> IO Double
+jitE x = do
+    fp <- funP "[e:x]"
+    pure $ ff fp x
+
+jitExp :: Int64 -> Double -> IO Double
+jitExp n x = do
+    fp <- funP =<< BSL.readFile "test/examples/exp.🍏"
+    pure $ iff fp n x
+
+fpFF :: FilePath -> Double -> IO Double
+fpFF fp x = do
+    f <- funP =<< BSL.readFile fp
+    pure $ ff f x
+
+gammaJit = fpFF "test/examples/gammaln.🍏"
+ncdfJit = fpFF "test/examples/ncdf.🍎"
+
+erfJit :: Double -> IO Double
+erfJit = fpFF "test/examples/erf.🍏"
+
+f11 :: Double -> IO Double
+f11 = fpFF "test/examples/hypergeometricEfficient.🍏"
+
+jitFact :: Double -> IO Double
+jitFact = fpFF "test/examples/ffact.🍎"
+
+jitRF :: Int -> Int -> IO Int
+jitRF m n = do
+    fp <- funP =<< BSL.readFile "test/examples/risingFactorial.🍎"
+    pure $ runRF fp m n
+
+wA :: Storable a => Apple a -> (Ptr (Apple a) -> IO b) -> IO b
+wA x act =
+    allocaBytes (sizeOf x) $ \p ->
+        poke p x *> act p
+
+bytesE = either throw id . bytes
+
+foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
+foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
+foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
+foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double
+foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> Int -> Int)
+foreign import ccall "dynamic" ia :: FunPtr (Int -> Ptr (Apple a)) -> Int -> Ptr (Apple a)
+foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> Ptr (Apple a)) -> Ptr (Apple a) -> Ptr (Apple a)

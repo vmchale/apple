@@ -1,0 +1,3 @@
+- [ ] Loop unrolling
+- [ ] Backwards/compare to 0 instead: (`test rax, rax ...`) https://stackoverflow.com/a/13064985
+  - [ ] https://stackoverflow.com/a/14842140/11296354

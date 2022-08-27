@@ -1,0 +1,10 @@
+packages: ./
+
+haddock-internal: True
+
+program-options
+  alex-options: -g
+  happy-options: -gcsa
+
+package apple
+  ghc-options: -j +RTS -A32m

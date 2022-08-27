@@ -1,0 +1,4 @@
+- [ ] `+/` and `*/` have SIMD
+- [ ] fold-map-reduce and variations
+- [ ] https://stackoverflow.com/a/45786422/11296354
+  - [ ] note ln (simplified)

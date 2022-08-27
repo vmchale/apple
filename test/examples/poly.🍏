@@ -1,0 +1,2 @@
+λp.λx. (+)/1 0 ((*)`2 1 p (gen. x (*) (:p)))
+-- TODO: consider something that folds with seed? (x's power being the seed)

@@ -1,0 +1,24 @@
+λz.
+{
+  erf ← λz.
+    {
+      exp ← λN.λx.
+        {
+          fact ← [(*)/1 1 (frange 1 x (⌊x))];
+          iix ← irange 0 N 1;
+          mkIx ← λn. (x^n)%(fact (𝑖n));
+          (+)/1 0 (mkIx'1 iix)
+        };
+      f11 ← λz.
+      {
+        rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))];
+        ix ← irange 0 99 1;
+        -- FIXME: might be more efficient to have an frange too?
+        mkIx ← [(z^x)%(rf 1.5 (itof x))];
+        (+)/1 0 (mkIx'1 ix)
+      };
+      2*z*(exp 20 (_(z^2)))*(f11 (z^2))%(√𝜋)
+    };
+  zz ⟜ z%(√2);
+  0.5*(1+erf(zz))
+}
