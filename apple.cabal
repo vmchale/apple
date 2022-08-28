@@ -36,7 +36,7 @@ library
         Sys.DL
         Asm.X86.Byte
 
-    build-tool-depends: alex:alex, happy:happy, hsc2hs:hsc2hs, c2hs:c2hs
+    build-tool-depends: alex:alex, happy:happy, hsc2hs:hsc2hs
     hs-source-dirs:     src
     other-modules:
         CF

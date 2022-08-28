@@ -11,7 +11,7 @@ apple.o: applemodule.c
 	gcc -fPIC -O2 -c $< -I /usr/include/python3.10 -I ../include -I $(HS_INCLUDE_DIR) -o $@
 
 apple.so: apple.o
-	gcc -shared $^ -o $@ -lapple -L .. -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR)
+	gcc -shared $^ -o $@ -lapple -L .. -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR) -rpath $(HS_LIBDIR) /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Python3
 
 clean:
 	rm -rf *.o *.so
