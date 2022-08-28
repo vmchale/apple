@@ -17,4 +17,4 @@ mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; dlclose c$>(m, 
 ll p = dlopen p [RTLD_LAZY]
 
 libc :: IO DL
-libc = ll "libc.so"
+libc = ll "libc.dylib"
