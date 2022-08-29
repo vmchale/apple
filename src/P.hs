@@ -72,7 +72,7 @@ funP = aFp <=< either throwIO pure . x86
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86
 
-x86 :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg ()] -- TODO: save/restore clobbered regs.
+x86 :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()] -- TODO: save/restore clobbered regs.
 x86 = fmap (optX86 . X86.allocFrame . intervals . reconstruct . X86.mkControlFlow . (\(x, st) -> irToX86 st x)) . ir
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)

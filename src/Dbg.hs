@@ -66,7 +66,7 @@ dumpX86Intervals = fmap prettyDebugX86 . x86Iv
 dumpX86Liveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Liveness = fmap (prettyDebugX86 . fmap (fmap liveness) . reconstruct . X86.mkControlFlow . (\(x, st) -> irToX86 st x)) . ir
 
-x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86 AbsReg Interval]
+x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86 AbsReg FAbsReg Interval]
 x86Iv = fmap (intervals . reconstruct . X86.mkControlFlow . (\(x, st) -> irToX86 st x)) . ir
 
 printParsed :: BSL.ByteString -> Doc ann

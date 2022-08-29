@@ -19,7 +19,7 @@ type FreshM = State (Int, M.Map Label Int)
 runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty)
 
-mkControlFlow :: [X86 AbsReg ()] -> [X86 AbsReg ControlAnn]
+mkControlFlow :: [X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
 getFresh :: FreshM Int
@@ -34,79 +34,83 @@ broadcast i l = modify (second (M.insert l i))
 singleton :: AbsReg -> IS.IntSet
 singleton = IS.singleton . toInt
 
+fs = IS.singleton . fToInt
+
+fromListF = foldMap fs
+
 fromList :: [AbsReg] -> IS.IntSet
 fromList = foldMap singleton
 
 -- | Annotate instructions with a unique node name and a list of all possible
 -- destinations.
-addControlFlow :: [X86 AbsReg ()] -> FreshM [X86 AbsReg ControlAnn]
+addControlFlow :: [X86 AbsReg FAbsReg ()] -> FreshM [X86 AbsReg FAbsReg ControlAnn]
 addControlFlow [] = pure []
 addControlFlow ((Label _ l):asms) = do
     { i <- lookupLabel l
     ; (f, asms') <- next asms
-    ; pure (Label (ControlAnn i (f []) IS.empty IS.empty) l : asms')
+    ; pure (Label (ControlAnn i (f []) IS.empty IS.empty IS.empty IS.empty) l : asms')
     }
 addControlFlow ((Je _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Je (ControlAnn i (f [l_i]) IS.empty IS.empty) l : asms')
+    ; pure (Je (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
     }
 addControlFlow ((Jl _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jl (ControlAnn i (f [l_i]) IS.empty IS.empty) l : asms')
+    ; pure (Jl (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
     }
 addControlFlow ((Jle _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jle (ControlAnn i (f [l_i]) IS.empty IS.empty) l : asms')
+    ; pure (Jle (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
     }
 addControlFlow ((Jne _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jne (ControlAnn i (f [l_i]) IS.empty IS.empty) l : asms')
+    ; pure (Jne (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
     }
 addControlFlow ((Jge _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jge (ControlAnn i (f [l_i]) IS.empty IS.empty) l : asms')
+    ; pure (Jge (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
     }
 addControlFlow ((Jg _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jg (ControlAnn i (f [l_i]) IS.empty IS.empty) l : asms')
+    ; pure (Jg (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
     }
 addControlFlow ((J _ l):asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
     ; l_i <- lookupLabel l
-    ; pure (J (ControlAnn i [l_i] IS.empty IS.empty) l : nextAsms)
+    ; pure (J (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
     }
 addControlFlow (Ret{}:asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
-    ; pure (Ret (ControlAnn i [] IS.empty IS.empty) : nextAsms)
+    ; pure (Ret (ControlAnn i [] IS.empty IS.empty IS.empty IS.empty) : nextAsms)
     }
 addControlFlow (asm:asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
-    ; pure ((asm $> ControlAnn i (f []) (uses asm) (defs asm)) : asms')
+    ; pure ((asm $> ControlAnn i (f []) (uses asm) (usesF asm) (defs asm) (defsF asm)) : asms')
     }
 
-isM :: X86 AbsReg ann -> Bool
+isM :: X86 AbsReg FAbsReg ann -> Bool
 isM MovRR{}   = True
 isM MovRA{}   = True
 isM MovRI{}   = True
 isM MovAR{}   = True
 isM MovAI32{} = True
 
-isMX :: X86 AbsReg ann -> Bool
+isMX :: X86 AbsReg FAbsReg ann -> Bool
 isMX MovqXR{} = True
 isMX MovqXA{} = True
 isMX MovqAX{} = True
@@ -117,7 +121,59 @@ uA (RC r _)      = singleton r
 uA (RS b _ i)    = fromList [b,i]
 uA (RSD b _ i _) = fromList [b,i]
 
-uses :: X86 AbsReg ann -> IS.IntSet
+usesF :: X86 AbsReg FAbsReg ann -> IS.IntSet
+usesF (Movapd _ _ r)           = fs r
+usesF (Vmulsd _ _ r0 r1)       = fromListF [r0, r1]
+usesF (Vaddsd _ _ r0 r1)       = fromListF [r0, r1]
+usesF (Vsubsd _ _ r0 r1)       = fromListF [r0, r1]
+usesF (Vdivsd _ _ r0 r1)       = fromListF [r0, r1]
+usesF (Mulsd _ r0 r1)          = fromListF [r0, r1]
+usesF (Divsd _ r0 r1)          = fromListF [r0, r1]
+usesF (Addsd _ r0 r1)          = fromListF [r0, r1]
+usesF (Subsd _ r0 r1)          = fromListF [r0, r1]
+usesF (Vfmadd231sd _ r0 r1 r2) = fromListF [r0, r1, r2]
+usesF (Sqrtsd _ _ r)           = fs r
+usesF (Vmaxsd _ _ r0 r1)       = fromListF [r0, r1]
+usesF (Vminsd _ _ r0 r1)       = fromListF [r0, r1]
+usesF (Maxsd _ r0 r1)          = fromListF [r0, r1]
+usesF (Minsd _ r0 r1)          = fromListF [r0, r1]
+usesF (Roundsd _ _ r _)        = fs r
+usesF (Cvttsd2si _ _ r)        = fs r
+usesF (MovqAX _ _ x)           = fs x
+usesF MovqXR{} = IS.empty
+usesF IAddRR{} = IS.empty
+usesF IAddRI{} = IS.empty
+usesF ISubRR{} = IS.empty
+usesF MovRI{} = IS.empty
+usesF MovRR{} = IS.empty
+usesF CmpRR{} = IS.empty
+usesF CmpRI{} = IS.empty
+usesF Cvtsi2sd{} = IS.empty
+usesF MovRA{} = IS.empty
+usesF MovAR{} = IS.empty
+usesF Fldln2{} = IS.empty
+usesF ISubRI{} = IS.empty
+usesF IMulRR{} = IS.empty
+usesF Sal{} = IS.empty
+usesF Sar{} = IS.empty
+usesF Fscale{} = IS.empty
+usesF Call{} = IS.empty
+usesF Cmovnle{} = IS.empty
+usesF Fstp{} = IS.empty
+usesF MovqXA{} = IS.empty
+usesF Fyl2x{} = IS.empty
+usesF Fld{} = IS.empty
+usesF MovAI32{} = IS.empty
+usesF Faddp{} = IS.empty
+usesF F2xm1{} = IS.empty
+usesF Fprem{} = IS.empty
+usesF Fmulp{} = IS.empty
+usesF FldS{} = IS.empty
+usesF Fld1{} = IS.empty
+usesF Fldl2e{} = IS.empty
+usesF r = error (show r)
+
+uses :: X86 AbsReg FAbsReg ann -> IS.IntSet
 uses (MovRR _ _ r)            = singleton r
 uses (And _ r0 r1)            = fromList [r0, r1]
 uses (IAddRR _ r0 r1)         = fromList [r0, r1]
@@ -127,22 +183,11 @@ uses (ISubRI _ r _)           = singleton r
 uses (IMulRR _ r0 r1)         = fromList [r0, r1]
 uses (CmpRR _ r0 r1)          = fromList [r0, r1]
 uses MovRI{}                  = IS.empty
-uses (Movapd _ _ r)           = singleton r
-uses (Roundsd _ _ r _)        = singleton r
-uses (Cvttsd2si _ _ r)        = singleton r
 uses (CmpRI _ r _)            = singleton r
-uses (Vmulsd _ _ r0 r1)       = fromList [r0, r1]
-uses (Vaddsd _ _ r0 r1)       = fromList [r0, r1]
-uses (Vsubsd _ _ r0 r1)       = fromList [r0, r1]
-uses (Vdivsd _ _ r0 r1)       = fromList [r0, r1]
 uses (MovqXR _ _ r)           = singleton r
 uses (Cvtsi2sd _ _ r)         = singleton r
-uses (Mulsd _ r0 r1)          = fromList [r0, r1]
-uses (Divsd _ r0 r1)          = fromList [r0, r1]
-uses (Addsd _ r0 r1)          = fromList [r0, r1]
-uses (Subsd _ r0 r1)          = fromList [r0, r1]
 uses (MovqXA _ _ a)           = uA a
-uses (MovqAX _ a x)           = uA a <> singleton x
+uses (MovqAX _ a _)           = uA a
 uses Fldl2e{}                 = IS.empty
 uses Fldln2{}                 = IS.empty
 uses (Fld _ a)                = uA a
@@ -151,18 +196,12 @@ uses F2xm1{}                  = IS.empty
 uses Fmulp{}                  = IS.empty
 uses (Fstp _ a)               = uA a
 uses (MovRA _ _ a)            = uA a
-uses (Vfmadd231sd _ r0 r1 r2) = fromList [r0, r1, r2]
 uses (IDiv _ r)               = fromList [r, Quot, Rem]
 uses (MovAR _ a r)            = uA a <> singleton r
 uses (Sal _ r _)              = singleton r
 uses (Sar _ r _)              = singleton r
 uses (Call _ Malloc)          = fromList [CArg0]
 uses (MovAI32 _ a _)          = uA a
-uses (Sqrtsd _ _ r)           = singleton r
-uses (Vmaxsd _ _ r0 r1)       = fromList [r0, r1]
-uses (Vminsd _ _ r0 r1)       = fromList [r0, r1]
-uses (Maxsd _ r0 r1)          = fromList [r0, r1]
-uses (Minsd _ r0 r1)          = fromList [r0, r1]
 uses Fld1{}                   = IS.empty
 uses FldS{}                   = IS.empty
 uses Fprem{}                  = IS.empty
@@ -171,10 +210,80 @@ uses Fscale{}                 = IS.empty
 uses Fxch{}                   = IS.empty
 uses (Not _ r)                = singleton r
 uses (Cmovnle _ _ r)          = singleton r
+uses Vmulsd{} = IS.empty
+uses Vaddsd{} = IS.empty
+uses Vdivsd{} = IS.empty
+uses Vsubsd{} = IS.empty
+uses Addsd{} = IS.empty
+uses Subsd{} = IS.empty
+uses Roundsd{} = IS.empty
+uses Mulsd{} = IS.empty
+uses Divsd{} = IS.empty
+uses Movapd{} = IS.empty
+uses Vfmadd231sd{} = IS.empty
+uses Cvttsd2si{} = IS.empty
+uses Sqrtsd{} = IS.empty
 uses r                        = error (show r)
 
-defs :: X86 AbsReg ann -> IS.IntSet
+defsF :: X86 AbsReg FAbsReg ann -> IS.IntSet
+defsF (Movapd _ r _)        = fs r
+defsF (Vmulsd _ r _ _)      = fs r
+defsF (Vaddsd _ r _ _)      = fs r
+defsF (Vsubsd _ r _ _)      = fs r
+defsF (Vdivsd _ r _ _)      = fs r
+defsF (MovqXR _ r _)        = fs r
+defsF (Addsd _ r _)         = fs r
+defsF (Subsd _ r _)         = fs r
+defsF (Divsd _ r _)         = fs r
+defsF (Mulsd _ r _)         = fs r
+defsF (MovqXA _ r _)        = fs r
+defsF MovqAX{}              = IS.empty
+defsF (Sqrtsd _ r _)        = fs r
+defsF (Vmaxsd _ r _ _)      = fs r
+defsF (Vminsd _ r _ _)      = fs r
+defsF (Minsd _ r _)         = fs r
+defsF (Maxsd _ r _)         = fs r
+defsF (Vfmadd231sd _ r _ _) = fs r
+defsF (Roundsd _ r _ _)     = fs r
+defsF (Cvtsi2sd _ r _)      = fs r
+defsF Label{} = IS.empty
+defsF IAddRR{} = IS.empty
+defsF IAddRI{} = IS.empty
+defsF ISubRR{} = IS.empty
+defsF ISubRI{} = IS.empty
+defsF IMulRR{} = IS.empty
+defsF MovRR{} = IS.empty
+defsF MovRA{} = IS.empty
+defsF MovAR{} = IS.empty
+defsF MovAI32{} = IS.empty
+defsF MovRI{} = IS.empty
+defsF Fld{} = IS.empty
+defsF FldS{} = IS.empty
+defsF Fldl2e{} = IS.empty
+defsF Fldln2{} = IS.empty
+defsF Fld1{} = IS.empty
+defsF Fyl2x{} = IS.empty
+defsF Fstp{} = IS.empty
+defsF F2xm1{} = IS.empty
+defsF Fmulp{} = IS.empty
+defsF Fprem{} = IS.empty
+defsF Faddp{} = IS.empty
+defsF Fscale{} = IS.empty
+defsF Fxch{} = IS.empty
+defsF CmpRR{} = IS.empty
+defsF CmpRI{} = IS.empty
+defsF Sal{} = IS.empty
+defsF Sar{} = IS.empty
+defsF Cmovnle{} = IS.empty
+defsF Call{} = IS.empty
+defsF Cvttsd2si{} = IS.empty
+defsF r = error (show r)
+
+defs :: X86 AbsReg FAbsReg ann -> IS.IntSet
 defs (MovRR _ r _)         = singleton r
+defs MovqXR{} = IS.empty
+defs MovqXA{} = IS.empty
+defs MovqAX{} = IS.empty
 defs (IAddRR _ r _)        = singleton r
 defs (And _ r _)           = singleton r
 defs (IAddRI _ r _)        = singleton r
@@ -183,22 +292,8 @@ defs (ISubRI _ r _)        = singleton r
 defs (IMulRR _ r _)        = singleton r
 defs CmpRR{}               = IS.empty
 defs (MovRI _ r _)         = singleton r
-defs (Movapd _ r _)        = singleton r
-defs (Roundsd _ r _ _)     = singleton r
 defs (Cvttsd2si _ r _)     = singleton r
 defs CmpRI{}               = IS.empty
-defs (Vmulsd _ r _ _)      = singleton r
-defs (Vaddsd _ r _ _)      = singleton r
-defs (Vsubsd _ r _ _)      = singleton r
-defs (Vdivsd _ r _ _)      = singleton r
-defs (MovqXR _ r _)        = singleton r
-defs (Cvtsi2sd _ r _)      = singleton r
-defs (Addsd _ r _)         = singleton r
-defs (Subsd _ r _)         = singleton r
-defs (Divsd _ r _)         = singleton r
-defs (Mulsd _ r _)         = singleton r
-defs (MovqXA _ r _)        = singleton r
-defs MovqAX{}              = IS.empty
 defs Fldl2e{}              = IS.empty
 defs Fldln2{}              = IS.empty
 defs Fyl2x{}               = IS.empty
@@ -207,18 +302,12 @@ defs Fld{}                 = IS.empty
 defs F2xm1{}               = IS.empty
 defs Fmulp{}               = IS.empty
 defs (MovRA _ r _)         = singleton r
-defs (Vfmadd231sd _ r _ _) = singleton r
 defs (IDiv _ r)            = fromList [r, Quot, Rem]
 defs MovAR{}               = IS.empty
 defs (Sal _ r _)           = singleton r
 defs (Sar _ r _)           = singleton r
 defs (Call _ Malloc)       = singleton CRet
 defs MovAI32{}             = IS.empty
-defs (Sqrtsd _ r _)        = singleton r
-defs (Vmaxsd _ r _ _)      = singleton r
-defs (Vminsd _ r _ _)      = singleton r
-defs (Minsd _ r _)         = singleton r
-defs (Maxsd _ r _)         = singleton r
 defs Fld1{}                = IS.empty
 defs FldS{}                = IS.empty
 defs Fprem{}               = IS.empty
@@ -227,8 +316,22 @@ defs Fscale{}              = IS.empty
 defs Fxch{}                = IS.empty
 defs (Not _ r)             = singleton r
 defs (Cmovnle _ r _)       = singleton r
+defs Vmulsd{} = IS.empty
+defs Vdivsd{} = IS.empty
+defs Vaddsd{} = IS.empty
+defs Vsubsd{} = IS.empty
+defs Addsd{} = IS.empty
+defs Subsd{} = IS.empty
+defs Mulsd{} = IS.empty
+defs Divsd{} = IS.empty
+defs Movapd{} = IS.empty
+defs Cvtsi2sd{} = IS.empty
+defs Vfmadd231sd{} = IS.empty
+defs Roundsd{} = IS.empty
+defs Sqrtsd{} = IS.empty
+defs r = error (show r)
 
-next :: [X86 AbsReg ()] -> FreshM ([Int] -> [Int], [X86 AbsReg ControlAnn])
+next :: [X86 AbsReg FAbsReg ()] -> FreshM ([Int] -> [Int], [X86 AbsReg FAbsReg ControlAnn])
 next asms = do
     nextAsms <- addControlFlow asms
     case nextAsms of
@@ -236,7 +339,7 @@ next asms = do
         (asm:_) -> pure ((node (ann asm) :), nextAsms)
 
 -- | Construct map assigning labels to their node name.
-broadcasts :: [X86 reg ()] -> FreshM [X86 reg ()]
+broadcasts :: [X86 reg freg ()] -> FreshM [X86 reg freg ()]
 broadcasts [] = pure []
 broadcasts (asm@(Label _ l):asms) = do
     { i <- getFresh

@@ -12,7 +12,7 @@ import qualified Data.IntSet      as IS
 import           Data.Semigroup   ((<>))
 
 emptyLiveness :: Liveness
-emptyLiveness = Liveness IS.empty IS.empty
+emptyLiveness = Liveness IS.empty IS.empty IS.empty IS.empty
 
 initLiveness :: Copointed p => [p ControlAnn] -> LivenessMap
 initLiveness = IM.fromList . fmap (\asm -> let x = copoint asm in (node x, (x, emptyLiveness)))
@@ -58,7 +58,9 @@ iterNodes is = thread (fmap stepNode is)
     where thread = foldr (.) id
 
 stepNode :: Int -> LivenessMap -> LivenessMap
-stepNode n ns = {-# SCC "stepNode" #-} IM.insert n (c, Liveness ins' out') ns
+stepNode n ns = {-# SCC "stepNode" #-} IM.insert n (c, Liveness ins' out' fins' fout') ns
     where (c, l) = lookupNode n ns
           ins' = usesNode c <> (out l IS.\\ defsNode c)
+          fins' = usesFNode c <> (fout l IS.\\ defsFNode c)
           out' = IS.unions (fmap ins (succNode c ns))
+          fout' = IS.unions (fmap fins (succNode c ns))

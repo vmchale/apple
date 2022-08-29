@@ -40,11 +40,11 @@ minM is | IS.null is = maxBound
         | otherwise = IS.findMin is
 
 ls :: Liveness -> [Edge]
-ls (Liveness is os) = cross (IS.toList is) (IS.toList os)
+ls (Liveness is os _ _) = cross (IS.toList is) (IS.toList os)
 
 -- FIXME: handle float vs. int registers as separate graphs
 boundLiveness :: Liveness -> Bounds
-boundLiveness (Liveness is os) = let vs = is `IS.union` os in (minM vs, maxM vs)
+boundLiveness (Liveness is os _ _) = let vs = is `IS.union` os in (minM vs, maxM vs)
 
 cross :: [a] -> [b] -> [(a,b)]
 cross xs ys = (,) <$> xs <*> ys
