@@ -13,7 +13,7 @@
   - [ ] ⍳ (apl iota)
   - [ ] remora-like type system
   - [ ] ⩪ for filter
-  - [ ] ℘
+  - [ ] ℘ ⊲ ⊳ ⪫ ⪪
   - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
   - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
   - [ ] dfns like k, APL (J)
@@ -36,6 +36,7 @@
 - [ ] deforestation
 - [ ] Note: !-modality is functorial, so we get some polymorphism that way?
 # Features
+- [ ] `zipWith` builtin (2-ary)
 - [ ] allow type signatures in lambdas?
 - [ ] mko executable - compile expression into .o file, with some name
 - [ ] random number generation

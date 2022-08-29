@@ -2,7 +2,7 @@
 λxs.λys.
   { dxs ⟜ (-)\~xs; dys ⟜ (-)\~ys
   ; dts ← [√((x^2)+y^2)]`2 1 dxs dys
-  ; pxs ← (+)Λ 0 dxs; pys ← (+)Λ 0 dys; pts ← (+)Λ 0 dts
+  ; pxs ← (+)Λ 0 dxs; pys ← (+)Λ 0 dys; pts ⟜ (+)Λ 0 dts
   ; 𝜉 ← (-)`2 1 pxs ((*)`2 1 ((%)`2 1 dxs dts) pts)
   ; 𝛿 ← (-)`2 1 pys ((*)`2 1 ((%)`2 1 dys dts) pts)
   ; (𝜉,𝛿)
