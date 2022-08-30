@@ -12,6 +12,8 @@ k = 16
 
 data St
 
+-- move list: map from abstract registers (def ∪ used) to nodes
+
 type M = State St
 
 -- make worklists (simplify, freeze, coalescedNodes,
