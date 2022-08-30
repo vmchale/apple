@@ -6,6 +6,7 @@ import qualified Data.Array                 as A
 import           Data.Copointed
 import           Data.Graph                 (Bounds, Edge, Graph, Vertex, buildG)
 import qualified Data.IntSet                as IS
+import qualified Data.IntMap as IM
 
 -- same for xmm0, r15
 k = 16
@@ -13,6 +14,9 @@ k = 16
 data St
 
 -- move list: map from abstract registers (def ∪ used) to nodes
+type Movs = IM.IntMap IS.IntSet
+type GS = S.Set (Int, Int)
+type GL = IM.IntMap IS.IntSet -- Array IS.IntSet?
 
 type M = State St
 
@@ -32,6 +36,7 @@ deg = fmap length
 mG :: Copointed p => [p Liveness] -> Graph
 mG asms = buildG bounds (concatMap (ls.copoint) asms)
     where bounds = (minimum mins, maximum maxs) where (mins, maxs) = unzip (fmap (boundLiveness.copoint) asms)
+    -- TODO: EdgeSet
 
 maxM :: IS.IntSet -> IS.Key
 maxM is | IS.null is = minBound
