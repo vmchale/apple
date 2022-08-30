@@ -22,18 +22,18 @@ import           Sys.DL
 pI :: Ptr a -> Int
 pI = (\(IntPtr i) -> i) . ptrToIntPtr
 
-hasMa :: [X86 reg a] -> Bool
+hasMa :: [X86 reg freg a] -> Bool
 hasMa = any g where
     g Call{} = True
     g _      = False
 
-prepAddrs :: [X86 reg a] -> IO (Maybe (Int, Int))
+prepAddrs :: [X86 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
 aFp = fmap snd . allFp
 dbgFp = fmap fst . allFp
 
-allFp :: [X86 X86Reg a] -> IO (BS.ByteString, FunPtr b)
+allFp :: [X86 X86Reg FX86Reg a] -> IO (BS.ByteString, FunPtr b)
 allFp instrs = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
@@ -44,7 +44,7 @@ allFp instrs = do
     let b = BS.pack$asm 0 (pI p, fn, lbls) instrs
     (b,)<$>finish b p
 
-assemble :: [X86 X86Reg a] -> BS.ByteString
+assemble :: [X86 X86Reg FX86Reg a] -> BS.ByteString
 assemble instrs =
     let (_, lbls) = mkIx 0 instrs in
     BS.pack $ asm 0 (error "Internal error: no self", Nothing, lbls) instrs
@@ -53,7 +53,7 @@ data VEXM = F | F38 | F3A
 
 data PP = S6 | F3 | F2
 
-rrNoPre :: [Word8] -> X86Reg -> X86Reg -> [Word8] -> [Word8]
+rrNoPre :: RMB reg => [Word8] -> reg -> reg -> [Word8] -> [Word8]
 rrNoPre opc r0 r1 =
     let (_, b0) = modRM r0
         (_, b1) = modRM r1
@@ -62,10 +62,11 @@ rrNoPre opc r0 r1 =
 
 mkRR opc = mkAR opc 3
 
-mkAR :: [Word8]
+mkAR :: (RMB reg0, RMB reg1)
+     => [Word8]
      -> Word8 -- ^ mod
-     -> X86Reg -- ^ r/m
-     -> X86Reg -- ^ reg
+     -> reg0 -- ^ r/m
+     -> reg1 -- ^ reg
      -> [Word8] -> [Word8]
 mkAR opc m r0 r1 =
     let (e0, b0) = modRM r0
@@ -78,7 +79,7 @@ mkAR opc m r0 r1 =
 -- movapd xmm1, xmm5 -> 66 0f 28 cd
 --
 -- addsd xmm8,xmm10 -> f2 45 0f 58 c2
-extSse :: Word8 -> Word8 -> X86Reg -> X86Reg -> [Word8] -> [Word8]
+extSse :: Word8 -> Word8 -> FX86Reg -> FX86Reg -> [Word8] -> [Word8]
 extSse pre opc r0 r1 =
     let (e0, b0) = modRM r0
         (e1, b1) = modRM r1
@@ -86,7 +87,7 @@ extSse pre opc r0 r1 =
         modRMB = (0x3 `shiftL` 6) .|. (b1 `shiftL` 3) .|. b0
         in (\x -> pre:b:0xf:opc:modRMB:x)
 
-vexV4 :: X86Reg -> Word8
+vexV4 :: FX86Reg -> Word8
 vexV4 XMM0  = 0xf
 vexV4 XMM1  = 0xe
 vexV4 XMM2  = 0xd
@@ -118,7 +119,7 @@ ppbits S6 = 0x1
 ppbits F3 = 0x2
 ppbits F2 = 0x3
 
-mkVex :: Word8 -> PP -> X86Reg -> X86Reg -> X86Reg -> ([Word8] -> [Word8])
+mkVex :: Word8 -> PP -> FX86Reg -> FX86Reg -> FX86Reg -> ([Word8] -> [Word8])
 mkVex opc pp r0 r1 r2 =
     \x -> 0xc5:b:opc:modRMB:x
     where b = (bitC e0 `shiftL` 7) .|. (vexV4 r1 `shiftL` 3) .|. ppbits pp
@@ -126,7 +127,7 @@ mkVex opc pp r0 r1 r2 =
           (_, b2) = modRM r2
           modRMB = (0x3 `shiftL` 6) .|. b0 `shiftL` 3 .|. b2
 
-mkVex3 :: Word8 -> PP -> VEXM -> X86Reg -> X86Reg -> X86Reg -> ([Word8] -> [Word8])
+mkVex3 :: Word8 -> PP -> VEXM -> FX86Reg -> FX86Reg -> FX86Reg -> ([Word8] -> [Word8])
 mkVex3 opc pp mm r0 r1 r2 =
     \x -> 0xc4:by0:by1:opc:modRMB:x
     where by0 = (bitC e0 `shiftL` 7) .|. (0x1 `shiftL` 6) .|. (bitC e2 `shiftL` 5) .|. bitsm mm
@@ -135,7 +136,7 @@ mkVex3 opc pp mm r0 r1 r2 =
           (e2, b2) = modRM r2
           modRMB = (0x3 `shiftL` 6) .|. b0 `shiftL` 3 .|. b2
 
-mkIx :: Int -> [X86 X86Reg a] -> (Int, M.Map Label Int)
+mkIx :: Int -> [X86 X86Reg FX86Reg a] -> (Int, M.Map Label Int)
 mkIx ix (Pop _ r:asms) | fits r               = mkIx (ix+1) asms
                        | otherwise            = mkIx (ix+2) asms
 mkIx ix (Push _ r:asms) | fits r              = mkIx (ix+1) asms
@@ -213,10 +214,10 @@ mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
 mkIx ix []                                    = (ix, M.empty)
 mkIx _ (instr:_) = error (show instr)
 
-fits :: X86Reg -> Bool
+fits :: RMB reg => reg -> Bool
 fits r = let (e, _) = modRM r in e == 0
 
-asm :: Int -> (Int, Maybe (Int, Int), M.Map Label Int) -> [X86 X86Reg a] -> [Word8]
+asm :: Int -> (Int, Maybe (Int, Int), M.Map Label Int) -> [X86 X86Reg FX86Reg a] -> [Word8]
 asm _ _ [] = []
 asm ix st (Push _ r:asms) | fits r =
     let (_, b0) = modRM r
@@ -512,40 +513,45 @@ mi64i32 :: Int64 -> Maybe Int32
 mi64i32 i | i > fromIntegral (maxBound :: Int32) || i < fromIntegral (minBound :: Int32) = Nothing
           | otherwise = Just $ fromIntegral i
 
--- extra is 1 bit, ModR/M is 3 bits; I store them as bytes for ease of
--- manipulation
-modRM :: X86Reg -> (Word8, Word8)
-modRM Rax   = (0, 0o0)
-modRM Rcx   = (0, 0o1)
-modRM Rdx   = (0, 0o2)
-modRM Rbx   = (0, 0o3)
-modRM Rsp   = (0, 0o4)
-modRM Rsi   = (0, 0o6)
-modRM Rdi   = (0, 0o7)
-modRM R8    = (1, 0o0)
-modRM R9    = (1, 0o1)
-modRM R10   = (1, 0o2)
-modRM R11   = (1, 0o3)
-modRM R12   = (1, 0o4)
-modRM R13   = (1, 0o5)
-modRM R14   = (1, 0o6)
-modRM R15   = (1, 0o7)
-modRM XMM0  = (0, 0o0)
-modRM XMM1  = (0, 0o1)
-modRM XMM2  = (0, 0o2)
-modRM XMM3  = (0, 0o3)
-modRM XMM4  = (0, 0o4)
-modRM XMM5  = (0, 0o5)
-modRM XMM6  = (0, 0o6)
-modRM XMM7  = (0, 0o7)
-modRM XMM8  = (1, 0o0)
-modRM XMM9  = (1, 0o1)
-modRM XMM10 = (1, 0o2)
-modRM XMM11 = (1, 0o3)
-modRM XMM12 = (1, 0o4)
-modRM XMM13 = (1, 0o5)
-modRM XMM14 = (1, 0o6)
-modRM XMM15 = (1, 0o7)
+class RMB a where
+    -- extra is 1 bit, ModR/M is 3 bits; I store them as bytes for ease of
+    -- manipulation
+    modRM :: a -> (Word8, Word8)
+
+instance RMB X86Reg where
+    modRM Rax = (0, 0o0)
+    modRM Rcx = (0, 0o1)
+    modRM Rdx = (0, 0o2)
+    modRM Rbx = (0, 0o3)
+    modRM Rsp = (0, 0o4)
+    modRM Rsi = (0, 0o6)
+    modRM Rdi = (0, 0o7)
+    modRM R8  = (1, 0o0)
+    modRM R9  = (1, 0o1)
+    modRM R10 = (1, 0o2)
+    modRM R11 = (1, 0o3)
+    modRM R12 = (1, 0o4)
+    modRM R13 = (1, 0o5)
+    modRM R14 = (1, 0o6)
+    modRM R15 = (1, 0o7)
+
+instance RMB FX86Reg where
+    modRM XMM0  = (0, 0o0)
+    modRM XMM1  = (0, 0o1)
+    modRM XMM2  = (0, 0o2)
+    modRM XMM3  = (0, 0o3)
+    modRM XMM4  = (0, 0o4)
+    modRM XMM5  = (0, 0o5)
+    modRM XMM6  = (0, 0o6)
+    modRM XMM7  = (0, 0o7)
+    modRM XMM8  = (1, 0o0)
+    modRM XMM9  = (1, 0o1)
+    modRM XMM10 = (1, 0o2)
+    modRM XMM11 = (1, 0o3)
+    modRM XMM12 = (1, 0o4)
+    modRM XMM13 = (1, 0o5)
+    modRM XMM14 = (1, 0o6)
+    modRM XMM15 = (1, 0o7)
 
 cb :: (Integral a) => a -> [Word8]
 cb x = le (fromIntegral x :: Int8)

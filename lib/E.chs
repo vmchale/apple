@@ -53,7 +53,7 @@ apple_ty src errPtr = do
         Left err -> do
             poke errPtr =<< tcstr (ptxt err)
             pure (-1)
-        Right t -> pure $ fromIntegral $ fromEnum $ case t of   
+        Right t -> pure $ fromIntegral $ fromEnum $ case t of
             A.I -> I_t
             A.F -> F_t
             (A.Arr _ A.I) -> IA

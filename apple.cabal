@@ -55,10 +55,8 @@ library
         Prettyprinter.Ext
         Data.Copointed
         Asm.X86
-        Asm.X86.BB
         Asm.X86.Opt
         Asm.X86.Alloc
-        Asm.X86.Color
         Asm.X86.CF
         Asm.X86.Trans
         Asm.G
@@ -81,7 +79,6 @@ library
         array,
         bytestring,
         transformers,
-        split,
         unix,
         extra
 

@@ -35,24 +35,24 @@ addControlFlow [] = pure []
 addControlFlow ((L l):stmts) = do
     { i <- lookupLabel l
     ; (f, stmts') <- next stmts
-    ; pure ((L l, ControlAnn i (f []) IS.empty IS.empty):stmts')
+    ; pure ((L l, ControlAnn i (f []) IS.empty IS.empty IS.empty IS.empty):stmts')
     }
 addControlFlow (J l:stmts) = do
     { i <- getFresh
     ; nextStmts <- addControlFlow stmts
     ; l_i <- lookupLabel l
-    ; pure ((J l, ControlAnn i [l_i] IS.empty IS.empty):nextStmts)
+    ; pure ((J l, ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty):nextStmts)
     }
 addControlFlow (MJ e l:stmts) = do
     { i <- getFresh
     ; (f, stmts') <- next stmts
     ; l_i <- lookupLabel l
-    ; pure ((MJ e l, ControlAnn i (f [l_i]) (uE e) IS.empty):stmts')
+    ; pure ((MJ e l, ControlAnn i (f [l_i]) (uE e) IS.empty IS.empty IS.empty):stmts')
     }
 addControlFlow (stmt:stmts) = do
     { i <- getFresh
     ; (f, stmts') <- next stmts
-    ; pure ((stmt, ControlAnn i (f []) (uses stmt) (defs stmt)):stmts')
+    ; pure ((stmt, ControlAnn i (f []) (uses stmt) (defs stmt) IS.empty IS.empty):stmts')
     }
 
 uE :: Exp -> IS.IntSet
