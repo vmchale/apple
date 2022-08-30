@@ -79,7 +79,6 @@ library
         array,
         bytestring,
         transformers,
-        split,
         unix,
         extra
 
