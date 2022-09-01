@@ -40,3 +40,12 @@ build l (St ml as al mv) (isn:isns) | isM isn =
         l' = u `IS.union` (lm IS.\\ d)
         st' = St ml' es al (IS.insert nIx mv)
     in build l' st' isns
+                                  | otherwise =
+    let ca = fst (copoint isn)
+        u = usesNode ca
+        d = defsNode ca
+        le = l `IS.union` d
+        es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
+        l' = u `IS.union` (l IS.\\ d)
+        st' = St ml es al mv
+    in build l' st' isns
