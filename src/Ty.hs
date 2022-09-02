@@ -102,7 +102,7 @@ mI :: I a -> I a -> Either (TyE b) (Subst a)
 mI (Ix _ i) (Ix _ j) | i == j = Right mempty
 mI (IVar _ (Name _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
-mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j'
+mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
 
 mSh :: Sh a -> Sh a -> Either (TyE b) (Subst a)
 mSh (SVar (Name _ (U i) _)) sh = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
@@ -228,7 +228,7 @@ mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mguPrep l s t0 t1 =
     let t0' = aT s t0
         t1' = aT s t1
-    in mgu l s t0' t1'
+    in mgu l s ({-# SCC "rwArr" #-} rwArr t0') ({-# SCC "rwArr" #-} rwArr t1')
 
 occ :: T a -> IS.IntSet
 occ (TVar (Name _ (U i) _)) = IS.singleton i
@@ -245,8 +245,6 @@ mgu l s (Arrow t0 t1) (Arrow t0' t1') = do
 mgu _ s I I = Right s
 mgu _ s F F = Right s
 mgu _ s B B = Right s
-mgu l s (Arr Nil t) t' = mguPrep l s t t'
-mgu l s t (Arr Nil t') = mguPrep l s t t'
 mgu _ s (TVar n) (TVar n') | n == n' = Right s
 mgu (l, _) s t'@(TVar (Name _ (U i) _)) t | i `IS.member` occ t = Left$ OccursCheck l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
@@ -254,7 +252,6 @@ mgu (l, _) s t t'@(TVar (Name _ (U i) _)) | i `IS.member` occ t = Left$ OccursCh
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
 mgu (l, e) _ t0@Arrow{} t1 = Left $ UnificationFailed l e t0 t1
 mgu (l, e) _ t0 t1@Arrow{} = Left $ UnificationFailed l e t0 t1
--- TODO: Arr 1 (Arr 1 a) ~ Arr 2 a
 mgu l s (Arr sh t) (Arr sh' t') = do
     s0 <- mguPrep l s t t'
     mgShPrep (fst l) s0 sh sh'
@@ -386,7 +383,7 @@ tyB _ (MapN a d) = do
         fTy = foldr Arrow b' as'
         codArrTys = Arr arrSh <$> as'
         gTy = foldr Arrow (Arr arrSh b') codArrTys
-    -- depends on Arr nil a = a, Arr (i+j) a = Arr i (Arr j sh) etc.
+    -- depends on Arr nil a = a, Arr (i+j) a = Arr i (Arr j sh)
     pure (Arrow fTy gTy, mempty)
 tyB l (Rank as) = do
     let ixN n = zipWithM (\_ c -> freshName (T.singleton c) ()) [1..n] ['i'..]
@@ -438,7 +435,8 @@ cloneWithConstraints t = do
 
 rwArr :: T a -> T a
 rwArr (Arr Nil t)  = rwArr t
-rwArr (Arr sh t)   = Arr sh (rwArr t) -- TODO: Arr i (Arr j a) -> Arr (i+j) a
+rwArr (Arr ixes arr) | (is, Nil) <- unroll ixes, Arr sh t <- rwArr arr = Arr (roll sh is) t
+rwArr (Arr sh t)   = Arr sh (rwArr t)
 rwArr (Arrow t t') = Arrow (rwArr t) (rwArr t')
 rwArr I            = I
 rwArr B            = B
