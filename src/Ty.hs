@@ -228,7 +228,7 @@ mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mguPrep l s t0 t1 =
     let t0' = aT s t0
         t1' = aT s t1
-    in mgu l s t0' t1'
+    in mgu l s (rwArr t0') (rwArr t1')
 
 occ :: T a -> IS.IntSet
 occ (TVar (Name _ (U i) _)) = IS.singleton i
@@ -245,8 +245,6 @@ mgu l s (Arrow t0 t1) (Arrow t0' t1') = do
 mgu _ s I I = Right s
 mgu _ s F F = Right s
 mgu _ s B B = Right s
-mgu l s (Arr Nil t) t' = mguPrep l s t t'
-mgu l s t (Arr Nil t') = mguPrep l s t t'
 mgu _ s (TVar n) (TVar n') | n == n' = Right s
 mgu (l, _) s t'@(TVar (Name _ (U i) _)) t | i `IS.member` occ t = Left$ OccursCheck l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
