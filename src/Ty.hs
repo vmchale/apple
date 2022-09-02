@@ -434,15 +434,15 @@ cloneWithConstraints t = do
     pure t'
 
 rwArr :: T a -> T a
-rwArr (Arr Nil t)  = rwArr t
-rwArr (Arr ixes arr) | (is, Nil) <- unroll ixes, Arr sh t <- rwArr arr = Arr (roll sh is) t
-rwArr (Arr sh t)   = Arr sh (rwArr t)
 rwArr (Arrow t t') = Arrow (rwArr t) (rwArr t')
 rwArr I            = I
 rwArr B            = B
 rwArr F            = F
 rwArr t@TVar{}     = t
 rwArr (P ts)       = P (rwArr<$>ts)
+rwArr (Arr Nil t)  = rwArr t
+rwArr (Arr ixes arr) | (is, Nil) <- unroll ixes, Arr sh t <- rwArr arr = Arr (roll sh is) t
+rwArr (Arr sh t)   = Arr sh (rwArr t)
 
 hasEI :: I a -> Bool
 hasEI IEVar{}            = True
