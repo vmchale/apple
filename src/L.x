@@ -140,6 +140,7 @@ tokens :-
         itof                     { mkBuiltin BuiltinI }
         𝑖                        { mkBuiltin BuiltinI } -- TODO: better as ℝ?
         𝓕                        { mkBuiltin BuiltinF }
+        𝓉                        { mkBuiltin BuiltinT }
         "#t"                     { mkBuiltin BuiltinTrue }
         "#f"                     { mkBuiltin BuiltinFalse }
         √                        { mkBuiltin BuiltinSqrt }
@@ -268,7 +269,7 @@ instance Pretty Var where
 data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
              | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
-             | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat
+             | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -291,6 +292,7 @@ instance Pretty Builtin where
     pretty BuiltinArr    = "Arr"
     pretty BuiltinInt    = "int"
     pretty BuiltinFloat  = "float"
+    pretty BuiltinT      = "𝓉"
 
 data Token a = EOF { loc :: a }
              | TokSym { loc :: a, _sym :: Sym }

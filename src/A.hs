@@ -131,7 +131,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | MapN !Int !Int
              | Rank [(Int, Maybe [Int])]
              | Fold !Int | Floor | ItoF
-             | Scan | Iter | Size | Re | Gen | Fib | Succ
+             | Scan | Iter | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int]
              -- sin/cos &c.

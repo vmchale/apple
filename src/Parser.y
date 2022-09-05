@@ -88,6 +88,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     e { TokBuiltin $$ BuiltinE }
     i { TokBuiltin $$ BuiltinI }
     f { TokBuiltin $$ BuiltinF }
+    t { TokBuiltin $$ BuiltinT }
     tt { TokBuiltin $$ BuiltinTrue }
     ff { TokBuiltin $$ BuiltinFalse }
     sqrt { TokBuiltin $$ BuiltinSqrt }
@@ -202,6 +203,7 @@ E :: { E AlexPosn }
   | colon { Builtin $1 Size }
   | log { Builtin $1 Log }
   | i { Builtin $1 ItoF }
+  | t { Builtin $1 Dim }
   | E fold intLit E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 (A.Fold (fromInteger $ int $3))) $1) $4) $5 }
   | E scan E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 Scan) $1) $3) $4 }
   | E E { EApp (eAnn $1) $1 $2 }
