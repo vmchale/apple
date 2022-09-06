@@ -67,6 +67,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     caret { TokSym $$ Caret }
     max { TokSym $$ MaxS }
     min { TokSym $$ MinS }
+    pow { TokSym $$ Pow }
 
     fold { TokSym $$ L.Fold }
     quot { TokSym $$ Quot }
@@ -202,6 +203,7 @@ E :: { E AlexPosn }
   | gen { Builtin $1 Gen }
   | colon { Builtin $1 Size }
   | log { Builtin $1 Log }
+  | pow { Builtin $1 Exp }
   | i { Builtin $1 ItoF }
   | t { Builtin $1 Dim }
   | E fold intLit E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 (A.Fold (fromInteger $ int $3))) $1) $4) $5 }
