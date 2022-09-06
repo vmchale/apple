@@ -90,6 +90,7 @@ tokens :-
         -- symbols/operators
         "%"                      { mkSym Percent }
         "*"                      { mkSym Times }
+        "**"                     { mkSym Pow }
         "+"                      { mkSym Plus }
         "-"                      { mkSym Minus }
         "^"                      { mkSym Caret }
@@ -213,7 +214,7 @@ set_ust st = Alex (Right . (go &&& (const ())))
 
 alexEOF = EOF <$> get_pos
 
-data Sym = Plus | Minus | Fold | Percent | Times | Semicolon | Bind
+data Sym = Plus | Minus | Fold | Percent | Times | Semicolon | Bind | Pow
          | LSqBracket | RSqBracket | LBrace | RBrace | LParen | RParen | Lam
          | Dot | Caret | Quot | MapN | Comma | Underscore | QuestionMark | Colon
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
@@ -225,6 +226,7 @@ instance Pretty Sym where
     pretty Minus        = "-"
     pretty Percent      = "%"
     pretty Fold         = "/"
+    pretty Pow          = "**"
     pretty Times        = "*"
     pretty Semicolon    = ";"
     pretty Colon        = ":"
