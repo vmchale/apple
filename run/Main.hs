@@ -40,8 +40,7 @@ data Env = Env { _lex :: AlexUserState, ee :: M.Map T.Text EE, _mf :: (Int, Int)
 type Repl a = InputT (StateT Env IO)
 
 cyclicSimple :: [String] -> [Completion]
-cyclicSimple [] = []
-cyclicSimple xs = cycle $ fmap simpleCompletion xs
+cyclicSimple = fmap simpleCompletion
 
 runRepl :: Repl a x -> IO x
 runRepl x = do
