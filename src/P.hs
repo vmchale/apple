@@ -39,6 +39,7 @@ import           IR.Trans
 import           L
 import           LI
 import           LR
+import           Name
 import           Parser
 import           Parser.Rw
 import           Prettyprinter              (Pretty (..))
@@ -63,8 +64,8 @@ parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
 parseRename = fmap (go.second rewrite) . parseWithMax where
     go (i, ast) = let (e, m) = dedfn i ast in rG m e
 
-tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (T ())
-tyExpr = fmap (eAnn.fst) . tyParse
+tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
+tyExpr = fmap (first eAnn.discard) . tyConstr where discard (x, y, _) = (x, y)
 
 funP :: BSL.ByteString -> IO (FunPtr a)
 funP = aFp <=< either throwIO pure . x86
@@ -88,8 +89,11 @@ parseInline :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline bsl =
     (\(e, i) -> inline i e) <$> tyParse bsl
 
-tyParse :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
-tyParse bsl =
+tyConstr :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
+tyConstr bsl =
     case parseRename bsl of
         Left err       -> Left $ PErr err
         Right (ast, m) -> first TyErr $ tyClosed m ast
+
+tyParse :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
+tyParse = fmap sel . tyConstr where sel ~(x, _, z) = (x, z)

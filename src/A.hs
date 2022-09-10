@@ -13,6 +13,7 @@ module A ( T (..)
          , Builtin (..)
          , ResVar (..)
          , prettyTyped
+         , prettyC
          ) where
 
 import           Control.DeepSeq   (NFData)
@@ -41,7 +42,7 @@ instance Show (I a) where
 -- type level)
 
 data C = IsNum | IsOrd -- implies eq
-       | HasBits deriving (Generic) -- or, xor, etc.
+       | HasBits deriving (Generic, Eq, Ord) -- or, xor, etc.
 
 instance NFData C where
 
@@ -141,6 +142,12 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
 ptName :: Name (T a) -> Doc ann
 ptName n@(Name _ _ t) = parens (pretty n <+> ":" <+> pretty t)
 
+prettyC :: (T (), [(Name a, C)]) -> Doc ann
+prettyC (t, []) = pretty t
+prettyC (t, cs) = tupled (pc<$>cs) <+> ":=>" <+> pretty t
+    where pc (n, c) = pretty c <+> pretty n
+
+-- TODO: constraints
 prettyTyped :: E (T a) -> Doc ann
 prettyTyped (Var t n)                                                = parens (pretty n <+> ":" <+> pretty t)
 prettyTyped (Builtin t b)                                            = parens (pretty b <+> ":" <+> pretty t)
