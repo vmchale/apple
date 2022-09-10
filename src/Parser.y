@@ -172,6 +172,7 @@ BBin :: { E AlexPosn }
      | mapN intLit intLit { Builtin $1 (A.MapN (fromInteger $ int $2) (fromInteger $ int $3)) }
      | lrank sepBy(R,comma) rbrace { Builtin $1 (Rank (reverse $2)) }
      | succ { Builtin $1 A.Succ }
+     | pow { Builtin $1 Exp }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
@@ -203,7 +204,6 @@ E :: { E AlexPosn }
   | gen { Builtin $1 Gen }
   | colon { Builtin $1 Size }
   | log { Builtin $1 Log }
-  | pow { Builtin $1 Exp }
   | i { Builtin $1 ItoF }
   | t { Builtin $1 Dim }
   | E fold intLit E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 (A.Fold (fromInteger $ int $3))) $1) $4) $5 }
