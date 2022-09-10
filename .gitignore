@@ -1,2 +1,4 @@
 *.o
 *.so
+*.dylib
+dist-newstyle
