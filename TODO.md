@@ -68,7 +68,7 @@
 - [ ] Pass over to ensure everything is monomorphized
 - [ ] `itof (:xs)` - would prefer w/o parens?
 - [ ] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
-- [ ] x+y-1 parsed as (x + (y - 1))
+- [ ] `((2 ^ (3 * 1)) + 2` (parses `2^3*1+2` wrong)
 ## Type system
 - [ ] Check that bindings are not too polymorphic
 - [ ] `LLet` should not contain functions, add a pass to check
