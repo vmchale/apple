@@ -14,6 +14,8 @@
   - [ ] remora-like type system
   - [ ] ⩪ for filter
   - [ ] ℘ ⊲ ⊳ ⪫ ⪪
+  - [ ] https://en.wikipedia.org/wiki/Guillemet#Encoding
+  - [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
   - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
   - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
   - [ ] dfns like k, APL (J)
@@ -36,15 +38,19 @@
 - [ ] deforestation
 - [ ] Note: !-modality is functorial, so we get some polymorphism that way?
 # Features
-- [ ] `zipWith` builtin (2-ary)
 - [ ] allow type signatures in lambdas?
 - [ ] mko executable - compile expression into .o file, with some name
 - [ ] random number generation
 - [ ] lift constants out of loops (precompute)
-- [ ] tuples idk.
-- [ ] reshape arrays...
+- [x] tuples idk.
+  - [ ] float tuple return
+- [ ] reshape arrays
 - [ ] clz? (count leading zeroes = floor(log) -> digits)
+## Array
+- [ ] concat
+- [ ] transpose (reverse all axes!)
 ## Syntax
+- [ ] `zipWith` builtin (2-ary)
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
 - [ ] https://www.compart.com/en/unicode/U+1D66
 ## Optimization
@@ -53,25 +59,20 @@
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
 # Performance
-- [ ] `-O2` perhaps (investigate with further pipeline)
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 - [ ] Live intervals/linear allocator is stupid as shit
   - [ ] need to do backwards/forwards thing and stitch it up at basic block
     boundaries
-- [ ] entropy: vfmadd231sd could take address directly as argument!
-# Modules
-- [x] Assembler
-- [x] linear register allocator
-- [ ] deforestation
+- [ ] entropy.🍏: vfmadd231sd could take address directly as argument!
 # Bugs
-- [ ] `gammaln` generates `vaddsd rsp, xmm3, xmm1` lol
 - [ ] Pass over to ensure everything is monomorphized
 - [ ] `itof (:xs)` - would prefer w/o parens?
 - [ ] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
 - [ ] x+y-1 parsed as (x + (y - 1))
 ## Type system
 - [ ] Check that bindings are not too polymorphic
-- [ ] `LLet` cannot contain functions (lol)
+- [ ] `LLet` should not contain functions, add a pass to check
+- [ ] print constraints
 # Checks/Passes
 - [ ] Warn if irange or frange will exceed?
 - [ ] Sanity check pass to make sure xmm0 doesn't end up target of `movtemp` etc.
@@ -91,10 +92,10 @@
 - [ ] continued fractions
 - [ ] `+//. y` in J... maybe `/.` takes `∀n. (Arr (n `Cons` Nil)) -> ...`
 - [ ] matrix multiplication
-  - [ ] rearrange: note that I implicitly coerce
+  - [x] rearrange: note that I implicitly coerce
   `Arr (i `Cons` Nil) (Arr (j `Cons` Nil) a)` into (Arr (i `Cons` j `Cons` Nil) a)
   which I guess needs a function (annoying?)
-  - [ ] my `map` is too underpowered I think... compared to true rank (remora
+  - [x] my `map` is too underpowered I think... compared to true rank (remora
     paper?)
     - [ ] could have a matmul builtin lol
 - [ ] https://www.labri.fr/perso/nrougier/from-python-to-numpy/
