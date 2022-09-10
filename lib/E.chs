@@ -40,7 +40,7 @@ apple_printty src errPtr = do
     case tyExpr (BSL.fromStrict bSrc) of
         Left err ->
             (poke errPtr =<< tcstr (ptxt err)) $> nullPtr
-        Right t -> tcstr (ptxt t)
+        Right t -> tcstr (renderStrict (layoutCompact (A.prettyC t)))
 
 ptxt :: Pretty a => a -> T.Text
 ptxt = renderStrict . layoutCompact . pretty
@@ -53,7 +53,7 @@ apple_ty src errPtr = do
         Left err -> do
             poke errPtr =<< tcstr (ptxt err)
             pure (-1)
-        Right (t, _) -> pure $ fromIntegral $ fromEnum $ case t of
+        Right (t, []) -> pure $ fromIntegral $ fromEnum $ case t of
             A.I -> I_t
             A.F -> F_t
             (A.Arr _ A.I) -> IA
