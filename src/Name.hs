@@ -19,6 +19,9 @@ data Name a = Name { name   :: T.Text
 instance Eq (Name a) where
     (==) (Name _ u _) (Name _ u' _) = u == u'
 
+instance Ord (Name a) where
+    compare (Name _ u _) (Name _ u' _) = compare u u'
+
 -- TODO: prettyprinter library?
 instance Pretty (Name a) where
     pretty (Name n _ _) = pretty n

@@ -77,7 +77,8 @@ printTypes :: BSL.ByteString -> Doc ann
 printTypes bsl =
     case parseRename bsl of
         Left err       -> throw err
-        Right (ast, m) -> either throw (prettyTyped.fst) $ tyClosed m ast
+        Right (ast, m) -> either throw (prettyTyped.fst3) $ tyClosed m ast
+    where fst3 ~(x, _, _) = x
 
 topt :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 topt = fmap prettyTyped . opt

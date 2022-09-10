@@ -18,16 +18,18 @@ import           Control.Monad              (zipWithM)
 import           Control.Monad.Except       (liftEither, throwError)
 import           Control.Monad.State.Strict (StateT (runStateT), gets, modify)
 import           Data.Bifunctor             (first, second)
+import           Data.Containers.ListUtils  (nubOrd)
 import           Data.Foldable              (traverse_)
 import           Data.Functor               (void, ($>))
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
+import           Data.Maybe                 (catMaybes)
 import           Data.Semigroup             (Semigroup (..))
 import qualified Data.Text                  as T
 import           Data.Typeable              (Typeable)
 import           GHC.Generics               (Generic)
 import           Name
-import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, vsep, (<+>))
+import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, tupled, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Ty.Clone
 import           U
@@ -493,12 +495,12 @@ checkClass s i c =
         Just ty -> checkTy (rwArr ty) c
         Nothing -> pure Nothing
 
-tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), Int)
+tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Name a, C)], Int)
 tyClosed u e = do
-    ((e', s), i) <- runTyM u (do { res@(_, s) <- tyE e ; cvs <- gets varConstr ; liftEither $ traverse_ (uncurry$checkClass s) (IM.toList cvs) ; pure res })
+    (((e', s), scs), i) <- runTyM u (do { res@(_, s) <- tyE e ; cvs <- gets varConstr ; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs) ; pure (res, scs) })
     let eS = {-# SCC "applySubst" #-} fmap (rwArr.aT (void s)) e'
     eS' <- do {(e'', s') <- {-# SCC "match" #-} rAn eS; pure (fmap (aT s') e'') }
-    chkE (eAnn eS') $> (eS', i)
+    chkE (eAnn eS') $> (eS', nubOrd scs, i)
 
 rAn :: E (T ()) -> Either (TyE a) (E (T ()), Subst ())
 rAn (Ann _ e t) = do
