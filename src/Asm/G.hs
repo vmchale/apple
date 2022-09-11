@@ -19,26 +19,29 @@ type Movs = IM.IntMap IS.IntSet
 type GS = S.Set (Int, Int)
 type GL = IM.IntMap IS.IntSet
 
-data St = St { mvs :: Movs, aS :: GS, aL :: GL, wlm :: IS.IntSet }
+data St = St { mvs :: Movs, aS :: GS, aL :: GL, wlm :: IS.IntSet, degs :: IM.IntMap Int }
 
 thread :: [a -> a] -> a -> a
 thread = foldr (.) id
 
+(@!) :: IM.Key -> Int -> GL -> GL
+(@!) k i = IM.alter (\kϵ -> Just$case kϵ of {Nothing -> IS.singleton i; Just is -> IS.insert i is}) k
+
 -- | To be called in reverse order, init with liveOut for the block
 build :: (Arch (p (ControlAnn, NLiveness)), Copointed p) => IS.IntSet -> St -> [p (ControlAnn, NLiveness)] -> (IS.IntSet, St)
 build l st [] = (l, st)
-build l (St ml as al mv) (isn:isns) | isM isn =
+build l (St ml as al mv ds) (isn:isns) | isM isn =
     let ca = fst (copoint isn)
         nl = snd (copoint isn)
         u = usesNode ca
         d = defsNode ca
         lm = l IS.\\ u
         nIx = nx nl
-        ml' = thread [ IM.alter (\k -> Just $ case k of {Nothing -> IS.singleton nIx; Just nxes -> IS.insert nIx nxes}) kϵ | kϵ <- IS.toList (u `IS.union` d) ] ml
+        ml' = thread [ kϵ @! nIx | kϵ <- IS.toList (u `IS.union` d) ] ml
         le = lm `IS.union` d
         es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
         l' = u `IS.union` (lm IS.\\ d)
-        st' = St ml' es al (IS.insert nIx mv)
+        st' = St ml' es al (IS.insert nIx mv) ds
     in build l' st' isns
                                   | otherwise =
     let ca = fst (copoint isn)
@@ -47,5 +50,21 @@ build l (St ml as al mv) (isn:isns) | isM isn =
         le = l `IS.union` d
         es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
         l' = u `IS.union` (l IS.\\ d)
-        st' = St ml es al mv
+        st' = St ml es al mv ds
     in build l' st' isns
+
+precoloredS :: IS.IntSet
+precoloredS = undefined
+
+addEdge :: Int -> Int -> St -> St
+addEdge u v st@(St ml as al mv ds) =
+    if (u, v) `S.notMember` as && u /= v
+        then
+            let as' = as `S.union` S.fromList [(u,v), (v, u)]
+                uC = u `IS.notMember` precoloredS
+                vC = v `IS.notMember` precoloredS
+                al' = (if uC then u @! v else id)$(if vC then v @! u else id) al
+                idg = IM.alter (\k -> Just$case k of {Nothing -> 1; Just d -> d+1})
+                ds' = (if uC then idg u else id)$(if vC then idg v else id) ds
+            in St ml as' al' mv ds'
+        else st
