@@ -392,6 +392,12 @@ eval (EApp F (EApp _ (Builtin _ Exp) (FLit _ x)) e) t = do
     f <- newFTemp
     plE <- eval e f
     pure $ plE ++ [MX t (FB FExp (ConstF x) (FReg f))]
+eval (EApp F (EApp _ (Builtin _ Exp) e0) e1) t = do
+    f0 <- newFTemp
+    f1 <- newFTemp
+    plE0 <- eval e0 f0
+    plE1 <- eval e1 f1
+    pure $ plE0 ++ plE1 ++ [MX t (FB FExp (FReg f0) (FReg f1))]
 eval (EApp F (EApp _ (Builtin _ IntExp) x) n) t = do
     i <- newITemp
     nR <- newITemp

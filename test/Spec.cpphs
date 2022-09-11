@@ -26,7 +26,7 @@ kl xs ys = sum [ x * log (x/y) | x <- xs, y <- ys ]
 infixl 1 .?=
 
 (.?=) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
-x .?= y = assertBool ("expected " ++ show y ++ ", got " ++ show x) (x-y<1e-15&&y-x<1e-15)
+x .?= y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-15&&(y-x)/y<1e-15)
 
 main :: IO ()
 main = defaultMain $ testGroup "All" $ rTy:
@@ -76,6 +76,8 @@ x64T = testGroup "x64"
     , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
     , testCase "scan" $ do { res <- scan 5 ; res @?= [0,1,3,6,10] }
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4,6,1] ; res @?= [0,4,6,6] }
+    , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res @?= 5040 }
+    , testCase "approx." $ do { res <- fpFf "test/examples/approxFfact.🍏" 10 ; res @?= 3628800 }
     ]
 
 scan i = do
@@ -152,22 +154,22 @@ jitExp n x = do
     fp <- funP =<< BSL.readFile "test/examples/exp.🍏"
     pure $ iff fp n x
 
-fpFF :: FilePath -> Double -> IO Double
-fpFF fp x = do
+fpFf :: FilePath -> Double -> IO Double
+fpFf fp x = do
     f <- funP =<< BSL.readFile fp
     pure $ ff f x
 
-gammaJit = fpFF "test/examples/gammaln.🍏"
-ncdfJit = fpFF "test/examples/ncdf.🍎"
+gammaJit = fpFf "test/examples/gammaln.🍏"
+ncdfJit = fpFf "test/examples/ncdf.🍎"
 
 erfJit :: Double -> IO Double
-erfJit = fpFF "test/examples/erf.🍏"
+erfJit = fpFf "test/examples/erf.🍏"
 
 f11 :: Double -> IO Double
-f11 = fpFF "test/examples/hypergeometricEfficient.🍏"
+f11 = fpFf "test/examples/hypergeometricEfficient.🍏"
 
 jitFact :: Double -> IO Double
-jitFact = fpFF "test/examples/ffact.🍎"
+jitFact = fpFf "test/examples/ffact.🍎"
 
 jitRF :: Int -> Int -> IO Int
 jitRF m n = do
