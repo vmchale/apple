@@ -15,22 +15,41 @@ import Asm.Ar
 -- move list: map from abstract registers (def ∪ used) to nodes
 type Movs = IM.IntMap IS.IntSet
 type GS = S.Set (Int, Int)
-type GL = IM.IntMap IS.IntSet
+type GL = IM.IntMap [Int]
 
-data Wk = Wk { sp :: IS.IntSet, fr :: IS.IntSet, simp :: IS.IntSet }
+-- FIXME: intset...
+data Wk = Wk { sp :: [Int], fr :: [Int], simp :: [Int] }
 
-data St = St { mvs :: Movs, aS :: GS, aL :: GL, wlm :: IS.IntSet, degs :: IM.IntMap Int, initial :: IS.IntSet, wkls :: Wk }
+mapSp f w = w { sp = f (sp w) }
+mapFr f w = w { fr = f (fr w) }
+mapSimp f w = w { simp = f (simp w) }
+
+-- TODO: appel says to make these doubly-linked lists
+data Mv = Mv { coal :: IS.IntSet, constr :: IS.IntSet, frz :: IS.IntSet, wl :: IS.IntSet, actv :: IS.IntSet }
+
+mapWl f mv = mv { wl = f (wl mv) }
+
+data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, degs :: IM.IntMap Int, initial :: [Int], wkls :: Wk, stack :: [Int] }
 
 thread :: [a -> a] -> a -> a
 thread = foldr (.) id
 
-(@!) :: IM.Key -> Int -> GL -> GL
+(!:) :: IM.Key -> Int -> GL -> GL
+(!:) k i = IM.alter (\kϵ -> Just$case kϵ of {Nothing -> [i]; Just is -> i:is}) k
+
+(@!) :: IM.Key -> Int -> Movs -> Movs
 (@!) k i = IM.alter (\kϵ -> Just$case kϵ of {Nothing -> IS.singleton i; Just is -> IS.insert i is}) k
+
+dec :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
+dec = IM.alter (\k -> case k of {Nothing -> Nothing;Just d -> Just$d-1})
+
+inc :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
+inc = IM.alter (\k -> case k of {Nothing -> Nothing;Just d -> Just$d+1})
 
 -- | To be called in reverse order, init with liveOut for the block
 build :: (Arch (p (ControlAnn, NLiveness)), Copointed p) => IS.IntSet -> St -> [p (ControlAnn, NLiveness)] -> (IS.IntSet, St)
 build l st [] = (l, st)
-build l (St ml as al mv ds i wk) (isn:isns) | isM isn =
+build l (St ml as al mv ds i wk s) (isn:isns) | isM isn =
     let ca = fst (copoint isn)
         nl = snd (copoint isn)
         u = usesNode ca
@@ -41,7 +60,7 @@ build l (St ml as al mv ds i wk) (isn:isns) | isM isn =
         le = lm `IS.union` d
         es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
         l' = u `IS.union` (lm IS.\\ d)
-        st' = St ml' es al (IS.insert nIx mv) ds i wk
+        st' = St ml' es al (mapWl (IS.insert nIx) mv) ds i wk s
     in build l' st' isns
                                   | otherwise =
     let ca = fst (copoint isn)
@@ -50,30 +69,55 @@ build l (St ml as al mv ds i wk) (isn:isns) | isM isn =
         le = l `IS.union` d
         es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
         l' = u `IS.union` (l IS.\\ d)
-        st' = St ml es al mv ds i wk
+        st' = St ml es al mv ds i wk s
     in build l' st' isns
 
 precoloredS :: IS.IntSet
 precoloredS = undefined
 
 addEdge :: Int -> Int -> St -> St
-addEdge u v st@(St ml as al mv ds i wk) =
+addEdge u v st@(St ml as al mv ds i wk s) =
     if (u, v) `S.notMember` as && u /= v
         then
             let as' = as `S.union` S.fromList [(u,v), (v, u)]
                 uC = u `IS.notMember` precoloredS
                 vC = v `IS.notMember` precoloredS
-                al' = (if uC then u @! v else id)$(if vC then v @! u else id) al
-                idg = IM.alter (\k -> Just$case k of {Nothing -> 1; Just d -> d+1})
-                ds' = (if uC then idg u else id)$(if vC then idg v else id) ds
-            in St ml as' al' mv ds' i wk
+                al' = (if uC then u !: v else id)$(if vC then v !: u else id) al
+                ds' = (if uC then inc u else id)$(if vC then inc v else id) ds
+            in St ml as' al' mv ds' i wk s
         else st
 
--- FIXME: initial is a NODE of instructions aaah
 mkWorklist :: St -> St
-mkWorklist st@(St _ _ _ _ ds i wk) =
-    let i' = IS.empty
-        wk' = thread [ case () of { _ | ds IM.! n >= k -> (\w -> w { sp = IS.insert n (sp w) })} | n <- IS.toList i ] wk
+mkWorklist st@(St _ _ _ _ ds i wk _) =
+    let i' = []
+        wk' = thread [ (case () of { _ | ds IM.! n >= ᴋ -> mapSp; _ | isMR n st -> mapFr; _-> mapSimp}) (n:) | n <- i] wk
     in st { initial = i', wkls = wk' }
-    -- same for xmm0, r15
-    where k = 16
+
+-- same for xmm0, r15
+ᴋ = 16
+
+isMR :: Int -> St -> Bool
+isMR i st = nodeMoves i st /= IS.empty
+
+nodeMoves :: Int -> St -> IS.IntSet
+nodeMoves n (St ml _ _ mv _ _ _ _) = (ml IM.! n) `IS.intersection` (actv mv `IS.union` wl mv)
+
+simplify :: St -> St
+simplify s@(St _ _ _ _ _ _ (Wk _ _ []) _) = s
+simplify s@(St _ _ al _ ds _ wk@(Wk _ _ (n:ns)) st) =
+    let ds' = thread [ dec m | m <- al IM.! n ] ds
+    in s { wkls = wk { simp = ns }, stack = n:st, degs = ds' }
+
+-- decrement degree
+ddg :: Int -> St -> St
+ddg m s =
+    let d = degs s
+        s' = s { degs = dec m d }
+    in if d IM.! m == ᴋ
+        then let s'' = enaMv (m:(aL s IM.! m))
+             in undefined
+        else s'
+
+-- enable moves
+enaMv :: [Int] -> St -> St
+enaMv ns = undefined
