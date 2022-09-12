@@ -243,6 +243,7 @@ allocReg (MovAI32 l a i)          = sequence [MovAI32 () <$> uA l a <*> pure i] 
 allocReg (MovqXA l x a)           = sequence [MovqXA () <$> useX l x <*> uA l a] <* freeDone l
 allocReg (MovqAX l a x)           = sequence [MovqAX () <$> uA l a <*> useX l x] <* freeDone l
 allocReg (Cmovnle l r0 r1)        = sequence [Cmovnle () <$> useR l r0 <*> useR l r1] <* freeDone l
+allocReg (Rdrand l r)             = sequence [Rdrand () <$> useR l r] <* freeDone l
 allocReg Fldl2e{}                 = pure [Fldl2e ()]
 allocReg Fldln2{}                 = pure [Fldln2 ()]
 allocReg Fld1{}                   = pure [Fld1 ()]

@@ -262,6 +262,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Not { ann :: a, rSrc :: reg }
                     | And { ann :: a, rDest :: reg, rSrc :: reg }
                     | Cmovnle { ann :: a, rDest :: reg, rSrc :: reg }
+                    | Rdrand { ann :: a, rDest :: reg }
                     deriving (Functor, Generic)
 
 instance (NFData a, NFData reg, NFData freg) => NFData (X86 reg freg a) where
@@ -340,6 +341,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
   pretty (Not _ r)                = i4 ("not" <+> pretty r)
   pretty (And _ r0 r1)            = i4 ("and" <+> pretty r0 <> "," <+> pretty r1)
   pretty (Cmovnle _ r0 r1)        = i4 ("cmovnle" <+> pretty r0 <> "," <+> pretty r1)
+  pretty (Rdrand _ r)             = i4 ("rdrand" <+> pretty r)
 
 instance (Pretty reg, Pretty freg) => Show (X86 reg freg a) where show = show . pretty
 

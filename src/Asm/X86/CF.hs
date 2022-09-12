@@ -223,6 +223,7 @@ uses Movapd{} = IS.empty
 uses Vfmadd231sd{} = IS.empty
 uses Cvttsd2si{} = IS.empty
 uses Sqrtsd{} = IS.empty
+uses Rdrand{} = IS.empty
 uses r                        = error (show r)
 
 defsF :: X86 AbsReg FAbsReg ann -> IS.IntSet
@@ -329,6 +330,7 @@ defs Cvtsi2sd{} = IS.empty
 defs Vfmadd231sd{} = IS.empty
 defs Roundsd{} = IS.empty
 defs Sqrtsd{} = IS.empty
+defs (Rdrand _ r) = singleton r
 defs r = error (show r)
 
 next :: [X86 AbsReg FAbsReg ()] -> FreshM ([Int] -> [Int], [X86 AbsReg FAbsReg ControlAnn])
