@@ -10,10 +10,23 @@ import           R.M
 -- TODO zip-of-map->zip
 
 optA :: E (T ()) -> RM (E (T ()))
+optA (ILit F x)  = pure (FLit F (realToFrac x))
 optA e@ILit{}    = pure e
 optA e@FLit{}    = pure e
 optA e@Var{}     = pure e
 optA e@Builtin{} = pure e
+optA (EApp l0 (EApp l1 op@(Builtin _ Exp) e0) e1) = do
+    e0' <- optA e0
+    e1' <- optA e1
+    pure $ case (e0', e1') of
+        (FLit _ x, FLit _ y) -> FLit l0 (x**y)
+        _ -> EApp l0 (EApp l1 op e0') e1'
+optA (EApp l0 (EApp l1 op@(Builtin _ Div) e0) e1) = do
+    e0' <- optA e0
+    e1' <- optA e1
+    pure $ case (e0', e1') of
+        (FLit _ x, FLit _ y) -> FLit l0 (x/y)
+        _ -> EApp l0 (EApp l1 op e0') e1'
 optA (Lam l n e) = Lam l n <$> optA e
 optA (EApp l0 (EApp l1 op@(Builtin _ Times) x) y) = do
     xO <- optA x
