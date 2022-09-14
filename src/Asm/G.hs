@@ -19,7 +19,7 @@ type GL = IM.IntMap [Int]
 
 data Memb = Pre | Init | Sp | Fr | Simp | Coal | Colored | Stack
 
-data Wk = Wk { pre :: IS.IntSet, sp :: [Int], fr :: [Int], simp :: [Int] }
+data Wk = Wk { pre :: IS.IntSet, sp :: IS.IntSet, fr :: IS.IntSet, simp :: IS.IntSet }
 
 mapSp f w = w { sp = f (sp w) }
 mapFr f w = w { fr = f (fr w) }
@@ -31,6 +31,8 @@ data Mv = Mv { coal :: IS.IntSet, constr :: IS.IntSet, frz :: IS.IntSet, wl :: I
 mapWl f mv = mv { wl = f (wl mv) }
 
 data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, degs :: IM.IntMap Int, initial :: [Int], wkls :: Wk, stack :: [Int] }
+
+mapWk f st = st { wkls = f (wkls st) }
 
 thread :: [a -> a] -> a -> a
 thread = foldr (.) id
@@ -93,7 +95,7 @@ addEdge u v st@(St ml as al mv ds i wk s) =
 mkWorklist :: St -> St
 mkWorklist st@(St _ _ _ _ ds i wk _) =
     let i' = []
-        wk' = thread [ (case () of { _ | ds IM.! n >= ᴋ -> mapSp; _ | isMR n st -> mapFr; _-> mapSimp}) (n:) | n <- i] wk
+        wk' = thread [ (case () of { _ | ds IM.! n >= ᴋ -> mapSp; _ | isMR n st -> mapFr; _-> mapSimp}) (IS.insert n) | n <- i] wk
     in st { initial = i', wkls = wk' }
 
 -- same for xmm0, r15
@@ -106,10 +108,10 @@ nodeMoves :: Int -> St -> IS.IntSet
 nodeMoves n (St ml _ _ mv _ _ _ _) = (ml IM.! n) `IS.intersection` (actv mv `IS.union` wl mv)
 
 simplify :: St -> St
-simplify s@(St _ _ _ _ _ _ (Wk _ _ _ []) _) = s
-simplify s@(St _ _ al _ ds _ wk@(Wk _ _ _ (n:ns)) st) =
+simplify s@(St _ _ al _ ds _ wk@(Wk _ _ _ stϵ) st) | Just (n,ns) <- IS.minView stϵ =
     let ds' = thread [ dec m | m <- al IM.! n ] ds
     in s { wkls = wk { simp = ns }, stack = n:st, degs = ds' }
+                                                   | otherwise = s
 
 -- decrement degree
 ddg :: Int -> St -> St
@@ -117,8 +119,8 @@ ddg m s =
     let d = degs s
         s' = s { degs = dec m d }
     in if d IM.! m == ᴋ
-        then let s'' = enaMv (m:(aL s IM.! m))
-             in undefined
+        then let s'' = enaMv (m:(aL s IM.! m)) s'
+             in mapWk (mapSp (IS.delete m).(if isMR m s'' then mapFr else mapSimp) (IS.insert m)) s''
         else s'
 
 -- enable moves
