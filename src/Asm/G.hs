@@ -17,8 +17,9 @@ type Movs = IM.IntMap IS.IntSet
 type GS = S.Set (Int, Int)
 type GL = IM.IntMap [Int]
 
--- FIXME: intset...
-data Wk = Wk { sp :: [Int], fr :: [Int], simp :: [Int] }
+data Memb = Pre | Init | Sp | Fr | Simp | Coal | Colored | Stack
+
+data Wk = Wk { pre :: IS.IntSet, sp :: [Int], fr :: [Int], simp :: [Int] }
 
 mapSp f w = w { sp = f (sp w) }
 mapFr f w = w { fr = f (fr w) }
@@ -59,6 +60,7 @@ build l (St ml as al mv ds i wk s) (isn:isns) | isM isn =
         ml' = thread [ kϵ @! nIx | kϵ <- IS.toList (u `IS.union` d) ] ml
         le = lm `IS.union` d
         es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
+        -- FIXME: addEdge functionality here
         l' = u `IS.union` (lm IS.\\ d)
         st' = St ml' es al (mapWl (IS.insert nIx) mv) ds i wk s
     in build l' st' isns
@@ -75,13 +77,14 @@ build l (St ml as al mv ds i wk s) (isn:isns) | isM isn =
 precoloredS :: IS.IntSet
 precoloredS = undefined
 
+-- TODO: Memb?
 addEdge :: Int -> Int -> St -> St
 addEdge u v st@(St ml as al mv ds i wk s) =
     if (u, v) `S.notMember` as && u /= v
         then
             let as' = as `S.union` S.fromList [(u,v), (v, u)]
-                uC = u `IS.notMember` precoloredS
-                vC = v `IS.notMember` precoloredS
+                uC = u `IS.notMember` pre wk
+                vC = v `IS.notMember` pre wk
                 al' = (if uC then u !: v else id)$(if vC then v !: u else id) al
                 ds' = (if uC then inc u else id)$(if vC then inc v else id) ds
             in St ml as' al' mv ds' i wk s
@@ -103,8 +106,8 @@ nodeMoves :: Int -> St -> IS.IntSet
 nodeMoves n (St ml _ _ mv _ _ _ _) = (ml IM.! n) `IS.intersection` (actv mv `IS.union` wl mv)
 
 simplify :: St -> St
-simplify s@(St _ _ _ _ _ _ (Wk _ _ []) _) = s
-simplify s@(St _ _ al _ ds _ wk@(Wk _ _ (n:ns)) st) =
+simplify s@(St _ _ _ _ _ _ (Wk _ _ _ []) _) = s
+simplify s@(St _ _ al _ ds _ wk@(Wk _ _ _ (n:ns)) st) =
     let ds' = thread [ dec m | m <- al IM.! n ] ds
     in s { wkls = wk { simp = ns }, stack = n:st, degs = ds' }
 
