@@ -435,7 +435,7 @@ tyB _ Gen = do
     a <- TVar <$> freshName "a" ()
     n <- IEVar () <$> freshName "n" ()
     let arrTy = Arr (n `Cons` Nil) a
-    pure (Arrow a (Arrow (Arrow a (Arrow a a)) (Arrow I arrTy)), mempty)
+    pure (Arrow a (Arrow (Arrow a a) (Arrow I arrTy)), mempty)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do
