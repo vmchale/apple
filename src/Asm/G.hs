@@ -72,6 +72,7 @@ build l (St ml as al mv ds i wk s) (isn:isns) | isM isn =
         d = defsNode ca
         le = l `IS.union` d
         es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
+        -- FIXME: addEdge functionality here
         l' = u `IS.union` (l IS.\\ d)
         st' = St ml es al mv ds i wk s
     in build l' st' isns
