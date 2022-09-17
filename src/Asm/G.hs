@@ -29,9 +29,11 @@ mapSimp f w = w { simp = f (simp w) }
 data Mv = Mv { coal :: IS.IntSet, constr :: IS.IntSet, frz :: IS.IntSet, wl :: IS.IntSet, actv :: IS.IntSet }
 
 mapWl f mv = mv { wl = f (wl mv) }
+mapActv f mv = mv { actv = f (actv mv) }
 
 data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, degs :: IM.IntMap Int, initial :: [Int], wkls :: Wk, stack :: [Int] }
 
+mapMv f st = st { mvS = f (mvS st) }
 mapWk f st = st { wkls = f (wkls st) }
 
 thread :: [a -> a] -> a -> a
@@ -72,12 +74,10 @@ build l (St ml as al mv ds i wk s) (isn:isns) | isM isn =
         d = defsNode ca
         le = l `IS.union` d
         es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
+        -- FIXME: addEdge functionality here
         l' = u `IS.union` (l IS.\\ d)
         st' = St ml es al mv ds i wk s
     in build l' st' isns
-
-precoloredS :: IS.IntSet
-precoloredS = undefined
 
 -- TODO: Memb?
 addEdge :: Int -> Int -> St -> St
@@ -125,4 +125,10 @@ ddg m s =
 
 -- enable moves
 enaMv :: [Int] -> St -> St
-enaMv ns = undefined
+enaMv ns = thread (fmap g ns) where
+    g n st = let ms = IS.toList (nodeMoves n st) in thread (fmap h ms) st
+        where h m stϵ | m `IS.member` actv(mvS stϵ) = mapMv (mapWl (IS.insert m) . mapActv (IS.delete m)) st
+                      | otherwise = st
+
+addWkl :: Int -> St -> St
+addWkl u st = undefined
