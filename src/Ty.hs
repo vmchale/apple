@@ -239,6 +239,7 @@ occ (Arr _ a)               = occ a -- shouldn't need shape?
 occ I                       = IS.empty
 occ F                       = IS.empty
 occ B                       = IS.empty
+occ (P ts)                  = foldMap occ ts
 
 mgu :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mgu l s (Arrow t0 t1) (Arrow t0' t1') = do
