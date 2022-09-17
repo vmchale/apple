@@ -79,9 +79,6 @@ build l (St ml as al mv ds i wk s) (isn:isns) | isM isn =
         st' = St ml es al mv ds i wk s
     in build l' st' isns
 
-precoloredS :: IS.IntSet
-precoloredS = undefined
-
 -- TODO: Memb?
 addEdge :: Int -> Int -> St -> St
 addEdge u v st@(St ml as al mv ds i wk s) =
@@ -132,3 +129,6 @@ enaMv ns = thread (fmap g ns) where
     g n st = let ms = IS.toList (nodeMoves n st) in thread (fmap h ms) st
         where h m stϵ | m `IS.member` actv(mvS stϵ) = mapMv (mapWl (IS.insert m) . mapActv (IS.delete m)) st
                       | otherwise = st
+
+addWkl :: Int -> St -> St
+addWkl u st = undefined
