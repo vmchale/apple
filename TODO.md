@@ -115,3 +115,6 @@
 - [ ] http://www.paulbourke.net/fractals/burnship/
 - [ ] kaplan-meier, clopper-pearson?
 - [ ] https://forem.julialang.org/inphyt/ann-juliaepi-collaborative-computational-epidemiology-in-julia-19ng
+- [ ] https://michaelmoroz.github.io/TracingGeodesics/
+- [ ] arithmetic-geometric mean?
+  - [ ] `gen.` plus tuple accessors...
