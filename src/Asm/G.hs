@@ -131,4 +131,8 @@ enaMv ns = thread (fmap g ns) where
                       | otherwise = st
 
 addWkl :: Int -> St -> St
-addWkl u st = undefined
+addWkl u st | u `IS.notMember` pre (wkls st) && not (isMR u st) && degs st IM.! u < ᴋ = mapWk (mapFr (IS.delete u) . mapSimp (IS.insert u)) st
+            | otherwise = st
+
+ok :: Int -> Int -> St -> Bool
+ok t r s = degs s IM.! t < ᴋ || t `IS.member` pre (wkls s) || (t,r) `S.member` aS s
