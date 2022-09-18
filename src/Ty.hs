@@ -377,10 +377,10 @@ tyB _ Succ = do
     pure (Arrow opTy (Arrow (Arr (StaPlus () i (Ix () 1) `Cons` sh) a) (Arr (i `Cons` sh) b)), mempty)
 tyB l (Map n) = tyB l (MapN 1 n)
 tyB l (TAt i) = do
+    ρ <- freshName "ρ" ()
     a <- freshName "a" ()
-    b <- freshName "b" ()
-    let bT = TVar b
-    pure (Arrow (Ρ a (IM.singleton (unU$unique a) bT)) bT, mempty)
+    let aT = TVar a
+    pure (Arrow (Ρ ρ (IM.singleton i aT)) aT, mempty)
 tyB _ (MapN a d) = do
     -- for n the shape is i1,i2,...in `Cons` Nil (this forces it to have
     -- enough indices)
