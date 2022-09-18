@@ -121,6 +121,7 @@ tokens :-
         ⇐                        { mkSym PolyBind }
         →                        { mkSym Arrow }
         "->"                     { mkSym Arrow }
+        "->"$digit+              { tok (\p s -> alex $ TokSym p (Access (read $ ASCII.unpack $ BSL.drop 2 s))) }
         ::                       { mkSym Sig }
         ⋉                        { mkSym MaxS }
         ">."                     { mkSym MaxS }
@@ -218,7 +219,7 @@ data Sym = Plus | Minus | Fold | Percent | Times | Semicolon | Bind | Pow
          | LSqBracket | RSqBracket | LBrace | RBrace | LParen | RParen | Lam
          | Dot | Caret | Quot | MapN | Comma | Underscore | QuestionMark | Colon
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
-         | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv
+         | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -260,6 +261,7 @@ instance Pretty Sym where
     pretty DIS          = "\\`"
     pretty Succ         = "\\~"
     pretty Conv         = "⨳"
+    pretty (Access i)   = "->" <> pretty i
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)
@@ -297,7 +299,7 @@ instance Pretty Builtin where
     pretty BuiltinT      = "𝓉"
 
 data Token a = EOF { loc :: a }
-             | TokSym { loc :: a, _sym :: Sym }
+             | TokSym { loc :: a, sym :: Sym }
              | TokName { loc :: a, _name :: Name a }
              | TokBuiltin { loc :: a, _builtin :: Builtin }
              | TokResVar { loc :: a, _var :: Var }

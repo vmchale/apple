@@ -19,7 +19,7 @@ import           Control.Monad.Except       (liftEither, throwError)
 import           Control.Monad.State.Strict (StateT (runStateT), gets, modify)
 import           Data.Bifunctor             (first, second)
 import           Data.Containers.ListUtils  (nubOrd)
-import           Data.Foldable              (traverse_)
+import           Data.Foldable              (fold, traverse_)
 import           Data.Functor               (void, ($>))
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
@@ -265,6 +265,7 @@ mgu l s (Arr (SVar (Name _ (U i) _)) t) F = mapShSubst (IM.insert i Nil) <$> mgu
 mgu l s (Arr (SVar (Name _ (U i) _)) t) I = mapShSubst (IM.insert i Nil) <$> mguPrep l s t I
 mgu l s F (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s F t
 mgu l s I (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s I t
+mgu l s (P ts) (P ts') | length ts == length ts' = fold <$> zipWithM (mguPrep l s) ts ts'
 
 vx i = Cons i Nil
 
@@ -375,6 +376,11 @@ tyB _ Succ = do
     let opTy = Arrow a (Arrow a b)
     pure (Arrow opTy (Arrow (Arr (StaPlus () i (Ix () 1) `Cons` sh) a) (Arr (i `Cons` sh) b)), mempty)
 tyB l (Map n) = tyB l (MapN 1 n)
+tyB l (TAt i) = do
+    a <- freshName "a" ()
+    b <- freshName "b" ()
+    let bT = TVar b
+    pure (Arrow (Ρ a (IM.singleton (unU$unique a) bT)) bT, mempty)
 tyB _ (MapN a d) = do
     -- for n the shape is i1,i2,...in `Cons` Nil (this forces it to have
     -- enough indices)
@@ -454,6 +460,7 @@ rwArr (P ts)       = P (rwArr<$>ts)
 rwArr (Arr Nil t)  = rwArr t
 rwArr (Arr ixes arr) | (is, Nil) <- unroll ixes, Arr sh t <- rwArr arr = Arr (roll sh is) t
 rwArr (Arr sh t)   = Arr sh (rwArr t)
+rwArr (Ρ n fs)     = Ρ n (rwArr<$>fs)
 
 hasEI :: I a -> Bool
 hasEI IEVar{}            = True
@@ -489,6 +496,7 @@ substI s@(Subst ts is sh) i =
         Just ty@TVar{} -> Just $ aT (Subst (IM.delete i ts) is sh) ty
         Just ty        -> Just $ aT s ty
         Nothing        -> Nothing
+
 
 checkClass :: Subst a -> Int -> (C, a) -> Either (TyE a) (Maybe (Name a, C))
 checkClass s i c =

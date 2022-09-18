@@ -68,6 +68,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     max { TokSym $$ MaxS }
     min { TokSym $$ MinS }
     pow { TokSym $$ Pow }
+    at { $$@(TokSym _ Access{}) }
 
     fold { TokSym $$ L.Fold }
     quot { TokSym $$ Quot }
@@ -216,6 +217,8 @@ E :: { E AlexPosn }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 (void $3) }
   | e { EApp $1 (Builtin $1 Exp) (FLit $1 (exp 1)) }
+  | E at { EApp (eAnn $1) (Builtin (loc $2) (TAt (iat $ sym $2))) $1 }
+  | parens(at) { Builtin (loc $1) (TAt (iat $ sym $1)) }
 
 {
 

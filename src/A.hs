@@ -16,12 +16,17 @@ module A ( T (..)
          , prettyC
          ) where
 
-import           Control.DeepSeq   (NFData)
-import           Data.Semigroup    ((<>))
-import           GHC.Generics      (Generic)
+import           Control.DeepSeq            (NFData)
+import           Control.Monad              (zipWithM)
+import           Control.Monad.State.Strict (gets, modify)
+import           Data.Functor               (void, ($>))
+import qualified Data.IntMap                as IM
+import           Data.Semigroup             ((<>))
+import           GHC.Generics               (Generic)
 import           Name
-import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, lbrace, lbracket, parens, rbrace, rbracket, tupled, (<+>))
+import           Prettyprinter              (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, lbrace, lbracket, parens, rbrace, rbracket, tupled, (<+>))
 import           Prettyprinter.Ext
+import           U
 
 instance Pretty (I a) where
     pretty (Ix _ i)        = pretty i
@@ -42,7 +47,7 @@ instance Show (I a) where
 -- type level)
 
 data C = IsNum | IsOrd -- implies eq
-       | HasBits deriving (Generic, Eq, Ord) -- or, xor, etc.
+       | HasBits deriving (Generic, Eq, Ord)
 
 instance NFData C where
 
@@ -57,7 +62,7 @@ data Sh a = IxA (I a)
           | Nil
           | SVar (Name a)
           | Cons (I a) (Sh a)
-         deriving (Functor, Generic)
+          deriving (Functor, Generic)
 
 instance Show (Sh a) where
     show = show . pretty
@@ -75,6 +80,7 @@ data T a = Arr (Sh a) (T a)
          | TVar (Name a) -- | Kind \(*\), 'F' or 'I'
          | Arrow (T a) (T a)
          | P [T a]
+         | Ρ (TyName a) (IM.IntMap (T a))
          deriving (Functor, Generic)
 
 instance Show (T a) where
@@ -134,7 +140,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Fold !Int | Floor | ItoF
              | Scan | Iter | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
-             | Conv [Int]
+             | Conv [Int] | TAt !Int
              -- sin/cos &c.
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?
