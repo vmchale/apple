@@ -240,6 +240,7 @@ occ I                       = IS.empty
 occ F                       = IS.empty
 occ B                       = IS.empty
 occ (P ts)                  = foldMap occ ts
+occ (Ρ (Name _ (U i) _) rs) = IS.insert i $ foldMap occ rs
 
 mgu :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mgu l s (Arrow t0 t1) (Arrow t0' t1') = do
@@ -266,6 +267,11 @@ mgu l s (Arr (SVar (Name _ (U i) _)) t) I = mapShSubst (IM.insert i Nil) <$> mgu
 mgu l s F (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s F t
 mgu l s I (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s I t
 mgu l s (P ts) (P ts') | length ts == length ts' = fold <$> zipWithM (mguPrep l s) ts ts'
+mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = do
+    ss <- traverse (\(i, t) -> mguPrep l s (ts!!(i-1)) t) (IM.toList rs)
+    pure $ mconcat ss
+                                     | otherwise = Left$UnificationFailed lϵ e t t'
+mgu l s t@P{} t'@Ρ{} = mgu l s t' t
 
 vx i = Cons i Nil
 
