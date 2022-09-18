@@ -24,7 +24,8 @@ import qualified Data.IntMap                as IM
 import           Data.Semigroup             ((<>))
 import           GHC.Generics               (Generic)
 import           Name
-import           Prettyprinter              (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, lbrace, lbracket, parens, rbrace, rbracket, tupled, (<+>))
+import           Prettyprinter              (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket,
+                                             tupled, (<+>))
 import           Prettyprinter.Ext
 import           U
 
@@ -94,6 +95,10 @@ instance Pretty (T a) where
     pretty (TVar n)      = pretty n
     pretty (Arrow t0 t1) = parens (pretty t0 <+> "→" <+> pretty t1)
     pretty (P ts)        = tupledBy " * " (pretty <$> ts)
+    pretty (Ρ n fs)      = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
+
+prettyFields :: [(Int, T a)] -> Doc ann
+prettyFields = mconcat . punctuate "," . fmap g where g (i, t) = pretty i <> ":" <+> pretty t
 
 prettyRank :: (Int, Maybe [Int]) -> Doc ann
 prettyRank (i, Nothing) = pretty i
