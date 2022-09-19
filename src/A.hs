@@ -130,6 +130,7 @@ instance Pretty Builtin where
     pretty Scan       = "Λ"
     pretty (DI i)     = "\\`" <> pretty i
     pretty (Conv ns)  = "⨳" <+> encloseSep lbrace rbrace comma (pretty<$>ns)
+    pretty (TAt i)    = parens ("->" <> pretty i)
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -190,6 +191,7 @@ instance Pretty (E a) where
     pretty (Var _ n)                                                = pretty n
     pretty (Builtin _ op) | isBinOp op                              = parens (pretty op)
     pretty (Builtin _ b)                                            = pretty b
+    pretty (EApp _ (Builtin _ (TAt i)) e)                           = pretty e <> "->" <> pretty i
     pretty (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (pretty e0 <+> pretty op)
     pretty (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ (Fold n)) e0) e1) e2) = parens (pretty e0 <> "/" <> pretty n <+> pretty e1 <+> pretty e2)
@@ -205,8 +207,8 @@ instance Pretty (E a) where
     pretty (Dfn _ e)                                                = brackets (pretty e)
     pretty (ResVar _ x)                                             = pretty x
     pretty (Parens _ e)                                             = parens (pretty e)
-    pretty (Let _ (n, e) e')                                        = braces (pretty n <+> "⇐" <+> pretty e <> ";" <+> pretty e')
-    pretty (Def _ (n, e) e')                                        = braces (pretty n <+> "←" <+> pretty e <> ";" <+> pretty e')
+    pretty (Let _ (n, e) e')                                        = braces (pretty n <+> "←" <+> pretty e <> ";" <+> pretty e')
+    pretty (Def _ (n, e) e')                                        = braces (pretty n <+> "⇐" <+> pretty e <> ";" <+> pretty e')
     pretty (LLet _ (n, e) e')                                       = braces (pretty n <+> "⟜" <+> pretty e <> ";" <+> pretty e')
     pretty (Id _ idm)                                               = pretty idm
     pretty (Tup _ es)                                               = tupled (pretty <$> es)
