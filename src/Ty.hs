@@ -455,8 +455,6 @@ cloneWithConstraints t = do
     pure t'
 
 rwArr :: T a -> T a
-rwArr (Arr Nil t)  = rwArr t
-rwArr (Arr sh t)   = Arr sh (rwArr t) -- TODO: Arr i (Arr j a) -> Arr (i+j) a
 rwArr (Arrow t t') = Arrow (rwArr t) (rwArr t')
 rwArr I            = I
 rwArr B            = B
