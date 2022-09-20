@@ -131,6 +131,7 @@ instance Pretty Builtin where
     pretty (DI i)     = "\\`" <> pretty i
     pretty (Conv ns)  = "⨳" <+> encloseSep lbrace rbrace comma (pretty<$>ns)
     pretty (TAt i)    = parens ("->" <> pretty i)
+    pretty Gen        = "gen."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
