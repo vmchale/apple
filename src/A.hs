@@ -131,6 +131,7 @@ instance Pretty Builtin where
     pretty (DI i)     = "\\`" <> pretty i
     pretty (Conv ns)  = "⨳" <+> encloseSep lbrace rbrace comma (pretty<$>ns)
     pretty (TAt i)    = parens ("->" <> pretty i)
+    pretty Gen        = "gen."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -170,6 +171,7 @@ prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ (Fold n)) e0) e1) e2) = parens (p
 prettyTyped (EApp _ e0 e1)                                           = parens (prettyTyped e0 <+> prettyTyped e1)
 prettyTyped (Let t (n, e) e')                                        = parens (braces (ptName n <+> "←" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
 prettyTyped (LLet t (n, e) e')                                       = parens (braces (ptName n <+> "⟜" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
+prettyTyped (Tup _ es)                                               = tupled (prettyTyped <$> es)
 
 isBinOp :: Builtin -> Bool
 isBinOp Plus   = True
