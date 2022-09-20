@@ -122,9 +122,10 @@ maM F F                           = Right mempty
 maM B B                           = Right mempty
 maM (TVar n) (TVar n') | n == n'  = Right mempty
 maM (TVar (Name _ (U i) _)) t     = Right $ Subst (IM.singleton i t) IM.empty IM.empty
-maM (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM t0 t0' <*> maM t1 t1'
+maM (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM t0 t0' <*> maM t1 t1' -- FIXME: use <\> over <>
 maM (Arr sh t) (Arr sh' t')       = (<>) <$> mSh sh sh' <*> maM t t'
 maM (P ts) (P ts')                = mconcat <$> zipWithM maM ts ts'
+maM Ρ{} Ρ{}                       = undefined
 maM t t'                          = Left $ MatchFailed (void t) (void t')
 
 shSubst :: Subst a -> Sh a -> Sh a
@@ -153,12 +154,19 @@ aT s@(Subst ts is ss) ty'@(TVar n) =
     let u = unU $ unique n in
     case IM.lookup u ts of
         Just ty@TVar{} -> aT (Subst (IM.delete u ts) is ss) ty
+        Just ty@(Ρ nr _) -> aT (Subst (IM.delete u ts) is ss) ty
         Just ty        -> aT s ty
         Nothing        -> ty'
--- TODO: convert Arr Nil a to a here?
 aT s (Arr sh ty) = Arr (shSubst s sh) (aT s ty)
 aT s (Arrow t₁ t₂) = Arrow (aT s t₁) (aT s t₂)
 aT s (P ts) = P (aT s <$> ts)
+aT s@(Subst ts is ss) ty'@(Ρ n rs) =
+    let u = unU (unique n) in
+    case IM.lookup u ts of
+        Just ty@(Ρ n' _) -> aT (Subst (IM.delete u ts) is ss) ty
+        Just ty@TVar{} -> undefined
+        Just ty -> aT s ty
+        Nothing -> Ρ n (aT s<$>rs)
 aT _ ty = ty
 
 runTyM :: Int -> TyM a b -> Either (TyE a) (b, Int)
@@ -256,7 +264,6 @@ mgu (l, _) s t t'@(TVar (Name _ (U i) _)) | i `IS.member` occ t = Left$ OccursCh
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
 mgu (l, e) _ t0@Arrow{} t1 = Left $ UnificationFailed l e t0 t1
 mgu (l, e) _ t0 t1@Arrow{} = Left $ UnificationFailed l e t0 t1
--- TODO: Arr 1 (Arr 1 a) ~ Arr 2 a
 mgu l s (Arr sh t) (Arr sh' t') = do
     s0 <- mguPrep l s t t'
     mgShPrep (fst l) s0 sh sh'
@@ -266,12 +273,22 @@ mgu l s (Arr (SVar (Name _ (U i) _)) t) F = mapShSubst (IM.insert i Nil) <$> mgu
 mgu l s (Arr (SVar (Name _ (U i) _)) t) I = mapShSubst (IM.insert i Nil) <$> mguPrep l s t I
 mgu l s F (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s F t
 mgu l s I (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s I t
-mgu l s (P ts) (P ts') | length ts == length ts' = fold <$> zipWithM (mguPrep l s) ts ts'
-mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = do
-    ss <- traverse (\(i, t) -> mguPrep l s (ts!!(i-1)) t) (IM.toList rs)
-    pure $ mconcat ss
+mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
+-- TODO: rho occurs check
+mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
                                      | otherwise = Left$UnificationFailed lϵ e t t'
 mgu l s t@P{} t'@Ρ{} = mgu l s t' t
+mgu l s t@(Ρ n rs) t'@(Ρ n' rs') = do
+    rss <- tS (\s (t0,t1) -> mguPrep l s t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
+    pure $ mapTySubst (IM.insert (unU$unique n) (Ρ n' (rs<>rs'))) rss
+
+zS _ s [] _           = pure s
+zS _ s _ []           = pure s
+zS op s (x:xs) (y:ys) = do{next <- op s x y; zS op next xs ys}
+
+tS :: Monad m => (Subst a -> b -> m (Subst a)) -> Subst a -> [b] -> m (Subst a)
+tS _ s []     = pure s
+tS f s (t:ts) = do{next <- f s t; tS f next ts}
 
 vx i = Cons i Nil
 
@@ -510,7 +527,7 @@ checkClass s i c =
 
 tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Name a, C)], Int)
 tyClosed u e = do
-    (((e', s), scs), i) <- runTyM u (do { res@(_, s) <- tyE e ; cvs <- gets varConstr ; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs) ; pure (res, scs) })
+    (((e', s), scs), i) <- runTyM u (do { res@(_, s) <- tyE mempty e ; cvs <- gets varConstr ; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs) ; pure (res, scs) })
     let eS = {-# SCC "applySubst" #-} fmap (rwArr.aT (void s)) e'
     eS' <- do {(e'', s') <- {-# SCC "match" #-} rAn eS; pure (fmap (aT s') e'') }
     chkE (eAnn eS') $> (eS', nubOrd scs, i)
@@ -554,97 +571,98 @@ rAn (Cond t p e0 e1) = do
     (e1',s1) <- rAn e1
     pure (Cond t p' e0' e1', sP<>s0<>s1)
 
--- TODO: check/dispatch constraints on type variables
--- return all type variables mentioned thereto
-tyE :: E a -> TyM a (E (T ()), Subst a)
-tyE (EApp _ (Builtin _ Re) (ILit _ n)) = do
+tyE :: Subst a -> E a -> TyM a (E (T ()), Subst a)
+tyE s (EApp _ (Builtin _ Re) (ILit _ n)) = do
     a <- TVar <$> freshName "a" ()
     let arrTy = Arrow a (Arr (vx $ Ix () (fromInteger n)) a)
-    pure (EApp arrTy (Builtin (Arrow I arrTy) Re) (ILit I n), mempty)
-tyE (EApp _ (EApp _ (EApp _ (Builtin _ FRange) e0) e1) (ILit _ n)) = do
-    (e0',s0) <- tyE e0
-    (e1',s1) <- tyE e1
+    pure (EApp arrTy (Builtin (Arrow I arrTy) Re) (ILit I n), s)
+tyE s (EApp _ (EApp _ (EApp _ (Builtin _ FRange) e0) e1) (ILit _ n)) = do
+    (e0',s0) <- tyE s e0
+    (e1',s1) <- tyE s0 e1
     let tyE0 = eAnn e0'
         tyE1 = eAnn e1'
         arrTy = Arr (vx (Ix () (fromInteger n))) F
         l0 = eAnn e0
         l1 = eAnn e1
-    s0' <- liftEither $ mguPrep (l0,e0) (s0<>s1) F (eAnn e0' $> l0)
+    s0' <- liftEither $ mguPrep (l0,e0) s1 F (eAnn e0' $> l0)
     s1' <- liftEither $ mguPrep (l1,e1) s0' F (eAnn e1' $> l1)
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow tyE1 (Arrow I arrTy)) (Builtin (Arrow tyE0 (Arrow tyE1 (Arrow I arrTy))) FRange) e0') e1') (ILit I n), s1')
-tyE (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _ s)) = do
-    let arrTy = Arr (vx (Ix () (fromInteger ((e-b+s) `div` s)))) I
-    pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow I (Arrow I arrTy)) (Builtin (Arrow I (Arrow I (Arrow I arrTy))) IRange) (ILit I b)) (ILit I e)) (ILit I s), mempty)
-tyE (FLit _ x) = pure (FLit F x, mempty)
-tyE (BLit _ x) = pure (BLit B x, mempty)
-tyE (ILit l m) = do
+tyE s (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _ si)) = do
+    let arrTy = Arr (vx (Ix () (fromInteger ((e-b+si) `div` si)))) I
+    pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow I (Arrow I arrTy)) (Builtin (Arrow I (Arrow I (Arrow I arrTy))) IRange) (ILit I b)) (ILit I e)) (ILit I si), s)
+tyE s (FLit _ x) = pure (FLit F x, s)
+tyE s (BLit _ x) = pure (BLit B x, s)
+tyE s (ILit l m) = do
     n <- freshName "a" l
     pushVarConstraint n l IsNum
-    pure (ILit (TVar (void n)) m, mempty)
-tyE (Builtin l b) = do {(t,s) <- tyB l b ; pure (Builtin t b, s)}
-tyE (Lam _ nϵ e) = do
+    pure (ILit (TVar (void n)) m, s)
+tyE s (Builtin l b) = do {(t,sϵ) <- tyB l b ; pure (Builtin t b, sϵ<>s)}
+tyE s (Lam _ nϵ e) = do
     n <- TVar <$> freshName "a" ()
     modify (addStaEnv nϵ n)
-    (e', s) <- tyE e
+    (e', s') <- tyE s e
     let lamTy = Arrow n (eAnn e')
-    pure (Lam lamTy (nϵ { loc = n }) e', s)
-tyE (Let _ (n, e') e) = do
-    (e'Res, s') <- tyE e'
+    pure (Lam lamTy (nϵ { loc = n }) e', s')
+tyE s (Let _ (n, e') e) = do
+    (e'Res, s') <- tyE s e'
     let e'Ty = eAnn e'Res
     modify (addStaEnv n (aT (void s') e'Ty))
-    (eRes, s) <- tyE e
-    pure (Let (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s<>s')
-tyE (Def _ (n, e') e) = do
-    (e'Res, s') <- tyE e'
+    (eRes, s'') <- tyE s' e
+    pure (Let (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s'')
+tyE s (Def _ (n, e') e) = do
+    (e'Res, s') <- tyE s e'
     let e'Ty = eAnn e'Res
     modify (addPolyEnv n (aT (void s') e'Ty))
-    (eRes, s) <- tyE e
-    pure (Def (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s<>s')
-tyE (LLet _ (n, e') e) = do
-    (e'Res, s') <- tyE e'
+    (eRes, s'') <- tyE s' e
+    pure (Def (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s'')
+tyE s (LLet _ (n, e') e) = do
+    (e'Res, s') <- tyE s e'
     let e'Ty = eAnn e'Res
     modify (addStaEnv n (aT (void s') e'Ty))
-    (eRes, s) <- tyE e
-    pure (LLet (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s<>s')
-tyE e@(ALit l es) = do
+    (eRes, s'') <- tyE s' e
+    pure (LLet (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s'')
+tyE s e@(ALit l es) = do
     a <- TVar <$> freshName "a" ()
-    (es', ss) <- unzip <$> traverse tyE es
+    (es', s') <- sSt s es
     let eTys = a : fmap eAnn es'
-        uHere t t' = liftEither $ mguPrep (l,e) (mconcat ss) (t$>l) (t'$>l)
+        uHere t t' = liftEither $ mguPrep (l,e) s' (t$>l) (t'$>l)
     -- FIXME: not stateful enough... apply substs forward?
     ss' <- zipWithM uHere eTys (tail eTys)
     pure (ALit (Arr (vx (Ix () $ length es)) a) es', mconcat ss')
-tyE (EApp l e0 e1) = do
+tyE s (EApp l e0 e1) = do
     a <- TVar <$> freshName "a" l
     b <- TVar <$> freshName "b" l
-    (e0', s0) <- tyE e0
-    (e1', s1) <- tyE e1
+    (e0', s0) <- tyE s e0
+    (e1', s1) <- tyE s0 e1
     let e0Ty = Arrow a b
-    s2 <- liftEither $ mguPrep (l,e0) (s0<>s1) (eAnn e0'$>l) e0Ty
+    s2 <- liftEither $ mguPrep (l,e0) s1 (eAnn e0'$>l) e0Ty
     s3 <- liftEither $ mguPrep (l,e1) s2 (eAnn e1'$>l) a
     pure (EApp (void b) e0' e1', s3)
-tyE (Cond l p e0 e1) = do
-    (p',sP) <- tyE p
-    (e0',s0) <- tyE e0
-    (e1',s1) <- tyE e1
-    sP' <- liftEither $ mguPrep (eAnn p,p) sP B (eAnn p'$>eAnn p)
-    s0' <- liftEither $ mguPrep (l,e0) (s0<>s1) (eAnn e0'$>l) (eAnn e1'$>eAnn e1)
-    pure (Cond (eAnn e0') p' e0' e1', sP'<>s0')
-tyE (Var l n@(Name _ (U u) _)) = do
+tyE s (Cond l p e0 e1) = do
+    (p',sP) <- tyE s p
+    (e0',s0) <- tyE sP e0
+    (e1',s1) <- tyE s0 e1
+    sP' <- liftEither $ mguPrep (eAnn p,p) s1 B (eAnn p'$>eAnn p)
+    s0' <- liftEither $ mguPrep (l,e0) sP' (eAnn e0'$>l) (eAnn e1'$>eAnn e1)
+    pure (Cond (eAnn e0') p' e0' e1', s0')
+tyE s (Var l n@(Name _ (U u) _)) = do
     lSt<- gets staEnv
     case IM.lookup u lSt of
-        Just t  -> pure (Var t (n $> t), mempty)
+        Just t  -> pure (Var t (n $> t), s)
         -- TODO: polymorphic let
         Nothing -> do
             vSt<- gets polyEnv
             case IM.lookup u vSt of
-                Just t  -> do {t'<- cloneWithConstraints t; pure (Var t' (n$>t'), mempty)}
+                Just t  -> do {t'<- cloneWithConstraints t; pure (Var t' (n$>t'), s)}
                 Nothing -> throwError $ IllScoped l n
-tyE (Tup _ es) = do
-    res <- traverse tyE es
-    let (es', ss) = unzip res
-        eTys = eAnn<$>es'
-    pure (Tup (P eTys) es', mconcat ss)
-tyE (Ann _ e t) = do
-    (e', s) <- tyE e
-    pure (Ann (eAnn e') e' t, s)
+tyE s (Tup _ es) = do
+    (es', s') <- sSt s es
+    let eTys = eAnn<$>es'
+    pure (Tup (P eTys) es', s')
+tyE s (Ann _ e t) = do
+    (e', s') <- tyE s e
+    pure (Ann (eAnn e') e' t, s')
+
+sSt :: Subst a -> [E a] -> TyM a ([E (T ())], Subst a)
+sSt s []     = pure([], s)
+sSt s (e:es) = do{(e',s') <- tyE s e; first (e':) <$> sSt s' es} -- TODO: recurse other way idk
