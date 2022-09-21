@@ -63,21 +63,19 @@ build l (St ml as al mv ds i wk s) (isn:isns) | isM isn =
         nIx = nx nl
         ml' = thread [ kϵ @! nIx | kϵ <- IS.toList (u `IS.union` d) ] ml
         le = lm `IS.union` d
-        es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
-        -- FIXME: addEdge functionality here
+        st' = St ml' as al (mapWl (IS.insert nIx) mv) ds i wk s
+        st'' = thread [ addEdge lϵ dϵ | lϵ <- IS.toList le, dϵ <- IS.toList d ] st'
         l' = u `IS.union` (lm IS.\\ d)
-        st' = St ml' es al (mapWl (IS.insert nIx) mv) ds i wk s
-    in build l' st' isns
+    in build l' st'' isns
                                   | otherwise =
     let ca = fst (copoint isn)
         u = usesNode ca
         d = defsNode ca
         le = l `IS.union` d
-        es = thread [ S.insert (lϵ, dϵ) | lϵ <- IS.toList le, dϵ <- IS.toList d ] as
-        -- FIXME: addEdge functionality here
+        st' = St ml as al mv ds i wk s
+        st'' = thread [ addEdge lϵ dϵ | lϵ <- IS.toList le, dϵ <- IS.toList d ] st'
         l' = u `IS.union` (l IS.\\ d)
-        st' = St ml es al mv ds i wk s
-    in build l' st' isns
+    in build l' st'' isns
 
 -- TODO: Memb?
 addEdge :: Int -> Int -> St -> St
@@ -136,3 +134,9 @@ addWkl u st | u `IS.notMember` pre (wkls st) && not (isMR u st) && degs st IM.! 
 
 ok :: Int -> Int -> St -> Bool
 ok t r s = degs s IM.! t < ᴋ || t `IS.member` pre (wkls s) || (t,r) `S.member` aS s
+
+conserv :: [Int] -> St -> Bool
+conserv is s =
+    let d = degs s
+        k = length (filter (\n -> (d IM.! n)>=ᴋ) is)
+    in k<ᴋ
