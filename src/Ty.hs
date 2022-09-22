@@ -50,6 +50,7 @@ data TyE a = IllScoped a (Name a)
            | UnificationIFailed a (I a) (I a)
            | UnificationShFailed a (Sh a) (Sh a)
            | OccursCheck a (T a) (T a)
+           | OccursI a (I a) (I a)
            | ExistentialArg (T ())
            | MatchFailed (T ()) (T ())
            | MatchShFailed (Sh ()) (Sh ())
@@ -71,6 +72,7 @@ instance Pretty a => Pretty (TyE a) where
     pretty (UnificationShFailed l sh sh') = pretty l <> ":" <+> "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
     pretty (UnificationIFailed l ix ix')  = pretty l <> ":" <+> "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
     pretty (OccursCheck l ty ty')         = pretty l <> ":" <+> "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
+    pretty (OccursI l i j)            = pretty l <> ":" <+> "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
     pretty (ExistentialArg ty)            = "Existential occurs as an argument in" <+> squotes (pretty ty)
     pretty (MatchFailed t t')             = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
     pretty (MatchShFailed sh sh')         = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
@@ -153,10 +155,10 @@ aT :: Subst a -> T a -> T a
 aT s@(Subst ts is ss) ty'@(TVar n) =
     let u = unU $ unique n in
     case IM.lookup u ts of
-        Just ty@TVar{} -> aT (Subst (IM.delete u ts) is ss) ty
+        Just ty@TVar{}   -> aT (Subst (IM.delete u ts) is ss) ty
         Just ty@(Ρ nr _) -> aT (Subst (IM.delete u ts) is ss) ty
-        Just ty        -> aT s ty
-        Nothing        -> ty'
+        Just ty          -> aT s ty
+        Nothing          -> ty'
 aT s (Arr sh ty) = Arr (shSubst s sh) (aT s ty)
 aT s (Arrow t₁ t₂) = Arrow (aT s t₁) (aT s t₂)
 aT s (P ts) = P (aT s <$> ts)
@@ -164,9 +166,9 @@ aT s@(Subst ts is ss) ty'@(Ρ n rs) =
     let u = unU (unique n) in
     case IM.lookup u ts of
         Just ty@(Ρ n' _) -> aT (Subst (IM.delete u ts) is ss) ty
-        Just ty@TVar{} -> undefined
-        Just ty -> aT s ty
-        Nothing -> Ρ n (aT s<$>rs)
+        Just ty@TVar{}   -> undefined
+        Just ty          -> aT s ty
+        Nothing          -> Ρ n (aT s<$>rs)
 aT _ ty = ty
 
 runTyM :: Int -> TyM a b -> Either (TyE a) (b, Int)
@@ -214,8 +216,11 @@ mguI inp (Ix _ i) (Ix _ j) | i == j = Right inp
 mguI inp ix0@(IEVar l i) ix1@(IEVar _ j) | i == j = Right inp
                                          | otherwise = Left $ UnificationIFailed l ix0 ix1
 mguI inp (IVar _ i) (IVar _ j) | i == j = Right inp
-mguI inp (IVar _ (Name _ (U i) _)) ix = Right $ IM.insert i ix inp
-mguI inp ix (IVar _ (Name _ (U i) _)) = Right $ IM.insert i ix inp
+mguI inp iix@(IVar l (Name _ (U i) _)) ix | i `IS.member` occI ix = Left $ OccursI l iix ix
+                                          | otherwise = Right $ IM.insert i ix inp
+mguI inp ix iix@(IVar l (Name _ (U i) _)) | i `IS.member` occI ix = Left$ OccursI l ix iix
+                                          | otherwise = Right $ IM.insert i ix inp
+mguI inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguI inp i0 i1
 
 mgShPrep :: a -> Subst a -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mgShPrep l s sh0 sh1 =
@@ -230,8 +235,8 @@ mgSh l inp (Cons i sh) (Cons i' sh') = do
     sI <- mguIPrep (iSubst inp) i i'
     mgShPrep l (inp { iSubst = sI }) sh sh'
 mgSh _ inp (SVar sh) (SVar sh') | sh == sh' = Right inp
-mgSh _ inp (SVar (Name _ (U i) _)) sh = Right$ mapShSubst (IM.insert i sh) inp
-mgSh _ inp sh (SVar (Name _ (U i) _)) = Right$ mapShSubst (IM.insert i sh) inp
+mgSh l inp (SVar (Name _ (U i) _)) sh = Right$ mapShSubst (IM.insert i sh) inp
+mgSh l inp sh (SVar (Name _ (U i) _)) = Right$ mapShSubst (IM.insert i sh) inp
 mgSh l _ sh@Nil sh'@Cons{} = Left $ UnificationShFailed l sh sh'
 
 mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
@@ -239,6 +244,12 @@ mguPrep l s t0 t1 =
     let t0' = aT s t0
         t1' = aT s t1
     in mgu l s ({-# SCC "rwArr" #-} rwArr t0') ({-# SCC "rwArr" #-} rwArr t1')
+
+occI :: I a -> IS.IntSet
+occI Ix{}                      = IS.empty
+occI (IVar _ (Name _ (U i) _)) = IS.singleton i
+occI (StaPlus _ i j)           = occI i <> occI j
+occI IEVar{}                   = IS.empty
 
 occ :: T a -> IS.IntSet
 occ (TVar (Name _ (U i) _)) = IS.singleton i

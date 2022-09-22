@@ -1,4 +1,5 @@
 *.o
 *.so
 *.dylib
+*.hp
 dist-newstyle
