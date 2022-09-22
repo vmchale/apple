@@ -30,6 +30,7 @@ data Mv = Mv { coal :: IS.IntSet, constr :: IS.IntSet, frz :: IS.IntSet, wl :: I
 
 mapWl f mv = mv { wl = f (wl mv) }
 mapActv f mv = mv { actv = f (actv mv) }
+mapCoal f mv = mv { coal = f (coal mv) }
 
 data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, degs :: IM.IntMap Int, initial :: [Int], wkls :: Wk, stack :: [Int], alias :: IM.IntMap Int }
 
@@ -143,3 +144,10 @@ conserv is s =
 
 getAlias :: Int -> St -> Int
 getAlias i s = case IM.lookup i (alias s) of {Just i' -> getAlias i' s; Nothing -> i}
+
+combine :: Int -> Int -> St -> St
+combine u v st =
+    let st0 = mapWk (\(Wk p s f sm) -> if v `IS.member` f then Wk p s (IS.delete v f) sm else Wk p (IS.delete v s) f sm) st
+        st1 = mapMv (mapCoal (IS.insert v)) st0
+        st2 = st1 { alias = IM.insert v u (alias st1) }
+    in st2
