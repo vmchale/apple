@@ -1,9 +1,17 @@
 -- A0 and C0 in Kuhl+Giardina
 λxs.λys.
-  { dxs ⟜ (-)\~xs; dys ⟜ (-)\~ys
+  { sum ← [(+)/1 0 x]
+  ; T ⟜
+    { succDiff ← ((-)\~)
+    ; sum ([√(x^2+y^2)]`2 1 (succDiff xs) (succDiff ys))
+    }
+  ; dxs ⟜ (-)\~xs; dys ⟜ (-)\~ys
   ; dts ⟜ [√((x^2)+y^2)]`2 1 dxs dys
   ; pxs ← (+)Λ 0 dxs; pys ← (+)Λ 0 dys; pts ⟜ (+)Λ 0 dts
   ; 𝜉 ← (-)`2 1 pxs ((*)`2 1 ((%)`2 1 dxs dts) pts)
   ; 𝛿 ← (-)`2 1 pys ((*)`2 1 ((%)`2 1 dys dts) pts)
-  ; (𝜉,𝛿)
+  ; dtss ⟜ (-)\~((^2)'1 pts)
+  ; A ← (sum ((*)`2 1 ((%)`2 1 dxs dts) dtss)) + (sum ((*)`2 1 𝜉 dts))
+  ; C ← (sum ((*)`2 1 ((%)`2 1 dys dts) dtss)) + (sum ((*)`2 1 𝛿 dts))
+  ; (A,C)
   }
