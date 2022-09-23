@@ -341,6 +341,11 @@ roll = foldr Cons
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (Arrow F I, mempty)
 tyB _ ItoF = pure (Arrow I F, mempty)
+tyB _ LastM = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    pure (Arrow (Arr (i `Cons` sh) a) (Arr sh a), mempty)
 tyB _ Re = do
     a <- TVar <$> freshName "a" ()
     n <- IEVar () <$> freshName "n" ()

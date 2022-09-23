@@ -57,6 +57,8 @@ instance Pretty C where
     pretty IsOrd   = "IsOrd"
     pretty HasBits = "HasBits"
 
+instance Show C where show = show.pretty
+
 tupledArr = group . encloseSep (flatAlt "⟨ " "⟨") (flatAlt " ⟩" "⟩") ", "
 
 data Sh a = IxA (I a)
@@ -132,6 +134,8 @@ instance Pretty Builtin where
     pretty (Conv ns)  = "⨳" <+> encloseSep lbrace rbrace comma (pretty<$>ns)
     pretty (TAt i)    = parens ("->" <> pretty i)
     pretty Gen        = "gen."
+    pretty Last       = "}."
+    pretty LastM      = "}.?"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -147,7 +151,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Fold !Int | Floor | ItoF
              | Scan | Iter | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
-             | Conv [Int] | TAt !Int
+             | Conv [Int] | TAt !Int | Last | LastM
              -- sin/cos &c.
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?

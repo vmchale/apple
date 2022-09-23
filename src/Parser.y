@@ -59,6 +59,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     di { TokSym $$ DIS }
     succ { TokSym $$ L.Succ }
     conv { TokSym $$ L.Conv }
+    last { TokSym $$ L.Last }
+    lastM { TokSym $$ L.LastM }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -213,6 +215,8 @@ E :: { E AlexPosn }
   | x { ResVar $1 X }
   | y { ResVar $1 Y }
   | f { Builtin $1 Fib }
+  | last { Builtin $1 A.Last }
+  | lastM { Builtin $1 A.LastM }
   | re { Builtin $1 Re }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 (void $3) }
