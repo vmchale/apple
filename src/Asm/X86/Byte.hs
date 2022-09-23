@@ -184,6 +184,8 @@ mkIx ix (MovqXA _ _ (R R13):asms)             = mkIx (ix+6) asms
 mkIx ix (MovqXA _ r0 (R r1):asms) | fits r0 && fits r1 = mkIx (ix+4) asms
                                   | otherwise = mkIx (ix+5) asms
 mkIx ix (MovqAX _ (RC Rsp _) r1:asms) | fits r1 = mkIx (ix+6) asms
+mkIx ix (MovqXA _ _ (RS R13 _ _):asms)        = mkIx (ix+7) asms
+mkIx ix (MovqXA _ _ RS{}:asms)                = mkIx (ix+6) asms
 mkIx ix (MovqXA _ r0 (RC Rsp _):asms) | fits r0 = mkIx (ix+6) asms
 mkIx ix (Fldl2e{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fldln2{}:asms)                       = mkIx (ix+2) asms
@@ -283,7 +285,25 @@ asm ix st (MovqAX _ (RC r0@Rsp i8) r1:asms) | fits r1 =
         modB = 0x1 `shiftL` 6 .|. b1 `shiftL` 3 .|. 0x4
         sib = b0 `shiftL` 3 .|. b0
         instr = 0x66:0x0f:0xd6:modB:sib:le i8
-    in (instr++) $ asm (ix+6) st asms
+    in instr++asm (ix+6) st asms
+asm ix st (MovqXA _ r (RS R13 s ri):asms) =
+    let (e, b) = modRM r
+        (eb, bb) = modRM R13
+        (ei, bi) = modRM ri
+        modB = 1 `shiftL` 6 .|. b `shiftL` 3 .|. 4
+        rex = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
+        sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
+        instr = 0x66:rex:0x0f:0x6e:modB:sib:le (0::Int8)
+    in instr++asm(ix+7) st asms
+asm ix st (MovqXA _ r (RS rb s ri):asms) =
+    let (e, b) = modRM r
+        (eb, bb) = modRM rb
+        (ei, bi) = modRM ri
+        modB = b `shiftL` 3 .|. 4
+        rex = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
+        sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
+        instr = [0x66,rex,0x0f,0x6e,modB,sib]
+    in instr++asm (ix+6) st asms
 asm ix st (Movapd _ r0 r1:asms) | fits r0 && fits r1 =
     rrNoPre [0x66,0x0f,0x28] r1 r0 $ asm (ix+4) st asms
                                 | otherwise =
