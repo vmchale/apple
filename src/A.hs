@@ -57,6 +57,8 @@ instance Pretty C where
     pretty IsOrd   = "IsOrd"
     pretty HasBits = "HasBits"
 
+instance Show C where show = show.pretty
+
 tupledArr = group . encloseSep (flatAlt "⟨ " "⟨") (flatAlt " ⟩" "⟩") ", "
 
 data Sh a = IxA (I a)
@@ -115,7 +117,7 @@ instance Pretty Builtin where
     pretty Max        = "⋉"
     pretty Min        = "⋊"
     pretty (Map n)    = "\'" <> pretty n
-    pretty (MapN n a) = "`" <> pretty n <+> pretty a
+    pretty Zip        = "`"
     pretty Div        = "%"
     pretty IntExp     = "^"
     pretty Exp        = "**"
@@ -132,6 +134,8 @@ instance Pretty Builtin where
     pretty (Conv ns)  = "⨳" <+> encloseSep lbrace rbrace comma (pretty<$>ns)
     pretty (TAt i)    = parens ("->" <> pretty i)
     pretty Gen        = "gen."
+    pretty Last       = "}."
+    pretty LastM      = "}.?"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -142,12 +146,12 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Grade -- TODO: sort
              | IRange | FRange
              | Map !Int
-             | MapN !Int !Int
+             | Zip
              | Rank [(Int, Maybe [Int])]
              | Fold !Int | Floor | ItoF
-             | Scan | Iter | Size | Dim | Re | Gen | Fib | Succ
+             | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
-             | Conv [Int] | TAt !Int
+             | Conv [Int] | TAt !Int | Last | LastM
              -- sin/cos &c.
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?
@@ -198,8 +202,8 @@ instance Pretty (E a) where
     pretty (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ (Fold n)) e0) e1) e2) = parens (pretty e0 <> "/" <> pretty n <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (Builtin _ (Map n)) e0) e1)              = parens (pretty e0 <> "'" <> pretty n <+> pretty e1)
-    pretty (EApp _ (EApp _ (Builtin _ (MapN a d)) e0) e1)           = parens (pretty e0 <+> "`" <+> pretty a <+> pretty d <+> pretty e1)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Scan) e0) e1) e2)     = parens (pretty e0 <+> "Λ" <+> pretty e1 <+> pretty e2)
+    pretty (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (Builtin _ op@Rank{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (Builtin _ op@Conv{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (Builtin _ (DI i)) e0) e1)               = parens (pretty e0 <+> "\\`" <> pretty i <+> pretty e1)

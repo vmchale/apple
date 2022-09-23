@@ -341,6 +341,16 @@ roll = foldr Cons
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (Arrow F I, mempty)
 tyB _ ItoF = pure (Arrow I F, mempty)
+tyB _ LastM = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    pure (Arrow (Arr (i `Cons` sh) a) (Arr sh a), mempty)
+tyB _ Last = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` sh) a) (Arr sh a), mempty)
 tyB _ Re = do
     a <- TVar <$> freshName "a" ()
     n <- IEVar () <$> freshName "n" ()
@@ -409,25 +419,34 @@ tyB _ Succ = do
     b <- TVar <$> freshName "b" ()
     let opTy = Arrow a (Arrow a b)
     pure (Arrow opTy (Arrow (Arr (StaPlus () i (Ix () 1) `Cons` sh) a) (Arr (i `Cons` sh) b)), mempty)
-tyB l (Map n) = tyB l (MapN 1 n)
 tyB l (TAt i) = do
     ρ <- freshName "ρ" ()
     a <- freshName "a" ()
     let aT = TVar a
     pure (Arrow (Ρ ρ (IM.singleton i aT)) aT, mempty)
-tyB _ (MapN a d) = do
+tyB _ (Map n) = do
     -- for n the shape is i1,i2,...in `Cons` Nil (this forces it to have
     -- enough indices)
-    ixList <- zipWithM (\_ c -> freshName (T.singleton c) ()) [0..d] ['i'..]
-    as <- traverse (\_ -> freshName "a" ()) [1..a]
+    ixList <- zipWithM (\_ c -> freshName (T.singleton c) ()) [1..n] ['i'..]
+    a <- freshName "a" ()
     b <- freshName "b" ()
-    let arrSh = foldr Cons Nil (IVar () <$> tail ixList)
-        as' = TVar <$> as
+    let arrSh = foldr Cons Nil (IVar () <$> ixList)
+        a' = TVar a
         b' = TVar b
-        fTy = foldr Arrow b' as'
-        codArrTys = Arr arrSh <$> as'
-        gTy = foldr Arrow (Arr arrSh b') codArrTys
-    -- depends on Arr nil a = a, Arr (i+j) a = Arr i (Arr j sh) etc.
+        fTy = Arrow a' b'
+        gTy = Arrow (Arr arrSh a') (Arr arrSh b')
+    pure (Arrow fTy gTy, mempty)
+tyB _ Zip = do
+    i <- freshName "i" ()
+    a <- freshName "a" ()
+    b <- freshName "b" ()
+    c <- freshName "c" ()
+    let arrSh = IVar () i `Cons` Nil
+        a' = TVar a
+        b' = TVar b
+        c' = TVar c
+        fTy = Arrow a' (Arrow b' c')
+        gTy = Arrow (Arr arrSh a') (Arrow (Arr arrSh b') (Arr arrSh c'))
     pure (Arrow fTy gTy, mempty)
 tyB l (Rank as) = do
     let ixN n = zipWithM (\_ c -> freshName (T.singleton c) ()) [1..n] ['i'..]

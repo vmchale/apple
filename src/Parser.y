@@ -59,6 +59,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     di { TokSym $$ DIS }
     succ { TokSym $$ L.Succ }
     conv { TokSym $$ L.Conv }
+    last { TokSym $$ L.Last }
+    lastM { TokSym $$ L.LastM }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -72,7 +74,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
 
     fold { TokSym $$ L.Fold }
     quot { TokSym $$ Quot }
-    mapN { TokSym $$ L.MapN }
+    zip { TokSym $$ L.Zip }
 
     lam { TokSym $$ L.Lam }
 
@@ -170,7 +172,6 @@ BBin :: { E AlexPosn }
      | di intLit { Builtin $1 (DI (fromInteger $ int $2)) }
      | conv braces(sepBy(intLit,comma)) { Builtin $1 (A.Conv (reverse (fmap (fromInteger.int) $2))) }
      -- FIXME: not necessarily binary operator!!
-     | mapN intLit intLit { Builtin $1 (A.MapN (fromInteger $ int $2) (fromInteger $ int $3)) }
      | lrank sepBy(R,comma) rbrace { Builtin $1 (Rank (reverse $2)) }
      | succ { Builtin $1 A.Succ }
      | pow { Builtin $1 Exp }
@@ -209,10 +210,13 @@ E :: { E AlexPosn }
   | t { Builtin $1 Dim }
   | E fold intLit E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 (A.Fold (fromInteger $ int $3))) $1) $4) $5 }
   | E scan E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 Scan) $1) $3) $4 }
+  | E zip E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Zip) $1) $3) $4 }
   | E E { EApp (eAnn $1) $1 $2 }
   | x { ResVar $1 X }
   | y { ResVar $1 Y }
   | f { Builtin $1 Fib }
+  | last { Builtin $1 A.Last }
+  | lastM { Builtin $1 A.LastM }
   | re { Builtin $1 Re }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 (void $3) }

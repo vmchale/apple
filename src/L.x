@@ -98,7 +98,7 @@ tokens :-
         "/"                      { mkSym Fold }
         '                        { mkSym Quot }
         `$white*"{"              { mkSym LRank `andBegin` braces }
-        `                        { mkSym MapN }
+        `                        { mkSym Zip }
 
         "("                      { mkSym LParen }
         ")"                      { mkSym RParen }
@@ -128,6 +128,8 @@ tokens :-
         ⋊                        { mkSym MinS }
         "<."                     { mkSym MinS }
         ⨳                        { mkSym Conv }
+        "}."                     { mkSym Last }
+        "}.?"                    { mkSym LastM }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -217,9 +219,10 @@ alexEOF = EOF <$> get_pos
 
 data Sym = Plus | Minus | Fold | Percent | Times | Semicolon | Bind | Pow
          | LSqBracket | RSqBracket | LBrace | RBrace | LParen | RParen | Lam
-         | Dot | Caret | Quot | MapN | Comma | Underscore | QuestionMark | Colon
+         | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
+         | Last | LastM
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -242,7 +245,7 @@ instance Pretty Sym where
     pretty Dot          = "."
     pretty Caret        = "^"
     pretty Quot         = "'"
-    pretty MapN         = "`"
+    pretty Zip          = "`"
     pretty Comma        = ","
     pretty Underscore   = "_"
     pretty QuestionMark = "?"
@@ -262,6 +265,8 @@ instance Pretty Sym where
     pretty Succ         = "\\~"
     pretty Conv         = "⨳"
     pretty (Access i)   = "->" <> pretty i
+    pretty Last         = "}."
+    pretty LastM        = "}.?"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)
