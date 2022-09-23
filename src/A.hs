@@ -149,7 +149,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Zip
              | Rank [(Int, Maybe [Int])]
              | Fold !Int | Floor | ItoF
-             | Scan | Iter | Size | Dim | Re | Gen | Fib | Succ
+             | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM
              -- sin/cos &c.

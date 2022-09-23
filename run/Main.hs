@@ -118,9 +118,13 @@ langHelp = liftIO $ putStr $ concat
     , lOption "ℯ" "exp" "⨳ {m,n}" "convolve"
     , lOption "\\~" "successive application" "\\`n" "dyadic infix"
     , lOption "_." "log" "'n" "map"
-    , lOption "`m n" "zip-m" "`{i,j∘[k,l]}" "rank"
+    , lOption "`" "zip" "`{i,j∘[k,l]}" "rank"
     , lOption "𝒻" "range (real)" "𝜋" "pi"
     , lOption "_" "negate" ":" "size"
+    , lOption "𝓉" "dimension" "}.?" "last"
+    , lOption "->n" "select" "**" "power"
+    , lOption "gen." "generate" "𝓕" "fibonacci"
+    , lOption "r:" "repeat" "}." "typesafe last"
     ]
 
 lOption op0 desc0 op1 desc1 =

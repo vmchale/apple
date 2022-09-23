@@ -448,9 +448,9 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) e) acc | f1 (eAnn e) =
     l <- newLabel
     endL <- newLabel
     stepR <- writeRF op [acc, x] acc
-    let step = MX x (FAt (AP arrR Nothing mI)):stepR ++ [MT arrR (IB IPlus (Reg arrR) (ConstI 8))]
+    let step = MX x (FAt (AP arrR (Just$IB IAsl (Reg i) (ConstI 3)) mI)):stepR ++ [MT i (IB IPlus (Reg i) (ConstI 1))] -- [MT arrR (IB IPlus (Reg arrR) (ConstI 8))]
     -- GHC uses 'length' but our szR needs to be one less
-    pure $ plE ++ putAcc ++ MT i (ConstI 0):MT szR (EAt (AP eR (Just (ConstI 8)) mI)):MT arrR (IB IPlus (Reg eR) (ConstI 16)):MT szR (IB IMinus (Reg szR) (ConstI 1)):L l:MJ (IRel IGt (Reg i) (Reg szR)) endL:MT i (IB IPlus (Reg i) (ConstI 1)):step++[J l, L endL]
+    pure $ plE ++ putAcc ++ MT i (ConstI 0):MT szR (EAt (AP eR (Just (ConstI 8)) mI)):MT arrR (IB IPlus (Reg eR) (ConstI 16)):MT szR (IB IMinus (Reg szR) (ConstI 1)):L l:MJ (IRel IGt (Reg i) (Reg szR)) endL:step++[J l, L endL]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) e) acc | i1 (eAnn e) = do
     x <- newITemp
     arrR <- newITemp
@@ -480,9 +480,9 @@ eval (Id F (FoldOfZip seed op [p, q])) acc | f1 (eAnn p) && f1 (eAnn q) = do
     l <- newLabel
     endL <- newLabel
     stepR <- writeRF op [acc, x, y] acc
-    let step = MX x (FAt (AP arr0R Nothing iP)):MX y (FAt (AP arr1R Nothing iQ)):stepR ++ [MT arr0R (IB IPlus (Reg arr0R) (ConstI 8)), MT arr1R (IB IPlus (Reg arr1R) (ConstI 8))]
+    let step = MX x (FAt (AP arr0R (Just$IB IAsl (Reg i) (ConstI 3)) iP)):MX y (FAt (AP arr1R (Just$IB IAsl (Reg i) (ConstI 3)) iQ)):stepR ++ [MT i (IB IPlus (Reg i) (ConstI 1))]
     -- FIXME: this assumes the arrays are the same size
-    pure $ plP ++ plQ ++ putAcc ++ MT i (ConstI 0):MT szR (EAt (AP pR (Just (ConstI 8)) iP)):MT arr0R (IB IPlus (Reg pR) (ConstI 16)):MT arr1R (IB IPlus (Reg qR) (ConstI 16)):MT szR (IB IMinus (Reg szR) (ConstI 1)):L l:MJ (IRel IGt (Reg i) (Reg szR)) endL:MT i (IB IPlus (Reg i) (ConstI 1)):step++[J l, L endL]
+    pure $ plP ++ plQ ++ putAcc ++ MT i (ConstI 0):MT szR (EAt (AP pR (Just (ConstI 8)) iP)):MT arr0R (IB IPlus (Reg pR) (ConstI 16)):MT arr1R (IB IPlus (Reg qR) (ConstI 16)):MT szR (IB IMinus (Reg szR) (ConstI 1)):L l:MJ (IRel IGt (Reg i) (Reg szR)) endL:step++[J l, L endL]
 eval (Id F (FoldOfZip seed op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr, ALit ty qs])) acc | f1 ty = do
     x <- newITemp
     i <- newITemp
