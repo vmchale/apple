@@ -19,6 +19,7 @@ type GL = IM.IntMap [Int]
 
 data Memb = Pre | Init | Sp | Fr | Simp | Coal | Colored | Stack
 
+-- TODO: might work as lazy lists idk (deletion)
 data Wk = Wk { pre :: IS.IntSet, sp :: IS.IntSet, fr :: IS.IntSet, simp :: IS.IntSet }
 
 mapSp f w = w { sp = f (sp w) }
@@ -150,4 +151,5 @@ combine u v st =
     let st0 = mapWk (\(Wk p s f sm) -> if v `IS.member` f then Wk p s (IS.delete v f) sm else Wk p (IS.delete v s) f sm) st
         st1 = mapMv (mapCoal (IS.insert v)) st0
         st2 = st1 { alias = IM.insert v u (alias st1) }
-    in st2
+        st3 = thread [ ddg t.addEdge t u | t <- aL st2 IM.! v ] st2
+    in if degs st3 IM.! u >= ᴋ && u `IS.member` fr(wkls st3) then st3 else mapWk(\(Wk p s f sm) -> Wk p (IS.insert u s) (IS.delete u f) sm) st3
