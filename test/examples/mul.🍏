@@ -1,8 +1,12 @@
-\x.
+\x.\y.
 {
-  dotprod ←
-    { sq ← ((^2)'1);
-      [(+)/1 0 ((*)`(sq x) (sq y))]
-    };
-  ((dotprod x)'1)
+  vec ← \A.\x.
+  {
+    dotprod ←
+      { sq ← ((^2)'1);
+        [(+)/1 0 ((*)`(sq x) (sq y))]
+      };
+    (dotprod x)`{1∘[2]} A
+  };
+  (vec x)`{1∘[2]} (y:~(i `Cons` j `Cons` Nil))
 }
