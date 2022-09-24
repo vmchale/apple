@@ -45,6 +45,8 @@ rTy = testGroup "Regression tests"
     , tyF "test/examples/weekMean.🍎"
     , tyF "test/examples/convolve.🍎"
     , tyF "test/examples/amgm.🍏"
+    , tyF "test/examples/mul.🍏"
+    , tyF "test/examples/offset.🍏"
     ]
 
 tyT :: TestTree
