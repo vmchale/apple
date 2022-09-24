@@ -123,6 +123,7 @@ tokens :-
         "->"                     { mkSym Arrow }
         "->"$digit+              { tok (\p s -> alex $ TokSym p (Access (read $ ASCII.unpack $ BSL.drop 2 s))) }
         ::                       { mkSym Sig }
+        ":~"                     { mkSym TSig }
         ⋉                        { mkSym MaxS }
         ">."                     { mkSym MaxS }
         ⋊                        { mkSym MinS }
@@ -222,7 +223,7 @@ data Sym = Plus | Minus | Fold | Percent | Times | Semicolon | Bind | Pow
          | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
-         | Last | LastM
+         | Last | LastM | TSig
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -259,6 +260,7 @@ instance Pretty Sym where
     pretty Compose      = "∘"
     pretty Arrow        = "→"
     pretty Sig          = "::"
+    pretty TSig         = ":~"
     pretty MaxS         = "⋉"
     pretty MinS         = "⋊"
     pretty DIS          = "\\`"

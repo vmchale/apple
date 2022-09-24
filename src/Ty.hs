@@ -289,7 +289,7 @@ mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
                                      | otherwise = Left$UnificationFailed lϵ e t t'
 mgu l s t@P{} t'@Ρ{} = mgu l s t' t
-mgu l s t@(Ρ n rs) t'@(Ρ n' rs') = do
+mgu l s (Ρ n rs) (Ρ n' rs') = do
     rss <- tS (\s (t0,t1) -> mguPrep l s t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     pure $ mapTySubst (IM.insert (unU$unique n) (Ρ n' (rs<>rs'))) rss
 
@@ -323,7 +323,7 @@ sel axes sh = roll Nil (fmap snd (filter ((`elem` axes) . fst) (zip [1..] unroll
 
 tydrop :: Int -> Sh a -> Sh a
 tydrop 0 sh            = sh
-tydrop n (_ `Cons` sh) = sh
+tydrop _ (_ `Cons` sh) = sh
 
 del :: [Int] -> Sh a -> Sh a
 del axes sh = roll t (fmap snd (filter ((`notElem` axes) . fst) (zip [1..] unrolled))) where
@@ -394,7 +394,7 @@ tyB _ Concat = do
         j' = IVar () j
         n' = TVar n
     pure (Arrow (Arr (vx i') n') (Arrow (Arr (vx j') n') (Arr (vx $ StaPlus () i' j') n')), mempty)
-tyB l Scan = do
+tyB _ Scan = do
     a <- TVar <$> freshName "a" ()
     b <- TVar <$> freshName "b" ()
     i <- IVar () <$> freshName "i" ()
@@ -419,7 +419,7 @@ tyB _ Succ = do
     b <- TVar <$> freshName "b" ()
     let opTy = Arrow a (Arrow a b)
     pure (Arrow opTy (Arrow (Arr (StaPlus () i (Ix () 1) `Cons` sh) a) (Arr (i `Cons` sh) b)), mempty)
-tyB l (TAt i) = do
+tyB _ (TAt i) = do
     ρ <- freshName "ρ" ()
     a <- freshName "a" ()
     let aT = TVar a
@@ -560,7 +560,7 @@ tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Name a, C)], Int)
 tyClosed u e = do
     (((e', s), scs), i) <- runTyM u (do { res@(_, s) <- tyE mempty e ; cvs <- gets varConstr ; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs) ; pure (res, scs) })
     let eS = {-# SCC "applySubst" #-} fmap (rwArr.aT (void s)) e'
-    eS' <- do {(e'', s') <- {-# SCC "match" #-} rAn eS; pure (fmap (aT s') e'') }
+    eS' <- do {(e'', s') <- {-# SCC "match" #-} rAn eS; pure (fmap (rwArr.aT s') e'') }
     chkE (eAnn eS') $> (eS', nubOrd scs, i)
 
 rAn :: E (T ()) -> Either (TyE a) (E (T ()), Subst ())
