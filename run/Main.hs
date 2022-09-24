@@ -125,6 +125,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "->n" "select" "**" "power"
     , lOption "gen." "generate" "𝓕" "fibonacci"
     , lOption "r:" "repeat" "}." "typesafe last"
+    , lOption "⊲" "cons" "⊳" "snoc"
     ]
 
 lOption op0 desc0 op1 desc1 =

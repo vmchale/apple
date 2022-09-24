@@ -107,35 +107,37 @@ prettyRank (i, Nothing) = pretty i
 prettyRank (i, Just as) = pretty i <+> "∘" <+> encloseSep lbracket rbracket comma (pretty<$>as)
 
 instance Pretty Builtin where
-    pretty Plus       = "+"
-    pretty (Fold n)   = "/" <> pretty n
-    pretty Times      = "*"
-    pretty FRange     = "frange"
-    pretty IRange     = "⍳"
-    pretty Floor      = "⌊"
-    pretty Minus      = "-"
-    pretty Max        = "⋉"
-    pretty Min        = "⋊"
-    pretty (Map n)    = "\'" <> pretty n
-    pretty Zip        = "`"
-    pretty Div        = "%"
-    pretty IntExp     = "^"
-    pretty Exp        = "**"
-    pretty ItoF       = "itof"
-    pretty Neg        = "_"
-    pretty Sqrt       = "√"
-    pretty Log        = "_."
-    pretty Re         = "r:"
-    pretty Size       = ":"
-    pretty (Rank as)  = "`" <> encloseSep lbrace rbrace comma (prettyRank<$>as)
-    pretty IDiv       = "/."
-    pretty Scan       = "Λ"
-    pretty (DI i)     = "\\`" <> pretty i
-    pretty (Conv ns)  = "⨳" <+> encloseSep lbrace rbrace comma (pretty<$>ns)
-    pretty (TAt i)    = parens ("->" <> pretty i)
-    pretty Gen        = "gen."
-    pretty Last       = "}."
-    pretty LastM      = "}.?"
+    pretty Plus      = "+"
+    pretty (Fold n)  = "/" <> pretty n
+    pretty Times     = "*"
+    pretty FRange    = "frange"
+    pretty IRange    = "⍳"
+    pretty Floor     = "⌊"
+    pretty Minus     = "-"
+    pretty Max       = "⋉"
+    pretty Min       = "⋊"
+    pretty (Map n)   = "\'" <> pretty n
+    pretty Zip       = "`"
+    pretty Div       = "%"
+    pretty IntExp    = "^"
+    pretty Exp       = "**"
+    pretty ItoF      = "itof"
+    pretty Neg       = "_"
+    pretty Sqrt      = "√"
+    pretty Log       = "_."
+    pretty Re        = "r:"
+    pretty Size      = ":"
+    pretty (Rank as) = "`" <> encloseSep lbrace rbrace comma (prettyRank<$>as)
+    pretty IDiv      = "/."
+    pretty Scan      = "Λ"
+    pretty (DI i)    = "\\`" <> pretty i
+    pretty (Conv ns) = "⨳" <+> encloseSep lbrace rbrace comma (pretty<$>ns)
+    pretty (TAt i)   = parens ("->" <> pretty i)
+    pretty Gen       = "gen."
+    pretty Last      = "}."
+    pretty LastM     = "}.?"
+    pretty ConsE     = "⊲"
+    pretty Snoc      = "⊳"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -151,7 +153,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Fold !Int | Floor | ItoF
              | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
-             | Conv [Int] | TAt !Int | Last | LastM
+             | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              -- sin/cos &c.
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?

@@ -341,6 +341,12 @@ roll = foldr Cons
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (Arrow F I, mempty)
 tyB _ ItoF = pure (Arrow I F, mempty)
+tyB _ ConsE = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    pure (Arrow a (Arrow (Arr (i `Cons` sh) a) (Arr (StaPlus () i (Ix()1) `Cons` sh) a)), mempty)
+tyB l Snoc = tyB l ConsE
 tyB _ LastM = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
@@ -483,6 +489,7 @@ tyB _ Gen = do
     n <- IEVar () <$> freshName "n" ()
     let arrTy = Arr (n `Cons` Nil) a
     pure (Arrow a (Arrow (Arrow a a) (Arrow I arrTy)), mempty)
+tyB _ e = error (show$pretty e)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do

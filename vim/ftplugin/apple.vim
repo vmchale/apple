@@ -15,6 +15,8 @@ digraphs <- 8592
     \ /\ 923
     \ ff 119995
     \ ii 119894
+    \ <\ 8882
+    \ \> 8883
 
 " register atc as a checker
 let g:syntastic_apple_checkers = ['atc']

@@ -72,6 +72,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     min { TokSym $$ MinS }
     pow { TokSym $$ Pow }
     at { $$@(TokSym _ Access{}) }
+    consS { TokSym $$ L.Cons }
+    snoc { TokSym $$ L.Snoc }
 
     fold { TokSym $$ L.Fold }
     quot { TokSym $$ Quot }
@@ -144,7 +146,7 @@ I :: { I AlexPosn }
 
 Sh :: { Sh AlexPosn }
    : nil { Nil }
-   | I cons Sh { Cons $1 $3 }
+   | I cons Sh { A.Cons $1 $3 }
    | name { SVar $1 }
    | parens(Sh) { $1 }
 
@@ -176,6 +178,8 @@ BBin :: { E AlexPosn }
      | lrank sepBy(R,comma) rbrace { Builtin $1 (Rank (reverse $2)) }
      | succ { Builtin $1 A.Succ }
      | pow { Builtin $1 Exp }
+     | consS { Builtin $1 ConsE }
+     | snoc { Builtin $1 A.Snoc }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
@@ -221,7 +225,7 @@ E :: { E AlexPosn }
   | re { Builtin $1 Re }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 (void $3) }
-  | E tsig Sh {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (void$Arr $3 (TVar a))} }
+  | E tsig parens(Sh) {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (void$Arr $3 (TVar a))} }
   | e { EApp $1 (Builtin $1 Exp) (FLit $1 (exp 1)) }
   | E at { EApp (eAnn $1) (Builtin (loc $2) (TAt (iat $ sym $2))) $1 }
   | parens(at) { Builtin (loc $1) (TAt (iat $ sym $1)) }
