@@ -40,7 +40,7 @@ apple_printty src errPtr = do
     case tyExpr (BSL.fromStrict bSrc) of
         Left err ->
             (poke errPtr =<< tcstr (ptxt err)) $> nullPtr
-        Right t -> tcstr (renderStrict (layoutCompact (A.prettyC t)))
+        Right d -> tcstr (renderStrict (layoutCompact d))
 
 ptxt :: Pretty a => a -> T.Text
 ptxt = renderStrict . layoutCompact . pretty
@@ -48,7 +48,7 @@ ptxt = renderStrict . layoutCompact . pretty
 apple_ty :: CString -> Ptr CString -> IO CInt
 apple_ty src errPtr = do
     bSrc <- BS.unsafePackCString src
-    let b = tyExpr (BSL.fromStrict bSrc)
+    let b = tyOf (BSL.fromStrict bSrc)
     case b of
         Left err -> do
             poke errPtr =<< tcstr (ptxt err)

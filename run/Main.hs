@@ -160,7 +160,7 @@ dumpAsm s = case dumpX86 (ubs s) of
 tyExprR :: String -> Repl AlexPosn ()
 tyExprR s = case tyExpr (ubs s) of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right t  -> liftIO $ putDoc (prettyC t <> hardline)
+    Right d  -> liftIO $ putDoc (d <> hardline)
 
 printExpr :: String -> Repl AlexPosn ()
 printExpr s = case tyParse bs of
