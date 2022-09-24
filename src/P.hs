@@ -5,6 +5,7 @@
 module P ( Err (..)
          , tyParse
          , tyExpr
+         , tyOf
          , parseInline
          , parseRename
          , opt
@@ -42,7 +43,7 @@ import           LR
 import           Name
 import           Parser
 import           Parser.Rw
-import           Prettyprinter              (Pretty (..))
+import           Prettyprinter              (Doc, Pretty (..))
 import           R
 import           R.Dfn
 import           Ty
@@ -64,8 +65,11 @@ parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
 parseRename = fmap (go.second rewrite) . parseWithMax where
     go (i, ast) = let (e, m) = dedfn i ast in rG m e
 
-tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
-tyExpr = fmap (first eAnn.discard) . tyConstr where discard (x, y, _) = (x, y)
+tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+tyExpr = fmap prettyC.tyOf
+
+tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
+tyOf = fmap (first eAnn.discard) . tyConstr where discard (x, y, _) = (x, y)
 
 funP :: BSL.ByteString -> IO (FunPtr a)
 funP = aFp <=< either throwIO pure . x86
