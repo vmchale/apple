@@ -32,7 +32,7 @@
     ix ← irange 0 99 1;
     -- a₂
     -- a2 ⟜ 1.5*(1.5*(ν+1));
-    mkIx ← [{xx⟜itof x;((z^x)*(rf 0.5 x)*(rf (1.5*(ν+1)) x))%((fact xx)*(rf 1.5 xx))}];
+    mkIx ← [{xx⟜itof x;((z^x)*(rf 0.5 xx)*(rf (1.5*(ν+1)) xx))%((fact xx)*(rf 1.5 xx))}];
     (+)/1 0 (mkIx'1 ix)
   };
   -- TODO: PARENTHESES!!
