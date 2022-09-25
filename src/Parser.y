@@ -126,7 +126,7 @@ sepBy(p,q)
     | p { [$1] }
 
 tupled(p,q)
-    : sepBy(p,q) q p { $3 : $1 }
+    : tupled(p,q) q p { $3 : $1 }
     | p q p { $3 : [$1] }
 
 braces(p)
