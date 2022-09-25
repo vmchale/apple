@@ -1,12 +1,18 @@
 module Main (main) where
 
-import qualified Data.ByteString.Lazy as BSL
-import           Data.Semigroup       ((<>))
-import qualified Data.Text            as T
-import qualified Data.Version         as V
+import           CGen
+import           Control.Exception         (throwIO)
+import qualified Data.ByteString.Lazy      as BSL
+import           Data.Semigroup            ((<>))
+import qualified Data.Text                 as T
+import qualified Data.Version              as V
 import           Nasm
 import           Options.Applicative
-import qualified Paths_apple          as P
+import           P
+import qualified Paths_apple               as P
+import           Prettyprinter.Render.Text (hPutDoc)
+import           System.IO                 (IOMode (WriteMode), withFile)
+
 
 fp :: Parser FilePath
 fp = argument str
@@ -35,4 +41,7 @@ main = run =<< execParser wrapper
 run :: (FilePath, T.Text) -> IO ()
 run (fpϵ, n) = do
     contents <- BSL.readFile fpϵ
+    t <- either throwIO (pure.fst) (tyOf contents)
+    ct <- either throwIO pure $ pCty n t
     writeO n contents True
+    withFile (T.unpack n <> ".h") WriteMode $ \h -> hPutDoc h ct
