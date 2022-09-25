@@ -34,6 +34,7 @@ lassoc IntExp = False
 lassoc Exp = False
 lassoc Div = True
 lassoc Times = True
+lassoc Mul = True
 lassoc Plus = True
 lassoc Minus = True
 

@@ -67,6 +67,8 @@ data Sh a = IxA (I a)
           | Cons (I a) (Sh a)
           deriving (Functor, Generic)
 
+infixr 8 `Cons`
+
 instance Show (Sh a) where
     show = show . pretty
 
@@ -138,6 +140,7 @@ instance Pretty Builtin where
     pretty LastM     = "}.?"
     pretty ConsE     = "⊲"
     pretty Snoc      = "⊳"
+    pretty Mul       = "%."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -154,6 +157,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
+             | Mul
              -- sin/cos &c.
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?
@@ -192,6 +196,7 @@ isBinOp Or     = True
 isBinOp Xor    = True
 isBinOp DI{}   = True
 isBinOp Conv{} = True
+isBinOp Mul    = True
 isBinOp _      = False
 
 instance Pretty (E a) where
