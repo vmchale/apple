@@ -2,10 +2,7 @@
 {
   vec ← \A.\x.
   {
-    dotprod ←
-      { sq ← ((^2)'1);
-        [(+)/1 0 ((*)`(sq x) (sq y))]
-      };
+    dotprod ← [(+)/1 0 ((*)`x y)];
     (dotprod x)`{1∘[2]} A
   };
   (vec x)`{1∘[2]} y
