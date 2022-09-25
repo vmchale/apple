@@ -135,6 +135,7 @@ tokens :-
         "<|"                     { mkSym Cons }
         ⊳                        { mkSym Snoc }
         "|>"                     { mkSym Snoc }
+        "^:"                     { mkSym Do }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -227,7 +228,7 @@ data Sym = Plus | Minus | Fold | Percent | Times | Semicolon | Bind | Pow
          | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
-         | Last | LastM | TSig | Cons | Snoc
+         | Last | LastM | TSig | Cons | Snoc | Do
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -275,6 +276,7 @@ instance Pretty Sym where
     pretty LastM        = "}.?"
     pretty Cons         = "⊲"
     pretty Snoc         = "⊳"
+    pretty Do           = "^:"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

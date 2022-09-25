@@ -341,6 +341,7 @@ roll = foldr Cons
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (Arrow F I, mempty)
 tyB _ ItoF = pure (Arrow I F, mempty)
+tyB _ Iter = do{a <- TVar<$>freshName "a"(); let s = Arrow a a in pure (Arrow s (Arrow I s), mempty)}
 tyB _ ConsE = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
