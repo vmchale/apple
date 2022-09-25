@@ -132,7 +132,9 @@ tokens :-
         "}."                     { mkSym Last }
         "}.?"                    { mkSym LastM }
         ⊲                        { mkSym Cons }
+        "<|"                     { mkSym Cons }
         ⊳                        { mkSym Snoc }
+        "|>"                     { mkSym Snoc }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
