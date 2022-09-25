@@ -1,0 +1,15 @@
+\X.
+{ sigmoid ← [1+ℯ(_x)];
+  sigmoidDdx ← [x*(1-x)];
+  dot ←
+    { sq ← ((^2)'1);
+      [(+)/1 0 ((*)`(sq x) (sq y))]
+    };
+  vmul ← λA.λx. (dot x)`{1∘[2]} A;
+  forward ← λwh.λwo.λbh.λbo.
+    { ho ← sigmoid'1 ((+)` bh (vmul X wh))
+    ; prediction ← sigmoid'1 ((+)` bo (dot ho wo))
+    ; (ho,prediction)
+    };
+  sigmoid
+}
