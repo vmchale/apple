@@ -8,5 +8,5 @@
       };
     (dotprod x)`{1∘[2]} A
   };
-  (vec x)`{1∘[2]} (y:~(i `Cons` j `Cons` Nil))
+  (vec x)`{1∘[2]} y
 }
