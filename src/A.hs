@@ -141,6 +141,7 @@ instance Pretty Builtin where
     pretty ConsE     = "⊲"
     pretty Snoc      = "⊳"
     pretty Mul       = "%."
+    pretty Iter      = "^:"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -153,7 +154,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Map !Int
              | Zip
              | Rank [(Int, Maybe [Int])]
-             | Fold !Int | Floor | ItoF
+             | Fold !Int | Floor | ItoF | Iter
              | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc

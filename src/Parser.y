@@ -62,6 +62,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     conv { TokSym $$ L.Conv }
     last { TokSym $$ L.Last }
     lastM { TokSym $$ L.LastM }
+    do { TokSym $$ Do }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -182,6 +183,7 @@ BBin :: { E AlexPosn }
      | consS { Builtin $1 ConsE }
      | snoc { Builtin $1 A.Snoc }
      | mul { Builtin $1 Mul }
+     | do { Builtin $1 Iter }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
