@@ -109,6 +109,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     int { TokBuiltin $$ BuiltinInt }
     float { TokBuiltin $$ BuiltinFloat }
     scan { TokBuiltin $$ BuiltinScan }
+    mul { TokBuiltin $$ BuiltinMMul }
 
 %left paren
 %nonassoc leq geq gt lt neq eq
@@ -180,6 +181,7 @@ BBin :: { E AlexPosn }
      | pow { Builtin $1 Exp }
      | consS { Builtin $1 ConsE }
      | snoc { Builtin $1 A.Snoc }
+     | mul { Builtin $1 Mul }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }

@@ -376,7 +376,7 @@ tyB _ IRange = do
 tyB l Plus = tyNumBinOp l
 tyB l Minus = tyNumBinOp l
 tyB l Times = tyNumBinOp l
-tyB l Exp = tyNumBinOp l
+tyB l Exp = pure (Arrow F (Arrow F F), mempty)
 tyB l Min = mm l
 tyB l Max = mm l
 tyB l IntExp = do
@@ -490,7 +490,14 @@ tyB _ Gen = do
     n <- IEVar () <$> freshName "n" ()
     let arrTy = Arr (n `Cons` Nil) a
     pure (Arrow a (Arrow (Arrow a a) (Arrow I arrTy)), mempty)
-tyB _ e = error (show$pretty e)
+tyB l Mul = do
+    a <- freshName "a" l
+    i <- IVar () <$> freshName "i" ()
+    j <- IVar () <$> freshName "j" ()
+    k <- IVar () <$> freshName "k" ()
+    pushVarConstraint a l IsNum
+    let a' = TVar (void a)
+    pure (Arrow (Arr (i `Cons` j `Cons` Nil) a') (Arrow (Arr (j `Cons` k `Cons` Nil) a') (Arr (i `Cons` k `Cons` Nil) a')), mempty)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do
