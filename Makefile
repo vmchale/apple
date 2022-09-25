@@ -2,7 +2,7 @@ HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
 
 libapple.so: $(HS_SRC) include/apple.h
 	cabal build flib:apple -w ghc-9.4.2
-	cp $$(fd 'libapple\.so$$' -I dist-newstyle) .
+	cp $$(cabal-plan list-bins | ja '{%/libapple.so/}{`2}') .
 
 moddeps.svg: $(HS_SRC)
 	graphmod -i src | dot -Tsvg -o $@
