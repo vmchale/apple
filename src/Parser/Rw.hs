@@ -22,12 +22,14 @@ isBinOp ItoF      = False
 isBinOp _         = True
 
 fi :: Builtin -> Int
+fi Succ = 9
 fi IntExp = 8
 fi Exp = 8
 fi Times = 7
 fi Div = 7
 fi Plus = 6
 fi Minus = 6
+fi ConsE = 5
 
 lassoc :: Builtin -> Bool
 lassoc IntExp = False
@@ -37,6 +39,7 @@ lassoc Times = True
 lassoc Mul = True
 lassoc Plus = True
 lassoc Minus = True
+lassoc ConsE = False
 
 shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1

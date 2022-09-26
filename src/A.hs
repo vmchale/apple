@@ -142,6 +142,7 @@ instance Pretty Builtin where
     pretty Snoc      = "⊳"
     pretty Mul       = "%."
     pretty Iter      = "^:"
+    pretty Succ      = "\\~"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -215,6 +216,7 @@ instance Pretty (E a) where
     pretty (EApp _ (EApp _ (Builtin _ op@Rank{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (Builtin _ op@Conv{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (Builtin _ (DI i)) e0) e1)               = parens (pretty e0 <+> "\\`" <> pretty i <+> pretty e1)
+    pretty (EApp _ (EApp _ (Builtin _ Succ) e0) e1)                 = parens (pretty e0 <+> "\\~" <+> pretty e1)
     pretty (EApp _ e0 e1)                                           = parens (pretty e0 <+> pretty e1)
     pretty (FLit _ x)                                               = pretty x
     pretty (ILit _ n)                                               = pretty n
