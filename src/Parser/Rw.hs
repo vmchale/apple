@@ -19,6 +19,12 @@ isBinOp Size      = False
 isBinOp Sqrt      = False
 isBinOp Scan{}    = False
 isBinOp ItoF      = False
+isBinOp Last      = False
+isBinOp LastM     = False
+isBinOp LastM     = False
+isBinOp Gen       = False
+isBinOp TAt{}     = False
+isBinOp Outer     = False
 isBinOp _         = True
 
 fi :: Builtin -> Int

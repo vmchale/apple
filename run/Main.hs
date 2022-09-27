@@ -127,6 +127,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "r:" "repeat" "}." "typesafe last"
     , lOption "⊲" "cons" "⊳" "snoc"
     , lOption "^:" "iterate" "%." "matmul"
+    , lOption "⊗" "outer product" "" ""
     ]
 
 lOption op0 desc0 op1 desc1 =

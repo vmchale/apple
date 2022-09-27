@@ -1,3 +1,4 @@
+-- see: https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d
 \X.\Y.
 { sigmoid ← [1+ℯ(_x)];
   sigmoidDdx ← [x*(1-x)];
@@ -13,8 +14,11 @@
     ; ho ⟜ o->1; prediction ⟜ o->2
     ; l1Err ← (-prediction)'1Y
     ; l1Delta ← (*(sigmoidDdx prediction))'1 l1Err
+    ; hiddenErr ← l1Delta (*)⊗ wo
     -- outer product??
-    ; (wha,woa,bha,boa)
+    ; hiddenDelta ← [(*)`(sigmoidDdx'1 ho) x]'1 hiddenErr 
+    ; hiddenDelta
+    -- (wha,woa,bha,boa)
     };
-  sigmoid
+  train
 }

@@ -4,11 +4,10 @@
   ; dxs ⟜ (-)\~xs; dys ⟜ (-)\~ys
   ; dts ⟜ [√((x^2)+y^2)]`dxs dys
   ; pxs ← (+)Λ 0 dxs; pys ← (+)Λ 0 dys; pts ⟜ (+)Λ 0 dts
+  ; dtss ⟜ 0<|(-)\~((^2)'1 pts)
+  ; T ⟜}.? pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) pts)
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) pts)
-  -- TODO: for T, take last of pts
-  ; dtss ⟜ 0⊲((-)\~((^2)'1 pts))
-  ; T ⟜}.? pts
   ; A ← (sum ((*)`((%)`dxs dts) dtss)) + (sum ((*)`𝜉 dts))
   ; C ← (sum ((*)`((%)`dys dts) dtss)) + (sum ((*)`𝛿 dts))
   ; (A,C)

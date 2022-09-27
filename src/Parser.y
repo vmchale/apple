@@ -63,6 +63,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     last { TokSym $$ L.Last }
     lastM { TokSym $$ L.LastM }
     do { TokSym $$ Do }
+    tensor { TokSym $$ Tensor }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -233,6 +234,7 @@ E :: { E AlexPosn }
   | e { EApp $1 (Builtin $1 Exp) (FLit $1 (exp 1)) }
   | E at { EApp (eAnn $1) (Builtin (loc $2) (TAt (iat $ sym $2))) $1 }
   | parens(at) { Builtin (loc $1) (TAt (iat $ sym $1)) }
+  | E E tensor E { EApp (eAnn $1) (EApp (eAnn $4) (EApp (eAnn $2) (Builtin $3 Outer) $2) $1) $4 }
 
 {
 

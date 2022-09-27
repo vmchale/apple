@@ -50,6 +50,7 @@ data TyE a = IllScoped a (Name a)
            | UnificationIFailed a (I a) (I a)
            | UnificationShFailed a (Sh a) (Sh a)
            | OccursCheck a (T a) (T a)
+           | OccursSh a (Sh a) (Sh a)
            | OccursI a (I a) (I a)
            | ExistentialArg (T ())
            | MatchFailed (T ()) (T ())
@@ -72,7 +73,8 @@ instance Pretty a => Pretty (TyE a) where
     pretty (UnificationShFailed l sh sh') = pretty l <> ":" <+> "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
     pretty (UnificationIFailed l ix ix')  = pretty l <> ":" <+> "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
     pretty (OccursCheck l ty ty')         = pretty l <> ":" <+> "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
-    pretty (OccursI l i j)            = pretty l <> ":" <+> "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
+    pretty (OccursI l i j)                = pretty l <> ":" <+> "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
+    pretty (OccursSh l s0 s1)             = pretty l <> ":" <+> "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
     pretty (ExistentialArg ty)            = "Existential occurs as an argument in" <+> squotes (pretty ty)
     pretty (MatchFailed t t')             = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
     pretty (MatchShFailed sh sh')         = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
@@ -134,6 +136,7 @@ shSubst :: Subst a -> Sh a -> Sh a
 shSubst s (IxA i) = IxA (iSubst s !> i)
 shSubst _ Nil = Nil
 shSubst s (Cons i sh) = Cons (iSubst s !> i) (shSubst s sh)
+shSubst s (Cat sh0 sh1) = Cat (shSubst s sh0) (shSubst s sh1)
 shSubst s@(Subst ts is ss) sh'@(SVar (Name _ (U u) _)) =
     case IM.lookup u ss of
         Just sh''@SVar{} -> shSubst (Subst ts is (IM.delete u ss)) sh''
@@ -235,8 +238,10 @@ mgSh l inp (Cons i sh) (Cons i' sh') = do
     sI <- mguIPrep (iSubst inp) i i'
     mgShPrep l (inp { iSubst = sI }) sh sh'
 mgSh _ inp (SVar sh) (SVar sh') | sh == sh' = Right inp
-mgSh l inp (SVar (Name _ (U i) _)) sh = Right$ mapShSubst (IM.insert i sh) inp
-mgSh l inp sh (SVar (Name _ (U i) _)) = Right$ mapShSubst (IM.insert i sh) inp
+mgSh l inp s@(SVar (Name _ (U i) _)) sh | i `IS.member` occSh sh = Left$ OccursSh l s sh
+                                        | otherwise = Right$ mapShSubst (IM.insert i sh) inp
+mgSh l inp sh s@(SVar (Name _ (U i) _)) | i `IS.member` occSh sh = Left$ OccursSh l sh s
+                                        | otherwise = Right$ mapShSubst (IM.insert i sh) inp
 mgSh l _ sh@Nil sh'@Cons{} = Left $ UnificationShFailed l sh sh'
 
 mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
@@ -244,6 +249,13 @@ mguPrep l s t0 t1 =
     let t0' = aT s t0
         t1' = aT s t1
     in mgu l s (rwArr t0') (rwArr t1')
+
+occSh :: Sh a -> IS.IntSet
+occSh (SVar (Name _ (U i) _)) = IS.singleton i
+occSh (Cat sh0 sh1)           = occSh sh0 <> occSh sh1
+occSh (_ `Cons` sh)           = occSh sh
+occSh IxA{}                   = IS.empty
+occSh Nil{}                   = IS.empty
 
 occI :: I a -> IS.IntSet
 occI Ix{}                      = IS.empty
@@ -286,7 +298,7 @@ mgu l s F (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mgu
 mgu l s I (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s I t
 mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 -- TODO: rho occurs check
-mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
+mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mapTySubst (IM.insert (unU$unique n) t') <$> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
                                      | otherwise = Left$UnificationFailed lϵ e t t'
 mgu l s t@P{} t'@Ρ{} = mgu l s t' t
 mgu l s (Ρ n rs) (Ρ n' rs') = do
@@ -377,7 +389,7 @@ tyB _ IRange = do
 tyB l Plus = tyNumBinOp l
 tyB l Minus = tyNumBinOp l
 tyB l Times = tyNumBinOp l
-tyB l Exp = pure (Arrow F (Arrow F F), mempty)
+tyB _ Exp = pure (Arrow F (Arrow F F), mempty)
 tyB l Min = mm l
 tyB l Max = mm l
 tyB l IntExp = do
@@ -393,6 +405,10 @@ tyB l Neg = do
 tyB _ Sqrt = pure (Arrow F F, mempty)
 tyB _ Log = pure (Arrow F F, mempty)
 tyB _ Div = pure (Arrow F (Arrow F F), mempty)
+tyB _ Outer = do
+    sh0 <- SVar <$> freshName "sh0" (); sh1 <- SVar <$> freshName "sh1" ()
+    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" (); c <- TVar <$> freshName "c" ()
+    pure (Arrow (Arrow a (Arrow b c)) (Arrow (Arr sh0 a) (Arrow (Arr sh1 b) (Arr (Cat sh0 sh1) c))), mempty)
 tyB _ Concat = do
     i <- freshName "i" ()
     j <- freshName "j" ()
@@ -516,6 +532,16 @@ cloneWithConstraints t = do
         (IM.toList vs)
     pure t'
 
+rwSh :: Sh a -> Sh a
+rwSh s@SVar{}     = s
+rwSh s@Nil        = s
+rwSh s@IxA{}      = s
+rwSh (i `Cons` s) = i `Cons` rwSh s
+rwSh (Cat s0 s1) | (is, Nil) <- unroll (rwSh s0), (js, Nil) <- unroll (rwSh s1) = roll Nil (is++js)
+                 | otherwise = Cat (rwSh s0) (rwSh s1)
+rwSh (Rev s) | (is, Nil) <- unroll (rwSh s) = roll Nil (reverse is)
+             | otherwise = Rev (rwSh s)
+
 rwArr :: T a -> T a
 rwArr (Arrow t t') = Arrow (rwArr t) (rwArr t')
 rwArr I            = I
@@ -525,7 +551,7 @@ rwArr t@TVar{}     = t
 rwArr (P ts)       = P (rwArr<$>ts)
 rwArr (Arr Nil t)  = rwArr t
 rwArr (Arr ixes arr) | (is, Nil) <- unroll ixes, Arr sh t <- rwArr arr = Arr (roll sh is) t
-rwArr (Arr sh t)   = Arr sh (rwArr t)
+rwArr (Arr sh t)   = Arr (rwSh sh) (rwArr t)
 rwArr (Ρ n fs)     = Ρ n (rwArr<$>fs)
 
 hasEI :: I a -> Bool
