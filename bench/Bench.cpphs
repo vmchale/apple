@@ -45,11 +45,12 @@ main = do
     gammaFp <- fmap ff . funP =<< BSL.readFile "test/examples/gammaln.🍏"
     scanFp <- fmap aa . funP =<< BSL.readFile "bench/apple/scanmax.🍏"
 #endif
-    defaultMain [ env files $ \ ~(he, e, t, f, 𝛾) ->
+    defaultMain [ env files $ \ ~(he, e, t, f, x, 𝛾) ->
                   bgroup "pipeline"
                       [ bench "tyParse (erf)" $ nf tyParse he
                       , bench "tyParse" $ nf tyParse e
                       , bench "tyParse (tcdf)" $ nf tyParse t
+                      , bench "tyParse (xor)" $ nf tyParse x
                       -- , bench "expanded" $ nf opt he
                       , bench "bytes (erf)" $ nf bytes he
                       , bench "bytes" $ nf bytes f
@@ -110,8 +111,9 @@ main = do
           expApple = BSL.readFile "test/examples/exp.🍏"
           gamma = BSL.readFile "test/examples/gammaln.🍏"
           tcdf = BSL.readFile "test/examples/tcdf.🍎"
+          xor = BSL.readFile "test/examples/xor.🍎"
           rfx86 = yeet . x86 <$> rf
-          files = (,,,,) <$> erfSrc <*> expApple <*> tcdf <*> rf <*> gamma
+          files = (,,,,,) <$> erfSrc <*> expApple <*> tcdf <*> rf <*> xor <*> gamma
           erfParsed = parseRename <$> erfSrc
           erfTy = tyParse <$> erfSrc
           yeet :: (Exception e) => Either e a -> a
