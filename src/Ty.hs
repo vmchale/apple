@@ -46,9 +46,9 @@ data Subst a = Subst { tySubst :: IM.IntMap (T a)
                      } deriving (Functor)
 
 data TyE a = IllScoped a (Name a)
-           | UnificationFailed a (E a) (T a) (T a)
-           | UnificationIFailed a (I a) (I a)
-           | UnificationShFailed a (Sh a) (Sh a)
+           | UF a (E a) (T a) (T a)
+           | UI a (I a) (I a)
+           | USh a (Sh a) (Sh a)
            | OccursCheck a (T a) (T a)
            | OccursSh a (Sh a) (Sh a)
            | OccursI a (I a) (I a)
@@ -68,17 +68,17 @@ instance Monoid (Subst a) where
 instance NFData a => NFData (TyE a) where
 
 instance Pretty a => Pretty (TyE a) where
-    pretty (IllScoped l n)                = pretty l <> ":" <+> squotes (pretty n) <+> "is not in scope."
-    pretty (UnificationFailed l e ty ty') = pretty l <> ":" <+> "could not unify" <+> squotes (pretty ty) <+> "with" <+> squotes (pretty ty') <+> "in expression" <+> squotes (pretty e)
-    pretty (UnificationShFailed l sh sh') = pretty l <> ":" <+> "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
-    pretty (UnificationIFailed l ix ix')  = pretty l <> ":" <+> "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
-    pretty (OccursCheck l ty ty')         = pretty l <> ":" <+> "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
-    pretty (OccursI l i j)                = pretty l <> ":" <+> "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
-    pretty (OccursSh l s0 s1)             = pretty l <> ":" <+> "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
-    pretty (ExistentialArg ty)            = "Existential occurs as an argument in" <+> squotes (pretty ty)
-    pretty (MatchFailed t t')             = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
-    pretty (MatchShFailed sh sh')         = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
-    pretty (Doesn'tSatisfy l ty c)        = pretty l <+> squotes (pretty ty) <+> "is not a member of class" <+> pretty c
+    pretty (IllScoped l n)         = pretty l <> ":" <+> squotes (pretty n) <+> "is not in scope."
+    pretty (UF l e ty ty')         = pretty l <> ":" <+> "could not unify" <+> squotes (pretty ty) <+> "with" <+> squotes (pretty ty') <+> "in expression" <+> squotes (pretty e)
+    pretty (USh l sh sh')          = pretty l <> ":" <+> "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
+    pretty (UI l ix ix')           = pretty l <> ":" <+> "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
+    pretty (OccursCheck l ty ty')  = pretty l <> ":" <+> "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
+    pretty (OccursI l i j)         = pretty l <> ":" <+> "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
+    pretty (OccursSh l s0 s1)      = pretty l <> ":" <+> "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
+    pretty (ExistentialArg ty)     = "Existential occurs as an argument in" <+> squotes (pretty ty)
+    pretty (MatchFailed t t')      = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
+    pretty (MatchShFailed sh sh')  = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
+    pretty (Doesn'tSatisfy l ty c) = pretty l <+> squotes (pretty ty) <+> "is not a member of class" <+> pretty c
 
 instance (Pretty a) => Show (TyE a) where
     show = show . pretty
@@ -216,9 +216,10 @@ mguIPrep is i0 i1 =
     in mguI is i0' i1'
 
 mguI :: IM.IntMap (I a) -> I a -> I a -> Either (TyE a) (IM.IntMap (I a))
-mguI inp (Ix _ i) (Ix _ j) | i == j = Right inp
+mguI inp i0@(Ix l i) i1@(Ix _ j) | i == j = Right inp
+                                 | otherwise = Left$ UI l i0 i1
 mguI inp ix0@(IEVar l i) ix1@(IEVar _ j) | i == j = Right inp
-                                         | otherwise = Left $ UnificationIFailed l ix0 ix1
+                                         | otherwise = Left $ UI l ix0 ix1
 mguI inp (IVar _ i) (IVar _ j) | i == j = Right inp
 mguI inp iix@(IVar l (Name _ (U i) _)) ix | i `IS.member` occI ix = Left $ OccursI l iix ix
                                           | otherwise = Right $ IM.insert i ix inp
@@ -243,7 +244,7 @@ mgSh l inp s@(SVar (Name _ (U i) _)) sh | i `IS.member` occSh sh = Left$ OccursS
                                         | otherwise = Right$ mapShSubst (IM.insert i sh) inp
 mgSh l inp sh s@(SVar (Name _ (U i) _)) | i `IS.member` occSh sh = Left$ OccursSh l sh s
                                         | otherwise = Right$ mapShSubst (IM.insert i sh) inp
-mgSh l _ sh@Nil sh'@Cons{} = Left $ UnificationShFailed l sh sh'
+mgSh l _ sh@Nil sh'@Cons{} = Left $ USh l sh sh'
 
 mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mguPrep l s t0 t1 =
@@ -286,13 +287,13 @@ mgu (l, _) s t'@(TVar (Name _ (U i) _)) t | i `IS.member` occ t = Left$ OccursCh
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
 mgu (l, _) s t t'@(TVar (Name _ (U i) _)) | i `IS.member` occ t = Left$ OccursCheck l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
-mgu (l, e) _ t0@Arrow{} t1 = Left $ UnificationFailed l e t0 t1
-mgu (l, e) _ t0 t1@Arrow{} = Left $ UnificationFailed l e t0 t1
+mgu (l, e) _ t0@Arrow{} t1 = Left $ UF l e t0 t1
+mgu (l, e) _ t0 t1@Arrow{} = Left $ UF l e t0 t1
 mgu l s (Arr sh t) (Arr sh' t') = do
     s0 <- mguPrep l s t t'
     mgShPrep (fst l) s0 sh sh'
-mgu (l, e) _ F I = Left$ UnificationFailed l e F I
-mgu (l, e) _ I F = Left$ UnificationFailed l e I F
+mgu (l, e) _ F I = Left$ UF l e F I
+mgu (l, e) _ I F = Left$ UF l e I F
 mgu l s (Arr (SVar (Name _ (U i) _)) t) F = mapShSubst (IM.insert i Nil) <$> mguPrep l s t F
 mgu l s (Arr (SVar (Name _ (U i) _)) t) I = mapShSubst (IM.insert i Nil) <$> mguPrep l s t I
 mgu l s F (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s F t
@@ -300,7 +301,7 @@ mgu l s I (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mgu
 mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 -- TODO: rho occurs check
 mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mapTySubst (IM.insert (unU$unique n) t') <$> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
-                                     | otherwise = Left$UnificationFailed lϵ e t t'
+                                     | otherwise = Left$UF lϵ e t t'
 mgu l s t@P{} t'@Ρ{} = mgu l s t' t
 mgu l s (Ρ n rs) (Ρ n' rs') = do
     rss <- tS (\s (t0,t1) -> mguPrep l s t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
