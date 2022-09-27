@@ -22,24 +22,24 @@ isBinOp ItoF      = False
 isBinOp _         = True
 
 fi :: Builtin -> Int
-fi Succ = 9
+fi Succ   = 9
 fi IntExp = 8
-fi Exp = 8
-fi Times = 7
-fi Div = 7
-fi Plus = 6
-fi Minus = 6
-fi ConsE = 5
+fi Exp    = 8
+fi Times  = 7
+fi Div    = 7
+fi Plus   = 6
+fi Minus  = 6
+fi ConsE  = 5
 
 lassoc :: Builtin -> Bool
 lassoc IntExp = False
-lassoc Exp = False
-lassoc Div = True
-lassoc Times = True
-lassoc Mul = True
-lassoc Plus = True
-lassoc Minus = True
-lassoc ConsE = False
+lassoc Exp    = False
+lassoc Div    = True
+lassoc Times  = True
+lassoc Mul    = True
+lassoc Plus   = True
+lassoc Minus  = True
+lassoc ConsE  = False
 
 shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1
@@ -50,7 +50,7 @@ rw :: E a -> E a
 rw (EApp l0 (EApp l1 e0@(Builtin _ op0) e1) e2) | isBinOp op0 =
     case rw e2 of
         (EApp l2 (EApp l3 e3@(Builtin _ op1) e4) e5) | isBinOp op1 && shuntl op0 op1 -> EApp l0 (EApp l1 e3 (rw (EApp l2 (EApp l3 e0 e1) e4))) e5
-        e2' -> EApp l0 (EApp l1 e0 (rw e1)) e2'
+        e2'                                                                          -> EApp l0 (EApp l1 e0 (rw e1)) e2'
 rw (EApp l e0 e') =
     case rw e' of
         (EApp lϵ e1@EApp{} e2) -> EApp l (rw $ EApp lϵ e0 e1) e2
