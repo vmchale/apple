@@ -133,10 +133,11 @@ maM Ρ{} Ρ{}                       = undefined
 maM t t'                          = Left $ MatchFailed (void t) (void t')
 
 shSubst :: Subst a -> Sh a -> Sh a
-shSubst s (IxA i) = IxA (iSubst s !> i)
-shSubst _ Nil = Nil
-shSubst s (Cons i sh) = Cons (iSubst s !> i) (shSubst s sh)
+shSubst s (IxA i)       = IxA (iSubst s !> i)
+shSubst _ Nil           = Nil
+shSubst s (Cons i sh)   = Cons (iSubst s !> i) (shSubst s sh)
 shSubst s (Cat sh0 sh1) = Cat (shSubst s sh0) (shSubst s sh1)
+shSubst s (Rev sh)      = Rev (shSubst s sh)
 shSubst s@(Subst ts is ss) sh'@(SVar (Name _ (U u) _)) =
     case IM.lookup u ss of
         Just sh''@SVar{} -> shSubst (Subst ts is (IM.delete u ss)) sh''
@@ -409,6 +410,9 @@ tyB _ Outer = do
     sh0 <- SVar <$> freshName "sh0" (); sh1 <- SVar <$> freshName "sh1" ()
     a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" (); c <- TVar <$> freshName "c" ()
     pure (Arrow (Arrow a (Arrow b c)) (Arrow (Arr sh0 a) (Arrow (Arr sh1 b) (Arr (Cat sh0 sh1) c))), mempty)
+tyB _ Transpose = do
+    sh <- SVar <$> freshName "sh" (); a <- TVar <$> freshName "a" ()
+    pure (Arrow (Arr sh a) (Arr (Rev sh) a), mempty)
 tyB _ Concat = do
     i <- freshName "i" ()
     j <- freshName "j" ()

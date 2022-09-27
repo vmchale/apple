@@ -146,11 +146,11 @@ instance Pretty Builtin where
     pretty Mul       = "%."
     pretty Iter      = "^:"
     pretty Succ      = "\\~"
+    pretty Transpose = "|:"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
-             | Max | Min | Neg | Sqrt
-             | Transpose -- TODO: in J, this has rank infinity... https://code.jsoftware.com/wiki/Vocabulary/barco
+             | Max | Min | Neg | Sqrt | Transpose
              | Reverse -- also rank infinity... https://code.jsoftware.com/wiki/Vocabulary/bardot
              | Filter -- TODO: filter by bitvector...
              | Grade -- TODO: sort
