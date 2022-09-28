@@ -1,5 +1,5 @@
 -- A0 and C0 in Kuhl+Giardina
-λxs.λys.
+λxs.λys.\N.
   { sum ← [(+)/1 0 x]
   ; dxs ⟜ (-)\~xs; dys ⟜ (-)\~ys
   ; dts ⟜ [√((x^2)+y^2)]`dxs dys
@@ -11,5 +11,6 @@
   ; T ⟜}.? pts
   ; A ← (sum ((*)`((%)`dxs dts) dtss)) + (sum ((*)`𝜉 dts))
   ; C ← (sum ((*)`((%)`dys dts) dtss)) + (sum ((*)`𝛿 dts))
+  ; ix ← frange 0 (itof N) N
   ; (A,C)
   }
