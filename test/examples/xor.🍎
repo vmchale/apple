@@ -3,9 +3,8 @@
 \X.
 { Y ⟜ ⟨0,1,1,0⟩;
   sigmoid ← [1+ℯ(_x)];
-  sigmoidDdx ← [x*(1-x)];
-  dot ← [(+)/1 0 ((*)`x y)];
-  sum ← [(+)/1 0 x];
+  sDdx ← [x*(1-x)];
+  dot ← [(+)/1 0 ((*)`x y)]; sum ← [(+)/1 0 x];
   vmul ← λA.λx. (dot x)`{1∘[2]} A;
   forward ← λwh.λwo.λbh.λbo.
     -- ho: 4x2
@@ -18,15 +17,15 @@
   train ← λwh.λwo.λbh.λbo.
     { o ← forward wh wo bh bo
     ; ho ⟜ o->1; prediction ⟜ o->2
-    ; l1Err ← (-)`prediction Y
-    ; l1Delta ← (*)` (sigmoidDdx'1 prediction) l1Err -- 4
-    ; hiddenErr ← l1Delta (*)⊗ wo -- 4x2
-    ; hiddenDelta ← (*)`{0,0} (sigmoidDdx'2 ho) hiddenErr -- 4x2
-    ; wha ← (+)`{0,0} wh ((|:X)%.hiddenDelta)
-    ; woa ← (|:ho)%.((r:1)'1 l1Delta) -- TODO: something more convenient than (r:1)'1
-    ; bha ← sum'1 ((<|)`{1,1} bh hiddenDelta)
-    ; boa ← bo + sum l1Delta
-    ; (wha,woa) -- (wha,woa,bha,boa)
+    ; l1E ← (-)`prediction Y
+    ; l1Δ ← (*)` (sDdx'1 prediction) l1E -- 4
+    ; he ← l1Δ (*)⊗ wo -- 4x2
+    ; hΔ ← (*)`{0,0} (sDdx'2 ho) he -- 4x2
+    ; wha ← (+)`{0,0} wh ((|:X)%.hΔ)
+    ; woa ← (|:ho)%.((r:1)'1 l1Δ) -- TODO: something more convenient than (r:1)'1
+    ; bha ← sum'1 ((<|)`{1,1} bh hΔ)
+    ; boa ← bo + sum l1Δ
+    ; (wha,woa,bha,boa)
     };
   train
 }
