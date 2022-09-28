@@ -46,21 +46,21 @@ instance NFData X86Reg where
 instance NFData FX86Reg where
 
 instance Pretty X86Reg where
-    pretty Rax   = "rax"
-    pretty Rbx   = "rbx"
-    pretty Rcx   = "rcx"
-    pretty Rdx   = "rdx"
-    pretty Rsi   = "rsi"
-    pretty Rdi   = "rdi"
-    pretty R8    = "r8"
-    pretty R9    = "r9"
-    pretty R10   = "r10"
-    pretty R11   = "r11"
-    pretty R12   = "r12"
-    pretty R13   = "r13"
-    pretty R14   = "r14"
-    pretty R15   = "r15"
-    pretty Rsp   = "rsp"
+    pretty Rax = "rax"
+    pretty Rbx = "rbx"
+    pretty Rcx = "rcx"
+    pretty Rdx = "rdx"
+    pretty Rsi = "rsi"
+    pretty Rdi = "rdi"
+    pretty R8  = "r8"
+    pretty R9  = "r9"
+    pretty R10 = "r10"
+    pretty R11 = "r11"
+    pretty R12 = "r12"
+    pretty R13 = "r13"
+    pretty R14 = "r14"
+    pretty R15 = "r15"
+    pretty Rsp = "rsp"
 
 instance Pretty FX86Reg where
     pretty XMM0  = "xmm0"
@@ -137,16 +137,16 @@ toInt Rem      = 2
 toInt (IReg i) = 16+i
 
 fToInt :: FAbsReg -> Int
-fToInt FArg0   = 8
-fToInt FArg1   = 9
-fToInt FArg2   = 10
-fToInt FArg3   = 11
-fToInt FArg4   = 12
-fToInt FArg5   = 13
-fToInt FArg6   = 14
-fToInt FArg7   = 15
-fToInt FRet0   = 8 -- xmm0
-fToInt FRet1   = 9 -- xmm1
+fToInt FArg0    = 8
+fToInt FArg1    = 9
+fToInt FArg2    = 10
+fToInt FArg3    = 11
+fToInt FArg4    = 12
+fToInt FArg5    = 13
+fToInt FArg6    = 14
+fToInt FArg7    = 15
+fToInt FRet0    = 8 -- xmm0
+fToInt FRet1    = 9 -- xmm1
 fToInt (FReg i) = 16+i
 
 newtype ST = ST Int8 deriving (NFData)

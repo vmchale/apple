@@ -1,20 +1,31 @@
-\X.\Y.
-{ sigmoid ← [1+ℯ(_x)];
-  sigmoidDdx ← [x*(1-x)];
-  dot ← [(+)/1 0 ((*)`x y)];
+-- see: https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d
+-- X: 4x2
+\X.
+{ Y ⟜ ⟨0,1,1,0⟩;
+  sigmoid ← [1+ℯ(_x)];
+  sDdx ← [x*(1-x)];
+  dot ← [(+)/1 0 ((*)`x y)]; sum ← [(+)/1 0 x];
   vmul ← λA.λx. (dot x)`{1∘[2]} A;
   forward ← λwh.λwo.λbh.λbo.
-    { ho ← sigmoid'1 ((+)` bh (vmul X wh))
-    ; prediction ← sigmoid (bo + (dot ho wo))
+    -- ho: 4x2
+    { ho ← sigmoid'2 ([(+)` bh x]'1 (X%.wh))
+    -- prediction: 4
+    ; prediction ← sigmoid'1 ((+bo)'1 (vmul ho wo))
     ; (ho,prediction)
     };
+  -- wh: 2x2 wo: 2 bh: 2 bo: (scalar)
   train ← λwh.λwo.λbh.λbo.
     { o ← forward wh wo bh bo
     ; ho ⟜ o->1; prediction ⟜ o->2
-    ; l1Err ← (-prediction)'1Y
-    ; l1Delta ← (*(sigmoidDdx prediction))'1 l1Err
-    -- outer product??
+    ; l1E ← (-)`prediction Y
+    ; l1Δ ← (*)` (sDdx'1 prediction) l1E -- 4
+    ; he ← l1Δ (*)⊗ wo -- 4x2
+    ; hΔ ← (*)`{0,0} (sDdx'2 ho) he -- 4x2
+    ; wha ← (+)`{0,0} wh ((|:X)%.hΔ)
+    ; woa ← (|:ho)%.((r:1)'1 l1Δ) -- TODO: something more convenient than (r:1)'1
+    ; bha ← sum'1 ((<|)`{1,1} bh hΔ)
+    ; boa ← bo + sum l1Δ
     ; (wha,woa,bha,boa)
     };
-  sigmoid
+  train
 }

@@ -65,6 +65,8 @@ data Sh a = IxA (I a)
           | Nil
           | SVar (Name a)
           | Cons (I a) (Sh a)
+          | Rev (Sh a)
+          | Cat (Sh a) (Sh a)
           deriving (Functor, Generic)
 
 infixr 8 `Cons`
@@ -77,6 +79,7 @@ instance Pretty (Sh a) where
     pretty (SVar n)    = pretty n
     pretty (Cons i sh) = pretty i <+> "`Cons`" <+> pretty sh
     pretty Nil         = "Nil"
+    pretty (Cat s s')  = pretty s <+> "⧺" <+> pretty s
 
 data T a = Arr (Sh a) (T a)
          | F -- | double
@@ -143,11 +146,11 @@ instance Pretty Builtin where
     pretty Mul       = "%."
     pretty Iter      = "^:"
     pretty Succ      = "\\~"
+    pretty Transpose = "|:"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
-             | Max | Min | Neg | Sqrt
-             | Transpose -- TODO: in J, this has rank infinity... https://code.jsoftware.com/wiki/Vocabulary/barco
+             | Max | Min | Neg | Sqrt | Transpose
              | Reverse -- also rank infinity... https://code.jsoftware.com/wiki/Vocabulary/bardot
              | Filter -- TODO: filter by bitvector...
              | Grade -- TODO: sort
@@ -159,7 +162,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
-             | Mul
+             | Mul | Outer
              -- sin/cos &c.
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?
@@ -213,6 +216,7 @@ instance Pretty (E a) where
     pretty (EApp _ (EApp _ (Builtin _ (Map n)) e0) e1)              = parens (pretty e0 <> "'" <> pretty n <+> pretty e1)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Scan) e0) e1) e2)     = parens (pretty e0 <+> "Λ" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)
+    pretty (EApp _ (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (pretty e1 <+> pretty e0 <+> "⊗" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (Builtin _ op@Rank{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (Builtin _ op@Conv{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (Builtin _ (DI i)) e0) e1)               = parens (pretty e0 <+> "\\`" <> pretty i <+> pretty e1)

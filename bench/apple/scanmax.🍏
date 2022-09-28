@@ -1,1 +1,3 @@
+-- see https://pythonspeed.com/articles/numba-faster-python/ and also
+-- http://blog.vmchale.com/article/numba-why
 [(⋉) Λ 0 (x::Arr (i `Cons` Nil) int)]

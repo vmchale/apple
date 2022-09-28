@@ -26,15 +26,15 @@ absReg IR.CRet         = CRet
 absReg IR.StackPointer = SP
 
 fabsReg :: IR.Temp -> FAbsReg
-fabsReg (IR.FTemp i)    = FReg i
-fabsReg IR.F0           = FArg0
-fabsReg IR.F1           = FArg1
-fabsReg IR.F2           = FArg2
-fabsReg IR.F3           = FArg3
-fabsReg IR.F4           = FArg4
-fabsReg IR.F5           = FArg5
-fabsReg IR.FRet         = FRet0
-fabsReg IR.FRet1        = FRet1
+fabsReg (IR.FTemp i) = FReg i
+fabsReg IR.F0        = FArg0
+fabsReg IR.F1        = FArg1
+fabsReg IR.F2        = FArg2
+fabsReg IR.F3        = FArg3
+fabsReg IR.F4        = FArg4
+fabsReg IR.F5        = FArg5
+fabsReg IR.FRet      = FRet0
+fabsReg IR.FRet1     = FRet1
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
 foldMapA = (fmap fold .) . traverse

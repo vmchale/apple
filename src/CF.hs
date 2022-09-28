@@ -31,10 +31,10 @@ instance Pretty Interval where
         where pp = mconcat . punctuate "," . fmap pretty . IS.toList
 
 -- | Control-flow annotations
-data ControlAnn = ControlAnn { node     :: !Int
-                             , conn     :: [Int]
-                             , usesNode :: IS.IntSet
+data ControlAnn = ControlAnn { node      :: !Int
+                             , conn      :: [Int]
+                             , usesNode  :: IS.IntSet
                              , usesFNode :: IS.IntSet
-                             , defsNode :: IS.IntSet
+                             , defsNode  :: IS.IntSet
                              , defsFNode :: IS.IntSet
                              } deriving (Generic, NFData)
