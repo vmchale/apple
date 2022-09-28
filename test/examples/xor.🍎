@@ -5,6 +5,7 @@
   sigmoid ← [1+ℯ(_x)];
   sigmoidDdx ← [x*(1-x)];
   dot ← [(+)/1 0 ((*)`x y)];
+  sum ← [(+)/1 0 x];
   vmul ← λA.λx. (dot x)`{1∘[2]} A;
   forward ← λwh.λwo.λbh.λbo.
     -- ho: 4x2
@@ -22,7 +23,10 @@
     ; hiddenErr ← l1Delta (*)⊗ wo -- 4x2
     ; hiddenDelta ← (*)`{0,0} (sigmoidDdx'2 ho) hiddenErr -- 4x2
     ; wha ← (+)`{0,0} wh ((|:X)%.hiddenDelta)
-    ; wha -- (wha,woa,bha,boa)
+    ; woa ← (|:ho)%.((r:1)'1 l1Delta) -- TODO: something more convenient than (r:1)'1
+    ; bha ← sum'1 ((<|)`{1,1} bh hiddenDelta)
+    ; boa ← bo + sum l1Delta
+    ; (wha,woa) -- (wha,woa,bha,boa)
     };
   train
 }
