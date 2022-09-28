@@ -52,7 +52,7 @@ runRepl x = do
     flip evalStateT initSt $ runInputT settings x
 
 appleCompletions :: CompletionFunc (StateT Env IO)
-appleCompletions (":","")        = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list"])
+appleCompletions (":","")        = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann"])
 appleCompletions ("i:", "")      = pure ("i:", cyclicSimple ["r", ""])
 appleCompletions ("ri:", "")     = pure ("ri:", cyclicSimple [""])
 appleCompletions ("t:", "")      = pure ("t:", cyclicSimple ["y", ""])
@@ -63,9 +63,11 @@ appleCompletions ("sid:", "")    = pure ("sid:", [simpleCompletion "asm"])
 appleCompletions ("asid:", "")   = pure ("asid:", [simpleCompletion "sm"])
 appleCompletions ("sasid:", "")  = pure ("sasid:", [simpleCompletion "m"])
 appleCompletions ("msasid:", "") = pure ("msasid:", [simpleCompletion ""])
-appleCompletions ("a:", "")      = pure ("a:", [simpleCompletion "ms"])
+appleCompletions ("a:", "")      = pure ("a:", [simpleCompletion "sm", simpleCompletion "nn"])
 appleCompletions ("sa:", "")     = pure ("sa:", [simpleCompletion "m"])
 appleCompletions ("msa:", "")    = pure ("msa:", [simpleCompletion ""])
+appleCompletions ("na:", "")     = pure ("na:", [simpleCompletion "n"])
+appleCompletions ("nna:", "")    = pure ("nna:", [simpleCompletion ""])
 appleCompletions ("q:", "")      = pure ("q:", cyclicSimple ["uit", ""])
 appleCompletions ("uq:", "")     = pure ("uq:", [simpleCompletion "it"])
 appleCompletions ("iuq:", "")    = pure ("iuq:", [simpleCompletion "t"])
@@ -95,6 +97,7 @@ loop = do
         Just [":q"]        -> pure ()
         Just [":quit"]     -> pure ()
         Just (":asm":e)    -> dumpAsm (unwords e) *> loop
+        Just (":ann":e)    -> annR (unwords e) *> loop
         Just (":ir":e)     -> irR (unwords e) *> loop
         Just (":disasm":e) -> disasm (unwords e) *> loop
         Just e             -> printExpr (unwords e) *> loop
@@ -104,6 +107,7 @@ showHelp :: Repl AlexPosn ()
 showHelp = liftIO $ putStr $ concat
     [ helpOption ":help, :h" "" "Show this help"
     , helpOption ":ty" "<expression>" "Display the type of an expression"
+    , helpOption ":ann" "<expression>" "Annotate with types"
     , helpOption ":list" "" "List all names that are in scope"
     , helpOption ":quit, :q" "" "Quit REPL"
     , helpOption "\\l" "" "Show reference"
@@ -164,6 +168,11 @@ tyExprR :: String -> Repl AlexPosn ()
 tyExprR s = case tyExpr (ubs s) of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right d  -> liftIO $ putDoc (d <> hardline)
+
+annR :: String -> Repl AlexPosn ()
+annR s = case tyParse$ubs s of
+    Left err    -> liftIO$putDoc(pretty err<>hardline)
+    Right (e,_) -> liftIO$putDoc(prettyTyped e<>hardline)
 
 printExpr :: String -> Repl AlexPosn ()
 printExpr s = case tyParse bs of
