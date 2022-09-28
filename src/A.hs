@@ -183,10 +183,14 @@ prettyTyped (ILit t n)                                               = parens (p
 prettyTyped (FLit t x)                                               = parens (pretty x <+> ":" <+> pretty t)
 prettyTyped (Lam _ n@(Name _ _ xt) e)                                = parens ("λ" <> parens (pretty n <+> ":" <+> pretty xt) <> "." <+> prettyTyped e)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ (Fold n)) e0) e1) e2) = parens (prettyTyped e0 <> "/" <> pretty n <+> prettyTyped e1 <+> prettyTyped e2)
+prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (prettyTyped e1 <+> pretty e0 <> "⊗" <+> prettyTyped e2)
 prettyTyped (EApp _ e0 e1)                                           = parens (prettyTyped e0 <+> prettyTyped e1)
 prettyTyped (Let t (n, e) e')                                        = parens (braces (ptName n <+> "←" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
 prettyTyped (LLet t (n, e) e')                                       = parens (braces (ptName n <+> "⟜" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
+prettyTyped (Def t (n, e) e')                                        = parens (braces (ptName n <+> "⇐" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
 prettyTyped (Tup _ es)                                               = tupled (prettyTyped <$> es)
+prettyTyped e@(ALit t _)                                             = parens (pretty e <+> ":" <+> pretty t)
+
 
 isBinOp :: Builtin -> Bool
 isBinOp Plus   = True

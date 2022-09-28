@@ -35,6 +35,7 @@ library
         Hs.FFI
         Sys.DL
         Asm.X86.Byte
+        Prettyprinter.Ext
 
     build-tool-depends: alex:alex, happy:happy, hsc2hs:hsc2hs
     hs-source-dirs:     src
@@ -52,7 +53,6 @@ library
         IR.Alloc
         IR.CF
         IR.Trans
-        Prettyprinter.Ext
         Data.Copointed
         Asm.X86
         Asm.X86.Opt
@@ -116,7 +116,6 @@ foreign-library apple
         base,
         apple,
         bytestring >=0.11.0.0,
-        prettyprinter,
         text
 
     lib-version-info: 1:0:0

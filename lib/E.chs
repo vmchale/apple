@@ -14,8 +14,7 @@ import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr (Ptr, castPtr, castFunPtrToPtr, nullPtr)
 import Foreign.Storable (poke, pokeByteOff)
 import P
-import Prettyprinter (Pretty (..), layoutCompact)
-import Prettyprinter.Render.Text (renderStrict)
+import Prettyprinter.Ext
 
 #include <string.h>
 #include <sys/mman.h>
@@ -40,10 +39,7 @@ apple_printty src errPtr = do
     case tyExpr (BSL.fromStrict bSrc) of
         Left err ->
             (poke errPtr =<< tcstr (ptxt err)) $> nullPtr
-        Right d -> tcstr (renderStrict (layoutCompact d))
-
-ptxt :: Pretty a => a -> T.Text
-ptxt = renderStrict . layoutCompact . pretty
+        Right d -> tcstr (aText d)
 
 apple_ty :: CString -> Ptr CString -> IO CInt
 apple_ty src errPtr = do
