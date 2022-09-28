@@ -25,6 +25,7 @@ isBinOp LastM     = False
 isBinOp Gen       = False
 isBinOp TAt{}     = False
 isBinOp Outer     = False
+isBinOp Transpose = False
 isBinOp _         = True
 
 fi :: Builtin -> Int
