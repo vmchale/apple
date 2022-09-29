@@ -31,6 +31,18 @@ inline i = runI i . iM
 β :: Int -> E (T ()) -> (E (T ()), Int)
 β i = runI i . bM
 
+hR :: E a -> Bool
+hR (EApp _ (EApp _ (Builtin _ RF) _) _) = True
+hR (EApp _ (EApp _ (Builtin _ RI) _) _) = True
+hR Builtin{}                            = False
+hR FLit{}                               = False
+hR ILit{}                               = False
+hR (ALit _ es)                          = any hR es
+hR (Tup _ es)                           = any hR es
+hR (Cond _ p e e')                      = hR p||hR e||hR e'
+hR (EApp _ e e')                        = hR e||hR e'
+hR (Lam _ _ e)                          = hR e
+
 -- assumes globally renamed already
 -- | Inlining is easy because we don't have recursion
 iM :: E (T ()) -> M (T ()) (E (T ()))
@@ -46,9 +58,10 @@ iM (LLet l (n, e') e) = do
     e'I <- iM e'
     eI <- iM e
     pure $ LLet l (n, e'I) eI
-iM (Let _ (n, e') e) = do
+iM (Let l (n, e') e) | not(hR e')= do
     eI <- iM e'
     modify (bind n eI) *> iM e
+                     | otherwise = iM(LLet l (n,e') e)
 iM (Def _ (n, e') e) = do
     eI <- iM e'
     modify (bind n eI) *> iM e

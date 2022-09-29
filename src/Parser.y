@@ -92,27 +92,28 @@ import Prettyprinter (Pretty (pretty), (<+>))
     x { TokResVar $$ VarX }
     y { TokResVar $$ VarY }
 
-    frange { TokBuiltin $$ BuiltinFRange }
-    iota { TokBuiltin $$ BuiltinIota }
-    floor { TokBuiltin $$ BuiltinFloor }
-    e { TokBuiltin $$ BuiltinE }
-    i { TokBuiltin $$ BuiltinI }
-    f { TokBuiltin $$ BuiltinF }
-    t { TokBuiltin $$ BuiltinT }
-    tt { TokBuiltin $$ BuiltinTrue }
-    ff { TokBuiltin $$ BuiltinFalse }
-    sqrt { TokBuiltin $$ BuiltinSqrt }
-    pi { TokBuiltin $$ BuiltinPi }
-    gen { TokBuiltin $$ BuiltinGen }
+    frange { TokB $$ BuiltinFRange }
+    iota { TokB $$ BuiltinIota }
+    floor { TokB $$ BuiltinFloor }
+    e { TokB $$ BuiltinE }
+    i { TokB $$ BuiltinI }
+    f { TokB $$ BuiltinF }
+    t { TokB $$ BuiltinT }
+    tt { TokB $$ BuiltinTrue }
+    ff { TokB $$ BuiltinFalse }
+    sqrt { TokB $$ BuiltinSqrt }
+    pi { TokB $$ BuiltinPi }
+    gen { TokB $$ BuiltinGen }
     log { TokSym $$ SymLog }
-    re { TokBuiltin $$ BuiltinRep }
-    nil { TokBuiltin $$ BuiltinNil }
-    cons { TokBuiltin $$ BuiltinCons }
-    arr { TokBuiltin $$ BuiltinArr }
-    int { TokBuiltin $$ BuiltinInt }
-    float { TokBuiltin $$ BuiltinFloat }
-    scan { TokBuiltin $$ BuiltinScan }
-    mul { TokBuiltin $$ BuiltinMMul }
+    re { TokB $$ BuiltinRep }
+    nil { TokB $$ BuiltinNil }
+    cons { TokB $$ BuiltinCons }
+    arr { TokB $$ BuiltinArr }
+    int { TokB $$ BuiltinInt }
+    float { TokB $$ BuiltinFloat }
+    scan { TokB $$ BuiltinScan }
+    mul { TokB $$ BuiltinMMul }
+    r { TokB $$ BuiltinR }
 
 %left paren
 %nonassoc leq geq gt lt neq eq
@@ -237,6 +238,7 @@ E :: { E AlexPosn }
   | parens(at) { Builtin (loc $1) (TAt (iat $ sym $1)) }
   | E E tensor E { EApp (eAnn $1) (EApp (eAnn $4) (EApp (eAnn $2) (Builtin $3 Outer) $2) $1) $4 }
   | trans { Builtin $1 Transpose }
+  | r { Builtin $1 RF }
 
 {
 

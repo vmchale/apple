@@ -167,6 +167,7 @@ tokens :-
         Arr                      { mkBuiltin BuiltinArr }
         float                    { mkBuiltin BuiltinFloat }
         int                      { mkBuiltin BuiltinInt }
+        𝔯                        { mkBuiltin BuiltinR }
 
         _$digit+                 { tok (\p s -> alex $ TokInt p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
 
@@ -190,7 +191,7 @@ mkRes = constructor TokResVar
 
 mkSym = constructor TokSym
 
-mkBuiltin = constructor TokBuiltin
+mkBuiltin = constructor TokB
 
 mkText :: BSL.ByteString -> T.Text
 mkText = decodeUtf8 . BSL.toStrict
@@ -293,6 +294,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
              | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
+             | BuiltinR
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -316,24 +318,25 @@ instance Pretty Builtin where
     pretty BuiltinInt    = "int"
     pretty BuiltinFloat  = "float"
     pretty BuiltinT      = "𝓉"
+    pretty BuiltinR      = "𝔯"
 
 data Token a = EOF { loc :: a }
              | TokSym { loc :: a, sym :: Sym }
              | TokName { loc :: a, _name :: Name a }
-             | TokBuiltin { loc :: a, _builtin :: Builtin }
+             | TokB { loc :: a, _builtin :: Builtin }
              | TokResVar { loc :: a, _var :: Var }
              | TokInt { loc :: a, int :: Integer }
              | TokFloat { loc :: a, float :: Double }
              deriving (Generic, NFData)
 
 instance Pretty (Token a) where
-    pretty EOF{}              = "(eof)"
-    pretty (TokSym _ s)       = "symbol" <+> squotes (pretty s)
-    pretty (TokName _ n)      = "identifier" <+> squotes (pretty n)
-    pretty (TokBuiltin _ b)   = "builtin" <+> squotes (pretty b)
-    pretty (TokInt _ i)       = pretty i
-    pretty (TokResVar _ v)    = "reserved variable" <+> squotes (pretty v)
-    pretty (TokFloat _ f)     = pretty f
+    pretty EOF{}           = "(eof)"
+    pretty (TokSym _ s)    = "symbol" <+> squotes (pretty s)
+    pretty (TokName _ n)   = "identifier" <+> squotes (pretty n)
+    pretty (TokB _ b)      = "builtin" <+> squotes (pretty b)
+    pretty (TokInt _ i)    = pretty i
+    pretty (TokResVar _ v) = "reserved variable" <+> squotes (pretty v)
+    pretty (TokFloat _ f)  = pretty f
 
 freshName :: T.Text -> Alex (Name AlexPosn)
 freshName t = do

@@ -21,10 +21,11 @@ isBinOp Scan{}    = False
 isBinOp ItoF      = False
 isBinOp Last      = False
 isBinOp LastM     = False
-isBinOp LastM     = False
 isBinOp Gen       = False
 isBinOp TAt{}     = False
 isBinOp Outer     = False
+isBinOp RF        = False
+isBinOp RI        = False
 isBinOp _         = True
 
 fi :: Builtin -> Int

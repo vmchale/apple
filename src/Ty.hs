@@ -156,6 +156,8 @@ infixr 4 !>
 (!>) _ ix@IEVar{} = ix
 
 aT :: Subst a -> T a -> T a
+aT s (Arr sh ty) = Arr (shSubst s sh) (aT s ty)
+aT s (Arrow t₁ t₂) = Arrow (aT s t₁) (aT s t₂)
 aT s@(Subst ts is ss) ty'@(TVar n) =
     let u = unU $ unique n in
     case IM.lookup u ts of
@@ -163,8 +165,6 @@ aT s@(Subst ts is ss) ty'@(TVar n) =
         Just ty@(Ρ nr _) -> aT (Subst (IM.delete u ts) is ss) ty
         Just ty          -> aT s ty
         Nothing          -> ty'
-aT s (Arr sh ty) = Arr (shSubst s sh) (aT s ty)
-aT s (Arrow t₁ t₂) = Arrow (aT s t₁) (aT s t₂)
 aT s (P ts) = P (aT s <$> ts)
 aT s@(Subst ts is ss) ty'@(Ρ n rs) =
     let u = unU (unique n) in
@@ -355,6 +355,8 @@ roll = foldr Cons
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (Arrow F I, mempty)
 tyB _ ItoF = pure (Arrow I F, mempty)
+tyB _ RF = pure (Arrow F (Arrow F F), mempty)
+tyB _ RI = pure (Arrow I (Arrow I I), mempty)
 tyB _ Iter = do{a <- TVar<$>freshName "a"(); let s = Arrow a a in pure (Arrow s (Arrow I s), mempty)}
 tyB _ ConsE = do
     a <- TVar <$> freshName "a" ()
