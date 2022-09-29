@@ -54,6 +54,7 @@ etaAt (Id l idm)                          = Id l <$> etaIdm idm
 etaAt e                                   = pure e
 
 etaIdm (FoldOfZip seed op es) = FoldOfZip <$> etaAt seed <*> etaAt op <*> traverse etaAt es
+etaIdm (LoopN seed op n)      = LoopN <$> etaAt seed <*> etaAt op <*> etaAt n
 
 -- outermost only
 etaM :: E (T ()) -> RM (E (T ()))
