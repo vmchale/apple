@@ -49,9 +49,9 @@ data TyE a = IllScoped a (Name a)
            | UF a (E a) (T a) (T a)
            | UI a (I a) (I a)
            | USh a (Sh a) (Sh a)
-           | OccursCheck a (T a) (T a)
-           | OccursSh a (Sh a) (Sh a)
-           | OccursI a (I a) (I a)
+           | OT a (T a) (T a)
+           | OSh a (Sh a) (Sh a)
+           | OI a (I a) (I a)
            | ExistentialArg (T ())
            | MatchFailed (T ()) (T ())
            | MatchShFailed (Sh ()) (Sh ())
@@ -72,9 +72,9 @@ instance Pretty a => Pretty (TyE a) where
     pretty (UF l e ty ty')         = pretty l <> ":" <+> "could not unify" <+> squotes (pretty ty) <+> "with" <+> squotes (pretty ty') <+> "in expression" <+> squotes (pretty e)
     pretty (USh l sh sh')          = pretty l <> ":" <+> "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
     pretty (UI l ix ix')           = pretty l <> ":" <+> "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
-    pretty (OccursCheck l ty ty')  = pretty l <> ":" <+> "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
-    pretty (OccursI l i j)         = pretty l <> ":" <+> "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
-    pretty (OccursSh l s0 s1)      = pretty l <> ":" <+> "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
+    pretty (OT l ty ty')           = pretty l <> ":" <+> "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
+    pretty (OI l i j)              = pretty l <> ":" <+> "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
+    pretty (OSh l s0 s1)           = pretty l <> ":" <+> "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
     pretty (ExistentialArg ty)     = "Existential occurs as an argument in" <+> squotes (pretty ty)
     pretty (MatchFailed t t')      = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
     pretty (MatchShFailed sh sh')  = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
@@ -221,9 +221,9 @@ mguI inp i0@(Ix l i) i1@(Ix _ j) | i == j = Right inp
 mguI inp ix0@(IEVar l i) ix1@(IEVar _ j) | i == j = Right inp
                                          | otherwise = Left $ UI l ix0 ix1
 mguI inp (IVar _ i) (IVar _ j) | i == j = Right inp
-mguI inp iix@(IVar l (Name _ (U i) _)) ix | i `IS.member` occI ix = Left $ OccursI l iix ix
+mguI inp iix@(IVar l (Name _ (U i) _)) ix | i `IS.member` occI ix = Left $ OI l iix ix
                                           | otherwise = Right $ IM.insert i ix inp
-mguI inp ix iix@(IVar l (Name _ (U i) _)) | i `IS.member` occI ix = Left$ OccursI l ix iix
+mguI inp ix iix@(IVar l (Name _ (U i) _)) | i `IS.member` occI ix = Left$ OI l ix iix
                                           | otherwise = Right $ IM.insert i ix inp
 mguI inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguI inp i0 i1
 
@@ -240,9 +240,9 @@ mgSh l inp (Cons i sh) (Cons i' sh') = do
     sI <- mguIPrep (iSubst inp) i i'
     mgShPrep l (inp { iSubst = sI }) sh sh'
 mgSh _ inp (SVar sh) (SVar sh') | sh == sh' = Right inp
-mgSh l inp s@(SVar (Name _ (U i) _)) sh | i `IS.member` occSh sh = Left$ OccursSh l s sh
+mgSh l inp s@(SVar (Name _ (U i) _)) sh | i `IS.member` occSh sh = Left$ OSh l s sh
                                         | otherwise = Right$ mapShSubst (IM.insert i sh) inp
-mgSh l inp sh s@(SVar (Name _ (U i) _)) | i `IS.member` occSh sh = Left$ OccursSh l sh s
+mgSh l inp sh s@(SVar (Name _ (U i) _)) | i `IS.member` occSh sh = Left$ OSh l sh s
                                         | otherwise = Right$ mapShSubst (IM.insert i sh) inp
 mgSh l _ sh@Nil sh'@Cons{} = Left $ USh l sh sh'
 
@@ -283,9 +283,9 @@ mgu _ s I I = Right s
 mgu _ s F F = Right s
 mgu _ s B B = Right s
 mgu _ s (TVar n) (TVar n') | n == n' = Right s
-mgu (l, _) s t'@(TVar (Name _ (U i) _)) t | i `IS.member` occ t = Left$ OccursCheck l t' t
+mgu (l, _) s t'@(TVar (Name _ (U i) _)) t | i `IS.member` occ t = Left$ OT l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
-mgu (l, _) s t t'@(TVar (Name _ (U i) _)) | i `IS.member` occ t = Left$ OccursCheck l t' t
+mgu (l, _) s t t'@(TVar (Name _ (U i) _)) | i `IS.member` occ t = Left$ OT l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
 mgu (l, e) _ t0@Arrow{} t1 = Left $ UF l e t0 t1
 mgu (l, e) _ t0 t1@Arrow{} = Left $ UF l e t0 t1
@@ -417,16 +417,12 @@ tyB _ Transpose = do
     sh <- SVar <$> freshName "sh" (); a <- TVar <$> freshName "a" ()
     pure (Arrow (Arr sh a) (Arr (Rev sh) a), mempty)
 tyB _ Concat = do
-    i <- freshName "i" ()
-    j <- freshName "j" ()
+    i <- freshName "i" (); j <- freshName "j" ()
     n <- freshName "a" ()
-    let i' = IVar () i
-        j' = IVar () j
-        n' = TVar n
+    let i' = IVar () i; j' = IVar () j; n' = TVar n
     pure (Arrow (Arr (vx i') n') (Arrow (Arr (vx j') n') (Arr (vx $ StaPlus () i' j') n')), mempty)
 tyB _ Scan = do
-    a <- TVar <$> freshName "a" ()
-    b <- TVar <$> freshName "b" ()
+    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" ()
     i <- IVar () <$> freshName "i" ()
     sh <- SVar <$> freshName "sh" ()
     let opTy = Arrow b (Arrow a b)
@@ -436,8 +432,7 @@ tyB l (DI n) = tyB l (Conv [n])
 tyB _ (Conv ns) = do
     sh <- SVar <$> freshName "sh" ()
     is <- zipWithM (\_ t -> IVar () <$> freshName (T.singleton t) ()) ns ['i'..]
-    a <- TVar <$> freshName "a" ()
-    b <- TVar <$> freshName "b" ()
+    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" ()
     let nx = Ix () <$> ns
         opTy = Arrow (Arr (foldr Cons sh nx) a) b
         t = Arrow (Arr (foldr Cons sh (zipWith (StaPlus ()) is nx)) a) (Arr (foldr Cons Nil is) b)
@@ -445,8 +440,7 @@ tyB _ (Conv ns) = do
 tyB _ Succ = do
     sh <- SVar <$> freshName "sh" ()
     i <- IVar () <$> freshName "i" ()
-    a <- TVar <$> freshName "a" ()
-    b <- TVar <$> freshName "b" ()
+    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" ()
     let opTy = Arrow a (Arrow a b)
     pure (Arrow opTy (Arrow (Arr (StaPlus () i (Ix () 1) `Cons` sh) a) (Arr (i `Cons` sh) b)), mempty)
 tyB _ (TAt i) = do
@@ -458,23 +452,17 @@ tyB _ (Map n) = do
     -- for n the shape is i1,i2,...in `Cons` Nil (this forces it to have
     -- enough indices)
     ixList <- zipWithM (\_ c -> freshName (T.singleton c) ()) [1..n] ['i'..]
-    a <- freshName "a" ()
-    b <- freshName "b" ()
+    a <- freshName "a" (); b <- freshName "b" ()
     let arrSh = foldr Cons Nil (IVar () <$> ixList)
-        a' = TVar a
-        b' = TVar b
+        a' = TVar a; b' = TVar b
         fTy = Arrow a' b'
         gTy = Arrow (Arr arrSh a') (Arr arrSh b')
     pure (Arrow fTy gTy, mempty)
 tyB _ Zip = do
     i <- freshName "i" ()
-    a <- freshName "a" ()
-    b <- freshName "b" ()
-    c <- freshName "c" ()
+    a <- freshName "a" (); b <- freshName "b" (); c <- freshName "c" ()
     let arrSh = IVar () i `Cons` Nil
-        a' = TVar a
-        b' = TVar b
-        c' = TVar c
+        a' = TVar a; b' = TVar b; c' = TVar c
         fTy = Arrow a' (Arrow b' c')
         gTy = Arrow (Arr arrSh a') (Arrow (Arr arrSh b') (Arr arrSh c'))
     pure (Arrow fTy gTy, mempty)
@@ -515,9 +503,7 @@ tyB _ Gen = do
     pure (Arrow a (Arrow (Arrow a a) (Arrow I arrTy)), mempty)
 tyB l Mul = do
     a <- freshName "a" l
-    i <- IVar () <$> freshName "i" ()
-    j <- IVar () <$> freshName "j" ()
-    k <- IVar () <$> freshName "k" ()
+    i <- IVar () <$> freshName "i" (); j <- IVar () <$> freshName "j" (); k <- IVar () <$> freshName "k" ()
     pushVarConstraint a l IsNum
     let a' = TVar (void a)
     pure (Arrow (Arr (i `Cons` j `Cons` Nil) a') (Arrow (Arr (j `Cons` k `Cons` Nil) a') (Arr (i `Cons` k `Cons` Nil) a')), mempty)
@@ -623,7 +609,7 @@ rAn e@FLit{} = pure (e, mempty)
 rAn e@ILit{} = pure (e, mempty)
 rAn e@Var{} = pure (e, mempty)
 rAn (Let t (n, e0) e1) = do
-    (e0', s) <- rAn e0
+    (e0', s) <- rAn e0;
     (e1', s') <- rAn e1
     pure (Let t (n, e0') e1', s<>s')
 rAn (LLet t (n, e0) e1) = do
@@ -655,15 +641,11 @@ tyE s (EApp _ (Builtin _ Re) (ILit _ n)) = do
     let arrTy = Arrow a (Arr (vx $ Ix () (fromInteger n)) a)
     pure (EApp arrTy (Builtin (Arrow I arrTy) Re) (ILit I n), s)
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ FRange) e0) e1) (ILit _ n)) = do
-    (e0',s0) <- tyE s e0
-    (e1',s1) <- tyE s0 e1
-    let tyE0 = eAnn e0'
-        tyE1 = eAnn e1'
+    (e0',s0) <- tyE s e0; (e1',s1) <- tyE s0 e1
+    let tyE0 = eAnn e0'; tyE1 = eAnn e1'
         arrTy = Arr (vx (Ix () (fromInteger n))) F
-        l0 = eAnn e0
-        l1 = eAnn e1
-    s0' <- liftEither $ mguPrep (l0,e0) s1 F (eAnn e0' $> l0)
-    s1' <- liftEither $ mguPrep (l1,e1) s0' F (eAnn e1' $> l1)
+        l0 = eAnn e0; l1 = eAnn e1
+    s0' <- liftEither $ mguPrep (l0,e0) s1 F (eAnn e0' $> l0); s1' <- liftEither $ mguPrep (l1,e1) s0' F (eAnn e1' $> l1)
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow tyE1 (Arrow I arrTy)) (Builtin (Arrow tyE0 (Arrow tyE1 (Arrow I arrTy))) FRange) e0') e1') (ILit I n), s1')
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _ si)) = do
     let arrTy = Arr (vx (Ix () (fromInteger ((e-b+si) `div` si)))) I
@@ -720,8 +702,7 @@ tyE s (Cond l p e0 e1) = do
     (p',sP) <- tyE s p
     (e0',s0) <- tyE sP e0
     (e1',s1) <- tyE s0 e1
-    sP' <- liftEither $ mguPrep (eAnn p,p) s1 B (eAnn p'$>eAnn p)
-    s0' <- liftEither $ mguPrep (l,e0) sP' (eAnn e0'$>l) (eAnn e1'$>eAnn e1)
+    sP' <- liftEither $ mguPrep (eAnn p,p) s1 B (eAnn p'$>eAnn p); s0' <- liftEither $ mguPrep (l,e0) sP' (eAnn e0'$>l) (eAnn e1'$>eAnn e1)
     pure (Cond (eAnn e0') p' e0' e1', s0')
 tyE s (Var l n@(Name _ (U u) _)) = do
     lSt<- gets staEnv
