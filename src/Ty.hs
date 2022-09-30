@@ -245,6 +245,7 @@ mgSh l inp s@(SVar (Name _ (U i) _)) sh | i `IS.member` occSh sh = Left$ OSh l s
 mgSh l inp sh s@(SVar (Name _ (U i) _)) | i `IS.member` occSh sh = Left$ OSh l sh s
                                         | otherwise = Right$ mapShSubst (IM.insert i sh) inp
 mgSh l _ sh@Nil sh'@Cons{} = Left $ USh l sh sh'
+mgSh l _ sh@Cons{} sh'@Nil{} = Left $ USh l sh' sh
 
 mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mguPrep l s t0 t1 =
