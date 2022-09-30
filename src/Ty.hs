@@ -361,19 +361,16 @@ tyB _ Iter = do{a <- TVar<$>freshName "a"(); let s = Arrow a a in pure (Arrow s 
 tyB _ ConsE = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
-    pure (Arrow a (Arrow (Arr (i `Cons` sh) a) (Arr (StaPlus () i (Ix()1) `Cons` sh) a)), mempty)
+    pure (Arrow a (Arrow (Arr (i `Cons` Nil) a) (Arr (StaPlus () i (Ix()1) `Cons` Nil) a)), mempty)
 tyB l Snoc = tyB l ConsE
 tyB _ LastM = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
-    pure (Arrow (Arr (i `Cons` sh) a) (Arr sh a), mempty)
+    pure (Arrow (Arr (i `Cons` Nil) a) a, mempty)
 tyB _ Last = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
-    pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` sh) a) (Arr sh a), mempty)
+    pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` Nil) a) a, mempty)
 tyB _ Re = do
     a <- TVar <$> freshName "a" ()
     n <- IEVar () <$> freshName "n" ()
