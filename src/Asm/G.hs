@@ -1,15 +1,15 @@
 -- | From Appel
 module Asm.G ( build ) where
 
+import           Asm.Ar
 import           CF
 import           Control.Monad.State.Strict (State)
 import qualified Data.Array                 as A
 import           Data.Copointed
 import           Data.Graph                 (Bounds, Edge, Graph, Vertex, buildG)
+import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
-import qualified Data.Set as S
-import qualified Data.IntMap as IM
-import Asm.Ar
+import qualified Data.Set                   as S
 
 
 -- move list: map from abstract registers (def ∪ used) to nodes
@@ -20,6 +20,7 @@ type GL = IM.IntMap [Int]
 data Memb = Pre | Init | Sp | Fr | Simp | Coal | Colored | Stack
 
 -- TODO: might work as lazy lists idk (deletion)
+-- filtering/difference would still be annoying though...
 data Wk = Wk { pre :: IS.IntSet, sp :: IS.IntSet, fr :: IS.IntSet, simp :: IS.IntSet }
 
 mapSp f w = w { sp = f (sp w) }
@@ -116,8 +117,7 @@ simplify s@(St _ _ al _ ds _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minVie
 -- decrement degree
 ddg :: Int -> St -> St
 ddg m s =
-    let d = degs s
-        s' = s { degs = dec m d }
+    let d = degs s; s' = s { degs = dec m d }
     in if d IM.! m == ᴋ
         then let s'' = enaMv (m:(aL s IM.! m)) s'
              in mapWk (mapSp (IS.delete m).(if isMR m s'' then mapFr else mapSimp) (IS.insert m)) s''

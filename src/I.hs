@@ -42,6 +42,10 @@ hR (Tup _ es)                           = any hR es
 hR (Cond _ p e e')                      = hR p||hR e||hR e'
 hR (EApp _ e e')                        = hR e||hR e'
 hR (Lam _ _ e)                          = hR e
+hR (Let _ (_, e') e)                    = hR e'||hR e
+hR (Def _ (_, e') e)                    = hR e'||hR e
+hR (LLet _ (_, e') e)                   = hR e'||hR e
+hR Var{}                                = False
 
 -- assumes globally renamed already
 -- | Inlining is easy because we don't have recursion
@@ -102,3 +106,4 @@ bM (Id l idm) = Id l <$> bid idm
 
 bid :: Idiom -> M (T ()) Idiom
 bid (FoldOfZip seed op es) = FoldOfZip <$> bM seed <*> bM op <*> traverse bM es
+bid (LoopN seed op n)      = LoopN <$> bM seed <*> bM op <*> bM n

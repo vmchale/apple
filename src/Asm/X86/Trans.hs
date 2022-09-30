@@ -57,9 +57,7 @@ mi32 i | i <= fromIntegral (maxBound :: Int32) && i >= fromIntegral (minBound ::
        | otherwise = Nothing
 
 fI64 :: Double -> Int64
-fI64 x = accursedUnutterablePerformIO $ alloca $ \bytes ->
-    poke (castPtr bytes) x *>
-    peek bytes
+fI64 x = accursedUnutterablePerformIO $ alloca $ \bytes -> poke (castPtr bytes) x *> peek bytes
 
 ir :: IR.Stmt -> WM [X86 AbsReg FAbsReg ()]
 ir (IR.MT t (IR.Reg r))                                 = pure [MovRR () (absReg t) (absReg r)]

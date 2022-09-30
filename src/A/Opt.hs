@@ -106,3 +106,4 @@ optA (LLet l (n, e') e) = do
 optA (Id l idm) = Id l <$> optI idm
 
 optI (FoldOfZip seed op es) = FoldOfZip <$> optA seed <*> optA op <*> traverse optA es
+optI (LoopN seed op n)      = LoopN <$> optA seed <*> optA op <*> optA n
