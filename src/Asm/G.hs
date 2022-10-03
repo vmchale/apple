@@ -27,7 +27,11 @@ mapSp f w = w { sp = f (sp w) }
 mapFr f w = w { fr = f (fr w) }
 mapSimp f w = w { simp = f (simp w) }
 
+type M = (Int, Int)
+
 -- TODO: appel says to make these doubly-linked lists
+--
+-- also these appear to be (Int, Int) idk
 data Mv = Mv { coal :: IS.IntSet, constr :: IS.IntSet, frz :: IS.IntSet, wl :: IS.IntSet, actv :: IS.IntSet }
 
 mapWl f mv = mv { wl = f (wl mv) }
@@ -151,5 +155,7 @@ combine u v st =
     let st0 = mapWk (\(Wk p s f sm) -> if v `IS.member` f then Wk p s (IS.delete v f) sm else Wk p (IS.delete v s) f sm) st
         st1 = mapMv (mapCoal (IS.insert v)) st0
         st2 = st1 { alias = IM.insert v u (alias st1) }
-        st3 = thread [ ddg t.addEdge t u | t <- aL st2 IM.! v ] st2
-    in if degs st3 IM.! u >= ᴋ && u `IS.member` fr(wkls st3) then st3 else mapWk(\(Wk p s f sm) -> Wk p (IS.insert u s) (IS.delete u f) sm) st3
+        -- https://github.com/sunchao/tiger/blob/d083a354987b7f1fe23f7065ab0c19c714e78cc4/color.sml#L265
+        st3 = let m = mvs st2; mvu = m IM.! u; mvv = m IM.! v in st2 { mvs = IM.insert u (mvu `IS.union` mvv) m }
+        st4 = thread [ ddg t.addEdge t u | t <- aL st2 IM.! v ] st3
+    in if degs st4 IM.! u >= ᴋ && u `IS.member` fr(wkls st3) then st4 else mapWk(\(Wk p s f sm) -> Wk p (IS.insert u s) (IS.delete u f) sm) st4
