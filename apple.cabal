@@ -60,7 +60,6 @@ library
         Asm.X86.CF
         Asm.X86.Trans
         Asm.G
-        Asm.Ar
 
     default-language:   Haskell2010
     other-extensions:
