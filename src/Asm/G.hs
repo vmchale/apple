@@ -27,12 +27,20 @@ mapSp f w = w { sp = f (sp w) }
 mapFr f w = w { fr = f (fr w) }
 mapSimp f w = w { simp = f (simp w) }
 
+<<<<<<< HEAD
 type M = (Int, Int); type MS = S.Set M
+=======
+type M = (Int, Int)
+>>>>>>> pc/main
 
 -- TODO: appel says to make these doubly-linked lists
 --
 -- also these appear to be (Int, Int) idk
+<<<<<<< HEAD
 data Mv = Mv { coal :: MS, constr :: MS, frz :: MS, wl :: MS, actv :: MS }
+=======
+data Mv = Mv { coal :: IS.IntSet, constr :: IS.IntSet, frz :: IS.IntSet, wl :: IS.IntSet, actv :: IS.IntSet }
+>>>>>>> pc/main
 
 mapWl f mv = mv { wl = f (wl mv) }
 mapActv f mv = mv { actv = f (actv mv) }

@@ -27,6 +27,7 @@
     ; boa ← bo + sum l1Δ
     ; (wha,woa,bha,boa)
     };
+  -- TODO: more fluent way to fill with random numbers
   wh ⟜ {g←\x.[𝔯_1 1]'1 (irange 1 2 1);g'1(irange 1 2 1)};
   wo ⟜ [𝔯_1 1]'1 (irange 1 2 1);
   bh ⟜ [𝔯_1 1]'1 (irange 1 2 1);
