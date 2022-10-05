@@ -37,6 +37,7 @@ data Mv = Mv { coal :: MS, constr :: MS, frz :: MS, wl :: MS, actv :: MS }
 mapWl f mv = mv { wl = f (wl mv) }
 mapActv f mv = mv { actv = f (actv mv) }
 mapCoal f mv = mv { coal = f (coal mv) }
+mapFrz f mv = mv { frz = f (frz mv) }
 
 data Ns = Ns { coalN :: IS.IntSet, colN :: IS.IntSet, spN :: IS.IntSet }
 
@@ -164,3 +165,12 @@ combine u v st =
         st3 = let m = mvs st2; mvu = m IM.! u; mvv = m IM.! v in st2 { mvs = IM.insert u (mvu `S.union` mvv) m }
         st4 = thread [ ddg t.addEdge t u | t <- aL st2 IM.! v ] st3
     in if degs st4 IM.! u >= ᴋ && u `IS.member` fr(wkls st3) then st4 else mapWk(\(Wk p s f sm) -> Wk p (IS.insert u s) (IS.delete u f) sm) st4
+
+freezeMoves :: Int -> St -> St
+freezeMoves u st = thread (fmap g (S.toList$nodeMoves u st)) st where
+    g m@(x, y) st =
+        let y' = getAlias y st; v = if y' == getAlias u st then getAlias x st else y'
+            st0 = mapMv (mapActv (S.delete m).mapFrz (S.insert m)) st
+        in if S.null (nodeMoves v st0) && degs st0 IM.! v < ᴋ
+            then mapWk (mapFr (IS.delete v).mapSimp (IS.insert v)) st0
+            else st0
