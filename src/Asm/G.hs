@@ -1,11 +1,11 @@
 -- | From Appel
-module Asm.G ( build ) where
+module Asm.G ( build, mkWorklist, assign ) where
 
 import           CF
 import           Control.Monad.State.Strict (State)
 import qualified Data.Array                 as A
 import           Data.Copointed
-import Data.Tuple.Extra
+import Data.Tuple.Extra (fst3, snd3, thd3)
 import Data.Containers.ListUtils
 import           Data.Graph                 (Bounds, Edge, Graph, Vertex, buildG)
 import qualified Data.IntMap                as IM
@@ -66,8 +66,12 @@ dec = IM.alter (\k -> case k of {Nothing -> Nothing;Just d -> Just$d-1})
 inc :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
 inc = IM.alter (\k -> case k of {Nothing -> Nothing;Just d -> Just$d+1})
 
--- | To be called in reverse order, init with liveOut for the block
-build :: (Copointed p) => IS.IntSet -> St -> [p (ControlAnn, NLiveness, Maybe M)] -> (IS.IntSet, St)
+-- | To be called in reverse order
+build :: (Copointed p) 
+      => IS.IntSet -- ^ Live-out for the block
+      -> St 
+      -> [p (ControlAnn, NLiveness, Maybe M)] 
+      -> (IS.IntSet, St)
 build l st [] = (l, st)
 build l (St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =
     let ca = fst3 (copoint isn)
@@ -198,3 +202,8 @@ coalesce s | Just (m@(x,y), nWl) <- S.minView (wl$mvS s) =
 
 sspill :: St -> St
 sspill s | Just (m, nSp) <- IS.minView (sp$wkls s) = freezeMoves m $ mapWk (mapSimp (IS.insert m). \wk -> wk { sp = nSp }) s
+
+assign :: Eq reg => [reg] -> St -> IM.IntMap reg
+assign colors s = thd3 $ go (s, colors, initColors) where
+    go (sϵ@(St _ _ _ _ (Ns ns _ _) _ _ _ [] _), _, c) = (undefined, undefined, thread [ IM.insert n (c IM.! getAlias n sϵ) | n <- IS.toList ns ] c)
+    initColors = IM.empty
