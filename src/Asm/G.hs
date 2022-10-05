@@ -6,6 +6,7 @@ import           Control.Monad.State.Strict (State)
 import qualified Data.Array                 as A
 import           Data.Copointed
 import Data.Tuple.Extra
+import Data.Containers.ListUtils
 import           Data.Graph                 (Bounds, Edge, Graph, Vertex, buildG)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
@@ -13,14 +14,14 @@ import qualified Data.Set                   as S
 
 
 -- move list: map from abstract registers (def ∪ used) to nodes
-type Movs = IM.IntMap MS -- IS.IntSet
+type Movs = IM.IntMap MS
 type GS = S.Set (Int, Int)
 type GL = IM.IntMap [Int]
 
 data Memb = Pre | Init | Sp | Fr | Simp | Coal | Colored | Stack
 
 -- TODO: might work as lazy lists idk (deletion)
--- filtering/difference would still be annoying though...
+-- difference would still be annoying though...
 data Wk = Wk { pre :: IS.IntSet, sp :: IS.IntSet, fr :: IS.IntSet, simp :: IS.IntSet }
 
 mapSp f w = w { sp = f (sp w) }
@@ -38,6 +39,7 @@ mapWl f mv = mv { wl = f (wl mv) }
 mapActv f mv = mv { actv = f (actv mv) }
 mapCoal f mv = mv { coal = f (coal mv) }
 mapFrz f mv = mv { frz = f (frz mv) }
+mapConstr f mv = mv { constr = f (constr mv) }
 
 data Ns = Ns { coalN :: IS.IntSet, colN :: IS.IntSet, spN :: IS.IntSet }
 
@@ -174,3 +176,25 @@ freezeMoves u st = thread (fmap g (S.toList$nodeMoves u st)) st where
         in if S.null (nodeMoves v st0) && degs st0 IM.! v < ᴋ
             then mapWk (mapFr (IS.delete v).mapSimp (IS.insert v)) st0
             else st0
+
+adj :: Int -> St -> [Int]
+adj n s = aL s IM.! n ∖ (IS.fromList (stack s) <> coalN (ɴs s))
+
+(∖) :: [Int] -> IS.IntSet -> [Int]
+(∖) x yϵ = filter (`IS.notMember` yϵ) x
+
+coalesce :: St -> St
+coalesce s | Just (m@(x,y), nWl) <- S.minView (wl$mvS s) =
+    let x' = getAlias x s; y' = getAlias y s
+        preS = pre (wkls s)
+        (u, v) = if y' `IS.member` preS then (y',x') else (x',y')
+        s0 = mapMv (\mv -> mv { wl = nWl }) s
+    in case () of
+        _ | u == v -> addWkl u $ mapMv (mapCoal (S.insert m)) s0
+          | v `IS.member` preS || (u,v) `S.member` aS s0 -> addWkl v $ addWkl u $ mapMv (mapConstr (S.insert m)) s0
+          | let av = adj v s0 in u `IS.member` preS && all (\t -> ok t u s0) av || u `IS.notMember` preS && conserv (adj u s0 ++ av) s0 ->
+              addWkl u $ combine u v $ mapMv (mapCoal (S.insert m)) s0
+          | otherwise -> mapMv (mapActv (S.insert m)) s0
+
+sspill :: St -> St
+sspill s | Just (m, nSp) <- IS.minView (sp$wkls s) = freezeMoves m $ mapWk (mapSimp (IS.insert m). \wk -> wk { sp = nSp }) s
