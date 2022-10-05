@@ -162,7 +162,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
-             | Mul | Outer | RF | RI
+             | Mul | Outer | R
              -- sin/cos &c.
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?
