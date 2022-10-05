@@ -238,7 +238,7 @@ E :: { E AlexPosn }
   | parens(at) { Builtin (loc $1) (TAt (iat $ sym $1)) }
   | E E tensor E { EApp (eAnn $1) (EApp (eAnn $4) (EApp (eAnn $2) (Builtin $3 Outer) $2) $1) $4 }
   | trans { Builtin $1 Transpose }
-  | r { Builtin $1 RF }
+  | r { Builtin $1 R }
 
 {
 

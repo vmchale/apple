@@ -32,20 +32,19 @@ inline i = runI i . iM
 β i = runI i . bM
 
 hR :: E a -> Bool
-hR (EApp _ (EApp _ (Builtin _ RF) _) _) = True
-hR (EApp _ (EApp _ (Builtin _ RI) _) _) = True
-hR Builtin{}                            = False
-hR FLit{}                               = False
-hR ILit{}                               = False
-hR (ALit _ es)                          = any hR es
-hR (Tup _ es)                           = any hR es
-hR (Cond _ p e e')                      = hR p||hR e||hR e'
-hR (EApp _ e e')                        = hR e||hR e'
-hR (Lam _ _ e)                          = hR e
-hR (Let _ (_, e') e)                    = hR e'||hR e
-hR (Def _ (_, e') e)                    = hR e'||hR e
-hR (LLet _ (_, e') e)                   = hR e'||hR e
-hR Var{}                                = False
+hR (EApp _ (EApp _ (Builtin _ R) _) _) = True
+hR Builtin{}                           = False
+hR FLit{}                              = False
+hR ILit{}                              = False
+hR (ALit _ es)                         = any hR es
+hR (Tup _ es)                          = any hR es
+hR (Cond _ p e e')                     = hR p||hR e||hR e'
+hR (EApp _ e e')                       = hR e||hR e'
+hR (Lam _ _ e)                         = hR e
+hR (Let _ (_, e') e)                   = hR e'||hR e
+hR (Def _ (_, e') e)                   = hR e'||hR e
+hR (LLet _ (_, e') e)                  = hR e'||hR e
+hR Var{}                               = False
 
 -- assumes globally renamed already
 -- | Inlining is easy because we don't have recursion
