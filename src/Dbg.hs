@@ -4,6 +4,7 @@ module Dbg ( dumpX86
            , dumpX86Abs
            , dumpX86Liveness
            , dumpIR
+           , dumpIRI
            , dumpX86Intervals
            , printParsed
            , printTypes
@@ -26,6 +27,7 @@ import qualified Data.ByteString.Lazy as BSL
 import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import           IR
+import           IR.Alloc
 import           L
 import           LI
 import           LR
@@ -59,6 +61,9 @@ dumpX86Abs = fmap (prettyX86 . (\(x, st) -> irToX86 st x)) . ir
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.fst) . ir
+
+dumpIRI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpIRI = fmap (prettyIRI.live.fst).ir
 
 dumpX86Intervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Intervals = fmap prettyDebugX86 . x86Iv

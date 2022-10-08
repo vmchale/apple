@@ -30,7 +30,7 @@ tcstr :: T.Text -> IO CString
 tcstr t =
     BS.unsafeUseAsCStringLen (encodeUtf8 t) $ \(bs,sz) -> do
         p <- mallocBytes (sz+1)
-        memcpy p bs (fromIntegral sz)
+        _ <- memcpy p bs (fromIntegral sz)
         pokeByteOff p sz (0::CChar) $> p
 
 apple_printty :: CString -> Ptr CString -> IO CString

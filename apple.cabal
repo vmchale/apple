@@ -203,7 +203,7 @@ executable arepl
     hs-source-dirs:   run
 
     default-language: Haskell2010
-    ghc-options:      -Wall
+    ghc-options:      -Wall -Wno-missing-signatures
     build-depends:
         base,
         apple,

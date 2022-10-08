@@ -16,18 +16,14 @@ module A ( T (..)
          , prettyC
          ) where
 
-import           Control.DeepSeq            (NFData)
-import           Control.Monad              (zipWithM)
-import           Control.Monad.State.Strict (gets, modify)
-import           Data.Functor               (void, ($>))
-import qualified Data.IntMap                as IM
-import           Data.Semigroup             ((<>))
-import           GHC.Generics               (Generic)
+import           Control.DeepSeq   (NFData)
+import qualified Data.IntMap       as IM
+import           Data.Semigroup    ((<>))
+import           GHC.Generics      (Generic)
 import           Name
-import           Prettyprinter              (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket,
-                                             tupled, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket, tupled,
+                                    (<+>))
 import           Prettyprinter.Ext
-import           U
 
 instance Pretty (I a) where
     pretty (Ix _ i)        = pretty i
@@ -79,7 +75,7 @@ instance Pretty (Sh a) where
     pretty (SVar n)    = pretty n
     pretty (Cons i sh) = pretty i <+> "`Cons`" <+> pretty sh
     pretty Nil         = "Nil"
-    pretty (Cat s s')  = pretty s <+> "⧺" <+> pretty s
+    pretty (Cat s s')  = pretty s <+> "⧺" <+> pretty s'
 
 data T a = Arr (Sh a) (T a)
          | F -- | double
@@ -147,6 +143,7 @@ instance Pretty Builtin where
     pretty Iter      = "^:"
     pretty Succ      = "\\~"
     pretty Transpose = "|:"
+    pretty Fib       = "𝓕"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod

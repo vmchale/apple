@@ -8,6 +8,7 @@
   ; T ⟜}. pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) pts)
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) pts)
-  ; ix ← frange 0 (itof N) N
+  ; A ← ((sum ((*)`((%)`dxs dts) dtss))%2 + (sum ((*)`𝜉 dts)))%T
+  ; C ← ((sum ((*)`((%)`dys dts) dtss))%2 + (sum ((*)`𝛿 dts)))%T
   ; (A,C)
   }
