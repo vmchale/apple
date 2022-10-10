@@ -27,6 +27,8 @@ Programmatic type inference can be of aid in debugging.
 This is based on J (and APL?). Looping is replaced by functoriality (map); we
 have a family of functors `('n)`
 
+<!-- rank is "bottom-up" -->
+
 ## Linear Memory Allocation
 
 Rather than calling `malloc` to create a new array, arrays

@@ -10,6 +10,7 @@ import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
+import           Debug.Trace
 import           IR
 import           Name
 import           U
@@ -19,6 +20,7 @@ data IRSt = IRSt { labels :: [Label]
                  , arrs   :: [Int]
                  , vars   :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                  , avars  :: IM.IntMap (Maybe Int, Temp)
+                 , mts    :: IM.IntMap Temp
                  }
 
 getT :: IM.IntMap b -> Name a -> b
@@ -27,12 +29,12 @@ getT st (Name _ (U i) _) = IM.findWithDefault (error "Internal error: variable n
 nextI :: IRM Int
 nextI = do
     i <- gets (head.temps)
-    modify (\(IRSt l (_:t) ar v a) -> IRSt l t ar v a) $> i
+    modify (\(IRSt l (_:t) ar v a ts) -> IRSt l t ar v a ts) $> i
 
 nextArr :: IRM Int
 nextArr = do
     a <- gets (head.arrs)
-    modify (\(IRSt l t (_:ar) v aϵ) -> IRSt l t ar v aϵ) $> a
+    modify (\(IRSt l t (_:ar) v aϵ ts) -> IRSt l t ar v aϵ ts) $> a
 
 newITemp :: IRM Temp
 newITemp = ITemp <$> nextI
@@ -43,13 +45,16 @@ newFTemp = FTemp <$> nextI
 newLabel :: IRM Label
 newLabel = do
     i <- gets (head.labels)
-    modify (\(IRSt l t ar v a) -> IRSt (tail l) t ar v a) $> i
+    modify (\(IRSt l t ar v a ts) -> IRSt (tail l) t ar v a ts) $> i
+
+addMT :: Int -> Temp -> IRSt -> IRSt
+addMT i tϵ (IRSt l t ar v a ts) = IRSt l t ar v a (IM.insert i tϵ ts)
 
 addVar :: Name a -> Temp -> IRSt -> IRSt
-addVar (Name _ (U i) _) r (IRSt l t ar v a) = IRSt l t ar (IM.insert i r v) a
+addVar (Name _ (U i) _) r (IRSt l t ar v a ts) = IRSt l t ar (IM.insert i r v) a ts
 
 addAVar :: Name a -> (Maybe Int, Temp) -> IRSt -> IRSt
-addAVar (Name _ (U i) _) r (IRSt l t ar v a) = IRSt l t ar v (IM.insert i r a)
+addAVar (Name _ (U i) _) r (IRSt l t ar v a ts) = IRSt l t ar v (IM.insert i r a) ts
 
 type IRM = State IRSt
 
@@ -64,8 +69,8 @@ isI _ = False
 isArr Arr{} = True
 isArr _     = False
 
-writeC :: E (T ()) -> ([Stmt], WSt)
-writeC = second π . flip runState (IRSt [0..] [0..] [0..] IM.empty IM.empty) . writeCM where π (IRSt l t _ _ _) = WSt l t
+writeC :: E (T ()) -> ([Stmt], WSt, IM.IntMap Temp)
+writeC = π.flip runState (IRSt [0..] [0..] [0..] IM.empty IM.empty IM.empty) . writeCM where π (s, IRSt l t _ _ _ a) = (s, WSt l t, a)
 
 -- %xmm0 – %xmm7
 writeCM :: E (T ()) -> IRM [Stmt]
@@ -83,7 +88,7 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
     go Lam{} _ [] = error "Not enough registers!"
     go e _ _ | isF (eAnn e) = do { f <- newFTemp ; (++[MX FRet (FReg f)]) <$> eval e f } -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = eval e CRet
-             | isArr (eAnn e) = snd <$> aeval e CRet
+             | isArr (eAnn e) = do{(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
@@ -128,7 +133,8 @@ aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | f1 (eAnn e) && f1 res = d
     let loop = MX f (FAt (AP arrP Nothing l)):ss++[WrF (AP t (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) (Just a)) (FReg f), MT arrP (IB IPlus (Reg arrP) (ConstI 8)), MT iR (IB IPlus (Reg iR) (ConstI 1))]
     ll <- newLabel
     endL <- newLabel
-    pure (Just a, plE ++ (MT szR sz:Ma t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 24)):MT iR (ConstI 0):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):MT arrP (IB IPlus (Reg arrP) (ConstI 16)):L ll:MJ (IRel IGt (Reg iR) (Reg szR)) endL:loop) ++ [J ll, L endL])
+    modify (addMT a t)
+    pure (Just a, plE ++ (MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 24)):MT iR (ConstI 0):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):MT arrP (IB IPlus (Reg arrP) (ConstI 16)):L ll:MJ (IRel IGt (Reg iR) (Reg szR)) endL:loop) ++ [J ll, L endL])
 aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | i1 (eAnn e) && i1 res && isI (eAnn seed) = do
     a <- nextArr
     arrP <- newITemp
@@ -145,7 +151,8 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | i1 (eAnn e) &&
     let loop=MT n (EAt (AP arrP (Just$IB IAsl (Reg iR) (ConstI 3)) l)):Wr (AP t (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) (Just a)) (Reg acc):ss++[MT iR (IB IPlus (Reg iR) (ConstI 1))]
     ll <- newLabel
     endL <- newLabel
-    pure (Just a, plE ++ plSeed ++ (MT szR (IB IPlus sz (ConstI 1)):Ma t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 24)):MT iR (ConstI 0):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):MT arrP (IB IPlus (Reg arrP) (ConstI 16)):L ll:MJ (IRel IGt (Reg iR) (Reg szR)) endL:loop) ++ [J ll, L endL])
+    modify (addMT a t)
+    pure (Just a, plE ++ plSeed ++ (MT szR (IB IPlus sz (ConstI 1)):Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 24)):MT iR (ConstI 0):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):MT arrP (IB IPlus (Reg arrP) (ConstI 16)):L ll:MJ (IRel IGt (Reg iR) (Reg szR)) endL:loop) ++ [J ll, L endL])
 aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | i1 (eAnn e) && i1 res = do
     a <- nextArr
     arrP <- newITemp
@@ -160,7 +167,8 @@ aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | i1 (eAnn e) && i1 res = d
     let loop = MT m (EAt (AP arrP (Just$IB IAsl (Reg iR) (ConstI 3)) l)):ss++[Wr (AP t (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) (Just a)) (Reg m), MT iR (IB IPlus (Reg iR) (ConstI 1))]
     ll <- newLabel
     endL <- newLabel
-    pure (Just a, plE ++ (MT szR sz:Ma t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 24)):MT iR (ConstI 0):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):MT arrP (IB IPlus (Reg arrP) (ConstI 16)):L ll:MJ (IRel IGt (Reg iR) (Reg szR)) endL:loop) ++ [J ll, L endL])
+    modify (addMT a t)
+    pure (Just a, plE ++ (MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 24)):MT iR (ConstI 0):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):MT arrP (IB IPlus (Reg arrP) (ConstI 16)):L ll:MJ (IRel IGt (Reg iR) (Reg szR)) endL:loop) ++ [J ll, L endL])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t = do
     a <- nextArr
     n <- newITemp
@@ -171,9 +179,10 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t = do
     putEnd <- eval end endR
     l <- newLabel
     endL <- newLabel
+    modify (addMT a t)
     let putN = MT n (IB IMinus (Reg endR) (Reg startR))
     let loop = [MJ (IRel IGt (Reg startR) (Reg endR)) endL, Wr (AP t (Just (Reg i)) (Just a)) (Reg startR), MT startR (IB IPlus (Reg startR) (ConstI 1)), MT i (IB IPlus (Reg i) (ConstI 8))]
-    pure (Just a, putStart++putEnd++putN:Ma t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (Reg n):MT i (ConstI 16):L l:loop ++ [J l, L endL])
+    pure (Just a, putStart++putEnd++putN:Ma a t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (Reg n):MT i (ConstI 16):L l:loop ++ [J l, L endL])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     a <- nextArr
     n <- newITemp
@@ -186,9 +195,10 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     putIncr <- eval incr incrR
     l <- newLabel
     endL <- newLabel
+    modify (addMT a t)
     let putN = MT n (IB IR.IDiv (IB IMinus (Reg endR) (Reg startR)) (Reg incrR))
     let loop = [MJ (IRel IGt (Reg startR) (Reg endR)) endL, Wr (AP t (Just (Reg i)) (Just a)) (Reg startR), MT startR (IB IPlus (Reg startR) (Reg incrR)), MT i (IB IPlus (Reg i) (ConstI 8))]
-    pure (Just a, putStart++putEnd++putIncr++putN:Ma t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (Reg n):MT i (ConstI 16):L l:loop ++ [J l, L endL])
+    pure (Just a, putStart++putEnd++putIncr++putN:Ma a t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (Reg n):MT i (ConstI 16):L l:loop ++ [J l, L endL])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> IRM [Stmt]
@@ -203,7 +213,7 @@ eval (LLet _ (n, e') e) t | isI (eAnn e') = do
     modify (addVar n t')
     (plT ++) <$> eval e t
     -- TODO: isArr
-eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ j))) acc = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ j))) acc = do
     i <- newITemp
     endR <- newITemp
     l <- newLabel
@@ -213,7 +223,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp 
     irEnd <- eval end endR
     step <- writeRF op [acc, i] acc
     pure $ putStart ++ putAcc ++ irEnd ++ (L l:MJ (IRel IGt (Reg i) (Reg endR)) endL:step) ++ [MT i (IB IPlus (Reg i) (ConstI $ asI j)), J l, L endL]
-eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr)) acc = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr)) acc = do
     i <- newITemp
     endR <- newITemp
     incrR <- newITemp
@@ -227,7 +237,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp 
     -- TODO: is this shortest loop?
     pure $ putStart ++ putAcc ++ irEnd ++ irIncr ++ (L l:MJ (IRel IGt (Reg i) (Reg endR)) endL:step) ++ [MT i (IB IPlus (Reg i) (Reg incrR)), J l, L endL]
 -- TODO: start, end, nSteps a literal
-eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) (ILit _ start)) (ILit _ end)) (ILit _ nSteps))) acc = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) (ILit _ start)) (ILit _ end)) (ILit _ nSteps))) acc = do
     i <- newITemp
     l <- newLabel
     endL <- newLabel
@@ -236,7 +246,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp 
     putAcc <- eval seed acc
     step <- writeRF op [acc, xR] acc
     pure $ putAcc ++ (MX xR (ConstF $ fromIntegral start):MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (ConstI $ fromIntegral nSteps)) endL:step) ++ [MT i (IB IPlus (Reg i) (ConstI 1)), MX xR (FB FPlus (FReg xR) (ConstF incr)), J l, L endL]
-eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps@(EApp _ (Builtin _ Floor) nStepsF))) acc = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps@(EApp _ (Builtin _ Floor) nStepsF))) acc = do
     i <- newITemp
     startR <- newFTemp
     incrR <- newFTemp
@@ -252,7 +262,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp 
     step <- writeRF op [acc, xR] acc
     pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [MT i (IB IPlus (Reg i) (ConstI 1)), MX xR (FB FPlus (FReg xR) (FReg incrR)), J l, L endL]
     -- TODO: case where nSteps is a Var ...
-eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps)) acc = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps)) acc = do
     i <- newITemp
     startR <- newFTemp
     incrR <- newFTemp
@@ -437,7 +447,7 @@ eval (EApp _ (Builtin _ Sqrt) e) t = do
     eR <- newFTemp
     plE <- eval e eR
     pure $ plE ++ [MX t (FU FSqrt (FReg eR))]
-eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) e) acc | f1 (eAnn e) = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) e) acc | f1 (eAnn e) = do
     x <- newFTemp
     arrR <- newITemp
     eR <- newITemp
@@ -451,7 +461,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) e) acc | f1 (eAnn e) =
     let step = MX x (FAt (AP arrR (Just$IB IAsl (Reg i) (ConstI 3)) mI)):stepR ++ [MT i (IB IPlus (Reg i) (ConstI 1))] -- [MT arrR (IB IPlus (Reg arrR) (ConstI 8))]
     -- GHC uses 'length' but our szR needs to be one less
     pure $ plE ++ putAcc ++ MT i (ConstI 0):MT szR (EAt (AP eR (Just (ConstI 8)) mI)):MT arrR (IB IPlus (Reg eR) (ConstI 16)):MT szR (IB IMinus (Reg szR) (ConstI 1)):L l:MJ (IRel IGt (Reg i) (Reg szR)) endL:step++[J l, L endL]
-eval (EApp _ (EApp _ (EApp _ (Builtin _ Fold{}) op) seed) e) acc | i1 (eAnn e) = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) e) acc | i1 (eAnn e) = do
     x <- newITemp
     arrR <- newITemp
     eR <- newITemp
@@ -483,7 +493,7 @@ eval (Id F (FoldOfZip seed op [p, q])) acc | f1 (eAnn p) && f1 (eAnn q) = do
     let step = MX x (FAt (AP arr0R (Just$IB IAsl (Reg i) (ConstI 3)) iP)):MX y (FAt (AP arr1R (Just$IB IAsl (Reg i) (ConstI 3)) iQ)):stepR ++ [MT i (IB IPlus (Reg i) (ConstI 1))]
     -- FIXME: this assumes the arrays are the same size
     pure $ plP ++ plQ ++ putAcc ++ MT i (ConstI 0):MT szR (EAt (AP pR (Just (ConstI 8)) iP)):MT arr0R (IB IPlus (Reg pR) (ConstI 16)):MT arr1R (IB IPlus (Reg qR) (ConstI 16)):MT szR (IB IMinus (Reg szR) (ConstI 1)):L l:MJ (IRel IGt (Reg i) (Reg szR)) endL:step++[J l, L endL]
-eval (Id F (FoldOfZip seed op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr, ALit ty qs])) acc | f1 ty = do
+eval (Id F (FoldOfZip seed op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, ALit ty qs])) acc | f1 ty = do
     x <- newITemp
     i <- newITemp
     y <- newFTemp

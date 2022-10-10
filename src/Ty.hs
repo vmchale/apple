@@ -19,7 +19,7 @@ import           Control.Monad.Except       (liftEither, throwError)
 import           Control.Monad.State.Strict (StateT (runStateT), gets, modify)
 import           Data.Bifunctor             (first, second)
 import           Data.Containers.ListUtils  (nubOrd)
-import           Data.Foldable              (fold, traverse_)
+import           Data.Foldable              (traverse_)
 import           Data.Functor               (void, ($>))
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
@@ -29,7 +29,7 @@ import qualified Data.Text                  as T
 import           Data.Typeable              (Typeable)
 import           GHC.Generics               (Generic)
 import           Name
-import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, tupled, vsep, (<+>))
+import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Ty.Clone
 import           U
@@ -108,7 +108,7 @@ mI :: I a -> I a -> Either (TyE b) (Subst a)
 mI (Ix _ i) (Ix _ j) | i == j = Right mempty
 mI (IVar _ (Name _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
-mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j'
+mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
 
 mSh :: Sh a -> Sh a -> Either (TyE b) (Subst a)
 mSh (SVar (Name _ (U i) _)) sh = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
@@ -161,18 +161,18 @@ aT s (Arrow t₁ t₂) = Arrow (aT s t₁) (aT s t₂)
 aT s@(Subst ts is ss) ty'@(TVar n) =
     let u = unU $ unique n in
     case IM.lookup u ts of
-        Just ty@TVar{}   -> aT (Subst (IM.delete u ts) is ss) ty
-        Just ty@(Ρ nr _) -> aT (Subst (IM.delete u ts) is ss) ty
-        Just ty          -> aT s ty
-        Nothing          -> ty'
+        Just ty@TVar{} -> aT (Subst (IM.delete u ts) is ss) ty
+        Just ty@Ρ{}    -> aT (Subst (IM.delete u ts) is ss) ty
+        Just ty        -> aT s ty
+        Nothing        -> ty'
 aT s (P ts) = P (aT s <$> ts)
-aT s@(Subst ts is ss) ty'@(Ρ n rs) =
+aT s@(Subst ts is ss) (Ρ n rs) =
     let u = unU (unique n) in
     case IM.lookup u ts of
-        Just ty@(Ρ n' _) -> aT (Subst (IM.delete u ts) is ss) ty
-        Just ty@TVar{}   -> undefined
-        Just ty          -> aT s ty
-        Nothing          -> Ρ n (aT s<$>rs)
+        Just ty@Ρ{}    -> aT (Subst (IM.delete u ts) is ss) ty
+        Just ty@TVar{} -> undefined
+        Just ty        -> aT s ty
+        Nothing        -> Ρ n (aT s<$>rs)
 aT _ ty = ty
 
 runTyM :: Int -> TyM a b -> Either (TyE a) (b, Int)
@@ -251,7 +251,7 @@ mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mguPrep l s t0 t1 =
     let t0' = aT s t0
         t1' = aT s t1
-    in mgu l s (rwArr t0') (rwArr t1')
+    in mgu l s ({-# SCC "rwArr" #-} rwArr t0') ({-# SCC "rwArr" #-} rwArr t1')
 
 occSh :: Sh a -> IS.IntSet
 occSh (SVar (Name _ (U i) _)) = IS.singleton i
@@ -305,7 +305,7 @@ mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (
                                      | otherwise = Left$UF lϵ e t t'
 mgu l s t@P{} t'@Ρ{} = mgu l s t' t
 mgu l s (Ρ n rs) (Ρ n' rs') = do
-    rss <- tS (\s (t0,t1) -> mguPrep l s t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
+    rss <- tS (\sϵ (t0,t1) -> mguPrep l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     pure $ mapTySubst (IM.insert (unU$unique n) (Ρ n' (rs<>rs'))) rss
 
 zS _ s [] _           = pure s
@@ -443,8 +443,8 @@ tyB _ Succ = do
 tyB _ (TAt i) = do
     ρ <- freshName "ρ" ()
     a <- freshName "a" ()
-    let aT = TVar a
-    pure (Arrow (Ρ ρ (IM.singleton i aT)) aT, mempty)
+    let aV = TVar a
+    pure (Arrow (Ρ ρ (IM.singleton i aV)) aV, mempty)
 tyB _ (Map n) = do
     -- for n the shape is i1,i2,...in `Cons` Nil (this forces it to have
     -- enough indices)
@@ -454,6 +454,7 @@ tyB _ (Map n) = do
         a' = TVar a; b' = TVar b
         fTy = Arrow a' b'
         gTy = Arrow (Arr arrSh a') (Arr arrSh b')
+    -- depends on Arr nil a = a, Arr (i+j) a = Arr i (Arr j sh)
     pure (Arrow fTy gTy, mempty)
 tyB _ Zip = do
     i <- freshName "i" ()

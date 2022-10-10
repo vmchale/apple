@@ -36,6 +36,7 @@ import           Foreign.Ptr                (FunPtr)
 import           GHC.Generics               (Generic)
 import           I
 import           IR
+import           IR.Alloc
 import           IR.Trans
 import           L
 import           LI
@@ -81,7 +82,7 @@ x86 :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()] -- TODO: 
 x86 = fmap (optX86 . X86.allocFrame . intervals . reconstruct . X86.mkControlFlow . (\(x, st) -> irToX86 st x)) . ir
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
-ir = fmap writeC . opt
+ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t s,r)
 
 opt :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
 opt bsl =

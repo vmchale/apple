@@ -52,19 +52,43 @@ addControlFlow (MJ e l:stmts) = do
 addControlFlow (stmt:stmts) = do
     { i <- getFresh
     ; (f, stmts') <- next stmts
-    ; pure ((stmt, ControlAnn i (f []) (uses stmt) (defs stmt) IS.empty IS.empty):stmts')
+    ; pure ((stmt, ControlAnn i (f []) (uses stmt) IS.empty (defs stmt) IS.empty):stmts')
     }
 
 uE :: Exp -> IS.IntSet
-uE (EAt (AP _ _ (Just m))) = IS.singleton m
+uE (EAt (AP _ Nothing (Just m)))  = IS.singleton m
+uE (EAt (AP _ (Just e) (Just m))) = IS.insert m$uE e
+uE (EAt (AP _ Nothing Nothing))   = IS.empty
+uE (EAt (AP _ (Just e) Nothing))  = uE e
+uE (IRel _ e0 e1)                 = uE e0<>uE e1
+uE Reg{}                          = IS.empty
+uE ConstI{}                       = IS.empty
+uE (IB _ e0 e1)                   = uE e0<>uE e1
+uE e                              = error(show e)
+
+uF :: FExp -> IS.IntSet
+uF (FAt (AP _ Nothing (Just m)))  = IS.singleton m
+uF (FAt (AP _ (Just e) (Just m))) = IS.insert m$uE e
+uF (FAt (AP _ (Just e) Nothing))  = uE e
+uF (FAt (AP _ Nothing Nothing))   = IS.empty
+uF ConstF{}                       = IS.empty
+uF FReg{}                         = IS.empty
+uF (FU _ e)                       = uF e
+uF (FConv e)                      = uE e
+uF (FB _ e0 e1)                   = uF e0<>uF e1
 
 uses :: Stmt -> IS.IntSet
-uses L{}      = IS.empty
-uses (Ma _ e) = uE e
+uses L{}                              = IS.empty
+uses (Ma _ _ e)                       = uE e
+uses (MX _ e)                         = uF e
+uses (MT _ e)                         = uE e
+uses (Wr (AP _ Nothing (Just m)) e)   = IS.insert m$uE e
+uses (Wr (AP _ (Just eϵ) (Just m)) e) = IS.insert m$uE eϵ<>uE e
+uses (RA l)                           = IS.singleton l
 
 defs :: Stmt -> IS.IntSet
-defs L{} = IS.empty
--- defs (Ma t _) = IS.singleton t
+defs (Ma a _ _) = IS.singleton a
+defs _          = IS.empty
 
 next :: [Stmt] -> FreshM ([Int] -> [Int], [(Stmt, ControlAnn)])
 next stmts = do

@@ -37,7 +37,7 @@ library
         Asm.X86.Byte
         Prettyprinter.Ext
 
-    build-tool-depends: alex:alex, happy:happy, hsc2hs:hsc2hs, c2hs:c2hs
+    build-tool-depends: alex:alex, happy:happy, hsc2hs:hsc2hs
     hs-source-dirs:     src
     other-modules:
         CF
@@ -204,7 +204,7 @@ executable arepl
     hs-source-dirs:   run
 
     default-language: Haskell2010
-    ghc-options:      -Wall
+    ghc-options:      -Wall -Wno-missing-signatures
     build-depends:
         base,
         apple,

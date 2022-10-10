@@ -4,6 +4,7 @@ module Asm.G ( build, mkWorklist, assign ) where
 import           CF
 import           Control.Monad.State.Strict (State)
 import qualified Data.Array                 as A
+import           Data.Containers.ListUtils
 import           Data.Copointed
 import Data.Tuple.Extra (fst3, snd3, thd3)
 import Data.Containers.ListUtils
@@ -11,6 +12,7 @@ import           Data.Graph                 (Bounds, Edge, Graph, Vertex, buildG
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import qualified Data.Set                   as S
+import           Data.Tuple.Extra
 
 
 -- move list: map from abstract registers (def ∪ used) to nodes

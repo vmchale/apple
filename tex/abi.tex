@@ -1,0 +1,33 @@
+\documentclass{report}
+
+\usepackage{amsmath}
+\usepackage{bytefield}
+\usepackage{hyperref}
+
+\begin{document}
+
+\title{Apple Array System ABI}
+\author{V. E. McHale}
+\maketitle
+
+\tableofcontents
+
+\section{Arrays}
+
+As an example, a {\tt 2x3} Apple array is laid out in memory like so:
+
+\begin{bytefield}{10}
+    \\
+    \bitheader{0-8} \\
+    \bitbox{1}{1} & \bitbox{2}{2 3} & \bitbox{3}{$a_{0i}$} & \bitbox{3}{$a_{1i}$}
+\end{bytefield}
+
+That is, rows are contiguous in memory.
+
+Rank and dimensions are all 64-bit integers.
+
+\section{Tuples}
+
+Tuples are stack-allocated when it is not possible to pass them in registers. A tuple with an array as one of its elements is not flat but rather contains a pointer to the array.
+
+\end{document}

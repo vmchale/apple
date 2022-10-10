@@ -69,8 +69,8 @@ data Stmt = L Label
           | J Label
           | MT Temp Exp
           | MX Temp FExp -- move targeting xmm0, etc.
-          | Ma Temp Exp -- size
-          | Free Temp
+          | Ma Int Temp Exp -- label, register, size
+          | Free Temp | RA !Int -- "return array" no-op (takes label)
           | Wr AE Exp
           | WrF AE FExp
           | Cmov Exp Temp Exp
@@ -84,8 +84,10 @@ instance Pretty Stmt where
     pretty (J l)        = parens ("j" <+> prettyLabel l)
     pretty (Wr p e)     = parens ("write" <+> pretty p <+> pretty e)
     pretty (WrF p e)    = parens ("write" <+> pretty p <+> pretty e)
-    pretty (Ma t e)     = parens ("malloc" <+> pretty t <+> ":" <+> pretty e)
+    pretty (Ma _ t e)   = parens ("malloc" <+> pretty t <+> ":" <+> pretty e)
+    pretty (Free t)     = parens ("free" <+> pretty t)
     pretty (Cmov p t e) = parens ("cmov" <+> pretty p <+> pretty t <+> pretty e)
+    pretty RA{}         = parens "return-array"
 
 instance Show Stmt where show = show . pretty
 

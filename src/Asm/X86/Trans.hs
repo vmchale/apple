@@ -79,7 +79,8 @@ ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = p
 ir (IR.J l)                                             = pure [J () l]
 -- see https://www.agner.org/optimize/optimizing_assembly.pdf, p. 125
 ir (IR.MX t e)                                          = feval e t
-ir (IR.Ma t e)                                          = do
+ir IR.RA{}                                              = pure[]
+ir (IR.Ma _ t e)                                        = do
     plE <- evalE e IR.C0
     pure $ plE ++ [Call () Malloc, MovRR () (absReg t) CRet]
 ir (IR.Wr (IR.AP m Nothing _) (IR.ConstI i)) | Just i32 <- mi32 i = pure [MovAI32 () (R$absReg m) i32]
