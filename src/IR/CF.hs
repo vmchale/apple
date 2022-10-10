@@ -78,14 +78,25 @@ uF (FConv e)                      = uE e
 uF (FB _ e0 e1)                   = uF e0<>uF e1
 
 uses :: Stmt -> IS.IntSet
-uses L{}                              = IS.empty
-uses (Ma _ _ e)                       = uE e
-uses (MX _ e)                         = uF e
-uses (MT _ e)                         = uE e
-uses (Wr (AP _ Nothing (Just m)) e)   = IS.insert m$uE e
-uses (Wr (AP _ (Just eϵ) (Just m)) e) = IS.insert m$uE eϵ<>uE e
-uses (RA l)                           = IS.singleton l
-uses (Cmov e0 _ e1)                   = uE e0<>uE e1
+uses L{}                               = IS.empty
+uses J{}                               = IS.empty
+uses (Ma _ _ e)                        = uE e
+uses (MX _ e)                          = uF e
+uses (MT _ e)                          = uE e
+uses (Wr (AP _ Nothing (Just m)) e)    = IS.insert m$uE e
+uses (Wr (AP _ Nothing Nothing) e)     = uE e
+uses (Wr (AP _ (Just eϵ) (Just m)) e)  = IS.insert m$uE eϵ<>uE e
+uses (Wr (AP _ (Just eϵ) Nothing) e)   = uE eϵ<>uE e
+uses (RA l)                            = IS.singleton l
+uses (Cmov e0 _ e1)                    = uE e0<>uE e1
+uses (Sa _ e)                          = uE e
+uses (WrF (AP _ Nothing (Just m)) e)   = IS.insert m$uF e
+uses (WrF (AP _ Nothing Nothing) e)    = uF e
+uses (WrF (AP _ (Just eϵ) (Just m)) e) = IS.insert m$uE eϵ<>uF e
+uses (WrF (AP _ (Just eϵ) Nothing) e)  = uE eϵ<>uF e
+uses (MJ e _)                          = uE e
+uses (Cpy _ _ e)                       = uE e
+uses (Pop e)                           = uE e
 
 defs :: Stmt -> IS.IntSet
 defs (Ma a _ _) = IS.singleton a

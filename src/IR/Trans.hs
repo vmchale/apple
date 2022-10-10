@@ -5,12 +5,10 @@ module IR.Trans ( writeC
 
 import           A
 import           Control.Monad.State.Strict (State, gets, modify, runState)
-import           Data.Bifunctor             (second)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
-import           Debug.Trace
 import           IR
 import           Name
 import           U
@@ -199,6 +197,23 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     let putN = MT n (IB IR.IDiv (IB IMinus (Reg endR) (Reg startR)) (Reg incrR))
     let loop = [MJ (IRel IGt (Reg startR) (Reg endR)) endL, Wr (AP t (Just (Reg i)) (Just a)) (Reg startR), MT startR (IB IPlus (Reg startR) (Reg incrR)), MT i (IB IPlus (Reg i) (ConstI 8))]
     pure (Just a, putStart++putEnd++putIncr++putN:Ma a t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (Reg n):MT i (ConstI 16):L l:loop ++ [J l, L endL])
+aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy = do
+    a <- nextArr
+    arrP <- newITemp
+    slopP <- newITemp
+    szR <- newITemp
+    fR <- newFTemp
+    (arrL, putX) <- aeval arr arrP
+    -- cause f1 (skip rank)
+    let sz = EAt (AP arrP (Just (ConstI 8)) arrL)
+        nIr = ConstI (16+fromIntegral n*8)
+    iR <- newITemp
+    l <- newLabel
+    endL <- newLabel
+    -- return value is of type F
+    (_, ss) <- writeF op [(Nothing, slopP)] fR
+    let loop = Cpy (AP slopP (Just (ConstI 16)) Nothing) (AP arrP (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) arrL) (ConstI $ fromIntegral n + 2):ss++[WrF (AP t (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) arrL) (FReg fR)]
+    pure (Just a, putX++MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI (24-8*fromIntegral n))):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (IB IMinus (Reg szR) (ConstI $ fromIntegral n - 1)):Sa slopP nIr:Wr (AP slopP Nothing Nothing) (ConstI 1):Wr (AP slopP (Just (ConstI 8)) Nothing) (ConstI $ fromIntegral n):MT iR (ConstI 0):L l:MJ (IRel IGeq (Reg iR) (Reg szR)) endL:loop++[MT iR (IB IPlus (Reg iR) (ConstI 1)), J l, L endL, Pop nIr])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> IRM [Stmt]
@@ -404,10 +419,10 @@ eval (EApp F (EApp _ (Builtin _ Exp) (FLit _ x)) e) t = do
     pure $ plE ++ [MX t (FB FExp (ConstF x) (FReg f))]
 eval (EApp F (EApp _ (Builtin _ Exp) e0) e1) t = do
     f0 <- newFTemp
-    f1 <- newFTemp
+    f1ϵ <- newFTemp
     plE0 <- eval e0 f0
-    plE1 <- eval e1 f1
-    pure $ plE0 ++ plE1 ++ [MX t (FB FExp (FReg f0) (FReg f1))]
+    plE1 <- eval e1 f1ϵ
+    pure $ plE0 ++ plE1 ++ [MX t (FB FExp (FReg f0) (FReg f1ϵ))]
 eval (EApp F (EApp _ (Builtin _ IntExp) x) n) t = do
     i <- newITemp
     nR <- newITemp
@@ -550,6 +565,16 @@ eval (EApp I (EApp _ (Builtin _ Max) e0) e1) t = do
     plE0 <- eval e0 e0R
     plE1 <- eval e1 e1R
     pure $ plE0 ++ plE1 ++ [MT t (Reg e1R), Cmov (IRel IGt (Reg e0R) (Reg e1R)) t (Reg e0R)]
+eval (EApp F (Builtin _ Head) arr) t | f1 (eAnn arr) = do
+    r <- newITemp
+    (mL, plArr) <- aeval arr r
+    -- rank 1
+    pure $ plArr ++ [MX t (FAt (AP r (Just $ ConstI 16) mL))]
+eval (EApp I (Builtin _ Head) arr) t | i1 (eAnn arr) = do
+    r <- newITemp
+    (mL, plArr) <- aeval arr r
+    -- rank 1
+    pure $ plArr ++ [MT t (EAt (AP r (Just $ ConstI 16) mL))]
 eval e _ = error (show e)
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m

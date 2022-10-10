@@ -96,7 +96,7 @@ loop = do
         Just (":ty":e)     -> tyExprR (unwords e) *> loop
         Just [":q"]        -> pure ()
         Just [":quit"]     -> pure ()
-        Just (":asm":e)    -> dumpAsm (unwords e) *> loop
+        Just (":asm":e)    -> dumpAsmL (unwords e) *> loop
         Just (":ann":e)    -> annR (unwords e) *> loop
         Just (":ir":e)     -> irR (unwords e) *> loop
         Just (":disasm":e) -> disasm (unwords e) *> loop
@@ -132,6 +132,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "⊲" "cons" "⊳" "snoc"
     , lOption "^:" "iterate" "%." "matmul"
     , lOption "⊗" "outer product" "|:" "transpose"
+    , lOption "{.?" "head" "{." "typesafe head"
     ]
 
 lOption op0 desc0 op1 desc1 =
@@ -159,8 +160,13 @@ irR s = case dumpIR (ubs s) of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right d  -> liftIO $ putDoc (d <> hardline)
 
-dumpAsm :: String -> Repl AlexPosn ()
-dumpAsm s = case dumpX86 (ubs s) of
+dumpAsmG :: String -> Repl AlexPosn ()
+dumpAsmG s = case dumpX86G (ubs s) of
+    Left err -> liftIO $ putDoc (pretty err <> hardline)
+    Right d  -> liftIO $ putDoc (d <> hardline)
+
+dumpAsmL :: String -> Repl AlexPosn ()
+dumpAsmL s = case dumpX86L (ubs s) of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right d  -> liftIO $ putDoc (d <> hardline)
 

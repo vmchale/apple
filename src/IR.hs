@@ -38,29 +38,27 @@ data Temp = ITemp !Int
           | F8Temp !Int -- ZMM0-ZMM31
           | F0 | F1 | F2 | F3 | F4 | F5
           | FRet | FRet1
-          | StackPointer
           deriving (Eq)
 
 instance Pretty Temp where
-    pretty (ITemp i)    = "r_" <> pretty i
-    pretty (ATemp i)    = "a_" <> pretty i
-    pretty C0           = "r_arg0"
-    pretty C1           = "r_arg1"
-    pretty C2           = "r_arg2"
-    pretty C3           = "r_arg3"
-    pretty C4           = "r_arg4"
-    pretty C5           = "r_arg5"
-    pretty CRet         = "r_ret"
-    pretty (FTemp i)    = "f_" <> pretty i
-    pretty F0           = "f_arg0"
-    pretty F1           = "f_arg1"
-    pretty F2           = "f_arg2"
-    pretty F3           = "f_arg3"
-    pretty F4           = "f_arg4"
-    pretty F5           = "f_arg5"
-    pretty FRet         = "f_ret"
-    pretty FRet1        = "f_ret1"
-    pretty StackPointer = "stack_pointer"
+    pretty (ITemp i) = "r_" <> pretty i
+    pretty (ATemp i) = "a_" <> pretty i
+    pretty C0        = "r_arg0"
+    pretty C1        = "r_arg1"
+    pretty C2        = "r_arg2"
+    pretty C3        = "r_arg3"
+    pretty C4        = "r_arg4"
+    pretty C5        = "r_arg5"
+    pretty CRet      = "r_ret"
+    pretty (FTemp i) = "f_" <> pretty i
+    pretty F0        = "f_arg0"
+    pretty F1        = "f_arg1"
+    pretty F2        = "f_arg2"
+    pretty F3        = "f_arg3"
+    pretty F4        = "f_arg4"
+    pretty F5        = "f_arg5"
+    pretty FRet      = "f_ret"
+    pretty FRet1     = "f_ret1"
 
 instance Show Temp where show = show . pretty
 
@@ -74,6 +72,9 @@ data Stmt = L Label
           | Wr AE Exp
           | WrF AE FExp
           | Cmov Exp Temp Exp
+          | Sa Temp Exp -- register, size
+          | Pop Exp -- pop salloc
+          | Cpy AE AE Exp -- bytes
           -- TODO: ccall?
 
 instance Pretty Stmt where
@@ -88,6 +89,9 @@ instance Pretty Stmt where
     pretty (Free t)     = parens ("free" <+> pretty t)
     pretty (Cmov p t e) = parens ("cmov" <+> pretty p <+> pretty t <+> pretty e)
     pretty RA{}         = parens "return-array"
+    pretty (Sa t e)     = parens ("salloc" <+> pretty t <+> ":" <+> pretty e)
+    pretty (Pop e)      = parens ("spop" <+> pretty e)
+    pretty (Cpy p p' e) = parens ("cpy" <+> pretty p <> "," <+> pretty p' <+> pretty e)
 
 instance Show Stmt where show = show . pretty
 

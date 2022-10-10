@@ -76,6 +76,7 @@ instance Pretty (Sh a) where
     pretty (Cons i sh) = pretty i <+> "`Cons`" <+> pretty sh
     pretty Nil         = "Nil"
     pretty (Cat s s')  = pretty s <+> "⧺" <+> pretty s'
+    pretty (Rev s)     = "rev" <> parens (pretty s)
 
 data T a = Arr (Sh a) (T a)
          | F -- | double
@@ -137,6 +138,8 @@ instance Pretty Builtin where
     pretty Gen       = "gen."
     pretty Last      = "}."
     pretty LastM     = "}.?"
+    pretty Head      = "{."
+    pretty HeadM     = "{.?"
     pretty ConsE     = "⊲"
     pretty Snoc      = "⊳"
     pretty Mul       = "%."
@@ -159,7 +162,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
-             | Mul | Outer | R
+             | Mul | Outer | R | Head | HeadM
              -- sin/cos &c.
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?

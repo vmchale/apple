@@ -14,16 +14,15 @@ import qualified IR
 type WM = State IR.WSt
 
 absReg :: IR.Temp -> AbsReg
-absReg (IR.ITemp i)    = IReg i
-absReg (IR.ATemp i)    = IReg i
-absReg IR.C0           = CArg0
-absReg IR.C1           = CArg1
-absReg IR.C2           = CArg2
-absReg IR.C3           = CArg3
-absReg IR.C4           = CArg4
-absReg IR.C5           = CArg5
-absReg IR.CRet         = CRet
-absReg IR.StackPointer = SP
+absReg (IR.ITemp i) = IReg i
+absReg (IR.ATemp i) = IReg i
+absReg IR.C0        = CArg0
+absReg IR.C1        = CArg1
+absReg IR.C2        = CArg2
+absReg IR.C3        = CArg3
+absReg IR.C4        = CArg4
+absReg IR.C5        = CArg5
+absReg IR.CRet      = CRet
 
 fabsReg :: IR.Temp -> FAbsReg
 fabsReg (IR.FTemp i) = FReg i
@@ -44,6 +43,9 @@ irToX86 st = flip evalState st . foldMapA ir
 
 nextI :: WM Int
 nextI = do { i <- gets (head.IR.wtemps); modify (\(IR.WSt l (_:t)) -> IR.WSt l t) $> i }
+
+nextL :: WM Label
+nextL = do { i <- gets (head.IR.wlabels); modify (\(IR.WSt (_:l) t) -> IR.WSt l t) $> i }
 
 nextR :: WM AbsReg
 nextR = IReg <$> nextI
@@ -66,6 +68,7 @@ ir (IR.MT t (IR.EAt (IR.AP m (Just (IR.ConstI i)) _))) | Just i8 <- mi8 i = pure
 ir (IR.MT t (IR.EAt (IR.AP m Nothing _)))               = pure [MovRA () (absReg t) (R$absReg m)]
 ir (IR.MX t (IR.FAt (IR.AP m Nothing _ )))              = pure [MovqXA () (fabsReg t) (R (absReg m))]
 ir (IR.MX t (IR.FAt (IR.AP m (Just (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3))) _))) = pure [MovqXA () (fabsReg t) (RS (absReg m) Eight (absReg i))]
+ir (IR.MX t (IR.FAt (IR.AP m (Just (IR.ConstI i)) _))) | Just i8 <- mi8 i = pure [MovqXA () (fabsReg t) (RC (absReg m) i8)]
 ir (IR.L l)                                             = pure [Label () l]
 ir (IR.MT t e)                                          = evalE e t
 ir (IR.MJ (IR.IRel IR.INeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [CmpRR () (absReg r0) (absReg r1), Jne () l]
@@ -88,10 +91,41 @@ ir (IR.Free t)                                          =
 ir (IR.Wr (IR.AP m Nothing _) (IR.ConstI i)) | Just i32 <- mi32 i = pure [MovAI32 () (R$absReg m) i32]
 ir (IR.Wr (IR.AP m Nothing _) (IR.Reg r))               = pure [MovAR () (R$absReg m) (absReg r)]
 ir (IR.Wr (IR.AP m (Just (IR.ConstI i)) _) (IR.Reg r)) | Just i8 <- mi8 i = pure [MovAR () (RC (absReg m) i8) (absReg r)]
+ir (IR.Wr (IR.AP m (Just (IR.ConstI i)) _) e) | Just i8 <- mi8 i = do
+    iT <- nextI
+    plE <- evalE e (IR.ITemp iT)
+    pure $ plE ++ [MovAR () (RC (absReg m) i8) (IReg iT)]
 ir (IR.Wr (IR.AP m (Just (IR.Reg ix)) _) (IR.Reg r))    = pure [MovAR () (RS (absReg m) One (absReg ix)) (absReg r)]
 ir (IR.Wr (IR.AP m (Just (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3))) _) (IR.Reg r)) = pure [MovAR () (RS (absReg m) Eight (absReg i)) (absReg r)]
 ir (IR.Wr (IR.AP m (Just (IR.IB IR.IPlus (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI j))) _) (IR.Reg r)) | Just i8 <- mi8 j = pure [MovAR () (RSD (absReg m) Eight (absReg i) i8) (absReg r)]
+ir (IR.WrF (IR.AP m (Just (IR.IB IR.IPlus (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _) (IR.FReg fr)) | Just d8 <- mi8 d = pure [MovqAX () (RSD (absReg m) Eight (absReg i) d8) (fabsReg fr)]
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) rD (IR.Reg rS)) = pure [CmpRR () (absReg r0) (absReg r1), Cmovnle () (absReg rD) (absReg rS)]
+ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just eI) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just sd8 <- mi8 sD = do
+    iT <- nextI
+    plE <- evalE (IR.IB IR.IPlus (IR.Reg tS) eI) (IR.ITemp iT)
+    i <- nextR
+    t <- nextR
+    l <- nextL
+    endL <- nextL
+    pure $ plE ++ [MovRI () i 0, Label () l, CmpRI () i (n32-1), Jg () endL, MovRA () t (RS (IReg iT) Eight i), MovAR () (RSD (absReg tD) Eight i sd8) t, IAddRI () i 1, J () l, Label () endL]
+ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just (IR.ConstI sI)) _) (IR.ConstI n)) | Just sd8 <- mi8 sD, Just si8 <- mi8 sI = do
+    i <- nextR
+    t <- nextR
+    l <- nextL
+    endL <- nextL
+    pure [MovRI () i (n-1), Label () l, CmpRI () i 0, Jl () endL, MovRA () t (RSD (absReg tS) Eight i si8), MovAR () (RSD (absReg tD) Eight i sd8) t, ISubRI () i 1, J () l, Label () endL]
+    -- FIXME: how do stack allocations work??
+    -- https://stackoverflow.com/a/26026415
+ir (IR.Sa t (IR.ConstI i))                              = pure [IAddRI () SP i, MovRR () (absReg t) SP]
+ir (IR.Sa t e)                                          = do
+    iT <- nextI
+    plE <- evalE e (IR.ITemp iT)
+    pure $ plE ++ [IAddRR () SP (IReg iT), MovRR () (absReg t) SP]
+ir (IR.Pop (IR.ConstI i))                               = pure [ISubRI () SP i]
+ir (IR.Pop e)                                           = do
+    iT <- nextI
+    plE <- evalE e (IR.ITemp iT)
+    pure $ plE ++ [ISubRR () SP (IReg iT)]
 ir s                                                    = error (show s)
 
 feval :: IR.FExp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
@@ -145,6 +179,7 @@ feval (IR.FU IR.FSqrt (IR.FReg r)) t =
 feval e _                                           = error (show e)
 
 evalE :: IR.Exp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
+evalE (IR.ConstI i) rD                               = pure [MovRI () (absReg rD) i]
 evalE (IR.IB IR.IMinus (IR.Reg r0) (IR.Reg r1)) rD   = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), ISubRR () rD' (absReg r1)]
 evalE (IR.IB IR.IPlus (IR.Reg r0) (IR.Reg r1)) rD    = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRR () rD' (absReg r1)]
 evalE (IR.IB IR.IPlus (IR.Reg r0) (IR.ConstI i)) rD  = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRI () rD' i]
@@ -162,6 +197,11 @@ evalE (IR.IB IR.IMinus e (IR.Reg r)) rD              = do
     eR <- nextI
     plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (IReg eR), ISubRR () rD' (absReg r)]
+evalE (IR.IB IR.IPlus (IR.Reg r) e) rD               = do
+    let rD' = absReg rD
+    eR <- nextI
+    plE <- evalE e (IR.ITemp eR)
+    pure $ plE ++ [MovRR () rD' (absReg r), IAddRR () rD' (IReg eR)]
 evalE (IR.IB IR.IDiv e (IR.Reg r)) rD                = do
     let rD' = absReg rD
     eR <- nextI

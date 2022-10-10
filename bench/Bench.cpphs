@@ -57,7 +57,7 @@ main = do
                       , bench "bytes (gammaln)" $ nf bytes 𝛾
                       ]
                       -- TODO: thunks after type checking?
-                , env rfx86 $ \asm ->
+                , env rfx86L $ \asm ->
                   bgroup "asm"
                       [ bench "risingFactorial" $ nf assemble asm
                       ]
@@ -112,7 +112,7 @@ main = do
           gamma = BSL.readFile "test/examples/gammaln.🍏"
           tcdf = BSL.readFile "test/examples/tcdf.🍎"
           xor = BSL.readFile "test/examples/xor.🍎"
-          rfx86 = yeet . x86 <$> rf
+          rfx86L = yeet . x86L <$> rf
           files = (,,,,,) <$> erfSrc <*> expApple <*> tcdf <*> rf <*> xor <*> gamma
           erfParsed = parseRename <$> erfSrc
           erfTy = tyParse <$> erfSrc

@@ -185,9 +185,12 @@ mkIx ix (MovqXA _ _ (R R13):asms)             = mkIx (ix+6) asms
 mkIx ix (MovqXA _ r0 (R r1):asms) | fits r0 && fits r1 = mkIx (ix+4) asms
                                   | otherwise = mkIx (ix+5) asms
 mkIx ix (MovqAX _ (RC Rsp _) r1:asms) | fits r1 = mkIx (ix+6) asms
+mkIx ix (MovqAX _ (RSD b _ i _) r:asms) | fits r && fits b && fits i = mkIx (ix+6) asms
 mkIx ix (MovqXA _ _ (RS R13 _ _):asms)        = mkIx (ix+7) asms
+mkIx ix (MovqXA _ _ RSD{}:asms)               = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RS{}:asms)                = mkIx (ix+6) asms
 mkIx ix (MovqXA _ r0 (RC Rsp _):asms) | fits r0 = mkIx (ix+6) asms
+mkIx ix (MovqXA _ _ RC{}:asms)                = mkIx (ix+6) asms
 mkIx ix (Fldl2e{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fldln2{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fld1{}:asms)                         = mkIx (ix+2) asms
@@ -207,6 +210,7 @@ mkIx ix (Call{}:asms)                         = mkIx (ix+5) asms
 mkIx ix (MovAI32 _ R{} _:asms)                = mkIx (ix+7) asms
 mkIx ix (MovAR _ RC{} _:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ RS{}:asms)                 = mkIx (ix+4) asms
+mkIx ix (MovRA _ _ RSD{}:asms)                = mkIx (ix+5) asms
 mkIx ix (MovAR _ RSD{} _:asms)                = mkIx (ix+5) asms
 mkIx ix (MovAR _ RS{} _:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovAR _ R{} _:asms)                  = mkIx (ix+3) asms
@@ -287,15 +291,16 @@ asm ix st (MovqAX _ (RC r0@Rsp i8) r1:asms) | fits r1 =
         sib = b0 `shiftL` 3 .|. b0
         instr = 0x66:0x0f:0xd6:modB:sib:le i8
     in instr++asm (ix+6) st asms
-asm ix st (MovqXA _ r (RS R13 s ri):asms) =
-    let (e, b) = modRM r
-        (eb, bb) = modRM R13
-        (ei, bi) = modRM ri
-        modB = 1 `shiftL` 6 .|. b `shiftL` 3 .|. 4
-        rex = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
+asm ix st (MovqAX _ (RSD rb s ri d) r:asms) | fits r && fits rb && fits ri =
+    let (_, b) = modRM r
+        (_, bi) = modRM ri
+        (_, bb) = modRM rb
+        -- rex = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
+        modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
-        instr = 0x66:rex:0x0f:0x6e:modB:sib:le (0::Int8)
-    in instr++asm(ix+7) st asms
+        instr = 0x66:0x0f:0xd6:modB:sib:le d
+    in instr++asm (ix+6) st asms
+asm ix st (MovqXA l r (RS R13 s ri):asms) = asm ix st (MovqXA l r (RSD R13 s ri 0):asms)
 asm ix st (MovqXA _ r (RS rb s ri):asms) =
     let (e, b) = modRM r
         (eb, bb) = modRM rb
@@ -305,6 +310,15 @@ asm ix st (MovqXA _ r (RS rb s ri):asms) =
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = [0x66,rex,0x0f,0x6e,modB,sib]
     in instr++asm (ix+6) st asms
+asm ix st (MovqXA _ r (RSD rb s ri d):asms) =
+    let (e, b) = modRM r
+        (eb, bb) = modRM rb
+        (ei, bi) = modRM ri
+        modB = 1 `shiftL` 6 .|. b `shiftL` 3 .|. 4
+        rex = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
+        sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
+        instr = 0x66:rex:0x0f:0x6e:modB:sib:le d
+    in instr ++ asm (ix+7) st asms
 asm ix st (Movapd _ r0 r1:asms) | fits r0 && fits r1 =
     rrNoPre [0x66,0x0f,0x28] r1 r0 $ asm (ix+4) st asms
                                 | otherwise =
@@ -486,7 +500,16 @@ asm ix st (MovAR _ (RSD b s i i8) r:asms) =
         modRMB = 1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 4
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = pre:0x89:modRMB:sib:le i8
-    in instr++asm(ix+5) st asms
+    in instr ++ asm (ix+5) st asms
+asm ix st (MovRA _ r (RSD b s i i8):asms) =
+    let (eb, bb) = modRM b
+        (ei, bi) = modRM i
+        (e0, b0) = modRM r
+        pre = 0x48 .|. e0 `shiftL` 2 .|. ei `shiftL` 1 .|. eb
+        modRMB = 1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 4
+        sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
+        instr = pre:0x8b:modRMB:sib:le i8
+    in instr ++ asm (ix+5) st asms
 asm ix st (MovAR _ (R ar) r:asms) =
     mkAR [0x89] 0 ar r $ asm (ix+3) st asms
 asm ix st (MovRA _ r (R ar):asms) =

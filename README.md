@@ -29,9 +29,10 @@ have a family of functors `('n)`
 
 <!-- rank is "bottom-up" -->
 
-## Linear Memory Allocation
+## Static Memory Allocation
 
-Rather than calling `malloc` to create a new array, arrays
+Because there are no references and conditionals are rare, memory
+allocations/frees are inserted up-front.
 
 <!-- reuse analysis -->
 <!-- no gc etc., comes from array &c. -->

@@ -62,6 +62,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     conv { TokSym $$ L.Conv }
     last { TokSym $$ L.Last }
     lastM { TokSym $$ L.LastM }
+    head { TokSym $$ L.Head }
+    headM { TokSym $$ L.HeadM }
     do { TokSym $$ Do }
     tensor { TokSym $$ Tensor }
 
@@ -211,14 +213,11 @@ E :: { E AlexPosn }
   | lam name dot E { A.Lam $1 $2 $4 }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
   | lsqbracket E rsqbracket { Dfn $1 $2 }
-  | frange { Builtin $1 FRange }
-  | iota { Builtin $1 IRange }
-  | floor { Builtin $1 Floor }
+  | frange { Builtin $1 FRange } | iota { Builtin $1 IRange }
+  | floor { Builtin $1 Floor } | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
   | underscore { Builtin $1 Neg }
-  | sqrt { Builtin $1 Sqrt }
   | gen { Builtin $1 Gen }
   | colon { Builtin $1 Size }
-  | log { Builtin $1 Log }
   | i { Builtin $1 ItoF }
   | t { Builtin $1 Dim }
   | E fold intLit E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 (A.Fold (fromInteger $ int $3))) $1) $4) $5 }
@@ -226,11 +225,10 @@ E :: { E AlexPosn }
   | E scan E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 Scan) $1) $3) $4 }
   | E zip E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Zip) $1) $3) $4 }
   | E E { EApp (eAnn $1) $1 $2 }
-  | x { ResVar $1 X }
-  | y { ResVar $1 Y }
+  | x { ResVar $1 X } | y { ResVar $1 Y }
   | f { Builtin $1 Fib }
-  | last { Builtin $1 A.Last }
-  | lastM { Builtin $1 A.LastM }
+  | last { Builtin $1 A.Last } | lastM { Builtin $1 A.LastM }
+  | head { Builtin $1 A.Head } | headM { Builtin $1 A.HeadM }
   | re { Builtin $1 Re }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 (void $3) }

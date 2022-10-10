@@ -12,7 +12,7 @@ import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           Hs.FFI
 import           Math.Hypergeometric   (erf, hypergeometric, ncdf)
-import           Math.SpecialFunction  (gammaln)
+import           Math.SpecialFunction  (gammaln, tcdf)
 import           P
 import           Test.Tasty
 import           Test.Tasty.HUnit
@@ -61,30 +61,33 @@ tyT = testGroup "Type system"
 x64T :: TestTree
 x64T = testGroup "x64"
     [ rfTest
-    , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
-    , testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
-    , testCase "f11" $ do { res <- f11 1 ; res @?= hypergeometric [1] [3/2] 1 }
-    , testCase "erf" $ do { res <- erfJit 1 ; res .?= erf 1 }
-    , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
-    , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
     , testCase "entropy" $ do { res <- jitEntropy [0.25, 0.25, 0.5] ; res @?= hsEntropy [0.25, 0.25, 0.5] }
-    , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
-    , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
-    , testCase "gammaln" $ do { res <- gammaJit 1.5 ; res @?= gammaln 1.5 }
     , testCase "avg" $ do { res <- fpAf "test/examples/avg.🍎" [1,2,3] ; res @?= 2 }
-    , testCase "twoSum" $ do { res <- fpAaf "test/data/twoSum.🍎" [1,2,3] [2,4,5] ; res @?= 17 }
+    , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
+    , testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
+    , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
+    , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
+    , testCase "gammaln" $ do { res <- gammaJit 1.5 ; res @?= gammaln 1.5 }
     , testCase "dotprod" $ do { res <- fpAaf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
     , testCase "euclidean" $ do { res <- fpAaf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
+    , testCase "twoSum" $ do { res <- fpAaf "test/data/twoSum.🍎" [1,2,3] [2,4,5] ; res @?= 17 }
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
-    , testCase "map/alloc" $ do { res <- sSq 25 ; res @?= [ i^(2::Int) | i <- [0..25] ] }
-    , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
+    , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
+    , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
+    , testCase "erf" $ do { res <- erfJit 1 ; res .?= erf 1 }
+    , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
+    , testCase "f11" $ do { res <- f11 1 ; res @?= hypergeometric [1] [3/2] 1 }
+    , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int,6,1] ; res @?= [0::Int,4,6,6] }
+    , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
+    , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
     , testCase "scan" $ do { res <- scan 5 ; res @?= [0,1,3,6,10] }
-    , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4,6,1] ; res @?= [0,4,6,6] }
-    , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res @?= 5040 }
-    , testCase "stirling" $ do { res <- fpFf "test/examples/stirling.🍏" 10 ; res @?= 3628800 }
-    , testCase "continuedFraction" $ do { res <- fpAf "test/examples/continuedFraction.🍎" (replicate 4 8 ++ [4]); res .?= sqrt 17 }
-    , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 4 8); res .?= sqrt 17 }
+    , testCase "tcdf" $ do { res <- fpFff "test/examples/tcdf.🍎" 12 2 ; res @?= tcdf 12 2 }
+    , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
+    , testCase "map/alloc" $ do { res <- sSq 25 ; res @?= [ i^(2::Int) | i <- [0..25] ] }
     ]
+
+(≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
+x ≈ y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-4&&(y-x)/y<1e-4)
 
 scan i = do
     f <- ia <$> funP "[(+) /\\ 0 (irange 1 x 1)]"
@@ -95,19 +98,22 @@ sSq i = do
     asI (f i)
 
 asI :: Ptr (Apple Int) -> IO [Int]
-asI = fmap (\(AA _ _ xs) -> xs) . peek
+asI = asN
+
+asN :: Storable a => Ptr (Apple a) -> IO [a]
+asN = fmap (\(AA _ _ xs) -> xs) . peek
 
 aaFp fp xs =
     let xA = AA 1 [fromIntegral(length xs)] xs in
     wA xA $ \p -> do
         f <- fmap aa . funP =<< BSL.readFile fp
-        asI (f p)
+        asN (f p)
 
 tyS :: BSL.ByteString -> TestTree
 tyS s = testCase "(expr)" $
     case tyExpr s of
         Left err -> assertFailure(show err)
-        Right{} -> assertBool "passed" True
+        Right{}  -> assertBool "passed" True
 
 tyF :: FilePath -> TestTree
 tyF fp = testCase fp $ do
@@ -177,6 +183,11 @@ fpFf fp x = do
     f <- funP =<< BSL.readFile fp
     pure $ ff f x
 
+fpFff :: FilePath -> Double -> Double -> IO Double
+fpFff fp x y = do
+    f <- funP =<< BSL.readFile fp
+    pure $ fff f x y
+
 gammaJit = fpFf "test/examples/gammaln.🍏"
 ncdfJit = fpFf "test/examples/ncdf.🍎"
 
@@ -205,7 +216,8 @@ foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Ap
 foreign import ccall "dynamic" faf :: FunPtr (Double -> Ptr (Apple a) -> Double) -> Double -> Ptr (Apple a) -> Double
 foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
+foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
 foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double
 foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> Int -> Int)
 foreign import ccall "dynamic" ia :: FunPtr (Int -> Ptr (Apple a)) -> Int -> Ptr (Apple a)
-foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> Ptr (Apple a)) -> Ptr (Apple a) -> Ptr (Apple a)
+foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b)) -> Ptr (Apple a) -> Ptr (Apple b)

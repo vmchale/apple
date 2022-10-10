@@ -130,6 +130,8 @@ tokens :-
         ⋊                        { mkSym MinS }
         "<."                     { mkSym MinS }
         ⨳                        { mkSym Conv }
+        "{."                     { mkSym Head }
+        "{.?"                    { mkSym HeadM }
         "}."                     { mkSym Last }
         "}.?"                    { mkSym LastM }
         ⊲                        { mkSym Cons }
@@ -232,7 +234,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
-         | Last | LastM | TSig | Cons | Snoc | Do | Tensor | Transp
+         | Last | LastM | TSig | Cons | Snoc | Do | Tensor | Transp | Head | HeadM
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -279,6 +281,8 @@ instance Pretty Sym where
     pretty (Access i)   = "->" <> pretty i
     pretty Last         = "}."
     pretty LastM        = "}.?"
+    pretty Head         = "{."
+    pretty HeadM        = "{.?"
     pretty Cons         = "⊲"
     pretty Snoc         = "⊳"
     pretty Do           = "^:"

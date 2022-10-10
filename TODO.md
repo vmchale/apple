@@ -52,6 +52,7 @@
 - [ ] Check that bindings are not too polymorphic
 - [ ] `LLet` should not contain functions, add a pass to check
 - [ ] print constraints
+- [ ] indexing with tuples (3-tuple for rank 3 array...)
 # Checks/Passes
 - [ ] Warn if irange or frange will exceed?
 - [ ] Sanity check pass to make sure xmm0 doesn't end up target of `movtemp` etc.

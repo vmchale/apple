@@ -226,6 +226,9 @@ mguI inp iix@(IVar l (Name _ (U i) _)) ix | i `IS.member` occI ix = Left $ OI l 
 mguI inp ix iix@(IVar l (Name _ (U i) _)) | i `IS.member` occI ix = Left$ OI l ix iix
                                           | otherwise = Right $ IM.insert i ix inp
 mguI inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguI inp i0 i1
+mguI inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguI inp i (Ix lk (j-k))
+                                                | otherwise = Left $ UI l i0 i1
+mguI inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguI inp i1 i0
 
 mgShPrep :: a -> Subst a -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mgShPrep l s sh0 sh1 =
@@ -371,6 +374,14 @@ tyB _ Last = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
     pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` Nil) a) a, mempty)
+tyB _ Head = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` Nil) a) a, mempty)
+tyB _ HeadM = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    pure (Arrow (Arr (i `Cons` Nil) a) a, mempty)
 tyB _ Re = do
     a <- TVar <$> freshName "a" ()
     n <- IEVar () <$> freshName "n" ()

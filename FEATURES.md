@@ -5,16 +5,17 @@
 - [ ] rank
 - [ ] convolve
 - [ ] transpose
+- [ ] concat
 ## Add Features
 - [ ] outer product
 - [ ] dyadic infix
 - [ ] successive application
 - [ ] matmul
+# Performance
+- [ ] lift constants out of loops
 # Allocations
-- [ ] insert `free`s
 - [ ] consolidate allocations up-front when possible (dim from types)
 # ABI
-- [ ] Figure out multidimensional arrays
-- [ ] Tuples (stack-allocate)
+- [ ] Tuples (stack-allocate) (induction)
 # Register Allocation
 - [ ] Finish graph-based allocator

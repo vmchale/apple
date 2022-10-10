@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Dbg ( dumpX86
+module Dbg ( dumpX86G
+           , dumpX86L
            , dumpX86Abs
            , dumpX86Liveness
            , dumpIR
@@ -38,7 +39,7 @@ import           Prettyprinter.Ext
 import           Ty
 
 pBIO :: BSL.ByteString -> IO (Either (Err AlexPosn) (Doc ann))
-pBIO = fmap (fmap pHex) . comm . fmap dbgFp . x86
+pBIO = fmap (fmap pHex) . comm . fmap dbgFp . x86L
     where comm :: Either a (IO b) -> IO (Either a b)
           comm (Left err) = pure(Left err)
           comm (Right x)  = Right <$> x
@@ -50,11 +51,12 @@ pHex :: BS.ByteString -> Doc ann
 pHex = prettyList . fmap (($"").showHex) . BS.unpack
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
-nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86
+nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86G
     where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
 
-dumpX86 :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86 = fmap prettyX86 . x86
+dumpX86G, dumpX86L :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86G = fmap prettyX86 . x86G
+dumpX86L = fmap prettyX86 . x86L
 
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Abs = fmap (prettyX86 . (\(x, st) -> irToX86 st x)) . ir

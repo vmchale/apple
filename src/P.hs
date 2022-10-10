@@ -10,7 +10,8 @@ module P ( Err (..)
          , parseRename
          , opt
          , ir
-         , x86
+         , x86G
+         , x86L
          , bytes
          , funP
          ) where
@@ -23,6 +24,7 @@ import qualified Asm.X86.Alloc              as X86
 import           Asm.X86.Byte
 import qualified Asm.X86.CF                 as X86
 import           Asm.X86.Opt
+import qualified Asm.X86.P                  as X86
 import           Asm.X86.Trans
 import           Control.DeepSeq            (NFData)
 import           Control.Exception          (Exception, throwIO)
@@ -73,13 +75,16 @@ tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
 tyOf = fmap (first eAnn.discard) . tyConstr where discard (x, y, _) = (x, y)
 
 funP :: BSL.ByteString -> IO (FunPtr a)
-funP = aFp <=< either throwIO pure . x86
+funP = aFp <=< either throwIO pure . x86L
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
-bytes = fmap assemble . x86
+bytes = fmap assemble . x86L
 
-x86 :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()] -- TODO: save/restore clobbered regs.
-x86 = fmap (optX86 . X86.allocFrame . intervals . reconstruct . X86.mkControlFlow . (\(x, st) -> irToX86 st x)) . ir
+x86L, x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
+x86G = walloc X86.galloc
+x86L = walloc (X86.allocFrame . intervals . reconstruct . X86.mkControlFlow)
+
+walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
 ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t s,r)
