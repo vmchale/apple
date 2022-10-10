@@ -485,6 +485,12 @@ tyB _ (Fold n) = do
     let sh = foldr Cons (SVar shV) (IVar () <$> ixList)
         a' = TVar a
     pure (Arrow (Arrow a' (Arrow a' a')) (Arrow a' (Arrow (Arr sh a') (Arr (SVar shV) a'))), mempty)
+tyB _ Foldl = do
+    ix <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    a <- TVar <$> freshName "a" ()
+    let sh1 = ix `Cons` sh
+    pure (Arrow (Arrow a (Arrow a a)) (Arrow a (Arrow (Arr sh1 a) (Arr sh a))), mempty)
 tyB _ Dim = do
     iV <- IVar () <$> freshName "i" ()
     shV <- SVar <$> freshName "sh" ()

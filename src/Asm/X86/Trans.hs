@@ -83,6 +83,8 @@ ir IR.RA{}                                              = pure[]
 ir (IR.Ma _ t e)                                        = do
     plE <- evalE e IR.C0
     pure $ plE ++ [Call () Malloc, MovRR () (absReg t) CRet]
+ir (IR.Free t)                                          =
+    pure [MovRR () CArg0 (absReg t), Call () Free]
 ir (IR.Wr (IR.AP m Nothing _) (IR.ConstI i)) | Just i32 <- mi32 i = pure [MovAI32 () (R$absReg m) i32]
 ir (IR.Wr (IR.AP m Nothing _) (IR.Reg r))               = pure [MovAR () (R$absReg m) (absReg r)]
 ir (IR.Wr (IR.AP m (Just (IR.ConstI i)) _) (IR.Reg r)) | Just i8 <- mi8 i = pure [MovAR () (RC (absReg m) i8) (absReg r)]

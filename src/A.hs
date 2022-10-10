@@ -155,7 +155,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Map !Int
              | Zip
              | Rank [(Int, Maybe [Int])]
-             | Fold !Int | Floor | ItoF | Iter
+             | Fold !Int | Foldl | Floor | ItoF | Iter
              | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
@@ -180,6 +180,7 @@ prettyTyped (ILit t n)                                               = parens (p
 prettyTyped (FLit t x)                                               = parens (pretty x <+> ":" <+> pretty t)
 prettyTyped (Lam _ n@(Name _ _ xt) e)                                = parens ("λ" <> parens (pretty n <+> ":" <+> pretty xt) <> "." <+> prettyTyped e)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ (Fold n)) e0) e1) e2) = parens (prettyTyped e0 <> "/" <> pretty n <+> prettyTyped e1 <+> prettyTyped e2)
+prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (prettyTyped e0 <> "/l" <+> prettyTyped e1 <+> prettyTyped e2)
 prettyTyped (EApp t (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (prettyTyped e1 <+> pretty e0 <> "⊗" <+> prettyTyped e2 <+> ":" <+> pretty t)
 prettyTyped (EApp _ e0 e1)                                           = parens (prettyTyped e0 <+> prettyTyped e1)
 prettyTyped (Let t (n, e) e')                                        = parens (braces (ptName n <+> "←" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
@@ -214,6 +215,7 @@ instance Pretty (E a) where
     pretty (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (pretty e0 <+> pretty op)
     pretty (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (pretty e0 <+> pretty op <+> pretty e1)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ (Fold n)) e0) e1) e2) = parens (pretty e0 <> "/" <> pretty n <+> pretty e1 <+> pretty e2)
+    pretty (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (Builtin _ (Map n)) e0) e1)              = parens (pretty e0 <> "'" <> pretty n <+> pretty e1)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Scan) e0) e1) e2)     = parens (pretty e0 <+> "Λ" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)

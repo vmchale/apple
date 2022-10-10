@@ -82,6 +82,8 @@ x64T = testGroup "x64"
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4,6,1] ; res @?= [0,4,6,6] }
     , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res @?= 5040 }
     , testCase "stirling" $ do { res <- fpFf "test/examples/stirling.🍏" 10 ; res @?= 3628800 }
+    , testCase "continuedFraction" $ do { res <- fpAf "test/examples/continuedFraction.🍎" (replicate 4 8 ++ [4]); res .?= sqrt 17 }
+    , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 4 8); res .?= sqrt 17 }
     ]
 
 scan i = do
@@ -128,6 +130,11 @@ jitEntropy = fpAf "test/examples/entropy.🍏"
 jitKl = fpAaf "test/examples/kl.🍎"
 jitB = fpAaf "test/examples/b.🍎"
 
+fpFaf :: FilePath -> Double -> [Double] -> IO Double
+fpFaf fp x ys = do
+    f <- bytesE <$> BSL.readFile fp
+    jitFaf f x ys
+
 fpAaf :: FilePath -> [Double] -> [Double] -> IO Double
 fpAaf fp xs ys = do
     f <- bytesE <$> BSL.readFile fp
@@ -140,6 +147,13 @@ jitAaf code xs ys =
     wA a $ \p -> wA b $ \q -> do
         (fp,_) <- bsFp code
         pure $ aaf fp p q
+
+jitFaf :: BS.ByteString -> Double -> [Double] -> IO Double
+jitFaf code x ys =
+    let a = AA 1 [fromIntegral (length ys)] ys in
+    wA a $ \p -> do
+        (fp,_) <- bsFp code
+        pure $ faf fp x p
 
 jitAf :: BS.ByteString -> [Double] -> IO Double
 jitAf code xs =
@@ -188,6 +202,7 @@ wA x act =
 bytesE = either throw id . bytes
 
 foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
+foreign import ccall "dynamic" faf :: FunPtr (Double -> Ptr (Apple a) -> Double) -> Double -> Ptr (Apple a) -> Double
 foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
 foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double

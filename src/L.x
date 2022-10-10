@@ -96,6 +96,7 @@ tokens :-
         "^"                      { mkSym Caret }
 
         "/"                      { mkSym Fold }
+        "/l"                     { mkSym Foldl }
         '                        { mkSym Quot }
         `$white*"{"              { mkSym LRank `andBegin` braces }
         `                        { mkSym Zip }
@@ -226,7 +227,7 @@ set_ust st = Alex (Right . (go &&& (const ())))
 
 alexEOF = EOF <$> get_pos
 
-data Sym = Plus | Minus | Fold | Percent | Times | Semicolon | Bind | Pow
+data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Pow
          | LSqBracket | RSqBracket | LBrace | RBrace | LParen | RParen | Lam
          | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
@@ -239,6 +240,7 @@ instance Pretty Sym where
     pretty Minus        = "-"
     pretty Percent      = "%"
     pretty Fold         = "/"
+    pretty Foldl        = "/l"
     pretty Pow          = "**"
     pretty Times        = "*"
     pretty Semicolon    = ";"

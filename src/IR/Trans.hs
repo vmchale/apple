@@ -458,9 +458,22 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) e) acc | f1 (eAnn e)
     l <- newLabel
     endL <- newLabel
     stepR <- writeRF op [acc, x] acc
-    let step = MX x (FAt (AP arrR (Just$IB IAsl (Reg i) (ConstI 3)) mI)):stepR ++ [MT i (IB IPlus (Reg i) (ConstI 1))] -- [MT arrR (IB IPlus (Reg arrR) (ConstI 8))]
+    let step = MX x (FAt (AP arrR (Just$IB IAsl (Reg i) (ConstI 3)) mI)):stepR ++ [MT i (IB IPlus (Reg i) (ConstI 1))]
     -- GHC uses 'length' but our szR needs to be one less
     pure $ plE ++ putAcc ++ MT i (ConstI 0):MT szR (EAt (AP eR (Just (ConstI 8)) mI)):MT arrR (IB IPlus (Reg eR) (ConstI 16)):MT szR (IB IMinus (Reg szR) (ConstI 1)):L l:MJ (IRel IGt (Reg i) (Reg szR)) endL:step++[J l, L endL]
+eval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | f1 (eAnn e) = do
+    x <- newFTemp
+    arrR <- newITemp
+    eR <- newITemp
+    i <- newITemp
+    (mI, plE) <- aeval e eR
+    putAcc <- eval seed acc
+    l <- newLabel
+    endL <- newLabel
+    stepR <- writeRF op [acc, x] acc
+    let step = MX x (FAt (AP arrR (Just$IB IAsl (Reg i) (ConstI 3)) mI)):stepR ++ [MT i (IB IMinus (Reg i) (ConstI 1))]
+    -- GHC uses 'length' but our szR needs to be one less
+    pure $ plE ++ putAcc ++ MT i (EAt (AP eR (Just (ConstI 8)) mI)):MT arrR (IB IPlus (Reg eR) (ConstI 16)):L l:MJ (IRel ILt (Reg i) (ConstI 0)) endL:step++[J l, L endL]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) e) acc | i1 (eAnn e) = do
     x <- newITemp
     arrR <- newITemp

@@ -79,6 +79,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     trans { TokSym $$ Transp }
 
     fold { TokSym $$ L.Fold }
+    foldl { TokSym $$ L.Foldl }
     quot { TokSym $$ Quot }
     zip { TokSym $$ L.Zip }
 
@@ -221,6 +222,7 @@ E :: { E AlexPosn }
   | i { Builtin $1 ItoF }
   | t { Builtin $1 Dim }
   | E fold intLit E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 (A.Fold (fromInteger $ int $3))) $1) $4) $5 }
+  | E foldl E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Foldl) $1) $3) $4 }
   | E scan E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 Scan) $1) $3) $4 }
   | E zip E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Zip) $1) $3) $4 }
   | E E { EApp (eAnn $1) $1 $2 }

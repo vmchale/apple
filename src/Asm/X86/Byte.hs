@@ -178,6 +178,7 @@ mkIx ix (Je{}:asms)                           = mkIx (ix+6) asms
 mkIx ix (Jg{}:asms)                           = mkIx (ix+6) asms
 mkIx ix (Jge{}:asms)                          = mkIx (ix+6) asms
 mkIx ix (Jl{}:asms)                           = mkIx (ix+6) asms
+mkIx ix (Jle{}:asms)                          = mkIx (ix+6) asms
 mkIx ix (J{}:asms)                            = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ RC{}:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovqXA _ _ (R R13):asms)             = mkIx (ix+6) asms
@@ -403,6 +404,10 @@ asm ix st (Jge _ l:asms) =
         instr = let offs = lIx-ix-6 in 0x0f:0x8d:cd (fromIntegral offs :: Int32)
     in (instr ++) $ asm (ix+6) st asms
 asm ix st (Jl _ l:asms) =
+    let lIx = get l st
+        instr = let offs = lIx-ix-6 in 0x0f:0x8c:cd (fromIntegral offs :: Int32)
+    in (instr ++) $ asm (ix+6) st asms
+asm ix st (Jle _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8e:cd (fromIntegral offs :: Int32)
     in (instr ++) $ asm (ix+6) st asms

@@ -1,1 +1,1 @@
-λa.λbs. [x+(1%y)]/1 a (bs::Arr (i `Cons` Nil) float)
+λas. [y+1%x]/1 0 (as::Arr (i `Cons` Nil) float)

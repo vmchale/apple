@@ -64,7 +64,7 @@ uE (IRel _ e0 e1)                 = uE e0<>uE e1
 uE Reg{}                          = IS.empty
 uE ConstI{}                       = IS.empty
 uE (IB _ e0 e1)                   = uE e0<>uE e1
-uE e                              = error(show e)
+uE (IRFloor e)                    = uF e
 
 uF :: FExp -> IS.IntSet
 uF (FAt (AP _ Nothing (Just m)))  = IS.singleton m
@@ -85,6 +85,7 @@ uses (MT _ e)                         = uE e
 uses (Wr (AP _ Nothing (Just m)) e)   = IS.insert m$uE e
 uses (Wr (AP _ (Just eϵ) (Just m)) e) = IS.insert m$uE eϵ<>uE e
 uses (RA l)                           = IS.singleton l
+uses (Cmov e0 _ e1)                   = uE e0<>uE e1
 
 defs :: Stmt -> IS.IntSet
 defs (Ma a _ _) = IS.singleton a

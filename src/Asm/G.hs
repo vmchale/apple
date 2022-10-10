@@ -6,13 +6,14 @@ import           Control.Monad.State.Strict (State)
 import qualified Data.Array                 as A
 import           Data.Containers.ListUtils
 import           Data.Copointed
-import Data.Tuple.Extra (fst3, snd3, thd3)
-import Data.Containers.ListUtils
 import           Data.Graph                 (Bounds, Edge, Graph, Vertex, buildG)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
+import Data.Semigroup ((<>))
+import Data.Semigroup ((<>))
 import qualified Data.Set                   as S
 import           Data.Tuple.Extra
+import           Data.Tuple.Extra           (fst3, snd3, thd3)
 
 
 -- move list: map from abstract registers (def ∪ used) to nodes
@@ -69,10 +70,10 @@ inc :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
 inc = IM.alter (\k -> case k of {Nothing -> Nothing;Just d -> Just$d+1})
 
 -- | To be called in reverse order
-build :: (Copointed p) 
+build :: (Copointed p)
       => IS.IntSet -- ^ Live-out for the block
-      -> St 
-      -> [p (ControlAnn, NLiveness, Maybe M)] 
+      -> St
+      -> [p (ControlAnn, NLiveness, Maybe M)]
       -> (IS.IntSet, St)
 build l st [] = (l, st)
 build l (St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =

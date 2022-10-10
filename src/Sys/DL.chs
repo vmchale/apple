@@ -7,6 +7,8 @@ import           Foreign.C.Types                       (CSize)
 import           Foreign.Ptr                           (FunPtr, IntPtr (..), Ptr, castFunPtrToPtr, ptrToIntPtr)
 import           System.Posix.DynamicLinker.ByteString (DL, RTLDFlags (RTLD_LAZY), dlclose, dlopen, dlsym)
 
+#include <gnu/lib-names.h>
+
 mem' :: IO (Int, Int)
 mem' = do {(m,f) <- mem; pure (g m, g f)}
     where g = (\(IntPtr i) -> i) . ptrToIntPtr . castFunPtrToPtr
@@ -17,4 +19,4 @@ mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; dlclose c$>(m, 
 ll p = dlopen p [RTLD_LAZY]
 
 libc :: IO DL
-libc = ll "libc.dylib"
+libc = ll {# const LIBC_SO #}

@@ -1,6 +1,6 @@
 module Asm.X86.G ( mI, mf ) where
 
-import Asm.X86
+import           Asm.X86
 
 -- | result: src, dest
 mI :: X86 reg freg a -> Maybe (reg, reg)
