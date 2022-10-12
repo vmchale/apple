@@ -1,13 +1,13 @@
 HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
 
-libapple.so: $(HS_SRC) include/apple.h
+libapple.dylib: $(HS_SRC) include/apple.h
 	cabal build flib:apple -w ghc-9.4
-	cp $$(cabal-plan list-bins | ja '{%/libapple.so/}{`2}') .
+	cp $$(cabal-plan list-bins | ja '{%/libapple.dylib/}{`2}') .
 
 moddeps.svg: $(HS_SRC)
 	graphmod -i src | dot -Tsvg -o $@
 
-install-lib: libapple.so
+install-lib: libapple.dylib
 	cp $^ /usr/local/lib
 
 install-py: libapple.so
@@ -21,5 +21,4 @@ install:
 
 clean:
 	make -C pyc clean
-	make -C vscode clean
-	rm -rf dist-newstyle tags moddeps.svg *.hp *.o *.prof *.tix *.svg *.so py/__pycache__
+	rm -rf dist-newstyle tags moddeps.svg *.hp *.o *.prof *.tix *.svg *.so *.dylib py/__pycache__
