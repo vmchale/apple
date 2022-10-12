@@ -22,7 +22,7 @@ apple.o: applemodule.c
 # needs to pull in/bundle all those GHC shared libraries...
 
 apple.so: apple.o
-	$(CC) -shared $^ -o $@ -lapple -lffi
+	gcc -shared $^ -o $@ -lapple -lffi -L /usr/local/lib -rpath /usr/local/lib -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR) -rpath $(HS_LIBDIR) /Library/Frameworks/Python.framework/Versions/$(PY_VER)/Python
 
 clean:
 	rm -rf *.o *.so
