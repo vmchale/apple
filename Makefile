@@ -1,7 +1,6 @@
 HC ?= ghc
 
 HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
-LD_VER := $(shell ja '{%/^\s*lib-version-info:/}{`2}' -i apple.cabal | sed 's/:/./g')
 
 libapple.so: $(HS_SRC) include/apple.h
 	cabal build flib:apple -w $(HC)
@@ -11,7 +10,7 @@ libapple.so: $(HS_SRC) include/apple.h
 moddeps.svg: $(HS_SRC)
 	graphmod -i src | dot -Tsvg -o $@
 
-install-lib: libapple.so
+install-lib: libapple.dylib
 	cp $^ /usr/local/lib
 
 install-py:
