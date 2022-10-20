@@ -1,0 +1,52 @@
+\documentclass{article}
+
+\begin{document}
+
+\title{Apple Array Allocation}
+\author{V. E. McHale}
+\maketitle
+
+\begin{abstract}
+    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors. Here I present statically determined memory allocation used in the Apple array system. Ownership is simple and Apple code can be called from garbage-collected languages and 
+\end{abstract}
+
+\section{Introduction}
+
+The language is simple and expression-oriented,
+
+% Language simplifies things
+
+\section{Method}
+
+% hooks in IR
+
+\begin{verbatim}
+
+ > {. (irange 0 99 1)
+0
+ > :ir {. (irange 0 99 1)
+(movtemp r_2 (int 0))
+(movtemp r_3 (int 99))
+(movtemp r_1 (- (reg r_3) (reg r_2)))
+(malloc r_0 : (+ (asl (reg r_1) (int 3)) (int 24)))
+(write (ptr r_0) (int 1))
+(write (ptr r_0+(int 8)) (reg r_1))
+(movtemp r_4 (int 16))
+
+apple_0:
+(mjump (> (reg r_2) (reg r_3)) apple_1)
+(write (ptr r_0+(reg r_4)) (reg r_2))
+(movtemp r_2 (+ (reg r_2) (int 1)))
+(movtemp r_4 (+ (reg r_4) (int 8)))
+(j apple_0)
+
+apple_1:
+(movtemp r_ret @(ptr r_0+(int 16)))
+(free r_0)
+\end{verbatim}
+
+\section{Coda}
+
+Apple has the potential to be far more efficient; type information could be used to
+
+\end{document}
