@@ -19,6 +19,7 @@
 - [ ] consolidate allocations up-front when possible (dim from types)
 # ABI
 - [ ] Tuples (stack-allocate) (induction)
+- [ ] arrays of tuples
 # Register Allocation
 - [x] Finish graph-based allocator
   - [ ] analyze clobbers in `call`s
