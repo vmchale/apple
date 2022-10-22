@@ -103,18 +103,6 @@ addControlFlow (asm:asms) = do
     ; pure ((asm $> ControlAnn i (f []) (uses asm) (usesF asm) (defs asm) (defsF asm)) : asms')
     }
 
-isM :: X86 AbsReg FAbsReg ann -> Bool
-isM MovRR{}   = True
-isM MovRA{}   = True
-isM MovRI{}   = True
-isM MovAR{}   = True
-isM MovAI32{} = True
-
-isMX :: X86 AbsReg FAbsReg ann -> Bool
-isMX MovqXR{} = True
-isMX MovqXA{} = True
-isMX MovqAX{} = True
-
 uA :: Addr AbsReg -> IS.IntSet
 uA (R r)         = singleton r
 uA (RC r _)      = singleton r
