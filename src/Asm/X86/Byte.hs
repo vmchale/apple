@@ -152,6 +152,8 @@ mkIx ix (Addsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
                              | otherwise = mkIx (ix+5) asms
 mkIx ix (Mulsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
                              | otherwise = mkIx (ix+5) asms
+mkIx ix (Divsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
+                             | otherwise = mkIx (ix+5) asms
 mkIx ix (Vsubsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
 mkIx ix (Vaddsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
@@ -337,6 +339,10 @@ asm ix st (Mulsd _ r0 r1:asms) | fits r0 && fits r1 =
     rrNoPre [0xf2,0x0f,0x59] r1 r0 $ asm (ix+4) st asms
                                | otherwise =
     extSse 0xf2 0x59 r1 r0 $ asm (ix+5) st asms
+asm ix st (Divsd _ r0 r1:asms) | fits r0 && fits r1 =
+    rrNoPre [0xf2,0x0f,0x5e] r1 r0 $ asm (ix+4) st asms
+                               | otherwise =
+    extSse 0xf2 0x5e r1 r0 $ asm (ix+5) st asms
 asm ix st (Vsubsd _ r0 r1 r2:asms) | fits r2 =
     mkVex 0x5c F2 r0 r1 r2 $ asm (ix+4) st asms
                                    | otherwise =
