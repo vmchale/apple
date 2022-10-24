@@ -7,21 +7,34 @@
 \maketitle
 
 \begin{abstract}
-    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors. Here I present statically determined memory allocation used in the Apple array system. Ownership is simple and Apple code can be called from garbage-collected languages and 
+    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors. Here I present statically determined memory allocation used in the Apple array system. Ownership is simple and Apple code does not constrain memory management in the host language.
 \end{abstract}
 
 \section{Introduction}
 
-The language is simple and expression-oriented,
-
-% Language simplifies things
+The language is simple and expression-oriented; there are no references
 
 \section{Method}
 
-% hooks in IR
+Our work is based on classical liveness algorithms.
+%, though we must tag additional information when generating the IR.
+
+The IR used in the Apple compiler is sequences of statements and expressions.
 
 \begin{verbatim}
+newtype ArrayExp = ArrayPointer Temp (Maybe Exp) (Maybe Int) -- register, offset, label
 
+data Exp = Const Int
+         | Reg Temp
+         | At ArrayExp
+         ...
+
+data Stmt = Malloc Int Temp Exp -- label, register, size
+          | Write ArrayExp Exp
+          ...
+\end{verbatim}
+
+\begin{verbatim}
  > {. (irange 0 99 1)
 0
  > :ir {. (irange 0 99 1)
@@ -47,6 +60,6 @@ apple_1:
 
 \section{Coda}
 
-Apple has the potential to be far more efficient; type information could be used to
+Apple has the potential to be far more efficient; type information could be used to consolidate allocations.
 
 \end{document}
