@@ -92,6 +92,8 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
 writeRF e rs = fmap snd . writeF e ((Nothing,) <$> rs)
 
+dim1 a t n = [Wr (AP t Nothing a) (ConstI 1), Wr (AP t (Just (ConstI 8)) a) n]
+
 -- write loop body (updates global state, dependent on ast being globally renamed)
 writeF :: E (T ())
        -> [(Maybe Int, Temp)] -- ^ Registers for arguments
@@ -197,6 +199,20 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     let putN = MT n (IB IR.IDiv (IB IMinus (Reg endR) (Reg startR)) (Reg incrR))
     let loop = [MJ (IRel IGt (Reg startR) (Reg endR)) endL, Wr (AP t (Just (Reg i)) (Just a)) (Reg startR), MT startR (IB IPlus (Reg startR) (Reg incrR)), MT i (IB IPlus (Reg i) (ConstI 8))]
     pure (Just a, putStart++putEnd++putIncr++putN:Ma a t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (Reg n):MT i (ConstI 16):L l:loop ++ [J l, L endL])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) t = do
+    a <- nextArr
+    i <- newITemp
+    startR <- newFTemp
+    incrR <- newFTemp
+    n <- newITemp
+    putStart <- eval start startR
+    putN <- eval nSteps n
+    l <- newLabel
+    endL <- newLabel
+    modify (addMT a t)
+    putIncr <- eval (((end `eMinus` start) `ePlus` FLit F 1) `eDiv` EApp F (Builtin (Arrow I F) ItoF) nSteps) incrR
+    let loop = [MJ (IRel IGt (Reg i) (Reg n)) endL, WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (FReg startR), MX startR (FB FPlus (FReg startR) (FReg incrR)), MT i (IB IPlus (Reg i) (ConstI 1))]
+    pure (Just a, putStart ++ putIncr ++ putN ++ Ma a t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):dim1 (Just a) t (Reg n) ++ MT i (ConstI 0):L l:loop ++ [J l, L endL])
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy = do
     a <- nextArr
     arrP <- newITemp
