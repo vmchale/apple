@@ -21,11 +21,12 @@ optA (EApp l0 (EApp l1 op@(Builtin _ Exp) e0) e1) = do
     pure $ case (e0', e1') of
         (FLit _ x, FLit _ y) -> FLit l0 (x**y)
         _                    -> EApp l0 (EApp l1 op e0') e1'
-optA (EApp l0 (EApp l1 op@(Builtin _ Div) e0) e1) = do
+optA (EApp l0 (EApp l1 op@(Builtin l2 Div) e0) e1) = do
     e0' <- optA e0
     e1' <- optA e1
     pure $ case (e0', e1') of
         (FLit _ x, FLit _ y) -> FLit l0 (x/y)
+        (x, FLit t y)        -> EApp l0 (EApp l1 (Builtin l2 Times) x) (FLit t (1/y))
         _                    -> EApp l0 (EApp l1 op e0') e1'
 optA (Lam l n e) = Lam l n <$> optA e
 optA (EApp l0 (EApp l1 op@(Builtin _ Times) x) y) = do
