@@ -25,6 +25,7 @@ import           CF
 import           Control.Exception    (throw)
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BSL
+import           Data.List.Split      (chunksOf)
 import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import           IR
@@ -34,21 +35,22 @@ import           LI
 import           LR
 import           Numeric              (showHex)
 import           P
-import           Prettyprinter        (Doc, pretty, prettyList)
+import           Prettyprinter        (Doc, pretty)
 import           Prettyprinter.Ext
 import           Ty
 
-pBIO :: BSL.ByteString -> IO (Either (Err AlexPosn) (Doc ann))
+pBIO :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
 pBIO = fmap (fmap pHex) . comm . fmap dbgFp . x86L
     where comm :: Either a (IO b) -> IO (Either a b)
           comm (Left err) = pure(Left err)
           comm (Right x)  = Right <$> x
 
-pB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+pB :: BSL.ByteString -> Either (Err AlexPosn) T.Text
 pB = fmap pHex . bytes
 
-pHex :: BS.ByteString -> Doc ann
-pHex = prettyList . fmap (($"").showHex) . BS.unpack
+pHex :: BS.ByteString -> T.Text
+pHex = T.unlines . fmap T.unwords . chunksOf 8 . fmap (pad.T.pack.($"").showHex) . BS.unpack
+    where pad s | T.length s == 1 = T.cons '0' s | otherwise = s
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
 nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86G

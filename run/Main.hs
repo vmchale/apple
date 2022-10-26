@@ -11,6 +11,7 @@ import           Data.List
 import qualified Data.Map                  as M
 import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
+import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
 import           Dbg
@@ -153,7 +154,7 @@ disasm s = liftIO $ do
     res <- pBIO (ubs s)
     case res of
         Left err -> putDoc (pretty err <> hardline)
-        Right b  -> putDoc (b <> hardline)
+        Right b  -> TIO.putStr b
 
 irR :: String -> Repl AlexPosn ()
 irR s = case dumpIR (ubs s) of
