@@ -12,7 +12,8 @@
 
 \section{Introduction}
 
-The language is simple and expression-oriented; there are no references
+The language is simple and expression-oriented; there are no references.
+% cite appel
 
 \section{Method}
 
@@ -34,9 +35,16 @@ data Stmt = Malloc Int Temp Exp -- label, register, size
           ...
 \end{verbatim}
 
+As an example, suppose we wish to generate an array and extract the first element:
+
 \begin{verbatim}
  > {. (irange 0 99 1)
 0
+\end{verbatim}
+
+Under the hood:
+
+\begin{verbatim}
  > :ir {. (irange 0 99 1)
 (movtemp r_2 (int 0))
 (movtemp r_3 (int 99))
@@ -57,6 +65,8 @@ apple_1:
 (movtemp r_ret @(ptr r_0+(int 16)))
 (free r_0)
 \end{verbatim}
+
+That is, the array that is allocated is freed precisely after all relevant operations have completed.
 
 \section{Coda}
 
