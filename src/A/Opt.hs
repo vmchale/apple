@@ -43,7 +43,7 @@ optA (EApp l op@(Builtin _ Sqrt) x) = do
 optA (EApp _ (Builtin _ Floor) (EApp _ (Builtin _ ItoF) x)) = optA x
 optA (EApp ty (EApp _ (Builtin _ IntExp) x) (ILit _ 2)) = pure $ EApp ty (EApp (Arrow ty ty) (Builtin (Arrow ty (Arrow ty ty)) Times) x) x
 optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@Fold{}) op) seed) (EApp _ (EApp _ (Builtin _ (Map 1)) f) x))
-    | Arrow dom _ <- eAnn f
+    | Arrow dom fCod <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
         x' <- optA x
         x0 <- nextU "x" cod
@@ -52,7 +52,7 @@ optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@Fold{}) op) seed) (EApp _ (EApp _ (
         let vx0 = Var cod x0
             vx1 = Var dom x1
             opTy = Arrow cod (Arrow dom cod)
-            op' = Lam opTy x0 (Lam (Arrow dom cod) x1 (EApp cod (EApp undefined opA vx0) (EApp undefined f vx1)))
+            op' = Lam opTy x0 (Lam (Arrow dom cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f vx1)))
             arrTy = eAnn x'
         optA (EApp l0 (EApp undefined (EApp (Arrow arrTy l0) (Builtin (Arrow opTy (Arrow arrTy l0)) ho0) op') seed) x')
 optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ (Map 1)) f) xs)) (EApp _ (EApp _ (Builtin _ (Map 1)) g) ys))
