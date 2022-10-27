@@ -53,6 +53,7 @@ library
         IR.Alloc
         IR.CF
         IR.Trans
+        Class.E
         Data.Copointed
         Asm.Ar
         Asm.X86
@@ -61,6 +62,8 @@ library
         Asm.X86.CF
         Asm.X86.G
         Asm.X86.Opt
+        Asm.X86.LI
+        Asm.X86.Frame
         Asm.X86.P
         Asm.X86.Trans
         Asm.G

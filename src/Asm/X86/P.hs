@@ -1,7 +1,9 @@
-module Asm.X86.P ( galloc ) where
+module Asm.X86.P ( gallocFrame ) where
 
 import           Asm.G
 import           Asm.X86
+import           Asm.X86.Frame
+import           Asm.X86.LI
 import qualified Data.IntMap    as IM
 import           Data.Semigroup
 import qualified Data.Set       as S
@@ -146,11 +148,16 @@ mapFR _ (And l r0 r1)               = And l r0 r1
 mapFR _ (Cmovnle l r0 r1)           = Cmovnle l r0 r1
 mapFR _ (Rdrand l r)                = Rdrand l r
 
+gallocFrame :: [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]
+gallocFrame = frameC . mkIntervals . galloc
+
+{-# SCC galloc #-}
 galloc :: [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]
 galloc isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt)) isns)
     where (regs, fregs) = gallocOn isns
           clob'd = S.fromList $ IM.elems regs
 
+{-# SCC frame #-}
 frame :: S.Set X86Reg -> [X86 X86Reg FX86Reg ()] -> [X86 X86Reg FX86Reg ()]
 frame clob asms = pre++asms++post++[Ret()] where
     pre = Push () <$> clobs

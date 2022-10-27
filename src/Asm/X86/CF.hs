@@ -3,9 +3,10 @@
 module Asm.X86.CF ( mkControlFlow
                   ) where
 
-import           Asm.X86
+import           Asm.X86                    as X86
 import           CF
 -- seems to pretty clearly be faster
+import           Class.E                    as E
 import           Control.Monad.State.Strict (State, evalState, gets, modify)
 import           Data.Bifunctor             (first, second)
 import           Data.Functor               (($>))
@@ -19,7 +20,7 @@ type FreshM = State (Int, M.Map Label Int)
 runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty)
 
-mkControlFlow :: [X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ControlAnn]
+mkControlFlow :: (E reg, E freg) => [X86 reg freg ()] -> [X86 reg freg ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
 getFresh :: FreshM Int
@@ -31,19 +32,15 @@ lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow g
 broadcast :: Int -> Label -> FreshM ()
 broadcast i l = modify (second (M.insert l i))
 
-singleton :: AbsReg -> IS.IntSet
-singleton = IS.singleton . toInt
+singleton :: E reg => reg -> IS.IntSet
+singleton = IS.singleton . E.toInt
 
-fs = IS.singleton . fToInt
-
-fromListF = foldMap fs
-
-fromList :: [AbsReg] -> IS.IntSet
+fromList :: E reg => [reg] -> IS.IntSet
 fromList = foldMap singleton
 
 -- | Annotate instructions with a unique node name and a list of all possible
 -- destinations.
-addControlFlow :: [X86 AbsReg FAbsReg ()] -> FreshM [X86 AbsReg FAbsReg ControlAnn]
+addControlFlow :: (E reg, E freg) => [X86 reg freg ()] -> FreshM [X86 reg freg ControlAnn]
 addControlFlow [] = pure []
 addControlFlow ((Label _ l):asms) = do
     { i <- lookupLabel l
@@ -103,31 +100,31 @@ addControlFlow (asm:asms) = do
     ; pure ((asm $> ControlAnn i (f []) (uses asm) (usesF asm) (defs asm) (defsF asm)) : asms')
     }
 
-uA :: Addr AbsReg -> IS.IntSet
+uA :: E reg => Addr reg -> IS.IntSet
 uA (R r)         = singleton r
 uA (RC r _)      = singleton r
 uA (RS b _ i)    = fromList [b,i]
 uA (RSD b _ i _) = fromList [b,i]
 
-usesF :: X86 AbsReg FAbsReg ann -> IS.IntSet
-usesF (Movapd _ _ r)           = fs r
-usesF (Vmulsd _ _ r0 r1)       = fromListF [r0, r1]
-usesF (Vaddsd _ _ r0 r1)       = fromListF [r0, r1]
-usesF (Vsubsd _ _ r0 r1)       = fromListF [r0, r1]
-usesF (Vdivsd _ _ r0 r1)       = fromListF [r0, r1]
-usesF (Mulsd _ r0 r1)          = fromListF [r0, r1]
-usesF (Divsd _ r0 r1)          = fromListF [r0, r1]
-usesF (Addsd _ r0 r1)          = fromListF [r0, r1]
-usesF (Subsd _ r0 r1)          = fromListF [r0, r1]
-usesF (Vfmadd231sd _ r0 r1 r2) = fromListF [r0, r1, r2]
-usesF (Sqrtsd _ _ r)           = fs r
-usesF (Vmaxsd _ _ r0 r1)       = fromListF [r0, r1]
-usesF (Vminsd _ _ r0 r1)       = fromListF [r0, r1]
-usesF (Maxsd _ r0 r1)          = fromListF [r0, r1]
-usesF (Minsd _ r0 r1)          = fromListF [r0, r1]
-usesF (Roundsd _ _ r _)        = fs r
-usesF (Cvttsd2si _ _ r)        = fs r
-usesF (MovqAX _ _ x)           = fs x
+usesF :: E freg => X86 reg freg ann -> IS.IntSet
+usesF (Movapd _ _ r)           = singleton r
+usesF (Vmulsd _ _ r0 r1)       = fromList [r0, r1]
+usesF (Vaddsd _ _ r0 r1)       = fromList [r0, r1]
+usesF (Vsubsd _ _ r0 r1)       = fromList [r0, r1]
+usesF (Vdivsd _ _ r0 r1)       = fromList [r0, r1]
+usesF (Mulsd _ r0 r1)          = fromList [r0, r1]
+usesF (Divsd _ r0 r1)          = fromList [r0, r1]
+usesF (Addsd _ r0 r1)          = fromList [r0, r1]
+usesF (Subsd _ r0 r1)          = fromList [r0, r1]
+usesF (Vfmadd231sd _ r0 r1 r2) = fromList [r0, r1, r2]
+usesF (Sqrtsd _ _ r)           = singleton r
+usesF (Vmaxsd _ _ r0 r1)       = fromList [r0, r1]
+usesF (Vminsd _ _ r0 r1)       = fromList [r0, r1]
+usesF (Maxsd _ r0 r1)          = fromList [r0, r1]
+usesF (Minsd _ r0 r1)          = fromList [r0, r1]
+usesF (Roundsd _ _ r _)        = singleton r
+usesF (Cvttsd2si _ _ r)        = singleton r
+usesF (MovqAX _ _ x)           = singleton x
 usesF MovqXR{}                 = IS.empty
 usesF IAddRR{}                 = IS.empty
 usesF IAddRI{}                 = IS.empty
@@ -159,9 +156,8 @@ usesF Fmulp{}                  = IS.empty
 usesF FldS{}                   = IS.empty
 usesF Fld1{}                   = IS.empty
 usesF Fldl2e{}                 = IS.empty
-usesF r                        = error (show r)
 
-uses :: X86 AbsReg FAbsReg ann -> IS.IntSet
+uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)    = singleton r
 uses (And _ r0 r1)    = fromList [r0, r1]
 uses (IAddRR _ r0 r1) = fromList [r0, r1]
@@ -184,7 +180,7 @@ uses F2xm1{}          = IS.empty
 uses Fmulp{}          = IS.empty
 uses (Fstp _ a)       = uA a
 uses (MovRA _ _ a)    = uA a
-uses (IDiv _ r)       = fromList [r, Quot, Rem]
+uses (IDiv _ r)       = IS.insert (E.toInt r) $ fromList [Quot, Rem]
 uses (MovAR _ a r)    = uA a <> singleton r
 uses (Sal _ r _)      = singleton r
 uses (Sar _ r _)      = singleton r
@@ -213,29 +209,28 @@ uses Vfmadd231sd{}    = IS.empty
 uses Cvttsd2si{}      = IS.empty
 uses Sqrtsd{}         = IS.empty
 uses Rdrand{}         = IS.empty
-uses r                = error (show r)
 
-defsF :: X86 AbsReg FAbsReg ann -> IS.IntSet
-defsF (Movapd _ r _)        = fs r
-defsF (Vmulsd _ r _ _)      = fs r
-defsF (Vaddsd _ r _ _)      = fs r
-defsF (Vsubsd _ r _ _)      = fs r
-defsF (Vdivsd _ r _ _)      = fs r
-defsF (MovqXR _ r _)        = fs r
-defsF (Addsd _ r _)         = fs r
-defsF (Subsd _ r _)         = fs r
-defsF (Divsd _ r _)         = fs r
-defsF (Mulsd _ r _)         = fs r
-defsF (MovqXA _ r _)        = fs r
+defsF :: E freg => X86 reg freg ann -> IS.IntSet
+defsF (Movapd _ r _)        = singleton r
+defsF (Vmulsd _ r _ _)      = singleton r
+defsF (Vaddsd _ r _ _)      = singleton r
+defsF (Vsubsd _ r _ _)      = singleton r
+defsF (Vdivsd _ r _ _)      = singleton r
+defsF (MovqXR _ r _)        = singleton r
+defsF (Addsd _ r _)         = singleton r
+defsF (Subsd _ r _)         = singleton r
+defsF (Divsd _ r _)         = singleton r
+defsF (Mulsd _ r _)         = singleton r
+defsF (MovqXA _ r _)        = singleton r
 defsF MovqAX{}              = IS.empty
-defsF (Sqrtsd _ r _)        = fs r
-defsF (Vmaxsd _ r _ _)      = fs r
-defsF (Vminsd _ r _ _)      = fs r
-defsF (Minsd _ r _)         = fs r
-defsF (Maxsd _ r _)         = fs r
-defsF (Vfmadd231sd _ r _ _) = fs r
-defsF (Roundsd _ r _ _)     = fs r
-defsF (Cvtsi2sd _ r _)      = fs r
+defsF (Sqrtsd _ r _)        = singleton r
+defsF (Vmaxsd _ r _ _)      = singleton r
+defsF (Vminsd _ r _ _)      = singleton r
+defsF (Minsd _ r _)         = singleton r
+defsF (Maxsd _ r _)         = singleton r
+defsF (Vfmadd231sd _ r _ _) = singleton r
+defsF (Roundsd _ r _ _)     = singleton r
+defsF (Cvtsi2sd _ r _)      = singleton r
 defsF Label{}               = IS.empty
 defsF IAddRR{}              = IS.empty
 defsF IAddRI{}              = IS.empty
@@ -267,9 +262,8 @@ defsF Sar{}                 = IS.empty
 defsF Cmovnle{}             = IS.empty
 defsF Call{}                = IS.empty
 defsF Cvttsd2si{}           = IS.empty
-defsF r                     = error (show r)
 
-defs :: X86 AbsReg FAbsReg ann -> IS.IntSet
+defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r
 defs MovqXR{}          = IS.empty
 defs MovqXA{}          = IS.empty
@@ -292,11 +286,11 @@ defs Fld{}             = IS.empty
 defs F2xm1{}           = IS.empty
 defs Fmulp{}           = IS.empty
 defs (MovRA _ r _)     = singleton r
-defs (IDiv _ r)        = fromList [r, Quot, Rem]
+defs (IDiv _ r)        = IS.insert (E.toInt r) (fromList [Quot, Rem])
 defs MovAR{}           = IS.empty
 defs (Sal _ r _)       = singleton r
 defs (Sar _ r _)       = singleton r
-defs (Call _ Malloc)   = singleton CRet
+defs (Call _ Malloc)   = IS.singleton (X86.toInt CRet)
 defs (Call _ Free)     = IS.empty
 defs MovAI32{}         = IS.empty
 defs Fld1{}            = IS.empty
@@ -321,9 +315,8 @@ defs Vfmadd231sd{}     = IS.empty
 defs Roundsd{}         = IS.empty
 defs Sqrtsd{}          = IS.empty
 defs (Rdrand _ r)      = singleton r
-defs r                 = error (show r)
 
-next :: [X86 AbsReg FAbsReg ()] -> FreshM ([Int] -> [Int], [X86 AbsReg FAbsReg ControlAnn])
+next :: (E reg, E freg) => [X86 reg freg ()] -> FreshM ([Int] -> [Int], [X86 reg freg ControlAnn])
 next asms = do
     nextAsms <- addControlFlow asms
     case nextAsms of

@@ -23,6 +23,7 @@ import           Asm.X86
 import qualified Asm.X86.Alloc              as X86
 import           Asm.X86.Byte
 import qualified Asm.X86.CF                 as X86
+import qualified Asm.X86.LI                 as X86
 import           Asm.X86.Opt
 import qualified Asm.X86.P                  as X86
 import           Asm.X86.Trans
@@ -41,8 +42,6 @@ import           IR
 import           IR.Alloc
 import           IR.Trans
 import           L
-import           LI
-import           LR
 import           Name
 import           Parser
 import           Parser.Rw
@@ -75,14 +74,14 @@ tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
 tyOf = fmap (first eAnn.discard) . tyConstr where discard (x, y, _) = (x, y)
 
 funP :: BSL.ByteString -> IO (FunPtr a)
-funP = aFp <=< either throwIO pure . x86L
+funP = aFp <=< either throwIO pure . x86G
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
-bytes = fmap assemble . x86L
+bytes = fmap assemble . x86G
 
 x86L, x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
-x86G = walloc X86.galloc
-x86L = walloc (X86.allocFrame . intervals . reconstruct . X86.mkControlFlow)
+x86G = walloc X86.gallocFrame
+x86L = walloc (X86.allocFrame . X86.mkIntervals)
 
 walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
 

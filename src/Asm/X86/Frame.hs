@@ -1,0 +1,34 @@
+module Asm.X86.Frame ( frameC ) where
+
+import           Asm.X86
+import           CF
+import           Data.Copointed
+import           Data.Functor   (void)
+import qualified Data.IntSet    as IS
+import           Data.Maybe     (mapMaybe)
+
+frameC :: [X86 X86Reg FX86Reg Interval] -> [X86 X86Reg FX86Reg ()]
+frameC = concat . go IS.empty
+    where go _ [] = []
+          go s (isn:isns) =
+            let i = copoint isn
+                s' = s `IS.union` new i `IS.difference` done i
+            in case isn of
+                Call{} ->
+                    let
+                        cs = mapMaybe fromInt $ IS.toList s
+                        save = fmap (Push ()) cs
+                        restore = fmap (Pop ()) (reverse cs)
+                    in (save ++ (void isn) : restore) : go s' isns
+                _ -> [void isn] : go s' isns
+
+fromInt :: Int -> Maybe X86Reg
+fromInt 0 = Just Rdi
+fromInt 1 = Just Rsi
+fromInt 2 = Just Rdx
+fromInt 3 = Just Rcx
+fromInt 4 = Just R8
+fromInt 5 = Just R9
+fromInt 6 = Just Rax
+fromInt 7 = Just Rsp
+fromInt _ = Nothing

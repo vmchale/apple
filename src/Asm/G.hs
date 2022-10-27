@@ -3,6 +3,7 @@ module Asm.G ( alloc, allocF ) where
 
 import           Asm.Ar
 import           CF
+import           Class.E
 import           Data.Copointed
 import qualified Data.IntMap      as IM
 import qualified Data.IntSet      as IS
