@@ -210,7 +210,9 @@ mkIx ix (Fstp _ (RC Rsp _):asms)              = mkIx (ix+4) asms
 mkIx ix (Sal{}:asms)                          = mkIx (ix+4) asms
 mkIx ix (Sar{}:asms)                          = mkIx (ix+4) asms
 mkIx ix (Call{}:asms)                         = mkIx (ix+5) asms
+mkIx ix (MovAI32 _ (R Rsp)_:asms)             = mkIx (ix+8) asms
 mkIx ix (MovAI32 _ R{} _:asms)                = mkIx (ix+7) asms
+mkIx ix (MovAR _ (RC Rsp _) _:asms)           = mkIx (ix+5) asms
 mkIx ix (MovAR _ RC{} _:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ RS{}:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ RSD{}:asms)                = mkIx (ix+5) asms
@@ -490,12 +492,26 @@ asm ix st (Sar _ r i:asms) =
         pre = 0x48 .|. e
         instr = pre:0xc1:modRMB:le i
     in instr ++ asm (ix+4) st asms
+asm ix st (MovAI32 _ (R Rsp) i32:asms) =
+    let (0, b) = modRM Rsp
+        modB = 0x4
+        sib = b `shiftL` 3 .|. b
+        instr = 0x48:0xc7:modB:sib:le i32
+    in instr ++ asm (ix+8) st asms
 asm ix st (MovAI32 _ (R r) i32:asms) =
     let (e, b) = modRM r
         modRMB = b
         pre = 0x48 .|. e
         instr = pre:0xc7:modRMB:le i32
     in instr ++ asm (ix+7) st asms
+asm ix st (MovAR _ (RC Rsp i8) r:asms) =
+    let (e, b) = modRM r
+        (0, bi) = modRM Rsp
+        pre = 0x48 .|. e `shiftL` 3
+        modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
+        sib = bi `shiftL` 3 .|. bi
+        instr = pre:0x89:modB:sib:le i8
+    in instr ++ asm (ix+5) st asms
 asm ix st (MovAR _ (RC ar i8) r:asms) =
     mkAR [0x89] 1 ar r $ le i8 ++ asm (ix+4) st asms
 asm ix st (MovRA _ r (RS b s i):asms) =
