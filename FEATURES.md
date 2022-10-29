@@ -6,6 +6,7 @@
 - [ ] convolve
 - [ ] transpose
 - [ ] concat
+- [ ] conditionals
 ## Add Features
 - [ ] outer product
 - [ ] dyadic infix
@@ -18,4 +19,6 @@
 # ABI
 - [ ] Tuples (stack-allocate) (induction)
 # Register Allocation
-- [ ] Finish graph-based allocator
+- [x] Finish graph-based allocator
+  - [ ] analyze clobbers in `call`s
+  - [ ] spill

@@ -147,6 +147,7 @@ instance Pretty Builtin where
     pretty Succ      = "\\~"
     pretty Transpose = "|:"
     pretty Fib       = "𝓕"
+    pretty Dim       = "𝓉"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod

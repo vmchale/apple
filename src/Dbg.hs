@@ -40,7 +40,7 @@ import           Prettyprinter.Ext
 import           Ty
 
 pBIO :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
-pBIO = fmap (fmap pHex) . comm . fmap dbgFp . x86L
+pBIO = fmap (fmap pHex) . comm . fmap dbgFp . x86G
     where comm :: Either a (IO b) -> IO (Either a b)
           comm (Left err) = pure(Left err)
           comm (Right x)  = Right <$> x

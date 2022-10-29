@@ -26,6 +26,7 @@
   - [ ] float tuple return
 - [ ] reshape arrays
 - [ ] clz? (count leading zeroes = floor(log) -> digits)
+- [ ] flatness check (arrays)
 ## Array
 - [ ] concat
 - [ ] transpose (reverse all axes!)
@@ -43,11 +44,25 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ]
+```
+{sig<-[1%(1+(e:(_x)))];sig'1 (frange _6 6 12)}
+```
 - [ ] Pass over to ensure everything is monomorphized
 - [ ] `itof (:xs)` - would prefer w/o parens?
 - [ ] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
 - [ ] `((2 ^ (3 * 1)) + 2` (parses `2^3*1+2` wrong)
+- [ ] `(+)/1 0 ((_.'1) frange 2 6 5)`
 - [ ] match doesn't check constraints on annotations
+```
+vanessa@vanessa-desktop /development/haskell/apple 🌸 arepl
+ > ((+1)'1) (frange 1 5 5)
+Arr (5) [1.0, 2.0, 3.0, 4.0, 5.0]
+ > ((+1)'1) (frange 1 5 5)
+Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
+ > ((+1)'1) (frange 1 5 5)
+Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
+```
 ## Type system
 - [ ] Check that bindings are not too polymorphic
 - [ ] `LLet` should not contain functions, add a pass to check
@@ -89,3 +104,4 @@
 - [ ] https://forem.julialang.org/inphyt/ann-juliaepi-collaborative-computational-epidemiology-in-julia-19ng
 - [ ] https://michaelmoroz.github.io/TracingGeodesics/
 - [ ] https://palaiologos.rocks/posts/linalg-apl/
+- [ ] FFI https://code.jsoftware.com/wiki/Guides/DLLs/Calling_DLLs

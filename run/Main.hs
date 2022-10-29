@@ -97,7 +97,7 @@ loop = do
         Just (":ty":e)     -> tyExprR (unwords e) *> loop
         Just [":q"]        -> pure ()
         Just [":quit"]     -> pure ()
-        Just (":asm":e)    -> dumpAsmL (unwords e) *> loop
+        Just (":asm":e)    -> dumpAsmG (unwords e) *> loop
         Just (":ann":e)    -> annR (unwords e) *> loop
         Just (":ir":e)     -> irR (unwords e) *> loop
         Just (":disasm":e) -> disasm (unwords e) *> loop

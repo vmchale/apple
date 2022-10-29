@@ -29,7 +29,7 @@ PyObject* npy_f(U x) {
     size_t sz=8*t;
     U data=malloc(sz);
     memcpy(data,i_p+rnk+1,sz);
-    PyObject* res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);
+    PyObject* res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);
     free(x);R res;
 }
 
