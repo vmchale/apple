@@ -2,10 +2,9 @@ void* apple_compile(const char*);
 // NULL on error
 char* apple_printty(const char*, char**);
 
-// FIXME: how do c-niles handle tuples??
 enum apple_t{I_t,F_t,IA,FA,Fn};
 
-// returns -1 on error
-enum apple_t apple_ty(const char*, char**);
+typedef struct FnTy {int argc; enum apple_t* args; enum apple_t res;} FnTy;
 
-enum apple_err{TooPolymorphic,Wrong};
+// returns -1 on error
+enum apple_t apple_ty(const char*, char**, FnTy**);

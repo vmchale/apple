@@ -53,15 +53,15 @@ typedef F (*Ffp)(void);
 
 static PyObject* apple_apple(PyObject *self, PyObject *args) {
     const char* inp;
-    PyArg_ParseTuple(args, "s", &inp);
-    char* err;char** err_p = &err;
-    enum apple_t ty=apple_ty(inp,err_p);
+    PyArg_ParseTuple(args, "s|O", &inp);
+    char* err;char** err_p = &err;FnTy* t;FnTy** t_p = &t;
+    enum apple_t ty=apple_ty(inp,err_p,t_p);
     if (ty == -1) {
         PyErr_SetString(PyExc_RuntimeError, err);
         free(err);R NULL;
     };
     U fp;
-    if (ty != Fn){fp=apple_compile(inp);}
+    fp=apple_compile(inp);
     switch(ty){
         case Fn: R PyUnicode_FromString("(function)");
         case IA: R npy_i(((Ufp) fp)());

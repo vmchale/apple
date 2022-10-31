@@ -1,6 +1,8 @@
 module E () where
 
 import qualified A
+import CGen
+import Control.Monad (zipWithM_)
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Unsafe as BS
 import Data.Coerce (coerce)
@@ -12,7 +14,7 @@ import Foreign.C.String (CString)
 import Foreign.C.Types (CInt (..), CSize (..), CChar)
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr (Ptr, castPtr, castFunPtrToPtr, nullPtr)
-import Foreign.Storable (poke, pokeByteOff)
+import Foreign.Storable (poke, pokeByteOff, sizeOf)
 import P
 import Prettyprinter.Ext
 
@@ -20,11 +22,21 @@ import Prettyprinter.Ext
 #include <sys/mman.h>
 #include <apple.h>
 
+data FnTy
+
 {# fun memcpy as ^ { castPtr `Ptr a', castPtr `Ptr a', coerce `CSize' } -> `Ptr a' castPtr #}
 
 -- how tf do C weenies store like... function types??
 {# enum apple_t as CT {} #}
-{# enum apple_err as IErr {} #}
+
+ct :: CType -> CT
+ct CR = F_t
+ct CI = I_t
+ct Af = FA
+ct Ai = IA
+
+t32 :: CType -> CInt
+t32 = fromIntegral.fromEnum.ct
 
 tcstr :: T.Text -> IO CString
 tcstr t =
@@ -41,20 +53,35 @@ apple_printty src errPtr = do
             (poke errPtr =<< tcstr (ptxt err)) $> nullPtr
         Right d -> tcstr (aText d)
 
-apple_ty :: CString -> Ptr CString -> IO CInt
-apple_ty src errPtr = do
+apple_ty :: CString -> Ptr CString -> Ptr (Ptr FnTy) -> IO CInt
+apple_ty src errPtr argsP = do
     bSrc <- BS.unsafePackCString src
     let b = tyOf (BSL.fromStrict bSrc)
     case b of
         Left err -> do
             poke errPtr =<< tcstr (ptxt err)
             pure (-1)
+        Right (t@A.Arrow{}, []) -> do
+            let mCty = tCTy t
+            case mCty of
+                Left te -> do {poke errPtr =<< tcstr (ptxt te); pure (-1)}
+                Right (tis, to) -> do
+                    let argc = length tis
+                    sp <- mallocBytes {# sizeof FnTy #}
+                    ip <- mallocBytes (argc * sizeOf (undefined::CInt))
+                    {# set FnTy.argc #} sp (fromIntegral argc)
+                    {# set FnTy.res #} sp (t32 to)
+                    zipWithM_ (\ti n -> do
+                        pokeByteOff ip (n * sizeOf (undefined::CInt)) (t32 ti)) tis [0..]
+                    {# set FnTy.args #} sp ip
+                    poke argsP sp
+                    pure $ fromIntegral $ fromEnum Fn
+            pure (fromIntegral $ fromEnum Fn)
         Right (t, []) -> pure $ fromIntegral $ fromEnum $ case t of
             A.I -> I_t
             A.F -> F_t
             (A.Arr _ A.I) -> IA
             (A.Arr _ A.F) -> FA
-            A.Arrow{} -> Fn
 
 apple_compile :: CString -> IO (Ptr Word8)
 apple_compile src = do
@@ -63,4 +90,4 @@ apple_compile src = do
 
 foreign export ccall apple_compile :: CString -> IO (Ptr Word8)
 foreign export ccall apple_printty :: CString -> Ptr CString -> IO CString
-foreign export ccall apple_ty :: CString -> Ptr CString -> IO CInt
+foreign export ccall apple_ty :: CString -> Ptr CString -> Ptr (Ptr FnTy) -> IO CInt
