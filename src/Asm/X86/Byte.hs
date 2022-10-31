@@ -53,7 +53,11 @@ data VEXM = F | F38 | F3A
 
 data PP = S6 | F3 | F2
 
-rrNoPre :: RMB reg => [Word8] -> reg -> reg -> [Word8] -> [Word8]
+rrNoPre :: RMB reg
+        => [Word8]
+        -> reg -- ^ r/m
+        -> reg -- ^ reg
+        -> [Word8] -> [Word8]
 rrNoPre opc r0 r1 =
     let (_, b0) = modRM r0
         (_, b1) = modRM r1
@@ -173,6 +177,7 @@ mkIx ix ((ISubRI _ _ i):asms) | Just{} <- mi64i8 i = mkIx (ix+4) asms
 mkIx ix (MovRI _ r i:asms) | Just{} <- mi64i32 i, i >= 0 && (r < R8 || r == Rax) = mkIx (ix+5) asms
 mkIx ix (MovRI{}:asms)                        = mkIx (ix+10) asms
 mkIx ix (Roundsd _ r0 r1 _:asms) | fits r0 && fits r1 = mkIx (ix+6) asms
+mkIx ix (Roundsd{}:asms)                      = mkIx (ix+7) asms
 mkIx ix (Cvttsd2si{}:asms)                    = mkIx (ix+5) asms
 mkIx ix (Cvtsi2sd{}:asms)                     = mkIx (ix+5) asms
 mkIx ix (Ret{}:asms)                          = mkIx (ix+1) asms
@@ -373,7 +378,9 @@ asm ix st (Vmulsd _ r0 r1 r2:asms) | fits r2 =
 asm ix st (Vfmadd231sd _ r0 r1 r2:asms) =
     mkVex3 0xb9 S6 F38 r0 r1 r2 $ asm (ix+5) st asms
 asm ix st (Roundsd _ r0 r1 i:asms) | fits r0 && fits r1 =
-    rrNoPre [0x66,0x0f,0x3a,0x0b] r0 r1 . (le (roundMode i) ++) $ asm (ix+6) st asms
+    rrNoPre [0x66,0x0f,0x3a,0x0b] r1 r0 . (le (roundMode i) ++) $ asm (ix+6) st asms
+asm ix st (Roundsd _ r0 r1 i:asms) =
+    (0x66:) . mkAR [0xf,0x3a,0xb] 0 r1 r0 . (le (roundMode i) ++) $ asm (ix+7) st asms
 asm ix st (Cvttsd2si _ r0 r1:asms) =
     (0xf2:) . mkRR [0x0f,0x2c] r1 r0 $ asm (ix+5) st asms
 asm ix st (Cvtsi2sd _ fr r:asms) =
