@@ -6,6 +6,37 @@
 
 #define U void*
 #define R return
+#define SW switch
+#define C case
+
+// https://numpy.org/doc/stable/reference/c-api/array.html
+U f_npy(PyObject* o) {
+    I rnk=PyArray_NDIM(o);
+    npy_intp* dims=PyArray_DIMS(o);
+    I n=PyArray_SIZE(o);
+    I sz_i=1+rnk+n;
+    size_t sz=sz_i*8;
+    U x=malloc(sz);I* x_i=x; F* x_f=x;
+    x_i[0]=rnk;
+    DO(i,rnk,x_i[i+1]=(I)dims[i]);
+    U data=PyArray_DATA(o);
+    memcpy(x_f+rnk+1,data,sz);
+    R x;
+}
+
+U i_npy(PyObject* o) {
+    I rnk=PyArray_NDIM(o);
+    npy_intp* dims=PyArray_DIMS(o);
+    I n=PyArray_SIZE(o);
+    I sz_i=1+rnk+n;
+    size_t sz=sz_i*8;
+    U x=malloc(sz);I* x_i=x;
+    x_i[0]=rnk;
+    DO(i,rnk,x_i[i+1]=(I)dims[i]);
+    U data=PyArray_DATA(o);
+    memcpy(x_i+rnk+1,data,sz);
+    R x;
+}
 
 PyObject* npy_i(U x) {
     I* i_p = x;
@@ -47,27 +78,70 @@ static PyObject* apple_typeof(PyObject* self, PyObject *args) {
     R pyres;
 }
 
+static PyObject* apple_asm(PyObject* self, PyObject *args) {
+    const char* inp;
+    PyArg_ParseTuple(args, "s", &inp);
+    char* err;char** err_p = &err;
+    char* res = apple_dumpasm(inp,err_p);
+    if (res == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, err);
+        free(err);R NULL;
+    }
+    PyObject* pyres = PyUnicode_FromString(res);
+    free(res);
+    R pyres;
+}
+
+static PyObject* apple_ir(PyObject* self, PyObject *args) {
+    const char* inp;
+    PyArg_ParseTuple(args, "s", &inp);
+    char* err;char** err_p = &err;
+    char* res = apple_dumpir(inp,err_p);
+    if (res == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, err);
+        free(err);R NULL;
+    }
+    PyObject* pyres = PyUnicode_FromString(res);
+    free(res);
+    R pyres;
+}
+
 typedef U (*Ufp)(void);
 typedef I (*Ifp)(void);
 typedef F (*Ffp)(void);
+typedef U (*Aafp)(U);
+typedef F (*Affp)(U);
+typedef I (*Aifp)(U);
+typedef U (*Iafp)(I);
 
 static PyObject* apple_apple(PyObject *self, PyObject *args) {
-    const char* inp;
-    PyArg_ParseTuple(args, "s|O", &inp);
-    char* err;char** err_p = &err;FnTy* t;FnTy** t_p = &t;
-    enum apple_t ty=apple_ty(inp,err_p,t_p);
-    if (ty == -1) {
+    const char* inp;PyObject* arg0;PyObject* arg1;PyObject* arg2; PyObject* arg3; PyObject* arg4; PyObject* arg5;
+    PyArg_ParseTuple(args, "s|OOOOOO", &inp, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
+    char* err;char** err_p = &err;
+    FnTy* ty=apple_ty(inp,err_p);
+    if (ty == NULL) {
         PyErr_SetString(PyExc_RuntimeError, err);
         free(err);R NULL;
     };
     U fp;
     fp=apple_compile(inp);
-    switch(ty){
-        case Fn: R PyUnicode_FromString("(function)");
-        case IA: R npy_i(((Ufp) fp)());
-        case FA: R npy_f(((Ufp) fp)());
-        case F_t: R PyFloat_FromDouble(((Ffp) fp)());
-        case I_t: R PyLong_FromLongLong(((Ifp) fp)());
+    SW(ty->res){
+        C IA: R npy_i(((Ufp) fp)());
+        C FA:
+            SW(ty->argc){
+                C 0: R npy_f(((Ufp) fp)());
+                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);R npy_f(((Aafp) fp)(inp0));};};
+            };
+        C F_t:
+            SW(ty->argc){
+                C 0: R PyFloat_FromDouble(((Ffp) fp)());
+                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);R PyFloat_FromDouble(((Affp) fp)(inp0));};};
+            };
+        C I_t:
+            SW(ty->argc){
+                C 0: R PyLong_FromLongLong(((Ifp) fp)());
+                C 1: SW(ty->args[0]){C IA: {U inp0=i_npy(arg0);R PyLong_FromLongLong(((Aifp) fp)(inp0));};};
+            };
     }
     // FIXME: function pointer is never freed
     Py_RETURN_NONE;
@@ -76,6 +150,8 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
 static PyMethodDef AppleMethods[] = {
     {"apple", apple_apple, METH_VARARGS, "JITed array"},
     {"typeof", apple_typeof, METH_VARARGS, "Display type of expression"},
+    {"asm", apple_asm, METH_VARARGS, "Dump x86 assembly"},
+    {"ir", apple_ir, METH_VARARGS, "Dump IR (debug)"},
     {NULL,NULL,0,NULL}
 };
 

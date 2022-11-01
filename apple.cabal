@@ -123,6 +123,7 @@ foreign-library apple
         base,
         apple,
         bytestring >=0.11.0.0,
+        prettyprinter >=1.7.0,
         text
 
     lib-version-info: 1:0:0
