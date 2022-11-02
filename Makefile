@@ -10,6 +10,9 @@ moddeps.svg: $(HS_SRC)
 install-lib: libapple.so
 	cp $^ /usr/local/lib
 
+install-py: libapple.so
+	make -C pyc install
+
 install:
 	cabal install -w ghc-9.4.2
 	strip $$(readlink -f $$(which atc))
