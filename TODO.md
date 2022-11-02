@@ -44,6 +44,7 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ] beta-reduction with 'rand' or w/e (needs to be llet ... in)
 - [ ]
 ```
 {sig<-[1%(1+(e:(_x)))];sig'1 (frange _6 6 12)}
