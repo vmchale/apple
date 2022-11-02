@@ -87,35 +87,33 @@ buildOverF :: Copointed p => [[p (ControlAnn, NLiveness, Maybe M)]] -> St -> St
 buildOverF blocks = thread [ \s -> snd $ buildF (fout (liveness (snd3 (copoint (last isns))))) s (reverse isns) | isns <- blocks ]
 
 alloc :: (Ord reg, Arch arch areg afreg, E areg, Copointed (arch areg afreg), Functor (arch areg afreg))
-      => [arch areg afreg ()]
+      => ([arch areg afreg ()], [arch areg afreg (ControlAnn, NLiveness, Maybe (Int,Int))])
       -> [reg] -- ^ available registers
       -> IS.IntSet -- ^ Precolored @areg@
       -> IM.IntMap reg -- ^ Precolored map
       -> IM.IntMap reg -- ^ Map from abs reg. id (temp) to concrete reg.
-alloc isns regs preC preCM =
+alloc (isns, aIsns) regs preC preCM =
     let st0 = buildOver (bb aIsns) (emptySt preC (IS.toList $ getIs nIsns IS.\\ preC))
         st1 = mkWorklist st0
         st2 = emptyWkl st1
         (st3, rs) = assign preCM regs st2
     in if IS.null (spN (ɴs st3)) then rs else error "Not yet implemented."
     where lInit = out (liveness (snd3 (copoint (last aIsns))))
-          aIsns = bundle isns
           nIsns = fmap snd3 <$> aIsns
 
 allocF :: (Ord freg, Arch arch areg afreg, E afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
-       => [arch areg afreg ()]
+       => ([arch areg afreg ()], [arch areg afreg (ControlAnn, NLiveness, Maybe (Int,Int))])
        -> [freg] -- ^ available registers
        -> IS.IntSet -- ^ Precolored @afreg@
        -> IM.IntMap freg -- ^ Precolored map
        -> IM.IntMap freg -- ^ Map from abs freg. id (temp) to concrete reg.
-allocF isns regs preC preCM =
+allocF (isns, aIsns) regs preC preCM =
     let st0 = buildOverF (bb aIsns) (emptySt preC (IS.toList $ getIFs nIsns IS.\\ preC))
         st1 = mkWorklist st0
         st2 = emptyWkl st1
         (st3, rs) = assign preCM regs st2
     in if IS.null (spN (ɴs st3)) then rs else error "Not yet implemented."
     where lInit = fout (liveness (snd3 (copoint (last aIsns))))
-          aIsns = bundleF isns
           nIsns = fmap snd3 <$> aIsns
 
 {-# SCC emptyWkl #-}

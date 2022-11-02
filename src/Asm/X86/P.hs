@@ -1,5 +1,6 @@
 module Asm.X86.P ( gallocFrame ) where
 
+import           Asm.Ar.P
 import           Asm.G
 import           Asm.X86
 import           Asm.X86.Frame
@@ -148,6 +149,7 @@ mapFR _ (And l r0 r1)               = And l r0 r1
 mapFR _ (Cmovnle l r0 r1)           = Cmovnle l r0 r1
 mapFR _ (Rdrand l r)                = Rdrand l r
 
+-- TODO: don't bother re-analyzing if no Calls
 gallocFrame :: [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]
 gallocFrame = frameC . mkIntervals . galloc
 
@@ -166,8 +168,9 @@ frame clob asms = pre++asms++post++[Ret()] where
 
 gallocOn :: [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86Reg)
 gallocOn isns = (regs, fregs)
-    where regs = alloc isns [Rcx .. Rax] (IM.keysSet pres) pres
-          fregs = allocF isns [XMM1 .. XMM15] (IM.keysSet preFs) preFs
+    where regs = alloc (isns, aIsns) [Rcx .. Rax] (IM.keysSet pres) pres
+          fregs = allocF (isns, aFIsns) [XMM1 .. XMM15] (IM.keysSet preFs) preFs
+          (aIsns, aFIsns) = bundle isns
 
 pres :: IM.IntMap X86Reg
 pres = IM.fromList [(0, Rdi), (1, Rsi), (2, Rdx), (3, Rcx), (4, R8), (5, R9), (6, Rax), (7, Rsp)]

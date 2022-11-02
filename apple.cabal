@@ -56,6 +56,7 @@ library
         Class.E
         Data.Copointed
         Asm.Ar
+        Asm.Ar.P
         Asm.X86
         Asm.X86.B
         Asm.X86.Alloc

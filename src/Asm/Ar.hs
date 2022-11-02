@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Asm.Ar ( Arch (..), bundle, bundleF ) where
+module Asm.Ar ( Arch (..) ) where
 
 import qualified Asm.X86          as X86
 import qualified Asm.X86.B        as X86
@@ -28,23 +28,3 @@ instance Arch X86.X86 X86.AbsReg X86.FAbsReg where
 
     cf = X86.mkControlFlow
     bb = X86.bb
-
-bundle :: (E reg, Copointed (arch reg freg), Functor (arch reg freg), Arch arch reg freg)
-       => [arch reg freg ()]
-       -> [arch reg freg (ControlAnn, NLiveness, Maybe (Int,Int))]
-bundle isns =
-    let cfIsns = cf isns; lIsns = reconstruct cfIsns
-        mvIsns = fmap (both toInt).mI<$>isns
-        combine x y z = let tup = (copoint x, copoint y, z) in tup <$ y
-    in zipWith3 combine cfIsns lIsns mvIsns
-
--- TODO: this computes reconstruct cfIsns twice?
-
-bundleF :: (E freg, Copointed (arch reg freg), Functor (arch reg freg), Arch arch reg freg)
-        => [arch reg freg ()]
-        -> [arch reg freg (ControlAnn, NLiveness, Maybe (Int,Int))]
-bundleF isns =
-    let cfIsns = cf isns; lIsns = reconstruct cfIsns
-        mvIsns = fmap (both toInt).mf<$>isns
-        combine x y z = let tup = (copoint x, copoint y, z) in tup <$ y
-    in zipWith3 combine cfIsns lIsns mvIsns
