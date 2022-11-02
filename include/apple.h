@@ -1,4 +1,6 @@
-void* apple_compile(const char*);
+#include<stdint.h>
+#define P intptr_t
+void* apple_compile(P,P,const char*);
 
 // NULL on error
 char* apple_printty(const char*, char**);

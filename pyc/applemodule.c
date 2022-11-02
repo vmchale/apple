@@ -111,6 +111,7 @@ typedef I (*Ifp)(void);
 typedef F (*Ffp)(void);
 typedef U (*Aafp)(U);
 typedef F (*Affp)(U);
+typedef F (*Aaffp)(U,U);
 typedef I (*Aifp)(U);
 typedef U (*Iafp)(I);
 
@@ -124,7 +125,7 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         free(err);R NULL;
     };
     U fp;
-    fp=apple_compile(inp);
+    fp=apple_compile((P)&malloc,(P)&free,inp);
     SW(ty->res){
         C IA: R npy_i(((Ufp) fp)());
         C FA:
@@ -136,6 +137,7 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
             SW(ty->argc){
                 C 0: R PyFloat_FromDouble(((Ffp) fp)());
                 C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);R PyFloat_FromDouble(((Affp) fp)(inp0));};};
+                C 2: SW(ty->args[0]){C FA: SW(ty->args[1]){C FA: {U inp0=f_npy(arg0);U inp1=f_npy(arg1);R PyFloat_FromDouble(((Aaffp) fp)(inp0, inp1));};};};
             };
         C I_t:
             SW(ty->argc){
