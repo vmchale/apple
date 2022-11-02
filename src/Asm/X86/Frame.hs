@@ -23,13 +23,13 @@ frameC = concat . go IS.empty
                 _ -> [void isn] : go s' isns
 
 fromInt :: Int -> Maybe X86Reg
-fromInt 1 = Just Rsi
-fromInt 2 = Just Rdx
-fromInt 3 = Just Rcx
-fromInt 4 = Just R8
-fromInt 5 = Just R9
-fromInt 6 = Just Rax
-fromInt 7 = Just Rsp
+fromInt 1    = Just Rsi
+fromInt 2    = Just Rdx
+fromInt 3    = Just Rcx
+fromInt 4    = Just R8
+fromInt 5    = Just R9
+fromInt 6    = Just Rax
+fromInt 7    = Just Rsp
 fromInt (-1) = Just R10
 fromInt (-2) = Just R11
-fromInt _ = Nothing
+fromInt _    = Nothing
