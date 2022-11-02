@@ -14,6 +14,7 @@ module P ( Err (..)
          , x86L
          , bytes
          , funP
+         , ctxFunP
          ) where
 
 import           A
@@ -22,7 +23,6 @@ import           A.Opt
 import           Asm.X86
 import qualified Asm.X86.Alloc              as X86
 import           Asm.X86.Byte
-import qualified Asm.X86.CF                 as X86
 import qualified Asm.X86.LI                 as X86
 import           Asm.X86.Opt
 import qualified Asm.X86.P                  as X86
@@ -72,6 +72,9 @@ tyExpr = fmap prettyC.tyOf
 
 tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
 tyOf = fmap (first eAnn.discard) . tyConstr where discard (x, y, _) = (x, y)
+
+ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (FunPtr a)
+ctxFunP ctx = fmap snd . (assembleCtx ctx <=< either throwIO pure . x86G)
 
 funP :: BSL.ByteString -> IO (FunPtr a)
 funP = aFp <=< either throwIO pure . x86G

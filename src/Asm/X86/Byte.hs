@@ -5,7 +5,7 @@
 
 {-# LANGUAGE TupleSections #-}
 
-module Asm.X86.Byte ( aFp, assemble, dbgFp ) where
+module Asm.X86.Byte ( aFp, assemble, assembleCtx, dbgFp ) where
 
 import           Asm.X86
 import           Data.Bifunctor   (second)
@@ -32,6 +32,13 @@ prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
 aFp = fmap snd . allFp
 dbgFp = fmap fst . allFp
+
+assembleCtx :: (Int, Int) -> [X86 X86Reg FX86Reg a] -> IO (BS.ByteString, FunPtr b)
+assembleCtx ctx isns = do
+    let (sz, lbls) = mkIx 0 isns
+    p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
+    let b = BS.pack$asm 0 (pI p, Just ctx, lbls) isns
+    (b,)<$>finish b p
 
 allFp :: [X86 X86Reg FX86Reg a] -> IO (BS.ByteString, FunPtr b)
 allFp instrs = do

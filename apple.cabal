@@ -223,6 +223,7 @@ executable arepl
         containers,
         haskeline,
         mtl,
+        transformers,
         text,
         directory,
         filepath

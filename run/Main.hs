@@ -6,6 +6,7 @@ module Main (main) where
 import           A
 import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.State       (StateT, evalStateT, gets)
+import           Control.Monad.Trans.Class (lift)
 import qualified Data.ByteString.Lazy      as BSL
 import           Data.List
 import qualified Data.Map                  as M
@@ -36,7 +37,7 @@ data EE = Fn (E AlexPosn) | CI !AI | CF !AF
 namesStr :: StateT Env IO [String]
 namesStr = gets (fmap T.unpack . M.keys . ee)
 
-data Env = Env { _lex :: AlexUserState, ee :: M.Map T.Text EE, _mf :: (Int, Int) }
+data Env = Env { _lex :: AlexUserState, ee :: M.Map T.Text EE, mf :: (Int, Int) }
 
 type Repl a = InputT (StateT Env IO)
 
@@ -186,21 +187,29 @@ printExpr s = case tyParse bs of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right (e, _) ->
         case eAnn e of
-            I -> liftIO $ do
-              fp <- funP bs
-              print =<< callFFI fp retInt64 []
-            F -> liftIO $ do
-                fp <- funP bs
-                print =<< callFFI fp retCDouble []
-            (Arr _ F) -> liftIO $ do
-                fp <- funP bs
-                p <- callFFI fp (retPtr undefined) []
-                putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
-                free p
-            (Arr _ I) -> liftIO $ do
-                fp <- funP bs
-                p <- callFFI fp (retPtr undefined) []
-                putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
-                free p
+            I -> do
+              m <- lift $ gets mf
+              liftIO $ do
+                  fp <- ctxFunP m bs
+                  print =<< callFFI fp retInt64 []
+            F -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    fp <- ctxFunP m bs
+                    print =<< callFFI fp retCDouble []
+            (Arr _ F) -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    fp <- ctxFunP m bs
+                    p <- callFFI fp (retPtr undefined) []
+                    putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
+                    free p
+            (Arr _ I) -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    fp <- ctxFunP m bs
+                    p <- callFFI fp (retPtr undefined) []
+                    putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
+                    free p
             t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
     where bs = ubs s
