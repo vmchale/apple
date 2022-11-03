@@ -84,7 +84,7 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
         modify (addAVar x (Nothing, r))
         go e frs rs
     go Lam{} _ [] = error "Not enough registers!"
-    go e _ _ | isF (eAnn e) = do { f <- newFTemp ; (++[MX FRet (FReg f)]) <$> eval e f } -- avoid clash with xmm0 (arg + ret)
+    go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX FRet (FReg f)]) <$> eval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = eval e CRet
              | isArr (eAnn e) = do{(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
@@ -99,7 +99,6 @@ writeF :: E (T ())
        -> [(Maybe Int, Temp)] -- ^ Registers for arguments
        -> Temp -- ^ Register for return value
        -> IRM (Maybe Int, [Stmt])
-       -- TODO: handle when args are arrays
 writeF (Lam _ x e) (r:rs) ret | isArr (loc x) = do
     modify (addAVar x r)
     writeF e rs ret
@@ -127,7 +126,7 @@ aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | f1 (eAnn e) && f1 res = d
     -- cause f1 (skip rank)
     let sz = EAt (AP arrP (Just (ConstI 8)) l)
     f <- newFTemp
-    (_, ss) <- writeF op [(Nothing, f)] f
+    ss <- writeRF op [f] f
     iR <- newITemp
     szR <- newITemp
     let loop = MX f (FAt (AP arrP Nothing l)):ss++[WrF (AP t (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) (Just a)) (FReg f), MT arrP (IB IPlus (Reg arrP) (ConstI 8)), MT iR (IB IPlus (Reg iR) (ConstI 1))]
@@ -144,7 +143,7 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | i1 (eAnn e) &&
     -- rank1
     let sz = EAt (AP arrP (Just$ConstI 8) l)
     n <- newITemp
-    (_, ss) <- writeF op [(Nothing, acc), (Nothing, n)] acc
+    ss <- writeRF op [acc, n] acc
     iR <- newITemp
     szR <- newITemp
     -- TODO: why arrP and iR?
@@ -160,7 +159,7 @@ aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | i1 (eAnn e) && i1 res = d
     -- cause f1 (skip rank)
     let sz = EAt (AP arrP (Just (ConstI 8)) l)
     m <- newITemp
-    (_, ss) <- writeF op [(Nothing, m)] m
+    ss <- writeRF op [m] m
     iR <- newITemp
     szR <- newITemp
     -- TODO: why arrP and iR?
@@ -213,6 +212,22 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) t = do
     putIncr <- eval (((end `eMinus` start) `ePlus` FLit F 1) `eDiv` EApp F (Builtin (Arrow I F) ItoF) nSteps) incrR
     let loop = [MJ (IRel IGt (Reg i) (Reg n)) endL, WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (FReg startR), MX startR (FB FPlus (FReg startR) (FReg incrR)), MT i (IB IPlus (Reg i) (ConstI 1))]
     pure (Just a, putStart ++ putIncr ++ putN ++ Ma a t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):dim1 (Just a) t (Reg n) ++ MT i (ConstI 0):L l:loop ++ [J l, L endL])
+aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | f1 (eAnn arr) && f1 oTy = do
+    a <- nextArr
+    arrP <- newITemp
+    szR <- newITemp
+    fArg0R <- newFTemp
+    fArg1R <- newFTemp
+    fRetR <- newFTemp
+    (arrL, putX) <- aeval arr arrP
+    -- f1 (skip rank)
+    let sz = EAt (AP arrP (Just (ConstI 8)) arrL)
+    i <- newITemp
+    l <- newLabel
+    endL <- newLabel
+    ss <- writeRF op [fArg0R, fArg1R] fRetR
+    let loop = MX fArg1R (FAt (AP arrP (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) arrL)):MX fArg0R (FAt (AP arrP (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 24))) arrL)):ss++[WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (FReg fRetR)]
+    pure (Just a, putX ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (IB IMinus (Reg szR) (ConstI 1)) ++ MT i (ConstI 0):L l:MJ (IRel IGeq (Reg i) (Reg szR)) endL:MT i (IB IPlus (Reg i) (ConstI 1)):loop ++ [J l, L endL])
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy = do
     a <- nextArr
     arrP <- newITemp
@@ -243,7 +258,6 @@ eval (LLet _ (n, e') e) t | isI (eAnn e') = do
     plT <- eval e' t'
     modify (addVar n t')
     (plT ++) <$> eval e t
-    -- TODO: isArr
 eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ j))) acc = do
     i <- newITemp
     endR <- newITemp
@@ -292,7 +306,6 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EAp
     -- step the accumulating value
     step <- writeRF op [acc, xR] acc
     pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [MT i (IB IPlus (Reg i) (ConstI 1)), MX xR (FB FPlus (FReg xR) (FReg incrR)), J l, L endL]
-    -- TODO: case where nSteps is a Var ...
 eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps)) acc = do
     i <- newITemp
     startR <- newFTemp
@@ -373,7 +386,7 @@ eval (EApp _ (EApp _ (Builtin (Arrow I _) Minus) e0) e1) t = do
     pl0 <- eval e0 t0
     pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MT t (IB IMinus (Reg t0) (Reg t1))]
-eval (ILit F x) t = pure [MX t (ConstF $ fromIntegral x)] -- if it overflows... you deserve it
+eval (ILit F x) t = pure [MX t (ConstF $ fromIntegral x)] -- if it overflows you deserve it
 eval (ILit _ i) t = pure [MT t (ConstI $ asI i)]
 eval (Var F x) t = do
   st <- gets vars
@@ -471,7 +484,6 @@ eval (EApp _ (Builtin (Arrow F _) Neg) x) t = do
 eval (FLit _ x) t = pure [MX t (ConstF x)]
 eval (EApp _ (Builtin _ Sqrt) (FLit _ x)) t =
     pure [MX t (ConstF (sqrt x))]
-    -- FIXME: check op is F->F &c.
 eval (EApp _ (Builtin _ Sqrt) (ILit F x)) t =
     pure [MX t (ConstF (sqrt $ realToFrac x :: Double))]
 eval (EApp _ (Builtin _ Sqrt) e) t = do
