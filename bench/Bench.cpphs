@@ -44,6 +44,7 @@ main = do
     klFp <- fmap aaf . funP =<< BSL.readFile "test/examples/kl.🍎"
     gammaFp <- fmap ff . funP =<< BSL.readFile "test/examples/gammaln.🍏"
     scanFp <- fmap aa . funP =<< BSL.readFile "bench/apple/scanmax.🍏"
+    ncdfFp <- fmap ff . funP =<< BSL.readFile "test/examples/ncdf.🍎"
 #endif
     defaultMain [ env files $ \ ~(he, e, t, f, x, 𝛾) ->
                   bgroup "pipeline"
@@ -94,6 +95,10 @@ main = do
                       , bench "jit" $ nfIO (pure $ klFp xsPtr ysPtr)
 #endif
                       ]
+#ifdef x86_64_HOST_ARCH
+                , bgroup "ncdf"
+                      [ bench "jit" $ nfIO (pure $ ncdfFp 2) ]
+#endif
                 , bgroup "Γ"
                       [ bench "hs" $ nf Math.gammaln (1.5 :: Double)
 #ifdef x86_64_HOST_ARCH
