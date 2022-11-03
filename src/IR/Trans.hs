@@ -228,6 +228,22 @@ aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | f1 (eAnn arr) && f1 oTy = 
     ss <- writeRF op [fArg0R, fArg1R] fRetR
     let loop = MX fArg1R (FAt (AP arrP (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) arrL)):MX fArg0R (FAt (AP arrP (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 24))) arrL)):ss++[WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (FReg fRetR)]
     pure (Just a, putX ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (IB IMinus (Reg szR) (ConstI 1)) ++ MT i (ConstI 0):L l:MJ (IRel IGeq (Reg i) (Reg szR)) endL:MT i (IB IPlus (Reg i) (ConstI 1)):loop ++ [J l, L endL])
+aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | i1 (eAnn arr) && i1 oTy = do
+    a <- nextArr
+    arrP <- newITemp
+    szR <- newITemp
+    arg0R <- newITemp
+    arg1R <- newITemp
+    retR <- newITemp
+    (arrL, putX) <- aeval arr arrP
+    -- f1 (skip rank)
+    let sz = EAt (AP arrP (Just (ConstI 8)) arrL)
+    i <- newITemp
+    l <- newLabel
+    endL <- newLabel
+    ss <- writeRF op [arg0R, arg1R] retR
+    let loop = MT arg1R (EAt (AP arrP (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) arrL)):MT arg0R (EAt (AP arrP (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 24))) arrL)):ss++[Wr (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (Reg retR)]
+    pure (Just a, putX ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (IB IMinus (Reg szR) (ConstI 1)) ++ MT i (ConstI 0):L l:MJ (IRel IGeq (Reg i) (Reg szR)) endL:MT i (IB IPlus (Reg i) (ConstI 1)):loop ++ [J l, L endL])
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy = do
     a <- nextArr
     arrP <- newITemp
