@@ -14,17 +14,22 @@ def regress(x,y):
       }'''
   return apple.apple(regress_apple,x,y)
 
-def erf(x):
-  erf_apple = '''
-    λz.
+erf_apple = '''
+  λz.
+  {
+    f11 ← λz.
     {
-      f11 ← λz.
-      {
-        rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))];
-        ix ← irange 0 99 1;
-        mkIx ← [(z^x)%(rf 1.5 (itof x))];
-        (+)/1 0 (mkIx'1 ix)
-      };
-      2*z*(e: (_(z^2)))*(f11 (z^2))%(√𝜋)
-    }'''
+      rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))];
+      ix ← irange 0 99 1;
+      mkIx ← [(z^x)%(rf 1.5 (itof x))];
+      (+)/1 0 (mkIx'1 ix)
+    };
+    2*z*(e: (_(z^2)))*(f11 (z^2))%(√𝜋)
+  }'''
+
+def ncdf(x):
+  ncdf_apple = 'λz. {erf ← ' + erf_apple + '; zz ⟜ z%(√2); 0.5*(1+erf(zz))}'
+  return apple.apple(ncdf_apple,x)
+
+def erf(x):
   return apple.apple(erf_apple,x)
