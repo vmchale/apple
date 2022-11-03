@@ -62,7 +62,6 @@ fI64 :: Double -> Int64
 fI64 x = accursedUnutterablePerformIO $ alloca $ \bytes -> poke (castPtr bytes) x *> peek bytes
 
 ir :: IR.Stmt -> WM [X86 AbsReg FAbsReg ()]
-ir (IR.MT t (IR.Reg r))                                 = pure [MovRR () (absReg t) (absReg r)]
 ir (IR.MT t (IR.ConstI i))                              = pure [MovRI () (absReg t) i]
 ir (IR.MT t (IR.EAt (IR.AP m (Just (IR.ConstI i)) _))) | Just i8 <- mi8 i = pure [MovRA () (absReg t) (RC (absReg m) i8)]
 ir (IR.MT t (IR.EAt (IR.AP m Nothing _)))               = pure [MovRA () (absReg t) (R$absReg m)]
@@ -180,14 +179,12 @@ feval (IR.FAt (IR.AP m (Just (IR.IB IR.IPlus (IR.IB IR.IAsl (IR.Reg i) (IR.Const
 feval e _                                           = error (show e)
 
 evalE :: IR.Exp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
+evalE (IR.Reg r) rD                                  = pure [MovRR () (absReg rD) (absReg r)]
 evalE (IR.ConstI i) rD                               = pure [MovRI () (absReg rD) i]
-evalE (IR.IB IR.IMinus (IR.Reg r0) (IR.Reg r1)) rD   = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), ISubRR () rD' (absReg r1)]
-evalE (IR.IB IR.IPlus (IR.Reg r0) (IR.Reg r1)) rD    = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRR () rD' (absReg r1)]
 evalE (IR.IB IR.IPlus (IR.Reg r0) (IR.ConstI i)) rD  = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRI () rD' i]
 evalE (IR.IB IR.ITimes (IR.Reg r0) (IR.Reg r1)) rD   = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IMulRR () rD' (absReg r1)]
 evalE (IR.IB IR.IAsl (IR.Reg r0) (IR.ConstI i)) rD | Just i8 <- mi8 i = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), Sal () rD' i8]
 evalE (IR.IB IR.IAsr (IR.Reg r0) (IR.ConstI i)) rD | Just i8 <- mi8 i = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), Sar () rD' i8]
-evalE (IR.IB IR.IMinus (IR.Reg r0) (IR.ConstI i)) rD = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), ISubRI () rD' i]
 evalE (IR.IB IR.IMinus e (IR.ConstI i)) rD           = do
     let rD' = absReg rD
     eR <- nextI
@@ -203,11 +200,6 @@ evalE (IR.IB IR.IPlus (IR.Reg r) e) rD               = do
     eR <- nextI
     plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (absReg r), IAddRR () rD' (IReg eR)]
-evalE (IR.IB IR.IDiv e (IR.Reg r)) rD                = do
-    let rD' = absReg rD
-    eR <- nextI
-    plE <- evalE e (IR.ITemp eR)
-    pure $ plE ++ [MovRR () Quot (absReg r), IDiv () (IReg eR), MovRR () rD' Quot]
 evalE (IR.IB IR.IDiv e0 e1) rD                       = do
     let rD' = absReg rD
     e0R <- nextI

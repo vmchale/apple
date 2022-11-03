@@ -321,11 +321,6 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EAp
     -- step the accumulating value
     step <- writeRF op [acc, xR] acc
     pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [MT i (IB IPlus (Reg i) (ConstI 1)), MX xR (FB FPlus (FReg xR) (FReg incrR)), J l, L endL]
-eval (EApp _ (EApp _ (Builtin (Arrow I _) Plus) (Var _ x)) e) t = do
-    tϵ <- newITemp
-    st <- gets vars
-    pl <- eval e tϵ
-    pure $ pl ++ [MT t (IB IPlus (Reg $ getT st x) (Reg tϵ))]
 eval (EApp _ (EApp _ (Builtin (Arrow I _) Plus) e0) e1) t = do
     t0 <- newITemp
     t1 <- newITemp
@@ -344,11 +339,6 @@ eval (EApp _ (EApp _ (Builtin _ Plus) (Var F x)) (EApp _ (EApp _ (Builtin _ Time
     pl0 <- eval e0 t0
     pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MX t (FB FPlus (FReg $ getT st x) (FB FTimes (FReg t0) (FReg t1)))]
-eval (EApp _ (EApp _ (Builtin _ Plus) (Var F x)) e) t = do
-    st <- gets vars
-    t' <- newFTemp
-    pl <- eval e t'
-    pure $ pl ++ [MX t (FB FPlus (FReg $ getT st x) (FReg t'))]
 eval (EApp _ (EApp _ (Builtin (Arrow F _) Plus) e0) e1) t = do
     t0 <- newFTemp
     t1 <- newFTemp
