@@ -8,7 +8,7 @@
 module Asm.X86.Byte ( aFp, assemble, assembleCtx, dbgFp ) where
 
 import           Asm.X86
-import           Data.Bifunctor   (second)
+import           Data.Bifunctor   (first, second)
 import           Data.Bits        (Bits, rotateR, shiftL, (.&.), (.|.))
 import qualified Data.ByteString  as BS
 import           Data.Int         (Int32, Int64, Int8)
@@ -30,7 +30,7 @@ hasMa = any g where
 prepAddrs :: [X86 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
-aFp = fmap snd . allFp
+aFp = fmap (first BS.length) . allFp
 dbgFp = fmap fst . allFp
 
 assembleCtx :: (Int, Int) -> [X86 X86Reg FX86Reg a] -> IO (BS.ByteString, FunPtr b)

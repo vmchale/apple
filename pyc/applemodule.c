@@ -1,6 +1,7 @@
 #include <HsFFI.h>
 #include <Python.h>
 #include <apple.h>
+#include<sys/mman.h>
 #include<numpy/arrayobject.h>
 #include<apple_abi.h>
 
@@ -125,29 +126,30 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, err);
         free(err);R NULL;
     };
-    U fp;
-    fp=apple_compile((P)&malloc,(P)&free,inp);
+    U fp;size_t f_sz;
+    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
+    PyObject* r;
     SW(ty->res){
-        C IA: R npy_i(((Ufp) fp)());
+        C IA: r=npy_i(((Ufp) fp)());
         C FA:
             SW(ty->argc){
-                C 0: R npy_f(((Ufp) fp)());
-                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);R npy_f(((Aafp) fp)(inp0));};};
+                C 0: r=npy_f(((Ufp) fp)());
+                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=npy_f(((Aafp) fp)(inp0));};};
             };
         C F_t:
             SW(ty->argc){
-                C 0: R PyFloat_FromDouble(((Ffp) fp)());
-                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);R PyFloat_FromDouble(((Affp) fp)(inp0));}; C F_t: {R PyFloat_FromDouble(((Fffp) fp)(PyFloat_AsDouble(arg0)));};};
-                C 2: SW(ty->args[0]){C FA: SW(ty->args[1]){C FA: {U inp0=f_npy(arg0);U inp1=f_npy(arg1);R PyFloat_FromDouble(((Aaffp) fp)(inp0, inp1));};};};
+                C 0: r=PyFloat_FromDouble(((Ffp) fp)());
+                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=PyFloat_FromDouble(((Affp) fp)(inp0));}; C F_t: {r=PyFloat_FromDouble(((Fffp) fp)(PyFloat_AsDouble(arg0)));};};
+                C 2: SW(ty->args[0]){C FA: SW(ty->args[1]){C FA: {U inp0=f_npy(arg0);U inp1=f_npy(arg1);r=PyFloat_FromDouble(((Aaffp) fp)(inp0, inp1));};};};
             };
         C I_t:
             SW(ty->argc){
-                C 0: R PyLong_FromLongLong(((Ifp) fp)());
-                C 1: SW(ty->args[0]){C IA: {U inp0=i_npy(arg0);R PyLong_FromLongLong(((Aifp) fp)(inp0));};};
+                C 0: r=PyLong_FromLongLong(((Ifp) fp)());
+                C 1: SW(ty->args[0]){C IA: {U inp0=i_npy(arg0);r=PyLong_FromLongLong(((Aifp) fp)(inp0));};};
             };
     }
-    // FIXME: function pointer is never freed
-    Py_RETURN_NONE;
+    munmap(fp,f_sz);
+    R r;
 }
 
 static PyMethodDef AppleMethods[] = {

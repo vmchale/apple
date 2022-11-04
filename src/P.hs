@@ -73,10 +73,10 @@ tyExpr = fmap prettyC.tyOf
 tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
 tyOf = fmap (first eAnn.discard) . tyConstr where discard (x, y, _) = (x, y)
 
-ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (FunPtr a)
-ctxFunP ctx = fmap snd . (assembleCtx ctx <=< either throwIO pure . x86G)
+ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
+ctxFunP ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . x86G)
 
-funP :: BSL.ByteString -> IO (FunPtr a)
+funP :: BSL.ByteString -> IO (Int, FunPtr a)
 funP = aFp <=< either throwIO pure . x86G
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString

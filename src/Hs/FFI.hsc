@@ -3,11 +3,13 @@ module Hs.FFI ( bsFp
               , allocNear
               , allocExec
               , finish
+              , freeFunPtr
               ) where
 
 import Data.Bits ((.|.))
+import Data.Functor (void)
 import Foreign.C.Types (CInt (..), CSize (..), CChar)
-import Foreign.Ptr (FunPtr, IntPtr (..), castPtrToFunPtr, Ptr, intPtrToPtr, nullPtr)
+import Foreign.Ptr (FunPtr, IntPtr (..), castFunPtrToPtr, castPtrToFunPtr, Ptr, intPtrToPtr, nullPtr)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 import System.Posix.Types (COff (..))
@@ -37,6 +39,9 @@ bsFp bs = BS.unsafeUseAsCStringLen bs $ \(bytes, sz) -> do
     _ <- {-# SCC "memcpy" #-} memcpy fAt bytes sz'
     _ <- {-# SCC "mprotect" #-} mprotect fAt sz' #{const PROT_EXEC}
     pure (castPtrToFunPtr fAt, sz')
+
+freeFunPtr :: Int -> FunPtr a -> IO ()
+freeFunPtr sz fp = void $ munmap (castFunPtrToPtr fp) (fromIntegral sz)
 
 foreign import ccall mmap :: Ptr a -> CSize -> CInt -> CInt -> CInt -> COff -> IO (Ptr a)
 foreign import ccall mprotect :: Ptr a -> CSize -> CInt -> IO CInt

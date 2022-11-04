@@ -31,6 +31,8 @@ aA x = do
     p <- mallocBytes (sizeOf x)
     poke p x $> p
 
+leakFp = fmap snd.funP
+
 main :: IO ()
 main = do
     -- this sucks but using env segfaults so...
@@ -38,13 +40,13 @@ main = do
     ysPtr <- aA (AA 1 [500] ys)
     iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int)))
 #ifdef x86_64_HOST_ARCH
-    fp <- fmap iii . funP =<< BSL.readFile "test/examples/risingFactorial.🍎"
-    erfFp <- fmap ff . funP =<< BSL.readFile "test/examples/erf.🍏"
-    entropyFp <- fmap af . funP =<< BSL.readFile "test/examples/entropy.🍏"
-    klFp <- fmap aaf . funP =<< BSL.readFile "test/examples/kl.🍎"
-    gammaFp <- fmap ff . funP =<< BSL.readFile "test/examples/gammaln.🍏"
-    scanFp <- fmap aa . funP =<< BSL.readFile "bench/apple/scanmax.🍏"
-    ncdfFp <- fmap ff . funP =<< BSL.readFile "test/examples/ncdf.🍎"
+    fp <- fmap iii . leakFp =<< BSL.readFile "test/examples/risingFactorial.🍎"
+    erfFp <- fmap ff . leakFp =<< BSL.readFile "test/examples/erf.🍏"
+    entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
+    klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
+    gammaFp <- fmap ff . leakFp =<< BSL.readFile "test/examples/gammaln.🍏"
+    scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
+    ncdfFp <- fmap ff . leakFp =<< BSL.readFile "test/examples/ncdf.🍎"
 #endif
     defaultMain [ env files $ \ ~(he, e, t, f, x, 𝛾) ->
                   bgroup "pipeline"

@@ -21,6 +21,7 @@ import           Foreign.Marshal.Alloc     (free)
 import           Foreign.Ptr               (Ptr)
 import           Foreign.Storable          (peek)
 import           Hs.A
+import           Hs.FFI
 import           L
 import           Prettyprinter             (hardline, pretty, (<+>))
 import           Prettyprinter.Render.Text (putDoc)
@@ -190,26 +191,28 @@ printExpr s = case tyParse bs of
             I -> do
               m <- lift $ gets mf
               liftIO $ do
-                  fp <- ctxFunP m bs
+                  (sz, fp) <- ctxFunP m bs
                   print =<< callFFI fp retInt64 []
+                  freeFunPtr sz fp
             F -> do
                 m <- lift $ gets mf
                 liftIO $ do
-                    fp <- ctxFunP m bs
+                    (sz, fp) <- ctxFunP m bs
                     print =<< callFFI fp retCDouble []
+                    freeFunPtr sz fp
             (Arr _ F) -> do
                 m <- lift $ gets mf
                 liftIO $ do
-                    fp <- ctxFunP m bs
+                    (sz, fp) <- ctxFunP m bs
                     p <- callFFI fp (retPtr undefined) []
                     putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
-                    free p
+                    free p *> freeFunPtr sz fp
             (Arr _ I) -> do
                 m <- lift $ gets mf
                 liftIO $ do
-                    fp <- ctxFunP m bs
+                    (sz, fp) <- ctxFunP m bs
                     p <- callFFI fp (retPtr undefined) []
                     putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
-                    free p
+                    free p *> freeFunPtr sz fp
             t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
     where bs = ubs s

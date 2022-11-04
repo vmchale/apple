@@ -85,12 +85,13 @@ apple_ty src errPtr = do
                     {# set FnTy.args #} sp ip
                     pure sp
 
-apple_compile :: IntPtr -> IntPtr -> CString -> IO (Ptr Word8)
-apple_compile (IntPtr m) (IntPtr f) src = do
+apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)
+apple_compile (IntPtr m) (IntPtr f) src szPtr = do
     bSrc <- BS.unsafePackCString src
-    castFunPtrToPtr <$> ctxFunP (m,f) (BSL.fromStrict bSrc)
+    (sz, fp) <- ctxFunP (m,f) (BSL.fromStrict bSrc)
+    poke szPtr (fromIntegral sz) $> castFunPtrToPtr fp
 
-foreign export ccall apple_compile :: IntPtr -> IntPtr -> CString -> IO (Ptr Word8)
+foreign export ccall apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)
 foreign export ccall apple_printty :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_dumpasm :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_dumpir :: CString -> Ptr CString -> IO CString

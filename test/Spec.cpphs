@@ -90,11 +90,11 @@ x64T = testGroup "x64"
 x ≈ y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-4&&(y-x)/y<1e-4)
 
 scan i = do
-    f <- ia <$> funP "[(+) /\\ 0 (irange 1 x 1)]"
+    f <- ia.snd <$> funP "[(+) /\\ 0 (irange 1 x 1)]"
     asI (f i)
 
 sSq i = do
-    f <- ia <$> funP "[(^2)'1 (irange 0 x 1)]"
+    f <- ia.snd <$> funP "[(^2)'1 (irange 0 x 1)]"
     asI (f i)
 
 asI :: Ptr (Apple Int) -> IO [Int]
@@ -106,7 +106,7 @@ asN = fmap (\(AA _ _ xs) -> xs) . peek
 aaFp fp xs =
     let xA = AA 1 [fromIntegral(length xs)] xs in
     wA xA $ \p -> do
-        f <- fmap aa . funP =<< BSL.readFile fp
+        f <- fmap (aa.snd) . funP =<< BSL.readFile fp
         asN (f p)
 
 tyS :: BSL.ByteString -> TestTree
@@ -170,22 +170,22 @@ jitAf code xs =
 
 jitE :: Double -> IO Double
 jitE x = do
-    fp <- funP "[e:x]"
+    (_, fp) <- funP "[e:x]"
     pure $ ff fp x
 
 jitExp :: Int64 -> Double -> IO Double
 jitExp n x = do
-    fp <- funP =<< BSL.readFile "test/examples/exp.🍏"
+    (_, fp) <- funP =<< BSL.readFile "test/examples/exp.🍏"
     pure $ iff fp n x
 
 fpFf :: FilePath -> Double -> IO Double
 fpFf fp x = do
-    f <- funP =<< BSL.readFile fp
+    (_, f) <- funP =<< BSL.readFile fp
     pure $ ff f x
 
 fpFff :: FilePath -> Double -> Double -> IO Double
 fpFff fp x y = do
-    f <- funP =<< BSL.readFile fp
+    (_, f) <- funP =<< BSL.readFile fp
     pure $ fff f x y
 
 gammaJit = fpFf "test/examples/gammaln.🍏"
@@ -202,7 +202,7 @@ jitFact = fpFf "test/examples/ffact.🍎"
 
 jitRF :: Int -> Int -> IO Int
 jitRF m n = do
-    fp <- funP =<< BSL.readFile "test/examples/risingFactorial.🍎"
+    (_, fp) <- funP =<< BSL.readFile "test/examples/risingFactorial.🍎"
     pure $ runRF fp m n
 
 wA :: Storable a => Apple a -> (Ptr (Apple a) -> IO b) -> IO b
