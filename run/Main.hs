@@ -48,8 +48,8 @@ cyclicSimple = fmap simpleCompletion
 runRepl :: Repl a x -> IO x
 runRepl x = do
     histDir <- (</> ".apple_history") <$> getHomeDirectory
-    mf <- mem'
-    let initSt = Env alexInitUserState M.empty mf
+    mfϵ <- mem'
+    let initSt = Env alexInitUserState M.empty mfϵ
     let myCompleter = appleCompletions
     let settings = setComplete myCompleter $ defaultSettings { historyFile = Just histDir }
     flip evalStateT initSt $ runInputT settings x
