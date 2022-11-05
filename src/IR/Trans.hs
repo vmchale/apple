@@ -261,7 +261,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     (_, ss) <- writeF op [(Nothing, slopP)] fR
     let loop = Cpy (AP slopP (Just (ConstI 16)) Nothing) (AP arrP (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) arrL) (ConstI $ fromIntegral n + 2):ss++[WrF (AP t (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) arrL) (FReg fR)]
     pure (Just a, putX++MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI (24-8*fromIntegral n))):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (IB IMinus (Reg szR) (ConstI $ fromIntegral n - 1)):Sa slopP nIr:Wr (AP slopP Nothing Nothing) (ConstI 1):Wr (AP slopP (Just (ConstI 8)) Nothing) (ConstI $ fromIntegral n):MT iR (ConstI 0):L l:MJ (IRel IGeq (Reg iR) (Reg szR)) endL:loop++[MT iR (IB IPlus (Reg iR) (ConstI 1)), J l, L endL, Pop nIr])
-aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 (oTy) = do
+aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do
     a <- nextArr
     arg <- newITemp
     i <- newITemp
@@ -274,6 +274,18 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 (oTy) = do
     ss <- writeRF op [arg] arg
     let loop = [Wr (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (Reg arg)] ++ ss
     pure (Just a, putSeed ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ MT i (ConstI 0):L l:MJ (IRel IGt (Reg i) (Reg nR)) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL])
+aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | f1 oTy = do
+    a <- nextArr
+    xR <- newFTemp
+    nR <- newITemp
+    i <- newITemp
+    let sz = IB IPlus (Reg nR) (ConstI 24)
+    putN <- eval n nR
+    putX <- eval x xR
+    l <- newLabel
+    endL <- newLabel
+    let step = WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (FReg xR)
+    pure (Just a, putX ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ [MT i (ConstI 0), L l, MJ (IRel IGt (Reg i) (Reg nR)) endL, step, MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> IRM [Stmt]
