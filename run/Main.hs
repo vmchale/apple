@@ -7,6 +7,7 @@ import           A
 import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.State       (StateT, evalStateT, gets)
 import           Control.Monad.Trans.Class (lift)
+import           Criterion                 (bench, benchmark, nfIO)
 import qualified Data.ByteString.Lazy      as BSL
 import           Data.Int                  (Int64)
 import           Data.List
@@ -65,6 +66,11 @@ appleCompletions ("psni:", "")    = pure ("psni:", [simpleCompletion "ect"])
 appleCompletions ("epsni:", "")   = pure ("epsni:", [simpleCompletion "ct"])
 appleCompletions ("cepsni:", "")  = pure ("cepsni:", [simpleCompletion "t"])
 appleCompletions ("tcepsni:", "") = pure ("tcepsni:", [simpleCompletion ""])
+appleCompletions ("b:", "")       = pure ("b:", cyclicSimple ["ench", ""])
+appleCompletions ("eb:", "")      = pure ("eb:", [simpleCompletion "nch"])
+appleCompletions ("neb:", "")     = pure ("neb:", [simpleCompletion "ch"])
+appleCompletions ("cneb:", "")    = pure ("cneb:", [simpleCompletion "h"])
+appleCompletions ("hcneb:", "")   = pure ("hcneb:", [simpleCompletion ""])
 appleCompletions ("t:", "")       = pure ("t:", cyclicSimple ["y", ""])
 appleCompletions ("yt:", "")      = pure ("yt:", cyclicSimple [""])
 appleCompletions ("d:", "")       = pure ("d:", [simpleCompletion "isasm"])
@@ -108,6 +114,8 @@ loop = do
         Just [":quit"]      -> pure ()
         Just (":asm":e)     -> dumpAsmG (unwords e) *> loop
         Just (":ann":e)     -> annR (unwords e) *> loop
+        Just (":b":e)       -> benchE (unwords e) *> loop
+        Just (":bench":e)   -> benchE (unwords e) *> loop
         Just (":ir":e)      -> irR (unwords e) *> loop
         Just (":disasm":e)  -> disasm (unwords e) *> loop
         Just (":inspect":e) -> inspect (unwords e) *> loop
@@ -119,6 +127,7 @@ showHelp = liftIO $ putStr $ concat
     [ helpOption ":help, :h" "" "Show this help"
     , helpOption ":ty" "<expression>" "Display the type of an expression"
     , helpOption ":ann" "<expression>" "Annotate with types"
+    , helpOption ":bench, :b" "<expression>" "Benchmark an expression"
     , helpOption ":list" "" "List all names that are in scope"
     , helpOption ":quit, :q" "" "Quit REPL"
     , helpOption "\\l" "" "Show reference"
@@ -216,6 +225,37 @@ inspect s = case tyParse bs of
             p <- callFFI fp (retPtr undefined) []
             TIO.putStrLn =<< dbgPrint p
             free p *> freeFunPtr sz fp
+    where bs = ubs s
+
+benchE :: String -> Repl AlexPosn ()
+benchE s = case tyParse bs of
+    Left err -> liftIO $ putDoc (pretty err <> hardline)
+    Right (e, _) ->
+        case eAnn e of
+            (Arr _ F) -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
+                    freeFunPtr sz fp
+            (Arr _ I) -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
+                    freeFunPtr sz fp
+            I -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    benchmark (nfIO $ callFFI fp retInt64 [])
+                    freeFunPtr sz fp
+            F -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    benchmark (nfIO $ callFFI fp retCDouble [])
+                    freeFunPtr sz fp
     where bs = ubs s
 
 printExpr :: String -> Repl AlexPosn ()
