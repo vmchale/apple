@@ -18,6 +18,7 @@
   - [ ] quickcheck!
   - [ ] automatic differentiation (pytorch eh)
 # Features
+- [ ] folds/scans shouldn't take seeds
 - [ ] allow type signatures in lambdas?
 - [ ] mko executable - compile expression into .o file, with some name
 - [ ] random number generation
@@ -27,13 +28,10 @@
 - [ ] reshape arrays
 - [ ] clz? (count leading zeroes = floor(log) -> digits)
 - [ ] flatness check (arrays)
-## Array
-- [ ] concat
-- [ ] transpose (reverse all axes!)
 ## Syntax
 - [ ] more laconic syntax for type signatures (no Arr... Cons)
-- [ ] `zipWith` builtin (2-ary)
-  - [ ] rename ` because it's only used as `2 1 anyway
+- [x] `zipWith` builtin (2-ary)
+  - [x] rename ` because it's only used as `2 1 anyway
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
 - [ ] https://www.compart.com/en/unicode/U+1D66
 ## Optimization
@@ -106,3 +104,6 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 - [ ] https://michaelmoroz.github.io/TracingGeodesics/
 - [ ] https://palaiologos.rocks/posts/linalg-apl/
 - [ ] FFI https://code.jsoftware.com/wiki/Guides/DLLs/Calling_DLLs
+- [ ] https://code.jsoftware.com/wiki/Essays
+- [ ] j901 integration:
+  - [ ] `viewmat 100 100 $ 1 2 1` `viewmat */~i:5` `viewmat +/~i.10`

@@ -7,6 +7,8 @@
 - [ ] transpose
 - [ ] concat
 - [ ] conditionals
+- [ ] array literals
+  - [ ] multidimensional arrays
 ## Add Features
 - [ ] outer product
 - [ ] dyadic infix
@@ -14,6 +16,7 @@
 - [ ] matmul
 # Performance
 - [ ] lift constants out of loops
+- [ ] liveness analysis on basic blocks
 # Allocations
 - [ ] consolidate allocations up-front when possible (dim from types)
 # ABI
