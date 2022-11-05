@@ -136,6 +136,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "^:" "iterate" "%." "matmul"
     , lOption "⊗" "outer product" "|:" "transpose"
     , lOption "{.?" "head" "{." "typesafe head"
+    , lOption "⟨z,w⟩" "array literal" "" ""
     ]
 
 lOption op0 desc0 op1 desc1 =
