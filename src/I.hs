@@ -82,9 +82,12 @@ bM e@ILit{} = pure e
 bM (ALit l es) = ALit l <$> traverse bM es
 bM (Tup l es) = Tup l <$> traverse bM es
 bM (Cond l p e0 e1) = Cond l <$> bM p <*> bM e0 <*> bM e1
-bM (EApp _ (Lam _ n e') e) = do
+bM (EApp l (Lam _ n e') e) | not(hR e) = do
     eI <- bM e
     modify (bind n eI) *> bM e'
+                           | otherwise = do
+    eI <- bM e
+    LLet l (n, eI) <$> bM e'
 bM (EApp l e0 e1) = do
     e0' <- bM e0
     e1' <- bM e1
