@@ -4,6 +4,7 @@ module IR.Trans ( writeC
                 ) where
 
 import           A
+import           Control.Monad              (zipWithM)
 import           Control.Monad.State.Strict (State, gets, modify, runState)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
@@ -286,6 +287,12 @@ aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | f1 oTy = do
     endL <- newLabel
     let step = WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (FReg xR)
     pure (Just a, putX ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ [MT i (ConstI 0), L l, MJ (IRel IGt (Reg i) (Reg nR)) endL, step, MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL])
+aeval (ALit oTy es) t | f1 oTy = do
+    a <- nextArr
+    xR <- newFTemp
+    let n = length es; sz = ConstI$8*fromIntegral n+24
+    steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[WrF (AP t (Just (ConstI$16+8*i)) (Just a)) (FReg xR)]}) [0..(fromIntegral n-1)] es
+    pure (Just a, Ma a t sz:dim1 (Just a) t (ConstI$fromIntegral n) ++ steps)
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> IRM [Stmt]
