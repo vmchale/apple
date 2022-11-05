@@ -242,6 +242,7 @@ executable arepl
         apple,
         bytestring,
         libffi,
+        criterion,
         prettyprinter,
         haskeline,
         mtl,
