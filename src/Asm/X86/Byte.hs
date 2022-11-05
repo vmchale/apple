@@ -28,17 +28,17 @@ hasMa = any g where g Call{} = True; g _ = False
 prepAddrs :: [X86 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
-aFp = fmap (first BS.length) . allFp
+aFp = fmap (first (BS.length.mconcat)) . allFp
 dbgFp = fmap fst . allFp
 
 assembleCtx :: (Int, Int) -> [X86 X86Reg FX86Reg a] -> IO (BS.ByteString, FunPtr b)
 assembleCtx ctx isns = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
-    let b = BS.pack$asm 0 (pI p, Just ctx, lbls) isns
+    let b = BS.pack.concat$asm 0 (pI p, Just ctx, lbls) isns
     (b,)<$>finish b p
 
-allFp :: [X86 X86Reg FX86Reg a] -> IO (BS.ByteString, FunPtr b)
+allFp :: [X86 X86Reg FX86Reg a] -> IO ([BS.ByteString], FunPtr b)
 allFp instrs = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
@@ -46,13 +46,13 @@ allFp instrs = do
         case res of
             Just (m, _) -> (res,) <$> allocNear m (fromIntegral sz)
             _           -> (res,) <$> allocExec (fromIntegral sz)
-    let b = BS.pack$asm 0 (pI p, fn, lbls) instrs
-    (b,)<$>finish b p
+    let is = asm 0 (pI p, fn, lbls) instrs; b = BS.pack.concat$is; bs = BS.pack<$>is
+    (bs,)<$>finish b p
 
 assemble :: [X86 X86Reg FX86Reg a] -> BS.ByteString
 assemble instrs =
     let (_, lbls) = mkIx 0 instrs in
-    BS.pack $ asm 0 (error "Internal error: no self", Nothing, lbls) instrs
+    BS.pack.concat$asm 0 (error "Internal error: no self", Nothing, lbls) instrs
 
 data VEXM = F | F38 | F3A
 
@@ -62,12 +62,12 @@ rrNoPre :: RMB reg
         => [Word8]
         -> reg -- ^ r/m
         -> reg -- ^ reg
-        -> [Word8] -> [Word8]
+        -> [Word8]
 rrNoPre opc r0 r1 =
     let (_, b0) = modRM r0
         (_, b1) = modRM r1
         modRMB = (0x3 `shiftL` 6) .|. (b1 `shiftL` 3) .|. b0
-        in (\x -> opc++modRMB:x)
+        in opc++[modRMB]
 
 mkRR opc = mkAR opc 3
 
@@ -76,25 +76,25 @@ mkAR :: (RMB reg0, RMB reg1)
      -> Word8 -- ^ mod
      -> reg0 -- ^ r/m
      -> reg1 -- ^ reg
-     -> [Word8] -> [Word8]
+     -> [Word8]
 mkAR opc m r0 r1 =
     let (e0, b0) = modRM r0
         (e1, b1) = modRM r1
         prefix = 0x48 .|. (e1 `shiftL` 2) .|. e0
         modRMB = (m `shiftL` 6) .|. (b1 `shiftL` 3) .|. b0
-        in (\x -> prefix:opc++modRMB:x)
+        in prefix:opc++[modRMB]
 
 -- movapd xmm9, xmm5 -> 66 44 0f 28 cd
 -- movapd xmm1, xmm5 -> 66 0f 28 cd
 --
 -- addsd xmm8,xmm10 -> f2 45 0f 58 c2
-extSse :: Word8 -> Word8 -> FX86Reg -> FX86Reg -> [Word8] -> [Word8]
+extSse :: Word8 -> Word8 -> FX86Reg -> FX86Reg -> [Word8]
 extSse pre opc r0 r1 =
     let (e0, b0) = modRM r0
         (e1, b1) = modRM r1
         b = 0x40 .|. (e1 `shiftL` 2) .|. e0
         modRMB = (0x3 `shiftL` 6) .|. (b1 `shiftL` 3) .|. b0
-        in (\x -> pre:b:0xf:opc:modRMB:x)
+        in [pre,b,0xf,opc,modRMB]
 
 vexV4 :: FX86Reg -> Word8
 vexV4 XMM0  = 0xf
@@ -128,17 +128,17 @@ ppbits S6 = 0x1
 ppbits F3 = 0x2
 ppbits F2 = 0x3
 
-mkVex :: Word8 -> PP -> FX86Reg -> FX86Reg -> FX86Reg -> ([Word8] -> [Word8])
+mkVex :: Word8 -> PP -> FX86Reg -> FX86Reg -> FX86Reg -> [Word8]
 mkVex opc pp r0 r1 r2 =
-    \x -> 0xc5:b:opc:modRMB:x
+    [0xc5,b,opc,modRMB]
     where b = (bitC e0 `shiftL` 7) .|. (vexV4 r1 `shiftL` 3) .|. ppbits pp
           (e0, b0) = modRM r0
           (_, b2) = modRM r2
           modRMB = (0x3 `shiftL` 6) .|. b0 `shiftL` 3 .|. b2
 
-mkVex3 :: Word8 -> PP -> VEXM -> FX86Reg -> FX86Reg -> FX86Reg -> ([Word8] -> [Word8])
+mkVex3 :: Word8 -> PP -> VEXM -> FX86Reg -> FX86Reg -> FX86Reg -> [Word8]
 mkVex3 opc pp mm r0 r1 r2 =
-    \x -> 0xc4:by0:by1:opc:modRMB:x
+    [0xc4,by0,by1,opc,modRMB]
     where by0 = (bitC e0 `shiftL` 7) .|. (0x1 `shiftL` 6) .|. (bitC e2 `shiftL` 5) .|. bitsm mm
           by1 = 1 `shiftL` 7 .|. (vexV4 r1 `shiftL` 3) .|. ppbits pp
           (e0, b0) = modRM r0
@@ -240,28 +240,28 @@ mkIx _ (instr:_) = error (show instr)
 fits :: RMB reg => reg -> Bool
 fits r = let (e, _) = modRM r in e == 0
 
-asm :: Int -> (Int, Maybe (Int, Int), M.Map Label Int) -> [X86 X86Reg FX86Reg a] -> [Word8]
+asm :: Int -> (Int, Maybe (Int, Int), M.Map Label Int) -> [X86 X86Reg FX86Reg a] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (Push _ r:asms) | fits r =
     let (_, b0) = modRM r
         isn = 0x50 .|. b0
-    in isn:asm (ix+1) st asms
+    in [isn]:asm (ix+1) st asms
                           | otherwise =
     let (_, b0) = modRM r
         instr = [0x41, 0x50 .|. b0]
-    in instr ++ asm (ix+2) st asms
+    in instr:asm (ix+2) st asms
 asm ix st (Pop _ r:asms) | fits r =
     let (_, b0) = modRM r
         isn = 0x58 .|. b0
-    in isn:asm (ix+1) st asms
+    in [isn]:asm (ix+1) st asms
                          | otherwise =
     let (_, b0) = modRM r
         instr = [0x41, 0x58 .|. b0]
-    in instr ++ asm (ix+2) st asms
+    in instr:asm (ix+2) st asms
 asm ix st (Label{}:asms) =
     asm ix st asms
 asm ix st (MovRR _ r0 r1:asms) =
-    mkRR [0x89] r0 r1 $ asm (ix+3) st asms
+    mkRR [0x89] r0 r1:asm (ix+3) st asms
 asm ix st (MovRA _ r0 (RC r1 i8):asms) =
     let (e0, b0) = modRM r0
         (e1, b1) = modRM r1
@@ -269,20 +269,20 @@ asm ix st (MovRA _ r0 (RC r1 i8):asms) =
         modB = 0x1 `shiftL` 6 .|. (b0 `shiftL` 3) .|. b1
         opc=0x8b
         instr = pref:opc:modB:le i8
-    in (instr++) $ asm (ix+4) st asms
+    in instr:asm (ix+4) st asms
 asm ix st (MovqXA _ r0 (RC r1@Rsp i8):asms) | fits r0 =
     let (_, b0) = modRM r0
         (_, b1) = modRM r1
         modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 0x4
         sib = b1 `shiftL` 3 .|. b1
         instr = 0xf3:0xf:0x7e:modB:sib:le i8
-    in (instr++) $ asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (MovqXA _ r0 (R r1):asms) | fits r0 && fits r1 =
     let (_, b0) = modRM r0
         (_, b1) = modRM r1
         modB = b0 `shiftL` 3 .|. b1
         instr = [0xf3, 0x0f, 0x7e, modB]
-    in instr ++ asm (ix+4) st asms
+    in instr:asm (ix+4) st asms
 -- https://stackoverflow.com/questions/52522544/rbp-not-allowed-as-sib-base
 asm ix st (MovqXA l r0 (R R13):asms) = asm ix st (MovqXA l r0 (RC R13 0):asms)
 asm ix st (MovqXA _ r0 (RC r1 i8):asms) =
@@ -291,14 +291,14 @@ asm ix st (MovqXA _ r0 (RC r1 i8):asms) =
           modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. b1
           pre = 0x48 .|. e0 `shiftL` 2 .|. e1
           instr = 0x66:pre:0xf:0x6e:modB:le i8
-      in instr ++ asm (ix+6) st asms
+      in instr:asm (ix+6) st asms
 asm ix st (MovqXA _ r0 (R r1):asms) =
       let (e0, b0) = modRM r0
           (e1, b1) = modRM r1
           modB = b0 `shiftL` 3 .|. b1
           pre = 0x48 .|. e0 `shiftL` 2 .|. e1
           instr = [0x66, pre, 0xf, 0x6e, modB]
-      in instr ++ asm (ix+5) st asms
+      in instr:asm (ix+5) st asms
 -- https://stackoverflow.com/questions/52522544/rbp-not-allowed-as-sib-base
 asm ix st (MovqAX _ (RC r0@Rsp i8) r1:asms) | fits r1 =
     let (0, b0) = modRM r0
@@ -306,26 +306,26 @@ asm ix st (MovqAX _ (RC r0@Rsp i8) r1:asms) | fits r1 =
         modB = 0x1 `shiftL` 6 .|. b1 `shiftL` 3 .|. 0x4
         sib = b0 `shiftL` 3 .|. b0
         instr = 0x66:0x0f:0xd6:modB:sib:le i8
-    in instr++asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (MovqAX _ (RC rb i8) r:asms) | fits rb && fits r =
     let (_, bb) = modRM rb
         (_, b) = modRM r
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. bb
         isn = 0x66:0x0f:0xd6:modB:le i8
-    in isn ++ asm (ix+5) st asms
+    in isn:asm (ix+5) st asms
 asm ix st (MovqAX _ (RSD rb s ri d) r:asms) | fits r && fits rb && fits ri =
     let (_, b) = modRM r; (_, bi) = modRM ri; (_, bb) = modRM rb
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = 0x66:0x0f:0xd6:modB:sib:le d
-    in instr++asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (MovqAX _ (RSD rb s ri d) r:asms) =
     let (e, b) = modRM r; (eb, bb) = modRM rb; (ei, bi) = modRM ri
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         rex = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = 0x66:rex:0x0f:0x7e:modB:sib:le d
-    in instr++asm (ix+7) st asms
+    in instr:asm (ix+7) st asms
 asm ix st (MovqXA l r (RS R13 s ri):asms) = asm ix st (MovqXA l r (RSD R13 s ri 0):asms)
 asm ix st (MovqXA _ r (RS rb s ri):asms) =
     let (e, b) = modRM r; (eb, bb) = modRM rb; (ei, bi) = modRM ri
@@ -333,91 +333,91 @@ asm ix st (MovqXA _ r (RS rb s ri):asms) =
         rex = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = [0x66,rex,0x0f,0x6e,modB,sib]
-    in instr++asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (MovqXA _ r (RSD rb s ri d):asms) =
     let (e, b) = modRM r; (eb, bb) = modRM rb; (ei, bi) = modRM ri
         modB = 1 `shiftL` 6 .|. b `shiftL` 3 .|. 4
         rex = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = 0x66:rex:0x0f:0x6e:modB:sib:le d
-    in instr ++ asm (ix+7) st asms
+    in instr:asm (ix+7) st asms
 asm ix st (Movapd _ r0 r1:asms) | fits r0 && fits r1 =
-    rrNoPre [0x66,0x0f,0x28] r1 r0 $ asm (ix+4) st asms
+    rrNoPre [0x66,0x0f,0x28] r1 r0:asm (ix+4) st asms
                                 | otherwise =
-    extSse 0x66 0x28 r1 r0 $ asm (ix+5) st asms
+    extSse 0x66 0x28 r1 r0:asm (ix+5) st asms
 asm ix st (IAddRR _ r0 r1:asms) =
-    mkRR [0x01] r0 r1 $ asm (ix+3) st asms
+    mkRR [0x01] r0 r1:asm (ix+3) st asms
 asm ix st (And _ r0 r1:asms) =
-    mkRR [0x21] r0 r1 $ asm (ix+3) st asms
+    mkRR [0x21] r0 r1:asm (ix+3) st asms
 asm ix st (ISubRR _ r0 r1:asms) =
-    mkRR [0x29] r0 r1 $ asm (ix+3) st asms
+    mkRR [0x29] r0 r1:asm (ix+3) st asms
 asm ix st (Addsd _ r0 r1:asms) | fits r0 && fits r1 =
-    rrNoPre [0xf2,0x0f,0x58] r1 r0 $ asm (ix+4) st asms -- idk why swapped for mulsd &c.
+    rrNoPre [0xf2,0x0f,0x58] r1 r0:asm (ix+4) st asms
                                | otherwise =
-    extSse 0xf2 0x58 r1 r0 $ asm (ix+5) st asms
+    extSse 0xf2 0x58 r1 r0:asm (ix+5) st asms
 asm ix st (Mulsd _ r0 r1:asms) | fits r0 && fits r1 =
-    rrNoPre [0xf2,0x0f,0x59] r1 r0 $ asm (ix+4) st asms
+    rrNoPre [0xf2,0x0f,0x59] r1 r0:asm (ix+4) st asms
                                | otherwise =
-    extSse 0xf2 0x59 r1 r0 $ asm (ix+5) st asms
+    extSse 0xf2 0x59 r1 r0:asm (ix+5) st asms
 asm ix st (Divsd _ r0 r1:asms) | fits r0 && fits r1 =
-    rrNoPre [0xf2,0x0f,0x5e] r1 r0 $ asm (ix+4) st asms
+    rrNoPre [0xf2,0x0f,0x5e] r1 r0:asm (ix+4) st asms
                                | otherwise =
-    extSse 0xf2 0x5e r1 r0 $ asm (ix+5) st asms
+    extSse 0xf2 0x5e r1 r0:asm (ix+5) st asms
 asm ix st (Vsubsd _ r0 r1 r2:asms) | fits r2 =
-    mkVex 0x5c F2 r0 r1 r2 $ asm (ix+4) st asms
+    mkVex 0x5c F2 r0 r1 r2:asm (ix+4) st asms
                                    | otherwise =
-    mkVex3 0x5c F2 F r0 r1 r2 $ asm (ix+5) st asms
+    mkVex3 0x5c F2 F r0 r1 r2:asm (ix+5) st asms
 asm ix st (Vaddsd _ r0 r1 r2:asms) | fits r2 =
-    mkVex 0x58 F2 r0 r1 r2 $ asm (ix+4) st asms
+    mkVex 0x58 F2 r0 r1 r2:asm (ix+4) st asms
                                    | otherwise =
-    mkVex3 0x58 F2 F r0 r1 r2 $ asm (ix+5) st asms
+    mkVex3 0x58 F2 F r0 r1 r2:asm (ix+5) st asms
 asm ix st (Vdivsd _ r0 r1 r2:asms) | fits r2 =
-    mkVex 0x5e F2 r0 r1 r2 $ asm (ix+4) st asms
+    mkVex 0x5e F2 r0 r1 r2:asm (ix+4) st asms
                                    | otherwise =
-    mkVex3 0x5e F2 F r0 r1 r2 $ asm (ix+5) st asms
+    mkVex3 0x5e F2 F r0 r1 r2:asm (ix+5) st asms
 asm ix st (Vmulsd _ r0 r1 r2:asms) | fits r2 =
-    mkVex 0x59 F2 r0 r1 r2 $ asm (ix+4) st asms
+    mkVex 0x59 F2 r0 r1 r2:asm (ix+4) st asms
                                    | otherwise =
-    mkVex3 0x59 F2 F r0 r1 r2 $ asm (ix+5) st asms
+    mkVex3 0x59 F2 F r0 r1 r2:asm (ix+5) st asms
 asm ix st (Vfmadd231sd _ r0 r1 r2:asms) =
-    mkVex3 0xb9 S6 F38 r0 r1 r2 $ asm (ix+5) st asms
+    mkVex3 0xb9 S6 F38 r0 r1 r2:asm (ix+5) st asms
 asm ix st (Roundsd _ r0 r1 i:asms) | fits r0 && fits r1 =
-    rrNoPre [0x66,0x0f,0x3a,0x0b] r1 r0 . (le (roundMode i) ++) $ asm (ix+6) st asms
+    (rrNoPre [0x66,0x0f,0x3a,0x0b] r1 r0++le (roundMode i)):asm (ix+6) st asms
 asm ix st (Roundsd _ r0 r1 i:asms) =
-    (0x66:) . mkAR [0xf,0x3a,0xb] 0 r1 r0 . (le (roundMode i) ++) $ asm (ix+7) st asms
+    (0x66:mkAR [0xf,0x3a,0xb] 0 r1 r0++le (roundMode i)):asm (ix+7) st asms
 asm ix st (Cvttsd2si _ r0 r1:asms) =
-    (0xf2:) . mkRR [0x0f,0x2c] r1 r0 $ asm (ix+5) st asms
+    (0xf2:mkRR [0x0f,0x2c] r1 r0):asm (ix+5) st asms
 asm ix st (Cvtsi2sd _ fr r:asms) =
-    (0xf2:) . mkRR [0x0f,0x2a] r fr $ asm (ix+5) st asms
+    (0xf2:mkRR [0x0f,0x2a] r fr):asm (ix+5) st asms
 asm ix st (Sqrtsd _ r0 r1:asms) =
-    rrNoPre [0xf2,0x0f,0x51] r1 r0 $ asm (ix+4) st asms
+    rrNoPre [0xf2,0x0f,0x51] r1 r0:asm (ix+4) st asms
 asm ix st (CmpRR _ r0 r1:asms) =
-    mkRR [0x39] r0 r1 $ asm (ix+3) st asms
+    mkRR [0x39] r0 r1:asm (ix+3) st asms
 asm ix st (MovqXR _ fr r:asms) =
-    (0x66:) . mkRR [0x0f,0x6e] r fr $ asm (ix+5) st asms
+    (0x66:mkRR [0x0f,0x6e] r fr):asm (ix+5) st asms
 asm ix st (IMulRR _ r0 r1:asms) =
     -- flip r0,r1 as instr. uses them differently from sub, etc.
-    mkRR [0x0f, 0xaf] r1 r0 $ asm (ix+4) st asms
+    mkRR [0x0f, 0xaf] r1 r0:asm (ix+4) st asms
 asm ix st (CmpRI _ r i:asms) | Just i8 <- mi64i8 (fromIntegral i) =
     let (e, b) = modRM r
         prefix = 0x48 .|. e
         modRMB = (0x3 `shiftL` 6) .|. (0o7 `shiftL` 3) .|. b
-    in (prefix:0x83:modRMB:le i8) ++ asm (ix+4) st asms
+    in (prefix:0x83:modRMB:le i8):asm (ix+4) st asms
 asm ix st (IAddRI _ r i:asms) | Just i8 <- mi64i8 i =
     let (e, b) = modRM r
         prefix = 0x48 .|. e
         modRMB = (0x3 `shiftL` 6) .|. b -- /0
-    in (prefix:0x83:modRMB:le i8) ++ asm (ix+4) st asms
+    in (prefix:0x83:modRMB:le i8):asm (ix+4) st asms
 asm ix st (ISubRI _ r i:asms) | Just i8 <- mi64i8 i =
     let (e, b) = modRM r
         prefix = 0x48 .|. e
         modRMB = (0x3 `shiftL` 6) .|. (0x5 `shiftL` 3) .|. b
-    in (prefix:0x83:modRMB:le i8) ++ asm (ix+4) st asms
+    in (prefix:0x83:modRMB:le i8):asm (ix+4) st asms
 asm ix st (ISubRI _ r i:asms) | Just i32 <- mi64i32 i =
     let (e, b) = modRM r
         prefix = 0x48 .|. e
         modRMB = (0x3 `shiftL` 6) .|. (0x5 `shiftL` 3) .|. b
-    in (prefix:0x81:modRMB:le i32) ++ asm (ix+7) st asms
+    in (prefix:0x81:modRMB:le i32):asm (ix+7) st asms
                            | otherwise = error "Not implemented yet: handling 64-bit immediates"
 -- TODO: r32<-i32 like nasm does (note r32<-i32 (zero-extended) vs.
 -- sign-extended
@@ -425,96 +425,96 @@ asm ix st (ISubRI _ r i:asms) | Just i32 <- mi64i32 i =
 asm ix st (MovRI _ r i:asms) | Just i32 <- mi64i32 i, i >= 0 && fits r =
     let (_, b) = modRM r
         opc = 0xb8 .|. b
-    in (opc:cd i32) ++ asm (ix+5) st asms
+    in (opc:cd i32):asm (ix+5) st asms
     -- TODO: 0xc7 for case i<0
 asm ix st (MovRI _ r i:asms) =
     let (e, b) = modRM r
         pre = (0x48 .|. e:) . (0xB8 .|. b:)
-    in pre (le i) ++ asm (ix+10) st asms
+    in pre (le i):asm (ix+10) st asms
 asm ix st (Ret{}:asms) =
-    0xc3:asm (ix+1) st asms
+    [0xc3]:asm (ix+1) st asms
 asm ix st (Je _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x84:cd (fromIntegral offs :: Int32)
-    in (instr ++) $ asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (Jg _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8f:cd (fromIntegral offs :: Int32)
-    in (instr ++) $ asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (Jge _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8d:cd (fromIntegral offs :: Int32)
-    in (instr ++) $ asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (Jl _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8c:cd (fromIntegral offs :: Int32)
-    in (instr ++) $ asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (Jle _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8e:cd (fromIntegral offs :: Int32)
-    in (instr ++) $ asm (ix+6) st asms
+    in instr:asm (ix+6) st asms
 asm ix st (J _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-5 in 0xe9:cd (fromIntegral offs :: Int32)
-    in (instr ++) $ asm (ix+5) st asms
+    in instr:asm (ix+5) st asms
 asm ix st (Fmulp{}:asms) =
-    (0xde:) . (0xc9:) $ asm (ix+2) st asms
+    [0xde,0xc9]:asm (ix+2) st asms
 asm ix st (F2xm1{}:asms) =
-    (0xd9:) . (0xf0:) $ asm (ix+2) st asms
+    [0xd9,0xf0]:asm (ix+2) st asms
 asm ix st (Fldl2e{}:asms) =
-    (0xd9:) . (0xea:) $ asm (ix+2) st asms
+    [0xd9,0xea]:asm (ix+2) st asms
 asm ix st (Fldln2{}:asms) =
-    (0xd9:) . (0xed:) $ asm (ix+2) st asms
+    [0xd9,0xed]:asm (ix+2) st asms
 asm ix st (Fld1{}:asms) =
-    (0xd9:) . (0xe8:) $ asm (ix+2) st asms
+    [0xd9,0xe8]:asm (ix+2) st asms
 asm ix st (FldS _ (ST i):asms) =
-    let isn = [0xd9, 0xc0+fromIntegral i] in isn ++ asm (ix+2) st asms
+    let isn = [0xd9, 0xc0+fromIntegral i] in isn:asm (ix+2) st asms
 asm ix st (Fprem{}:asms) =
-    (0xd9:) . (0xf8:) $ asm (ix+2) st asms
+    [0xd9,0xf8]:asm (ix+2) st asms
 asm ix st (Faddp{}:asms) =
-    (0xde:) . (0xc1:) $ asm (ix+2) st asms
+    [0xde,0xc1]:asm (ix+2) st asms
 asm ix st (Fscale{}:asms) =
-    (0xd9:) . (0xfd:) $ asm (ix+2) st asms
+    [0xd9,0xfd]:asm (ix+2) st asms
 asm ix st (Fxch _ (ST i):asms) =
-    let isn = [0xd9, 0xc9+fromIntegral i] in isn ++ asm (ix+2) st asms
+    let isn = [0xd9, 0xc9+fromIntegral i] in isn:asm (ix+2) st asms
 asm ix st (Fyl2x{}:asms) =
-    (0xd9:) . (0xf1:) $ asm (ix+2) st asms
+    [0xd9,0xf1]:asm (ix+2) st asms
 asm ix st (Fld _ (RC r@Rsp i8):asms) =
     let (_, b) = modRM r
         modB = 0x1 `shiftL` 6 .|. 0x4
         sib = b `shiftL` 3 .|. b
         instr = 0xdd:modB:sib:le i8
-    in instr ++ asm (ix+4) st asms
+    in instr:asm (ix+4) st asms
 asm ix st (Fstp _ (RC r@Rsp i8):asms) =
     let (_, b) = modRM r
         modB = 0x1 `shiftL` 6 .|. 0x3 `shiftL` 3 .|. 0x4
         sib = b `shiftL` 3 .|. b
         instr = 0xdd:modB:sib:le i8
-    in instr ++ asm (ix+4) st asms
+    in instr:asm (ix+4) st asms
 asm ix st (Sal _ r i:asms) =
     let (e, b) = modRM r
         modRMB = (0x3 `shiftL` 6) .|. (0x4 `shiftL` 3) .|. b
         pre = 0x48 .|. e
         instr = pre:0xc1:modRMB:le i
-    in instr ++ asm (ix+4) st asms
+    in instr:asm (ix+4) st asms
 asm ix st (Sar _ r i:asms) =
     let (e, b) = modRM r
         modRMB = (0x3 `shiftL` 6) .|. (0x7 `shiftL` 3) .|. b
         pre = 0x48 .|. e
         instr = pre:0xc1:modRMB:le i
-    in instr ++ asm (ix+4) st asms
+    in instr:asm (ix+4) st asms
 asm ix st (MovAI32 _ (R Rsp) i32:asms) =
     let (0, b) = modRM Rsp
         modB = 0x4
         sib = b `shiftL` 3 .|. b
         instr = 0x48:0xc7:modB:sib:le i32
-    in instr ++ asm (ix+8) st asms
+    in instr:asm (ix+8) st asms
 asm ix st (MovAI32 _ (R r) i32:asms) =
     let (e, b) = modRM r
         modRMB = b
         pre = 0x48 .|. e
         instr = pre:0xc7:modRMB:le i32
-    in instr ++ asm (ix+7) st asms
+    in instr:asm (ix+7) st asms
 asm ix st (MovAR _ (RC Rsp i8) r:asms) =
     let (e, b) = modRM r
         (0, bi) = modRM Rsp
@@ -522,9 +522,9 @@ asm ix st (MovAR _ (RC Rsp i8) r:asms) =
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = bi `shiftL` 3 .|. bi
         instr = pre:0x89:modB:sib:le i8
-    in instr ++ asm (ix+5) st asms
+    in instr:asm (ix+5) st asms
 asm ix st (MovAR _ (RC ar i8) r:asms) =
-    mkAR [0x89] 1 ar r $ le i8 ++ asm (ix+4) st asms
+    (mkAR [0x89] 1 ar r++le i8):asm (ix+4) st asms
 asm ix st (MovRA _ r (RS b s i):asms) =
     let (e0, b0) = modRM r
         (eb, bb) = modRM b
@@ -533,7 +533,7 @@ asm ix st (MovRA _ r (RS b s i):asms) =
         modB = b0 `shiftL` 3 .|. 4
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = [pre,0x8b,modB,sib]
-    in instr ++ asm (ix+4) st asms
+    in instr:asm (ix+4) st asms
 asm ix st (MovAR _ (RSD b s i i8) r:asms) =
     let (eb, bb) = modRM b
         (ei, bi) = modRM i
@@ -542,7 +542,7 @@ asm ix st (MovAR _ (RSD b s i i8) r:asms) =
         modRMB = 1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 4
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = pre:0x89:modRMB:sib:le i8
-    in instr ++ asm (ix+5) st asms
+    in instr:asm (ix+5) st asms
 asm ix st (MovRA _ r (RSD b s i i8):asms) =
     let (eb, bb) = modRM b
         (ei, bi) = modRM i
@@ -551,13 +551,13 @@ asm ix st (MovRA _ r (RSD b s i i8):asms) =
         modRMB = 1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 4
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = pre:0x8b:modRMB:sib:le i8
-    in instr ++ asm (ix+5) st asms
+    in instr:asm (ix+5) st asms
 asm ix st (MovAR _ (R ar) r:asms) =
-    mkAR [0x89] 0 ar r $ asm (ix+3) st asms
+    mkAR [0x89] 0 ar r:asm (ix+3) st asms
 asm ix st (MovRA _ r (R ar):asms) =
-    mkAR [0x8b] 0 ar r $ asm (ix+3) st asms
+    mkAR [0x8b] 0 ar r:asm (ix+3) st asms
 asm ix st (Cmovnle _ r0 r1:asms) =
-    mkRR [0xf,0x4f] r1 r0 $ asm (ix+4) st asms
+    mkRR [0xf,0x4f] r1 r0:asm (ix+4) st asms
 asm ix st (MovAR _ (RS rb s ri) r:asms) =
     let (eb, bb) = modRM rb
         (ei, bi) = modRM ri
@@ -565,19 +565,19 @@ asm ix st (MovAR _ (RS rb s ri) r:asms) =
         modRMB = b `shiftL` 3 .|. 4
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         pre = 0x48 .|. e `shiftL` 2 .|. ei `shiftL` 1 .|. eb
-    in pre:0x89:modRMB:sib:asm (ix+4) st asms
+    in [pre,0x89,modRMB,sib]:asm (ix+4) st asms
 asm ix st (Not _ r:asms) =
     let (e, b) = modRM r
         pre = 0x48 .|. e
         opc = 0xf7
         modB = 3 `shiftL` 6 .|. 2 `shiftL` 3 .|. b
-    in (pre:).(opc:).(modB:) $ asm(ix+3) st asms
+    in [pre,opc,modB]:asm (ix+3) st asms
 asm ix st@(self, Just (m, _), _) (Call _ Malloc:asms) | Just i32 <- mi32 (m-(self+ix+5)) =
     let instr = 0xe8:le i32
-    in instr ++ asm (ix+5) st asms
+    in instr:asm (ix+5) st asms
 asm ix st@(self, Just (_, f), _) (Call _ Free:asms) | Just i32 <- mi32 (f-(self+ix+5)) =
     let instr = 0xe8:le i32
-    in instr ++ asm (ix+5) st asms
+    in instr:asm (ix+5) st asms
 asm _ (_, Nothing, _) (Call{}:_) = error "Internal error? no dynlibs"
 asm _ _ (instr:_) = error (show instr)
 

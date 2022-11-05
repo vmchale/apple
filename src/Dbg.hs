@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Dbg ( dumpX86G
            , dumpX86L
@@ -11,7 +12,6 @@ module Dbg ( dumpX86G
            , printTypes
            , topt
            , nasm
-           , pB
            , pBIO
            , module P
            ) where
@@ -35,22 +35,28 @@ import           LI
 import           LR
 import           Numeric              (showHex)
 import           P
-import           Prettyprinter        (Doc, pretty)
+import           Prettyprinter        (Doc, Pretty (..))
 import           Prettyprinter.Ext
 import           Ty
 
 pBIO :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
-pBIO = fmap (fmap pHex) . comm . fmap dbgFp . x86G
+pBIO = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM dbgFp) . x86G
     where comm :: Either a (IO b) -> IO (Either a b)
           comm (Left err) = pure(Left err)
           comm (Right x)  = Right <$> x
+          wIdM :: Functor m => (a -> m b) -> a -> m (a, b)
+          wIdM f x = (x,)<$>f x
+          zipS [] []             = []
+          zipS (x@Label{}:xs) ys = (x,BS.empty):zipS xs ys
+          zipS (x:xs) (y:ys)     = (x,y):zipS xs ys
 
-pB :: BSL.ByteString -> Either (Err AlexPosn) T.Text
-pB = fmap pHex . bytes
+rightPad :: Int -> T.Text -> T.Text
+rightPad n str = T.take n (str <> T.replicate n " ")
 
-pHex :: BS.ByteString -> T.Text
-pHex = T.unlines . fmap T.unwords . chunksOf 8 . fmap (pad.T.pack.($"").showHex) . BS.unpack
-    where pad s | T.length s == 1 = T.cons '0' s | otherwise = s
+present :: Pretty a => (a, BS.ByteString) -> T.Text
+present (x, b) = rightPad 40 (ptxt x) <> he b
+    where he = T.unwords.fmap (pad.T.pack.($"").showHex).BS.unpack
+          pad s | T.length s == 1 = T.cons '0' s | otherwise = s
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
 nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86G
