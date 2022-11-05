@@ -23,9 +23,7 @@ pI :: Ptr a -> Int
 pI = (\(IntPtr i) -> i) . ptrToIntPtr
 
 hasMa :: [X86 reg freg a] -> Bool
-hasMa = any g where
-    g Call{} = True
-    g _      = False
+hasMa = any g where g Call{} = True; g _ = False
 
 prepAddrs :: [X86 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
