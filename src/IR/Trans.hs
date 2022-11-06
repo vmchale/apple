@@ -202,7 +202,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) t = do
     putStart <- eval start startR; putN <- eval nSteps n
     l <- newLabel; endL <- newLabel
     modify (addMT a t)
-    putIncr <- eval (((end `eMinus` start) `ePlus` FLit F 1) `eDiv` EApp F (Builtin (Arrow I F) ItoF) nSteps) incrR
+    putIncr <- eval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)) incrR
     let loop = [MJ (IRel IGt (Reg i) (Reg n)) endL, WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (FReg startR), MX startR (FB FPlus (FReg startR) (FReg incrR)), MT i (IB IPlus (Reg i) (ConstI 1))]
     pure (Just a, putStart ++ putIncr ++ putN ++ Ma a t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):dim1 (Just a) t (Reg n) ++ MT i (ConstI 0):L l:loop ++ [J l, L endL])
 aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | f1 (eAnn arr) && f1 oTy = do
