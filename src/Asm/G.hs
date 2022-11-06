@@ -45,9 +45,7 @@ mapSpN f ns = ns { spN = f (spN ns) }
 
 data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, ɴs :: Ns, degs :: IM.IntMap Int, initial :: [Int], wkls :: Wk, stack :: [Int], alias :: IM.IntMap Int }
 
-mapMv f st = st { mvS = f (mvS st) }
-mapWk f st = st { wkls = f (wkls st) }
-mapNs f st = st { ɴs = f (ɴs st) }
+mapMv f st = st { mvS = f (mvS st) }; mapWk f st = st { wkls = f (wkls st) }; mapNs f st = st { ɴs = f (ɴs st) }
 
 thread :: [a -> a] -> a -> a
 thread = foldr (.) id
@@ -128,8 +126,7 @@ buildF :: (Copointed p) => IS.IntSet -> St -> [p (ControlAnn, NLiveness, Maybe M
 buildF l st [] = (l, st)
 buildF l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =
     let ca = fst3 (copoint isn)
-        u = usesFNode ca
-        d = defsFNode ca
+        u = usesFNode ca; d = defsFNode ca
         lm = l IS.\\ u
         ml' = thread [ kϵ @! mIx | kϵ <- IS.toList (u `IS.union` d) ] ml
         le = lm `IS.union` d
@@ -139,8 +136,7 @@ buildF l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoi
     in buildF l' st'' isns
                                   | otherwise =
     let ca = fst3 (copoint isn)
-        u = usesFNode ca
-        d = defsFNode ca
+        u = usesFNode ca; d = defsFNode ca
         le = l `IS.union` d
         st'' = thread [ addEdge lϵ dϵ | lϵ <- IS.toList le, dϵ <- IS.toList d ] st
         l' = u `IS.union` (l IS.\\ d)
@@ -155,8 +151,7 @@ build :: (Copointed p)
 build l st [] = (l, st)
 build l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =
     let ca = fst3 (copoint isn)
-        u = usesNode ca
-        d = defsNode ca
+        u = usesNode ca; d = defsNode ca
         lm = l IS.\\ u
         ml' = thread [ kϵ @! mIx | kϵ <- IS.toList (u `IS.union` d) ] ml
         le = lm `IS.union` d
@@ -229,7 +224,7 @@ enaMv ns = thread (fmap g ns) where
 
 {-# SCC addWkl #-}
 addWkl :: Int -> St -> St
-addWkl u st | u `IS.notMember` pre (wkls st) && not (isMR u st) && degs st IM.! u < ᴋ = mapWk (mapFr (IS.delete u) . mapSimp (IS.insert u)) st
+addWkl u st | u `IS.notMember` pre (wkls st) && not (isMR u st) && u !* degs st < ᴋ = mapWk (mapFr (IS.delete u) . mapSimp (IS.insert u)) st
             | otherwise = st
 
 {-# SCC ok #-}
@@ -257,7 +252,7 @@ combine u v st =
         st3 = let m = mvs st2 -- default to S.empty if we haven't filled it in
                   mvu = m !. u; mvv = m !. v in st2 { mvs = IM.insert u (mvu `S.union` mvv) m }
         st4 = thread [ ddg t.addEdge t u | t <- adj v st2 ] st3
-    in if u `IS.member` fr(wkls st3) && degs st4 IM.! u >= ᴋ then mapWk(\(Wk p s f sm) -> Wk p (IS.insert u s) (IS.delete u f) sm) st4 else st4
+    in if u `IS.member` fr(wkls st3) && u !* degs st4 >= ᴋ then mapWk(\(Wk p s f sm) -> Wk p (IS.insert u s) (IS.delete u f) sm) st4 else st4
 
 freeze :: St -> St
 freeze s | Just (u, _) <- IS.minView (fr$wkls s) =
