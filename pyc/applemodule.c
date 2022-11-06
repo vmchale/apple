@@ -9,6 +9,7 @@
 #define R return
 #define SW switch
 #define C case
+#define BR break;
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
 U f_npy(PyObject* o) {
@@ -108,13 +109,11 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
 }
 
 typedef U (*Ufp)(void);
-typedef I (*Ifp)(void);
-typedef F (*Ffp)(void);
+typedef I (*Ifp)(void);typedef F (*Ffp)(void);
 typedef F (*Fffp)(F);
 typedef U (*Aafp)(U);
-typedef F (*Affp)(U);
+typedef F (*Affp)(U);typedef I (*Aifp)(U);
 typedef F (*Aaffp)(U,U);
-typedef I (*Aifp)(U);
 typedef U (*Iafp)(I);
 
 static PyObject* apple_apple(PyObject *self, PyObject *args) {
@@ -130,23 +129,23 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     PyObject* r;
     SW(ty->res){
-        C IA: r=npy_i(((Ufp) fp)());
+        C IA: r=npy_i(((Ufp) fp)());BR
         C FA:
             SW(ty->argc){
-                C 0: r=npy_f(((Ufp) fp)());
-                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=npy_f(((Aafp) fp)(inp0));};};
-            };
+                C 0: {r=npy_f(((Ufp) fp)());BR}
+                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=npy_f(((Aafp) fp)(inp0));BR};};BR
+            };BR
         C F_t:
             SW(ty->argc){
-                C 0: r=PyFloat_FromDouble(((Ffp) fp)());
-                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=PyFloat_FromDouble(((Affp) fp)(inp0));}; C F_t: {r=PyFloat_FromDouble(((Fffp) fp)(PyFloat_AsDouble(arg0)));};};
-                C 2: SW(ty->args[0]){C FA: SW(ty->args[1]){C FA: {U inp0=f_npy(arg0);U inp1=f_npy(arg1);r=PyFloat_FromDouble(((Aaffp) fp)(inp0, inp1));};};};
-            };
+                C 0: r=PyFloat_FromDouble(((Ffp) fp)());BR
+                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=PyFloat_FromDouble(((Affp) fp)(inp0));BR}; C F_t: {r=PyFloat_FromDouble(((Fffp) fp)(PyFloat_AsDouble(arg0)));BR};};BR
+                C 2: SW(ty->args[0]){C FA: SW(ty->args[1]){C FA: {U inp0=f_npy(arg0);U inp1=f_npy(arg1);r=PyFloat_FromDouble(((Aaffp) fp)(inp0, inp1));BR};};};BR
+            };BR
         C I_t:
             SW(ty->argc){
-                C 0: r=PyLong_FromLongLong(((Ifp) fp)());
-                C 1: SW(ty->args[0]){C IA: {U inp0=i_npy(arg0);r=PyLong_FromLongLong(((Aifp) fp)(inp0));};};
-            };
+                C 0: r=PyLong_FromLongLong(((Ifp) fp)());BR
+                C 1: SW(ty->args[0]){C IA: {U inp0=i_npy(arg0);r=PyLong_FromLongLong(((Aifp) fp)(inp0));BR};};BR
+            };BR
     }
     munmap(fp,f_sz);
     R r;
