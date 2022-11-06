@@ -156,6 +156,7 @@ usesF Fmulp{}                  = IS.empty
 usesF FldS{}                   = IS.empty
 usesF Fld1{}                   = IS.empty
 usesF Fldl2e{}                 = IS.empty
+usesF Fninit{}                 = IS.empty
 
 uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)    = singleton r
@@ -209,6 +210,7 @@ uses Vfmadd231sd{}    = IS.empty
 uses Cvttsd2si{}      = IS.empty
 uses Sqrtsd{}         = IS.empty
 uses Rdrand{}         = IS.empty
+uses Fninit{}         = IS.empty
 
 defsF :: E freg => X86 reg freg ann -> IS.IntSet
 defsF (Movapd _ r _)        = singleton r
@@ -262,6 +264,7 @@ defsF Sar{}                 = IS.empty
 defsF Cmovnle{}             = IS.empty
 defsF Call{}                = IS.empty
 defsF Cvttsd2si{}           = IS.empty
+defsF Fninit{}              = IS.empty
 
 defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r
@@ -315,6 +318,7 @@ defs Vfmadd231sd{}     = IS.empty
 defs Roundsd{}         = IS.empty
 defs Sqrtsd{}          = IS.empty
 defs (Rdrand _ r)      = singleton r
+defs Fninit{}          = IS.empty
 
 next :: (E reg, E freg) => [X86 reg freg ()] -> FreshM ([Int] -> [Int], [X86 reg freg ControlAnn])
 next asms = do

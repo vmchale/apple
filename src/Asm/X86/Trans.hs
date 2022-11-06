@@ -157,23 +157,23 @@ feval (IR.ConstF x) t = do
     iR <- nextR
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]
 feval (IR.FU IR.FLog (IR.FReg r0)) t =
-    let sa = RC SP 8 in
-    pure [Fldln2 (), MovqAX () sa (fabsReg r0), Fld () sa, Fyl2x (), Fstp () sa, MovqXA () (fabsReg t) sa]
+    let sa = RC SP (-8) in
+    pure [Fninit (), Fldln2 (), MovqAX () sa (fabsReg r0), Fld () sa, Fyl2x (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FB IR.FExp (IR.ConstF 2.718281828459045) e) t = do
     i <- nextI
     putE <- feval e (IR.FTemp i)
-    let sa = RC SP 8
+    let sa = RC SP (-8)
     -- https://www.madwizard.org/programming/snippets?id=36
-    pure $ putE ++ [MovqAX () sa (FReg i), Fld () sa, Fldl2e (), Fmulp (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa, MovqXA () (fabsReg t) sa]
+    pure $ putE ++ [MovqAX () sa (FReg i), Fninit (), Fld () sa, Fldl2e (), Fmulp (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FB IR.FExp e0 e1) t = do
     i0 <- nextI
     i1 <- nextI
     putE0 <- feval e0 (IR.FTemp i0)
     putE1 <- feval e1 (IR.FTemp i1)
-    let sa0 = RC SP 8
-        sa1 = RC SP 16
+    let sa0 = RC SP (-8)
+        sa1 = RC SP (-16)
     -- https://www.madwizard.org/programming/snippets?id=36
-    pure $ putE0 ++ putE1 ++ [MovqAX () sa0 (FReg i0), MovqAX () sa1 (FReg i1), Fld () sa1, Fld () sa0, Fyl2x (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa0, MovqXA () (fabsReg t) sa0]
+    pure $ putE0 ++ putE1 ++ [MovqAX () sa0 (FReg i0), MovqAX () sa1 (FReg i1), Fninit (), Fld () sa1, Fld () sa0, Fyl2x (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa0, MovqXA () (fabsReg t) sa0]
 feval (IR.FU IR.FSqrt (IR.FReg r)) t =
     pure [Sqrtsd () (fabsReg t) (fabsReg r)]
 feval (IR.FAt (IR.AP m (Just (IR.IB IR.IPlus (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = pure [MovqXA () (fabsReg rD) (RSD (absReg m) Eight (absReg i) i8)]

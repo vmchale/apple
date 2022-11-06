@@ -81,6 +81,7 @@ mapR f (Not l r)                   = Not l (f r)
 mapR f (And l r0 r1)               = And l (f r0) (f r1)
 mapR f (Rdrand l r)                = Rdrand l (f r)
 mapR f (Cmovnle l r0 r1)           = Cmovnle l (f r0) (f r1)
+mapR _ (Fninit l)                  = Fninit l
 
 mapFR :: (afreg -> freg) -> X86 areg afreg a -> X86 areg freg a
 mapFR _ (Jg x l)                    = Jg x l
@@ -120,6 +121,7 @@ mapFR _ (Fmulp l)                   = Fmulp l
 mapFR _ (Fprem l)                   = Fprem l
 mapFR _ (Faddp l)                   = Faddp l
 mapFR _ (Fscale l)                  = Fscale l
+mapFR _ (Fninit l)                  = Fninit l
 mapFR _ (Fxch l s)                  = Fxch l s
 mapFR _ (Je x l)                    = Je x l
 mapFR _ (Jge x l)                   = Jge x l

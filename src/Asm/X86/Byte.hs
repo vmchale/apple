@@ -234,6 +234,7 @@ mkIx ix (MovRA _ _ R{}:asms)                  = mkIx (ix+3) asms
 mkIx ix (Sqrtsd{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Not{}:asms)                          = mkIx (ix+3) asms
 mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
+mkIx ix (Fninit{}:asms)                       = mkIx (ix+2) asms
 mkIx ix []                                    = (ix, M.empty)
 mkIx _ (instr:_) = error (show instr)
 
@@ -475,6 +476,8 @@ asm ix st (Faddp{}:asms) =
     [0xde,0xc1]:asm (ix+2) st asms
 asm ix st (Fscale{}:asms) =
     [0xd9,0xfd]:asm (ix+2) st asms
+asm ix st (Fninit{}:asms) =
+    [0xdb,0xe3]:asm (ix+2) st asms
 asm ix st (Fxch _ (ST i):asms) =
     let isn = [0xd9, 0xc9+fromIntegral i] in isn:asm (ix+2) st asms
 asm ix st (Fyl2x{}:asms) =

@@ -224,6 +224,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Fprem { ann :: a }
                     | Faddp { ann :: a }
                     | Fscale { ann :: a }
+                    | Fninit { ann :: a }
                     | Fxch { ann :: a, stIsn :: ST }
                     | J { ann :: a, label :: Label }
                     | Je { ann :: a, jLabel :: Label }
@@ -323,6 +324,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
   pretty Fprem{}                  = i4 "fprem"
   pretty Faddp{}                  = i4 "faddp"
   pretty Fscale{}                 = i4 "fscale"
+  pretty Fninit{}                 = i4 "fninit"
   pretty (Fxch _ st)              = i4 ("fxch" <+> pretty st)
   pretty (FldS _ st)              = i4 ("fld" <+> pretty st)
   pretty Fmulp{}                  = i4 "fmulp"
