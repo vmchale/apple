@@ -1,9 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-<<<<<<< HEAD
 {-# LANGUAGE TupleSections     #-}
-=======
-{-# LANGUAGE TupleSections #-}
->>>>>>> 19744a4 (disasm?)
 
 module Dbg ( dumpAAbs
            , dumpAarch64
