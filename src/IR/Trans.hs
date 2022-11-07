@@ -10,6 +10,7 @@ import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
+import           Data.List                  (scanl')
 import           IR
 import           Name
 import           U
@@ -65,6 +66,9 @@ isI :: T a -> Bool
 isI I = True
 isI _ = False
 
+isT :: T a -> Bool
+isT P{} = True; isT _ = False
+
 isArr Arr{} = True
 isArr _     = False
 
@@ -81,6 +85,9 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
     go (Lam _ x@(Name _ _ I) e) frs (r:rs) = do
         modify (addVar x r)
         go e frs rs
+    go (Lam _ x@(Name _ _ P{}) e) frs (r:rs) = do
+        modify (addVar x r)
+        go e frs rs
     go (Lam _ x@(Name _ _ Arr{}) e) frs (r:rs) = do
         modify (addAVar x (Nothing, r))
         go e frs rs
@@ -88,6 +95,7 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
     go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX FRet (FReg f)]) <$> eval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = eval e CRet
              | isArr (eAnn e) = do{(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
+             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing))]}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
@@ -256,7 +264,19 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do
     putSeed <- eval seed arg; putN <- eval n nR
     l <- newLabel; endL <- newLabel
     ss <- writeRF op [arg] arg
-    let loop = [Wr (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (Reg arg)] ++ ss
+    let loop = Wr (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (Reg arg):ss
+    pure (Just a, Sa arg undefined:putSeed ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ MT i (ConstI 0):L l:MJ (IRel IGt (Reg i) (Reg nR)) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL])
+aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | (Arr (_ `Cons` Nil) ty@P{}) <- oTy = do
+    a <- nextArr
+    arg <- newITemp
+    i <- newITemp
+    nR <- newITemp
+    let ptN=bT ty;pt = ConstI ptN
+        sz = IB IPlus (IB ITimes (Reg nR) pt) (ConstI 24)
+    putSeed <- eval seed arg; putN <- eval n nR
+    l <- newLabel; endL <- newLabel
+    ss <- writeRF op [arg] arg
+    let loop = ss ++ [Cpy (AP t (Just (IB IPlus (IB ITimes (Reg i) pt) (ConstI 16))) (Just a)) (AP arg Nothing Nothing) (ConstI$ptN`div`8)]
     pure (Just a, putSeed ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ MT i (ConstI 0):L l:MJ (IRel IGt (Reg i) (Reg nR)) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL])
 aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | f1 oTy = do
     a <- nextArr
@@ -517,15 +537,6 @@ eval (EApp _ (Builtin _ Size) e) t = do
     l <- newLabel; endL <- newLabel
     i <- newITemp
     pure $ plE ++ [MT rnkR (EAt (AP r Nothing mI)), MT i (ConstI 8), MT t (EAt (AP r (Just (ConstI 8)) mI)), L l, MJ (IRel IGt (Reg i) (Reg rnkR)) endL, MT i (IB IPlus (Reg i) (ConstI 8)), MT t (IB ITimes (Reg t) (EAt (AP r (Just (Reg i)) mI))),J l, L endL]
-eval (EApp I (EApp _ (Builtin _ Max) e0) (Var _ y)) t = do
-    st <- gets vars
-    e0R <- newITemp
-    let e1R = getT st y
-        e1RE = Reg e1R
-    plE0 <- eval e0 e0R
-    pure $ if e1R == t
-        then plE0 ++ [MT t (Reg e0R), Cmov (IRel IGt e1RE (Reg e0R)) t e1RE]
-        else plE0 ++ [MT t e1RE, Cmov (IRel IGt (Reg e0R) e1RE) t (Reg e0R)]
 eval (EApp I (EApp _ (Builtin _ Max) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
@@ -540,6 +551,10 @@ eval (EApp I (Builtin _ Head) arr) t | i1 (eAnn arr) = do
     (mL, plArr) <- aeval arr r
     -- rank 1
     pure $ plArr ++ [MT t (EAt (AP r (Just $ ConstI 16) mL))]
+eval (Tup _ es) t = do
+    let szs = scanl' (\off ty -> off+bT ty) 0 (eAnn<$>es)
+    pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]}}) es szs
+    pure$Sa t (ConstI$last szs):concat pls
 eval e _ = error (show e)
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
@@ -553,6 +568,12 @@ f1 _                      = False
 i1 :: T a -> Bool
 i1 (Arr (_ `Cons` Nil) I) = True
 i1 _                      = False
+
+bT :: Integral b => T a -> b
+bT (P ts) = sum (bT<$>ts)
+bT F      = 8
+bT I      = 8
+bT Arr{}  = 8
 
 unDim :: T a -> Bool
 unDim (Arr (_ `Cons` Nil) _) = True
