@@ -17,6 +17,8 @@ U f_npy(PyObject* o) {
     npy_intp* dims=PyArray_DIMS(o);
     I n=PyArray_SIZE(o);
     I sz_i=1+rnk+n;
+    // FIXME: error when np.dtype /= float
+    /* PyErr_SetString(PyExc_RuntimeError, "Expected array of floats"); */
     size_t sz=sz_i*8;
     U x=malloc(sz);I* x_i=x; F* x_f=x;
     x_i[0]=rnk;

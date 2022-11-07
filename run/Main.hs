@@ -215,5 +215,12 @@ printExpr s = case tyParse bs of
                     p <- callFFI fp (retPtr undefined) []
                     putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
                     free p *> freeFunPtr sz fp
+            (Arr _ (P [F,F])) -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    p <- callFFI fp (retPtr undefined) []
+                    putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Float Float)) -> IO (Apple (Pp Float Float))) p
+                    free p *> freeFunPtr sz fp
             t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
     where bs = ubs s

@@ -105,27 +105,25 @@ ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just eI) _) (IR.ConstI 
     plE <- evalE (IR.IB IR.IPlus (IR.Reg tS) eI) (IR.ITemp iT)
     i <- nextR
     t <- nextR
-    l <- nextL
-    endL <- nextL
+    l <- nextL; endL <- nextL
     pure $ plE ++ [MovRI () i 0, Label () l, CmpRI () i (n32-1), Jg () endL, MovRA () t (RS (IReg iT) Eight i), MovAR () (RSD (absReg tD) Eight i sd8) t, IAddRI () i 1, J () l, Label () endL]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just (IR.ConstI sI)) _) (IR.ConstI n)) | Just sd8 <- mi8 sD, Just si8 <- mi8 sI = do
     i <- nextR
     t <- nextR
-    l <- nextL
-    endL <- nextL
+    l <- nextL; endL <- nextL
     pure [MovRI () i (n-1), Label () l, CmpRI () i 0, Jl () endL, MovRA () t (RSD (absReg tS) Eight i si8), MovAR () (RSD (absReg tD) Eight i sd8) t, ISubRI () i 1, J () l, Label () endL]
-    -- FIXME: how do stack allocations work??
-    -- https://stackoverflow.com/a/26026415
-ir (IR.Sa t (IR.ConstI i))                              = pure [IAddRI () SP i, MovRR () (absReg t) SP]
-ir (IR.Sa t e)                                          = do
-    iT <- nextI
-    plE <- evalE e (IR.ITemp iT)
-    pure $ plE ++ [IAddRR () SP (IReg iT), MovRR () (absReg t) SP]
-ir (IR.Pop (IR.ConstI i))                               = pure [ISubRI () SP i]
-ir (IR.Pop e)                                           = do
-    iT <- nextI
-    plE <- evalE e (IR.ITemp iT)
-    pure $ plE ++ [ISubRR () SP (IReg iT)]
+ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) (IR.ConstI n)) | n <= 4 = do
+    iR <- nextI; plE <- evalE e (IR.ITemp iR)
+    t <- nextR
+    pure $ plE ++ IAddRR () (IReg iR) (absReg tD):concat [ [MovRA () t (RC (absReg tS) (i*8)), MovAR () (RC (IReg iR) (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
+ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) (IR.ConstI n)) | Just n32 <- mi32 n = do
+    iR <- nextI; plE <- evalE e (IR.ITemp iR)
+    i <- nextR; t <- nextR
+    l <- nextL; endL <- nextL
+    pure $ plE ++ [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, Label () l, CmpRI () i (n32-1), Jg () endL, MovRA () t (RS (absReg tS) Eight i), MovAR () (RS (IReg iR) Eight i) t, IAddRI () i 1, J () l, Label () endL]
+-- https://www.cs.uaf.edu/2015/fall/cs301/lecture/09_23_allocation.html
+ir (IR.Sa t i)                                          = pure [ISubRI () SP (fromIntegral i+8), MovRR () (absReg t) SP]
+ir (IR.Pop i)                                           = pure [IAddRI () SP (fromIntegral i+8)]
 ir s                                                    = error (show s)
 
 feval :: IR.FExp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
@@ -201,6 +199,11 @@ evalE (IR.IB IR.IPlus (IR.Reg r) e) rD               = do
     eR <- nextI
     plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (absReg r), IAddRR () rD' (IReg eR)]
+evalE (IR.IB IR.ITimes e0 e1) rD = do
+    let rD' = absReg rD
+    e0R <- nextI; plE0 <- evalE e0 (IR.ITemp e0R)
+    e1R <- nextI; plE1 <- evalE e1 (IR.ITemp e1R)
+    pure $ plE0 ++ plE1 ++ [MovRR () rD' (IReg e0R), IMulRR () rD' (IReg e1R)]
 evalE (IR.IB IR.IDiv e0 e1) rD                       = do
     let rD' = absReg rD
     e0R <- nextI

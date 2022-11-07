@@ -25,7 +25,6 @@ import           CF
 import           Control.Exception    (throw)
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BSL
-import           Data.List.Split      (chunksOf)
 import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import           IR

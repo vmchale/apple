@@ -64,6 +64,7 @@ x64T = testGroup "x64"
     , testCase "entropy" $ do { res <- jitEntropy [0.25, 0.25, 0.5] ; res @?= hsEntropy [0.25, 0.25, 0.5] }
     , testCase "avg" $ do { res <- fpAf "test/examples/avg.🍎" [1,2,3] ; res @?= 2 }
     , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
+    , testCase "ℯ_" $ do { (_, fp) <- funP "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
     , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }

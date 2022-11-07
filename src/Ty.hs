@@ -622,9 +622,10 @@ rAn (EApp t e0 e1) = do
 rAn e@Builtin{} = pure (e, mempty)
 rAn e@FLit{} = pure (e, mempty)
 rAn e@ILit{} = pure (e, mempty)
+rAn e@BLit{} = pure (e, mempty)
 rAn e@Var{} = pure (e, mempty)
 rAn (Let t (n, e0) e1) = do
-    (e0', s) <- rAn e0;
+    (e0', s) <- rAn e0
     (e1', s') <- rAn e1
     pure (Let t (n, e0') e1', s<>s')
 rAn (LLet t (n, e0) e1) = do

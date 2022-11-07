@@ -18,8 +18,8 @@
            , _0.261908384015814087e-4
            , 0.368991826595316234e-5
            ⟩;
-  -- TODO: maybe faster w/ frange? (segfaults rip)
+  -- TODO: maybe faster w/ frange? (segfaults atm)
   ss ← (+)/1 0 ([y%(zz+itof x)]` (irange 1 14 1) coeffs);
-  -- FIXME: these parentheses are annoying as shit!!
+  -- FIXME: these parentheses are annoying
   (((zz+0.5)*(_.(zz+𝛾+0.5)))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
 }

@@ -248,7 +248,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     (arrL, putX) <- aeval arr arrP
     -- cause f1 (skip rank)
     let sz = EAt (AP arrP (Just (ConstI 8)) arrL)
-        nIr = ConstI (16+fromIntegral n*8)
+        nIr = 24+n*8
     iR <- newITemp
     l <- newLabel; endL <- newLabel
     -- return value is of type F
@@ -265,19 +265,19 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do
     l <- newLabel; endL <- newLabel
     ss <- writeRF op [arg] arg
     let loop = Wr (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just a)) (Reg arg):ss
-    pure (Just a, Sa arg undefined:putSeed ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ MT i (ConstI 0):L l:MJ (IRel IGt (Reg i) (Reg nR)) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL])
+    pure (Just a, putSeed ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ MT i (ConstI 0):L l:MJ (IRel IGt (Reg i) (Reg nR)) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL])
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | (Arr (_ `Cons` Nil) ty@P{}) <- oTy = do
     a <- nextArr
     arg <- newITemp
     i <- newITemp
     nR <- newITemp
-    let ptN=bT ty;pt = ConstI ptN
-        sz = IB IPlus (IB ITimes (Reg nR) pt) (ConstI 24)
+    let ptN :: Integral a => a; ptN=bT ty;pt = ConstI ptN
+        sz = IB IPlus (IB ITimes (Reg nR) pt) (ConstI$16+ptN)
     putSeed <- eval seed arg; putN <- eval n nR
     l <- newLabel; endL <- newLabel
     ss <- writeRF op [arg] arg
     let loop = ss ++ [Cpy (AP t (Just (IB IPlus (IB ITimes (Reg i) pt) (ConstI 16))) (Just a)) (AP arg Nothing Nothing) (ConstI$ptN`div`8)]
-    pure (Just a, putSeed ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ MT i (ConstI 0):L l:MJ (IRel IGt (Reg i) (Reg nR)) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL])
+    pure (Just a, putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ Sa arg ptN:putSeed ++ MT i (ConstI 0):L l:MJ (IRel IGt (Reg i) (Reg nR)) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL, Pop ptN])
 aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | f1 oTy = do
     a <- nextArr
     xR <- newFTemp
@@ -393,7 +393,7 @@ eval (ILit _ i) t = pure [MT t (ConstI $ asI i)]
 eval (Var F x) t = do
   st <- gets vars
   pure [MX t (FReg $ getT st x)]
-eval (Var I x) t = do
+eval (Var _ x) t = do
     st <- gets vars
     pure [MT t (Reg $ getT st x)]
 eval (EApp _ (Builtin _ ItoF) (ILit _ i)) t = do
@@ -552,9 +552,13 @@ eval (EApp I (Builtin _ Head) arr) t | i1 (eAnn arr) = do
     -- rank 1
     pure $ plArr ++ [MT t (EAt (AP r (Just $ ConstI 16) mL))]
 eval (Tup _ es) t = do
-    let szs = scanl' (\off ty -> off+bT ty) 0 (eAnn<$>es)
+    let szs = szT (eAnn<$>es)
     pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]}}) es szs
-    pure$Sa t (ConstI$last szs):concat pls
+    pure$concat pls
+eval (EApp F (Builtin _ (TAt n)) e) t = do
+    let (P tys) = eAnn e; szs = szT tys
+    r <- newITemp; pl <- eval e r
+    pure $ pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
 eval e _ = error (show e)
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
@@ -574,6 +578,8 @@ bT (P ts) = sum (bT<$>ts)
 bT F      = 8
 bT I      = 8
 bT Arr{}  = 8
+
+szT = scanl' (\off ty -> off+bT ty) 0
 
 unDim :: T a -> Bool
 unDim (Arr (_ `Cons` Nil) _) = True

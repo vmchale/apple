@@ -27,9 +27,9 @@ erf_apple = '''
     2*z*(e: (_(z^2)))*(f11 (z^2))%(√𝜋)
   }'''
 
+def erf(x):
+  return apple.apple(erf_apple,x)
+
 def ncdf(x):
   ncdf_apple = 'λz. {erf ← ' + erf_apple + '; zz ⟜ z%(√2); 0.5*(1+erf(zz))}'
   return apple.apple(ncdf_apple,x)
-
-def erf(x):
-  return apple.apple(erf_apple,x)

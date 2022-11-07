@@ -252,12 +252,10 @@ instance Pretty ResVar where
     pretty Y = "y"
 
 data Idiom = FoldOfZip { seedI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
-           | LoopN { seedL :: E (T ()), opL :: E (T ()), nL :: E (T ()) } -- index ... gen.
            deriving (Generic)
 
 instance Pretty Idiom where
     pretty (FoldOfZip seed op es) = parens ("fold-of-zip" <+> pretty seed <+> pretty op <+> pretty es)
-    pretty (LoopN seed op n)      = parens ("loop-n" <+> pretty op <+> pretty seed <+> pretty n)
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          -- TODO: bool array
