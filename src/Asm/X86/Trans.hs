@@ -122,9 +122,11 @@ ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) (IR.ConstI n)) | Just n32 
     l <- nextL; endL <- nextL
     pure $ plE ++ [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, Label () l, CmpRI () i (n32-1), Jg () endL, MovRA () t (RS (absReg tS) Eight i), MovAR () (RS (IReg iR) Eight i) t, IAddRI () i 1, J () l, Label () endL]
 -- https://www.cs.uaf.edu/2015/fall/cs301/lecture/09_23_allocation.html
-ir (IR.Sa t i)                                          = pure [ISubRI () SP (fromIntegral i+8), MovRR () (absReg t) SP]
-ir (IR.Pop i)                                           = pure [IAddRI () SP (fromIntegral i+8)]
+ir (IR.Sa t i)                                          = pure [ISubRI () SP (saI i+8), MovRR () (absReg t) SP]
+ir (IR.Pop i)                                           = pure [IAddRI () SP (saI i+8)]
 ir s                                                    = error (show s)
+
+saI i | i+8 `rem` 16 == 0 = fromIntegral i | otherwise = fromIntegral i+8
 
 feval :: IR.FExp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
 feval (IR.FB IR.FDiv (IR.FReg r0) (IR.FReg r1)) t   | t == r0 = pure [Divsd () (fabsReg t) (fabsReg r1)]
