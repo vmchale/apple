@@ -335,6 +335,13 @@ mm l = do
     pushVarConstraint n l IsOrd
     pure (Arrow n' (Arrow n' n'), mempty)
 
+tyOrdBinRel :: a -> TyM a (T (), Subst a)
+tyOrdBinRel l = do
+    n <- freshName "o" l
+    let n' = TVar (void n)
+    pushVarConstraint n l IsOrd
+    pure (Arrow n' (Arrow n' B), mempty)
+
 sel :: [Int] -> Sh a -> Sh a
 sel axes sh = roll Nil (fmap snd (filter ((`elem` axes) . fst) (zip [1..] unrolled))) where
     (unrolled, _) = unroll sh
@@ -401,6 +408,12 @@ tyB _ IRange = do
 tyB l Plus = tyNumBinOp l
 tyB l Minus = tyNumBinOp l
 tyB l Times = tyNumBinOp l
+tyB l Gte = tyOrdBinRel l
+tyB l Gt = tyOrdBinRel l
+tyB l Lt = tyOrdBinRel l
+tyB l Lte = tyOrdBinRel l
+tyB l Eq = tyOrdBinRel l
+tyB l Neq = tyOrdBinRel l
 tyB _ Exp = pure (Arrow F (Arrow F F), mempty)
 tyB l Min = mm l
 tyB l Max = mm l
@@ -522,6 +535,7 @@ tyB l Mul = do
     pushVarConstraint a l IsNum
     let a' = TVar (void a)
     pure (Arrow (Arr (i `Cons` j `Cons` Nil) a') (Arrow (Arr (j `Cons` k `Cons` Nil) a') (Arr (i `Cons` k `Cons` Nil) a')), mempty)
+tyB l Sin = pure (Arrow F F, mempty)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do

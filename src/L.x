@@ -141,6 +141,8 @@ tokens :-
         "^:"                     { mkSym Do }
         ⊗                        { mkSym Tensor }
         "|:"                     { mkSym Transp }
+        ≥                        { mkSym Geq }
+        ">="                     { mkSym Geq }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -171,6 +173,7 @@ tokens :-
         float                    { mkBuiltin BuiltinFloat }
         int                      { mkBuiltin BuiltinInt }
         𝔯                        { mkBuiltin BuiltinR }
+        "sin."                   { mkBuiltin BuiltinSin }
 
         _$digit+                 { tok (\p s -> alex $ TokInt p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
 
@@ -235,6 +238,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
          | Last | LastM | TSig | Cons | Snoc | Do | Tensor | Transp | Head | HeadM
+         | Geq
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -288,6 +292,7 @@ instance Pretty Sym where
     pretty Do           = "^:"
     pretty Tensor       = "⊗"
     pretty Transp       = ":|"
+    pretty Geq          = "≥"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)
@@ -300,7 +305,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
              | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
-             | BuiltinR
+             | BuiltinR | BuiltinSin
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -325,6 +330,7 @@ instance Pretty Builtin where
     pretty BuiltinFloat  = "float"
     pretty BuiltinT      = "𝓉"
     pretty BuiltinR      = "𝔯"
+    pretty BuiltinSin    = "sin."
 
 data Token a = EOF { loc :: a }
              | TokSym { loc :: a, sym :: Sym }

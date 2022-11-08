@@ -51,6 +51,7 @@ etaAt (Lam l n e)                         = Lam l n <$> etaAt e
 etaAt (Cond l p e e')                     = Cond l <$> etaAt p <*> etaAt e <*> etaAt e'
 etaAt (LLet l (n, e') e)                  = do { e'𝜂 <- etaAt e'; e𝜂 <- etaAt e; pure $ LLet l (n, e'𝜂) e𝜂 }
 etaAt (Id l idm)                          = Id l <$> etaIdm idm
+etaAt (ALit l es)                         = ALit l <$> traverse etaAt es
 etaAt e                                   = pure e
 
 etaIdm (FoldOfZip seed op es) = FoldOfZip <$> etaAt seed <*> etaAt op <*> traverse etaAt es
@@ -60,6 +61,8 @@ etaM :: E (T ()) -> RM (E (T ()))
 etaM e@FLit{}                = pure e
 etaM e@ILit{}                = pure e
 etaM e@ALit{}                = pure e
+etaM e@Cond{}                = pure e
+etaM e@BLit{}                = pure e
 etaM e@(Var t@Arrow{} _)     = mkLam (doms t) e
 etaM e@Var{}                 = pure e
 etaM e@(Builtin t@Arrow{} _) = mkLam (doms t) e

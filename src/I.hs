@@ -36,6 +36,7 @@ hR (EApp _ (EApp _ (Builtin _ R) _) _) = True
 hR Builtin{}                           = False
 hR FLit{}                              = False
 hR ILit{}                              = False
+hR BLit{}                              = False
 hR (ALit _ es)                         = any hR es
 hR (Tup _ es)                          = any hR es
 hR (Cond _ p e e')                     = hR p||hR e||hR e'
@@ -52,6 +53,7 @@ iM :: E (T ()) -> M (T ()) (E (T ()))
 iM e@Builtin{} = pure e
 iM e@FLit{} = pure e
 iM e@ILit{} = pure e
+iM e@BLit{} = pure e
 iM (ALit l es) = ALit l <$> traverse iM es
 iM (Tup l es) = Tup l <$> traverse iM es
 iM (Cond l p e0 e1) = Cond l <$> iM p <*> iM e0 <*> iM e1
@@ -79,6 +81,7 @@ bM :: E (T ()) -> M (T ()) (E (T ()))
 bM e@Builtin{} = pure e
 bM e@FLit{} = pure e
 bM e@ILit{} = pure e
+bM e@BLit{} = pure e
 bM (ALit l es) = ALit l <$> traverse bM es
 bM (Tup l es) = Tup l <$> traverse bM es
 bM (Cond l p e0 e1) = Cond l <$> bM p <*> bM e0 <*> bM e1

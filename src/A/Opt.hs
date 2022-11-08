@@ -13,6 +13,7 @@ optA :: E (T ()) -> RM (E (T ()))
 optA (ILit F x)  = pure (FLit F (realToFrac x))
 optA e@ILit{}    = pure e
 optA e@FLit{}    = pure e
+optA e@BLit{}    = pure e
 optA e@Var{}     = pure e
 optA e@Builtin{} = pure e
 optA (EApp l0 (EApp l1 op@(Builtin _ Exp) e0) e1) = do
@@ -105,5 +106,6 @@ optA (LLet l (n, e') e) = do
     eOpt <- optA e
     pure $ LLet l (n, e'Opt) eOpt
 optA (Id l idm) = Id l <$> optI idm
+optA (Cond l p e0 e1) = Cond l <$> optA p <*> optA e0 <*> optA e1
 
 optI (FoldOfZip seed op es) = FoldOfZip <$> optA seed <*> optA op <*> traverse optA es

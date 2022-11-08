@@ -148,6 +148,8 @@ instance Pretty Builtin where
     pretty Transpose = "|:"
     pretty Fib       = "𝓕"
     pretty Dim       = "𝓉"
+    pretty Sin       = "sin."
+    pretty Gte       = "≥"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
@@ -164,7 +166,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | Outer | R | Head | HeadM
-             -- sin/cos &c.
+             | Sin | Cos
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, foldAll, reshape...?
 
@@ -231,6 +233,8 @@ instance Pretty (E a) where
     pretty (EApp _ e0 e1)                                           = parens (pretty e0 <+> pretty e1)
     pretty (FLit _ x)                                               = pretty x
     pretty (ILit _ n)                                               = pretty n
+    pretty (BLit _ True)                                            = "#t"
+    pretty (BLit _ False)                                           = "#f"
     pretty (Dfn _ e)                                                = brackets (pretty e)
     pretty (ResVar _ x)                                             = pretty x
     pretty (Parens _ e)                                             = parens (pretty e)
@@ -241,6 +245,7 @@ instance Pretty (E a) where
     pretty (Tup _ es)                                               = tupled (pretty <$> es)
     pretty (ALit _ es)                                              = tupledArr (pretty <$> es)
     pretty (Ann _ e t)                                              = parens (pretty e <+> "::" <+> pretty t)
+    pretty (Cond _ p e₀ e₁)                                         = "?" <> pretty p <> ",." <+> pretty e₀ <+> ",." <+> pretty e₁
 
 instance Show (E a) where
     show = show . pretty

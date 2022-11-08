@@ -10,6 +10,7 @@ module IR ( Exp (..)
           , IBin (..)
           , IUn (..)
           , IRel (..)
+          , FRel (..)
           , Label
           , WSt (..)
           , prettyIR
@@ -111,6 +112,7 @@ data FExp = ConstF Double
 data Exp = ConstI Int64
          | Reg Temp
          | IB IBin Exp Exp
+         | FRel FRel FExp FExp
          | IRel IRel Exp Exp
          | IU IUn Exp
          | IRFloor FExp
@@ -134,10 +136,11 @@ instance Pretty Exp where
     pretty (IU op e)      = parens (pretty op <+> pretty e)
     pretty (IRFloor e)    = parens ("floor" <+> pretty e)
     pretty (EAt p)        = "@" <> pretty p
+    pretty (FRel op e e') = parens (pretty op <+> pretty e <+> pretty e')
 
 instance Show Exp where show = show.pretty
 
-data FUn = FSqrt | FLog
+data FUn = FSqrt | FLog | FSin | FCos
 
 data IUn = ISgn | INot
 
@@ -146,6 +149,7 @@ data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp
 data IBin = IPlus | IMinus | ITimes | IAsr | IAnd | IMax | IMin | IDiv | IAsl
 
 data IRel = IEq | INeq | IGt | ILt | ILeq | IGeq
+data FRel = FEq | FNeq | FGt | FLt | FLeq | FGeq
 
 instance Pretty IRel where
     pretty IEq  = "="
@@ -155,15 +159,21 @@ instance Pretty IRel where
     pretty ILeq = "≤"
     pretty IGeq = "≥"
 
+instance Pretty FRel where
+    pretty FEq  = "="
+    pretty FNeq = "!="
+    pretty FGt  = ">"
+    pretty FLt  = "<"
+    pretty FLeq = "≤"
+    pretty FGeq = "≥"
+
 instance Pretty IBin where
     pretty IPlus  = "+"
     pretty IMinus = "-"
     pretty ITimes = "*"
     pretty IDiv   = "div"
-    pretty IAsl   = "asl"
-    pretty IAsr   = "asr"
-    pretty IMax   = "max"
-    pretty IMin   = "min"
+    pretty IAsl   = "asl"; pretty IAsr   = "asr"
+    pretty IMax   = "max"; pretty IMin   = "min"
     pretty IAnd   = "∧"
 
 instance Pretty FBin where
@@ -176,10 +186,10 @@ instance Pretty FBin where
 instance Pretty FUn where
     pretty FSqrt = "sqrt"
     pretty FLog  = "log"
+    pretty FSin  = "sin"; pretty FCos  = "cos"
 
 instance Pretty IUn where
-    pretty ISgn = "sgn"
-    pretty INot = "¬"
+    pretty ISgn = "sgn"; pretty INot = "¬"
 
 prettyIR :: [Stmt] -> Doc ann
 prettyIR = prettyLines . fmap pretty

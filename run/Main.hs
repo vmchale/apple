@@ -16,7 +16,7 @@ import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
 import           Dbg
-import           Foreign.LibFFI            (callFFI, retCDouble, retInt64, retPtr)
+import           Foreign.LibFFI            (callFFI, retCDouble, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc     (free)
 import           Foreign.Ptr               (Ptr)
 import           Foreign.Storable          (peek)
@@ -215,6 +215,14 @@ printExpr s = case tyParse bs of
                     p <- callFFI fp (retPtr undefined) []
                     putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
                     free p *> freeFunPtr sz fp
+            (Arr _ B) -> do
+                m <- lift$gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    cb <- callFFI fp (retWord8) []
+                    putStrLn (sB cb)
+                    freeFunPtr sz fp
+                where sB 1 = "#t"; sB 0 = "#f"
             (Arr _ (P [F,F])) -> do
                 m <- lift $ gets mf
                 liftIO $ do

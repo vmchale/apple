@@ -69,6 +69,8 @@ isI _ = False
 isT :: T a -> Bool
 isT P{} = True; isT _ = False
 
+isB :: T a -> Bool; isB B = True; isB _ = False
+
 isArr Arr{} = True
 isArr _     = False
 
@@ -94,6 +96,7 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
     go Lam{} _ [] = error "Not enough registers!"
     go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX FRet (FReg f)]) <$> eval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = eval e CRet
+             | isB (eAnn e) = eval e CRet
              | isArr (eAnn e) = do{(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
              | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing))]}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
@@ -526,6 +529,10 @@ eval (EApp _ (Builtin _ Log) e) t = do
     t' <- newFTemp
     plE <- eval e t'
     pure $ plE ++ [MX t (FU FLog (FReg t'))]
+eval (EApp _ (Builtin _ Sin) e) t = do
+    f <- newFTemp
+    plE <- eval e f
+    pure $ plE ++ [MX t (FU FSin (FReg f))]
 eval (EApp _ (Builtin _ Size) e) t | unDim (eAnn e) = do
     r <- newITemp
     (mI, plE) <- aeval e r
@@ -541,6 +548,12 @@ eval (EApp I (EApp _ (Builtin _ Max) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
     pure $ plE0 ++ plE1 ++ [MT t (Reg e1R), Cmov (IRel IGt (Reg e0R) (Reg e1R)) t (Reg e0R)]
+eval (Cond F (EApp _ (EApp _ (Builtin (Arrow F _) Gte) c0) c1) e0 e1) t = do
+    c0R <- newFTemp; c1R <- newFTemp
+    plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
+    fR <- newFTemp; plE0 <- eval e0 fR; plE1 <- eval e1 fR
+    l <- newLabel
+    pure $ plC0 ++ plC1 ++ MJ (FRel FGeq (FReg c0R) (FReg c1R)) l:plE1 ++ L l:plE0 ++ [MX t (FReg fR)]
 eval (EApp F (Builtin _ Head) arr) t | f1 (eAnn arr) = do
     r <- newITemp
     (mL, plArr) <- aeval arr r
