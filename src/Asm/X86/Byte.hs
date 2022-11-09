@@ -187,6 +187,7 @@ mkIx ix (Cvttsd2si{}:asms)                    = mkIx (ix+5) asms
 mkIx ix (Cvtsi2sd{}:asms)                     = mkIx (ix+5) asms
 mkIx ix (Ret{}:asms)                          = mkIx (ix+1) asms
 mkIx ix (Je{}:asms)                           = mkIx (ix+6) asms
+mkIx ix (Jne{}:asms)                          = mkIx (ix+6) asms
 mkIx ix (Jg{}:asms)                           = mkIx (ix+6) asms
 mkIx ix (Jge{}:asms)                          = mkIx (ix+6) asms
 mkIx ix (Jl{}:asms)                           = mkIx (ix+6) asms
@@ -444,6 +445,10 @@ asm ix st (Ret{}:asms) =
 asm ix st (Je _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x84:cd (fromIntegral offs :: Int32)
+    in instr:asm (ix+6) st asms
+asm ix st (Jne _ l:asms) =
+    let lIx = get l st
+        instr = let offs = lIx-ix-6 in 0x0f:0x85:cd (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
 asm ix st (Jg _ l:asms) =
     let lIx = get l st

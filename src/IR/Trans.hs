@@ -552,8 +552,38 @@ eval (Cond F (EApp _ (EApp _ (Builtin (Arrow F _) Gte) c0) c1) e0 e1) t = do
     c0R <- newFTemp; c1R <- newFTemp
     plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
     fR <- newFTemp; plE0 <- eval e0 fR; plE1 <- eval e1 fR
-    l <- newLabel
-    pure $ plC0 ++ plC1 ++ MJ (FRel FGeq (FReg c0R) (FReg c1R)) l:plE1 ++ L l:plE0 ++ [MX t (FReg fR)]
+    l <- newLabel; nextL <- newLabel
+    pure $ plC0 ++ plC1 ++ MJ (FRel FGeq (FReg c0R) (FReg c1R)) l:plE1 ++ J nextL:L l:plE0 ++ [L nextL, MX t (FReg fR)]
+eval (Cond F (EApp _ (EApp _ (Builtin (Arrow I _) Gt) c0) c1) e0 e1) t = do
+    c0R <- newITemp; c1R <- newITemp
+    plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
+    fR <- newFTemp; plE0 <- eval e0 fR; plE1 <- eval e1 fR
+    l <- newLabel; nextL <- newLabel
+    pure $ plC0 ++ plC1 ++ MJ (IRel IGeq (Reg c0R) (Reg c1R)) l:plE1 ++ J nextL:L l:plE0 ++ [L nextL, MX t (FReg fR)]
+eval (Cond F (EApp _ (EApp _ (Builtin (Arrow I _) Eq) c0) c1) e0 e1) t = do
+    c0R <- newITemp; c1R <- newITemp
+    plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
+    fR <- newFTemp; plE0 <- eval e0 fR; plE1 <- eval e1 fR
+    l <- newLabel; nextL <- newLabel
+    pure $ plC0 ++ plC1 ++ MJ (IRel IEq (Reg c0R) (Reg c1R)) l:plE1 ++ J nextL:L l:plE0 ++ [L nextL, MX t (FReg fR)]
+eval (Cond F (EApp _ (EApp _ (Builtin (Arrow I _) Neq) c0) c1) e0 e1) t = do
+    c0R <- newITemp; c1R <- newITemp
+    plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
+    fR <- newFTemp; plE0 <- eval e0 fR; plE1 <- eval e1 fR
+    l <- newLabel; nextL <- newLabel
+    pure $ plC0 ++ plC1 ++ MJ (IRel INeq (Reg c0R) (Reg c1R)) l:plE1 ++ J nextL:L l:plE0 ++ [L nextL, MX t (FReg fR)]
+eval (Cond F (EApp _ (EApp _ (Builtin (Arrow I _) Lt) c0) c1) e0 e1) t = do
+    c0R <- newITemp; c1R <- newITemp
+    plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
+    fR <- newFTemp; plE0 <- eval e0 fR; plE1 <- eval e1 fR
+    l <- newLabel; nextL <- newLabel
+    pure $ plC0 ++ plC1 ++ MJ (IRel ILt (Reg c0R) (Reg c1R)) l:plE1 ++ J nextL:L l:plE0 ++ [L nextL, MX t (FReg fR)]
+eval (Cond F (EApp _ (EApp _ (Builtin (Arrow I _) Lte) c0) c1) e0 e1) t = do
+    c0R <- newITemp; c1R <- newITemp
+    plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
+    fR <- newFTemp; plE0 <- eval e0 fR; plE1 <- eval e1 fR
+    l <- newLabel; nextL <- newLabel
+    pure $ plC0 ++ plC1 ++ MJ (IRel ILeq (Reg c0R) (Reg c1R)) l:plE1 ++ J nextL:L l:plE0 ++ [L nextL, MX t (FReg fR)]
 eval (EApp F (Builtin _ Head) arr) t | f1 (eAnn arr) = do
     r <- newITemp
     (mL, plArr) <- aeval arr r

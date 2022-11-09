@@ -70,6 +70,7 @@ ir (IR.MX t (IR.FAt (IR.AP m (Just (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3))) _))
 ir (IR.MX t (IR.FAt (IR.AP m (Just (IR.ConstI i)) _))) | Just i8 <- mi8 i = pure [MovqXA () (fabsReg t) (RC (absReg m) i8)]
 ir (IR.L l)                                             = pure [Label () l]
 ir (IR.MT t e)                                          = evalE e t
+ir (IR.MJ (IR.IRel IR.ILeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [CmpRR () (absReg r0) (absReg r1), Jle () l]
 ir (IR.MJ (IR.IRel IR.INeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [CmpRR () (absReg r0) (absReg r1), Jne () l]
 ir (IR.MJ (IR.IRel IR.IEq (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Je () l]
 ir (IR.MJ (IR.IRel IR.IEq (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Je () l]

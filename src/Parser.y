@@ -67,6 +67,11 @@ import Prettyprinter (Pretty (pretty), (<+>))
     do { TokSym $$ Do }
     tensor { TokSym $$ Tensor }
     geq { TokSym $$ Geq }
+    gt { TokSym $$ L.Gt }
+    leq { TokSym $$ Leq }
+    lt { TokSym $$ L.Lt }
+    eq { TokSym $$ L.Eq }
+    neq { TokSym $$ L.Neq }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -193,6 +198,11 @@ BBin :: { E AlexPosn }
      | mul { Builtin $1 Mul }
      | do { Builtin $1 Iter }
      | geq { Builtin $1 Gte }
+     | gt { Builtin $1 A.Gt }
+     | leq { Builtin $1 Lte }
+     | lt { Builtin $1 A.Lt }
+     | eq { Builtin $1 A.Eq }
+     | neq { Builtin $1 A.Neq }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }

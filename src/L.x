@@ -143,6 +143,13 @@ tokens :-
         "|:"                     { mkSym Transp }
         ≥                        { mkSym Geq }
         ">="                     { mkSym Geq }
+        ">"                      { mkSym Gt }
+        =                        { mkSym Eq }
+        ≠                        { mkSym Neq }
+        "!="                     { mkSym Neq }
+        "<"                      { mkSym Lt }
+        "<="                     { mkSym Leq }
+        ≤                        { mkSym Leq }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -238,7 +245,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
          | Last | LastM | TSig | Cons | Snoc | Do | Tensor | Transp | Head | HeadM
-         | Geq
+         | Geq | Gt | Eq | Neq | Leq | Lt
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -293,6 +300,11 @@ instance Pretty Sym where
     pretty Tensor       = "⊗"
     pretty Transp       = ":|"
     pretty Geq          = "≥"
+    pretty Gt           = ">"
+    pretty Eq           = "="
+    pretty Leq          = "≤"
+    pretty Neq          = "≠"
+    pretty Lt           = "<"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

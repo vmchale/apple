@@ -150,6 +150,11 @@ instance Pretty Builtin where
     pretty Dim       = "𝓉"
     pretty Sin       = "sin."
     pretty Gte       = "≥"
+    pretty Gt        = ">"
+    pretty Lt        = "<"
+    pretty Eq        = "="
+    pretty Neq       = "≠"
+    pretty Lte       = "≤"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
