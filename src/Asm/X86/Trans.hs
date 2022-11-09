@@ -48,7 +48,7 @@ nextL :: WM Label
 nextL = do { i <- gets (head.IR.wlabels); modify (\(IR.WSt (_:l) t) -> IR.WSt l t) $> i }
 
 nextR :: WM AbsReg
-nextR = IReg <$> nextI
+nextR = IReg <$> nextI; nextF = FReg <$> nextI
 
 mi8 :: Int64 -> Maybe Int8
 mi8 i | i <= fromIntegral (maxBound :: Int8) && i >= fromIntegral (minBound :: Int8) = Just $ fromIntegral i
@@ -71,14 +71,17 @@ ir (IR.MX t (IR.FAt (IR.AP m (Just (IR.ConstI i)) _))) | Just i8 <- mi8 i = pure
 ir (IR.L l)                                             = pure [Label () l]
 ir (IR.MT t e)                                          = evalE e t
 ir (IR.MJ (IR.IRel IR.ILeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [CmpRR () (absReg r0) (absReg r1), Jle () l]
-ir (IR.MJ (IR.IRel IR.INeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [CmpRR () (absReg r0) (absReg r1), Jne () l]
-ir (IR.MJ (IR.IRel IR.IEq (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Je () l]
+ir (IR.MJ (IR.IRel IR.INeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [Test () (absReg r0) (absReg r1), Jne () l]
+ir (IR.MJ (IR.IRel IR.IEq (IR.Reg r0) (IR.Reg r1)) l)   = pure [Test () (absReg r0) (absReg r1), Je () l]
 ir (IR.MJ (IR.IRel IR.IEq (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Je () l]
 ir (IR.MJ (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jg () l]
 ir (IR.MJ (IR.IRel IR.IGeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [CmpRR () (absReg r0) (absReg r1), Jge () l]
 ir (IR.MJ (IR.IRel IR.IGt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jg () l]
 ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jl () l]
 ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jl () l]
+ir (IR.MJ (IR.FRel IR.FGeq (IR.FReg r0) (IR.FReg r1)) l) = do
+    f <- nextF; r <- nextR
+    pure [Vcmppd () f (fabsReg r0) (fabsReg r1) Nltus, MovqRX () r f, TestI () r maxBound, Jne () l]
 ir (IR.J l)                                             = pure [J () l]
 -- see https://www.agner.org/optimize/optimizing_assembly.pdf, p. 125
 ir (IR.MX t e)                                          = feval e t
@@ -160,6 +163,9 @@ feval (IR.ConstF x) t = do
 feval (IR.FU IR.FLog (IR.FReg r0)) t =
     let sa = RC SP (-8) in
     pure [Fninit (), Fldln2 (), MovqAX () sa (fabsReg r0), Fld () sa, Fyl2x (), Fstp () sa, MovqXA () (fabsReg t) sa]
+feval (IR.FU IR.FSin (IR.FReg r)) t =
+    let sa = RC SP (-8) in
+    pure [Fninit (), MovqAX () sa (fabsReg r), Fld () sa, Fsin (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FB IR.FExp (IR.ConstF 2.718281828459045) e) t = do
     i <- nextI
     putE <- feval e (IR.FTemp i)

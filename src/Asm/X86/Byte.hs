@@ -171,10 +171,14 @@ mkIx ix (Vdivsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
 mkIx ix (Vmulsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
+mkIx ix (Vcmppd _ _ _ r _ :asms) | fits r     = mkIx (ix+5) asms
+                                 | otherwise  = mkIx (ix+6) asms
 mkIx ix (Vfmadd231sd{}:asms)                  = mkIx (ix+5) asms
 mkIx ix (CmpRR{}:asms)                        = mkIx (ix+3) asms
 mkIx ix (IMulRR{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (MovqXR{}:asms)                       = mkIx (ix+5) asms
+mkIx ix (MovqRX{}:asms)                       = mkIx (ix+5) asms
+mkIx ix (TestI{}:asms)                        = mkIx (ix+7) asms
 mkIx ix ((CmpRI _ _ i):asms) | Just{} <- mi64i8 (fromIntegral i) = mkIx (ix+4) asms
 mkIx ix ((IAddRI _ _ i):asms) | Just{} <- mi64i8 i = mkIx (ix+4) asms
 mkIx ix ((ISubRI _ _ i):asms) | Just{} <- mi64i8 i = mkIx (ix+4) asms
@@ -210,6 +214,7 @@ mkIx ix (MovqXA _ _ RC{}:asms)                = mkIx (ix+6) asms
 mkIx ix (Fldl2e{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fldln2{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fld1{}:asms)                         = mkIx (ix+2) asms
+mkIx ix (Fsin{}:asms)                         = mkIx (ix+2) asms
 mkIx ix (FldS{}:asms)                         = mkIx (ix+2) asms
 mkIx ix (Fld _ (RC Rsp _):asms)               = mkIx (ix+4) asms
 mkIx ix (Fyl2x{}:asms)                        = mkIx (ix+2) asms
@@ -388,6 +393,10 @@ asm ix st (Vmulsd _ r0 r1 r2:asms) | fits r2 =
     mkVex 0x59 F2 r0 r1 r2:asm (ix+4) st asms
                                    | otherwise =
     mkVex3 0x59 F2 F r0 r1 r2:asm (ix+5) st asms
+asm ix st (Vcmppd _ r0 r1 r2 p:asms) | fits r2 =
+    (mkVex 0xc2 S6 r0 r1 r2 ++ le (imm8 p)):asm (ix+5) st asms
+                                     | otherwise =
+    (mkVex3 0xc2 S6 F r0 r1 r2 ++ le (imm8 p)):asm (ix+6) st asms
 asm ix st (Vfmadd231sd _ r0 r1 r2:asms) =
     mkVex3 0xb9 S6 F38 r0 r1 r2:asm (ix+5) st asms
 asm ix st (Roundsd _ r0 r1 i:asms) | fits r0 && fits r1 =
@@ -404,9 +413,16 @@ asm ix st (CmpRR _ r0 r1:asms) =
     mkRR [0x39] r0 r1:asm (ix+3) st asms
 asm ix st (MovqXR _ fr r:asms) =
     (0x66:mkRR [0x0f,0x6e] r fr):asm (ix+5) st asms
+asm ix st (MovqRX _ r fr:asms) =
+    (0x66:mkRR [0x0f,0x7e] r fr):asm (ix+5) st asms
 asm ix st (IMulRR _ r0 r1:asms) =
     -- flip r0,r1 as instr. uses them differently from sub, etc.
     mkRR [0x0f, 0xaf] r1 r0:asm (ix+4) st asms
+asm ix st (TestI _ r i:asms) =
+    let (e, b) = modRM r
+        prefix = 0x48 .|. e
+        modB = 0x3 `shiftL` 6 .|. b
+    in (prefix:0xf7:modB:le i):asm (ix+7) st asms
 asm ix st (CmpRI _ r i:asms) | Just i8 <- mi64i8 (fromIntegral i) =
     let (e, b) = modRM r
         prefix = 0x48 .|. e
@@ -480,6 +496,8 @@ asm ix st (Fldln2{}:asms) =
     [0xd9,0xed]:asm (ix+2) st asms
 asm ix st (Fld1{}:asms) =
     [0xd9,0xe8]:asm (ix+2) st asms
+asm ix st (Fsin{}:asms) =
+    [0xd9,0xfe]:asm (ix+2) st asms
 asm ix st (FldS _ (ST i):asms) =
     let isn = [0xd9, 0xc0+fromIntegral i] in isn:asm (ix+2) st asms
 asm ix st (Fprem{}:asms) =

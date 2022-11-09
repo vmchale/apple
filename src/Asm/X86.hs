@@ -13,6 +13,7 @@ module Asm.X86 ( X86 (..)
                , Addr (..)
                , ST (..)
                , Scale (..)
+               , Pred (..)
                , RoundMode (..)
                , Label
                , CFunc (..)
@@ -20,6 +21,7 @@ module Asm.X86 ( X86 (..)
                , prettyDebugX86
                , toInt
                , fToInt
+               , imm8
                , roundMode
                ) where
 
@@ -176,6 +178,31 @@ instance Pretty Scale where
     pretty Four  = "4"
     pretty Eight = "8"
 
+data Pred = Eqoq | Ltos | Leos | Unordq | Nequq | Nltus | Nleus | Ordq deriving (Generic)
+
+instance Pretty Pred where
+    pretty Eqoq   = "EQ_OQ"
+    pretty Ltos   = "LT_OS"
+    pretty Leos   = "LE_OS"
+    pretty Unordq = "UNORD_Q"
+    pretty Nequq  = "NEQ_UQ"
+    pretty Nltus  = "NLT_US"
+    pretty Nleus  = "NLE_US"
+    pretty Ordq   = "ORD_Q"
+
+-- https://www.felixcloutier.com/x86/cmppd
+imm8 :: Pred -> Int8
+imm8 Eqoq   = 0
+imm8 Ltos   = 1
+imm8 Leos   = 2
+imm8 Unordq = 3
+imm8 Nequq  = 4
+imm8 Nltus  = 5
+imm8 Nleus  = 6
+imm8 Ordq   = 7
+
+instance NFData Pred where
+
 data Addr reg = R reg | RC reg Int8 | RS reg Scale reg | RSD reg Scale reg Int8 deriving (Generic, Functor, Foldable, Traversable)
 
 instance NFData Scale where
@@ -212,12 +239,14 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | MovqXR { ann :: a, fDest :: freg, rSrc :: reg }
                     | MovqXA { ann :: a, fDest :: freg, aSrc :: Addr reg }
                     | MovqAX { ann :: a, aDest :: Addr reg, fSrc :: freg }
+                    | MovqRX { ann :: a, rDest :: reg, fSrc :: freg }
                     | Fld { ann :: a, a87 :: Addr reg }
                     | FldS { ann :: a, stIsn :: ST }
                     | Fldl2e { ann :: a }
                     | Fldln2 { ann :: a }
                     | Fld1 { ann :: a }
                     | Fyl2x { ann :: a }
+                    | Fsin { ann :: a }
                     | Fstp { ann :: a, a87 :: Addr reg }
                     | F2xm1 { ann :: a }
                     | Fmulp { ann :: a }
@@ -235,6 +264,9 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Jle { ann :: a, jLabel :: Label }
                     | CmpRR { ann :: a, rCmp :: reg, rCmp' :: reg }
                     | CmpRI { ann :: a, rCmp :: reg, cmpI32 :: Int32 }
+                    | Vcmppd { ann :: a, fDest :: freg, fCmp :: freg, fCmp' :: freg, cpred :: Pred }
+                    | Test { ann :: a, rCmp :: reg, rCmp' :: reg }
+                    | TestI { ann :: a, rCmp :: reg, cmpI32 :: Int32 }
                     | Ret { ann :: a }
                     | Vdivsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
                     | Movapd { ann :: a, fDest :: freg, fSrc :: freg }
@@ -321,6 +353,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
   pretty Fldl2e{}                 = i4 "fldl2e"
   pretty Fldln2{}                 = i4 "fldln2"
   pretty Fld1{}                   = i4 "fld1"
+  pretty Fsin{}                   = i4 "fsin"
   pretty Fprem{}                  = i4 "fprem"
   pretty Faddp{}                  = i4 "faddp"
   pretty Fscale{}                 = i4 "fscale"
@@ -344,6 +377,10 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
   pretty (And _ r0 r1)            = i4 ("and" <+> pretty r0 <> "," <+> pretty r1)
   pretty (Cmovnle _ r0 r1)        = i4 ("cmovnle" <+> pretty r0 <> "," <+> pretty r1)
   pretty (Rdrand _ r)             = i4 ("rdrand" <+> pretty r)
+  pretty (Test _ r0 r1)           = i4 ("test" <+> pretty r0 <> "," <+> pretty r1)
+  pretty (TestI _ r0 i)           = i4 ("test" <+> pretty r0 <> "," <+> pretty i)
+  pretty (MovqRX _ r xr)          = i4 ("movq" <+> pretty r <> "," <+> pretty xr)
+  pretty (Vcmppd _ xr0 xr1 xr2 p) = i4 ("vcmppd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2 <+> pretty p)
 
 instance (Pretty reg, Pretty freg) => Show (X86 reg freg a) where show = show . pretty
 

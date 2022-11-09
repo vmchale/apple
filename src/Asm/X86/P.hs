@@ -82,6 +82,11 @@ mapR f (And l r0 r1)               = And l (f r0) (f r1)
 mapR f (Rdrand l r)                = Rdrand l (f r)
 mapR f (Cmovnle l r0 r1)           = Cmovnle l (f r0) (f r1)
 mapR _ (Fninit l)                  = Fninit l
+mapR f (Test l r0 r1)              = Test l (f r0) (f r1)
+mapR f (TestI l r i)               = TestI l (f r) i
+mapR _ (Vcmppd l xr0 xr1 xr2 p)    = Vcmppd l xr0 xr1 xr2 p
+mapR f (MovqRX l r xr)             = MovqRX l (f r) xr
+mapR _ (Fsin l)                    = Fsin l
 
 mapFR :: (afreg -> freg) -> X86 areg afreg a -> X86 areg freg a
 mapFR _ (Jg x l)                    = Jg x l
@@ -150,6 +155,11 @@ mapFR f (Sqrtsd l xr0 xr1)          = Sqrtsd l (f xr0) (f xr1)
 mapFR _ (And l r0 r1)               = And l r0 r1
 mapFR _ (Cmovnle l r0 r1)           = Cmovnle l r0 r1
 mapFR _ (Rdrand l r)                = Rdrand l r
+mapFR _ (TestI l r i)               = TestI l r i
+mapFR _ (Test l r0 r1)              = Test l r0 r1
+mapFR f (Vcmppd l xr0 xr1 xr2 p)    = Vcmppd l (f xr0) (f xr1) (f xr2) p
+mapFR f (MovqRX l r xr)             = MovqRX l r (f xr)
+mapFR _ (Fsin l)                    = Fsin l
 
 -- TODO: don't bother re-analyzing if no Calls
 gallocFrame :: [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]

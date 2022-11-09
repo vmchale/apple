@@ -2,9 +2,9 @@
 
 module Asm.Ar ( Arch (..) ) where
 
-import qualified Asm.X86          as X86
-import qualified Asm.X86.B        as X86
-import qualified Asm.X86.CF       as X86
+import qualified Asm.X86    as X86
+import qualified Asm.X86.B  as X86
+import qualified Asm.X86.CF as X86
 import           CF
 
 class Arch arch reg freg where
