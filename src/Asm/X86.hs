@@ -231,6 +231,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | ISubRR { ann :: a, rSub1 :: reg, rSub2 :: reg }
                     | ISubRI { ann :: a, rSub :: reg, rSubI :: Int64 }
                     | IMulRR { ann :: a, rMul1 :: reg, rMul2 :: reg }
+                    | XorRR { ann :: a, rXor1 :: reg, rXor2 :: reg }
                     | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
                     | MovRA { ann :: a, rDest :: reg, aSrc :: Addr reg }
                     | MovAR { ann :: a, aDest :: Addr reg, rSrc :: reg }
@@ -315,6 +316,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
   pretty (CmpRR _ r0 r1)          = i4 ("cmp" <+> pretty r0 <> "," <+> pretty r1)
   pretty (MovRR _ r0 r1)          = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
   pretty (MovRI _ r i)            = i4 ("mov" <+> pretty r <> "," <+> pretty i)
+  pretty (XorRR _ r0 r1)          = i4 ("xor" <+> pretty r0 <> "," <+> pretty r1)
   pretty (MovqXR _ r0 r1)         = i4 ("movq" <+> pretty r0 <> "," <+> pretty r1)
   pretty (IAddRR _ r0 r1)         = i4 ("add" <+> pretty r0 <> "," <+> pretty r1)
   pretty (IAddRI _ r i)           = i4 ("add" <+> pretty r <> "," <+> pretty i)

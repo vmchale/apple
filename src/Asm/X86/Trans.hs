@@ -62,7 +62,6 @@ fI64 :: Double -> Int64
 fI64 x = accursedUnutterablePerformIO $ alloca $ \bytes -> poke (castPtr bytes) x *> peek bytes
 
 ir :: IR.Stmt -> WM [X86 AbsReg FAbsReg ()]
-ir (IR.MT t (IR.ConstI i))                              = pure [MovRI () (absReg t) i]
 ir (IR.MT t (IR.EAt (IR.AP m (Just (IR.ConstI i)) _))) | Just i8 <- mi8 i = pure [MovRA () (absReg t) (RC (absReg m) i8)]
 ir (IR.MT t (IR.EAt (IR.AP m Nothing _)))               = pure [MovRA () (absReg t) (R$absReg m)]
 ir (IR.MX t (IR.FAt (IR.AP m Nothing _ )))              = pure [MovqXA () (fabsReg t) (R (absReg m))]
@@ -132,7 +131,7 @@ ir s                                                    = error (show s)
 
 saI i | i+8 `rem` 16 == 0 = fromIntegral i | otherwise = fromIntegral i+8
 
-feval :: IR.FExp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
+feval :: IR.FExp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()] -- TODO: feval 0 (xor?)
 feval (IR.FB IR.FDiv (IR.FReg r0) (IR.FReg r1)) t   | t == r0 = pure [Divsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB IR.FTimes (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Mulsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB IR.FMinus (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Subsd () (fabsReg t) (fabsReg r1)]
@@ -162,10 +161,10 @@ feval (IR.ConstF x) t = do
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]
 feval (IR.FU IR.FLog (IR.FReg r0)) t =
     let sa = RC SP (-8) in
-    pure [Fninit (), Fldln2 (), MovqAX () sa (fabsReg r0), Fld () sa, Fyl2x (), Fstp () sa, MovqXA () (fabsReg t) sa]
+    pure [Fldln2 (), MovqAX () sa (fabsReg r0), Fld () sa, Fyl2x (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FU IR.FSin (IR.FReg r)) t =
     let sa = RC SP (-8) in
-    pure [Fninit (), MovqAX () sa (fabsReg r), Fld () sa, Fsin (), Fstp () sa, MovqXA () (fabsReg t) sa]
+    pure [MovqAX () sa (fabsReg r), Fld () sa, Fsin (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FB IR.FExp (IR.ConstF 2.718281828459045) e) t = do
     i <- nextI
     putE <- feval e (IR.FTemp i)
@@ -188,6 +187,7 @@ feval e _                                           = error (show e)
 
 evalE :: IR.Exp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
 evalE (IR.Reg r) rD                                  = pure [MovRR () (absReg rD) (absReg r)]
+evalE (IR.ConstI 0) rD                               = pure [XorRR () (absReg rD) (absReg rD)]
 evalE (IR.ConstI i) rD                               = pure [MovRI () (absReg rD) i]
 evalE (IR.IB IR.IPlus (IR.Reg r0) (IR.ConstI i)) rD  = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRI () rD' i]
 evalE (IR.IB IR.ITimes (IR.Reg r0) (IR.Reg r1)) rD   = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IMulRR () rD' (absReg r1)]

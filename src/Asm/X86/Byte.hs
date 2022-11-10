@@ -176,6 +176,7 @@ mkIx ix (Vcmppd _ _ _ r _ :asms) | fits r     = mkIx (ix+5) asms
 mkIx ix (Vfmadd231sd{}:asms)                  = mkIx (ix+5) asms
 mkIx ix (CmpRR{}:asms)                        = mkIx (ix+3) asms
 mkIx ix (IMulRR{}:asms)                       = mkIx (ix+4) asms
+mkIx ix (XorRR{}:asms)                        = mkIx (ix+3) asms
 mkIx ix (MovqXR{}:asms)                       = mkIx (ix+5) asms
 mkIx ix (MovqRX{}:asms)                       = mkIx (ix+5) asms
 mkIx ix (TestI{}:asms)                        = mkIx (ix+7) asms
@@ -418,6 +419,8 @@ asm ix st (MovqRX _ r fr:asms) =
 asm ix st (IMulRR _ r0 r1:asms) =
     -- flip r0,r1 as instr. uses them differently from sub, etc.
     mkRR [0x0f, 0xaf] r1 r0:asm (ix+4) st asms
+asm ix st (XorRR _ r0 r1:asms) =
+    mkRR [0x31] r0 r1:asm (ix+3) st asms
 asm ix st (TestI _ r i:asms) =
     let (e, b) = modRM r
         prefix = 0x48 .|. e

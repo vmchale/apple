@@ -215,7 +215,7 @@ printExpr s = case tyParse bs of
                     p <- callFFI fp (retPtr undefined) []
                     putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
                     free p *> freeFunPtr sz fp
-            (Arr _ B) -> do
+            B -> do
                 m <- lift$gets mf
                 liftIO $ do
                     (sz, fp) <- ctxFunP m bs

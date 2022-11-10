@@ -161,6 +161,7 @@ usesF TestI{}                  = IS.empty
 usesF (Vcmppd _ _ r0 r1 _)     = fromList [r0, r1]
 usesF (MovqRX _ _ xr)          = singleton xr
 usesF Fsin{}                   = IS.empty
+usesF XorRR{}                  = IS.empty
 
 uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)    = singleton r
@@ -219,6 +220,7 @@ uses Fninit{}         = IS.empty
 uses (TestI _ r _)    = singleton r
 uses Vcmppd{}         = IS.empty
 uses MovqRX{}         = IS.empty
+uses (XorRR _ r0 r1)  = fromList [r0, r1]
 
 defsF :: E freg => X86 reg freg ann -> IS.IntSet
 defsF (Movapd _ r _)        = singleton r
@@ -277,6 +279,7 @@ defsF Fninit{}              = IS.empty
 defsF TestI{}               = IS.empty
 defsF (Vcmppd _ r _ _ _)    = singleton r
 defsF MovqRX{}              = IS.empty
+defsF XorRR{}               = IS.empty
 
 defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r
@@ -335,6 +338,7 @@ defs Fninit{}          = IS.empty
 defs TestI{}           = IS.empty
 defs Vcmppd{}          = IS.empty
 defs (MovqRX _ r _)    = singleton r
+defs (XorRR _ r _)     = singleton r
 
 next :: (E reg, E freg) => [X86 reg freg ()] -> FreshM ([Int] -> [Int], [X86 reg freg ControlAnn])
 next asms = do
