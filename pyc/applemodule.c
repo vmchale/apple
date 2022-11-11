@@ -118,6 +118,66 @@ typedef F (*Affp)(U);typedef I (*Aifp)(U);
 typedef F (*Aaffp)(U,U);
 typedef U (*Iafp)(I);
 
+typedef struct PyCacheObject {
+    PyObject_HEAD
+    U code;size_t code_sz;FnTy* ty;
+} PyCacheObject;
+
+static PyTypeObject CacheType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "Cache",
+    .tp_doc = PyDoc_STR("Cached JIT function"),
+    .tp_basicsize = sizeof(PyCacheObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyType_GenericNew,
+    // TODO: leaks memory lol
+};
+
+static PyObject* apple_cache(PyObject *self, PyObject *args) {
+    const char* inp;
+    PyArg_ParseTuple(args, "s", &inp);
+    char* err;char** err_p=&err;
+    FnTy* ty=apple_ty(inp,err_p);
+    if(ty == NULL){
+        PyErr_SetString(PyExc_RuntimeError, err);
+        free(err);R NULL;
+    };
+    U fp;size_t f_sz;
+    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
+    PyCacheObject* cc=PyObject_New(PyCacheObject, &CacheType);
+    cc->code=fp;cc->code_sz=f_sz;cc->ty=ty;
+    Py_INCREF(cc);
+    R (PyObject*)cc;
+};
+
+static PyObject* apple_f(PyObject* self, PyObject* args) {
+    PyCacheObject* c;PyObject* arg0;PyObject* arg1;PyObject* arg2; PyObject* arg3; PyObject* arg4;
+    PyArg_ParseTuple(args, "O|OOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4);
+    FnTy* ty=c->ty;U fp=c->code;
+    PyObject* r;
+    SW(ty->res){
+        C IA: r=npy_i(((Ufp) fp)());BR
+        C FA:
+            SW(ty->argc){
+                C 0: {r=npy_f(((Ufp) fp)());BR}
+                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=npy_f(((Aafp) fp)(inp0));BR};};BR
+            };BR
+        C F_t:
+            SW(ty->argc){
+                C 0: r=PyFloat_FromDouble(((Ffp) fp)());BR
+                C 1: SW(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=PyFloat_FromDouble(((Affp) fp)(inp0));BR}; C F_t: {r=PyFloat_FromDouble(((Fffp) fp)(PyFloat_AsDouble(arg0)));BR};};BR
+                C 2: SW(ty->args[0]){C FA: SW(ty->args[1]){C FA: {U inp0=f_npy(arg0);U inp1=f_npy(arg1);r=PyFloat_FromDouble(((Aaffp) fp)(inp0, inp1));BR};};};BR
+            };BR
+        C I_t:
+            SW(ty->argc){
+                C 0: r=PyLong_FromLongLong(((Ifp) fp)());BR
+                C 1: SW(ty->args[0]){C IA: {U inp0=i_npy(arg0);r=PyLong_FromLongLong(((Aifp) fp)(inp0));BR};};BR
+            };BR
+    }
+    R r;
+};
+
 static PyObject* apple_apple(PyObject *self, PyObject *args) {
     const char* inp;PyObject* arg0;PyObject* arg1;PyObject* arg2; PyObject* arg3; PyObject* arg4; PyObject* arg5;
     PyArg_ParseTuple(args, "s|OOOOOO", &inp, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
@@ -154,6 +214,8 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
 }
 
 static PyMethodDef AppleMethods[] = {
+    {"f", apple_f, METH_VARARGS, "Run a cached function"},
+    {"cache", apple_cache, METH_VARARGS, "JIT a function"},
     {"apple", apple_apple, METH_VARARGS, "JITed array"},
     {"typeof", apple_typeof, METH_VARARGS, "Display type of expression"},
     {"asm", apple_asm, METH_VARARGS, "Dump x86 assembly"},
