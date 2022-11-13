@@ -152,7 +152,7 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | f1(eAnn xs) && f
     arrPX <- newITemp; arrPY <- newITemp
     (lX, plEX) <- aeval xs arrPX; (lY, plEY) <- aeval ys arrPY
     let sz = EAt (AP arrPX (Just (ConstI 8)) lX)
-    x <- newITemp; y <- newITemp; z <- newITemp
+    x <- newFTemp; y <- newFTemp; z <- newFTemp
     ss <- writeRF op [x,y] z
     iR <- newITemp
     szR <- newITemp
