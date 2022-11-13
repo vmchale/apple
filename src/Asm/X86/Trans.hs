@@ -76,6 +76,7 @@ ir (IR.MJ (IR.IRel IR.IEq (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = p
 ir (IR.MJ (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jg () l]
 ir (IR.MJ (IR.IRel IR.IGeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [CmpRR () (absReg r0) (absReg r1), Jge () l]
 ir (IR.MJ (IR.IRel IR.IGt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jg () l]
+ir (IR.MJ (IR.IRel IR.IGeq (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jge () l]
 ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jl () l]
 ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jl () l]
 ir (IR.MJ (IR.FRel IR.FGeq (IR.FReg r0) (IR.FReg r1)) l) = do
@@ -124,6 +125,11 @@ ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) (IR.ConstI n)) | Just n32 
     i <- nextR; t <- nextR
     l <- nextL; endL <- nextL
     pure $ plE ++ [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, Label () l, CmpRI () i (n32-1), Jg () endL, MovRA () t (RS (absReg tS) Eight i), MovAR () (RS (IReg iR) Eight i) t, IAddRI () i 1, J () l, Label () endL]
+ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS (Just (IR.ConstI d)) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just d8 <- mi8 d = do
+    iR <- nextI; plE <- evalE e (IR.ITemp iR)
+    i <- nextR; t <- nextR
+    l <- nextL; endL <- nextL
+    pure $ plE ++ [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, Label () l, CmpRI () i (n32-1), Jg () endL, MovRA () t (RSD (absReg tS) Eight i d8), MovAR () (RS (IReg iR) Eight i) t, IAddRI () i 1, J () l, Label () endL]
 -- https://www.cs.uaf.edu/2015/fall/cs301/lecture/09_23_allocation.html
 ir (IR.Sa t i)                                          = pure [ISubRI () SP (saI i+8), MovRR () (absReg t) SP]
 ir (IR.Pop i)                                           = pure [IAddRI () SP (saI i+8)]
