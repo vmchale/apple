@@ -24,3 +24,6 @@
 - [ ] https://numpy.org/doc/stable/reference/c-api/array.html#
 - [ ] https://docs.python.org/3/c-api/index.html
 - [ ] https://pythonextensionpatterns.readthedocs.io/en/latest/parsing_arguments.html#variable-number-of-arguments
+- [ ] https://docs.python.org/3/extending/newtypes_tutorial.html
+- [ ] https://docs.python.org/3/c-api/typeobj.html#examples
+  - [ ] https://docs.python.org/3/extending/newtypes.html

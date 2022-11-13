@@ -6,8 +6,7 @@
 - [ ] convolve
 - [ ] transpose
 - [ ] concat
-- [ ] conditionals
-- [ ] array literals
+- [x] array literals
   - [ ] multidimensional arrays
 ## Add Features
 - [ ] outer product
@@ -16,6 +15,7 @@
 - [ ] matmul
 # Performance
 - [ ] lift constants out of loops
+- [ ] lift `fninit` out of loops
 - [ ] liveness analysis on basic blocks
 # Allocations
 - [ ] consolidate allocations up-front when possible (dim from types)

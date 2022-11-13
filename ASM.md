@@ -7,6 +7,7 @@
 - [ ] avx512 has: https://www.felixcloutier.com/x86/vexp2pd
 - [ ] https://www.felixcloutier.com/x86/f2xm1
   - [ ] thence: x^y=s^(y \* (log_2 x))
+- [ ] https://www.felixcloutier.com/x86/setcc
 # Min/max
 - [ ] http://web.archive.org/web/20130821015554/http://bob.allegronetwork.com/prog/tricks.html
   - [ ] quick absolute value
