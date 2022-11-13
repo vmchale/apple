@@ -160,6 +160,20 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | f1(eAnn xs) && f
     l <- newLabel; endL <- newLabel
     modify (addMT a t)
     pure (Just a, plEX ++ plEY ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg szR) ++ MT iR (ConstI 0):L l:MJ (IRel IGeq (Reg iR) (Reg szR)) endL:loop ++ [J l, L endL])
+aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | f1 (eAnn e) && f1 res && isF (eAnn seed) = do
+    a <- nextArr
+    arrP <- newITemp
+    acc <- newFTemp
+    plSeed <- eval seed acc
+    (l, plE) <- aeval e arrP
+    let sz = EAt (AP arrP (Just (ConstI 8)) l)
+    n <- newFTemp
+    ss <- writeRF op [acc, n] acc
+    iR <- newITemp; szR <- newITemp
+    let loop = MX n (FAt (AP arrP (Just$sib iR) l)):WrF (AP t (Just (sib iR)) (Just a)) (FReg acc):ss ++ [tick iR]
+    l <- newLabel; endL <- newLabel
+    modify (addMT a t)
+    pure (Just a, plE ++ plSeed ++ MT szR (IB IPlus sz (ConstI 1)):Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):MT iR (ConstI 0):dim1 (Just a) t (Reg szR) ++ L l:MJ (IRel IGeq (Reg iR) (Reg szR)) endL:loop ++ [J l, L endL])
 aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | i1 (eAnn e) && i1 res && isI (eAnn seed) = do
     a <- nextArr
     arrP <- newITemp
@@ -173,10 +187,10 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | i1 (eAnn e) &&
     iR <- newITemp
     szR <- newITemp
     -- TODO: why arrP and iR?
-    let loop=MT n (EAt (AP arrP (Just$IB IAsl (Reg iR) (ConstI 3)) l)):Wr (AP t (Just (sib iR)) (Just a)) (Reg acc):ss++[tick iR]
+    let loop=MT n (EAt (AP arrP (Just$IB IAsl (Reg iR) (ConstI 3)) l)):Wr (AP t (Just (sib iR)) (Just a)) (Reg acc):ss ++ [tick iR]
     ll <- newLabel; endL <- newLabel
     modify (addMT a t)
-    pure (Just a, plE ++ plSeed ++ (MT szR (IB IPlus sz (ConstI 1)):Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):MT iR (ConstI 0):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):MT arrP (IB IPlus (Reg arrP) (ConstI 16)):L ll:MJ (IRel IGeq (Reg iR) (Reg szR)) endL:loop) ++ [J ll, L endL])
+    pure (Just a, plE ++ plSeed ++ (MT szR (IB IPlus sz (ConstI 1)):Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):MT iR (ConstI 0):dim1 (Just a) t (Reg szR) ++ MT arrP (IB IPlus (Reg arrP) (ConstI 16)):L ll:MJ (IRel IGeq (Reg iR) (Reg szR)) endL:loop) ++ [J ll, L endL])
 aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | i1 (eAnn e) && i1 res = do
     a <- nextArr
     arrP <- newITemp
