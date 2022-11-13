@@ -182,8 +182,8 @@ frame clob asms = pre++asms++post++[Ret()] where
 
 gallocOn :: [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86Reg)
 gallocOn isns = (regs, fregs)
-    where regs = alloc (isns, aIsns) [Rcx .. Rax] (IM.keysSet pres) pres
-          fregs = allocF (isns, aFIsns) [XMM1 .. XMM15] (IM.keysSet preFs) preFs
+    where regs = alloc aIsns [Rcx .. Rax] (IM.keysSet pres) pres
+          fregs = allocF aFIsns [XMM1 .. XMM15] (IM.keysSet preFs) preFs
           (aIsns, aFIsns) = bundle isns
 
 pres :: IM.IntMap X86Reg

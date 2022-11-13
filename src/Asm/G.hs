@@ -3,7 +3,6 @@ module Asm.G ( alloc, allocF ) where
 
 import           Asm.Ar
 import           CF
-import           Class.E
 import           Data.Copointed
 import qualified Data.IntMap      as IM
 import qualified Data.IntSet      as IS
@@ -84,35 +83,33 @@ buildOver blocks = thread [ \s -> snd $ build (out (liveness (snd3 (copoint (las
 buildOverF :: Copointed p => [[p (ControlAnn, NLiveness, Maybe M)]] -> St -> St
 buildOverF blocks = thread [ \s -> snd $ buildF (fout (liveness (snd3 (copoint (last isns))))) s (reverse isns) | isns <- blocks ]
 
-alloc :: (Ord reg, Arch arch areg afreg, E areg, Copointed (arch areg afreg), Functor (arch areg afreg))
-      => ([arch areg afreg ()], [arch areg afreg (ControlAnn, NLiveness, Maybe (Int,Int))])
+alloc :: (Ord reg, Arch arch areg afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
+      => [arch areg afreg (ControlAnn, NLiveness, Maybe (Int,Int))]
       -> [reg] -- ^ available registers
       -> IS.IntSet -- ^ Precolored @areg@
       -> IM.IntMap reg -- ^ Precolored map
       -> IM.IntMap reg -- ^ Map from abs reg. id (temp) to concrete reg.
-alloc (isns, aIsns) regs preC preCM =
+alloc aIsns regs preC preCM =
     let st0 = buildOver (bb aIsns) (emptySt preC (IS.toList $ getIs nIsns IS.\\ preC))
         st1 = mkWorklist st0
         st2 = emptyWkl st1
         (st3, rs) = assign preCM regs st2
     in if IS.null (spN (ɴs st3)) then rs else error "Not yet implemented."
-    where lInit = out (liveness (snd3 (copoint (last aIsns))))
-          nIsns = fmap snd3 <$> aIsns
+    where nIsns = fmap snd3 <$> aIsns
 
-allocF :: (Ord freg, Arch arch areg afreg, E afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
-       => ([arch areg afreg ()], [arch areg afreg (ControlAnn, NLiveness, Maybe (Int,Int))])
+allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
+       => [arch areg afreg (ControlAnn, NLiveness, Maybe (Int,Int))]
        -> [freg] -- ^ available registers
        -> IS.IntSet -- ^ Precolored @afreg@
        -> IM.IntMap freg -- ^ Precolored map
        -> IM.IntMap freg -- ^ Map from abs freg. id (temp) to concrete reg.
-allocF (isns, aIsns) regs preC preCM =
+allocF aIsns regs preC preCM =
     let st0 = buildOverF (bb aIsns) (emptySt preC (IS.toList $ getIFs nIsns IS.\\ preC))
         st1 = mkWorklist st0
         st2 = emptyWkl st1
         (st3, rs) = assign preCM regs st2
     in if IS.null (spN (ɴs st3)) then rs else error "Not yet implemented."
-    where lInit = fout (liveness (snd3 (copoint (last aIsns))))
-          nIsns = fmap snd3 <$> aIsns
+    where nIsns = fmap snd3 <$> aIsns
 
 {-# SCC emptyWkl #-}
 emptyWkl :: St -> St
@@ -258,12 +255,13 @@ freeze :: St -> St
 freeze s | Just (u, _) <- IS.minView (fr$wkls s) =
     let s0 = mapWk (mapFr (IS.delete u).mapSimp (IS.insert u)) s in freezeMoves u s0
 
+{-# SCC freezeMoves #-}
 freezeMoves :: Int -> St -> St
 freezeMoves u st = thread (fmap g (S.toList$nodeMoves u st)) st where
     g m@(x, y) s =
         let y' = getAlias y s; v = if y' == getAlias u s then getAlias x s else y'
             st0 = mapMv (mapActv (S.delete m).mapFrz (S.insert m)) s
-        in if S.null (nodeMoves v st0) && degs st0 IM.! v < ᴋ
+        in if S.null (nodeMoves v st0) && v !* degs st0 < ᴋ
             then mapWk (mapFr (IS.delete v).mapSimp (IS.insert v)) st0
             else st0
 
