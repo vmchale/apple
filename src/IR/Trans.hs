@@ -337,6 +337,22 @@ aeval (ALit oTy es) t | f1 oTy = do
     let n = length es; sz = ConstI$8*fromIntegral n+24
     steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[WrF (AP t (Just (ConstI$16+8*i)) (Just a)) (FReg xR)]}) [0..(fromIntegral n-1)] es
     pure (Just a, Ma a t sz:dim1 (Just a) t (ConstI$fromIntegral n) ++ steps)
+aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | i1 res = do
+    a <- nextArr
+    xR <- newITemp; xsR <- newITemp
+    plX <- eval x xR
+    (l, plXs) <- aeval xs xsR
+    nR <- newITemp; nϵR <- newITemp
+    let nϵ = EAt (AP xsR (Just (ConstI 8)) l); n = IB IPlus (Reg nϵR) (ConstI 1)
+    pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:Ma a t (IB IPlus (IB IAsl (Reg nR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just (ConstI 24)) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), Wr (AP t (Just (ConstI 16)) (Just a)) (Reg xR)])
+aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | f1 res = do
+    a <- nextArr
+    xR <- newFTemp; xsR <- newITemp
+    plX <- eval x xR
+    (l, plXs) <- aeval xs xsR
+    nR <- newITemp; nϵR <- newITemp
+    let nϵ = EAt (AP xsR (Just (ConstI 8)) l); n = IB IPlus (Reg nϵR) (ConstI 1)
+    pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:Ma a t (IB IPlus (IB IAsl (Reg nR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just (ConstI 24)) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), WrF (AP t (Just (ConstI 16)) (Just a)) (FReg xR)])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> IRM [Stmt]

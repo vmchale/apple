@@ -244,6 +244,7 @@ mkIx ix (Sqrtsd{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Not{}:asms)                          = mkIx (ix+3) asms
 mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
 mkIx ix (Fninit{}:asms)                       = mkIx (ix+2) asms
+mkIx ix (IDiv{}:asms)                         = mkIx (ix+3) asms
 mkIx ix []                                    = (ix, M.empty)
 mkIx _ (instr:_) = error (show instr)
 
@@ -374,6 +375,12 @@ asm ix st (And _ r0 r1:asms) =
     mkRR [0x21] r0 r1:asm (ix+3) st asms
 asm ix st (ISubRR _ r0 r1:asms) =
     mkRR [0x29] r0 r1:asm (ix+3) st asms
+asm ix st (IDiv _ r:asms) =
+    let (e, b) = modRM r
+        modB = 3 `shiftL` 6 .|. 7 `shiftL` 3 .|. b
+        pre = 0x48 .|. e
+        isn = [pre,0xf7,modB]
+    in isn:asm (ix+3) st asms
 asm ix st (Addsd _ r0 r1:asms) | fits r0 && fits r1 =
     rrNoPre [0xf2,0x0f,0x58] r1 r0:asm (ix+4) st asms
                                | otherwise =

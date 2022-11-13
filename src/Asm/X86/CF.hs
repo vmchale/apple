@@ -162,6 +162,8 @@ usesF (Vcmppd _ _ r0 r1 _)     = fromList [r0, r1]
 usesF (MovqRX _ _ xr)          = singleton xr
 usesF Fsin{}                   = IS.empty
 usesF XorRR{}                  = IS.empty
+usesF Fxch{}                   = IS.empty
+usesF IDiv{}                   = IS.empty
 
 uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)    = singleton r
@@ -243,7 +245,6 @@ defsF (Maxsd _ r _)         = singleton r
 defsF (Vfmadd231sd _ r _ _) = singleton r
 defsF (Roundsd _ r _ _)     = singleton r
 defsF (Cvtsi2sd _ r _)      = singleton r
-defsF Label{}               = IS.empty
 defsF IAddRR{}              = IS.empty
 defsF IAddRI{}              = IS.empty
 defsF ISubRR{}              = IS.empty
@@ -280,6 +281,7 @@ defsF TestI{}               = IS.empty
 defsF (Vcmppd _ r _ _ _)    = singleton r
 defsF MovqRX{}              = IS.empty
 defsF XorRR{}               = IS.empty
+defsF IDiv{}                = IS.empty
 
 defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r
