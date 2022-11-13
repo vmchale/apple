@@ -92,7 +92,7 @@ addControlFlow ((J _ l):asms) = do
 addControlFlow (Ret{}:asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
-    ; pure (Ret (ControlAnn i [] IS.empty IS.empty IS.empty IS.empty) : nextAsms)
+    ; pure (Ret (ControlAnn i [] (singleton CRet) (fromList [FRet0, FRet1]) IS.empty IS.empty) : nextAsms) -- TODO: pass information down if redundant
     }
 addControlFlow (asm:asms) = do
     { i <- getFresh
