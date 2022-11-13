@@ -645,16 +645,24 @@ eval (Cond F (EApp _ (EApp _ (Builtin (Arrow I _) Lte) c0) c1) e0 e1) t = do
     fR <- newFTemp; plE0 <- eval e0 fR; plE1 <- eval e1 fR
     l <- newLabel; nextL <- newLabel
     pure $ plC0 ++ plC1 ++ MJ (IRel ILeq (Reg c0R) (Reg c1R)) l:plE1 ++ J nextL:L l:plE0 ++ [L nextL, MX t (FReg fR)]
-eval (EApp F (Builtin _ Head) arr) t | f1 (eAnn arr) = do
+eval (EApp F (Builtin _ Head) arr) t = do
     r <- newITemp
     (mL, plArr) <- aeval arr r
     -- rank 1
     pure $ plArr ++ [MX t (FAt (AP r (Just $ ConstI 16) mL))]
-eval (EApp I (Builtin _ Head) arr) t | i1 (eAnn arr) = do
+eval (EApp I (Builtin _ Head) arr) t = do
     r <- newITemp
     (mL, plArr) <- aeval arr r
     -- rank 1
     pure $ plArr ++ [MT t (EAt (AP r (Just $ ConstI 16) mL))]
+eval (EApp I (Builtin _ Last) arr) t = do
+    r <- newITemp
+    (l, plArr) <- aeval arr r
+    pure $ plArr ++ [MT t (EAt (AP r (Just (IB IPlus (IB IAsl (EAt (AP r (Just$ConstI 8) l)) (ConstI 3)) (ConstI 8))) l))]
+eval (EApp F (Builtin _ Last) arr) t = do
+    r <- newITemp
+    (l, plArr) <- aeval arr r
+    pure $ plArr ++ [MX t (FAt (AP r (Just (IB IPlus (IB IAsl (EAt (AP r (Just$ConstI 8) l)) (ConstI 3)) (ConstI 8))) l))]
 eval (Tup _ es) t = do
     let szs = szT (eAnn<$>es)
     pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]};I -> do{r <- newITemp; p <- eval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}}) es szs
