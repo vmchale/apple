@@ -52,6 +52,7 @@ etaAt (Cond l p e e')                     = Cond l <$> etaAt p <*> etaAt e <*> e
 etaAt (LLet l (n, e') e)                  = do { e'𝜂 <- etaAt e'; e𝜂 <- etaAt e; pure $ LLet l (n, e'𝜂) e𝜂 }
 etaAt (Id l idm)                          = Id l <$> etaIdm idm
 etaAt (ALit l es)                         = ALit l <$> traverse etaAt es
+etaAt (Tup l es)                          = Tup l <$> traverse etaAt es
 etaAt e                                   = pure e
 
 etaIdm (FoldOfZip seed op es) = FoldOfZip <$> etaAt seed <*> etaAt op <*> traverse etaAt es
