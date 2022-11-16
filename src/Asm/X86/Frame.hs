@@ -16,7 +16,7 @@ frameC = concat . go IS.empty
             in case isn of
                 Call{} ->
                     let
-                        scratch = IS.size s `rem` 2 == 0
+                        scratch = even$IS.size s
                         cs = mapMaybe fromInt $ IS.toList s
                         save = (if scratch then (++[ISubRI () Rsp 8]) else id)$fmap (Push ()) cs
                         restore = (if scratch then (IAddRI () Rsp 8:) else id)$fmap (Pop ()) (reverse cs)

@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections    #-}
 
 -- live intervals
 module LI ( intervals
@@ -21,7 +22,7 @@ fpF is = snd $ execState (traverse_ g is) (IS.empty, IM.empty) where
         let ann = copoint x
             potentiallyNew = let lx = liveness ann in fins lx <> fout lx
             newS = potentiallyNew IS.\\ previouslySeen
-            nAt = IM.fromList (zip (IS.toList newS) (repeat $ nx ann))
+            nAt = IM.fromList (fmap (,nx ann) (IS.toList newS))
         put (previouslySeen `IS.union` newS, nAt `IM.union` upd)
 
 -- forward pass (first mentioned, indexed by register)
@@ -32,7 +33,7 @@ pF is = snd $ execState (traverse_ g is) (IS.empty, IM.empty) where
         let ann = copoint x
             potentiallyNew = let lx = liveness ann in ins lx <> out lx
             newS = potentiallyNew IS.\\ previouslySeen
-            nAt = IM.fromList (zip (IS.toList newS) (repeat $ nx ann))
+            nAt = IM.fromList (fmap (,nx ann) (IS.toList newS))
         put (previouslySeen `IS.union` newS, nAt `IM.union` upd)
 
 -- backward pass (last mentioned, ...)
