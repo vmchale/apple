@@ -341,6 +341,12 @@ aeval (ALit oTy es) t | f1 oTy = do
     let n = length es; sz = ConstI$8*fromIntegral n+24
     steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[WrF (AP t (Just (ConstI$16+8*i)) (Just a)) (FReg xR)]}) [0..(fromIntegral n-1)] es
     pure (Just a, Ma a t sz:dim1 (Just a) t (ConstI$fromIntegral n) ++ steps)
+aeval (ALit oTy es) t | i1 oTy = do
+    a <- nextArr
+    xR <- newITemp
+    let n = length es; sz = ConstI$8*fromIntegral n+24
+    steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[Wr (AP t (Just (ConstI$16+8*i)) (Just a)) (Reg xR)]}) [0..(fromIntegral n-1)] es
+    pure (Just a, Ma a t sz:dim1 (Just a) t (ConstI$fromIntegral n) ++ steps)
 aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | i1 res = do
     a <- nextArr
     xR <- newITemp; xsR <- newITemp
