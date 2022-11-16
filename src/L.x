@@ -97,6 +97,7 @@ tokens :-
 
         "/"                      { mkSym Fold }
         "/l"                     { mkSym Foldl }
+        "/*"                     { mkSym FoldA }
         '                        { mkSym Quot }
         `$white*"{"              { mkSym LRank `andBegin` braces }
         `                        { mkSym Zip }
@@ -246,6 +247,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
          | Last | LastM | TSig | Cons | Snoc | Do | Tensor | Transp | Head | HeadM
          | Geq | Gt | Eq | Neq | Leq | Lt
+         | FoldA
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -254,6 +256,7 @@ instance Pretty Sym where
     pretty Percent      = "%"
     pretty Fold         = "/"
     pretty Foldl        = "/l"
+    pretty FoldA        = "/*"
     pretty Pow          = "**"
     pretty Times        = "*"
     pretty Semicolon    = ";"
