@@ -20,21 +20,22 @@ data IRSt = IRSt { labels :: [Label]
                  , arrs   :: [Int]
                  , vars   :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                  , avars  :: IM.IntMap (Maybe Int, Temp)
+                 , fvars  :: IM.IntMap (Label, [(Maybe Int, Temp)], (Maybe Int, Temp))
                  , mts    :: IM.IntMap Temp
                  }
 
 getT :: IM.IntMap b -> Name a -> b
-getT st (Name _ (U i) _) = IM.findWithDefault (error "Internal error: variable not mapped to register.") i st
+getT st n@(Name _ (U i) _) = IM.findWithDefault (error ("Internal error: variable " ++ show n ++ " not mapped to register.")) i st
 
 nextI :: IRM Int
 nextI = do
     i <- gets (head.temps)
-    modify (\(IRSt l (_:t) ar v a ts) -> IRSt l t ar v a ts) $> i
+    modify (\(IRSt l (_:t) ar v a f ts) -> IRSt l t ar v a f ts) $> i
 
 nextArr :: IRM Int
 nextArr = do
     a <- gets (head.arrs)
-    modify (\(IRSt l t (_:ar) v aϵ ts) -> IRSt l t ar v aϵ ts) $> a
+    modify (\(IRSt l t (_:ar) v aϵ f ts) -> IRSt l t ar v aϵ f ts) $> a
 
 newITemp :: IRM Temp
 newITemp = ITemp <$> nextI
@@ -45,16 +46,19 @@ newFTemp = FTemp <$> nextI
 newLabel :: IRM Label
 newLabel = do
     i <- gets (head.labels)
-    modify (\(IRSt l t ar v a ts) -> IRSt (tail l) t ar v a ts) $> i
+    modify (\(IRSt l t ar v a f ts) -> IRSt (tail l) t ar v a f ts) $> i
 
 addMT :: Int -> Temp -> IRSt -> IRSt
-addMT i tϵ (IRSt l t ar v a ts) = IRSt l t ar v a (IM.insert i tϵ ts)
+addMT i tϵ (IRSt l t ar v a f ts) = IRSt l t ar v a f (IM.insert i tϵ ts)
 
 addVar :: Name a -> Temp -> IRSt -> IRSt
-addVar (Name _ (U i) _) r (IRSt l t ar v a ts) = IRSt l t ar (IM.insert i r v) a ts
+addVar (Name _ (U i) _) r (IRSt l t ar v a f ts) = IRSt l t ar (IM.insert i r v) a f ts
 
 addAVar :: Name a -> (Maybe Int, Temp) -> IRSt -> IRSt
-addAVar (Name _ (U i) _) r (IRSt l t ar v a ts) = IRSt l t ar v (IM.insert i r a) ts
+addAVar (Name _ (U i) _) r (IRSt l t ar v a f ts) = IRSt l t ar v (IM.insert i r a) f ts
+
+addFVar :: Name a -> (Label, [(Maybe Int, Temp)], (Maybe Int, Temp)) -> IRSt -> IRSt
+addFVar (Name _ (U i) _) x (IRSt l t ar v a f ts) = IRSt l t ar v a (IM.insert i x f) ts
 
 type IRM = State IRSt
 
@@ -75,7 +79,7 @@ isArr Arr{} = True
 isArr _     = False
 
 writeC :: E (T ()) -> ([Stmt], WSt, IM.IntMap Temp)
-writeC = π.flip runState (IRSt [0..] [0..] [0..] IM.empty IM.empty IM.empty) . writeCM where π (s, IRSt l t _ _ _ a) = (s, WSt l t, a)
+writeC = π.flip runState (IRSt [0..] [0..] [0..] IM.empty IM.empty IM.empty IM.empty) . writeCM where π (s, IRSt l t _ _ _ _ a) = (s, WSt l t, a)
 
 -- %xmm0 – %xmm7
 writeCM :: E (T ()) -> IRM [Stmt]
@@ -112,6 +116,10 @@ sib ireg = IB IPlus (IB IAsl (Reg ireg) (ConstI 3)) (ConstI 16)
 doN t e ss = do
     l <- newLabel; endL <- newLabel
     pure $ MT t (ConstI 0):L l:MJ (IRel IGeq (Reg t) e) endL:ss++[tick t, J l, L endL]
+
+dimR rnk (t,l) = (\o -> EAt (AP t (Just$ConstI (8*o)) l)) <$> [1..rnk]
+offByDim dims = let d1 = dims in do {ts <- traverse (\_ -> newITemp) d1; let ss=zipWith3 (\t1 t0 d -> MT t1 (IB ITimes (Reg t0) d)) (tail ts) ts dims in pure (drop 1$reverse ts,MT (head ts) (ConstI 1):ss)}
+get tdims ixs (t,l) = let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i (Reg d)) tdims ixs in EAt (AP t (Just (IB IAsl offs (ConstI 3))) l)
 
 -- write loop body (updates global state, dependent on ast being globally renamed)
 writeF :: E (T ())
@@ -381,6 +389,11 @@ eval (LLet _ (n, e') e) t | isArr (eAnn e') = do
     (l, ss) <- aeval e' t'
     modify (addAVar n (l, t'))
     (ss ++) <$> eval e t
+eval (LLet _ (n, e') e) t | (Arrow F F) <- eAnn e' = do
+    l <- newLabel; endL <- newLabel; arg <- newFTemp; ret <- newFTemp
+    ss <- writeRF e' [arg] ret
+    modify (addFVar n (l, [(Nothing, arg)], (Nothing, ret)))
+    (++ (J endL:L l:ss++[IR.R l, L endL])) <$> eval e t
 eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ j))) acc = do
     i <- newITemp
     endR <- newITemp
@@ -684,6 +697,12 @@ eval (EApp I (Builtin _ (TAt n)) e) t = do
     let (P tys) = eAnn e; szs = szT tys
     r <- newITemp; pl <- eval e r
     pure $ pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
+eval (EApp F (Var _ f) e) t = do
+    st <- gets fvars
+    let (l, [(Nothing, arg)], (Nothing, ret)) = getT st f
+    plE <- eval e arg
+    retL <- newLabel
+    pure $ plE ++ [C l, L retL, MX t (FReg ret)]
 eval e _ = error (show e)
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m

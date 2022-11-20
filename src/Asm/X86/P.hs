@@ -88,6 +88,8 @@ mapR _ (Vcmppd l xr0 xr1 xr2 p)    = Vcmppd l xr0 xr1 xr2 p
 mapR f (MovqRX l r xr)             = MovqRX l (f r) xr
 mapR _ (Fsin l)                    = Fsin l
 mapR f (XorRR l r0 r1)             = XorRR l (f r0) (f r1)
+mapR _ (C a l)                     = C a l
+mapR _ (RetL a l)                  = RetL a l
 
 mapFR :: (afreg -> freg) -> X86 areg afreg a -> X86 areg freg a
 mapFR _ (Jg x l)                    = Jg x l
@@ -162,6 +164,8 @@ mapFR f (Vcmppd l xr0 xr1 xr2 p)    = Vcmppd l (f xr0) (f xr1) (f xr2) p
 mapFR f (MovqRX l r xr)             = MovqRX l r (f xr)
 mapFR _ (Fsin l)                    = Fsin l
 mapFR _ (XorRR l r0 r1)             = XorRR l r0 r1
+mapFR _ (C a l)                     = C a l
+mapFR _ (RetL a l)                  = RetL a l
 
 -- TODO: don't bother re-analyzing if no Calls
 gallocFrame :: [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]

@@ -265,12 +265,13 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Jge { ann :: a, jLabel :: Label }
                     | Jl { ann :: a, jLabel :: Label }
                     | Jle { ann :: a, jLabel :: Label }
+                    | C { ann :: a, label :: Label }
                     | CmpRR { ann :: a, rCmp :: reg, rCmp' :: reg }
                     | CmpRI { ann :: a, rCmp :: reg, cmpI32 :: Int32 }
                     | Vcmppd { ann :: a, fDest :: freg, fCmp :: freg, fCmp' :: freg, cpred :: Pred }
                     | Test { ann :: a, rCmp :: reg, rCmp' :: reg }
                     | TestI { ann :: a, rCmp :: reg, cmpI32 :: Int32 }
-                    | Ret { ann :: a }
+                    | Ret { ann :: a } | RetL { ann :: a, label :: Label }
                     | Vdivsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
                     | Movapd { ann :: a, fDest :: freg, fSrc :: freg }
                     | Roundsd { ann :: a, fDest :: freg, fSrc :: freg, mode :: RoundMode }
@@ -392,6 +393,8 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
   pretty (Vcmppd _ xr0 xr1 xr2 Nltus)  = i4 ("vcmpnltpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
   pretty (Vcmppd _ xr0 xr1 xr2 Nleus)  = i4 ("vcmpnlepd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
   pretty (Vcmppd _ xr0 xr1 xr2 Ordq)   = i4 ("vcmpordpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
+  pretty (C _ l)                  = i4 ("call" <+> prettyLabel l)
+  pretty RetL{}                   = i4 "ret"
 
 instance (Pretty reg, Pretty freg) => Show (X86 reg freg a) where show = show . pretty
 

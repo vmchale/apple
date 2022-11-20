@@ -191,6 +191,7 @@ mkIx ix (Roundsd{}:asms)                      = mkIx (ix+7) asms
 mkIx ix (Cvttsd2si{}:asms)                    = mkIx (ix+5) asms
 mkIx ix (Cvtsi2sd{}:asms)                     = mkIx (ix+5) asms
 mkIx ix (Ret{}:asms)                          = mkIx (ix+1) asms
+mkIx ix (RetL{}:asms)                         = mkIx (ix+1) asms
 mkIx ix (Je{}:asms)                           = mkIx (ix+6) asms
 mkIx ix (Jne{}:asms)                          = mkIx (ix+6) asms
 mkIx ix (Jg{}:asms)                           = mkIx (ix+6) asms
@@ -198,6 +199,7 @@ mkIx ix (Jge{}:asms)                          = mkIx (ix+6) asms
 mkIx ix (Jl{}:asms)                           = mkIx (ix+6) asms
 mkIx ix (Jle{}:asms)                          = mkIx (ix+6) asms
 mkIx ix (J{}:asms)                            = mkIx (ix+5) asms
+mkIx ix (C{}:asms)                            = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ RC{}:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovqXA _ _ (R R13):asms)             = mkIx (ix+6) asms
 mkIx ix (MovqXA _ r0 (R r1):asms) | fits r0 && fits r1 = mkIx (ix+4) asms
@@ -476,6 +478,8 @@ asm ix st (MovRI _ r i:asms) =
     in pre (le i):asm (ix+10) st asms
 asm ix st (Ret{}:asms) =
     [0xc3]:asm (ix+1) st asms
+asm ix st (RetL{}:asms) =
+    [0xc3]:asm (ix+1) st asms
 asm ix st (Je _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x84:cd (fromIntegral offs :: Int32)
@@ -503,6 +507,10 @@ asm ix st (Jle _ l:asms) =
 asm ix st (J _ l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-5 in 0xe9:cd (fromIntegral offs :: Int32)
+    in instr:asm (ix+5) st asms
+asm ix st (C _ l:asms) =
+    let lIx = get l st
+        instr = let offs = lIx-ix-5 in 0xe8:cd (fromIntegral offs :: Int32)
     in instr:asm (ix+5) st asms
 asm ix st (Fmulp{}:asms) =
     [0xde,0xc9]:asm (ix+2) st asms

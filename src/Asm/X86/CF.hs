@@ -13,24 +13,31 @@ import           Data.Functor               (($>))
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
 import           Data.Semigroup             ((<>))
+import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
 
 -- map of labels by node
-type FreshM = State (Int, M.Map Label Int)
+type FreshM = State (Int, M.Map Label Int, M.Map Label [Label])
 
 runFreshM :: FreshM a -> a
-runFreshM = flip evalState (0, mempty)
+runFreshM = flip evalState (0, mempty, mempty)
 
 mkControlFlow :: (E reg, E freg) => [X86 reg freg ()] -> [X86 reg freg ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
 getFresh :: FreshM Int
-getFresh = gets fst <* modify (first (+1))
+getFresh = gets fst3 <* modify (first3 (+1))
 
 lookupLabel :: Label -> FreshM Int
-lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd)
+lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
+
+lC :: Label -> FreshM [Label]
+lC l = gets (M.findWithDefault (error "Internal error in CF graph: node label not in map.") l . thd3)
 
 broadcast :: Int -> Label -> FreshM ()
-broadcast i l = modify (second (M.insert l i))
+broadcast i l = modify (second3 (M.insert l i))
+
+b3 :: Label -> Label -> FreshM ()
+b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is -> i:is}) l))
 
 singleton :: E reg => reg -> IS.IntSet
 singleton = IS.singleton . E.toInt
@@ -88,6 +95,18 @@ addControlFlow ((J _ l):asms) = do
     ; nextAsms <- addControlFlow asms
     ; l_i <- lookupLabel l
     ; pure (J (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
+    }
+addControlFlow ((C _ l):asms) = do
+    { i <- getFresh
+    ; nextAsms <- addControlFlow asms
+    ; l_i <- lookupLabel l
+    ; pure (C (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
+    }
+addControlFlow (RetL _ l:stmts) = do
+    { i <- getFresh
+    ; nextStmts <- addControlFlow stmts
+    ; l_is <- traverse lookupLabel =<< lC l
+    ; pure (RetL (ControlAnn i l_is IS.empty IS.empty IS.empty IS.empty) l:nextStmts)
     }
 addControlFlow (Ret{}:asms) = do
     { i <- getFresh
@@ -352,6 +371,11 @@ next asms = do
 -- | Construct map assigning labels to their node name.
 broadcasts :: [X86 reg freg ()] -> FreshM [X86 reg freg ()]
 broadcasts [] = pure []
+broadcasts (asm@(C _ l):asm'@(Label _ retL):stmts) = do
+    { i <- getFresh
+    ; b3 retL l; broadcast i retL
+    ; (asm:).(asm':) <$> broadcasts stmts
+    }
 broadcasts (asm@(Label _ l):asms) = do
     { i <- getFresh
     ; broadcast i l

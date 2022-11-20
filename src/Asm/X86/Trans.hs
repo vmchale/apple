@@ -137,6 +137,8 @@ ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS (Just (IR.ConstI d)) _) (IR.ConstI n)
 -- https://www.cs.uaf.edu/2015/fall/cs301/lecture/09_23_allocation.html
 ir (IR.Sa t i)                                          = pure [ISubRI () SP (saI i+8), MovRR () (absReg t) SP]
 ir (IR.Pop i)                                           = pure [IAddRI () SP (saI i+8)]
+ir (IR.R l)                                             = pure [RetL () l]
+ir (IR.C l)                                             = pure [C () l]
 ir s                                                    = error (show s)
 
 saI i | i+8 `rem` 16 == 0 = fromIntegral i | otherwise = fromIntegral i+8
