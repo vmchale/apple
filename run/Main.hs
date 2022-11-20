@@ -8,6 +8,7 @@ import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.State       (StateT, evalStateT, gets)
 import           Control.Monad.Trans.Class (lift)
 import qualified Data.ByteString.Lazy      as BSL
+import           Data.Int                  (Int64)
 import           Data.List
 import qualified Data.Map                  as M
 import           Data.Semigroup            ((<>))
@@ -230,6 +231,13 @@ printExpr s = case tyParse bs of
                     (sz, fp) <- ctxFunP m bs
                     p <- callFFI fp (retPtr undefined) []
                     putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Float Float)) -> IO (Apple (Pp Float Float))) p
+                    free p *> freeFunPtr sz fp
+            (Arr _ (P [I,I])) -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    p <- callFFI fp (retPtr undefined) []
+                    putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Int64 Int64)) -> IO (Apple (Pp Int64 Int64))) p
                     free p *> freeFunPtr sz fp
             t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
     where bs = ubs s
