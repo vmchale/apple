@@ -21,4 +21,4 @@ install:
 
 clean:
 	make -C pyc clean
-	rm -rf dist-newstyle tags moddeps.svg *.hp *.prof *.tix *.svg *.so py/__pycache__
+	rm -rf dist-newstyle tags moddeps.svg *.hp *.o *.prof *.tix *.svg *.so py/__pycache__
