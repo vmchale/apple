@@ -393,8 +393,8 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
   pretty (Vcmppd _ xr0 xr1 xr2 Nltus)  = i4 ("vcmpnltpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
   pretty (Vcmppd _ xr0 xr1 xr2 Nleus)  = i4 ("vcmpnlepd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
   pretty (Vcmppd _ xr0 xr1 xr2 Ordq)   = i4 ("vcmpordpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-  pretty (C _ l)                  = i4 ("call" <+> prettyLabel l)
-  pretty RetL{}                   = i4 "ret"
+  pretty (C _ l)                       = i4 ("call" <+> prettyLabel l)
+  pretty RetL{}                        = i4 "ret"
 
 instance (Pretty reg, Pretty freg) => Show (X86 reg freg a) where show = show . pretty
 
