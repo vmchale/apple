@@ -5,12 +5,14 @@ module Prettyprinter.Ext ( (<#>)
                          , tupledBy
                          , ptxt
                          , aText
+                         , prettyDumpBinds
                          ) where
 
+import qualified Data.IntMap               as IM
 import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
 import           Prettyprinter             (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
-                                            layoutSmart)
+                                            layoutSmart, vsep, (<+>))
 import           Prettyprinter.Render.Text (renderStrict)
 
 infixr 6 <#>
@@ -34,3 +36,9 @@ aText = renderStrict.smartA
 
 ptxt :: Pretty a => a -> T.Text
 ptxt = aText.pretty
+
+prettyBind :: (Pretty c, Pretty b) => (c, b) -> Doc a
+prettyBind (i, j) = pretty i <+> "→" <+> pretty j
+
+prettyDumpBinds :: Pretty b => IM.IntMap b -> Doc a
+prettyDumpBinds b = vsep (prettyBind <$> IM.toList b)

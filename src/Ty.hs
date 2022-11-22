@@ -96,12 +96,6 @@ instance Show (Subst a) where show = show . pretty
 (<#*>) :: Doc a -> Doc a -> Doc a
 (<#*>) x y = x <> hardline <> indent 2 y
 
-prettyBind :: (Pretty c, Pretty b) => (c, b) -> Doc a
-prettyBind (i, j) = pretty i <+> "→" <+> pretty j
-
-prettyDumpBinds :: Pretty b => IM.IntMap b -> Doc a
-prettyDumpBinds b = vsep (prettyBind <$> IM.toList b)
-
 type TyM a = StateT (TySt a) (Either (TyE a))
 
 mI :: I a -> I a -> Either (TyE b) (Subst a)

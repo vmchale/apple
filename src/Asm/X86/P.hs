@@ -1,4 +1,4 @@
-module Asm.X86.P ( gallocFrame ) where
+module Asm.X86.P ( gallocFrame, gallocOn ) where
 
 import           Asm.Ar.P
 import           Asm.G

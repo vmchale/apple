@@ -4,12 +4,10 @@ module IR.CF ( mkControlFlow
 import           CF
 -- seems to pretty clearly be faster
 import           Control.Monad.State.Strict (State, evalState, gets, modify)
-import           Data.Bifunctor             (first, second)
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
 import           Data.Semigroup             ((<>))
 import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
-import           Debug.Trace
 import           IR
 
 -- map of labels by node

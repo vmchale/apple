@@ -8,6 +8,7 @@ module Dbg ( dumpX86G
            , dumpIR
            , dumpIRI
            , dumpX86Intervals
+           , dumpX86Ass
            , printParsed
            , printTypes
            , topt
@@ -20,11 +21,13 @@ import           A
 import           Asm.X86
 import           Asm.X86.Byte
 import qualified Asm.X86.CF           as X86
+import           Asm.X86.P
 import           Asm.X86.Trans
 import           CF
 import           Control.Exception    (throw)
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.IntMap          as IM
 import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import           IR
@@ -60,6 +63,10 @@ present (x, b) = rightPad 40 (ptxt x) <> he b
 nasm :: T.Text -> BSL.ByteString -> Doc ann
 nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86G
     where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
+
+dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86Ass = fmap ((\(regs, fregs) -> pR regs <#> pR fregs).gallocOn.(\(x, st) -> irToX86 st x)) . ir
+    where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 16)
 
 dumpX86G, dumpX86L :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86G = fmap prettyX86 . x86G
