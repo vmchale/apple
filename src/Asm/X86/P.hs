@@ -184,6 +184,7 @@ frame clob asms = pre++asms++post++[Ret()] where
     post = Pop () <$> reverse clobs
     clobs = S.toList (clob `S.intersection` S.fromList [R12 .. Rbx])
 
+{-# INLINE gallocOn #-}
 gallocOn :: [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86Reg)
 gallocOn isns = (regs, fregs)
     where regs = alloc aIsns [Rcx .. Rax] (IM.keysSet pres) pres
