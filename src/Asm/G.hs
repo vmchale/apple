@@ -188,7 +188,7 @@ mkWorklist st@(St _ _ _ _ _ ds i wk _ _) =
 ᴋ = 16
 
 isMR :: Int -> St -> Bool
-isMR i st = nodeMoves i st /= S.empty
+isMR i st = not $ S.null (nodeMoves i st)
 
 {-# SCC nodeMoves #-}
 nodeMoves :: Int -> St -> MS
@@ -196,9 +196,9 @@ nodeMoves n (St ml _ _ mv _ _ _ _ _ _) = ml !. n `S.intersection` (actv mv `S.un
 
 {-# SCC simplify #-}
 simplify :: St -> St
-simplify s@(St _ _ al _ _ ds _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minView stϵ =
+simplify s@(St _ _ _ _ _ ds _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minView stϵ =
     let s' = s { wkls = wk { simp = ns }, stack = n:st }
-    in thread [ ddg m | m <- al !. n ] s'
+    in thread [ ddg m | m <- adj n s' ] s'
                                                        | otherwise = s
 
 {-# SCC ddg #-}
@@ -208,7 +208,7 @@ ddg m s | m `IS.member` pre (wkls s) = s
         | otherwise =
     let d = degs s; s' = s { degs = dec m d }
     in if d IM.! m == ᴋ
-        then let s'' = enaMv (m:(aL s IM.! m)) s'
+        then let s'' = enaMv (m:adj m s) s'
              in mapWk (mapSp (IS.delete m).(if isMR m s'' then mapFr else mapSimp) (IS.insert m)) s''
         else s'
 
