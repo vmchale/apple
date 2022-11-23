@@ -58,7 +58,7 @@ thread = foldr (.) id
 (!.) :: Monoid m => IM.IntMap m -> IM.Key -> m
 (!.) m k = IM.findWithDefault mempty k m
 
-n !* d = IM.findWithDefault 0 n d
+n !* d = IM.findWithDefault maxBound n d
 
 dec :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
 dec = IM.alter (\k -> case k of {Nothing -> Nothing;Just d -> Just$d-1})
@@ -197,8 +197,8 @@ nodeMoves n (St ml _ _ mv _ _ _ _ _ _) = ml !. n `S.intersection` (actv mv `S.un
 {-# SCC simplify #-}
 simplify :: St -> St
 simplify s@(St _ _ al _ _ ds _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minView stϵ =
-    let ds' = thread [ dec m | m <- al !. n ] ds
-    in s { wkls = wk { simp = ns }, stack = n:st, degs = ds' }
+    let s' = s { wkls = wk { simp = ns }, stack = n:st }
+    in thread [ ddg m | m <- al !. n ] s'
                                                        | otherwise = s
 
 {-# SCC ddg #-}
@@ -232,7 +232,7 @@ ok t r s = t `IS.member` pre (wkls s) || degs s IM.! t < ᴋ || (t,r) `S.member`
 conserv :: [Int] -> St -> Bool
 conserv is s =
     let d = degs s
-        k = length (filter (\n -> n `IS.member` pre(wkls s) || (d IM.! n)>=ᴋ) is)
+        k = length (filter (\n -> (n !* d)>=ᴋ) is)
     in k<ᴋ
 
 {-# SCC getAlias #-}
