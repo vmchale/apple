@@ -285,7 +285,7 @@ coalesce s | Just (m@(x,y), nWl) <- S.minView (wl$mvS s) =
     in case () of
         _ | u == v -> addWkl u $ mapMv (mapCoal (S.insert m)) s0
           | v `IS.member` preS || (u,v) `S.member` aS s0 -> addWkl v $ addWkl u $ mapMv (mapConstr (S.insert m)) s0
-          | let av = adj v s0 in u `IS.member` preS && all (\t -> ok t u s0) av || u `IS.notMember` preS && conserv (adj u s0 ++ av) s0 ->
+          | let av = adj v s0 in if u `IS.member` preS then all (\t -> ok t u s0) av else conserv (adj u s0 ++ av) s0 ->
               addWkl u $ combine u v $ mapMv (mapCoal (S.insert m)) s0
           | otherwise -> mapMv (mapActv (S.insert m)) s0
 
