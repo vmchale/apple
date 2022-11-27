@@ -15,8 +15,8 @@ extra-doc-files:
     CHANGELOG.md
 
 source-repository head
-    type:     darcs
-    location: https://hub.darcs.net/vmchale/apple
+    type:     git
+    location: https://github.com/vmchale/apple
 
 library
     exposed-modules:
