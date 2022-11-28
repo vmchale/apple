@@ -10,8 +10,6 @@
   - [ ] multidimensional arrays
 ## Add Features
 - [ ] outer product
-- [ ] dyadic infix
-- [ ] successive application
 - [ ] matmul
 # Performance
 - [ ] lift constants out of loops
