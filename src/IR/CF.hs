@@ -11,7 +11,7 @@ import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, 
 import           IR
 
 -- map of labels by node
-type FreshM = State (Int, M.Map Label Int, M.Map Label [Label])
+type FreshM = State (Int, M.Map Label Int, M.Map Label [Int])
 
 runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
@@ -25,13 +25,13 @@ getFresh = gets fst3 <* modify (first3 (+1))
 lookupLabel :: Label -> FreshM Int
 lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
 
-lC :: Label -> FreshM [Label]
+lC :: Label -> FreshM [Int]
 lC l = gets (M.findWithDefault (error "Internal error in CF graph: node label not in map.") l . thd3)
 
 broadcast :: Int -> Label -> FreshM ()
 broadcast i l = modify (second3 (M.insert l i))
 
-b3 :: Label -> Label -> FreshM ()
+b3 :: Int -> Label -> FreshM ()
 b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is -> i:is}) l))
 
 -- | Pair 'Stmt's with a unique node name and a list of all possible
@@ -58,7 +58,7 @@ addControlFlow (C l:stmts) = do
 addControlFlow (R l:stmts) = do
     { i <- getFresh
     ; nextStmts <- addControlFlow stmts
-    ; l_is <- traverse lookupLabel =<< lC l
+    ; l_is <- lC l
     ; pure ((R l, ControlAnn i l_is IS.empty IS.empty IS.empty IS.empty):nextStmts)
     }
 addControlFlow (MJ e l:stmts) = do
@@ -130,7 +130,7 @@ broadcasts :: [Stmt] -> FreshM [Stmt]
 broadcasts [] = pure []
 broadcasts (stmt@(C l):stmt'@(L retL):stmts) = do
     { i <- getFresh
-    ; b3 retL l; broadcast i retL
+    ; broadcast i retL; b3 i l
     ; (stmt:).(stmt':) <$> broadcasts stmts
     }
 broadcasts (stmt@(L l):stmts) = do
