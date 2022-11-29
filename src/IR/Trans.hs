@@ -697,7 +697,7 @@ eval (EApp I (Builtin _ (TAt n)) e) t = do
     let (P tys) = eAnn e; szs = szT tys
     r <- newITemp; pl <- eval e r
     pure $ pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
-eval (EApp F (Var _ f) e) t = do
+eval (EApp F (Var _ f) e) t | isF (eAnn e) = do
     st <- gets fvars
     let (l, [(Nothing, arg)], (Nothing, ret)) = getT st f
     plE <- eval e arg
