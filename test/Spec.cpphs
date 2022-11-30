@@ -69,6 +69,7 @@ x64T = testGroup "x64"
     , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
     , testCase "gammaln" $ do { res <- gammaJit 1.5 ; res @?= gammaln 1.5 }
+    , testCase "gammaln" $ do { res <- gammaJit (-3.5) ; res @?= gammaln (-3.5) }
     , testCase "dotprod" $ do { res <- fpAaf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
     , testCase "euclidean" $ do { res <- fpAaf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
     , testCase "twoSum" $ do { res <- fpAaf "test/data/twoSum.🍎" [1,2,3] [2,4,5] ; res @?= 17 }
