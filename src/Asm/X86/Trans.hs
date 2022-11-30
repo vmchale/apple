@@ -173,7 +173,7 @@ feval (IR.ConstF x) t = do
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]
 feval (IR.FU IR.FLog (IR.FReg r0)) t =
     let sa = RC SP (-8) in
-    pure [Fninit (), Fldln2 (), MovqAX () sa (fabsReg r0), Fld () sa, Fyl2x (), Fstp () sa, MovqXA () (fabsReg t) sa]
+    pure [Fldln2 (), MovqAX () sa (fabsReg r0), Fld () sa, Fyl2x (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FU IR.FSin (IR.FReg r)) t =
     let sa = RC SP (-8) in
     pure [MovqAX () sa (fabsReg r), Fld () sa, Fsin (), Fstp () sa, MovqXA () (fabsReg t) sa]
