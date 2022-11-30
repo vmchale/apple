@@ -242,7 +242,8 @@ mkIx ix (MovAR _ RSD{} _:asms)                = mkIx (ix+5) asms
 mkIx ix (MovAR _ RS{} _:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovAR _ R{} _:asms)                  = mkIx (ix+3) asms
 mkIx ix (MovRA _ _ R{}:asms)                  = mkIx (ix+3) asms
-mkIx ix (Sqrtsd{}:asms)                       = mkIx (ix+4) asms
+mkIx ix (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
+                              | otherwise     = mkIx (ix+5) asms
 mkIx ix (Not{}:asms)                          = mkIx (ix+3) asms
 mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
 mkIx ix (Fninit{}:asms)                       = mkIx (ix+2) asms
@@ -425,7 +426,11 @@ asm ix st (Cvttsd2si _ r0 r1:asms) =
     (0xf2:mkRR [0x0f,0x2c] r1 r0):asm (ix+5) st asms
 asm ix st (Cvtsi2sd _ fr r:asms) =
     (0xf2:mkRR [0x0f,0x2a] r fr):asm (ix+5) st asms
-asm ix st (Sqrtsd _ r0 r1:asms) =
+asm ix st (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 =
+    rrNoPre [0xf2,0x0f,0x51] r1 r0:asm (ix+4) st asms
+                                | otherwise =
+    extSse 0xf2 0x51 r1 r0:asm (ix+5) st asms
+asm ix st (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 =
     rrNoPre [0xf2,0x0f,0x51] r1 r0:asm (ix+4) st asms
 asm ix st (CmpRR _ r0 r1:asms) =
     mkRR [0x39] r0 r1:asm (ix+3) st asms
