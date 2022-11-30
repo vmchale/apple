@@ -27,3 +27,5 @@
 - [ ] https://docs.python.org/3/extending/newtypes_tutorial.html
 - [ ] https://docs.python.org/3/c-api/typeobj.html#examples
   - [ ] https://docs.python.org/3/extending/newtypes.html
+## Stride
+- [ ] https://numpy.org/doc/stable/reference/arrays.ndarray.html
