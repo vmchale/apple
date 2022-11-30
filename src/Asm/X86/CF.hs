@@ -102,11 +102,11 @@ addControlFlow ((C _ l):asms) = do
     ; l_i <- lookupLabel l
     ; pure (C (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
     }
-addControlFlow (RetL _ l:stmts) = do
+addControlFlow (RetL _ l:asms) = do
     { i <- getFresh
-    ; nextStmts <- addControlFlow stmts
+    ; nextAsms <- addControlFlow asms
     ; l_is <- lC l
-    ; pure (RetL (ControlAnn i l_is IS.empty IS.empty IS.empty IS.empty) l:nextStmts)
+    ; pure (RetL (ControlAnn i l_is IS.empty IS.empty IS.empty IS.empty) l:nextAsms)
     }
 addControlFlow (Ret{}:asms) = do
     { i <- getFresh
