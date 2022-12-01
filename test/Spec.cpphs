@@ -12,7 +12,7 @@ import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           Hs.FFI
 import           Math.Hypergeometric   (erf, hypergeometric, ncdf)
-import           Math.SpecialFunction  (gammaln, tcdf)
+import           Math.SpecialFunction  (gammaln, tcdf, bessel1)
 import           P
 import           Test.Tasty
 import           Test.Tasty.HUnit
@@ -68,7 +68,6 @@ x64T = testGroup "x64"
     , testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
     , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
-    , testCase "gammaln" $ do { res <- gammaJit 1.5 ; res @?= gammaln 1.5 }
     , testCase "gammaln" $ do { res <- gammaJit (-3.5) ; res @?= gammaln (-3.5) }
     , testCase "dotprod" $ do { res <- fpAaf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
     , testCase "euclidean" $ do { res <- fpAaf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
@@ -80,6 +79,7 @@ x64T = testGroup "x64"
     , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
     , testCase "f11" $ do { res <- f11 1 ; res @?= hypergeometric [1] [3/2] 1 }
     , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
+    , testCase "bessel1" $ do { res <- fpIff "test/examples/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "tcdf" $ do { res <- fpFff "test/examples/tcdf.🍎" 12 2 ; res @?= tcdf 12 2 }
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int,6,1] ; res @?= [0::Int,4,6,6] }
     , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
@@ -176,14 +176,17 @@ jitE x = do
     pure $ ff fp x
 
 jitExp :: Int64 -> Double -> IO Double
-jitExp n x = do
-    (_, fp) <- funP =<< BSL.readFile "test/examples/exp.🍏"
-    pure $ iff fp n x
+jitExp = fpIff "test/examples/exp.🍏"
 
 fpFf :: FilePath -> Double -> IO Double
 fpFf fp x = do
     (_, f) <- funP =<< BSL.readFile fp
     pure $ ff f x
+
+fpIff :: FilePath -> Int64 -> Double -> IO Double
+fpIff fp x y = do
+    (_, f) <- funP =<< BSL.readFile fp
+    pure $ iff f x y
 
 fpFff :: FilePath -> Double -> Double -> IO Double
 fpFff fp x y = do
