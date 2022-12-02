@@ -10,6 +10,8 @@ category:        Language, Array
 build-type:      Simple
 data-files:
     ./c/apple.c
+    ./math/*.🍎
+    ./math/*.🍏
 extra-doc-files:
     README.md
     CHANGELOG.md

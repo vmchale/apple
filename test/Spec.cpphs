@@ -39,7 +39,7 @@ main = defaultMain $ testGroup "All" $ rTy:
 rTy :: TestTree
 rTy = testGroup "Regression tests"
     [ tyF "test/data/polymorphic.🍎"
-    , tyF "test/examples/gammaln.🍏"
+    , tyF "math/gammaln.🍏"
     , tyF "test/examples/regress.🍎"
     , tyF "test/data/rank.🍎"
     , tyF "test/examples/weekMean.🍎"
@@ -77,9 +77,9 @@ x64T = testGroup "x64"
     , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
     , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
     , testCase "f11" $ do { res <- f11 1 ; res @?= hypergeometric [1] [3/2] 1 }
-    , testCase "hypergeo" $ do { res <- fpAaff "test/examples/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
+    , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
     , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
-    , testCase "bessel1" $ do { res <- fpIff "test/examples/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
+    , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "tcdf" $ do { res <- fpFff "test/examples/tcdf.🍎" 12 2 ; res @?= tcdf 12 2 }
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int,6,1] ; res @?= [0::Int,4,6,6] }
     , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
@@ -204,11 +204,11 @@ fpFff fp x y = do
     (_, f) <- funP =<< BSL.readFile fp
     pure $ fff f x y
 
-gammaJit = fpFf "test/examples/gammaln.🍏"
-ncdfJit = fpFf "test/examples/ncdf.🍎"
+gammaJit = fpFf "math/gammaln.🍏"
+ncdfJit = fpFf "math/ncdf.🍎"
 
 erfJit :: Double -> IO Double
-erfJit = fpFf "test/examples/erf.🍏"
+erfJit = fpFf "math/erf.🍏"
 
 f11 :: Double -> IO Double
 f11 = fpFf "test/examples/hypergeometricEfficient.🍏"

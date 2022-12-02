@@ -4,7 +4,6 @@
   {
     rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))];
     ix ← irange 0 99 1;
-    -- FIXME: might be more efficient to have an frange too?
     mkIx ← [(z^x)%(rf 1.5 (itof x))];
     (+)/1 0 (mkIx'1 ix)
   };
