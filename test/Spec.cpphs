@@ -75,9 +75,9 @@ x64T = testGroup "x64"
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
     , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
     , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
-    , testCase "erf" $ do { res <- erfJit 1 ; res .?= erf 1 }
     , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
     , testCase "f11" $ do { res <- f11 1 ; res @?= hypergeometric [1] [3/2] 1 }
+    , testCase "hypergeo" $ do { res <- fpAaff "test/examples/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
     , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
     , testCase "bessel1" $ do { res <- fpIff "test/examples/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "tcdf" $ do { res <- fpFff "test/examples/tcdf.🍎" 12 2 ; res @?= tcdf 12 2 }
@@ -147,6 +147,17 @@ fpAaf :: FilePath -> [Double] -> [Double] -> IO Double
 fpAaf fp xs ys = do
     f <- bytesE <$> BSL.readFile fp
     jitAaf f xs ys
+
+fpAaff :: FilePath -> [Double] -> [Double] -> Double -> IO Double
+fpAaff fp xs ys z = do {f <- bytesE <$> BSL.readFile fp; jitAaff f xs ys z}
+
+jitAaff :: BS.ByteString -> [Double] -> [Double] -> Double -> IO Double
+jitAaff code xs ys z =
+    let a = AA 1 [fromIntegral(length xs)] xs
+        b = AA 1 [fromIntegral(length ys)] ys in
+    wA a $ \p -> wA b $ \q -> do
+        (fp,_) <- bsFp code
+        pure $ aaff fp p q z
 
 jitAaf :: BS.ByteString -> [Double] -> [Double] -> IO Double
 jitAaf code xs ys =
@@ -220,6 +231,7 @@ bytesE = either throw id . bytes
 foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
 foreign import ccall "dynamic" faf :: FunPtr (Double -> Ptr (Apple a) -> Double) -> Double -> Ptr (Apple a) -> Double
 foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
+foreign import ccall "dynamic" aaff :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
 foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
 foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double
