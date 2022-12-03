@@ -155,10 +155,11 @@ instance Pretty Builtin where
     pretty Eq        = "="
     pretty Neq       = "≠"
     pretty Lte       = "≤"
+    pretty Flip      = "~"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
-             | Max | Min | Neg | Sqrt | Transpose
+             | Max | Min | Neg | Sqrt | Transpose | Flip
              | Reverse -- also rank infinity... https://code.jsoftware.com/wiki/Vocabulary/bardot
              | Filter -- TODO: filter by bitvector...
              | Grade -- TODO: sort

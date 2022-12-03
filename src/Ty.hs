@@ -29,7 +29,7 @@ import qualified Data.Text                  as T
 import           Data.Typeable              (Typeable)
 import           GHC.Generics               (Generic)
 import           Name
-import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, vsep, (<+>))
+import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, (<+>))
 import           Prettyprinter.Ext
 import           Ty.Clone
 import           U
@@ -362,6 +362,9 @@ tyB _ Floor = pure (Arrow F I, mempty)
 tyB _ ItoF = pure (Arrow I F, mempty)
 tyB l R = tyNumBinOp l
 tyB _ Iter = do{a <- TVar<$>freshName "a"(); let s = Arrow a a in pure (Arrow s (Arrow I s), mempty)}
+tyB _ Flip = do
+    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" (); c <- TVar <$> freshName "c" ()
+    pure (Arrow (Arrow a (Arrow b c)) (Arrow b (Arrow a c)), mempty)
 tyB _ ConsE = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()

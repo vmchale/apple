@@ -72,6 +72,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     lt { TokSym $$ L.Lt }
     eq { TokSym $$ L.Eq }
     neq { TokSym $$ L.Neq }
+    tilde { TokSym $$ Tilde }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -255,6 +256,7 @@ E :: { E AlexPosn }
   | trans { Builtin $1 Transpose }
   | r { Builtin $1 R }
   | sin { Builtin $1 Sin }
+  | tilde { Builtin $1 Flip }
 
 {
 

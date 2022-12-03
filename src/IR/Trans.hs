@@ -118,8 +118,13 @@ doN t e ss = do
     pure $ MT t (ConstI 0):L l:MJ (IRel IGeq (Reg t) e) endL:ss++[tick t, J l, L endL]
 
 dimR rnk (t,l) = (\o -> EAt (AP t (Just$ConstI (8*o)) l)) <$> [1..rnk]
-offByDim dims = let d1 = dims in do {ts <- traverse (\_ -> newITemp) d1; let ss=zipWith3 (\t1 t0 d -> MT t1 (IB ITimes (Reg t0) d)) (tail ts) ts dims in pure (drop 1$reverse ts,MT (head ts) (ConstI 1):ss)}
-get tdims ixs (t,l) = let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i (Reg d)) tdims ixs in EAt (AP t (Just (IB IAsl offs (ConstI 3))) l)
+offByDim dims = do
+    ts <- traverse (\_ -> newITemp) dims
+    let ss=zipWith3 (\t1 t0 d -> MT t1 (IB ITimes (Reg t0) d)) (tail ts) ts dims
+    pure (drop 1$reverse ts,MT (head ts) (ConstI 1):ss)
+get tdims ixs (t,l) =
+    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i (Reg d)) tdims ixs
+    in EAt (AP t (Just (IB IAsl offs (ConstI 3))) l)
 
 -- write loop body (updates global state, dependent on ast being globally renamed)
 writeF :: E (T ())
