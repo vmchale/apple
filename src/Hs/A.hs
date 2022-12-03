@@ -5,13 +5,18 @@ module Hs.A ( Apple (..)
             , AI
             , AF
             , Pp (..)
+            , dbgAB
             ) where
 
-import           Control.Monad     (forM, zipWithM_)
-import           Data.Int          (Int64)
-import           Foreign.Ptr       (castPtr, plusPtr)
-import           Foreign.Storable  (Storable (..))
-import           Prettyprinter     (Pretty (..), (<+>))
+import           Control.Monad         (forM, zipWithM_)
+import           Data.Int              (Int64)
+import qualified Data.Text             as T
+import           Data.Word             (Word8)
+import           Foreign.Marshal.Array (peekArray)
+import           Foreign.Ptr           (Ptr, castPtr, plusPtr)
+import           Foreign.Storable      (Storable (..))
+import           Numeric               (showHex)
+import           Prettyprinter         (Pretty (..), (<+>))
 import           Prettyprinter.Ext
 
 type AI = Apple Int64
@@ -24,13 +29,21 @@ data Pp a b = Pp a b
 
 instance (Storable a, Storable b) => Storable (Pp a b) where
     sizeOf _ = sizeOf(undefined::a)+sizeOf(undefined::b)
-    peek p = Pp <$> peek (castPtr p) <*> peek (p `plusPtr` (sizeOf(undefined::a)))
+    peek p = Pp <$> peek (castPtr p) <*> peek (p `plusPtr` sizeOf(undefined::a))
 
 instance Pretty a => Pretty (Apple a) where
     pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pretty xs
 
 instance (Pretty a, Pretty b) => Pretty (Pp a b) where
     pretty (Pp x y) = tupledBy "*" [pretty x, pretty y]
+
+dbgAB :: forall a. Storable a => Ptr (Apple a) -> IO T.Text
+dbgAB p = do
+    rnk <- peek (castPtr p :: Ptr Int64)
+    dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)
+    let sz = 8+8*rnk+fromIntegral (sizeOf (undefined::a))*product dims
+    hextext <$> peekArray (fromIntegral sz) (castPtr p :: Ptr Word8)
+    where hextext = T.unwords . fmap (T.pack.($"").showHex)
 
 instance Storable a => Storable (Apple a) where
     sizeOf (AA rnk dims _) = 8+8*fromIntegral rnk+(sizeOf (undefined::a)*fromIntegral (product dims))

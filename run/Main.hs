@@ -56,35 +56,41 @@ runRepl x = do
     flip evalStateT initSt $ runInputT settings x
 
 appleCompletions :: CompletionFunc (StateT Env IO)
-appleCompletions (":","")        = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann"])
-appleCompletions ("i:", "")      = pure ("i:", cyclicSimple ["r", ""])
-appleCompletions ("ri:", "")     = pure ("ri:", cyclicSimple [""])
-appleCompletions ("t:", "")      = pure ("t:", cyclicSimple ["y", ""])
-appleCompletions ("yt:", "")     = pure ("yt:", cyclicSimple [""])
-appleCompletions ("d:", "")      = pure ("d:", [simpleCompletion "isasm"])
-appleCompletions ("id:", "")     = pure ("id:", [simpleCompletion "sasm"])
-appleCompletions ("sid:", "")    = pure ("sid:", [simpleCompletion "asm"])
-appleCompletions ("asid:", "")   = pure ("asid:", [simpleCompletion "sm"])
-appleCompletions ("sasid:", "")  = pure ("sasid:", [simpleCompletion "m"])
-appleCompletions ("msasid:", "") = pure ("msasid:", [simpleCompletion ""])
-appleCompletions ("a:", "")      = pure ("a:", [simpleCompletion "sm", simpleCompletion "nn"])
-appleCompletions ("sa:", "")     = pure ("sa:", [simpleCompletion "m"])
-appleCompletions ("msa:", "")    = pure ("msa:", [simpleCompletion ""])
-appleCompletions ("na:", "")     = pure ("na:", [simpleCompletion "n"])
-appleCompletions ("nna:", "")    = pure ("nna:", [simpleCompletion ""])
-appleCompletions ("q:", "")      = pure ("q:", cyclicSimple ["uit", ""])
-appleCompletions ("uq:", "")     = pure ("uq:", [simpleCompletion "it"])
-appleCompletions ("iuq:", "")    = pure ("iuq:", [simpleCompletion "t"])
-appleCompletions ("tiuq:", "")   = pure ("tiuq:", [simpleCompletion ""])
-appleCompletions ("h:", "")      = pure ("h:", cyclicSimple ["elp", ""])
-appleCompletions ("eh:", "")     = pure ("eh:", [simpleCompletion "lp"])
-appleCompletions ("leh:", "")    = pure ("leh:", [simpleCompletion "p"])
-appleCompletions ("pleh:", "")   = pure ("pleh:", [simpleCompletion ""])
-appleCompletions (" yt:", "")    = do { ns <- namesStr ; pure (" yt:", cyclicSimple ns) }
-appleCompletions (" t:", "")     = do { ns <- namesStr ; pure (" t:", cyclicSimple ns) }
-appleCompletions ("", "")        = ("",) . cyclicSimple <$> namesStr
-appleCompletions (rp, "")        = do { ns <- namesStr ; pure (unwords ("" : tail (words rp)), cyclicSimple (namePrefix ns rp)) }
-appleCompletions _               = pure (undefined, [])
+appleCompletions (":","")         = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann"])
+appleCompletions ("i:", "")       = pure ("i:", cyclicSimple ["r", "nspect", ""])
+appleCompletions ("ri:", "")      = pure ("ri:", cyclicSimple [""])
+appleCompletions ("ni:", "")      = pure ("ni:", [simpleCompletion "spect"])
+appleCompletions ("sni:", "")     = pure ("sni:", [simpleCompletion "pect"])
+appleCompletions ("psni:", "")    = pure ("psni:", [simpleCompletion "ect"])
+appleCompletions ("epsni:", "")   = pure ("epsni:", [simpleCompletion "ct"])
+appleCompletions ("cepsni:", "")  = pure ("cepsni:", [simpleCompletion "t"])
+appleCompletions ("tcepsni:", "") = pure ("tcepsni:", [simpleCompletion ""])
+appleCompletions ("t:", "")       = pure ("t:", cyclicSimple ["y", ""])
+appleCompletions ("yt:", "")      = pure ("yt:", cyclicSimple [""])
+appleCompletions ("d:", "")       = pure ("d:", [simpleCompletion "isasm"])
+appleCompletions ("id:", "")      = pure ("id:", [simpleCompletion "sasm"])
+appleCompletions ("sid:", "")     = pure ("sid:", [simpleCompletion "asm"])
+appleCompletions ("asid:", "")    = pure ("asid:", [simpleCompletion "sm"])
+appleCompletions ("sasid:", "")   = pure ("sasid:", [simpleCompletion "m"])
+appleCompletions ("msasid:", "")  = pure ("msasid:", [simpleCompletion ""])
+appleCompletions ("a:", "")       = pure ("a:", [simpleCompletion "sm", simpleCompletion "nn"])
+appleCompletions ("sa:", "")      = pure ("sa:", [simpleCompletion "m"])
+appleCompletions ("msa:", "")     = pure ("msa:", [simpleCompletion ""])
+appleCompletions ("na:", "")      = pure ("na:", [simpleCompletion "n"])
+appleCompletions ("nna:", "")     = pure ("nna:", [simpleCompletion ""])
+appleCompletions ("q:", "")       = pure ("q:", cyclicSimple ["uit", ""])
+appleCompletions ("uq:", "")      = pure ("uq:", [simpleCompletion "it"])
+appleCompletions ("iuq:", "")     = pure ("iuq:", [simpleCompletion "t"])
+appleCompletions ("tiuq:", "")    = pure ("tiuq:", [simpleCompletion ""])
+appleCompletions ("h:", "")       = pure ("h:", cyclicSimple ["elp", ""])
+appleCompletions ("eh:", "")      = pure ("eh:", [simpleCompletion "lp"])
+appleCompletions ("leh:", "")     = pure ("leh:", [simpleCompletion "p"])
+appleCompletions ("pleh:", "")    = pure ("pleh:", [simpleCompletion ""])
+appleCompletions (" yt:", "")     = do { ns <- namesStr ; pure (" yt:", cyclicSimple ns) }
+appleCompletions (" t:", "")      = do { ns <- namesStr ; pure (" t:", cyclicSimple ns) }
+appleCompletions ("", "")         = ("",) . cyclicSimple <$> namesStr
+appleCompletions (rp, "")         = do { ns <- namesStr ; pure (unwords ("" : tail (words rp)), cyclicSimple (namePrefix ns rp)) }
+appleCompletions _                = pure (undefined, [])
 
 namePrefix :: [String] -> String -> [String]
 namePrefix names prevRev = filter (last (words (reverse prevRev)) `isPrefixOf`) names
@@ -93,19 +99,20 @@ loop :: Repl AlexPosn ()
 loop = do
     inp <- getInputLine " > "
     case words <$> inp of
-        Just []            -> loop
-        Just (":h":_)      -> showHelp *> loop
-        Just (":help":_)   -> showHelp *> loop
-        Just ("\\l":_)     -> langHelp *> loop
-        Just (":ty":e)     -> tyExprR (unwords e) *> loop
-        Just [":q"]        -> pure ()
-        Just [":quit"]     -> pure ()
-        Just (":asm":e)    -> dumpAsmG (unwords e) *> loop
-        Just (":ann":e)    -> annR (unwords e) *> loop
-        Just (":ir":e)     -> irR (unwords e) *> loop
-        Just (":disasm":e) -> disasm (unwords e) *> loop
-        Just e             -> printExpr (unwords e) *> loop
-        Nothing            -> pure ()
+        Just []             -> loop
+        Just (":h":_)       -> showHelp *> loop
+        Just (":help":_)    -> showHelp *> loop
+        Just ("\\l":_)      -> langHelp *> loop
+        Just (":ty":e)      -> tyExprR (unwords e) *> loop
+        Just [":q"]         -> pure ()
+        Just [":quit"]      -> pure ()
+        Just (":asm":e)     -> dumpAsmG (unwords e) *> loop
+        Just (":ann":e)     -> annR (unwords e) *> loop
+        Just (":ir":e)      -> irR (unwords e) *> loop
+        Just (":disasm":e)  -> disasm (unwords e) *> loop
+        Just (":inspect":e) -> inspect (unwords e) *> loop
+        Just e              -> printExpr (unwords e) *> loop
+        Nothing             -> pure ()
 
 showHelp :: Repl AlexPosn ()
 showHelp = liftIO $ putStr $ concat
@@ -186,6 +193,20 @@ annR s = case tyParse$ubs s of
     Left err    -> liftIO$putDoc(pretty err<>hardline)
     Right (e,_) -> liftIO$putDoc(prettyTyped e<>hardline)
 
+inspect :: String -> Repl AlexPosn ()
+inspect s = case tyParse bs of
+    Left err -> liftIO $ putDoc (pretty err <> hardline)
+    Right (e, _) ->
+        case eAnn e of
+            (Arr _ (P [F,F])) -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    p <- callFFI fp (retPtr undefined) []
+                    TIO.putStrLn =<< (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) p
+                    free p *> freeFunPtr sz fp
+    where bs = ubs s
+
 printExpr :: String -> Repl AlexPosn ()
 printExpr s = case tyParse bs of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
@@ -230,7 +251,7 @@ printExpr s = case tyParse bs of
                 liftIO $ do
                     (sz, fp) <- ctxFunP m bs
                     p <- callFFI fp (retPtr undefined) []
-                    putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Float Float)) -> IO (Apple (Pp Float Float))) p
+                    putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Double Double)) -> IO (Apple (Pp Double Double))) p
                     free p *> freeFunPtr sz fp
             (Arr _ (P [I,I])) -> do
                 m <- lift $ gets mf
