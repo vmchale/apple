@@ -102,7 +102,7 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
              | isI (eAnn e) = eval e CRet
              | isB (eAnn e) = eval e CRet
              | isArr (eAnn e) = do{(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
-             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing))]}
+             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing)), Pop 16]}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
@@ -310,6 +310,7 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do
     i <- newITemp
     nR <- newITemp
     let sz = IB IPlus (Reg nR) (ConstI 16)
+    modify (addMT a t)
     putSeed <- eval seed arg; putN <- eval n nR
     ss <- writeRF op [arg] arg
     let loopBody = Wr (AP t (Just (sib i)) (Just a)) (Reg arg):ss
@@ -321,6 +322,7 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) (ILit _ n)) t | (Arr (
     i <- newITemp
     let ptN :: Integral a => a; ptN=bT ty;pt = ConstI ptN
         nE=ConstI$asI n;sz = IB IPlus (IB ITimes nE pt) (ConstI$16+ptN)
+    modify (addMT a t)
     putSeed <- eval seed arg
     l <- newLabel; endL <- newLabel
     ss <- writeRF op [arg] arg
@@ -333,6 +335,7 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | (Arr (_ `Cons` 
     nR <- newITemp
     let ptN :: Integral a => a; ptN=bT ty;pt = ConstI ptN
         sz = IB IPlus (IB ITimes (Reg nR) pt) (ConstI$16+ptN)
+    modify (addMT a t)
     putSeed <- eval seed arg; putN <- eval n nR
     ss <- writeRF op [arg] arg
     let loopBody = ss ++ [Cpy (AP t (Just (IB IPlus (IB ITimes (Reg i) pt) (ConstI 16))) (Just a)) (AP arg Nothing Nothing) (ConstI$ptN`div`8)]
@@ -690,18 +693,22 @@ eval (EApp F (Builtin _ Last) arr) t = do
     r <- newITemp
     (l, plArr) <- aeval arr r
     pure $ plArr ++ [MX t (FAt (AP r (Just (IB IPlus (IB IAsl (EAt (AP r (Just$ConstI 8) l)) (ConstI 3)) (ConstI 8))) l))]
+eval (EApp ty@P{} (Builtin _ Last) arr) t = do
+    r <- newITemp
+    (l, plArr) <- aeval arr r
+    pure $ plArr ++ [Cpy (AP t Nothing Nothing) (AP r (Just (IB IPlus (IB IAsl (EAt (AP r (Just$ConstI 8) l)) (ConstI 3)) (ConstI 8))) l) (ConstI$bT ty `div` 8)]
 eval (Tup _ es) t = do
     let szs = szT (eAnn<$>es)
     pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]};I -> do{r <- newITemp; p <- eval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}}) es szs
     pure$concat pls
 eval (EApp F (Builtin _ (TAt n)) e) t = do
-    let (P tys) = eAnn e; szs = szT tys
+    let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
     r <- newITemp; pl <- eval e r
-    pure $ pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
+    pure $ Sa r sz:pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop sz]
 eval (EApp I (Builtin _ (TAt n)) e) t = do
-    let (P tys) = eAnn e; szs = szT tys
+    let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
     r <- newITemp; pl <- eval e r
-    pure $ pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
+    pure $ Sa r sz:pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop sz]
 eval (EApp F (Var _ f) e) t | isF (eAnn e) = do
     st <- gets fvars
     let (l, [(Nothing, arg)], (Nothing, ret)) = getT st f
