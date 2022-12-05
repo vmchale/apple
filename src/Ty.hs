@@ -678,6 +678,13 @@ tyE s (EApp _ (EApp _ (EApp _ (Builtin _ FRange) e0) e1) (ILit _ n)) = do
         l0 = eAnn e0; l1 = eAnn e1
     s0' <- liftEither $ mguPrep (l0,e0) s1 F (eAnn e0' $> l0); s1' <- liftEither $ mguPrep (l1,e1) s0' F (eAnn e1' $> l1)
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow tyE1 (Arrow I arrTy)) (Builtin (Arrow tyE0 (Arrow tyE1 (Arrow I arrTy))) FRange) e0') e1') (ILit I n), s1')
+tyE s (EApp _ (EApp _ (EApp _ (Builtin _ Gen) x) f) (ILit _ n)) = do
+    (x',s0) <- tyE s x; (f',s1) <- tyE s0 f
+    let tyX = eAnn x'; tyF = eAnn f'
+        arrTy = Arr (vx $ Ix () (fromInteger n)) tyX
+        lX = eAnn x; lF = eAnn f
+    s1' <- liftEither $ mguPrep (lF, f) s1 (Arrow (tyX $> lX) (tyX $> lX)) (tyF $> lF)
+    pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow tyF (Arrow I arrTy)) (Builtin (Arrow tyX (Arrow tyF (Arrow I arrTy))) Gen) x') f') (ILit I n), s1')
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _ si)) = do
     let arrTy = Arr (vx (Ix () (fromInteger ((e-b+si) `div` si)))) I
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow I (Arrow I arrTy)) (Builtin (Arrow I (Arrow I (Arrow I arrTy))) IRange) (ILit I b)) (ILit I e)) (ILit I si), s)
