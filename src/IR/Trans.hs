@@ -696,7 +696,7 @@ eval (EApp F (Builtin _ Last) arr) t = do
 eval (EApp ty@P{} (Builtin _ Last) arr) t = do
     r <- newITemp
     (l, plArr) <- aeval arr r
-    pure $ plArr ++ [Cpy (AP t Nothing Nothing) (AP r (Just (IB IPlus (IB IAsl (EAt (AP r (Just$ConstI 8) l)) (ConstI 3)) (ConstI 8))) l) (ConstI$bT ty `div` 8)]
+    pure $ plArr ++ [Cpy (AP t Nothing Nothing) (AP r (Just (IB IPlus (IB ITimes (IB IMinus (EAt (AP r (Just$ConstI 8) l)) (ConstI 1)) (ConstI$bT ty)) (ConstI 16))) l) (ConstI$bT ty `div` 8)]
 eval (Tup _ es) t = do
     let szs = szT (eAnn<$>es)
     pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]};I -> do{r <- newITemp; p <- eval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}}) es szs
