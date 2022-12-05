@@ -214,6 +214,7 @@ mkIx ix (MovqXA _ _ (RS R13 _ _):asms)        = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RSD{}:asms)               = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RS{}:asms)                = mkIx (ix+6) asms
 mkIx ix (MovqXA _ r0 (RC Rsp _):asms) | fits r0 = mkIx (ix+6) asms
+mkIx ix (MovqXA _ xr (RC r _):asms) | fits xr && fits r = mkIx (ix+5) asms
 mkIx ix (MovqXA _ _ RC{}:asms)                = mkIx (ix+6) asms
 mkIx ix (Fldl2e{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fldln2{}:asms)                       = mkIx (ix+2) asms
@@ -299,6 +300,10 @@ asm ix st (MovqXA _ r0 (R r1):asms) | fits r0 && fits r1 =
     in instr:asm (ix+4) st asms
 -- https://stackoverflow.com/questions/52522544/rbp-not-allowed-as-sib-base
 asm ix st (MovqXA l r0 (R R13):asms) = asm ix st (MovqXA l r0 (RC R13 0):asms)
+asm ix st (MovqXA _ r0 (RC r1 i8):asms) | (0, b0) <- modRM r0, (0, b1) <- modRM r1 =
+      let modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. b1
+          instr = 0xf3:0x0f:0x7e:modB:le i8
+      in instr:asm (ix+5) st asms
 asm ix st (MovqXA _ r0 (RC r1 i8):asms) =
       let (e0, b0) = modRM r0
           (e1, b1) = modRM r1
