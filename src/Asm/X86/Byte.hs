@@ -200,15 +200,17 @@ mkIx ix (Jl{}:asms)                           = mkIx (ix+6) asms
 mkIx ix (Jle{}:asms)                          = mkIx (ix+6) asms
 mkIx ix (J{}:asms)                            = mkIx (ix+5) asms
 mkIx ix (C{}:asms)                            = mkIx (ix+5) asms
-mkIx ix (MovqXA _ _ (R R13):asms)             = mkIx (ix+6) asms
-mkIx ix (MovqXA _ r0 (R r1):asms) | fits r0 && fits r1 = mkIx (ix+4) asms
-                                  | otherwise = mkIx (ix+5) asms
-mkIx ix (MovqAX _ (RC Rsp _) r1:asms) | fits r1 = mkIx (ix+6) asms
 mkIx ix (MovqAX _ (R Rsp) r:asms) | fits r = mkIx (ix+5) asms
 mkIx ix (MovqAX _ (R rb) r:asms) | fits rb && fits r = mkIx (ix+4) asms
+mkIx ix (MovqAX _ (RC Rsp _) r1:asms) | fits r1 = mkIx (ix+6) asms
 mkIx ix (MovqAX _ (RC rb _) r:asms) | fits rb && fits r = mkIx (ix+5) asms
 mkIx ix (MovqAX _ (RSD b _ i _) r:asms) | fits r && fits b && fits i = mkIx (ix+6) asms
 mkIx ix (MovqAX _ RSD{} _:asms)               = mkIx (ix+7) asms
+mkIx ix (MovqXA _ _ (R R13):asms)             = mkIx (ix+6) asms
+mkIx ix (MovqXA _ r0 (R Rsp):asms) | fits r0  = mkIx (ix+5) asms
+                                   | otherwise = mkIx (ix+6) asms
+mkIx ix (MovqXA _ r0 (R r1):asms) | fits r0 && fits r1 = mkIx (ix+4) asms
+                                  | otherwise = mkIx (ix+5) asms
 mkIx ix (MovqXA _ _ (RS R13 _ _):asms)        = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RSD{}:asms)               = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RS{}:asms)                = mkIx (ix+6) asms
@@ -302,32 +304,44 @@ asm ix st (MovqXA _ r0 (RC r1@Rsp i8):asms) | fits r0 =
         sib = b1 `shiftL` 3 .|. b1
         instr = 0xf3:0xf:0x7e:modB:sib:le i8
     in instr:asm (ix+6) st asms
-asm ix st (MovqXA _ r0 (R r1):asms) | fits r0 && fits r1 =
-    let (_, b0) = modRM r0
-        (_, b1) = modRM r1
-        modB = b0 `shiftL` 3 .|. b1
-        instr = [0xf3, 0x0f, 0x7e, modB]
-    in instr:asm (ix+4) st asms
 -- https://stackoverflow.com/questions/52522544/rbp-not-allowed-as-sib-base
 asm ix st (MovqXA l r0 (R R13):asms) = asm ix st (MovqXA l r0 (RC R13 0):asms)
+asm ix st (MovqXA l r0 (R r1@Rsp):asms) | (0, b0) <- modRM r0 =
+    let (0, b1) = modRM r1
+        modB = b0 `shiftL` 3 .|. 4
+        sib = b1 `shiftL` 3 .|. b1
+        isn = [0xf3,0x0f,0x7e,modB,sib]
+    in isn:asm (ix+5) st asms
+asm ix st (MovqXA _ r0 (R r1):asms) | (0, b0) <- modRM r0, (0, b1) <- modRM r1 =
+    let modB = b0 `shiftL` 3 .|. b1
+        instr = [0xf3, 0x0f, 0x7e, modB]
+    in instr:asm (ix+4) st asms
 asm ix st (MovqXA _ r0 (RC r1 i8):asms) | (0, b0) <- modRM r0, (0, b1) <- modRM r1 =
-      let modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. b1
-          instr = 0xf3:0x0f:0x7e:modB:le i8
-      in instr:asm (ix+5) st asms
+    let modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. b1
+        instr = 0xf3:0x0f:0x7e:modB:le i8
+    in instr:asm (ix+5) st asms
 asm ix st (MovqXA _ r0 (RC r1 i8):asms) =
-      let (e0, b0) = modRM r0
-          (e1, b1) = modRM r1
-          modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. b1
-          pre = 0x48 .|. e0 `shiftL` 2 .|. e1
-          instr = 0x66:pre:0xf:0x6e:modB:le i8
-      in instr:asm (ix+6) st asms
+    let (e0, b0) = modRM r0
+        (e1, b1) = modRM r1
+        modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. b1
+        pre = 0x48 .|. e0 `shiftL` 2 .|. e1
+        instr = 0x66:pre:0xf:0x6e:modB:le i8
+    in instr:asm (ix+6) st asms
+asm ix st (MovqXA _ r0 (R r1@Rsp):asms) =
+    let (e0, b0) = modRM r0
+        (0, b1) = modRM r1
+        modB = b0 `shiftL` 3 .|. 4
+        pre = 0x48 .|. e0 `shiftL` 2
+        sib = b1 `shiftL` 3 .|. b1
+        instr = [0x66, pre, 0xf, 0x6e, modB, sib]
+    in instr:asm (ix+6) st asms
 asm ix st (MovqXA _ r0 (R r1):asms) =
-      let (e0, b0) = modRM r0
-          (e1, b1) = modRM r1
-          modB = b0 `shiftL` 3 .|. b1
-          pre = 0x48 .|. e0 `shiftL` 2 .|. e1
-          instr = [0x66, pre, 0xf, 0x6e, modB]
-      in instr:asm (ix+5) st asms
+    let (e0, b0) = modRM r0
+        (e1, b1) = modRM r1
+        modB = b0 `shiftL` 3 .|. b1
+        pre = 0x48 .|. e0 `shiftL` 2 .|. e1
+        instr = [0x66, pre, 0xf, 0x6e, modB]
+    in instr:asm (ix+5) st asms
 -- https://stackoverflow.com/questions/52522544/rbp-not-allowed-as-sib-base
 asm ix st (MovqAX _ (RC r0@Rsp i8) r1:asms) | (0, b1) <- modRM r1 =
     let (0, b0) = modRM r0
