@@ -129,6 +129,11 @@ ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) (IR.ConstI n)) | Just n32 
     i <- nextR; t <- nextR
     l <- nextL; endL <- nextL
     pure $ plE ++ [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, Label () l, CmpRI () i (n32-1), Jg () endL, MovRA () t (RS (absReg tS) Eight i), MovAR () (RS (IReg iR) Eight i) t, IAddRI () i 1, J () l, Label () endL]
+ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS (Just e) _) (IR.ConstI n)) | Just n32 <- mi32 n = do
+    iR <- nextI; plE <- evalE e (IR.ITemp iR)
+    i <- nextR; t <- nextR
+    l <- nextL; endL <- nextL
+    pure $ plE ++ [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, Label () l, CmpRI () i (n32-1), Jg () endL, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tD) Eight i) t, IAddRI () i 1, J () l, Label () endL]
 ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS (Just (IR.ConstI d)) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just d8 <- mi8 d = do
     iR <- nextI; plE <- evalE e (IR.ITemp iR)
     i <- nextR; t <- nextR
@@ -206,8 +211,14 @@ evalE (IR.ConstI 0) rD                               = pure [XorRR () (absReg rD
 evalE (IR.ConstI i) rD                               = pure [MovRI () (absReg rD) i]
 evalE (IR.IB IR.IPlus (IR.Reg r0) (IR.ConstI i)) rD  = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRI () rD' i]
 evalE (IR.IB IR.ITimes (IR.Reg r0) (IR.Reg r1)) rD   = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IMulRR () rD' (absReg r1)]
-evalE (IR.IB IR.IAsl (IR.Reg r0) (IR.ConstI i)) rD | Just i8 <- mi8 i = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), Sal () rD' i8]
-evalE (IR.IB IR.IAsr (IR.Reg r0) (IR.ConstI i)) rD | Just i8 <- mi8 i = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), Sar () rD' i8]
+evalE (IR.IB IR.IAsl e (IR.ConstI i)) rD | Just i8 <- mi8 i = do
+    let rD' = absReg rD
+    eR <- nextI; plE <- evalE e (IR.ITemp eR)
+    pure $ plE ++ [MovRR () rD' (IReg eR), Sal () rD' i8]
+evalE (IR.IB IR.IAsr e (IR.ConstI i)) rD | Just i8 <- mi8 i = do
+    let rD' = absReg rD
+    eR <- nextI; plE <- evalE e (IR.ITemp eR)
+    pure $ plE ++ [MovRR () rD' (IReg eR), Sar () rD' i8]
 evalE (IR.IB IR.IMinus e (IR.ConstI i)) rD           = do
     let rD' = absReg rD
     eR <- nextI
