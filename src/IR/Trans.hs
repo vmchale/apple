@@ -701,10 +701,18 @@ eval (Tup _ es) t = do
     let szs = szT (eAnn<$>es)
     pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]};I -> do{r <- newITemp; p <- eval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}}) es szs
     pure$concat pls
+eval (EApp F (Builtin _ (TAt n)) e@Var{}) t = do
+    let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
+    r <- newITemp; pl <- eval e r
+    pure $ pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
 eval (EApp F (Builtin _ (TAt n)) e) t = do
     let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
     r <- newITemp; pl <- eval e r
     pure $ Sa r sz:pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop sz]
+eval (EApp I (Builtin _ (TAt n)) e@Var{}) t = do
+    let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
+    r <- newITemp; pl <- eval e r
+    pure $ pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
 eval (EApp I (Builtin _ (TAt n)) e) t = do
     let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
     r <- newITemp; pl <- eval e r
