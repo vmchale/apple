@@ -20,16 +20,16 @@ instance E X86.X86Reg where
     toInt X86.R14 = -4
 
 instance E X86.FX86Reg where
-    toInt X86.XMM0 = 8
-    toInt X86.XMM1 = 9
-    toInt X86.XMM2 = 10
-    toInt X86.XMM3 = 11
-    toInt X86.XMM4 = 12
-    toInt X86.XMM5 = 13
-    toInt X86.XMM6 = 14
-    toInt X86.XMM7 = 15
-    toInt X86.XMM8 = -5
-    toInt X86.XMM9 = -6
+    toInt X86.XMM0  = 8
+    toInt X86.XMM1  = 9
+    toInt X86.XMM2  = 10
+    toInt X86.XMM3  = 11
+    toInt X86.XMM4  = 12
+    toInt X86.XMM5  = 13
+    toInt X86.XMM6  = 14
+    toInt X86.XMM7  = 15
+    toInt X86.XMM8  = -5
+    toInt X86.XMM9  = -6
     toInt X86.XMM10 = -7
     toInt X86.XMM11 = -8
     toInt X86.XMM12 = -9
