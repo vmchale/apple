@@ -145,7 +145,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "⊗" "outer product" "|:" "transpose"
     , lOption "{.?" "head" "{." "typesafe head"
     , lOption "⟨z,w⟩" "array literal" "?p,.e1,.e2" "conditional"
-    , lOption "/*" "fold all" "" ""
+    , lOption "/*" "fold all" "𝑖" "i->f conversion"
     ]
 
 lOption op0 desc0 op1 desc1 =
