@@ -2,7 +2,7 @@
 {
   -- FIXME: this fails with polymorphic bind lol
   Σ ← [(+)/1 0 x];
-  n ⟜ 𝑖(:xs);
+  n ⟜ ℝ(:xs);
   xbar ⟜ (Σ xs) % n; ybar ← (Σ ys) % n;
   xy ← Σ ((*)`xs ys); x2 ← Σ ((^2)'1 xs);
   denom ← (x2-(n*(xbar^2)));

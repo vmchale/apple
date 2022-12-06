@@ -50,7 +50,7 @@ $letter = [$latin $greek]
 
 @follow_char = [$letter $digit \_]
 
-@name = ($letter#[Λλ] @follow_char* | $mathgreek)
+@name = ($letter#[Λλ] @follow_char* | $mathgreek | ∫)
 
 @exp = e\-?$digit+
 @float = $digit+\.$digit+@exp?
@@ -165,7 +165,7 @@ tokens :-
         ℯ                        { mkBuiltin BuiltinE }
         "e:"                     { mkBuiltin BuiltinE }
         itof                     { mkBuiltin BuiltinI }
-        𝑖                        { mkBuiltin BuiltinI } -- TODO: better as ℝ?
+        ℝ                        { mkBuiltin BuiltinI }
         𝓕                        { mkBuiltin BuiltinF }
         𝓉                        { mkBuiltin BuiltinT }
         "#t"                     { mkBuiltin BuiltinTrue }

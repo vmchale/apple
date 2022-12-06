@@ -146,7 +146,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "{.?" "head" "{." "typesafe head"
     , lOption "}.?" "last" "}." "typesafe last"
     , lOption "⟨z,w⟩" "array literal" "?p,.e1,.e2" "conditional"
-    , lOption "/*" "fold all" "𝑖" "i->f conversion"
+    , lOption "/*" "fold all" "ℝ" "i->f conversion"
     , lOption "⧺" "cat" "" ""
     ]
 

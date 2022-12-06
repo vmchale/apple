@@ -2,6 +2,6 @@
 {
   fact ← [(*)/1 1 (frange 1 x (⌊x))];
   iix ← irange 0 N 1;
-  mkIx ← λn. (x^n)%(fact (𝑖n));
+  mkIx ← λn. (x^n)%(fact (ℝn));
   (+)/1 0 (mkIx'1 iix)
 }
