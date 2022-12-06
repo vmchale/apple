@@ -156,6 +156,7 @@ instance Pretty Builtin where
     pretty Neq       = "≠"
     pretty Lte       = "≤"
     pretty Flip      = "~"
+    pretty Concat    = "⧺"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
