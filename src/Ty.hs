@@ -122,6 +122,7 @@ maM (TVar n) (TVar n') | n == n'  = Right mempty
 maM (TVar (Name _ (U i) _)) t     = Right $ Subst (IM.singleton i t) IM.empty IM.empty
 maM (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM t0 t0' <*> maM t1 t1' -- FIXME: use <\> over <>
 maM (Arr sh t) (Arr sh' t')       = (<>) <$> mSh sh sh' <*> maM t t'
+maM (Arr sh t) t'                 = (<>) <$> mSh sh Nil <*> maM t t' -- FIXME ?
 maM (P ts) (P ts')                = mconcat <$> zipWithM maM ts ts'
 maM Ρ{} Ρ{}                       = undefined
 maM t t'                          = Left $ MatchFailed (void t) (void t')
