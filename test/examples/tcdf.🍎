@@ -27,8 +27,7 @@
   Γ ⟜ [ℯ(gammaln x)];
   f21 ← λz.
   {
-    rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))];
-    fact ← [(*)/1 1 (frange 1 x (⌊x))];
+    rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))]; fact ← rf 1;
     ix ← irange 0 99 1;
     -- a₂
     -- a2 ⟜ 1.5*(1.5*(ν+1))x=0
