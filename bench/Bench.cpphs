@@ -48,7 +48,7 @@ main = do
     scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
     ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
 #endif
-    defaultMain [ env files $ \ ~(he, e, t, f, x, 𝛾) ->
+    defaultMain [ env files $ \ ~(he, e, t, f, x, 𝛾, ꜰ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (erf)" $ nf tyParse he
                       , bench "tyParse" $ nf tyParse e
@@ -58,6 +58,7 @@ main = do
                       , bench "bytes (erf)" $ nf bytes he
                       , bench "bytes" $ nf bytes f
                       , bench "bytes (gammaln)" $ nf bytes 𝛾
+                      , bench "bytes (fcdf)" $ nf bytes ꜰ
                       ]
                       -- TODO: thunks after type checking?
                 , env rfx86L $ \asm ->
@@ -119,8 +120,9 @@ main = do
           gamma = BSL.readFile "math/gammaln.🍏"
           tcdf = BSL.readFile "test/examples/tcdf.🍎"
           xor = BSL.readFile "test/examples/xor.🍎"
+          fcdf = BSL.readFile "math/fcdf.🍎"
           rfx86L = yeet . x86L <$> rf
-          files = (,,,,,) <$> erfSrc <*> expApple <*> tcdf <*> rf <*> xor <*> gamma
+          files = (,,,,,,) <$> erfSrc <*> expApple <*> tcdf <*> rf <*> xor <*> gamma <*> fcdf
           erfParsed = parseRename <$> erfSrc
           erfTy = tyParse <$> erfSrc
           yeet :: (Exception e) => Either e a -> a
