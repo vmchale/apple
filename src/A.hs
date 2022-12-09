@@ -123,7 +123,7 @@ instance Pretty Builtin where
     pretty Div       = "%"
     pretty IntExp    = "^"
     pretty Exp       = "**"
-    pretty ItoF      = "itof"
+    pretty ItoF      = "ℝ"
     pretty Neg       = "_"
     pretty Sqrt      = "√"
     pretty Log       = "_."
