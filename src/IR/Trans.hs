@@ -118,13 +118,25 @@ doN t e ss = do
     pure $ MT t (ConstI 0):L l:MJ (IRel IGeq (Reg t) e) endL:ss++[tick t, J l, L endL]
 
 dimR rnk (t,l) = (\o -> EAt (AP t (Just$ConstI (8*o)) l)) <$> [1..rnk]
+offByDim :: [Exp] -> IRM ([Temp], [Stmt])
 offByDim dims = do
     ts <- traverse (\_ -> newITemp) dims
     let ss=zipWith3 (\t1 t0 d -> MT t1 (IB ITimes (Reg t0) d)) (tail ts) ts dims
-    pure (drop 1$reverse ts,MT (head ts) (ConstI 1):ss)
-get tdims ixs (t,l) =
+    pure (reverse ts, MT (head ts) (ConstI 1):ss)
+    -- drop 1 for strides
+
+xp tdims ixs (t,l) =
     let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i (Reg d)) tdims ixs
-    in EAt (AP t (Just (IB IAsl offs (ConstI 3))) l)
+    in AP t (Just (IB IAsl offs (ConstI 3))) l
+
+stacopy tdims x ls ad as = do
+    t <- newITemp
+    let eachIx = crossN $ fmap (\l -> [0..l]) ls
+    pure [ [ MT t (EAt (xp tdims (at is) as)), Wr (xp tdims (at is) ad) (Reg t) ] | is <- eachIx ]
+    where at = zipWith (\x_a i -> IB IPlus x_a (ConstI i)) x
+
+crossN :: [[a]] -> [[a]]
+crossN = foldr (\xs yss -> [ x:ys | x <- xs, ys <- yss ]) [[]]
 
 -- write loop body (updates global state, dependent on ast being globally renamed)
 writeF :: E (T ())
@@ -702,7 +714,7 @@ eval (Tup _ es) t = do
     pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]};I -> do{r <- newITemp; p <- eval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}}) es szs
     pure$concat pls
 eval (EApp F (Builtin _ (TAt n)) e@Var{}) t = do
-    let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
+    let (P tys) = eAnn e; szs = szT tys
     r <- newITemp; pl <- eval e r
     pure $ pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
 eval (EApp F (Builtin _ (TAt n)) e) t = do
@@ -710,7 +722,7 @@ eval (EApp F (Builtin _ (TAt n)) e) t = do
     r <- newITemp; pl <- eval e r
     pure $ Sa r sz:pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop sz]
 eval (EApp I (Builtin _ (TAt n)) e@Var{}) t = do
-    let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
+    let (P tys) = eAnn e; szs = szT tys
     r <- newITemp; pl <- eval e r
     pure $ pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
 eval (EApp I (Builtin _ (TAt n)) e) t = do
