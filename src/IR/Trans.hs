@@ -4,7 +4,7 @@ module IR.Trans ( writeC
                 ) where
 
 import           A
-import           Control.Monad              (zipWithM)
+import           Control.Monad              (zipWithM, (<=<))
 import           Control.Monad.State.Strict (State, gets, modify, runState)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
@@ -61,6 +61,10 @@ addFVar :: Name a -> (Label, [(Maybe Int, Temp)], (Maybe Int, Temp)) -> IRSt -> 
 addFVar (Name _ (U i) _) x (IRSt l t ar v a f ts) = IRSt l t ar v a (IM.insert i x f) ts
 
 type IRM = State IRSt
+
+mAF :: T a -> Maybe (T a)
+mAF (Arrow (Arr _ t) F) = Just t
+mAF _ = Nothing
 
 isF :: T a -> Bool
 isF F = True
@@ -120,19 +124,19 @@ doN t e ss = do
 dimR rnk (t,l) = (\o -> EAt (AP t (Just$ConstI (8*o)) l)) <$> [1..rnk]
 offByDim :: [Exp] -> IRM ([Temp], [Stmt])
 offByDim dims = do
-    ts <- traverse (\_ -> newITemp) dims
+    ts <- traverse (\_ -> newITemp) (undefined:dims)
     let ss=zipWith3 (\t1 t0 d -> MT t1 (IB ITimes (Reg t0) d)) (tail ts) ts dims
     pure (reverse ts, MT (head ts) (ConstI 1):ss)
     -- drop 1 for strides
 
-xp tdims ixs (t,l) =
-    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i (Reg d)) tdims ixs
+xp dims ixs (t,l) =
+    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i d) dims ixs
     in AP t (Just (IB IAsl offs (ConstI 3))) l
 
-stacopy tdims x ls ad as = do
+stacopy sdims ddims x ls ad as = do
     t <- newITemp
-    let eachIx = crossN $ fmap (\l -> [0..l]) ls
-    pure [ [ MT t (EAt (xp tdims (at is) as)), Wr (xp tdims (at is) ad) (Reg t) ] | is <- eachIx ]
+    let eachIx = crossN $ fmap (\l -> [0..(l-1)]) ls
+    pure $ concat [ [ MT t (EAt (xp sdims (at is) as)), Wr (xp ddims (at is) ad) (Reg t) ] | is <- eachIx ]
     where at = zipWith (\x_a i -> IB IPlus x_a (ConstI i)) x
 
 crossN :: [[a]] -> [[a]]
@@ -391,7 +395,26 @@ aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | f1 res = do
     nR <- newITemp; nϵR <- newITemp
     let nϵ = EAt (AP xsR (Just (ConstI 8)) l); n = IB IPlus (Reg nϵR) (ConstI 1)
     pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:Ma a t (IB IPlus (IB IAsl (Reg nR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just (ConstI 24)) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), WrF (AP t (Just (ConstI 16)) (Just a)) (FReg xR)])
+aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) = do
+    a <- nextArr
+    xR <- newITemp; slopP <- newITemp; ret <- newFTemp
+    (l, plX) <- aeval x xR
+    let rnk = length is; rnk64 = fromIntegral rnk; dimE = dimR rnk64 (xR, l)
+        nIr = 8+8*rnk+bT iTy*product is
+        i64s = fromIntegral <$> is; slopStrides = tail (scanr (*) 1 i64s)
+        dimEs = zipWith (IB IMinus) (dimR rnk64 (xR, l)) (ConstI . fromIntegral <$> is)
+    (dts, dss) <- unzip <$> traverse (\e -> do {dt <- newITemp; pure (dt, MT dt e)}) dimEs
+    (sts, sss) <- offByDim (Reg <$> dts) -- strides
+    let nOut:strides = sts
+    ss <- writeRF f [slopP] ret
+    ixs <- traverse (\_ -> newITemp) is
+    preCopy <- stacopy (Reg <$> strides) (ConstI <$> slopStrides) (Reg <$> ixs) i64s (t, Just a) (xR, l)
+    loop <- threadM (zipWith doN ixs (Reg <$> dts)) (preCopy ++ ss)
+    pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ [Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk64)) (ConstI 3)) (ConstI 8))] ++ loop ++ [Pop nIr])
 aeval e _ = error (show e)
+
+threadM :: Monad m => [a -> m a] -> a -> m a
+threadM = foldr (<=<) pure
 
 eval :: E (T ()) -> Temp -> IRM [Stmt]
 eval (LLet _ (n, e') e) t | isF (eAnn e') = do
