@@ -258,6 +258,7 @@ evalE (IR.IB IR.IPlus e (IR.ConstI i)) rD            = do
     -- = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRI () rD' i]
 evalE (IR.IRFloor (IR.FReg r)) t                     = let r' = fabsReg r in pure [Roundsd () r' r' RDown, Cvttsd2si () (absReg t) r']
 evalE (IR.EAt (IR.AP m (Just (IR.ConstI i)) _)) rD | Just i8 <- mi8 i = pure [MovRA () (absReg rD) (RC (absReg m) i8)]
+evalE (IR.EAt (IR.AP m (Just (IR.Reg i)) _)) rD = pure [MovRA () (absReg rD) (RS (absReg m) One (absReg i))]
 evalE (IR.EAt (IR.AP m (Just (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3))) _)) rD = pure [MovRA () (absReg rD) (RS (absReg m) Eight (absReg i))]
 evalE (IR.IU IR.INot (IR.Reg r0)) rD | r0 == rD      = pure [Not () (absReg rD)]
                                      | otherwise     = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), Not () rD']
