@@ -64,7 +64,11 @@ type IRM = State IRSt
 
 mAF :: T a -> Maybe (T a)
 mAF (Arrow (Arr _ t) F) = Just t
-mAF _ = Nothing
+mAF _                   = Nothing
+
+isFFF :: T a -> Bool
+isFFF (Arrow F (Arrow F F)) = True
+isFFF _                     = False
 
 isF :: T a -> Bool
 isF F = True
@@ -602,6 +606,19 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) e) acc | f1 (eAnn e)
     let step = MX x (FAt (AP arrR (Just$IB IAsl (Reg i) (ConstI 3)) mI)):stepR
     loop <- doN i (Reg szR) step
     pure $ plE ++ putAcc ++ MT szR (EAt (AP eR (Just (ConstI 8)) mI)):MT arrR (IB IPlus (Reg eR) (ConstI 16)):loop
+eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) e) acc | isFFF (eAnn op) = do
+    x <- newFTemp
+    eR <- newITemp; datR <- newITemp
+    szR <- newITemp; rnkR <- newITemp
+    i <- newITemp; j <- newITemp
+    (mI, plE) <- aeval e eR
+    putAcc <- eval seed acc
+    stepR <- writeRF op [acc, x] acc
+    let stepSz = MT szR (IB ITimes (Reg szR) (EAt (AP eR (Just (IB IPlus (IB IAsl (Reg j) (ConstI 3)) (ConstI 8))) mI)))
+        step = MX x (FAt (AP datR (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 8))) mI)):stepR
+    szLoop <- doN j (Reg rnkR) [stepSz]
+    loop <- doN i (Reg szR) step
+    pure $ plE ++ putAcc ++ MT rnkR (EAt (AP eR Nothing mI)):MT datR (IB IPlus (Reg eR) (IB IAsl (Reg rnkR) (ConstI 3))):MT szR (ConstI 1):szLoop ++ loop
 eval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | f1 (eAnn e) = do
     x <- newFTemp
     arrR <- newITemp
