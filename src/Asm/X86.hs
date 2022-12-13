@@ -214,7 +214,7 @@ pix c | c < 0 = pretty c | otherwise = "+" <> pretty c
 instance Pretty reg => Pretty (Addr reg) where
     pretty (R r)           = brackets (pretty r)
     pretty (RC r c)        = brackets (pretty r <> pix c)
-    pretty (RS b One i)    = brackets (pretty b <> pretty i)
+    pretty (RS b One i)    = brackets (pretty b <> "+" <> pretty i)
     pretty (RS b s i)      = brackets (pretty b <> "+" <> pretty s <> "*" <> pretty i)
     pretty (RSD b One i d) = brackets (pretty b <> pretty i <> pix d)
     pretty (RSD b s i d)   = brackets (pretty b <> "+" <> pretty s <> "*" <> pretty i <> pix d)
