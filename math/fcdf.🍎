@@ -1,7 +1,7 @@
 λn.λm.λx.
 {
   incΒ ← λz.λa.λb.
-    { 
+    {
       f21 ← λa0.λa1.λb.λz.
         {
           rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))]; fact ← rf 1;
