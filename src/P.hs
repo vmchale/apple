@@ -4,7 +4,9 @@
 -- pipeline
 module P ( Err (..)
          , tyParse
+         , tyParseCtx
          , tyExpr
+         , tyExprCtx
          , tyOf
          , parseInline
          , parseRename
@@ -63,15 +65,24 @@ instance Pretty a => Pretty (Err a) where
     pretty (PErr err)  = pretty err
     pretty (TyErr err) = pretty err
 
-parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
-parseRename = fmap (go.second rewrite) . parseWithMax where
+parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
+parseRenameCtx st = fmap (go.second rewrite) . parseWithMaxCtx st where
     go (i, ast) = let (e, m) = dedfn i ast in rG m e
 
+parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
+parseRename = parseRenameCtx alexInitUserState
+
+tyExprCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+tyExprCtx st = fmap prettyC.tyOfCtx st
+
 tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-tyExpr = fmap prettyC.tyOf
+tyExpr = tyExprCtx alexInitUserState
+
+tyOfCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
+tyOfCtx st = fmap (first eAnn.discard) . tyConstrCtx st where discard (x, y, _) = (x, y)
 
 tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
-tyOf = fmap (first eAnn.discard) . tyConstr where discard (x, y, _) = (x, y)
+tyOf = tyOfCtx alexInitUserState
 
 ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
 ctxFunP ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . x86G)
@@ -101,11 +112,14 @@ parseInline :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline bsl =
     (\(e, i) -> inline i e) <$> tyParse bsl
 
-tyConstr :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
-tyConstr bsl =
-    case parseRename bsl of
+tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
+tyConstrCtx st bsl =
+    case parseRenameCtx st bsl of
         Left err       -> Left $ PErr err
         Right (ast, m) -> first TyErr $ tyClosed m ast
 
+tyParseCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
+tyParseCtx st = fmap sel . tyConstrCtx st where sel ~(x, _, z) = (x, z)
+
 tyParse :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
-tyParse = fmap sel . tyConstr where sel ~(x, _, z) = (x, z)
+tyParse = tyParseCtx alexInitUserState

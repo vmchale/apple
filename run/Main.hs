@@ -186,14 +186,18 @@ dumpAsmL s = case dumpX86L (ubs s) of
     Right d  -> liftIO $ putDoc (d <> hardline)
 
 tyExprR :: String -> Repl AlexPosn ()
-tyExprR s = case tyExpr (ubs s) of
-    Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right d  -> liftIO $ putDoc (d <> hardline)
+tyExprR s = do
+    st <- lift $ gets _lex
+    liftIO $ case tyExprCtx st (ubs s) of
+        Left err -> putDoc (pretty err <> hardline)
+        Right d  -> putDoc (d <> hardline)
 
 annR :: String -> Repl AlexPosn ()
-annR s = case tyParse$ubs s of
-    Left err    -> liftIO$putDoc(pretty err<>hardline)
-    Right (e,_) -> liftIO$putDoc(prettyTyped e<>hardline)
+annR s = do
+    st <- lift $ gets _lex
+    liftIO $ case tyParseCtx st $ ubs s of
+        Left err    -> putDoc(pretty err<>hardline)
+        Right (e,_) -> putDoc(prettyTyped e<>hardline)
 
 inspect :: String -> Repl AlexPosn ()
 inspect s = case tyParse bs of
@@ -244,7 +248,7 @@ printExpr s = case tyParse bs of
                 m <- lift$gets mf
                 liftIO $ do
                     (sz, fp) <- ctxFunP m bs
-                    cb <- callFFI fp (retWord8) []
+                    cb <- callFFI fp retWord8 []
                     putStrLn (sB cb)
                     freeFunPtr sz fp
                 where sB 1 = "#t"; sB 0 = "#f"

@@ -1,8 +1,9 @@
 {
     {-# LANGUAGE DeriveGeneric #-}
     {-# LANGUAGE OverloadedStrings #-}
-    module Parser ( parse
+    module Parser ( parseAll
                   , parseWithMax
+                  , parseWithMaxCtx
                   , ParseE (..)
                   ) where
 
@@ -290,18 +291,17 @@ instance NFData a => NFData (ParseE a) where
 
 type Parse = ExceptT (ParseE AlexPosn) Alex
 
-parse :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn)
-parse = fmap snd . runParse parseE
-
 parseWithMax :: BSL.ByteString -> Either (ParseE AlexPosn) (Int, E AlexPosn)
-parseWithMax = fmap (first fst3) . runParse parseE
-    where fst3 (x, _, _) = x
+parseWithMax = parseWithMaxCtx alexInitUserState
+
+parseAll :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (AlexUserState, E AlexPosn)
+parseAll = runParseSt parseE
+
+parseWithMaxCtx :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (Int, E AlexPosn)
+parseWithMaxCtx st b = fmap (first fst3) (parseAll st b) where fst3 (x, _, _) = x
 
 runParseSt :: Parse a -> AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (AlexUserState, a)
 runParseSt parser u bs = liftErr $ withAlexSt bs u (runExceptT parser)
-
-runParse :: Parse a -> BSL.ByteString -> Either (ParseE AlexPosn) (AlexUserState, a)
-runParse parser = runParseSt parser alexInitUserState
 
 liftErr :: Either String (b, Either (ParseE a) c) -> Either (ParseE a) (b, c)
 liftErr (Left err)            = Left (LexErr err)
