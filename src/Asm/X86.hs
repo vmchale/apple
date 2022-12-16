@@ -154,7 +154,7 @@ fToInt (FReg i) = 16+i
 newtype ST = ST Int8 deriving (NFData)
 
 instance Pretty ST where
-    pretty (ST i) = "ST(" <> pretty i <> ")"
+    pretty (ST i) = "st" <> pretty i
 
 data RoundMode = RNearest | RDown | RUp | RZero deriving Generic
 
