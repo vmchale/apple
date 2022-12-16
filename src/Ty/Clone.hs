@@ -58,7 +58,6 @@ cloneTClosed u = (\(t, TRenames uϵ tvs _ _) -> (uϵ,t,tvs)) . flip runState (TR
     cloneIx e@IEVar{}        = pure e
 
     cloneSh :: Sh a -> CM (Sh a)
-    cloneSh (IxA i)     = IxA <$> cloneIx i
     cloneSh Nil         = pure Nil
     cloneSh (Cons i sh) = Cons <$> cloneIx i <*> cloneSh sh
     cloneSh (SVar n)    = SVar <$> tryReplaceInT boundShLens n

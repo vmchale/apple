@@ -57,8 +57,7 @@ instance Show C where show = show.pretty
 
 tupledArr = group . encloseSep (flatAlt "⟨ " "⟨") (flatAlt " ⟩" "⟩") ", "
 
-data Sh a = IxA (I a)
-          | Nil
+data Sh a = Nil
           | SVar (Name a)
           | Cons (I a) (Sh a)
           | Rev (Sh a)
@@ -71,7 +70,6 @@ instance Show (Sh a) where
     show = show . pretty
 
 instance Pretty (Sh a) where
-    pretty (IxA i)     = pretty i
     pretty (SVar n)    = pretty n
     pretty (Cons i sh) = pretty i <+> "`Cons`" <+> pretty sh
     pretty Nil         = "Nil"

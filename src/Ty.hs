@@ -107,7 +107,6 @@ mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: to
 mSh :: Sh a -> Sh a -> Either (TyE b) (Subst a)
 mSh (SVar (Name _ (U i) _)) sh = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
 mSh Nil Nil                    = Right mempty
-mSh (IxA i) (IxA i')           = mI i i'
 mSh (Cons i sh) (Cons i' sh')  = (<>) <$> mI i i' <*> mSh sh sh'
 mSh sh sh'                     = Left $ MatchShFailed (void sh) (void sh')
 
@@ -128,7 +127,6 @@ maM Ρ{} Ρ{}                       = undefined
 maM t t'                          = Left $ MatchFailed (void t) (void t')
 
 shSubst :: Subst a -> Sh a -> Sh a
-shSubst s (IxA i)       = IxA (iSubst s !> i)
 shSubst _ Nil           = Nil
 shSubst s (Cons i sh)   = Cons (iSubst s !> i) (shSubst s sh)
 shSubst s (Cat sh0 sh1) = Cat (shSubst s sh0) (shSubst s sh1)
@@ -233,7 +231,6 @@ mgShPrep l s sh0 sh1 =
 
 mgSh :: a -> Subst a -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mgSh _ inp Nil Nil = Right inp
-mgSh _ inp (IxA i) (IxA i') = do {iSubst' <- mguIPrep (iSubst inp) i i' ; pure inp { iSubst = iSubst' }}
 mgSh l inp (Cons i sh) (Cons i' sh') = do
     sI <- mguIPrep (iSubst inp) i i'
     mgShPrep l (inp { iSubst = sI }) sh sh'
@@ -255,7 +252,6 @@ occSh :: Sh a -> IS.IntSet
 occSh (SVar (Name _ (U i) _)) = IS.singleton i
 occSh (Cat sh0 sh1)           = occSh sh0 <> occSh sh1
 occSh (_ `Cons` sh)           = occSh sh
-occSh IxA{}                   = IS.empty
 occSh Nil{}                   = IS.empty
 
 occI :: I a -> IS.IntSet
@@ -563,7 +559,6 @@ cloneWithConstraints t = do
 rwSh :: Sh a -> Sh a
 rwSh s@SVar{}     = s
 rwSh s@Nil        = s
-rwSh s@IxA{}      = s
 rwSh (i `Cons` s) = i `Cons` rwSh s
 rwSh (Cat s0 s1) | (is, Nil) <- unroll (rwSh s0), (js, Nil) <- unroll (rwSh s1) = roll Nil (is++js)
                  | otherwise = Cat (rwSh s0) (rwSh s1)
@@ -588,7 +583,6 @@ hasEI (StaPlus _ ix ix') = hasEI ix || hasEI ix'
 hasEI _                  = False
 
 hasESh :: Sh a -> Bool
-hasESh (IxA i)     = hasEI i
 hasESh (Cons i sh) = hasEI i || hasESh sh
 hasESh _           = False
 
