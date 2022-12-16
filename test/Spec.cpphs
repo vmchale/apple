@@ -12,7 +12,7 @@ import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           Hs.FFI
 import           Math.Hypergeometric   (erf, hypergeometric, ncdf)
-import           Math.SpecialFunction  (gammaln, tcdf, bessel1)
+import           Math.SpecialFunction  (agm, bessel1, chisqcdf, completeElliptic, gammaln, tcdf)
 import           P
 import           Test.Tasty
 import           Test.Tasty.HUnit
@@ -44,7 +44,6 @@ rTy = testGroup "Regression tests"
     , tyF "test/data/rank.🍎"
     , tyF "test/examples/weekMean.🍎"
     , tyF "test/examples/convolve.🍎"
-    , tyF "test/examples/amgm.🍏"
     , tyF "test/examples/mul.🍏"
     , tyF "test/examples/offset.🍏"
     , tyF "test/examples/xor.🍎"
@@ -54,6 +53,7 @@ tyT :: TestTree
 tyT = testGroup "Type system"
     [ tyF "test/examples/erfSum.🍏"
     , tyF "test/examples/kl.🍎"
+    , tyF "math/amgm.🍏"
     , tyS "[(+)/\\ 0 (irange 0 x 1)]"
     , tyS "((-)\\~)"
     ]
@@ -80,7 +80,12 @@ x64T = testGroup "x64"
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
     , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
-    , testCase "tcdf" $ do { res <- fpFff "test/examples/tcdf.🍎" 12 2 ; res @?= tcdf 12 2 }
+    , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res @?= 0.6339381452606089 }
+    , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
+    , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res @?= tcdf 12 2 }
+    , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; (hsTup <$> res) @?= [(1.9 :: Double, 1.9 :: Double)] }
+    , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
+    , testCase "amgm" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int,6,1] ; res @?= [0::Int,4,6,6] }
     , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
     , testCase "scan" $ do { res <- scan 4 ; res @?= [0,1,3,6,10] }
@@ -199,10 +204,20 @@ fpIff fp x y = do
     (_, f) <- funP =<< BSL.readFile fp
     pure $ iff f x y
 
+fpFfa :: Storable a => FilePath -> Double -> Double -> IO [a]
+fpFfa fp x y = do
+    (_, f) <- funP =<< BSL.readFile fp
+    asN (ffa f x y)
+
 fpFff :: FilePath -> Double -> Double -> IO Double
 fpFff fp x y = do
     (_, f) <- funP =<< BSL.readFile fp
     pure $ fff f x y
+
+fpFfff :: FilePath -> Double -> Double -> Double -> IO Double
+fpFfff fp x y z = do
+    (_, f) <- funP =<< BSL.readFile fp
+    pure $ ffff f x y z
 
 gammaJit = fpFf "math/gammaln.🍏"
 ncdfJit = fpFf "math/ncdf.🍎"
@@ -234,6 +249,8 @@ foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> 
 foreign import ccall "dynamic" aaff :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
 foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
+foreign import ccall "dynamic" ffff :: FunPtr (Double -> Double -> Double -> Double) -> Double -> Double -> Double -> Double
+foreign import ccall "dynamic" ffa :: FunPtr (Double -> Double -> Ptr (Apple a)) -> Double -> Double -> Ptr (Apple a)
 foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double
 foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> Int -> Int)
 foreign import ccall "dynamic" ia :: FunPtr (Int -> Ptr (Apple a)) -> Int -> Ptr (Apple a)
