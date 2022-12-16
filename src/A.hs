@@ -158,6 +158,7 @@ instance Pretty Builtin where
     pretty Lte       = "≤"
     pretty Flip      = "~"
     pretty Concat    = "⧺"
+    pretty R         = "𝔯"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod

@@ -361,7 +361,11 @@ roll = foldr Cons
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (Arrow F I, mempty)
 tyB _ ItoF = pure (Arrow I F, mempty)
-tyB l R = tyNumBinOp l
+tyB l R = do
+    n <- freshName "a" l; sh <- freshName "sh" ()
+    let n' = TVar (void n)
+    pushVarConstraint n l IsNum
+    pure (Arrow n' (Arrow n' (Arr (SVar sh) n')), mempty)
 tyB _ Iter = do{a <- TVar<$>freshName "a"(); let s = Arrow a a in pure (Arrow s (Arrow I s), mempty)}
 tyB _ Flip = do
     a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" (); c <- TVar <$> freshName "c" ()
