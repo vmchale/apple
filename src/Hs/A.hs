@@ -6,6 +6,7 @@ module Hs.A ( Apple (..)
             , AF
             , Pp (..)
             , dbgAB
+            , hsTup
             ) where
 
 import           Control.Monad         (forM, zipWithM_)
@@ -26,6 +27,7 @@ type AF = Apple Double
 data Apple a = AA !Int64 [Int64] [a]
 
 data Pp a b = Pp a b
+hsTup (Pp a b) = (a,b)
 
 instance (Storable a, Storable b) => Storable (Pp a b) where
     sizeOf _ = sizeOf(undefined::a)+sizeOf(undefined::b)
