@@ -66,6 +66,7 @@ library
         Asm.X86.LI
         Asm.X86.Frame
         Asm.X86.P
+        Asm.X86.Sp
         Asm.X86.Trans
         Asm.G
 

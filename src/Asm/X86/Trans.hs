@@ -1,11 +1,13 @@
 module Asm.X86.Trans ( irToX86 ) where
 
 import           Asm.X86
-import           Control.Monad.State.Strict (State, evalState, gets, modify)
+import           Control.Monad.State.Strict (State, runState, gets, modify)
 import           Data.ByteString.Internal   (accursedUnutterablePerformIO)
+import Data.Bifunctor (second)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int32, Int64, Int8)
+import Data.Tuple (swap)
 import           Foreign.Marshal.Alloc      (alloca)
 import           Foreign.Ptr                (castPtr)
 import           Foreign.Storable           (peek, poke)
@@ -38,8 +40,8 @@ fabsReg IR.FRet1     = FRet1
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
 foldMapA = (fmap fold .) . traverse
 
-irToX86 :: IR.WSt -> [IR.Stmt] -> [X86 AbsReg FAbsReg ()]
-irToX86 st = flip evalState st . foldMapA ir
+irToX86 :: IR.WSt -> [IR.Stmt] -> (Int, [X86 AbsReg FAbsReg ()])
+irToX86 st = swap . second (head.IR.wtemps) . flip runState st . foldMapA ir
 
 nextI :: WM Int
 nextI = do { i <- gets (head.IR.wtemps); modify (\(IR.WSt l (_:t)) -> IR.WSt l t) $> i }

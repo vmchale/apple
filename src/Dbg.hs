@@ -65,7 +65,7 @@ nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86G
     where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
 
 dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Ass = fmap ((\(regs, fregs) -> pR regs <#> pR fregs).gallocOn.(\(x, st) -> irToX86 st x)) . ir
+dumpX86Ass = fmap ((\(regs, fregs) -> pR regs <#> pR fregs).gallocOn.(\(x, st) -> snd (irToX86 st x))) . ir
     where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 16)
 
 dumpX86G, dumpX86L :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
@@ -73,7 +73,7 @@ dumpX86G = fmap prettyX86 . x86G
 dumpX86L = fmap prettyX86 . x86L
 
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Abs = fmap (prettyX86 . (\(x, st) -> irToX86 st x)) . ir
+dumpX86Abs = fmap (prettyX86 . (\(x, st) -> snd (irToX86 st x))) . ir
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.fst) . ir
@@ -85,10 +85,10 @@ dumpX86Intervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Intervals = fmap prettyDebugX86 . x86Iv
 
 dumpX86Liveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Liveness = fmap (prettyDebugX86 . fmap (fmap liveness) . reconstruct . X86.mkControlFlow . (\(x, st) -> irToX86 st x)) . ir
+dumpX86Liveness = fmap (prettyDebugX86 . fmap (fmap liveness) . reconstruct . X86.mkControlFlow . (\(x, st) -> snd (irToX86 st x))) . ir
 
 x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86 AbsReg FAbsReg Interval]
-x86Iv = fmap (intervals . reconstruct . X86.mkControlFlow . (\(x, st) -> irToX86 st x)) . ir
+x86Iv = fmap (intervals . reconstruct . X86.mkControlFlow . (\(x, st) -> snd (irToX86 st x))) . ir
 
 printParsed :: BSL.ByteString -> Doc ann
 printParsed = pretty . fst . either throw id . parseRename

@@ -94,8 +94,8 @@ bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86G
 
 x86L, x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
-x86G = walloc X86.gallocFrame
-x86L = walloc (X86.allocFrame . X86.mkIntervals)
+x86G = walloc (uncurry X86.gallocFrame)
+x86L = walloc (X86.allocFrame . X86.mkIntervals . snd)
 
 walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
 

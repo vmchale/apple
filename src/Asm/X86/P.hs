@@ -168,8 +168,9 @@ mapFR _ (C a l)                     = C a l
 mapFR _ (RetL a l)                  = RetL a l
 
 -- TODO: don't bother re-analyzing if no Calls
-gallocFrame :: [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]
-gallocFrame = frameC . mkIntervals . galloc
+gallocFrame :: Int -- ^ int supply for spilling
+            -> [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]
+gallocFrame _ = frameC . mkIntervals . galloc
 
 {-# SCC galloc #-}
 galloc :: [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]
