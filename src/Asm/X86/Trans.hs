@@ -1,13 +1,13 @@
 module Asm.X86.Trans ( irToX86 ) where
 
 import           Asm.X86
-import           Control.Monad.State.Strict (State, runState, gets, modify)
+import           Control.Monad.State.Strict (State, gets, modify, runState)
+import           Data.Bifunctor             (second)
 import           Data.ByteString.Internal   (accursedUnutterablePerformIO)
-import Data.Bifunctor (second)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int32, Int64, Int8)
-import Data.Tuple (swap)
+import           Data.Tuple                 (swap)
 import           Foreign.Marshal.Alloc      (alloca)
 import           Foreign.Ptr                (castPtr)
 import           Foreign.Storable           (peek, poke)
