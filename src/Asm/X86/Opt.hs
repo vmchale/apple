@@ -11,6 +11,7 @@ optAddr a             = a
 -- remove noops
 optX86 :: (Eq reg, Eq freg) => [X86 reg freg a] -> [X86 reg freg a]
 optX86 [] = []
+optX86 (ISubRI _ _ 0:asms) = optX86 asms
 optX86 ((MovqAX l a r):asms) = MovqAX l (optAddr a) r:optX86 asms
 optX86 ((MovqXA l r a):asms) = MovqXA l r (optAddr a):optX86 asms
 optX86 ((MovAR l a r):asms) = MovAR l (optAddr a) r:optX86 asms

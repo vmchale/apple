@@ -1,7 +1,6 @@
 module Asm.Ar.P ( bundle ) where
 
 import           Asm.Ar
-import qualified Asm.X86.CF       as X86
 import           CF
 import           Class.E
 import           Data.Copointed

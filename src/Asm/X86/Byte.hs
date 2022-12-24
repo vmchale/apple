@@ -238,6 +238,8 @@ mkIx ix (MovAI32 _ (R Rsp)_:asms)             = mkIx (ix+8) asms
 mkIx ix (MovAI32 _ R{} _:asms)                = mkIx (ix+7) asms
 mkIx ix (MovAR _ (RC Rsp _) _:asms)           = mkIx (ix+5) asms
 mkIx ix (MovAR _ RC{} _:asms)                 = mkIx (ix+4) asms
+mkIx ix (MovAR _ (RC32 Rsp _) _:asms)         = mkIx (ix+8) asms
+mkIx ix (MovAR _ RC32{} _:asms)               = mkIx (ix+7) asms
 mkIx ix (MovAR _ RSD{} _:asms)                = mkIx (ix+5) asms
 mkIx ix (MovAR _ RS{} _:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovAR _ (R Rsp) _:asms)              = mkIx (ix+4) asms
@@ -248,6 +250,8 @@ mkIx ix (MovRA _ _ (R Rsp):asms)              = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ R{}:asms)                  = mkIx (ix+3) asms
 mkIx ix (MovRA _ _ (RC Rsp _):asms)           = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ RC{}:asms)                 = mkIx (ix+4) asms
+mkIx ix (MovRA _ _ (RC32 Rsp _):asms)         = mkIx (ix+8) asms
+mkIx ix (MovRA _ _ RC32{}:asms)               = mkIx (ix+7) asms
 mkIx ix (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
 mkIx ix (Not{}:asms)                          = mkIx (ix+3) asms
@@ -290,6 +294,14 @@ asm ix st (MovRA _ r0 (RC r1@Rsp i8):asms) =
         sib = b1 `shiftL` 3 .|. b1
         opc=0x8b; instr = pref:opc:modB:sib:le i8
     in instr:asm (ix+5) st asms
+asm ix st (MovRA _ r0 (RC32 r1@Rsp i32):asms) =
+    let (e0, b0) = modRM r0
+        (0, b1) = modRM r1
+        pref = 0x48 .|. e0 `shiftL` 2
+        modB = 0x2 `shiftL` 6 .|. b0 `shiftL` 3 .|. 4
+        sib = b1 `shiftL` 3 .|. b1
+        opc=0x8b; instr = pref:opc:modB:sib:le i32
+    in instr:asm (ix+8) st asms
 asm ix st (MovRA _ r0 (RC r1 i8):asms) =
     let (e0, b0) = modRM r0
         (e1, b1) = modRM r1
@@ -297,6 +309,13 @@ asm ix st (MovRA _ r0 (RC r1 i8):asms) =
         modB = 0x1 `shiftL` 6 .|. (b0 `shiftL` 3) .|. b1
         opc=0x8b; instr = pref:opc:modB:le i8
     in instr:asm (ix+4) st asms
+asm ix st (MovRA _ r0 (RC32 r1 i32):asms) =
+    let (e0, b0) = modRM r0
+        (e1, b1) = modRM r1
+        pref = 0x48 .|. (e0 `shiftL` 2) .|. e1
+        modB = 0x2 `shiftL` 6 .|. (b0 `shiftL` 3) .|. b1
+        opc=0x8b; instr = pref:opc:modB:le i32
+    in instr:asm (ix+7) st asms
 asm ix st (MovqXA _ r0 (RC r1@Rsp i8):asms) | fits r0 =
     let (_, b0) = modRM r0
         (_, b1) = modRM r1
@@ -306,7 +325,7 @@ asm ix st (MovqXA _ r0 (RC r1@Rsp i8):asms) | fits r0 =
     in instr:asm (ix+6) st asms
 -- https://stackoverflow.com/questions/52522544/rbp-not-allowed-as-sib-base
 asm ix st (MovqXA l r0 (R R13):asms) = asm ix st (MovqXA l r0 (RC R13 0):asms)
-asm ix st (MovqXA l r0 (R r1@Rsp):asms) | (0, b0) <- modRM r0 =
+asm ix st (MovqXA _ r0 (R r1@Rsp):asms) | (0, b0) <- modRM r0 =
     let (0, b1) = modRM r1
         modB = b0 `shiftL` 3 .|. 4
         sib = b1 `shiftL` 3 .|. b1
@@ -613,9 +632,19 @@ asm ix st (MovAR _ (RC Rsp i8) r:asms) =
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = bi `shiftL` 3 .|. bi
         instr = pre:0x89:modB:sib:le i8
+    in instr:asm (ix+8) st asms
+asm ix st (MovAR _ (RC32 Rsp i32) r:asms) =
+    let (e, b) = modRM r
+        (0, bi) = modRM Rsp
+        pre = 0x48 .|. e `shiftL` 3
+        modB = 0x2 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
+        sib = bi `shiftL` 3 .|. bi
+        instr = pre:0x89:modB:sib:le i32
     in instr:asm (ix+5) st asms
 asm ix st (MovAR _ (RC ar i8) r:asms) =
     (mkAR [0x89] 1 ar r++le i8):asm (ix+4) st asms
+asm ix st (MovAR _ (RC32 ar i32) r:asms) =
+    (mkAR [0x89] 2 ar r++le i32):asm (ix+7) st asms
 asm ix st (MovRA _ r (RS b s i):asms) =
     let (e0, b0) = modRM r
         (eb, bb) = modRM b
@@ -719,6 +748,7 @@ instance RMB X86Reg where
     modRM Rdx = (0, 0o2)
     modRM Rbx = (0, 0o3)
     modRM Rsp = (0, 0o4)
+    modRM Rbp = (0, 0o5)
     modRM Rsi = (0, 0o6)
     modRM Rdi = (0, 0o7)
     modRM R8  = (1, 0o0)

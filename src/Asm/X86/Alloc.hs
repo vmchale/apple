@@ -96,23 +96,24 @@ freeReg i = do
           freeFϵ r = modifying freeFLens (S.insert r) *> modifying activeFLens (S.delete r)
 
 fromInt :: Int -> Maybe (Either FX86Reg X86Reg)
-fromInt 0  = Just (Right Rdi)
-fromInt 1  = Just (Right Rsi)
-fromInt 2  = Just (Right Rdx)
-fromInt 3  = Just (Right Rcx)
-fromInt 4  = Just (Right R8)
-fromInt 5  = Just (Right R9)
-fromInt 6  = Just (Right Rax)
-fromInt 7  = Just (Right Rsp)
-fromInt 8  = Just (Left XMM0)
-fromInt 9  = Just (Left XMM1)
-fromInt 10 = Just (Left XMM2)
-fromInt 11 = Just (Left XMM3)
-fromInt 12 = Just (Left XMM4)
-fromInt 13 = Just (Left XMM5)
-fromInt 14 = Just (Left XMM6)
-fromInt 15 = Just (Left XMM7)
-fromInt _  = Nothing
+fromInt 0     = Just (Right Rdi)
+fromInt 1     = Just (Right Rsi)
+fromInt 2     = Just (Right Rdx)
+fromInt 3     = Just (Right Rcx)
+fromInt 4     = Just (Right R8)
+fromInt 5     = Just (Right R9)
+fromInt 6     = Just (Right Rax)
+fromInt 7     = Just (Right Rsp)
+fromInt 8     = Just (Left XMM0)
+fromInt 9     = Just (Left XMM1)
+fromInt 10    = Just (Left XMM2)
+fromInt 11    = Just (Left XMM3)
+fromInt 12    = Just (Left XMM4)
+fromInt 13    = Just (Left XMM5)
+fromInt 14    = Just (Left XMM6)
+fromInt 15    = Just (Left XMM7)
+fromInt (-16) = Just (Right Rbp)
+fromInt _     = Nothing
 
 initUsed :: Interval -> AM ()
 initUsed l = traverse_ (either iniF iniI) (mapMaybe fromInt (IS.toList (new l)))
@@ -199,6 +200,9 @@ useR l r@CRet{}  =
         assignReg (toInt r) rr $> rr
 useR _ r@SP =
     let rr = Rsp
+    in assignReg (toInt r) rr $> rr
+usR _ r@BP =
+    let rr = Rbp
     in assignReg (toInt r) rr $> rr
 
 uA :: Interval -> Addr AbsReg -> AM (Addr X86Reg)

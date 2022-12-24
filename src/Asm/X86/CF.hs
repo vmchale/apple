@@ -1,6 +1,7 @@
 -- | From the [Kempe compiler](http://vmchale.com/original/compiler.pdf) with
 -- improvements.
 module Asm.X86.CF ( mkControlFlow
+                  , defs, uses
                   ) where
 
 import           Asm.X86                    as X86
@@ -8,7 +9,6 @@ import           CF
 -- seems to pretty clearly be faster
 import           Class.E                    as E
 import           Control.Monad.State.Strict (State, evalState, gets, modify)
-import           Data.Bifunctor             (first, second)
 import           Data.Functor               (($>))
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
@@ -121,6 +121,7 @@ addControlFlow (asm:asms) = do
 
 uA :: E reg => Addr reg -> IS.IntSet
 uA (R r)         = singleton r
+uA (RC32 r _) = singleton r
 uA (RC r _)      = singleton r
 uA (RS b _ i)    = fromList [b,i]
 uA (RSD b _ i _) = fromList [b,i]
@@ -183,6 +184,9 @@ usesF Fsin{}                   = IS.empty
 usesF XorRR{}                  = IS.empty
 usesF Fxch{}                   = IS.empty
 usesF IDiv{}                   = IS.empty
+usesF Test{} = IS.empty
+usesF Push{} = IS.empty
+usesF Pop{} = IS.empty
 
 uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)    = singleton r
@@ -242,6 +246,9 @@ uses (TestI _ r _)    = singleton r
 uses Vcmppd{}         = IS.empty
 uses MovqRX{}         = IS.empty
 uses (XorRR _ r0 r1)  = fromList [r0, r1]
+uses (Test _ r0 r1) = fromList [r0, r1]
+uses (Push _ r) = singleton r
+uses Pop{} = IS.empty
 
 defsF :: E freg => X86 reg freg ann -> IS.IntSet
 defsF (Movapd _ r _)        = singleton r
@@ -301,6 +308,9 @@ defsF (Vcmppd _ r _ _ _)    = singleton r
 defsF MovqRX{}              = IS.empty
 defsF XorRR{}               = IS.empty
 defsF IDiv{}                = IS.empty
+defsF Test{} = IS.empty
+defsF Pop{} = IS.empty
+defsF Push{} = IS.empty
 
 defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r
@@ -360,6 +370,9 @@ defs TestI{}           = IS.empty
 defs Vcmppd{}          = IS.empty
 defs (MovqRX _ r _)    = singleton r
 defs (XorRR _ r _)     = singleton r
+defs Test{} = IS.empty
+defs Push{} = IS.empty
+defs (Pop _ r) = singleton r
 
 next :: (E reg, E freg) => [X86 reg freg ()] -> FreshM ([Int] -> [Int], [X86 reg freg ControlAnn])
 next asms = do

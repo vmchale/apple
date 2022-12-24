@@ -54,7 +54,7 @@ nextR = IReg <$> nextI; nextF = FReg <$> nextI
 
 mi8 :: Int64 -> Maybe Int8
 mi8 i | i <= fromIntegral (maxBound :: Int8) && i >= fromIntegral (minBound :: Int8) = Just $ fromIntegral i
-       | otherwise = Nothing
+      | otherwise = Nothing
 
 mi32 :: Int64 -> Maybe Int32
 mi32 i | i <= fromIntegral (maxBound :: Int32) && i >= fromIntegral (minBound :: Int32) = Just $ fromIntegral i

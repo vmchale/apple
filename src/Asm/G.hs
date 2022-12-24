@@ -26,8 +26,6 @@ mapSimp f w = w { simp = f (simp w) }
 type M = (Int, Int); type MS = S.Set M
 
 -- TODO: appel says to make these doubly-linked lists
---
--- also these appear to be (Int, Int) idk
 data Mv = Mv { coal :: MS, constr :: MS, frz :: MS, wl :: MS, actv :: MS }
 
 mapWl f mv = mv { wl = f (wl mv) }
@@ -88,13 +86,14 @@ alloc :: (Ord reg, Arch arch areg afreg, Copointed (arch areg afreg), Functor (a
       -> [reg] -- ^ available registers
       -> IS.IntSet -- ^ Precolored @areg@
       -> IM.IntMap reg -- ^ Precolored map
-      -> IM.IntMap reg -- ^ Map from abs reg. id (temp) to concrete reg.
+      -> Either IS.IntSet (IM.IntMap reg) -- ^ Map from abs reg. id (temp) to concrete reg.
 alloc aIsns regs preC preCM =
     let st0 = buildOver (bb aIsns) (emptySt preC (IS.toList $ getIs nIsns IS.\\ preC))
         st1 = mkWorklist st0
         st2 = emptyWkl st1
         (st3, rs) = assign preCM regs st2
-    in if IS.null (spN (ɴs st3)) then rs else error "Not yet implemented."
+        s = spN (ɴs st3)
+    in if IS.null s then Right rs else Left s
     where nIsns = fmap snd3 <$> aIsns
 
 allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
@@ -102,13 +101,14 @@ allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg), Functor 
        -> [freg] -- ^ available registers
        -> IS.IntSet -- ^ Precolored @afreg@
        -> IM.IntMap freg -- ^ Precolored map
-       -> IM.IntMap freg -- ^ Map from abs freg. id (temp) to concrete reg.
+       -> Either IS.IntSet (IM.IntMap freg) -- ^ Map from abs freg. id (temp) to concrete reg.
 allocF aIsns regs preC preCM =
     let st0 = buildOverF (bb aIsns) (emptySt preC (IS.toList $ getIFs nIsns IS.\\ preC))
         st1 = mkWorklist st0
         st2 = emptyWkl st1
         (st3, rs) = assign preCM regs st2
-    in if IS.null (spN (ɴs st3)) then rs else error "Not yet implemented."
+        s = spN (ɴs st3)
+    in if IS.null s then Right rs else Left s
     where nIsns = fmap snd3 <$> aIsns
 
 {-# SCC emptyWkl #-}
@@ -196,7 +196,7 @@ nodeMoves n (St ml _ _ mv _ _ _ _ _ _) = ml !. n `S.intersection` (actv mv `S.un
 
 {-# SCC simplify #-}
 simplify :: St -> St
-simplify s@(St _ _ _ _ _ ds _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minView stϵ =
+simplify s@(St _ _ _ _ _ _ _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minView stϵ =
     let s' = s { wkls = wk { simp = ns }, stack = n:st }
     in thread [ ddg m | m <- adj n s' ] s'
                                                        | otherwise = s

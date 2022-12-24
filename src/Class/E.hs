@@ -16,8 +16,12 @@ instance E X86.X86Reg where
     toInt X86.Rsp = 7
     toInt X86.R10 = -1
     toInt X86.R11 = -2
-    toInt X86.R13 = -3
-    toInt X86.R14 = -4
+    toInt X86.R12 = -3
+    toInt X86.R13 = -4
+    toInt X86.R14 = -13
+    toInt X86.R15 = -14
+    toInt X86.Rbx = -15
+    toInt X86.Rbp = -16
 
 instance E X86.FX86Reg where
     toInt X86.XMM0  = 8
