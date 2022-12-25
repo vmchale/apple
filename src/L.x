@@ -135,6 +135,8 @@ tokens :-
         "{.?"                    { mkSym HeadM }
         "}."                     { mkSym Last }
         "}.?"                    { mkSym LastM }
+        "{:"                     { mkSym Tail }
+        "}:"                     { mkSym Init }
         ⊲                        { mkSym Cons }
         "<|"                     { mkSym Cons }
         ⊳                        { mkSym Snoc }
@@ -248,7 +250,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus
-         | Last | LastM | Head | HeadM
+         | Last | LastM | Head | HeadM | Tail | Init
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | Tilde
          deriving (Generic, NFData)
@@ -313,6 +315,8 @@ instance Pretty Sym where
     pretty Lt           = "<"
     pretty Tilde        = "~"
     pretty PlusPlus     = "⧺"
+    pretty Tail         = "{:"
+    pretty Init         = "}:"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

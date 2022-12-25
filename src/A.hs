@@ -139,6 +139,8 @@ instance Pretty Builtin where
     pretty LastM     = "}.?"
     pretty Head      = "{."
     pretty HeadM     = "{.?"
+    pretty Tail      = "{:"
+    pretty Init      = "}:"
     pretty ConsE     = "⊲"
     pretty Snoc      = "⊳"
     pretty Mul       = "%."
@@ -171,7 +173,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Scan | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
-             | Mul | Outer | R | Head | HeadM
+             | Mul | Outer | R | Head | HeadM | Tail | Init
              | Sin | Cos
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?

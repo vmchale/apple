@@ -65,6 +65,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     lastM { TokSym $$ L.LastM }
     head { TokSym $$ L.Head }
     headM { TokSym $$ L.HeadM }
+    tail { TokSym $$ L.Tail }
+    init { TokSym $$ L.Init }
     do { TokSym $$ Do }
     tensor { TokSym $$ Tensor }
     geq { TokSym $$ Geq }
@@ -248,6 +250,8 @@ E :: { E AlexPosn }
   | f { Builtin $1 Fib }
   | last { Builtin $1 A.Last } | lastM { Builtin $1 A.LastM }
   | head { Builtin $1 A.Head } | headM { Builtin $1 A.HeadM }
+  | tail { Builtin $1 A.Tail }
+  | init { Builtin $1 A.Init }
   | re { Builtin $1 Re }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 (void $3) }
