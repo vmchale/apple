@@ -27,6 +27,8 @@ isBinOp Gen       = False
 isBinOp TAt{}     = False
 isBinOp Outer     = False
 isBinOp R         = False
+isBinOp Tail      = False
+isBinOp Init      = False
 isBinOp _         = True
 
 fi :: Builtin -> Int
@@ -54,13 +56,14 @@ shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1
 
 rw :: E a -> E a
 -- TODO: guard against rewriting unary ops (transpose, reverse, floor?)
--- guard against rewriting binary infix
 rw (EApp l0 (EApp l1 e0@(Builtin _ op0) e1) e2) | isBinOp op0 =
     case rw e2 of
         (EApp l2 (EApp l3 e3@(Builtin _ op1) e4) e5) | isBinOp op1 && shuntl op0 op1 -> EApp l0 (EApp l1 e3 (rw (EApp l2 (EApp l3 e0 e1) e4))) e5
         e2'                                                                          -> EApp l0 (EApp l1 e0 (rw e1)) e2'
 rw (EApp l e0 e') =
     case rw e' of
+        (EApp lϵ e1@(EApp lϵϵ e3@(Builtin _ op) e4) e2) | not (isBinOp op) -> EApp l (rw $ EApp lϵ e0 e1) e2
+                                                        | otherwise -> EApp l (EApp lϵϵ e3 (rw $ EApp lϵ e0 e4)) e2
         (EApp lϵ e1@EApp{} e2) -> EApp l (rw $ EApp lϵ e0 e1) e2
         (EApp lϵ e1 e2)        -> EApp l (EApp lϵ (rw e0) e1) e2
         eRw                    -> EApp l (rw e0) eRw

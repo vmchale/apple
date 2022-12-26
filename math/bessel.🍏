@@ -2,8 +2,8 @@
   { fact ← [(*)/1 1 (irange 1 x 1)]
   ; f10 ← λa.λx.
     { rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))]; ffact ← rf 1
-    ; mkIx ← λk. {kk⟜itof k; (x^k%(rf a kk))%(ffact kk)}
+    ; mkIx ← λk. {kk⟜itof k; (x^k%(rf a kk))%ffact kk}
     ; (+)/1 0 (mkIx'1(irange 0 100 1))
     }
-  ; (((x%2)^𝛼)%(itof (fact 𝛼)))*f10 (itof (𝛼+1)) (_((x^2)%4))
+  ; ((x%2)^𝛼%itof (fact 𝛼))*f10 (itof (𝛼+1)) (_((x^2)%4))
   }
