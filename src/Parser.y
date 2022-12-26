@@ -77,6 +77,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     neq { TokSym $$ L.Neq }
     tilde { TokSym $$ Tilde }
     pp { TokSym $$ PlusPlus }
+    rot { TokSym $$ Rotate }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -210,6 +211,7 @@ BBin :: { E AlexPosn }
      | eq { Builtin $1 A.Eq }
      | neq { Builtin $1 A.Neq }
      | pp { Builtin $1 A.Concat }
+     | rot { Builtin $1 Rot }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }

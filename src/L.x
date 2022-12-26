@@ -155,6 +155,7 @@ tokens :-
         ≤                        { mkSym Leq }
         "~"                      { mkSym Tilde }
         ⧺                        { mkSym PlusPlus }
+        ⊖                        { mkSym Rotate }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -249,7 +250,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
          | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
-         | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus
+         | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | Init
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | Tilde
@@ -317,6 +318,7 @@ instance Pretty Sym where
     pretty PlusPlus     = "⧺"
     pretty Tail         = "{:"
     pretty Init         = "}:"
+    pretty Rotate       = "⊖"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

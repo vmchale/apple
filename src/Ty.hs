@@ -391,6 +391,10 @@ tyB _ Tail = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
     pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` Nil) a) (Arr (i `Cons` Nil) a), mempty)
+tyB _ Rot = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    pure (Arrow I (Arrow (Arr (i `Cons` Nil) a) (Arr (i `Cons` Nil) a)), mempty)
 tyB _ HeadM = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
