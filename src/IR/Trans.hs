@@ -413,8 +413,8 @@ aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) =
     ss <- writeRF f [slopP] ret
     ixs <- traverse (\_ -> newITemp) is
     preCopy <- stacopy (Reg <$> strides) (ConstI <$> slopStrides) (Reg <$> ixs) i64s (t, Just a) (xR, l)
-    loop <- threadM (zipWith doN ixs (Reg <$> dts)) (preCopy ++ ss)
-    pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ [Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk64)) (ConstI 3)) (ConstI 8))] ++ loop ++ [Pop nIr])
+    loop <- threadM (zipWith doN ixs (Reg <$> dts)) (preCopy ++ ss ++ [WrF (xp (Reg <$> dts) (Reg <$> ixs) (t, Just a)) (FReg ret)])
+    pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ [Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk64)) (ConstI 3)) (ConstI 8))] ++ Wr (AP t Nothing (Just a)) (ConstI 1):zipWith (\o t -> Wr (AP t (Just$ConstI (8+8*o)) (Just a)) (Reg t)) [0..] dts ++ loop ++ [Pop nIr])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
