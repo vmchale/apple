@@ -10,7 +10,7 @@ moddeps.svg: $(HS_SRC)
 install-lib: libapple.dylib
 	cp $^ /usr/local/lib
 
-install-py: libapple.so
+install-py: libapple.dylib
 	make -C pyc install
 
 install:
