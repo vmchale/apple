@@ -21,4 +21,5 @@ install:
 
 clean:
 	make -C pyc clean
+	make -C vscode clean
 	rm -rf dist-newstyle tags moddeps.svg *.hp *.o *.prof *.tix *.svg *.so py/__pycache__
