@@ -1,3 +1,4 @@
 ---
 - ignore: {name: Use lambda-case}
+- ignore: {name: Avoid lambda}
 - ignore: {name: Use const}
