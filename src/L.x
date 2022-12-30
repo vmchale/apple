@@ -144,6 +144,7 @@ tokens :-
         "^:"                     { mkSym Do }
         ⊗                        { mkSym Tensor }
         "|:"                     { mkSym Transp }
+        ⍉                        { mkSym Transp }
         ≥                        { mkSym Geq }
         ">="                     { mkSym Geq }
         ">"                      { mkSym Gt }
