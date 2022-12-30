@@ -476,8 +476,6 @@ asm ix st (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 =
     rrNoPre [0xf2,0x0f,0x51] r1 r0:asm (ix+4) st asms
                                 | otherwise =
     extSse 0xf2 0x51 r1 r0:asm (ix+5) st asms
-asm ix st (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 =
-    rrNoPre [0xf2,0x0f,0x51] r1 r0:asm (ix+4) st asms
 asm ix st (CmpRR _ r0 r1:asms) =
     mkRR [0x39] r0 r1:asm (ix+3) st asms
 asm ix st (MovqXR _ fr r:asms) =

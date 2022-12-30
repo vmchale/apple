@@ -110,9 +110,10 @@ ir (IR.Wr (IR.AP m (Just ei) _) e) = do
 ir (IR.WrF (IR.AP m (Just (IR.IB IR.IPlus (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _) (IR.FReg fr)) | Just d8 <- mi8 d = pure [MovqAX () (RSD (absReg m) Eight (absReg i) d8) (fabsReg fr)]
 ir (IR.WrF (IR.AP m (Just (IR.ConstI i)) _) (IR.FReg r)) | Just d8 <- mi8 i = pure [MovqAX () (RC (absReg m) d8) (fabsReg r)]
 ir (IR.WrF (IR.AP m (Just ei) _) (IR.FReg r)) = do
+    let m' = absReg m
     eR <- nextI
     plE <- evalE ei (IR.ITemp eR)
-    pure $ plE ++ [MovqAX () (R (IReg eR)) (fabsReg r)]
+    pure $ plE ++ [IAddRR () m' (IReg eR), MovqAX () (R m') (fabsReg r)]
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) rD (IR.Reg rS)) = pure [CmpRR () (absReg r0) (absReg r1), Cmovnle () (absReg rD) (absReg rS)]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just eI) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just sd8 <- mi8 sD = do
     iT <- nextI
