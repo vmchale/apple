@@ -146,7 +146,7 @@ instance Pretty Builtin where
     pretty Mul       = "%."
     pretty Iter      = "^:"
     pretty Succ      = "\\~"
-    pretty Transpose = "|:"
+    pretty T         = "|:"
     pretty Fib       = "𝓕"
     pretty Dim       = "𝓉"
     pretty Sin       = "sin."
@@ -163,7 +163,7 @@ instance Pretty Builtin where
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | Concat | IDiv | Mod
-             | Max | Min | Neg | Sqrt | Transpose | Flip
+             | Max | Min | Neg | Sqrt | T | Flip
              | Reverse -- also rank infinity... https://code.jsoftware.com/wiki/Vocabulary/bardot
              | Filter -- TODO: filter by bitvector...
              | Grade -- TODO: sort

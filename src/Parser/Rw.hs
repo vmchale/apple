@@ -6,30 +6,30 @@ import           A
 rewrite = rw
 
 isBinOp :: Builtin -> Bool
-isBinOp Grade     = False
-isBinOp FRange    = False
-isBinOp IRange    = False
-isBinOp Reverse   = False
-isBinOp Transpose = False
-isBinOp Zip       = False
-isBinOp Rank{}    = False
-isBinOp Fib       = False
-isBinOp Log       = False
-isBinOp Size      = False
-isBinOp Sqrt      = False
-isBinOp Scan{}    = False
-isBinOp ItoF      = False
-isBinOp Last      = False
-isBinOp LastM     = False
-isBinOp Head      = False
-isBinOp HeadM     = False
-isBinOp Gen       = False
-isBinOp TAt{}     = False
-isBinOp Outer     = False
-isBinOp R         = False
-isBinOp Tail      = False
-isBinOp Init      = False
-isBinOp _         = True
+isBinOp Grade   = False
+isBinOp FRange  = False
+isBinOp IRange  = False
+isBinOp Reverse = False
+isBinOp T       = False
+isBinOp Zip     = False
+isBinOp Rank{}  = False
+isBinOp Fib     = False
+isBinOp Log     = False
+isBinOp Size    = False
+isBinOp Sqrt    = False
+isBinOp Scan{}  = False
+isBinOp ItoF    = False
+isBinOp Last    = False
+isBinOp LastM   = False
+isBinOp Head    = False
+isBinOp HeadM   = False
+isBinOp Gen     = False
+isBinOp TAt{}   = False
+isBinOp Outer   = False
+isBinOp R       = False
+isBinOp Tail    = False
+isBinOp Init    = False
+isBinOp _       = True
 
 fi :: Builtin -> Int
 fi Succ   = 9

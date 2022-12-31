@@ -125,6 +125,15 @@ doN t e ss = do
     l <- newLabel; endL <- newLabel
     pure $ MT t (ConstI 0):L l:MJ (IRel IGeq (Reg t) e) endL:ss++[tick t, J l, L endL]
 
+staRnk :: Integral b => Sh a -> Maybe b
+staRnk Nil           = Just 0
+staRnk (_ `Cons` sh) = (1+) <$> staRnk sh
+staRnk _             = Nothing
+
+tRnk :: Integral b => T a -> Maybe (T a, b)
+tRnk (Arr sh t) = (t,) <$> staRnk sh
+tRnk _          = Nothing
+
 dimR rnk (t,l) = (\o -> EAt (AP t (Just$ConstI (8*o)) l)) <$> [1..rnk]
 offByDim :: [Exp] -> IRM ([Temp], [Stmt])
 offByDim dims = do
@@ -133,8 +142,8 @@ offByDim dims = do
     pure (reverse ts, MT (head ts) (ConstI 1):ss)
     -- drop 1 for strides
 
-xp dims ixs (t,l) =
-    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i d) dims ixs
+xp strides ixs (t,l) =
+    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i d) strides ixs
     in AP t (Just (IB IAsl offs (ConstI 3))) l
 
 stacopy sdims ddims x ls ad as = do
@@ -399,11 +408,24 @@ aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | f1 res = do
     nR <- newITemp; nϵR <- newITemp
     let nϵ = EAt (AP xsR (Just (ConstI 8)) l); n = IB IPlus (Reg nϵR) (ConstI 1)
     pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:Ma a t (IB IPlus (IB IAsl (Reg nR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just (ConstI 24)) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), WrF (AP t (Just (ConstI 16)) (Just a)) (FReg xR)])
+aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
+    a <- nextArr
+    xR <- newITemp; xRd <- newITemp; td <- newITemp
+    let dE = ConstI$8+8*rnk
+    (l, plX) <- aeval x xR
+    let dimE = dimR rnk (xR, l); sze = bT ty
+    (dts, dss) <- unzip <$> traverse (\e -> do {dt <- newITemp; pure (dt, MT dt e)}) dimE
+    (sts, sss) <- offByDim (Reg <$> dts)
+    (std, ssd) <- offByDim (Reg <$> reverse dts)
+    let nOut:sstrides = sts; (_:dstrides) = std
+    ixs <- traverse (\_ -> newITemp) [1..rnk]
+    loop <- threadM (zipWith doN ixs (Reg <$> dts)) [Cpy (xp (Reg <$> dstrides) (Reg <$> reverse ixs) (td, Just a)) (xp (Reg <$> sstrides) (Reg <$> ixs) (xRd, l)) (ConstI$sze`div`8)]
+    pure (Just a, plX ++ dss ++ sss ++ Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk)) (ConstI 3)) (ConstI 8)):ssd ++ MT xRd (IB IPlus (Reg xR) dE):MT td (IB IPlus (Reg t) dE):loop)
 aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) = do
     a <- nextArr
-    xR <- newITemp; slopP <- newITemp; ret <- newFTemp
+    xR <- newITemp; xRd <- newITemp; slopP <- newITemp; ret <- newFTemp; td <- newITemp
     (l, plX) <- aeval x xR
-    let rnk = length is; rnk64 = fromIntegral rnk; dimE = dimR rnk64 (xR, l)
+    let rnk = length is; rnk64 = fromIntegral rnk; dimE = dimR rnk64 (xR, l); dE = ConstI$8+8*rnk64
         nIr = 8+8*rnk+bT iTy*product is
         i64s = fromIntegral <$> is; slopStrides = tail (scanr (*) 1 i64s)
         dimEs = zipWith (IB IMinus) (dimR rnk64 (xR, l)) (ConstI . fromIntegral <$> is)
@@ -412,9 +434,9 @@ aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) =
     let nOut:strides = sts
     ss <- writeRF f [slopP] ret
     ixs <- traverse (\_ -> newITemp) is
-    preCopy <- stacopy (Reg <$> strides) (ConstI <$> slopStrides) (Reg <$> ixs) i64s (t, Just a) (xR, l)
-    loop <- threadM (zipWith doN ixs (Reg <$> dts)) (preCopy ++ ss ++ [WrF (xp (Reg <$> dts) (Reg <$> ixs) (t, Just a)) (FReg ret)])
-    pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ [Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk64)) (ConstI 3)) (ConstI 8))] ++ Wr (AP t Nothing (Just a)) (ConstI 1):zipWith (\o t -> Wr (AP t (Just$ConstI (8+8*o)) (Just a)) (Reg t)) [0..] dts ++ loop ++ [Pop nIr])
+    preCopy <- stacopy (Reg <$> strides) (ConstI <$> slopStrides) (Reg <$> ixs) i64s (td, Just a) (xRd, l)
+    loop <- threadM (zipWith doN ixs (Reg <$> dts)) (preCopy ++ ss ++ [WrF (xp (Reg <$> sts) (Reg <$> ixs) (td, Just a)) (FReg ret)])
+    pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk64)) (ConstI 3)) (ConstI 8)):Wr (AP t Nothing (Just a)) (ConstI 1):zipWith (\o t -> Wr (AP t (Just$ConstI (8*o)) (Just a)) (Reg t)) [1..] dts ++ MT xRd (IB IPlus (Reg xR) dE):MT td (IB IPlus (Reg t) dE):loop ++ [Pop nIr])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
