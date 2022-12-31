@@ -52,6 +52,7 @@ library
         A.Opt
         IR.Alloc
         IR.CF
+        IR.Opt
         IR.Trans
         Class.E
         Data.Copointed

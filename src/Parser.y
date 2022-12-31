@@ -210,7 +210,7 @@ BBin :: { E AlexPosn }
      | lt { Builtin $1 A.Lt }
      | eq { Builtin $1 A.Eq }
      | neq { Builtin $1 A.Neq }
-     | pp { Builtin $1 A.Concat }
+     | pp { Builtin $1 CatE }
      | rot { Builtin $1 Rot }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }

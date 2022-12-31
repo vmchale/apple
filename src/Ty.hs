@@ -447,7 +447,7 @@ tyB _ Outer = do
 tyB _ T = do
     sh <- SVar <$> freshName "sh" (); a <- TVar <$> freshName "a" ()
     pure (Arrow (Arr sh a) (Arr (Rev sh) a), mempty)
-tyB _ Concat = do
+tyB _ CatE = do
     i <- freshName "i" (); j <- freshName "j" ()
     n <- freshName "a" ()
     let i' = IVar () i; j' = IVar () j; n' = TVar n

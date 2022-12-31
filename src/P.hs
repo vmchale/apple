@@ -42,6 +42,7 @@ import           GHC.Generics               (Generic)
 import           I
 import           IR
 import           IR.Alloc
+import           IR.Opt
 import           IR.Trans
 import           L
 import           Name
@@ -100,7 +101,7 @@ x86L = walloc (X86.allocFrame . X86.mkIntervals . snd)
 walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
-ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t s,r)
+ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t (optIR s),r)
 
 opt :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
 opt bsl =
