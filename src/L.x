@@ -58,22 +58,25 @@ $letter = [$latin $greek]
 tokens :-
 
     <0> "["                      { mkSym LSqBracket `andBegin` dfn } -- FIXME: this doesn't allow nested
+    <0> `$white*"{"              { mkSym LRank `andBegin` braces }
 
     <dfn> {
         x                        { mkRes VarX }
         y                        { mkRes VarY }
+        `$white*"{"              { mkSym LRank `andBegin` dbraces }
     }
 
-    <braces> {
+    <braces,dbraces> {
         "["                      { mkSym LSqBracket }
         "]"                      { mkSym RSqBracket }
-        -- FIXME: what if this is in a dfn?
-        "}"                      { mkSym RBrace `andBegin` 0 }
         ∘                        { mkSym Compose }
         o                        { mkSym Compose }
     }
 
-    <0,dfn,braces> {
+    <braces>  "}"                { mkSym RBrace `andBegin` 0 }
+    <dbraces> "}"                { mkSym RBrace `andBegin` dfn }
+
+    <0,dfn,braces,dbraces> {
         $white+                  ;
 
         "--".*                   ;
@@ -99,7 +102,6 @@ tokens :-
         "/l"                     { mkSym Foldl }
         "/*"                     { mkSym FoldA }
         '                        { mkSym Quot }
-        `$white*"{"              { mkSym LRank `andBegin` braces }
         `                        { mkSym Zip }
 
         "("                      { mkSym LParen }
