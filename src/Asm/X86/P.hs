@@ -19,22 +19,23 @@ gallocFrame u = frameC . mkIntervals . galloc u
 {-# SCC galloc #-}
 galloc :: Int -> [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]
 galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt)) isns')
-    where (regs, fregs, isns') = gallocOn u isns
-          clob'd = S.fromList $ IM.elems regs
+    where (regs, fregs, isns', rbp) = gallocOn u isns
+          clob'd = (if rbp then id else S.delete Rbp)$ S.fromList $ IM.elems regs
 
 {-# SCC frame #-}
 frame :: S.Set X86Reg -> [X86 X86Reg FX86Reg ()] -> [X86 X86Reg FX86Reg ()]
 frame clob asms = pre++asms++post++[Ret()] where
     pre = Push () <$> clobs
     post = Pop () <$> reverse clobs
+    -- FIXME: stack alignment
     clobs = S.toList (clob `S.intersection` S.fromList [R12 .. Rbx])
 
 {-# INLINE gallocOn #-}
-gallocOn :: Int -> [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86Reg, [X86 AbsReg FAbsReg ()])
+gallocOn :: Int -> [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86Reg, [X86 AbsReg FAbsReg ()], Bool)
 gallocOn u = go u 0
     where go uϵ offs isns = rmaps
               where rmaps = case (regsM, fregsM) of
-                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs in (regs, fregs, ISubRI () SP saa:isns)
+                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs in (regs, fregs, ISubRI () SP saa:isns, saa /= 0)
                         (Left s, Right fregs) ->
                             let (uϵ', offs', isns') = spill uϵ offs s isns
                             in go uϵ' offs' isns'
