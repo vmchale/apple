@@ -21,8 +21,8 @@ import qualified Data.IntMap       as IM
 import           Data.Semigroup    ((<>))
 import           GHC.Generics      (Generic)
 import           Name
-import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket, tupled,
-                                    (<+>))
+import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket,
+                                    tupled, (<+>))
 import           Prettyprinter.Ext
 
 instance Pretty (I a) where
@@ -271,10 +271,12 @@ instance Pretty ResVar where
     pretty Y = "y"
 
 data Idiom = FoldOfZip { seedI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
+           | AShLit { litSh :: [Int], esLit :: [E (T ())] }
            deriving (Generic)
 
 instance Pretty Idiom where
     pretty (FoldOfZip seed op es) = parens ("fold-of-zip" <+> pretty seed <+> pretty op <+> pretty es)
+    pretty (AShLit re es)         = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          -- TODO: bool array

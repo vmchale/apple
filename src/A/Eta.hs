@@ -56,12 +56,14 @@ etaAt (Tup l es)                          = Tup l <$> traverse etaAt es
 etaAt e                                   = pure e
 
 etaIdm (FoldOfZip seed op es) = FoldOfZip <$> etaAt seed <*> etaAt op <*> traverse etaAt es
+etaIdm (AShLit ds es)         = AShLit ds <$> traverse etaAt es
 
 -- outermost only
 etaM :: E (T ()) -> RM (E (T ()))
 etaM e@FLit{}                = pure e
 etaM e@ILit{}                = pure e
 etaM e@ALit{}                = pure e
+etaM e@(Id _ AShLit{})       = pure e
 etaM e@Cond{}                = pure e
 etaM e@BLit{}                = pure e
 etaM e@(Var t@Arrow{} _)     = mkLam (doms t) e

@@ -120,6 +120,8 @@ dim1 a t n = [Wr (AP t Nothing a) (ConstI 1), Wr (AP t (Just (ConstI 8)) a) n]
 tick reg = MT reg (IB IPlus (Reg reg) (ConstI 1))
 sib ireg = IB IPlus (IB IAsl (Reg ireg) (ConstI 3)) (ConstI 16)
 
+stadim a t ns = Wr (AP t Nothing a) (ConstI (fromIntegral$length ns)):zipWith (\o n -> Wr (AP t (Just (ConstI$8*o)) a) n) [1..] ns
+
 -- incr.
 doN t e ss = do
     l <- newLabel; endL <- newLabel
@@ -380,16 +382,22 @@ aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | f1 oTy = do
     let step = WrF (AP t (Just (sib i)) (Just a)) (FReg xR)
     loop <- doN i (Reg nR) [step]
     pure (Just a, putX ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ loop)
-aeval (ALit oTy es) t | f1 oTy = do
+aeval (Id oTy (AShLit [n] es)) t | f1 oTy = do
     a <- nextArr
     xR <- newFTemp
-    let n = length es; sz = ConstI$8*fromIntegral n+24
+    let sz = ConstI$8*fromIntegral n+24
     steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[WrF (AP t (Just (ConstI$16+8*i)) (Just a)) (FReg xR)]}) [0..(fromIntegral n-1)] es
     pure (Just a, Ma a t sz:dim1 (Just a) t (ConstI$fromIntegral n) ++ steps)
-aeval (ALit oTy es) t | i1 oTy = do
+aeval (Id _ (AShLit ns es)) t | isF (eAnn$head es) = do
     a <- nextArr
     xR <- newITemp
-    let n = length es; sz = ConstI$8*fromIntegral n+24
+    let ne=product ns; sz=ConstI$8*fromIntegral ne+24
+    steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[WrF (AP t (Just (ConstI$8+8*i)) (Just a)) (FReg xR)]}) [1..fromIntegral ne] es
+    pure (Just a, Ma a t sz:stadim (Just a) t (ConstI .fromIntegral<$>ns) ++ steps)
+aeval (Id oTy (AShLit [n] es)) t | i1 oTy = do
+    a <- nextArr
+    xR <- newITemp
+    let sz = ConstI$8*fromIntegral n+24
     steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[Wr (AP t (Just (ConstI$16+8*i)) (Just a)) (Reg xR)]}) [0..(fromIntegral n-1)] es
     pure (Just a, Ma a t sz:dim1 (Just a) t (ConstI$fromIntegral n) ++ steps)
 aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | i1 res = do
@@ -686,7 +694,7 @@ eval (Id F (FoldOfZip seed op [p, q])) acc | f1 (eAnn p) && f1 (eAnn q) = do
     loop <- doN i (Reg szR) step
     -- FIXME: this assumes the arrays are the same size
     pure $ plP ++ plQ ++ putAcc ++ MT szR (EAt (AP pR (Just (ConstI 8)) iP)):MT arr0R (IB IPlus (Reg pR) (ConstI 16)):MT arr1R (IB IPlus (Reg qR) (ConstI 16)):loop
-eval (Id F (FoldOfZip seed op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, ALit ty qs])) acc | f1 ty = do
+eval (Id F (FoldOfZip seed op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, Id ty (AShLit [_] qs)])) acc | f1 ty = do
     x <- newITemp
     i <- newITemp
     y <- newFTemp

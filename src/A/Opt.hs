@@ -9,6 +9,10 @@ import           R.M
 -- FIXME: fold-of-zip-of-map... as in dotprod.
 -- TODO zip-of-map->zip
 
+mShLit (Id _ (AShLit is es)) = Just (is, es)
+mShLit (ALit _ es)           = Just ([length es], es)
+mShLit _                     = Nothing
+
 optA :: E (T ()) -> RM (E (T ()))
 optA (ILit F x)  = pure (FLit F (realToFrac x))
 optA e@ILit{}    = pure e
@@ -95,7 +99,11 @@ optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@Fold{}) op) seed) arr) = do
                 pure $ Id l $ FoldOfZip seed' op' [xs',ys']
         _ -> pure (EApp l (EApp t0 (EApp t1 (Builtin bt b) opA) seed') arr')
 optA (EApp l e0 e1) = EApp l <$> optA e0 <*> optA e1
-optA (ALit l es) = ALit l <$> traverse optA es
+optA (ALit l es) = do
+    es' <- traverse optA es
+    pure $ case unzip <$> traverse mShLit es' of
+        Nothing       -> Id l $ AShLit [length es] es'
+        Just (ds, es) -> Id l $ AShLit (length ds : head ds) (concat es)
 optA (Tup l es) = Tup l <$> traverse optA es
 optA (Let l (n, e') e) = do
     e'Opt <- optA e'
@@ -109,3 +117,4 @@ optA (Id l idm) = Id l <$> optI idm
 optA (Cond l p e0 e1) = Cond l <$> optA p <*> optA e0 <*> optA e1
 
 optI (FoldOfZip seed op es) = FoldOfZip <$> optA seed <*> optA op <*> traverse optA es
+optI (AShLit ds es)         = AShLit ds <$> traverse optA es

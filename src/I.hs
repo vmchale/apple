@@ -111,3 +111,4 @@ bM (Id l idm) = Id l <$> bid idm
 
 bid :: Idiom -> M (T ()) Idiom
 bid (FoldOfZip seed op es) = FoldOfZip <$> bM seed <*> bM op <*> traverse bM es
+bid (AShLit ds es)         = AShLit ds <$> traverse bM es
