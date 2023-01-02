@@ -111,6 +111,7 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
              | isB (eAnn e) = eval e CRet
              | isArr (eAnn e) = do{(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
              | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing)), Pop 16]}
+             | ty@P{} <- eAnn e = let b = bT ty in do{t <- newITemp; a <- nextArr; pl <- eval e t; pure $ pl ++ [Ma a CRet (ConstI b), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b `div` 8), RA a]}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
