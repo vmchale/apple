@@ -212,6 +212,13 @@ inspect s = case tyParse bs of
                     p <- callFFI fp (retPtr undefined) []
                     TIO.putStrLn =<< (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) p
                     free p *> freeFunPtr sz fp
+            Arr _ F -> do
+                m <- lift $ gets mf
+                liftIO $ do
+                    (sz, fp) <- ctxFunP m bs
+                    p <- callFFI fp (retPtr undefined) []
+                    TIO.putStrLn =<< (dbgAB :: Ptr (Apple Double) -> IO T.Text) p
+                    free p *> freeFunPtr sz fp
     where bs = ubs s
 
 printExpr :: String -> Repl AlexPosn ()
