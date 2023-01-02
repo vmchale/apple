@@ -404,6 +404,7 @@ aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | i1 res = do
     (l, plXs) <- aeval xs xsR
     nR <- newITemp; nϵR <- newITemp
     let nϵ = EAt (AP xsR (Just (ConstI 8)) l); n = IB IPlus (Reg nϵR) (ConstI 1)
+    modify (addMT a t)
     pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:Ma a t (IB IPlus (IB IAsl (Reg nR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just (ConstI 24)) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), Wr (AP t (Just (ConstI 16)) (Just a)) (Reg xR)])
 aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | f1 res = do
     a <- nextArr
@@ -425,6 +426,7 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     let nOut:sstrides = sts; (_:dstrides) = std
     ixs <- traverse (\_ -> newITemp) [1..rnk]
     loop <- threadM (zipWith doN ixs (Reg <$> dts)) [Cpy (xp (Reg <$> dstrides) (Reg <$> reverse ixs) (td, Just a)) (xp (Reg <$> sstrides) (Reg <$> ixs) (xRd, l)) (ConstI$sze`div`8)]
+    modify (addMT a t)
     pure (Just a, plX ++ dss ++ sss ++ Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk)) (ConstI 3)) (ConstI 8)):ssd ++ MT xRd (IB IPlus (Reg xR) dE):MT td (IB IPlus (Reg t) dE):loop)
 aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) = do
     a <- nextArr
@@ -441,6 +443,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) =
     ixs <- traverse (\_ -> newITemp) is
     preCopy <- stacopy (Reg <$> strides) (ConstI <$> slopStrides) (Reg <$> ixs) i64s (td, Just a) (xRd, l)
     loop <- threadM (zipWith doN ixs (Reg <$> dts)) (preCopy ++ ss ++ [WrF (xp (Reg <$> sts) (Reg <$> ixs) (td, Just a)) (FReg ret)])
+    modify (addMT a t)
     pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk64)) (ConstI 3)) (ConstI 8)):Wr (AP t Nothing (Just a)) (ConstI 1):zipWith (\o t -> Wr (AP t (Just$ConstI (8*o)) (Just a)) (Reg t)) [1..] dts ++ MT xRd (IB IPlus (Reg xR) dE):MT td (IB IPlus (Reg t) dE):loop ++ [Pop nIr])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr
@@ -448,6 +451,7 @@ aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) =
     xnR <- newITemp; ynR <- newITemp; tn <- newITemp; mid <- newITemp
     let tyN=bT ty`div`8
     (lX, plX) <- aeval x xR; (lY, plY) <- aeval y yR
+    modify (addMT a t)
     pure (Just a, plX ++ plY ++ MT xnR (EAt (AP xR (Just$ConstI 8) lX)):MT ynR (EAt (AP yR (Just$ConstI 8) lY)):MT tn (IB IPlus (Reg xnR) (Reg ynR)):Ma a t (IB IPlus (IB IAsl (Reg tn) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg tn) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 16) lX) (IB ITimes (Reg xnR) (ConstI tyN)), MT mid (IB IPlus (Reg t) (IB IAsl (IB IPlus (Reg ynR) (ConstI 2)) (ConstI 3))), Cpy (AP mid Nothing (Just a)) (AP yR (Just$ConstI 16) lY) (IB ITimes (Reg ynR) (ConstI tyN))])
 aeval e _ = error (show e)
 

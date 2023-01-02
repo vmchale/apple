@@ -158,6 +158,7 @@ tokens :-
         ≤                        { mkSym Leq }
         "~"                      { mkSym Tilde }
         ⧺                        { mkSym PlusPlus }
+        "++"                     { mkSym PlusPlus }
         ⊖                        { mkSym Rotate }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
