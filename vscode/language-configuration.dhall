@@ -1,3 +1,1 @@
-{ comments.lineComment = "--"
-, brackets = [ [ "{", "}" ], [ "(", ")" ], [ "⟨", "⟩" ] ]
-}
+{ comments.lineComment = "--", brackets = [ [ "(", ")" ], [ "⟨", "⟩" ] ] }
