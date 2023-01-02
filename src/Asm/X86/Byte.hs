@@ -632,7 +632,7 @@ asm ix st (MovAR _ (RC Rsp i8) r:asms) =
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = bi `shiftL` 3 .|. bi
         instr = pre:0x89:modB:sib:le i8
-    in instr:asm (ix+8) st asms
+    in instr:asm (ix+5) st asms
 asm ix st (MovAR _ (RC32 Rsp i32) r:asms) =
     let (e, b) = modRM r
         (0, bi) = modRM Rsp
@@ -640,7 +640,7 @@ asm ix st (MovAR _ (RC32 Rsp i32) r:asms) =
         modB = 0x2 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = bi `shiftL` 3 .|. bi
         instr = pre:0x89:modB:sib:le i32
-    in instr:asm (ix+5) st asms
+    in instr:asm (ix+8) st asms
 asm ix st (MovAR _ (RC ar i8) r:asms) =
     (mkAR [0x89] 1 ar r++le i8):asm (ix+4) st asms
 asm ix st (MovAR _ (RC32 ar i32) r:asms) =
