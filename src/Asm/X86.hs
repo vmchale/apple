@@ -31,7 +31,7 @@ module Asm.X86 ( X86 (..)
 import           Control.DeepSeq   (NFData (..))
 import           Data.Copointed
 import           Data.Int          (Int32, Int64, Int8)
-import           Data.Semigroup    ((<>))
+import           Data.Semigroup    (Semigroup (..))
 import           Data.Word         (Word8)
 import           GHC.Generics      (Generic)
 import           Prettyprinter     (Doc, Pretty (..), brackets, colon, indent, (<+>))
@@ -504,7 +504,7 @@ mapR f (XorRR l r0 r1)             = XorRR l (f r0) (f r1)
 mapR _ (C a l)                     = C a l
 mapR _ (RetL a l)                  = RetL a l
 
-fR :: Monoid m => (reg -> m) -> X86 reg freg a -> m
+fR :: (Semigroup m, Monoid m) => (reg -> m) -> X86 reg freg a -> m
 fR _ Jg{}              = mempty
 fR _ J{}               = mempty
 fR f (MovAR _ a r)     = f @<> a <> f r
