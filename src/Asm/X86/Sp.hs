@@ -1,10 +1,6 @@
 module Asm.X86.Sp ( spill ) where
 
 import           Asm.X86
-import           Control.Monad.Extra        (concatMapM)
-import           Control.Monad.State.Strict (State)
-import qualified Data.IntMap.Strict         as IM
-import qualified Data.IntSet                as IS
 import           Asm.X86.CF
 import           Control.Monad.Extra        (concatMapM)
 import           Control.Monad.State.Strict (State, runState, state)
