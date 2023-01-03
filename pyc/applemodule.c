@@ -112,7 +112,7 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
 
 typedef U (*Ufp)(void);
 typedef I (*Ifp)(void);typedef F(*Ffp)(void);
-typedef F (*Fffp)(F);typedef F(*Ifffp)(I,F);
+typedef F (*Fffp)(F);typedef F(*Ifffp)(I,F);typedef F(*Ffffp)(F,F);
 typedef U (*Aafp)(U);
 typedef F (*Affp)(U);typedef I (*Aifp)(U);
 typedef F (*Aaffp)(U,U);
@@ -181,6 +181,9 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
                     };BR
                     C I_t: Sw(ty->args[1]){
                         C F_t: {I inp0=PyLong_AsLong(arg0);F inp1=PyFloat_AsDouble(arg1);r=PyFloat_FromDouble(((Ifffp) fp)(inp0,inp1));BR};
+                    };BR
+                    C F_t: Sw(ty->args[1]){
+                        C F_t: {F inp0=PyFloat_AsDouble(arg0); F inp1=PyFloat_AsDouble(arg1);r=PyFloat_FromDouble(((Ffffp) fp)(inp0,inp1));BR};
                     };BR
                 };BR
             };BR
