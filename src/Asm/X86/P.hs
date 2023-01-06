@@ -19,12 +19,12 @@ gallocFrame u = frameC . mkIntervals . galloc u
 {-# SCC galloc #-}
 galloc :: Int -> [X86 AbsReg FAbsReg ()] -> [X86 X86Reg FX86Reg ()]
 galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt)) isns')
-    where (regs, fregs, isns', rbp) = gallocOn u isns
+    where (regs, fregs, isns', rbp) = gallocOn u (isns ++ [Ret()])
           clob'd = (if rbp then id else S.delete Rbp)$ S.fromList $ IM.elems regs
 
 {-# SCC frame #-}
 frame :: S.Set X86Reg -> [X86 X86Reg FX86Reg ()] -> [X86 X86Reg FX86Reg ()]
-frame clob asms = pre++asms++post++[Ret()] where
+frame clob asms = pre++init asms++post++[Ret()] where
     pre = Push () <$> clobs
     post = Pop () <$> reverse clobs
     -- FIXME: stack alignment
