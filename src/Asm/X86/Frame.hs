@@ -16,8 +16,9 @@ frameC = concat . go IS.empty
             in case isn of
                 Call{} ->
                     let
-                        scratch = even$IS.size s
+                        scratch = odd$IS.size s
                         cs = mapMaybe fromInt $ IS.toList s
+                        -- PUSH...POP rax destroys the return value!
                         save = (if scratch then (++[ISubRI () Rsp 8]) else id)$fmap (Push ()) cs
                         restore = (if scratch then (IAddRI () Rsp 8:) else id)$fmap (Pop ()) (reverse cs)
                     in (save ++ void isn : restore) : go s' isns
