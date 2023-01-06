@@ -14,15 +14,17 @@ frameC = concat . go IS.empty
             let i = copoint isn
                 s' = s `IS.union` new i `IS.difference` done i
             in case isn of
-                Call{} ->
+                Call _ cf ->
                     let
                         scratch = odd$IS.size s
-                        cs = mapMaybe fromInt $ IS.toList s
+                        cs = handleRax cf $ mapMaybe fromInt $ IS.toList s
                         -- PUSH...POP rax destroys the return value!
                         save = (if scratch then (++[ISubRI () Rsp 8]) else id)$fmap (Push ()) cs
                         restore = (if scratch then (IAddRI () Rsp 8:) else id)$fmap (Pop ()) (reverse cs)
                     in (save ++ void isn : restore) : go s' isns
                 _ -> [void isn] : go s' isns
+          handleRax Malloc = filter (/=Rax)
+          handleRax Free   = id
 
 fromInt :: Int -> Maybe X86Reg
 fromInt 1    = Just Rsi
