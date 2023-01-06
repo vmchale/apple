@@ -133,7 +133,7 @@ staRnk Nil           = Just 0
 staRnk (_ `Cons` sh) = (1+) <$> staRnk sh
 staRnk _             = Nothing
 
-tRnk :: Integral b => T a -> Maybe (T a, b)
+tRnk :: T a -> Maybe (T a, Int64)
 tRnk (Arr sh t) = (t,) <$> staRnk sh
 tRnk _          = Nothing
 
@@ -452,7 +452,8 @@ aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) =
     let tyN=bT ty`div`8
     (lX, plX) <- aeval x xR; (lY, plY) <- aeval y yR
     modify (addMT a t)
-    pure (Just a, plX ++ plY ++ MT xnR (EAt (AP xR (Just$ConstI 8) lX)):MT ynR (EAt (AP yR (Just$ConstI 8) lY)):MT tn (IB IPlus (Reg xnR) (Reg ynR)):Ma a t (IB IPlus (IB IAsl (Reg tn) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg tn) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 16) lX) (IB ITimes (Reg xnR) (ConstI tyN)), MT mid (IB IPlus (Reg t) (IB IAsl (IB IPlus (Reg ynR) (ConstI 2)) (ConstI 3))), Cpy (AP mid Nothing (Just a)) (AP yR (Just$ConstI 16) lY) (IB ITimes (Reg ynR) (ConstI tyN))])
+    -- TODO: hardcoded to 8-byte types MT mid ...
+    pure (Just a, plX ++ plY ++ MT xnR (EAt (AP xR (Just$ConstI 8) lX)):MT ynR (EAt (AP yR (Just$ConstI 8) lY)):MT tn (IB IPlus (Reg xnR) (Reg ynR)):Ma a t (IB IPlus (IB IAsl (Reg tn) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg tn) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 16) lX) (IB ITimes (Reg xnR) (ConstI tyN)), MT mid (IB IPlus (Reg t) (IB IAsl (IB IPlus (Reg xnR) (ConstI 2)) (ConstI 3))), Cpy (AP mid Nothing (Just a)) (AP yR (Just$ConstI 16) lY) (IB ITimes (Reg ynR) (ConstI tyN))])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
