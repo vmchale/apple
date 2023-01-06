@@ -19,7 +19,7 @@ import           Data.Text.Lazy.Encoding   (encodeUtf8)
 import           Dbg
 import           Foreign.LibFFI            (callFFI, retCDouble, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc     (free)
-import           Foreign.Ptr               (Ptr)
+import           Foreign.Ptr               (Ptr, castPtr)
 import           Foreign.Storable          (peek)
 import           Hs.A
 import           Hs.FFI
@@ -203,22 +203,18 @@ annR s = do
 inspect :: String -> Repl AlexPosn ()
 inspect s = case tyParse bs of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right (e, _) ->
-        case eAnn e of
-            (Arr _ (P [F,F])) -> do
-                m <- lift $ gets mf
-                liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
-                    p <- callFFI fp (retPtr undefined) []
-                    TIO.putStrLn =<< (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) p
-                    free p *> freeFunPtr sz fp
-            Arr _ F -> do
-                m <- lift $ gets mf
-                liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
-                    p <- callFFI fp (retPtr undefined) []
-                    TIO.putStrLn =<< (dbgAB :: Ptr (Apple Double) -> IO T.Text) p
-                    free p *> freeFunPtr sz fp
+    Right (e, _) -> do
+        let dbgPrint =
+                case eAnn e of
+                    (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) (castPtr p)
+                    (Arr _ F)         -> \p -> (dbgAB :: Ptr (Apple Double) -> IO T.Text) (castPtr p)
+                    (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
+        m <- lift $ gets mf
+        liftIO $ do
+            (sz, fp) <- ctxFunP m bs
+            p <- callFFI fp (retPtr undefined) []
+            TIO.putStrLn =<< dbgPrint p
+            free p *> freeFunPtr sz fp
     where bs = ubs s
 
 printExpr :: String -> Repl AlexPosn ()
