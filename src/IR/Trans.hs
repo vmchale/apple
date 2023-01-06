@@ -432,7 +432,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) =
     a <- nextArr
     xR <- newITemp; xRd <- newITemp; slopP <- newITemp; ret <- newFTemp; td <- newITemp
     (l, plX) <- aeval x xR
-    let rnk = length is; rnk64 = fromIntegral rnk; dimE = dimR rnk64 (xR, l); dE = ConstI$8+8*rnk64
+    let rnk = length is; rnk64 = fromIntegral rnk; dE = ConstI$8+8*rnk64
         nIr = 8+8*rnk+bT iTy*product is
         i64s = fromIntegral <$> is; slopStrides = tail (scanr (*) 1 i64s)
         dimEs = zipWith (IB IMinus) (dimR rnk64 (xR, l)) (ConstI . fromIntegral <$> is)
@@ -444,7 +444,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) =
     preCopy <- stacopy (Reg <$> strides) (ConstI <$> slopStrides) (Reg <$> ixs) i64s (td, Just a) (xRd, l)
     loop <- threadM (zipWith doN ixs (Reg <$> dts)) (preCopy ++ ss ++ [WrF (xp (Reg <$> sts) (Reg <$> ixs) (td, Just a)) (FReg ret)])
     modify (addMT a t)
-    pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk64)) (ConstI 3)) (ConstI 8)):Wr (AP t Nothing (Just a)) (ConstI 1):zipWith (\o t -> Wr (AP t (Just$ConstI (8*o)) (Just a)) (Reg t)) [1..] dts ++ MT xRd (IB IPlus (Reg xR) dE):MT td (IB IPlus (Reg t) dE):loop ++ [Pop nIr])
+    pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg nOut) (ConstI rnk64)) (ConstI 3)) (ConstI 8)):Wr (AP t Nothing (Just a)) (ConstI 1):zipWith (\o t' -> Wr (AP t (Just$ConstI (8*o)) (Just a)) (Reg t')) [1..] dts ++ MT xRd (IB IPlus (Reg xR) dE):MT td (IB IPlus (Reg t) dE):loop ++ [Pop nIr])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr
     xR <- newITemp; yR <- newITemp
