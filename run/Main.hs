@@ -139,7 +139,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "𝓉" "dimension" "}.?" "last"
     , lOption "->n" "select" "**" "power"
     , lOption "gen." "generate" "𝓕" "fibonacci"
-    , lOption "r:" "repeat" "}." "typesafe last"
+    , lOption "re:" "repeat" "}." "typesafe last"
     , lOption "⊲" "cons" "⊳" "snoc"
     , lOption "^:" "iterate" "%." "matmul"
     , lOption "⊗" "outer product" "|:" "transpose"
@@ -149,6 +149,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "/*" "fold all" "ℝ" "i->f conversion"
     , lOption "⧺" "cat" "{:" "typesafe tail"
     , lOption "⊖" "rotate" "sin." "sine"
+    , lOption "𝔯" "rand" "" ""
     ]
 
 lOption op0 desc0 op1 desc1 =

@@ -126,7 +126,7 @@ instance Pretty Builtin where
     pretty Neg       = "_"
     pretty Sqrt      = "√"
     pretty Log       = "_."
-    pretty Re        = "r:"
+    pretty Re        = "re:"
     pretty Size      = ":"
     pretty (Rank as) = "`" <> encloseSep lbrace rbrace comma (prettyRank<$>as)
     pretty IDiv      = "/."

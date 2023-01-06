@@ -180,7 +180,7 @@ tokens :-
         √                        { mkBuiltin BuiltinSqrt }
         𝜋                        { mkBuiltin BuiltinPi }
         "gen."                   { mkBuiltin BuiltinGen }
-        "r:"                     { mkBuiltin BuiltinRep }
+        "re:"                    { mkBuiltin BuiltinRep }
         Λ                        { mkBuiltin BuiltinScan }
         "/\"                     { mkBuiltin BuiltinScan }
         "`Cons`"                 { mkBuiltin BuiltinCons }
@@ -190,6 +190,7 @@ tokens :-
         float                    { mkBuiltin BuiltinFloat }
         int                      { mkBuiltin BuiltinInt }
         𝔯                        { mkBuiltin BuiltinR }
+        "rand."                  { mkBuiltin BuiltinR }
         "sin."                   { mkBuiltin BuiltinSin }
 
         _$digit+                 { tok (\p s -> alex $ TokInt p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
@@ -350,7 +351,7 @@ instance Pretty Builtin where
     pretty BuiltinSqrt   = "√"
     pretty BuiltinPi     = "𝜋"
     pretty BuiltinGen    = "gen."
-    pretty BuiltinRep    = "r:"
+    pretty BuiltinRep    = "re:"
     pretty BuiltinScan   = "Λ"
     pretty BuiltinCons   = "`Cons`"
     pretty BuiltinNil    = "Nil"
