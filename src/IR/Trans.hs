@@ -147,6 +147,7 @@ offByDim dims = do
 
 xp strides ixs (t,l) =
     let offs=foldl1 (IB IPlus) $ zipWith (\d i -> IB ITimes i d) strides ixs
+    -- FIXME: data not of size 8
     in AP t (Just (IB IAsl offs (ConstI 3))) l
 
 stacopy sdims ddims x ls ad as = do
@@ -400,13 +401,13 @@ aeval (Id _ (AShLit ns es)) t | isF (eAnn$head es) = do
     modify (addMT a t)
     steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[WrF (AP t (Just (ConstI$8*rnk+8*i)) (Just a)) (FReg xR)]}) [1..fromIntegral ne] es
     pure (Just a, Ma a t sz:stadim (Just a) t (ConstI .fromIntegral<$>ns) ++ steps)
-aeval (Id oTy (AShLit [n] es)) t | i1 oTy = do
+aeval (Id _ (AShLit ns es)) t | isI (eAnn$head es) = do
     a <- nextArr
     xR <- newITemp
-    let sz = ConstI$8*fromIntegral n+24
+    let ne=product ns; rnk=fromIntegral$length ns;sz=ConstI$8*fromIntegral ne+24
     modify (addMT a t)
-    steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[Wr (AP t (Just (ConstI$16+8*i)) (Just a)) (Reg xR)]}) [0..(fromIntegral n-1)] es
-    pure (Just a, Ma a t sz:dim1 (Just a) t (ConstI$fromIntegral n) ++ steps)
+    steps <- concat<$>zipWithM (\i e -> do{ss <- eval e xR; pure$ss++[Wr (AP t (Just (ConstI$8*rnk+8*i)) (Just a)) (Reg xR)]}) [1..fromIntegral ne] es
+    pure (Just a, Ma a t sz:stadim (Just a) t (ConstI .fromIntegral<$>ns) ++ steps)
 aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | i1 res = do
     a <- nextArr
     xR <- newITemp; xsR <- newITemp
