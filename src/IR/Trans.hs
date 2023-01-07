@@ -383,6 +383,16 @@ aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | f1 oTy = do
     let step = WrF (AP t (Just (sib i)) (Just a)) (FReg xR)
     loop <- doN i (Reg nR) [step]
     pure (Just a, putX ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ loop)
+aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | i1 oTy = do
+    a <- nextArr
+    xR <- newITemp
+    nR <- newITemp
+    i <- newITemp
+    let sz = IB IPlus (Reg nR) (ConstI 16)
+    putN <- eval n nR; putX <- eval x xR
+    let step = Wr (AP t (Just (sib i)) (Just a)) (Reg xR)
+    loop <- doN i (Reg nR) [step]
+    pure (Just a, putX ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ loop)
 aeval (Id _ (AShLit ns es)) t | isF (eAnn$head es) = do
     a <- nextArr
     xR <- newFTemp
@@ -579,6 +589,10 @@ eval (EApp _ (EApp _ (Builtin _ Div) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MX t (FB FDiv (FReg t0) (FReg t1))]
+eval (EApp F (EApp _ (Builtin _ Max) e0) e1) t = do
+    t0 <- newFTemp; t1 <- newFTemp
+    pl0 <- eval e0 t0; pl1 <- eval e1 t1
+    pure $ pl0 ++ pl1 ++ [MX t (FB FMax (FReg t0) (FReg t1))]
 eval (EApp _ (EApp _ (Builtin _ A.IDiv) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1

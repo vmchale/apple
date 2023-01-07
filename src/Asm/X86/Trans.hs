@@ -199,6 +199,10 @@ feval (IR.FB IR.FPlus (IR.FReg r0) e) t            = do
     i <- nextI
     putR <- feval e (IR.FTemp i)
     pure $ putR ++ [Vaddsd () (fabsReg t) (fabsReg r0) (FReg i)]
+feval (IR.FB IR.FMax e0 e1) t                      = do
+    i0 <- nextI; i1 <- nextI
+    putR0 <- feval e0 (IR.FTemp i0); putR1 <- feval e1 (IR.FTemp i1)
+    pure $ putR0 ++ putR1 ++ [Vmaxsd () (fabsReg t) (FReg i0) (FReg i1)]
 feval (IR.ConstF x) t = do
     iR <- nextR
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]

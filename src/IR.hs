@@ -185,6 +185,8 @@ instance Pretty FBin where
     pretty FTimes = "*"
     pretty FDiv   = "%"
     pretty FExp   = "^"
+    pretty FMax   = "max"
+    pretty FMin   = "min"
 
 instance Pretty FUn where
     pretty FSqrt = "sqrt"
