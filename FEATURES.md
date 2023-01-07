@@ -1,11 +1,11 @@
 # Fix IR-gen step
 ## Broken/Core Features
 - [ ] map(-n)
-- [ ] fold(-n)
+- [ ] fold
 - [ ] rank
 - [ ] convolve
 - [ ] transpose
-- [ ] concat
+- [x] concat
 - [x] array literals
   - [ ] multidimensional arrays
 ## Add Features
