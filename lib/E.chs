@@ -53,7 +53,6 @@ harnessString oup src errPtr = do
             (poke errPtr =<< tcstr (ptxt err)) $> nullPtr
         Right d -> tcstr (aText d)
 
-
 apple_dumpasm :: CString -> Ptr CString -> IO CString
 apple_dumpasm = harnessString dumpX86G
 

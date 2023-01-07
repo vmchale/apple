@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor  #-}
 
 module Name ( Name (..)
             , TyName
@@ -14,7 +15,7 @@ type TyName a = Name a
 data Name a = Name { name   :: T.Text
                    , unique :: !U
                    , loc    :: a
-                   } deriving (Functor)
+                   } deriving (Functor, Foldable)
 
 instance Eq (Name a) where
     (==) (Name _ u _) (Name _ u' _) = u == u'
