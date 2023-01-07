@@ -35,7 +35,7 @@ gallocOn :: Int -> [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86R
 gallocOn u = go u 0
     where go uϵ offs isns = rmaps
               where rmaps = case (regsM, fregsM) of
-                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs in (regs, fregs, ISubRI () SP saa:isns, saa /= 0)
+                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs in (regs, fregs, ISubRI () SP saa:isns, saa == 0)
                         (Left s, Right fregs) ->
                             let (uϵ', offs', isns') = spill uϵ offs s isns
                             in go uϵ' offs' isns'
