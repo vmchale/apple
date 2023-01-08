@@ -16,17 +16,14 @@ frameC = concat . go IS.empty
             in case isn of
                 Call _ cf ->
                     let
-                        scratch = odd$IS.size$raxS cf s
                         cs = handleRax cf $ mapMaybe fromInt $ IS.toList s
-                        -- PUSH...POP rax destroys the return value!
+                        scratch = odd$length cs
                         save = (if scratch then (++[ISubRI () Rsp 8]) else id)$fmap (Push ()) cs
                         restore = (if scratch then (IAddRI () Rsp 8:) else id)$fmap (Pop ()) (reverse cs)
                     in (save ++ void isn : restore) : go s' isns
                 _ -> [void isn] : go s' isns
           handleRax Malloc = filter (/=Rax)
           handleRax Free   = id
-          raxS Malloc = IS.delete 6
-          raxS Free   = id
 
 fromInt :: Int -> Maybe X86Reg
 fromInt 1    = Just Rsi
