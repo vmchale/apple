@@ -17,7 +17,7 @@ frameC = concat . go IS.empty
                 Call _ cf ->
                     let
                         cs = handleRax cf $ mapMaybe fromInt $ IS.toList s
-                        scratch = odd$length cs
+                        scratch = even$length cs
                         save = (if scratch then (++[ISubRI () Rsp 8]) else id)$fmap (Push ()) cs
                         restore = (if scratch then (IAddRI () Rsp 8:) else id)$fmap (Pop ()) (reverse cs)
                     in (save ++ void isn : restore) : go s' isns
