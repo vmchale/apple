@@ -441,7 +441,16 @@ aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | f1 res = do
     (l, plXs) <- aeval xs xsR
     nR <- newITemp; nϵR <- newITemp
     let nϵ = EAt (AP xsR (Just (ConstI 8)) l); n = IB IPlus (Reg nϵR) (ConstI 1)
+    -- TODO: place X later so less live interval?
     pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just (ConstI 24)) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), WrF (AP t (Just (ConstI 16)) (Just a)) (FReg xR)])
+aeval (EApp res (EApp _ (Builtin _ Snoc) x) xs) t | f1 res = do
+    a <- nextArr
+    xR <- newFTemp; xsR <- newITemp
+    plX <- eval x xR
+    (l, plXs) <- aeval xs xsR
+    nR <- newITemp; nϵR <- newITemp
+    let nϵ=EAt (AP xsR (Just (ConstI 8)) l); n=IB IPlus (Reg nϵR) (ConstI 1)
+    pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), WrF (AP t (Just (IB IPlus (IB IAsl (Reg nR) (ConstI 3)) (ConstI 8))) (Just a)) (FReg xR)])
 aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     a <- nextArr
     xR <- newITemp; xRd <- newITemp; td <- newITemp
