@@ -6,6 +6,7 @@ module IR.Trans ( writeC
 import           A
 import           Control.Monad              (zipWithM, (<=<))
 import           Control.Monad.State.Strict (State, gets, modify, runState)
+import           Data.Bifunctor             (second)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
@@ -120,6 +121,7 @@ writeRF e rs = fmap snd . writeF e ((Nothing,) <$> rs)
 dim1 a t n = [Wr (AP t Nothing a) (ConstI 1), Wr (AP t (Just (ConstI 8)) a) n]
 tick reg = MT reg (IB IPlus (Reg reg) (ConstI 1))
 sib ireg = IB IPlus (IB IAsl (Reg ireg) (ConstI 3)) (ConstI 16)
+sib1 ireg = IB IPlus (IB IAsl (Reg ireg) (ConstI 3)) (ConstI 24)
 
 stadim a t ns = Wr (AP t Nothing a) (ConstI (fromIntegral$length ns)):zipWith (\o n -> Wr (AP t (Just (ConstI$8*o)) a) n) [1..] ns
 
@@ -299,29 +301,29 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) t = do
 aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | f1 (eAnn arr) && f1 oTy = do
     a <- nextArr
     arrP <- newITemp
-    szR <- newITemp
+    szR <- newITemp; szR' <- newITemp
     fArg0R <- newFTemp; fArg1R <- newFTemp; fRetR <- newFTemp
     (arrL, putX) <- aeval arr arrP
     -- f1 (skip rank)
     let sz = EAt (AP arrP (Just (ConstI 8)) arrL)
     i <- newITemp
     ss <- writeRF op [fArg0R, fArg1R] fRetR
-    let loopBody = MX fArg1R (FAt (AP arrP (Just (sib i)) arrL)):MX fArg0R (FAt (AP arrP (Just (sib i)) arrL)):ss++[WrF (AP t (Just (sib i)) (Just a)) (FReg fRetR)]
-    loop <- doN i (Reg szR) loopBody
-    pure (Just a, putX ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (IB IMinus (Reg szR) (ConstI 1)) ++ loop)
+    let loopBody = MX fArg1R (FAt (AP arrP (Just (sib i)) arrL)):MX fArg0R (FAt (AP arrP (Just (sib1 i)) arrL)):ss++[WrF (AP t (Just (sib i)) (Just a)) (FReg fRetR)]
+    loop <- doN i (Reg szR') loopBody
+    pure (Just a, putX ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):MT szR' (IB IMinus (Reg szR) (ConstI 1)):dim1 (Just a) t (Reg szR') ++ loop)
 aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | i1 (eAnn arr) && i1 oTy = do
     a <- nextArr
     arrP <- newITemp
-    szR <- newITemp
+    szR <- newITemp; szR' <- newITemp
     arg0R <- newITemp; arg1R <- newITemp; retR <- newITemp
     (arrL, putX) <- aeval arr arrP
     -- f1 (skip rank)
     let sz = EAt (AP arrP (Just (ConstI 8)) arrL)
     i <- newITemp
     ss <- writeRF op [arg0R, arg1R] retR
-    let loopBody = MT arg1R (EAt (AP arrP (Just (sib i)) arrL)):MT arg0R (EAt (AP arrP (Just (sib i)) arrL)):ss++[Wr (AP t (Just (sib i)) (Just a)) (Reg retR)]
+    let loopBody = MT arg1R (EAt (AP arrP (Just (sib i)) arrL)):MT arg0R (EAt (AP arrP (Just (sib1 i)) arrL)):ss++[Wr (AP t (Just (sib i)) (Just a)) (Reg retR)]
     loop <- doN i (Reg szR) loopBody
-    pure (Just a, putX ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (IB IMinus (Reg szR) (ConstI 1)) ++ loop)
+    pure (Just a, putX ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):MT szR' (IB IMinus (Reg szR) (ConstI 1)):dim1 (Just a) t (Reg szR') ++ loop)
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy = do
     a <- nextArr
     arrP <- newITemp
@@ -466,6 +468,11 @@ aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) =
     modify (addMT a t)
     -- TODO: hardcoded to 8-byte types MT mid ...
     pure (Just a, plX ++ plY ++ MT xnR (EAt (AP xR (Just$ConstI 8) lX)):MT ynR (EAt (AP yR (Just$ConstI 8) lY)):MT tn (IB IPlus (Reg xnR) (Reg ynR)):Ma a t (IB IPlus (IB IAsl (Reg tn) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg tn) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 16) lX) (IB ITimes (Reg xnR) (ConstI tyN)), MT mid (IB IPlus (Reg t) (IB IAsl (IB IPlus (Reg xnR) (ConstI 2)) (ConstI 3))), Cpy (AP mid Nothing (Just a)) (AP yR (Just$ConstI 16) lY) (IB ITimes (Reg ynR) (ConstI tyN))])
+aeval (LLet _ (n, e') e) t | isArr (eAnn e') = do
+    t' <- newITemp
+    (l, ss) <- aeval e' t'
+    modify (addAVar n (l, t'))
+    second (ss ++) <$> aeval e t
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
