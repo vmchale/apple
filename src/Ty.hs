@@ -568,10 +568,14 @@ cloneWithConstraints t = do
         (IM.toList vs)
     pure t'
 
+rwI :: I a -> I a
+rwI (StaPlus _ (Ix l i) (Ix _ j)) = Ix l (i+j)
+rwI i                             = i
+
 rwSh :: Sh a -> Sh a
 rwSh s@SVar{}     = s
 rwSh s@Nil        = s
-rwSh (i `Cons` s) = i `Cons` rwSh s
+rwSh (i `Cons` s) = rwI i `Cons` rwSh s
 rwSh (Cat s0 s1) | (is, Nil) <- unroll (rwSh s0), (js, Nil) <- unroll (rwSh s1) = roll Nil (is++js)
                  | otherwise = Cat (rwSh s0) (rwSh s1)
 rwSh (Rev s) | (is, Nil) <- unroll (rwSh s) = roll Nil (reverse is)
