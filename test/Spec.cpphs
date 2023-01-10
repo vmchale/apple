@@ -102,7 +102,7 @@ x64T = testGroup "x64"
 x ≈ y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-4&&(y-x)/y<1e-4)
 
 scan i = do
-    f <- ia.snd <$> funP "[(+) /\\ 0 (irange 1 x 1)]"
+    f <- ia.snd <$> funP "[(+) /\\o 0 (irange 1 x 1)]"
     asI (f i)
 
 sSq i = do

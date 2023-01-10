@@ -182,7 +182,9 @@ tokens :-
         "gen."                   { mkBuiltin BuiltinGen }
         "re:"                    { mkBuiltin BuiltinRep }
         Λ                        { mkBuiltin BuiltinScan }
+        Λₒ                       { mkBuiltin BuiltinScanS }
         "/\"                     { mkBuiltin BuiltinScan }
+        "/\o"                    { mkBuiltin BuiltinScanS }
         "`Cons`"                 { mkBuiltin BuiltinCons }
         Nil                      { mkBuiltin BuiltinNil }
         "%."                     { mkBuiltin BuiltinMMul }
@@ -336,7 +338,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
              | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
-             | BuiltinR | BuiltinSin
+             | BuiltinR | BuiltinSin | BuiltinScanS
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -353,6 +355,7 @@ instance Pretty Builtin where
     pretty BuiltinGen    = "gen."
     pretty BuiltinRep    = "re:"
     pretty BuiltinScan   = "Λ"
+    pretty BuiltinScanS  = "Λₒ"
     pretty BuiltinCons   = "`Cons`"
     pretty BuiltinNil    = "Nil"
     pretty BuiltinMMul   = "%."

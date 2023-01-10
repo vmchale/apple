@@ -132,6 +132,7 @@ instance Pretty Builtin where
     pretty (Rank as) = "`" <> encloseSep lbrace rbrace comma (prettyRank<$>as)
     pretty IDiv      = "/."
     pretty Scan      = "Λ"
+    pretty ScanS     = "Λₒ"
     pretty (DI i)    = "\\`" <> pretty i
     pretty (Conv ns) = "⨳" <+> encloseSep lbrace rbrace comma (pretty<$>ns)
     pretty (TAt i)   = parens ("->" <> pretty i)
@@ -172,7 +173,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Map !Int | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
              | Fold !Int | Foldl | Floor | ItoF | Iter
-             | Scan | Size | Dim | Re | Gen | Fib | Succ
+             | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | Outer | R | Head | HeadM | Tail | Init
@@ -224,6 +225,7 @@ isBinOp Mul    = True
 isBinOp Rot    = True
 isBinOp ConsE  = True
 isBinOp Snoc   = True
+isBinOp Scan   = True
 isBinOp _      = False
 
 instance Pretty (E a) where
@@ -238,7 +240,7 @@ instance Pretty (E a) where
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (Builtin _ (Map n)) e0) e1)              = parens (pretty e0 <> "'" <> pretty n <+> pretty e1)
-    pretty (EApp _ (EApp _ (EApp _ (Builtin _ Scan) e0) e1) e2)     = parens (pretty e0 <+> "Λ" <+> pretty e1 <+> pretty e2)
+    pretty (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)    = parens (pretty e0 <+> "Λₒ" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (pretty e1 <+> pretty e0 <+> "⊗" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (Builtin _ op@Rank{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)

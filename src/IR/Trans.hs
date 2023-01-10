@@ -126,9 +126,13 @@ sib1 ireg = IB IPlus (IB IAsl (Reg ireg) (ConstI 3)) (ConstI 24)
 stadim a t ns = Wr (AP t Nothing a) (ConstI (fromIntegral$length ns)):zipWith (\o n -> Wr (AP t (Just (ConstI$8*o)) a) n) [1..] ns
 
 -- incr.
-doN t e ss = do
+doI t el eu rel ss = do
     l <- newLabel; endL <- newLabel
-    pure $ MT t (ConstI 0):L l:MJ (IRel IGeq (Reg t) e) endL:ss++[tick t, J l, L endL]
+    pure $ MT t el:L l:MJ (IRel rel (Reg t) eu) endL:ss++[tick t, J l, L endL]
+
+doN t e = doI t (ConstI 0) e IGeq; doN1 t e = doI t (ConstI 1) e IGt
+
+man (a, t) rnk n = Ma a t (IB IPlus (IB IAsl n (ConstI 3)) (ConstI$8+8*rnk))
 
 staRnk :: Integral b => Sh a -> Maybe b
 staRnk Nil           = Just 0
@@ -213,7 +217,18 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | f1(eAnn xs) && f
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
     pure (Just a, plEX ++ plEY ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg szR) ++ loop)
-aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | f1 (eAnn e) && f1 res && isF (eAnn seed) = do
+aeval (EApp res (EApp _ (Builtin _ Scan) op) xs) t | f1 (eAnn xs) && f1 res = do
+    a <- nextArr
+    arrP <- newITemp
+    acc <- newFTemp; x <- newFTemp
+    (l, plE) <- aeval xs arrP
+    let sz = EAt (AP arrP (Just (ConstI 8)) l)
+    ss <- writeRF op [acc, x] acc
+    iR <- newITemp; szR <- newITemp
+    let loopBody = MX x (FAt (AP arrP (Just$sib iR) l)):WrF (AP t (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 8))) (Just a)) (FReg acc):ss
+    loop <- doN1 iR (Reg szR) loopBody
+    pure (Just a, plE ++ MT szR sz:man (a, t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ MX acc (FAt (AP arrP (Just$ConstI 16) l)):loop)
+aeval (EApp res (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | f1 (eAnn e) && f1 res && isF (eAnn seed) = do
     a <- nextArr
     arrP <- newITemp
     acc <- newFTemp
@@ -227,7 +242,7 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | f1 (eAnn e) &&
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
     pure (Just a, plE ++ plSeed ++ MT szR (IB IPlus sz (ConstI 1)):Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg szR) ++ loop)
-aeval (EApp res (EApp _ (EApp _ (Builtin _ Scan) op) seed) e) t | i1 (eAnn e) && i1 res && isI (eAnn seed) = do
+aeval (EApp res (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | i1 (eAnn e) && i1 res && isI (eAnn seed) = do
     a <- nextArr
     arrP <- newITemp
     acc <- newITemp

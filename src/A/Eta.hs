@@ -36,6 +36,7 @@ tuck e           = (id, e)
 
 etaAt :: E (T ()) -> RM (E (T ()))
 etaAt (EApp t ho@(Builtin _ Scan{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
+etaAt (EApp t ho@(Builtin _ ScanS{}) op)  = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ Zip{}) op)    = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ Succ{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ Fold{}) op)   = EApp t ho <$> (etaM =<< etaAt op)

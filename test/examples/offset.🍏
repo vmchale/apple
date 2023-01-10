@@ -1,10 +1,11 @@
 -- A0 and C0 in Kuhl+Giardina
 λxs.λys.
   { sum ← [(+)/1 0 x]
-  ; tieSelf ← [({.x) ⊳ x];Δ ← [(-)\~(tieSelf x)]
+  ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys
-  ; pxs ← (+)Λ 0 dxs; pys ← (+)Λ 0 dys; pts ⟜ (+)Λ 0 dts
+  -- FIXME: scan increases length by one, we want seedless scan!
+  ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λ dts
   ; dtss ⟜ 0<|(-)\~((^2)'1 pts)
   ; T ⟜}. pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) pts)

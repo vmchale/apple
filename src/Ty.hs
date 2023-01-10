@@ -453,12 +453,20 @@ tyB _ CatE = do
     let i' = IVar () i; j' = IVar () j; n' = TVar n
     pure (Arrow (Arr (vx i') n') (Arrow (Arr (vx j') n') (Arr (vx $ StaPlus () i' j') n')), mempty)
 tyB _ Scan = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    let i1 = StaPlus () i (Ix()1)
+        arrTy = Arr (Cons i1 sh) a
+    pure (Arrow (Arrow a (Arrow a a)) (Arrow arrTy arrTy), mempty)
+tyB _ ScanS = do
     a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" ()
     i <- IVar () <$> freshName "i" ()
     sh <- SVar <$> freshName "sh" ()
     let opTy = Arrow b (Arrow a b)
-        arrTy = Arr (Cons i sh)
-    pure (Arrow opTy (Arrow b (Arrow (arrTy a) (arrTy b))), mempty)
+        arrTy = Arr (Cons i sh); rarrTy = Arr (Cons (StaPlus () i (Ix()1)) sh)
+        -- FIXME: 1+1?
+    pure (Arrow opTy (Arrow b (Arrow (arrTy a) (rarrTy b))), mempty)
 tyB l (DI n) = tyB l (Conv [n])
 tyB _ (Conv ns) = do
     sh <- SVar <$> freshName "sh" ()

@@ -39,6 +39,7 @@ main = do
     xsPtr <- aA (AA 1 [500] xs)
     ysPtr <- aA (AA 1 [500] ys)
     iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int)))
+    fPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Double)))
 #ifdef x86_64_HOST_ARCH
     fp <- fmap iii . leakFp =<< BSL.readFile "test/examples/risingFactorial.🍎"
     erfFp <- fmap ff . leakFp =<< BSL.readFile "math/erf.🍏"
@@ -46,6 +47,7 @@ main = do
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
     gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gammaln.🍏"
     scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
+    scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
     ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
 #endif
     defaultMain [ env files $ \ ~(he, e, t, f, x, 𝛾, ꜰ) ->
@@ -111,6 +113,7 @@ main = do
 #ifdef x86_64_HOST_ARCH
                 , bgroup "scanmax"
                       [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
+                      , bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
                       ]
 #endif
                 ]

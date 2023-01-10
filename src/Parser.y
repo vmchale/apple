@@ -127,6 +127,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     arr { TokB $$ BuiltinArr }
     int { TokB $$ BuiltinInt }
     float { TokB $$ BuiltinFloat }
+    scanS { TokB $$ BuiltinScanS }
     scan { TokB $$ BuiltinScan }
     mul { TokB $$ BuiltinMMul }
     r { TokB $$ BuiltinR }
@@ -245,7 +246,7 @@ E :: { E AlexPosn }
   | E fold intLit E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 (A.Fold (fromInteger $ int $3))) $1) $4) $5 }
   | E foldl E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Foldl) $1) $3) $4 }
   | E foldA E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldA) $1) $3) $4 }
-  | E scan E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 Scan) $1) $3) $4 }
+  | E scanS E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 ScanS) $1) $3) $4 }
   | E zip E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Zip) $1) $3) $4 }
   | E E { EApp (eAnn $1) $1 $2 }
   | x { ResVar $1 X } | y { ResVar $1 Y }
