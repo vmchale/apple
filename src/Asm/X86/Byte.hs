@@ -651,7 +651,7 @@ asm ix st (MovAI32 _ (RC r i8) i32:asms) =
     let (e, b) = modRM r
         modB = 0x1 `shiftL` 6 .|. b
         pre = 0x48 .|. e
-        isn = pre:0xc7:le i8 ++ le i32
+        isn = pre:0xc7:modB:le i8 ++ le i32
     in isn:asm (ix+8) st asms
 asm ix st (MovAR _ (RC Rsp i8) r:asms) =
     let (e, b) = modRM r
