@@ -96,8 +96,7 @@ x64T = testGroup "x64"
     , testCase "scan" $ do { res <- scan 4 ; res @?= [0,1,3,6,10] }
     , testCase "map/alloc" $ do { res <- sSq 25 ; res @?= [ i^(2::Int) | i <- [0..25] ] }
     , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
-    , testCase "pts (elliptic fourier)" $ do { res <- aaaFp "test/data/pts.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= [4,7,12::Double] }
-    -- , testCase "𝜉 (elliptic fourier)" $ do { res <- aaaFp "test/data/xi.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= [0,4,9.6::Double] }
+    , testCase "𝜉 (elliptic fourier)" $ do { res <- aaaFp "test/data/xi.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= [0,4,9.600000000000001::Double] }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
