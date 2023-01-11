@@ -4,7 +4,6 @@
   ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys
-  -- FIXME: scan increases length by one, we want seedless scan!
   ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λ dts
   ; dtss ⟜ 0<|(-)\~((^2)'1 pts)
   ; T ⟜}. pts

@@ -1,0 +1,8 @@
+-- A0 and C0 in Kuhl+Giardina
+λxs.λys.
+  { tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
+  ; dxs ⟜ Δ xs; dys ⟜ Δ ys
+  ; dts ⟜ [√(x^2+y^2)]`dxs dys
+  ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λ dts
+  ; pts
+  }

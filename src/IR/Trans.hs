@@ -327,7 +327,7 @@ aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | f1 (eAnn arr) && f1 oTy = 
     let loopBody = MX fArg1R (FAt (AP arrP (Just (sib i)) arrL)):MX fArg0R (FAt (AP arrP (Just (sib1 i)) arrL)):ss++[WrF (AP t (Just (sib i)) (Just a)) (FReg fRetR)]
     loop <- doN i (Reg szR') loopBody
     modify (addMT a t)
-    pure (Just a, putX ++ MT szR sz:man (a,t) 1 (Reg szR):MT szR' (IB IMinus (Reg szR) (ConstI 1)):dim1 (Just a) t (Reg szR') ++ loop)
+    pure (Just a, putX ++ MT szR sz:MT szR' (IB IMinus (Reg szR) (ConstI 1)):man (a,t) 1 (Reg szR'):dim1 (Just a) t (Reg szR') ++ loop)
 aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | i1 (eAnn arr) && i1 oTy = do
     a <- nextArr
     arrP <- newITemp
@@ -341,7 +341,7 @@ aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | i1 (eAnn arr) && i1 oTy = 
     let loopBody = MT arg1R (EAt (AP arrP (Just (sib i)) arrL)):MT arg0R (EAt (AP arrP (Just (sib1 i)) arrL)):ss++[Wr (AP t (Just (sib i)) (Just a)) (Reg retR)]
     loop <- doN i (Reg szR) loopBody
     modify (addMT a t)
-    pure (Just a, putX ++ MT szR sz:man (a,t) 1 (Reg szR):MT szR' (IB IMinus (Reg szR) (ConstI 1)):dim1 (Just a) t (Reg szR') ++ loop)
+    pure (Just a, putX ++ MT szR sz:MT szR' (IB IMinus (Reg szR) (ConstI 1)):man (a,t) 1 (Reg szR'):dim1 (Just a) t (Reg szR') ++ loop)
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy = do
     a <- nextArr
     arrP <- newITemp
