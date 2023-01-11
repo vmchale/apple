@@ -205,6 +205,7 @@ mkIx ix (C{}:asms)                            = mkIx (ix+5) asms
 mkIx ix (MovqAX _ (R Rsp) r:asms) | fits r = mkIx (ix+5) asms
 mkIx ix (MovqAX _ (R rb) r:asms) | fits rb && fits r = mkIx (ix+4) asms
 mkIx ix (MovqAX _ (RC Rsp _) r1:asms) | fits r1 = mkIx (ix+6) asms
+mkIx ix (MovqAX _ (RC R12 _) _:asms)            = mkIx (ix+7) asms
 mkIx ix (MovqAX _ (RC rb _) r:asms) | fits rb && fits r = mkIx (ix+5) asms
                                     | otherwise = mkIx (ix+6) asms
 mkIx ix (MovqAX _ (RSD b _ i _) r:asms) | fits r && fits b && fits i = mkIx (ix+6) asms
@@ -219,6 +220,7 @@ mkIx ix (MovqXA _ _ RSD{}:asms)               = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RS{}:asms)                = mkIx (ix+6) asms
 mkIx ix (MovqXA _ r0 (RC Rsp _):asms) | fits r0 = mkIx (ix+6) asms
 mkIx ix (MovqXA _ xr (RC r _):asms) | fits xr && fits r = mkIx (ix+5) asms
+mkIx ix (MovqXA _ _ (RC R12 _):asms)          = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RC{}:asms)                = mkIx (ix+6) asms
 mkIx ix (Fldl2e{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fldln2{}:asms)                       = mkIx (ix+2) asms
@@ -237,9 +239,10 @@ mkIx ix (Fstp _ (RC Rsp _):asms)              = mkIx (ix+4) asms
 mkIx ix (Sal{}:asms)                          = mkIx (ix+4) asms
 mkIx ix (Sar{}:asms)                          = mkIx (ix+4) asms
 mkIx ix (Call{}:asms)                         = mkIx (ix+5) asms
-mkIx ix (MovAI32 _ (R Rsp)_:asms)             = mkIx (ix+8) asms
-mkIx ix (MovAI32 _ (R Rbp)_:asms)             = mkIx (ix+8) asms
-mkIx ix (MovAI32 _ (R R13)_:asms)             = mkIx (ix+8) asms
+mkIx ix (MovAI32 _ (R Rsp) _:asms)            = mkIx (ix+8) asms
+mkIx ix (MovAI32 _ (R Rbp) _:asms)            = mkIx (ix+8) asms
+mkIx ix (MovAI32 _ (R R13) _:asms)            = mkIx (ix+8) asms
+mkIx ix (MovAI32 _ (R R12) _:asms)            = mkIx (ix+8) asms
 mkIx ix (MovAI32 _ R{} _:asms)                = mkIx (ix+7) asms
 mkIx ix (MovAI32 _ RC{} _:asms)               = mkIx (ix+8) asms
 mkIx ix (MovAR _ (RC Rsp _) _:asms)           = mkIx (ix+5) asms
@@ -355,6 +358,14 @@ asm ix st (MovqXA _ r0 (RC r1 i8):asms) | (0, b0) <- modRM r0, (0, b1) <- modRM 
     let modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. b1
         instr = 0xf3:0x0f:0x7e:modB:le i8
     in instr:asm (ix+5) st asms
+asm ix st (MovqXA _ r (RC rb@R12 i8):asms) =
+    let (e, b) = modRM r
+        (eb, bb) = modRM rb
+        modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
+        sib = 0x4 `shiftL` 3 .|. bb
+        pre = 0x48 .|. e `shiftL` 2 .|. eb
+        isn = 0x66:pre:0xf:0x6e:modB:sib:le i8
+    in isn:asm (ix+7) st asms
 asm ix st (MovqXA _ r0 (RC r1 i8):asms) =
     let (e0, b0) = modRM r0
         (e1, b1) = modRM r1
@@ -398,6 +409,14 @@ asm ix st (MovqAX _ (RC rb i8) r:asms) | (0, bb) <- modRM rb, (0, b) <- modRM r 
     let modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. bb
         isn = 0x66:0x0f:0xd6:modB:le i8
     in isn:asm (ix+5) st asms
+asm ix st (MovqAX _ (RC rb@R12 i8) r:asms) =
+    let (eb, bb) = modRM rb
+        (e, b) = modRM r
+        modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
+        pre = 0x48 .|. e `shiftL` 2 .|. eb
+        sib = 0x4 `shiftL` 3 .|. bb
+        isn = 0x66:pre:0x0f:0xd6:modB:sib:le i8
+    in isn:asm (ix+7) st asms
 asm ix st (MovqAX _ (RC rb i8) r:asms) =
     let (eb, bb) = modRM rb
         (e, b) = modRM r
@@ -641,6 +660,13 @@ asm ix st (MovAI32 _ (R Rsp) i32:asms) =
         sib = b `shiftL` 3 .|. b
         instr = 0x48:0xc7:modB:sib:le i32
     in instr:asm (ix+8) st asms
+asm ix st (MovAI32 _ (R R12) i32:asms) =
+    let (e, b) = modRM R12
+        modB = 0x4
+        sib = 0x4 `shiftL` 3 .|. b
+        pre = 0x48 .|. e
+        isn = pre:0xc7:modB:sib:le i32
+    in isn:asm (ix+8) st asms
 asm ix st (MovAI32 _ (R r) i32:asms) =
     let (e, b) = modRM r
         modRMB = b
