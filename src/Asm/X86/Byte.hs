@@ -240,6 +240,7 @@ mkIx ix (Call{}:asms)                         = mkIx (ix+5) asms
 mkIx ix (MovAI32 _ (R Rsp)_:asms)             = mkIx (ix+8) asms
 mkIx ix (MovAI32 _ R{} _:asms)                = mkIx (ix+7) asms
 mkIx ix (MovAR _ (RC Rsp _) _:asms)           = mkIx (ix+5) asms
+mkIx ix (MovAR _ (RC R12 _) _:asms)           = mkIx (ix+5) asms
 mkIx ix (MovAR _ RC{} _:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovAR _ (RC32 Rsp _) _:asms)         = mkIx (ix+8) asms
 mkIx ix (MovAR _ RC32{} _:asms)               = mkIx (ix+7) asms
@@ -253,6 +254,7 @@ mkIx ix (MovRA _ _ RSD{}:asms)                = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ (R Rsp):asms)              = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ R{}:asms)                  = mkIx (ix+3) asms
 mkIx ix (MovRA _ _ (RC Rsp _):asms)           = mkIx (ix+5) asms
+mkIx ix (MovRA _ _ (RC R12 _):asms)           = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ RC{}:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ (RC32 Rsp _):asms)         = mkIx (ix+8) asms
 mkIx ix (MovRA _ _ RC32{}:asms)               = mkIx (ix+7) asms
@@ -293,6 +295,14 @@ asm ix st (MovRA _ r0 (RC r1@Rsp i8):asms) =
     let (e0, b0) = modRM r0
         (0, b1) = modRM r1
         pref = 0x48 .|. e0 `shiftL` 2
+        modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 4
+        sib = b1 `shiftL` 3 .|. b1
+        opc=0x8b; instr = pref:opc:modB:sib:le i8
+    in instr:asm (ix+5) st asms
+asm ix st (MovRA _ r0 (RC r1@R12 i8):asms) =
+    let (e0, b0) = modRM r0
+        (e1, b1) = modRM r1
+        pref = 0x48 .|. e0 `shiftL` 2 .|. e1
         modB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 4
         sib = b1 `shiftL` 3 .|. b1
         opc=0x8b; instr = pref:opc:modB:sib:le i8
@@ -636,6 +646,14 @@ asm ix st (MovAR _ (RC Rsp i8) r:asms) =
     let (e, b) = modRM r
         (0, bi) = modRM Rsp
         pre = 0x48 .|. e `shiftL` 3
+        modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
+        sib = bi `shiftL` 3 .|. bi
+        instr = pre:0x89:modB:sib:le i8
+    in instr:asm (ix+5) st asms
+asm ix st (MovAR _ (RC R12 i8) r:asms) =
+    let (e, b) = modRM r
+        (ei, bi) = modRM R12
+        pre = 0x48 .|. e `shiftL` 3 .|. ei
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = bi `shiftL` 3 .|. bi
         instr = pre:0x89:modB:sib:le i8
