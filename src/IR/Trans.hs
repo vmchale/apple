@@ -216,7 +216,7 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | f1(eAnn xs) && f
     let loopBody = let ireg = Just (sib iR) in MX x (FAt (AP arrPX ireg lX)):MX y (FAt (AP arrPY ireg lY)):ss++[WrF (AP t ireg (Just a)) (FReg z)]
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
-    pure (Just a, plEX ++ plEY ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg szR) ++ loop)
+    pure (Just a, plEX ++ plEY ++ MT szR sz:man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ loop)
 aeval (EApp res (EApp _ (Builtin _ Scan) op) xs) t | f1 (eAnn xs) && f1 res = do
     a <- nextArr
     arrP <- newITemp
@@ -227,6 +227,7 @@ aeval (EApp res (EApp _ (Builtin _ Scan) op) xs) t | f1 (eAnn xs) && f1 res = do
     iR <- newITemp; szR <- newITemp
     let loopBody = MX x (FAt (AP arrP (Just$sib iR) l)):WrF (AP t (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 8))) (Just a)) (FReg acc):ss
     loop <- doN1 iR (Reg szR) loopBody
+    modify (addMT a t)
     pure (Just a, plE ++ MT szR sz:man (a, t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ MX acc (FAt (AP arrP (Just$ConstI 16) l)):loop)
 aeval (EApp res (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | f1 (eAnn e) && f1 res && isF (eAnn seed) = do
     a <- nextArr
@@ -325,6 +326,7 @@ aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | f1 (eAnn arr) && f1 oTy = 
     ss <- writeRF op [fArg0R, fArg1R] fRetR
     let loopBody = MX fArg1R (FAt (AP arrP (Just (sib i)) arrL)):MX fArg0R (FAt (AP arrP (Just (sib1 i)) arrL)):ss++[WrF (AP t (Just (sib i)) (Just a)) (FReg fRetR)]
     loop <- doN i (Reg szR') loopBody
+    modify (addMT a t)
     pure (Just a, putX ++ MT szR sz:man (a,t) 1 (Reg szR):MT szR' (IB IMinus (Reg szR) (ConstI 1)):dim1 (Just a) t (Reg szR') ++ loop)
 aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | i1 (eAnn arr) && i1 oTy = do
     a <- nextArr
@@ -338,6 +340,7 @@ aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | i1 (eAnn arr) && i1 oTy = 
     ss <- writeRF op [arg0R, arg1R] retR
     let loopBody = MT arg1R (EAt (AP arrP (Just (sib i)) arrL)):MT arg0R (EAt (AP arrP (Just (sib1 i)) arrL)):ss++[Wr (AP t (Just (sib i)) (Just a)) (Reg retR)]
     loop <- doN i (Reg szR) loopBody
+    modify (addMT a t)
     pure (Just a, putX ++ MT szR sz:man (a,t) 1 (Reg szR):MT szR' (IB IMinus (Reg szR) (ConstI 1)):dim1 (Just a) t (Reg szR') ++ loop)
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy = do
     a <- nextArr
@@ -353,6 +356,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     ss <- writeRF op [slopP] fR
     let loopBody = Cpy (AP slopP (Just (ConstI 16)) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI $ fromIntegral n + 2):ss++[WrF (AP t (Just (sib iR)) arrL) (FReg fR)]
     loop <- doN iR (Reg szR) loopBody
+    modify (addMT a t)
     pure (Just a, putX++MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI (24-8*fromIntegral n))):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (IB IMinus (Reg szR) (ConstI $ fromIntegral n - 1)):Sa slopP nIr:Wr (AP slopP Nothing Nothing) (ConstI 1):Wr (AP slopP (Just (ConstI 8)) Nothing) (ConstI $ fromIntegral n):loop ++ [Pop nIr])
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do
     a <- nextArr
@@ -400,6 +404,7 @@ aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | f1 oTy = do
     putN <- eval n nR; putX <- eval x xR
     let step = WrF (AP t (Just (sib i)) (Just a)) (FReg xR)
     loop <- doN i (Reg nR) [step]
+    modify (addMT a t)
     pure (Just a, putX ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ loop)
 aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | i1 oTy = do
     a <- nextArr
@@ -410,6 +415,7 @@ aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | i1 oTy = do
     putN <- eval n nR; putX <- eval x xR
     let step = Wr (AP t (Just (sib i)) (Just a)) (Reg xR)
     loop <- doN i (Reg nR) [step]
+    modify (addMT a t)
     pure (Just a, putX ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ loop)
 aeval (Id _ (AShLit ns es)) t | isF (eAnn$head es) = do
     a <- nextArr
@@ -441,6 +447,7 @@ aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | f1 res = do
     (l, plXs) <- aeval xs xsR
     nR <- newITemp; nϵR <- newITemp
     let nϵ = EAt (AP xsR (Just (ConstI 8)) l); n = IB IPlus (Reg nϵR) (ConstI 1)
+    modify (addMT a t)
     -- TODO: place X later so less live interval?
     pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just (ConstI 24)) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), WrF (AP t (Just (ConstI 16)) (Just a)) (FReg xR)])
 aeval (EApp res (EApp _ (Builtin _ Snoc) x) xs) t | f1 res = do
@@ -450,6 +457,7 @@ aeval (EApp res (EApp _ (Builtin _ Snoc) x) xs) t | f1 res = do
     (l, plXs) <- aeval xs xsR
     nR <- newITemp; nϵR <- newITemp
     let nϵ=EAt (AP xsR (Just (ConstI 8)) l); n=IB IPlus (Reg nϵR) (ConstI 1)
+    modify (addMT a t)
     pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xsR (Just (ConstI 16)) l) (Reg nϵR), WrF (AP t (Just (IB IPlus (IB IAsl (Reg nR) (ConstI 3)) (ConstI 8))) (Just a)) (FReg xR)])
 aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     a <- nextArr
