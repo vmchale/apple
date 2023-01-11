@@ -13,7 +13,7 @@ module Dbg ( dumpX86G
            , printTypes
            , topt
            , nasm
-           , pBIO
+           , pBIO, dtxt
            , module P
            ) where
 
@@ -24,12 +24,14 @@ import qualified Asm.X86.CF           as X86
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           CF
-import           Control.Exception    (throw)
+import           Control.Exception    (throw, throwIO)
+import           Control.Monad        ((<=<))
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
 import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
+import qualified Data.Text.IO         as TIO
 import           IR
 import           IR.Alloc
 import           L
@@ -41,8 +43,11 @@ import           Prettyprinter        (Doc, Pretty (..))
 import           Prettyprinter.Ext
 import           Ty
 
-pBIO :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
-pBIO = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM dbgFp) . x86G
+pBIO :: BSL.ByteString -> IO ()
+pBIO = either throwIO TIO.putStr <=< dtxt
+
+dtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
+dtxt = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM dbgFp) . x86G
     where comm :: Either a (IO b) -> IO (Either a b)
           comm (Left err) = pure(Left err)
           comm (Right x)  = Right <$> x

@@ -167,7 +167,7 @@ ubs = encodeUtf8 . TL.pack
 
 disasm :: String -> Repl AlexPosn ()
 disasm s = liftIO $ do
-    res <- pBIO (ubs s)
+    res <- dtxt (ubs s)
     case res of
         Left err -> putDoc (pretty err <> hardline)
         Right b  -> TIO.putStr b
