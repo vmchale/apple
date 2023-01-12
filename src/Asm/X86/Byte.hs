@@ -253,11 +253,15 @@ mkIx ix (MovAR _ RC32{} _:asms)               = mkIx (ix+7) asms
 mkIx ix (MovAR _ RSD{} _:asms)                = mkIx (ix+5) asms
 mkIx ix (MovAR _ RS{} _:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovAR _ (R Rsp) _:asms)              = mkIx (ix+4) asms
+mkIx ix (MovAR _ (R Rbp) _:asms)              = mkIx (ix+4) asms
+mkIx ix (MovAR _ (R R13) _:asms)              = mkIx (ix+4) asms
 mkIx ix (MovAR _ R{} _:asms)                  = mkIx (ix+3) asms
 mkIx ix (MovRA _ _ (RS Rbp _ _):asms)         = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ RS{}:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ RSD{}:asms)                = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ (R Rsp):asms)              = mkIx (ix+4) asms
+mkIx ix (MovRA _ _ (R Rbp):asms)              = mkIx (ix+4) asms
+mkIx ix (MovRA _ _ (R R13):asms)              = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ R{}:asms)                  = mkIx (ix+3) asms
 mkIx ix (MovRA _ _ (RC Rsp _):asms)           = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ (RC R12 _):asms)           = mkIx (ix+5) asms
@@ -735,6 +739,8 @@ asm ix st (MovRA _ r (RSD b s i i8):asms) =
         sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
         instr = pre:0x8b:modRMB:sib:le i8
     in instr:asm (ix+5) st asms
+asm ix st (MovAR l (R Rbp) r:asms) = asm ix st (MovAR l (RC Rbp 0) r:asms)
+asm ix st (MovAR l (R R13) r:asms) = asm ix st (MovAR l (RC R13 0) r:asms)
 asm ix st (MovAR _ (R ar@Rsp) r:asms) =
     let (0, bi) = modRM ar
         (e0, b0) = modRM r
@@ -751,6 +757,8 @@ asm ix st (MovRA _ r (R ar@Rsp):asms) =
     in isn:asm (ix+4) st asms
 asm ix st (MovAR _ (R ar) r:asms) =
     mkAR [0x89] 0 ar r:asm (ix+3) st asms
+asm ix st (MovRA l r (R Rbp):asms) = asm ix st (MovRA l r (RC Rbp 0):asms)
+asm ix st (MovRA l r (R R13):asms) = asm ix st (MovRA l r (RC R13 0):asms)
 asm ix st (MovRA _ r (R ar):asms) =
     mkAR [0x8b] 0 ar r:asm (ix+3) st asms
 asm ix st (Cmovnle _ r0 r1:asms) =
