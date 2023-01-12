@@ -176,7 +176,7 @@ roundMode RZero    = 0x3
 instance Pretty RoundMode where
     pretty = pretty . roundMode
 
-data Scale = One | Two | Four | Eight deriving (Generic)
+data Scale = One | Two | Four | Eight deriving (Eq, Generic)
 
 instance Pretty Scale where
     pretty One   = "1"
@@ -209,7 +209,7 @@ imm8 Ordq   = 7
 
 instance NFData Pred where
 
-data Addr reg = R reg | RC reg Int8 | RC32 reg Int32 | RS reg Scale reg | RSD reg Scale reg Int8 deriving (Generic, Functor, Foldable, Traversable)
+data Addr reg = R reg | RC reg Int8 | RC32 reg Int32 | RS reg Scale reg | RSD reg Scale reg Int8 deriving (Eq, Generic, Functor, Foldable, Traversable)
 
 instance NFData Scale where
 
@@ -292,6 +292,10 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Vsubsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
                     | Cvtsi2sd { ann :: a, fDest :: freg, rSrc :: reg }
                     | Vfmadd231sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
+                    | Vfmadd213sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
+                    | Vfmsub231sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
+                    | Vfmsub213sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
+                    | Vfmsub132sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
                     | Push { ann :: a, rSrc :: reg }
                     | Pop { ann :: a, rDest :: reg }
                     | Call { ann :: a, cfunc :: CFunc }
@@ -374,6 +378,10 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (FldS _ st)                   = i4 ("fld" <+> pretty st)
     pretty Fmulp{}                       = i4 "fmulp"
     pretty (Vfmadd231sd _ rD r0 r1)      = i4 ("vfmadd231sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Vfmadd213sd _ rD r0 r1)      = i4 ("vfmadd213sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Vfmsub231sd _ rD r0 r1)      = i4 ("vfsubd231sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Vfmsub213sd _ rD r0 r1)      = i4 ("vfsubd213sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Vfmsub132sd _ rD r0 r1)      = i4 ("vfsubd132sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Push _ r)                    = i4 ("push" <+> pretty r)
     pretty (Pop _ r)                     = i4 ("pop" <+> pretty r)
     pretty (IDiv _ r)                    = i4 ("idiv" <+> pretty r)
@@ -476,6 +484,10 @@ mapR f (IDiv l r)                  = IDiv l (f r)
 mapR _ (Roundsd l xr0 xr1 m)       = Roundsd l xr0 xr1 m
 mapR f (Cvtsi2sd l xr r)           = Cvtsi2sd l xr (f r)
 mapR _ (Vfmadd231sd l xr0 xr1 xr2) = Vfmadd231sd l xr0 xr1 xr2
+mapR _ (Vfmadd213sd l xr0 xr1 xr2) = Vfmadd213sd l xr0 xr1 xr2
+mapR _ (Vfmsub213sd l xr0 xr1 xr2) = Vfmsub213sd l xr0 xr1 xr2
+mapR _ (Vfmsub231sd l xr0 xr1 xr2) = Vfmsub231sd l xr0 xr1 xr2
+mapR _ (Vfmsub132sd l xr0 xr1 xr2) = Vfmsub132sd l xr0 xr1 xr2
 mapR f (Sal l r i)                 = Sal l (f r) i
 mapR f (Sar l r i)                 = Sar l (f r) i
 mapR _ (Sqrtsd l xr0 xr1)          = Sqrtsd l xr0 xr1
@@ -557,6 +569,10 @@ fR _ Vaddsd{}          = mempty
 fR _ Vsubsd{}          = mempty
 fR f (Cvtsi2sd _ _ r)  = f r
 fR _ Vfmadd231sd{}     = mempty
+fR _ Vfmadd213sd{}     = mempty
+fR _ Vfmsub213sd{}     = mempty
+fR _ Vfmsub231sd{}     = mempty
+fR _ Vfmsub132sd{}     = mempty
 fR f (Push _ r)        = f r
 fR f (Pop _ r)         = f r
 fR _ Call{}            = mempty
@@ -637,6 +653,10 @@ tR _ (Subsd l xr0 xr1)           = pure (Subsd l xr0 xr1)
 tR _ (Divsd l xr0 xr1)           = pure (Divsd l xr0 xr1)
 tR _ (Movapd l xr0 xr1)          = pure (Movapd l xr0 xr1)
 tR _ (Vfmadd231sd l xr0 xr1 xr2) = pure (Vfmadd231sd l xr0 xr1 xr2)
+tR _ (Vfmadd213sd l xr0 xr1 xr2) = pure (Vfmadd213sd l xr0 xr1 xr2)
+tR _ (Vfmsub213sd l xr0 xr1 xr2) = pure (Vfmsub213sd l xr0 xr1 xr2)
+tR _ (Vfmsub231sd l xr0 xr1 xr2) = pure (Vfmsub231sd l xr0 xr1 xr2)
+tR _ (Vfmsub132sd l xr0 xr1 xr2) = pure (Vfmsub132sd l xr0 xr1 xr2)
 tR f (Cvttsd2si l r xr)          = Cvttsd2si l <$> f r <*> pure xr
 tR f (Cvtsi2sd l xr r)           = Cvtsi2sd l xr <$> f r
 tR f (Push l r)                  = Push l <$> f r
@@ -718,6 +738,10 @@ mapFR f (Vminsd l xr0 xr1 xr2)      = Vminsd l (f xr0) (f xr1) (f xr2)
 mapFR _ (Not l r)                   = Not l r
 mapFR f (Cvtsi2sd l xr r)           = Cvtsi2sd l (f xr) r
 mapFR f (Vfmadd231sd l xr0 xr1 xr2) = Vfmadd231sd l (f xr0) (f xr1) (f xr2)
+mapFR f (Vfmadd213sd l xr0 xr1 xr2) = Vfmadd213sd l (f xr0) (f xr1) (f xr2)
+mapFR f (Vfmsub213sd l xr0 xr1 xr2) = Vfmsub213sd l (f xr0) (f xr1) (f xr2)
+mapFR f (Vfmsub231sd l xr0 xr1 xr2) = Vfmsub231sd l (f xr0) (f xr1) (f xr2)
+mapFR f (Vfmsub132sd l xr0 xr1 xr2) = Vfmsub132sd l (f xr0) (f xr1) (f xr2)
 mapFR f (Sqrtsd l xr0 xr1)          = Sqrtsd l (f xr0) (f xr1)
 mapFR _ (And l r0 r1)               = And l r0 r1
 mapFR _ (Cmovnle l r0 r1)           = Cmovnle l r0 r1

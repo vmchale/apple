@@ -191,6 +191,8 @@ feval (IR.FB IR.FPlus (IR.FReg r0) (IR.FReg r1)) t  = pure [Vaddsd () (fabsReg t
 feval (IR.FB IR.FMinus (IR.FReg r0) (IR.FReg r1)) t = pure [Vsubsd () (fabsReg t) (fabsReg r0) (fabsReg r1)]
 feval (IR.FConv (IR.Reg r)) t                       = pure [Cvtsi2sd () (fabsReg t) (absReg r)]
 feval (IR.FReg r) t                                 = pure [Movapd () (fabsReg t) (fabsReg r)]
+feval (IR.FB IR.FMinus (IR.FReg r0) (IR.FB IR.FTimes (IR.FReg r1) (IR.FReg r2))) t =
+    pure [Movapd () (fabsReg t) (fabsReg r0), Vfmsub231sd () (fabsReg t) (fabsReg r1) (fabsReg r2)]
 feval (IR.FB IR.FMinus (IR.FReg r0) e) t            = do
     i <- nextI
     putR <- feval e (IR.FTemp i)

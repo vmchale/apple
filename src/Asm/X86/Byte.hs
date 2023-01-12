@@ -176,6 +176,10 @@ mkIx ix (Vmaxsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
 mkIx ix (Vcmppd _ _ _ r _ :asms) | fits r     = mkIx (ix+5) asms
                                  | otherwise  = mkIx (ix+6) asms
 mkIx ix (Vfmadd231sd{}:asms)                  = mkIx (ix+5) asms
+mkIx ix (Vfmadd213sd{}:asms)                  = mkIx (ix+5) asms
+mkIx ix (Vfmsub213sd{}:asms)                  = mkIx (ix+5) asms
+mkIx ix (Vfmsub231sd{}:asms)                  = mkIx (ix+5) asms
+mkIx ix (Vfmsub132sd{}:asms)                  = mkIx (ix+5) asms
 mkIx ix (CmpRR{}:asms)                        = mkIx (ix+3) asms
 mkIx ix (IMulRR{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (XorRR{}:asms)                        = mkIx (ix+3) asms
@@ -509,6 +513,14 @@ asm ix st (Vcmppd _ r0 r1 r2 p:asms) | fits r2 =
     (mkVex3 0xc2 S6 F r0 r1 r2 ++ le (imm8 p)):asm (ix+6) st asms
 asm ix st (Vfmadd231sd _ r0 r1 r2:asms) =
     mkVex3 0xb9 S6 F38 r0 r1 r2:asm (ix+5) st asms
+asm ix st (Vfmadd213sd _ r0 r1 r2:asms) =
+    mkVex3 0xa9 S6 F38 r0 r1 r2:asm (ix+5) st asms
+asm ix st (Vfmsub132sd _ r0 r1 r2:asms) =
+    mkVex3 0x9b S6 F38 r0 r1 r2:asm (ix+5) st asms
+asm ix st (Vfmsub213sd _ r0 r1 r2:asms) =
+    mkVex3 0xab S6 F38 r0 r1 r2:asm (ix+5) st asms
+asm ix st (Vfmsub231sd _ r0 r1 r2:asms) =
+    mkVex3 0xbb S6 F38 r0 r1 r2:asm (ix+5) st asms
 asm ix st (Roundsd _ r0 r1 i:asms) | fits r0 && fits r1 =
     (rrNoPre [0x66,0x0f,0x3a,0x0b] r1 r0++le (roundMode i)):asm (ix+6) st asms
 asm ix st (Roundsd _ r0 r1 i:asms) =
