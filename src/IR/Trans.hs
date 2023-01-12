@@ -198,12 +198,11 @@ aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | f1 (eAnn e) && f1 res = d
     let sz = EAt (AP arrP (Just (ConstI 8)) l)
     f <- newFTemp
     ss <- writeRF op [f] f
-    iR <- newITemp
-    szR <- newITemp
+    iR <- newITemp; szR <- newITemp
     let loopBody = MX f (FAt (AP arrP Nothing l)):ss++[WrF (AP t (Just (sib iR)) (Just a)) (FReg f), MT arrP (IB IPlus (Reg arrP) (ConstI 8))]
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
-    pure (Just a, plE ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg szR) ++ MT arrP (IB IPlus (Reg arrP) (ConstI 16)):loop)
+    pure (Just a, plE ++ MT szR sz:man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ MT arrP (IB IPlus (Reg arrP) (ConstI 16)):loop)
 aeval (EApp res (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | f1(eAnn xs) && f1(eAnn ys) && f1 res = do
     a <- nextArr
     arrPX <- newITemp; arrPY <- newITemp

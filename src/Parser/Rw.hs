@@ -40,6 +40,7 @@ fi Div    = 7
 fi Plus   = 6
 fi Minus  = 6
 fi ConsE  = 5
+fi Snoc   = 5
 
 lassoc :: Builtin -> Bool
 lassoc IntExp = False
