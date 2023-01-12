@@ -97,6 +97,8 @@ x64T = testGroup "x64"
     , testCase "map/alloc" $ do { res <- sSq 25 ; res @?= [ i^(2::Int) | i <- [0..25] ] }
     , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
     , testCase "𝜉 (elliptic fourier)" $ do { res <- aaaFp "test/data/xi.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= [0,4,9.600000000000001::Double] }
+    -- , testCase "dtss (elliptic fourier)" $ do { res <- aaaFp "test/data/dtss.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= [16,33,95::Double] }
+    -- , testCase "A (elliptic fourier)" $ do { res <- fpAaf "test/data/A.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= 2.5 }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
@@ -165,7 +167,7 @@ fpFaf fp x ys = do
 
 fpAaf :: FilePath -> [Double] -> [Double] -> IO Double
 fpAaf fp xs ys = do
-    f <- bytesE <$> BSL.readFile fp
+    f <- fmap snd.funP =<< BSL.readFile fp
     jitAaf f xs ys
 
 fpAaff :: FilePath -> [Double] -> [Double] -> Double -> IO Double
@@ -179,12 +181,11 @@ jitAaff code xs ys z =
         (fp,_) <- bsFp code
         pure $ aaff fp p q z
 
-jitAaf :: BS.ByteString -> [Double] -> [Double] -> IO Double
-jitAaf code xs ys =
+jitAaf :: FunPtr (Ptr (Apple Double) -> Ptr (Apple Double) -> Double) -> [Double] -> [Double] -> IO Double
+jitAaf fp xs ys =
     let a = AA 1 [fromIntegral(length xs)] xs
         b = AA 1 [fromIntegral(length ys)] ys in
     wA a $ \p -> wA b $ \q -> do
-        (fp,_) <- bsFp code
         pure $ aaf fp p q
 
 jitFaf :: BS.ByteString -> Double -> [Double] -> IO Double

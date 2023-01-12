@@ -1,0 +1,13 @@
+-- A0 and C0 in Kuhl+Giardina
+λxs.λys.
+  { sum ← [(+)/1 0 x]
+  ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
+  ; dxs ⟜ Δ xs; dys ⟜ Δ ys
+  ; dts ⟜ [√(x^2+y^2)]`dxs dys
+  ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λ dts
+  ; dtss ⟜ (-)\~((^2)'1 (0<|pts))
+  ; T ⟜}. pts
+  ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) pts)
+  ; A ← ((sum ((*)`((%)`dxs dts) dtss))%2 + (sum ((*)`𝜉 dts)))%T
+  ; A
+  }
