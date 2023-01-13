@@ -67,7 +67,7 @@ runRepl x = do
     flip evalStateT initSt $ runInputT settings x
 
 appleCompletions :: CompletionFunc (StateT Env IO)
-appleCompletions (":","")         = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann", "y", "yank"])
+appleCompletions (":","")         = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann", "bench", "y", "yank"])
 appleCompletions ("i:", "")       = pure ("i:", cyclicSimple ["r", "nspect", ""])
 appleCompletions ("ri:", "")      = pure ("ri:", cyclicSimple [""])
 appleCompletions ("c:", "")       = pure ("c:", cyclicSimple ["mm"])
@@ -85,6 +85,13 @@ appleCompletions ("eb:", "")      = pure ("eb:", [simpleCompletion "nch"])
 appleCompletions ("neb:", "")     = pure ("neb:", [simpleCompletion "ch"])
 appleCompletions ("cneb:", "")    = pure ("cneb:", [simpleCompletion "h"])
 appleCompletions ("hcneb:", "")   = pure ("hcneb:", [simpleCompletion ""])
+appleCompletions ("c:", "")       = pure ("c:", cyclicSimple ["ompile", ""])
+appleCompletions ("oc:", "")      = pure ("oc:", cyclicSimple ["mpile", ""])
+appleCompletions ("moc:", "")     = pure ("moc:", cyclicSimple ["pile", ""])
+appleCompletions ("pmoc:", "")    = pure ("pmoc:", cyclicSimple ["ile", ""])
+appleCompletions ("ipmoc:", "")   = pure ("ipmoc:", cyclicSimple ["le", ""])
+appleCompletions ("lipmoc:", "")  = pure ("lipmoc:", cyclicSimple ["e", ""])
+appleCompletions ("elipmoc:", "") = pure ("elipmoc:", cyclicSimple [""])
 appleCompletions ("yt:", "")      = pure ("yt:", cyclicSimple [""])
 appleCompletions ("y:", "")       = pure ("y:", cyclicSimple ["ank", ""])
 appleCompletions ("ay:", "")      = pure ("ay:", cyclicSimple ["nk"])
@@ -138,6 +145,7 @@ loop = do
         Just (":cmm":e)       -> cR (unwords e) *> loop
         Just (":disasm":e)    -> disasm (unwords e) *> loop
         Just (":inspect":e)   -> inspect (unwords e) *> loop
+        Just (":compile":e)   -> benchC (unwords e) *> loop
         Just (":yank":f:[fp]) -> iCtx f fp *> loop
         Just (":y":f:[fp])    -> iCtx f fp *> loop
         Just (":graph":e)     -> graph (unwords e) *> loop
@@ -316,6 +324,14 @@ iCtx f fp = do
                 x' = parseE st' bs
             in lift $ do {modify (aEe n x'); modify (setL st')}
     where setM i' (_, mm, im) = (i', mm, im)
+
+benchC :: String -> Repl AlexPosn ()
+benchC s = case tyParse bs of
+    Left err -> liftIO $ putDoc (pretty err <> hardline)
+    Right _ -> do
+        m <- lift $ gets mf
+        liftIO $ benchmark (nfIO (do{(sz,fp) <- ctxFunP m bs; freeFunPtr sz fp}))
+    where bs = ubs s
 
 benchE :: String -> Repl AlexPosn ()
 benchE s = case tyParse bs of
