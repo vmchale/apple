@@ -40,7 +40,7 @@ import           Prettyprinter.Ext
 type Label = Word
 
 -- TODO: consider separate FX86Reg etc. type
-data X86Reg = Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15 | Rbp | Rbx | Rax | Rsp
+data X86Reg = Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15 | Rbx | Rax | Rbp | Rsp
             deriving (Eq, Ord, Enum, Generic)
 
 data FX86Reg = XMM1 | XMM2 | XMM3 | XMM4 | XMM5 | XMM6 | XMM7 | XMM8 | XMM9 | XMM10 | XMM11 | XMM12 | XMM13 | XMM14 | XMM15 | XMM0

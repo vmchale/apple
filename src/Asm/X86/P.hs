@@ -27,19 +27,20 @@ frame :: S.Set X86Reg -> [X86 X86Reg FX86Reg ()] -> [X86 X86Reg FX86Reg ()]
 frame clob asms = pre++init asms++post++[Ret()] where
     pre = Push () <$> clobs
     post = Pop () <$> reverse clobs
-    -- FIXME: stack alignment
-    clobs = S.toList (clob `S.intersection` S.fromList [R12 .. Rbx])
+    clobs = S.toList (clob `S.intersection` S.fromList (Rbp:[R12 .. Rbx]))
+    -- TODO: https://eli.thegreenplace.net/2011/09/06/stack-frame-layout-on-x86-64/
+    -- https://stackoverflow.com/questions/51523127/why-does-the-compiler-reserve-a-little-stack-space-but-not-the-whole-array-size
 
 {-# INLINE gallocOn #-}
 gallocOn :: Int -> [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86Reg, [X86 AbsReg FAbsReg ()])
-gallocOn u = go u 0 pres
-    where go uϵ offs pres' isns = rmaps
+gallocOn u = go u 0 pres True
+    where go uϵ offs pres' i isns = rmaps
               where rmaps = case (regsM, fregsM) of
-                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs in (regs, fregs, ISubRI () SP saa:isns)
+                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs; saaP = if i then id else (ISubRI () BP saa:) in (regs, fregs, saaP isns)
                         (Left s, Right fregs) ->
                             let (uϵ', offs', isns') = spill uϵ offs s isns
-                            in go uϵ' offs' (IM.insert (-16) Rbp pres') isns'
-                    regsM = alloc aIsns [Rcx .. Rax] (IM.keysSet pres') pres'
+                            in go uϵ' offs' (IM.insert (-16) Rbp pres') False isns'
+                    regsM = alloc aIsns ((if i then (++[Rbp]) else id) [Rcx .. Rax]) (IM.keysSet pres') pres'
                     fregsM = allocF aFIsns [XMM1 .. XMM15] (IM.keysSet preFs) preFs
                     (aIsns, aFIsns) = bundle isns
 

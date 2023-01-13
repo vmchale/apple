@@ -4,7 +4,7 @@
 
 #include "../../c/apple.c"
 
-extern F aaf(U, U);
+extern U aaa(U, U);
 
 int main(int argc, char *argv[]) {
     F xs[] = {0,4,4};
@@ -14,6 +14,6 @@ int main(int argc, char *argv[]) {
     Af b = {1,d,ys};
     U x = poke_af(a);
     U y = poke_af(b);
-    printf("%f\n", aaf(x, y));
+    printf("%p\n", aaa(x, y));
     free(x);free(y);
 }
