@@ -51,8 +51,8 @@ spillM offs m isns = (foffs, concatMapM g isns)
 
           thread = foldr (.) id
 
-ao o | Just i8 <- mi8 (-o) = RC BP i8
-     | Just i32 <- mi32 (-o) = RC32 BP i32
+ao o | Just i8 <- mi8 o = RC BP i8
+     | Just i32 <- mi32 o = RC32 BP i32
 
 mi8 :: Int -> Maybe Int8
 mi8 i | i <= fromIntegral (maxBound :: Int8) && i >= fromIntegral (minBound :: Int8) = Just $ fromIntegral i
