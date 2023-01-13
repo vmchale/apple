@@ -23,7 +23,7 @@ spill :: Int -- ^ Unique state
 spill u offs m isns =
     let (o', ᴍ) = spillM offs m isns
         (nisns, u') = runState ᴍ u
-    in (o', u', nisns)
+    in (u', o', nisns)
 
 spillM :: Int -- ^ Offset (from already spilled)
        -> IS.IntSet
