@@ -24,7 +24,7 @@ galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!)
 
 {-# SCC frame #-}
 frame :: S.Set X86Reg -> [X86 X86Reg FX86Reg ()] -> [X86 X86Reg FX86Reg ()]
-frame clob asms = pre++init asms++post++[Ret()] where
+frame clob asms = pre++asms++post++[Ret()] where
     pre = Push () <$> clobs
     post = Pop () <$> reverse clobs
     clobs = S.toList (clob `S.intersection` S.fromList (Rbp:[R12 .. Rbx]))
@@ -36,7 +36,7 @@ gallocOn :: Int -> [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86R
 gallocOn u = go u 0 pres True
     where go uϵ offs pres' i isns = rmaps
               where rmaps = case (regsM, fregsM) of
-                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs; saaP = if i then id else (ISubRI () BP saa:) in (regs, fregs, saaP isns)
+                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs; saaP = if i then init else (++[IAddRI () SP saa]).init.(ISubRI () SP saa:).(ISubRI () BP saa:) in (regs, fregs, saaP isns)
                         (Left s, Right fregs) ->
                             let (uϵ', offs', isns') = spill uϵ offs s isns
                             in go uϵ' offs' (IM.insert (-16) Rbp pres') False isns'
