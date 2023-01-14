@@ -8,6 +8,7 @@
 - [ ] https://www.felixcloutier.com/x86/f2xm1
   - [ ] thence: x^y=s^(y \* (log_2 x))
 - [ ] https://www.felixcloutier.com/x86/setcc
+- [ ] https://www.felixcloutier.com/x86/leave
 # Min/max
 - [ ] http://web.archive.org/web/20130821015554/http://bob.allegronetwork.com/prog/tricks.html
   - [ ] quick absolute value

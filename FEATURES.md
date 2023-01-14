@@ -11,6 +11,8 @@
 ## Add Features
 - [ ] outer product
 - [ ] matmul
+- [ ] reverse
+- [ ] `reshape`
 # Performance
 - [ ] lift constants out of loops
 - [ ] lift `fninit` out of loops
@@ -21,5 +23,5 @@
 - [ ] Tuples (stack-allocate) (induction)
 # Register Allocation
 - [x] Finish graph-based allocator
-  - [ ] analyze clobbers in `call`s
-  - [ ] spill
+  - [x] analyze clobbers in `call`s
+  - [?] spill

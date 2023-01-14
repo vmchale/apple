@@ -33,6 +33,7 @@
 - [x] `zipWith` builtin (2-ary)
   - [x] rename ` because it's only used as `2 1 anyway
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
+- [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
 - [ ] https://www.compart.com/en/unicode/U+1D66
 ## Optimization
 - [ ] `neg` instruction, not `0-`...
@@ -42,6 +43,7 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ] `⟨⟨1.0,0⟩,⟨0,1⟩,⟨0,0⟩⟩` fails (types, see FIXME in `src/Ty.hs`)
 - [ ] beta-reduction with 'rand' or w/e (needs to be llet ... in)
 - [ ]
 ```
