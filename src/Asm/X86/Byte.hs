@@ -262,6 +262,7 @@ mkIx ix (MovAR _ (R Rbp) _:asms)              = mkIx (ix+4) asms
 mkIx ix (MovAR _ (R R13) _:asms)              = mkIx (ix+4) asms
 mkIx ix (MovAR _ R{} _:asms)                  = mkIx (ix+3) asms
 mkIx ix (MovRA _ _ (RS Rbp _ _):asms)         = mkIx (ix+5) asms
+mkIx ix (MovRA _ _ (RS R13 _ _):asms)         = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ RS{}:asms)                 = mkIx (ix+4) asms
 mkIx ix (MovRA _ _ RSD{}:asms)                = mkIx (ix+5) asms
 mkIx ix (MovRA _ _ (R Rsp):asms)              = mkIx (ix+4) asms
@@ -730,6 +731,7 @@ asm ix st (MovAR _ (RC ar i8) r:asms) =
 asm ix st (MovAR _ (RC32 ar i32) r:asms) =
     (mkAR [0x89] 2 ar r++le i32):asm (ix+7) st asms
 asm ix st (MovRA l r (RS b@Rbp s i):asms) = asm ix st (MovRA l r (RSD b s i 0):asms)
+asm ix st (MovRA l r (RS b@R13 s i):asms) = asm ix st (MovRA l r (RSD b s i 0):asms)
 asm ix st (MovRA _ r (RS b s i):asms) =
     let (e0, b0) = modRM r
         (eb, bb) = modRM b
