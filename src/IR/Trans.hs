@@ -769,6 +769,10 @@ eval (EApp _ (Builtin _ Sin) e) t = do
     f <- newFTemp
     plE <- eval e f
     pure $ plE ++ [MX t (FU FSin (FReg f))]
+eval (EApp _ (Builtin _ Cos) e) t = do
+    f <- newFTemp
+    plE <- eval e f
+    pure $ plE ++ [MX t (FU FCos (FReg f))]
 eval (EApp _ (Builtin _ Size) e) t | unDim (eAnn e) = do
     r <- newITemp
     (mI, plE) <- aeval e r

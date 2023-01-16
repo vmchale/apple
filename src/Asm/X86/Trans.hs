@@ -220,6 +220,9 @@ feval (IR.FU IR.FLog (IR.FReg r0)) t =
 feval (IR.FU IR.FSin (IR.FReg r)) t =
     let sa = RC SP (-8) in
     pure [MovqAX () sa (fabsReg r), Fld () sa, Fsin (), Fstp () sa, MovqXA () (fabsReg t) sa]
+feval (IR.FU IR.FCos (IR.FReg r)) t =
+    let sa = RC SP (-8) in
+    pure [MovqAX () sa (fabsReg r), Fld () sa, Fcos (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FB IR.FExp (IR.ConstF 2.718281828459045) e) t = do
     i <- nextI
     putE <- feval e (IR.FTemp i)

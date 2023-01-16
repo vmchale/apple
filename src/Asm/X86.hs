@@ -257,6 +257,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Fld1 { ann :: a }
                     | Fyl2x { ann :: a }
                     | Fsin { ann :: a }
+                    | Fcos { ann :: a }
                     | Fstp { ann :: a, a87 :: Addr reg }
                     | F2xm1 { ann :: a }
                     | Fmulp { ann :: a }
@@ -370,6 +371,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty Fldln2{}                      = i4 "fldln2"
     pretty Fld1{}                        = i4 "fld1"
     pretty Fsin{}                        = i4 "fsin"
+    pretty Fcos{}                        = i4 "fcos"
     pretty Fprem{}                       = i4 "fprem"
     pretty Faddp{}                       = i4 "faddp"
     pretty Fscale{}                      = i4 "fscale"
@@ -505,6 +507,7 @@ mapR f (TestI l r i)               = TestI l (f r) i
 mapR _ (Vcmppd l xr0 xr1 xr2 p)    = Vcmppd l xr0 xr1 xr2 p
 mapR f (MovqRX l r xr)             = MovqRX l (f r) xr
 mapR _ (Fsin l)                    = Fsin l
+mapR _ (Fcos l)                    = Fcos l
 mapR f (XorRR l r0 r1)             = XorRR l (f r0) (f r1)
 mapR _ (C a l)                     = C a l
 mapR _ (RetL a l)                  = RetL a l
@@ -535,6 +538,7 @@ fR _ Fldln2{}          = mempty
 fR _ Fld1{}            = mempty
 fR _ Fyl2x{}           = mempty
 fR _ Fsin{}            = mempty
+fR _ Fcos{}            = mempty
 fR f (Fstp _ a)        = f @<> a
 fR _ F2xm1{}           = mempty
 fR _ Fmulp{}           = mempty
@@ -620,6 +624,7 @@ tR _ (Fldln2 l)                  = pure (Fldln2 l)
 tR _ (Fld1 l)                    = pure (Fld1 l)
 tR _ (Fyl2x l)                   = pure (Fyl2x l)
 tR _ (Fsin l)                    = pure (Fsin l)
+tR _ (Fcos l)                    = pure (Fcos l)
 tR f (Fstp l a)                  = Fstp l <$> f @* a
 tR _ (F2xm1 l)                   = pure (F2xm1 l)
 tR _ (Fmulp l)                   = pure (Fmulp l)
@@ -751,6 +756,7 @@ mapFR _ (Test l r0 r1)              = Test l r0 r1
 mapFR f (Vcmppd l xr0 xr1 xr2 p)    = Vcmppd l (f xr0) (f xr1) (f xr2) p
 mapFR f (MovqRX l r xr)             = MovqRX l r (f xr)
 mapFR _ (Fsin l)                    = Fsin l
+mapFR _ (Fcos l)                    = Fcos l
 mapFR _ (XorRR l r0 r1)             = XorRR l r0 r1
 mapFR _ (C a l)                     = C a l
 mapFR _ (RetL a l)                  = RetL a l

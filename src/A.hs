@@ -152,6 +152,7 @@ instance Pretty Builtin where
     pretty Fib       = "𝓕"
     pretty Dim       = "𝓉"
     pretty Sin       = "sin."
+    pretty Cos       = "cos."
     pretty Gte       = "≥"
     pretty Gt        = ">"
     pretty Lt        = "<"

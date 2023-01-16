@@ -231,6 +231,7 @@ mkIx ix (Fldl2e{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fldln2{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (Fld1{}:asms)                         = mkIx (ix+2) asms
 mkIx ix (Fsin{}:asms)                         = mkIx (ix+2) asms
+mkIx ix (Fcos{}:asms)                         = mkIx (ix+2) asms
 mkIx ix (FldS{}:asms)                         = mkIx (ix+2) asms
 mkIx ix (Fld _ (RC Rsp _):asms)               = mkIx (ix+4) asms
 mkIx ix (Fyl2x{}:asms)                        = mkIx (ix+2) asms
@@ -637,6 +638,8 @@ asm ix st (Fld1{}:asms) =
     [0xd9,0xe8]:asm (ix+2) st asms
 asm ix st (Fsin{}:asms) =
     [0xd9,0xfe]:asm (ix+2) st asms
+asm ix st (Fcos{}:asms) =
+    [0xd9,0xff]:asm (ix+2) st asms
 asm ix st (FldS _ (ST i):asms) =
     let isn = [0xd9, 0xc0+fromIntegral i] in isn:asm (ix+2) st asms
 asm ix st (Fprem{}:asms) =

@@ -132,6 +132,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     mul { TokB $$ BuiltinMMul }
     r { TokB $$ BuiltinR }
     sin { TokB $$ BuiltinSin }
+    cos { TokB $$ BuiltinCos }
 
 %left paren
 %nonassoc leq geq gt lt neq eq
@@ -266,6 +267,7 @@ E :: { E AlexPosn }
   | trans { Builtin $1 T }
   | r { Builtin $1 R }
   | sin { Builtin $1 Sin }
+  | cos { Builtin $1 Cos }
   | tilde { Builtin $1 Flip }
 
 {
