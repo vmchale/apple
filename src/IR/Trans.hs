@@ -504,6 +504,20 @@ aeval (LLet _ (n, e') e) t | isArr (eAnn e') = do
     (l, ss) <- aeval e' t'
     modify (addAVar n (l, t'))
     second (ss ++) <$> aeval e t
+aeval (EApp oTy (Builtin _ Init) x) t | f1 oTy = do
+    a <- nextArr
+    xR <- newITemp; nR <- newITemp
+    (lX, plX) <- aeval x xR
+    modify (addMT a t)
+    let n=EAt (AP xR (Just$ConstI 8) lX)
+    pure (Just a, plX ++ MT nR (IB IMinus n (ConstI 1)):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 16) lX) (Reg nR)])
+aeval (EApp oTy (Builtin _ Tail) x) t | f1 oTy = do
+    a <- nextArr
+    xR <- newITemp; nR <- newITemp
+    (lX, plX) <- aeval x xR
+    modify (addMT a t)
+    let n=EAt (AP xR (Just$ConstI 8) lX)
+    pure (Just a, plX ++ MT nR (IB IMinus n (ConstI 1)):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 24) lX) (Reg nR)])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
