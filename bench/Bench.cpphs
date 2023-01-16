@@ -53,12 +53,13 @@ main = do
     ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
     ᴀFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/offset.🍏"
 #endif
-    defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ) ->
+    defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
                       , bench "tyParse (xor)" $ nf tyParse x
                       , bench "bytes (gammaln)" $ nf bytes 𝛾
                       , bench "bytes (fcdf)" $ nf bytes ꜰ
+                      , bench "asm (A)" $ nf x86G ᴀ
                       ]
                       -- TODO: thunks after type checking?
                 , env rfx86L $ \asm ->
@@ -123,8 +124,9 @@ main = do
           tcdf = BSL.readFile "math/tcdf.🍎"
           xor = BSL.readFile "test/examples/xor.🍎"
           fcdf = BSL.readFile "math/fcdf.🍎"
+          offA = BSL.readFile "test/data/A.🍏"
           rfx86L = yeet . x86L <$> rf
-          files = (,,,) <$> tcdf <*> xor <*> gamma <*> fcdf
+          files = (,,,,) <$> tcdf <*> xor <*> gamma <*> fcdf <*> offA
           erfParsed = parseRename <$> erfSrc
           erfTy = tyParse <$> erfSrc
           yeet :: (Exception e) => Either e a -> a
