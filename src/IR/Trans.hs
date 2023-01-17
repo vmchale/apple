@@ -354,8 +354,8 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
         nIr = 16+n*8
     iR <- newITemp
     ss <- writeRF op [slopP] fR
-    let loopBody = Cpy (AP slopP (Just (ConstI 16)) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI $ fromIntegral n + 2):ss++[WrF (AP t (Just (sib iR)) arrL) (FReg fR)]
-    loop <- doN iR (Reg szR) loopBody
+    let loopBody = Cpy (AP slopP (Just (ConstI 16)) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI$fromIntegral n+2):ss++[WrF (AP t (Just (sib iR)) arrL) (FReg fR)]
+    loop <- doN iR (IB IMinus (Reg szR) (ConstI$fromIntegral n-1)) loopBody
     modify (addMT a t)
     pure (Just a, putX++MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI (24-8*fromIntegral n))):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (IB IMinus (Reg szR) (ConstI $ fromIntegral n - 1)):Sa slopP nIr:Wr (AP slopP Nothing Nothing) (ConstI 1):Wr (AP slopP (Just (ConstI 8)) Nothing) (ConstI $ fromIntegral n):loop ++ [Pop nIr])
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do

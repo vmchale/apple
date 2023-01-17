@@ -76,7 +76,9 @@ ir (IR.MJ (IR.IRel IR.INeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [Test () (absReg 
 ir (IR.MJ (IR.IRel IR.IEq (IR.Reg r0) (IR.Reg r1)) l)   = pure [Test () (absReg r0) (absReg r1), Je () l]
 ir (IR.MJ (IR.IRel IR.IEq (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Je () l]
 ir (IR.MJ (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jg () l]
-ir (IR.MJ (IR.IRel IR.IGeq (IR.Reg r0) (IR.Reg r1)) l)  = pure [CmpRR () (absReg r0) (absReg r1), Jge () l]
+ir (IR.MJ (IR.IRel IR.IGeq (IR.Reg r0) e1) l) = do
+    i1 <- nextI; plE1 <- evalE e1 (IR.ITemp i1)
+    pure $ plE1 ++ [CmpRR () (absReg r0) (IReg i1), Jge () l]
 ir (IR.MJ (IR.IRel IR.IGt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jg () l]
 ir (IR.MJ (IR.IRel IR.IGeq (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jge () l]
 ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jl () l]
