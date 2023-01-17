@@ -131,6 +131,9 @@ ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just (IR.ConstI sI)) _)
     let i = IReg ii
     l <- nextL; endL <- nextL
     pure $ plE ++ [ISubRI () i 1, Label () l, CmpRI () i 0, Jl () endL, MovRA () t (RSD (absReg tS) Eight i si8), MovAR () (RSD (absReg tD) Eight i sd8) t, ISubRI () i 1, J () l, Label () endL]
+ir (IR.Cpy (IR.AP tD Nothing _ ) (IR.AP tS Nothing _) (IR.ConstI n)) | n <= 4 = do
+    t <- nextR
+    pure $ concat [ [ MovRA () t (RC (absReg tS) (i*8)), MovAR () (RC (absReg tD) (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
 ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) (IR.ConstI n)) | n <= 4 = do
     iR <- nextI; plE <- evalE e (IR.ITemp iR)
     t <- nextR
