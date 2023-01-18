@@ -42,13 +42,16 @@ $digit = [0-9]
 
 $latin = [a-zA-Z]
 
+$subscript = [ₐ-ₜ]
+$digitsubscript = [₀-₉]
+
 $greek = [α-ωΑ-Ω]
 
 $mathgreek = [𝛼-𝜛]
 
 $letter = [$latin $greek]
 
-@follow_char = [$letter $digit \_]
+@follow_char = [$letter $digit $subscript $digitsubscript \_]
 
 @name = ($letter#[Λλ] @follow_char* | $mathgreek | ∫)
 
