@@ -33,7 +33,7 @@ frame clob asms = pre++asms++post++[Ret()] where
 
 {-# INLINE gallocOn #-}
 gallocOn :: Int -> [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86Reg, [X86 AbsReg FAbsReg ()])
-gallocOn u = go u 0 pres True
+gallocOn u = go u 16 pres True
     where go uϵ offs pres' i isns = rmaps
               where rmaps = case (regsM, fregsM) of
                         (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs; saaP = if i then init else (++[IAddRI () SP saa]).init.(ISubRI () SP saa:).(ISubRI () BP saa:) in (regs, fregs, saaP isns)
