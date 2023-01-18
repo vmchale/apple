@@ -578,7 +578,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EAp
     endI <- newITemp
     l <- newLabel; endL <- newLabel
     putStart <- eval start startR; putAcc <- eval seed acc; putIEnd <- eval nSteps endI
-    putIncr <- eval (((end `eMinus` start) `ePlus` FLit F 1) `eDiv` nStepsF) incrR
+    putIncr <- eval ((end `eMinus` start) `eDiv` (nStepsF `eMinus` FLit F 1)) incrR
     -- step the accumulating value
     step <- writeRF op [acc, xR] acc
     pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [tick i, MX xR (FB FPlus (FReg xR) (FReg incrR)), J l, L endL]
@@ -592,7 +592,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ (Fold 1)) op) seed) (EApp _ (EApp _ (EAp
     putStart <- eval start startR
     putAcc <- eval seed acc
     putIEnd <- eval nSteps endI
-    putIncr <- eval (((end `eMinus` start) `ePlus` FLit F 1) `eDiv` EApp F (Builtin (Arrow I F) ItoF) nSteps) incrR
+    putIncr <- eval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)) incrR
     -- step the accumulating value
     step <- writeRF op [acc, xR] acc
     pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [tick i, MX xR (FB FPlus (FReg xR) (FReg incrR)), J l, L endL]
