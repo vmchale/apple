@@ -1,17 +1,16 @@
--- a_n, b_n, c_n, d_n in Kuhl+Giardina
+-- aₙ, bₙ, cₙ, dₙ in Kuhl+Giardina
 λxs.λys.λn.
   { sum ← [(+)/1 0 x]
   ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys
-  ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λ dts
-  ; dtss ⟜ (-)\~((^2)'1 (0<|pts))
-  ; dxss ← {:((%)`dxs dts); dyss ← {:((%)`dys dts)
+  ; pts ⟜ (+)Λ dts
+  ; dxss ⟜ {:((%)`dxs dts); dyss ⟜ {:((%)`dys dts)
   ; T ⟜}. pts
   ; scaleRad ← [2*n*𝜋*x%T]
+  ; cosDiffs ⟜ (-)\~([cos.(scaleRad x)]'1 pts)
+  ; sinDiffs ⟜ (-)\~([sin.(scaleRad x)]'1 pts)
   ; c ⟜ T%(2*n^2*𝜋^2)
-  ; cosDiffs ⟜ (-)\~([cos.(scaleRad x)]'1 dtss)
-  ; sinDiffs ⟜ (-)\~([sin.(scaleRad x)]'1 dtss)
   ; aₙ ← c*sum ((*)`dxss cosDiffs)
   ; bₙ ← c*sum ((*)`dxss sinDiffs)
   ; cₙ ← c*sum ((*)`dyss cosDiffs)
