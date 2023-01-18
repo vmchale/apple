@@ -22,6 +22,7 @@
 # ABI
 - [ ] Tuples (stack-allocate) (induction)
   - [ ] cos/sin crash against the stack (refer to rsp+8, rsp+16?)
+  - [ ] stack-allocations: ensure 16-byte??
 # Register Allocation
 - [x] Finish graph-based allocator
   - [x] analyze clobbers in `call`s
