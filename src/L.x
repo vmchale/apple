@@ -50,10 +50,11 @@ $greek = [α-ωΑ-Ω]
 $mathgreek = [𝛼-𝜛]
 
 $letter = [$latin $greek]
+$sub = [$subscript $digitsubscript]
 
-@follow_char = [$letter $digit $subscript $digitsubscript \_]
+@follow_char = [$letter $digit \_]
 
-@name = ($letter#[Λλ] @follow_char* | $mathgreek | ∫)
+@name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek | ∫)
 
 @exp = e\-?$digit+
 @float = $digit+\.$digit+@exp?
