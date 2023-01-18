@@ -4,7 +4,7 @@
 - [ ] fold
 - [ ] rank
 - [ ] convolve
-- [ ] transpose
+- [◦] transpose
 - [x] concat
 - [x] array literals
   - [ ] multidimensional arrays
@@ -21,6 +21,7 @@
 - [ ] consolidate allocations up-front when possible (dim from types)
 # ABI
 - [ ] Tuples (stack-allocate) (induction)
+  - [ ] cos/sin crash against the stack (refer to rsp+8, rsp+16?)
 # Register Allocation
 - [x] Finish graph-based allocator
   - [x] analyze clobbers in `call`s
