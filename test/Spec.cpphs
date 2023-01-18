@@ -59,7 +59,7 @@ tyT = testGroup "Type system"
     , tyF "math/hypergeometric.🍏"
     , tyF "math/erf.🍏"
     , tyF "math/amgm.🍏"
-    , tyS "[(+)/\\ 0 (irange 0 x 1)]"
+    , tyS "[(+)/\\o 0 (irange 0 x 1)]"
     , tyS "((-)\\~)"
     ]
 
