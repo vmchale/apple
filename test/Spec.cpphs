@@ -97,6 +97,7 @@ x64T = testGroup "x64"
     , testCase "map/alloc" $ do { res <- sSq 25 ; res @?= [ i^(2::Int) | i <- [0..25] ] }
     , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
     , testCase "A (elliptic fourier)" $ do { res <- fpAaf "test/data/A.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= 2.5000000000000004 }
+    , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/examples/coeffs.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.288765,-0.026324,0.106387,0.342212) }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
@@ -162,6 +163,13 @@ fpFaf :: FilePath -> Double -> [Double] -> IO Double
 fpFaf fp x ys = do
     f <- bytesE <$> BSL.readFile fp
     jitFaf f x ys
+
+fpAait :: FilePath -> [Double] -> [Double] -> Int -> IO (Double, Double, Double, Double)
+fpAait fp xs ys n = do
+    f <- fmap snd.funP =<< BSL.readFile fp
+    let a=AA 1 [fromIntegral(length xs)] xs; b=AA 1 [fromIntegral(length ys)] ys
+    wA a $ \p -> wA b $ \q -> do
+        hs4 <$> peek (aait f p q n)
 
 fpAaf :: FilePath -> [Double] -> [Double] -> IO Double
 fpAaf fp xs ys = do
@@ -270,3 +278,4 @@ foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> In
 foreign import ccall "dynamic" ia :: FunPtr (Int -> Ptr (Apple a)) -> Int -> Ptr (Apple a)
 foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b)) -> Ptr (Apple a) -> Ptr (Apple b)
 foreign import ccall "dynamic" aaa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c)) -> Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c)
+foreign import ccall "dynamic" aait :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Int -> Ptr (P4 a b c d)) -> Ptr (Apple a) -> Ptr (Apple a) -> Int -> Ptr (P4 a b c d)

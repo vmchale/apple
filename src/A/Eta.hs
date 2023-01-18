@@ -67,6 +67,7 @@ etaM e@ALit{}                = pure e
 etaM e@(Id _ AShLit{})       = pure e
 etaM e@Cond{}                = pure e
 etaM e@BLit{}                = pure e
+etaM e@Tup{}                 = pure e
 etaM e@(Var t@Arrow{} _)     = mkLam (doms t) e
 etaM e@Var{}                 = pure e
 etaM e@(Builtin t@Arrow{} _) = mkLam (doms t) e

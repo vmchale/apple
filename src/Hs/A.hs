@@ -4,9 +4,9 @@
 module Hs.A ( Apple (..)
             , AI
             , AF
-            , Pp (..)
+            , Pp (..), P4 (..)
             , dbgAB
-            , hsTup
+            , hsTup, hs4
             ) where
 
 import           Control.Monad         (forM, zipWithM_)
@@ -28,10 +28,15 @@ data Apple a = AA !Int64 [Int64] [a]
 
 data Pp a b = Pp a b
 hsTup (Pp a b) = (a,b)
+data P4 a b c d = P4 a b c d; hs4 (P4 a b c d) = (a,b,c,d)
 
 instance (Storable a, Storable b) => Storable (Pp a b) where
     sizeOf _ = sizeOf(undefined::a)+sizeOf(undefined::b)
     peek p = Pp <$> peek (castPtr p) <*> peek (p `plusPtr` sizeOf(undefined::a))
+
+instance (Storable a, Storable b, Storable c, Storable d) => Storable (P4 a b c d) where
+    sizeOf _ = sizeOf(undefined::a)+sizeOf(undefined::b)+sizeOf(undefined::c)+sizeOf(undefined::d)
+    peek p = P4 <$> peek (castPtr p) <*> peek (p `plusPtr` sizeOf(undefined::a)) <*> peek (p `plusPtr` (sizeOf(undefined::a)+sizeOf(undefined::b))) <*> peek (p `plusPtr` (sizeOf(undefined::a)+sizeOf(undefined::b)+sizeOf(undefined::c)))
 
 instance Pretty a => Pretty (Apple a) where
     pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pretty xs
@@ -45,7 +50,8 @@ dbgAB p = do
     dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)
     let sz = 8+8*rnk+fromIntegral (sizeOf (undefined::a))*product dims
     hextext <$> peekArray (fromIntegral sz) (castPtr p :: Ptr Word8)
-    where hextext = T.unwords . fmap (T.pack.($"").showHex)
+
+hextext = T.unwords . fmap (T.pack.($"").showHex)
 
 instance Storable a => Storable (Apple a) where
     sizeOf (AA rnk dims _) = 8+8*fromIntegral rnk+(sizeOf (undefined::a)*fromIntegral (product dims))

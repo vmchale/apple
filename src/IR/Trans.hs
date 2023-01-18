@@ -111,8 +111,8 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
              | isI (eAnn e) = eval e CRet
              | isB (eAnn e) = eval e CRet
              | isArr (eAnn e) = do{(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
-             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing)), Pop 16]}
-             | ty@P{} <- eAnn e = let b = bT ty in do{t <- newITemp; a <- nextArr; pl <- eval e t; pure $ pl ++ [Ma a CRet (ConstI b), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b `div` 8), RA a]}
+             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t 16:[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing)), Pop 16]}
+             | ty@P{} <- eAnn e = let b=bT ty; b64=fromIntegral b in do{t <- newITemp; a <- nextArr; pl <- eval e t; pure $ Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a]}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
@@ -357,7 +357,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     let loopBody = Cpy (AP slopP (Just (ConstI 16)) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI$fromIntegral n+2):ss++[WrF (AP t (Just (sib iR)) arrL) (FReg fR)]
     loop <- doN iR (IB IMinus (Reg szR) (ConstI$fromIntegral n-1)) loopBody
     modify (addMT a t)
-    pure (Just a, putX++MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI (24-8*fromIntegral n))):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (IB IMinus (Reg szR) (ConstI $ fromIntegral n - 1)):Sa slopP nIr:Wr (AP slopP Nothing Nothing) (ConstI 1):Wr (AP slopP (Just (ConstI 8)) Nothing) (ConstI $ fromIntegral n):loop ++ [Pop nIr])
+    pure (Just a, putX++MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI (24-8*fromIntegral n))):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (IB IMinus (Reg szR) (ConstI$fromIntegral n-1)):Sa slopP nIr:Wr (AP slopP Nothing Nothing) (ConstI 1):Wr (AP slopP (Just (ConstI 8)) Nothing) (ConstI $ fromIntegral n):loop ++ [Pop nIr])
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do
     a <- nextArr
     arg <- newITemp
