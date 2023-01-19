@@ -200,10 +200,10 @@ aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | f1 (eAnn e) && f1 res = d
     f <- newFTemp
     ss <- writeRF op [f] f
     iR <- newITemp; szR <- newITemp
-    let loopBody = MX f (FAt (AP arrP Nothing l)):ss++[WrF (AP t (Just (sib iR)) (Just a)) (FReg f), MT arrP (IB IPlus (Reg arrP) (ConstI 8))]
+    let loopBody = MX f (FAt (AP arrP (Just (sib iR)) l)):ss++[WrF (AP t (Just (sib iR)) (Just a)) (FReg f)]
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
-    pure (Just a, plE ++ MT szR sz:man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ MT arrP (IB IPlus (Reg arrP) (ConstI 16)):loop)
+    pure (Just a, plE ++ MT szR sz:man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR)++loop)
 aeval (EApp res (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | f1(eAnn xs) && f1(eAnn ys) && f1 res = do
     a <- nextArr
     arrPX <- newITemp; arrPY <- newITemp
@@ -255,11 +255,10 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | i1 (eAnn e) &
     ss <- writeRF op [acc, n] acc
     iR <- newITemp
     szR <- newITemp
-    -- TODO: why arrP and iR?
-    let loopBody=MT n (EAt (AP arrP (Just$IB IAsl (Reg iR) (ConstI 3)) l)):Wr (AP t (Just (sib iR)) (Just a)) (Reg acc):ss
+    let loopBody=MT n (EAt (AP arrP (Just (sib iR)) l)):Wr (AP t (Just (sib iR)) (Just a)) (Reg acc):ss
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
-    pure (Just a, plE ++ plSeed ++ MT szR (IB IPlus sz (ConstI 1)):Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg szR) ++ MT arrP (IB IPlus (Reg arrP) (ConstI 16)):loop)
+    pure (Just a, plE ++ plSeed ++ MT szR (IB IPlus sz (ConstI 1)):Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg szR) ++ loop)
 aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | i1 (eAnn e) && i1 res = do
     a <- nextArr
     arrP <- newITemp
@@ -270,11 +269,10 @@ aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | i1 (eAnn e) && i1 res = d
     ss <- writeRF op [m] m
     iR <- newITemp
     szR <- newITemp
-    -- TODO: why arrP and iR?
-    let loopBody = MT m (EAt (AP arrP (Just$IB IAsl (Reg iR) (ConstI 3)) l)):ss++[Wr (AP t (Just (sib iR)) (Just a)) (Reg m)]
+    let loopBody = MT m (EAt (AP arrP (Just (sib iR)) l)):ss++[Wr (AP t (Just (sib iR)) (Just a)) (Reg m)]
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
-    pure (Just a, plE ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):MT arrP (IB IPlus (Reg arrP) (ConstI 16)):loop)
+    pure (Just a, plE ++ MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just$ConstI 8) (Just a)) (Reg szR):loop)
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t = do
     a <- nextArr
     n <- newITemp
