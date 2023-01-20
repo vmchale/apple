@@ -218,10 +218,10 @@ mguI inp iix@(IVar l (Name _ (U i) _)) ix | i `IS.member` occI ix = Left $ OI l 
                                           | otherwise = Right $ IM.insert i ix inp
 mguI inp ix iix@(IVar l (Name _ (U i) _)) | i `IS.member` occI ix = Left$ OI l ix iix
                                           | otherwise = Right $ IM.insert i ix inp
-mguI inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguI inp i0 i1
-mguI inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguI inp i (Ix lk (j-k))
+mguI inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep inp i0 i1
+mguI inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguIPrep inp i (Ix lk (j-k))
                                                 | otherwise = Left $ UI l i0 i1
-mguI inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguI inp i1 i0
+mguI inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguIPrep inp i1 i0
 
 mgShPrep :: a -> Subst a -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mgShPrep l s sh0 sh1 =
@@ -297,10 +297,14 @@ mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 -- TODO: rho occurs check
 mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mapTySubst (IM.insert (unU$unique n) t') <$> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
                                      | otherwise = Left$UF lϵ e t t'
-mgu l s t@P{} t'@Ρ{} = mgu l s t' t
+mgu l s t@P{} t'@Ρ{} = mguPrep l s t' t
 mgu l s (Ρ n rs) (Ρ n' rs') = do
     rss <- tS (\sϵ (t0,t1) -> mguPrep l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     pure $ mapTySubst (IM.insert (unU$unique n) (Ρ n' (rs<>rs'))) rss
+mgu (l, e) _ F t@Arr{} = Left $ UF l e F t
+mgu (l, e) _ t@Arr{} F = Left $ UF l e t F
+mgu (l, e) _ I t@Arr{} = Left $ UF l e I t
+mgu (l, e) _ t@Arr{} I = Left $ UF l e t I
 
 zS _ s [] _           = pure s
 zS _ s _ []           = pure s
