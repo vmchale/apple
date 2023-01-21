@@ -54,7 +54,7 @@ $sub = [$subscript $digitsubscript]
 
 @follow_char = [$letter $digit \_]
 
-@name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek | ∫)
+@name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek $sub* | ∫)
 
 @exp = e\-?$digit+
 @float = $digit+\.$digit+@exp?
