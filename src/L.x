@@ -199,6 +199,7 @@ tokens :-
         "rand."                  { mkBuiltin BuiltinR }
         "sin."                   { mkBuiltin BuiltinSin }
         "cos."                   { mkBuiltin BuiltinCos }
+        "tan."                   { mkBuiltin BuiltinTan }
 
         _$digit+                 { tok (\p s -> alex $ TokInt p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
 
@@ -343,7 +344,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
              | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
-             | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS
+             | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -371,6 +372,7 @@ instance Pretty Builtin where
     pretty BuiltinR      = "𝔯"
     pretty BuiltinSin    = "sin."
     pretty BuiltinCos    = "cos."
+    pretty BuiltinTan    = "tan."
 
 data Token a = EOF { loc :: a }
              | TokSym { loc :: a, sym :: Sym }

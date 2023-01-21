@@ -153,6 +153,7 @@ instance Pretty Builtin where
     pretty Dim       = "𝓉"
     pretty Sin       = "sin."
     pretty Cos       = "cos."
+    pretty Tan       = "tan."
     pretty Gte       = "≥"
     pretty Gt        = ">"
     pretty Lt        = "<"
@@ -178,7 +179,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | Outer | R | Head | HeadM | Tail | Init
-             | Sin | Cos | Rot
+             | Sin | Cos | Rot | Tan
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 
