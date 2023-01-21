@@ -39,8 +39,9 @@ fi Times  = 7
 fi Div    = 7
 fi Plus   = 6
 fi Minus  = 6
-fi ConsE  = 5
-fi Snoc   = 5
+fi Map{}  = 5
+fi ConsE  = 4
+fi Snoc   = 4
 
 lassoc :: Builtin -> Bool
 lassoc IntExp = False
@@ -51,6 +52,7 @@ lassoc Mul    = True
 lassoc Plus   = True
 lassoc Minus  = True
 lassoc ConsE  = False
+lassoc Map{}  = False
 
 shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1
