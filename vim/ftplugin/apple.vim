@@ -14,11 +14,12 @@ digraphs <- 8592
     \ oo 8728
     \ /\ 923
     \ ff 119995
-    \ ii 119894
     \ <\ 8882
     \ \> 8883
     \ o* 8855
     \ rr 120111
+    \ RR 8477
+    \ ii 9075
     \ O- 8854
 
 " register atc as a checker

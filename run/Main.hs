@@ -150,6 +150,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "⧺" "cat" "{:" "typesafe tail"
     , lOption "⊖" "rotate" "sin." "sine"
     , lOption "𝔯" "rand" "Λₒ" "scan with seed"
+    , lOption "⍳" "range (int)" "" ""
     ]
 
 lOption op0 desc0 op1 desc1 =

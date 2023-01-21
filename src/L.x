@@ -351,7 +351,7 @@ instance Pretty Builtin where
     pretty BuiltinIota   = "⍳"
     pretty BuiltinFloor  = "⌊"
     pretty BuiltinE      = "ℯ"
-    pretty BuiltinI      = "𝑖"
+    pretty BuiltinI      = "ℝ"
     pretty BuiltinF      = "𝓕"
     pretty BuiltinTrue   = "#t"
     pretty BuiltinFalse  = "#f"

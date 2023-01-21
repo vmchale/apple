@@ -1,6 +1,6 @@
 λa.λb.λz.
 {
   rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))]; fact ← rf 1;
-  Σ ← λN.λa. (+)/1 0 (a'1 (irange 0 N 1));
-  Σ 99 (λn. {nn⟜itof n; ((rf a nn)%(rf b nn))*((z^n)%(fact nn))})
+  Σ ← λN.λa. (+)/1 0 (a'1 (⍳ 0 N 1));
+  Σ 99 (λn. {nn⟜ℝ n; ((rf a nn)%(rf b nn))*((z^n)%(fact nn))})
 }
