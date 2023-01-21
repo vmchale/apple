@@ -43,6 +43,7 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ] `fsin` instruction requires reduction module 2pi or w/e
 - [ ] `⟨⟨1.0,0⟩,⟨0,1⟩,⟨0,0⟩⟩` fails (types, see FIXME in `src/Ty.hs`)
 - [ ] beta-reduction with 'rand' or w/e (needs to be llet ... in)
 - [ ]
