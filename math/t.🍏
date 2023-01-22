@@ -1,0 +1,11 @@
+λxs.λys.
+{
+  sum ⇐ [(+)/1 0 x]; fsz ← [ℝ(:x)];
+  𝜇 ← λxs. [sum x%fsz x] xs;
+  𝜎 ← λxs. {𝜇 ⟜ 𝜇 xs; sum ([(x-𝜇)^2]'1 xs)%fsz xs};
+  xsn ← fsz xs; ysn ← fsz ys;
+  𝜈 ⟜ xsn+ysn-2;
+  sₚ ← √(((xsn-1)*(𝜎 xs)+(ysn-1)*(𝜎 ys))%𝜈);
+  t ← (𝜇 xs-𝜇 ys)%(sₚ*√(1%(xsn+ysn)));
+  t
+}
