@@ -7,7 +7,7 @@
   vmul ⇐ λA.λx. (dot x)`{1∘[2]} A;
   forward ← λwh.λwo.λbh.λbo.
     -- ho: 4x2
-    { ho ← sigmoid'2 ([(+)` bh x]'1 (X%.wh))
+    { ho ← sigmoid`{0} ([(+)` bh x]'1 (X%.wh))
     -- prediction: 4
     ; prediction ← sigmoid'1 ((+bo)'1 (vmul ho wo))
     ; (ho,prediction)
@@ -20,7 +20,7 @@
     ; l1E ← (-)`prediction Y
     ; l1Δ ← (*)` (sDdx'1 prediction) l1E -- 4
     ; he ← l1Δ (*)⊗ wo -- 4x2
-    ; hΔ ← (*)`{0,0} (sDdx'2 ho) he -- 4x2
+    ; hΔ ← (*)`{0,0} (sDdx`{0} ho) he -- 4x2
     ; wha ← (+)`{0,0} wh ((|:X)%.hΔ)
     ; woa ← vmul (|:ho) l1Δ
     ; bha ← sum'1 ((<|)`{0,1} bh hΔ)
