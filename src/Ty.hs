@@ -524,13 +524,20 @@ tyB l (Rank as) = do
         shUHere sh sh' = liftEither $ mgShPrep l mempty (sh$>l) (sh'$>l)
     s <- zipWithM shUHere shsU (tail shsU++[SVar codSh])
     pure (Arrow fTy rTy, mconcat s)
-tyB _ (Fold n) = do
-    ixList <- zipWithM (\_ c -> freshName (T.singleton c) ()) [1..n] ['i'..]
-    shV <- freshName "sh" ()
+tyB _ Fold = do
+    ix <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
     a <- freshName "a" ()
-    let sh = foldr Cons (SVar shV) (IVar () <$> ixList)
+    let sh1 = StaPlus () ix (Ix()1) `Cons` sh
         a' = TVar a
-    pure (Arrow (Arrow a' (Arrow a' a')) (Arrow a' (Arrow (Arr sh a') (Arr (SVar shV) a'))), mempty)
+    pure (Arrow (Arrow a' (Arrow a' a')) (Arrow (Arr sh1 a') (Arr sh a')), mempty)
+tyB _ FoldS = do
+    ix <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    a <- freshName "a" ()
+    let sh1 = ix `Cons` sh
+        a' = TVar a
+    pure (Arrow (Arrow a' (Arrow a' a')) (Arrow a' (Arrow (Arr sh1 a') (Arr sh a'))), mempty)
 tyB _ Foldl = do
     ix <- IVar () <$> freshName "i" ()
     sh <- SVar <$> freshName "sh" ()

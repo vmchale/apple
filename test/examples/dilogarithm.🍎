@@ -1,1 +1,1 @@
-\z.\N. (+)/1 0 ((\k.(z^k)%(itof (k^2)))'1 irange 1 N 1)
+\z.\N. (+)/ 0 ((\k.(z^k)%(itof (k^2)))'1 irange 1 N 1)

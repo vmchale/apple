@@ -2,7 +2,7 @@
   softmax ← λx. {
     -- TODO: softmax... what's the key for max?
     xs ⟜ [ℯ(_x)]'1 x;
-    avg ← (+)/1 0 xs;
+    avg ← (+)/ 0 xs;
     (%avg)'1 xs
   };
   sigmoid ← [1+ℯ(_x)];

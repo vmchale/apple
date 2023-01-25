@@ -27,5 +27,6 @@ iF a = concatMap g where
 
 pf :: [Stmt] -> [Stmt]
 pf (s0@J{}:s1@Free{}:s2@L{}:ss) = s0:s2:s1:pf ss
+-- FIXME: j free free l ...
 pf (s:ss)                       = s:pf ss
 pf []                           = []

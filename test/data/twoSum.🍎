@@ -1,6 +1,5 @@
 \xs.\ys.
 {
-  -- FIXME: this fails with polymorphic bind lol
-  Σ ← [(+)/1 0.0 x];
+  Σ ← [(+)/ₒ 0.0 x];
   (Σ xs) + (Σ ys) + 0.0
 }

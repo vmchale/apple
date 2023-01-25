@@ -1,2 +1,2 @@
-([(+)/1 0 x] :: Arr (i `Cons` Nil) float → float)
+([(+)/ 0 x] :: Arr (i `Cons` Nil) float → float)
 -- FIXME: this parses wrong...

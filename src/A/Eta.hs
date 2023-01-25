@@ -39,7 +39,8 @@ etaAt (EApp t ho@(Builtin _ Scan{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ ScanS{}) op)  = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ Zip{}) op)    = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ Succ{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Fold{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
+etaAt (EApp t ho@(Builtin _ FoldS) op)    = EApp t ho <$> (etaM =<< etaAt op)
+etaAt (EApp t ho@(Builtin _ Fold) op)     = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ FoldA) op)    = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ Foldl) op)    = EApp t ho <$> (etaM =<< etaAt op)
 etaAt (EApp t ho@(Builtin _ Filter{}) op) = EApp t ho <$> (etaM =<< etaAt op)
@@ -56,8 +57,9 @@ etaAt (ALit l es)                         = ALit l <$> traverse etaAt es
 etaAt (Tup l es)                          = Tup l <$> traverse etaAt es
 etaAt e                                   = pure e
 
-etaIdm (FoldOfZip seed op es) = FoldOfZip <$> etaAt seed <*> etaAt op <*> traverse etaAt es
-etaIdm (AShLit ds es)         = AShLit ds <$> traverse etaAt es
+etaIdm (FoldSOfZip seed op es) = FoldSOfZip <$> etaAt seed <*> etaAt op <*> traverse etaAt es
+etaIdm (FoldOfZip zop op es)   = FoldOfZip <$> etaAt zop <*> etaAt op <*> traverse etaAt es
+etaIdm (AShLit ds es)          = AShLit ds <$> traverse etaAt es
 
 -- outermost only
 etaM :: E (T ()) -> RM (E (T ()))

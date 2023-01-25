@@ -109,7 +109,8 @@ prettyRank (i, Just as) = pretty i <+> "∘" <+> encloseSep lbracket rbracket co
 
 instance Pretty Builtin where
     pretty Plus      = "+"
-    pretty (Fold n)  = "/" <> pretty n
+    pretty Fold      = "/"
+    pretty FoldS     = "/ₒ"
     pretty FoldA     = "/*"
     pretty Times     = "*"
     pretty FRange    = "frange"
@@ -174,7 +175,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | IRange | FRange
              | Map !Int | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
-             | Fold !Int | Foldl | Floor | ItoF | Iter
+             | Fold | FoldS | Foldl | Floor | ItoF | Iter
              | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
@@ -193,21 +194,21 @@ prettyC (t, cs) = tupled (pc<$>cs) <+> ":=>" <+> pretty t
 
 -- TODO: constraints
 prettyTyped :: E (T a) -> Doc ann
-prettyTyped (Var t n)                                                = parens (pretty n <+> ":" <+> pretty t)
-prettyTyped (Builtin t b)                                            = parens (pretty b <+> ":" <+> pretty t)
-prettyTyped (ILit t n)                                               = parens (pretty n <+> ":" <+> pretty t)
-prettyTyped (FLit t x)                                               = parens (pretty x <+> ":" <+> pretty t)
-prettyTyped (Lam _ n@(Name _ _ xt) e)                                = parens ("λ" <> parens (pretty n <+> ":" <+> pretty xt) <> "." <+> prettyTyped e)
-prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ (Fold n)) e0) e1) e2) = parens (prettyTyped e0 <> "/" <> pretty n <+> prettyTyped e1 <+> prettyTyped e2)
-prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (prettyTyped e0 <> "/*" <+> prettyTyped e1 <+> prettyTyped e2)
-prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (prettyTyped e0 <> "/l" <+> prettyTyped e1 <+> prettyTyped e2)
-prettyTyped (EApp t (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (prettyTyped e1 <+> pretty e0 <> "⊗" <+> prettyTyped e2 <+> ":" <+> pretty t)
-prettyTyped (EApp _ e0 e1)                                           = parens (prettyTyped e0 <+> prettyTyped e1)
-prettyTyped (Let t (n, e) e')                                        = parens (braces (ptName n <+> "←" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
-prettyTyped (LLet t (n, e) e')                                       = parens (braces (ptName n <+> "⟜" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
-prettyTyped (Def t (n, e) e')                                        = parens (braces (ptName n <+> "⇐" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
-prettyTyped (Tup _ es)                                               = tupled (prettyTyped <$> es)
-prettyTyped e@(ALit t _)                                             = parens (pretty e <+> ":" <+> pretty t)
+prettyTyped (Var t n)                                             = parens (pretty n <+> ":" <+> pretty t)
+prettyTyped (Builtin t b)                                         = parens (pretty b <+> ":" <+> pretty t)
+prettyTyped (ILit t n)                                            = parens (pretty n <+> ":" <+> pretty t)
+prettyTyped (FLit t x)                                            = parens (pretty x <+> ":" <+> pretty t)
+prettyTyped (Lam _ n@(Name _ _ xt) e)                             = parens ("λ" <> parens (pretty n <+> ":" <+> pretty xt) <> "." <+> prettyTyped e)
+prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2) = parens (prettyTyped e0 <> "/" <+> prettyTyped e1 <+> prettyTyped e2)
+prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2) = parens (prettyTyped e0 <> "/*" <+> prettyTyped e1 <+> prettyTyped e2)
+prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2) = parens (prettyTyped e0 <> "/l" <+> prettyTyped e1 <+> prettyTyped e2)
+prettyTyped (EApp t (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2) = parens (prettyTyped e1 <+> pretty e0 <> "⊗" <+> prettyTyped e2 <+> ":" <+> pretty t)
+prettyTyped (EApp _ e0 e1)                                        = parens (prettyTyped e0 <+> prettyTyped e1)
+prettyTyped (Let t (n, e) e')                                     = parens (braces (ptName n <+> "←" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
+prettyTyped (LLet t (n, e) e')                                    = parens (braces (ptName n <+> "⟜" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
+prettyTyped (Def t (n, e) e')                                     = parens (braces (ptName n <+> "⇐" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
+prettyTyped (Tup _ es)                                            = tupled (prettyTyped <$> es)
+prettyTyped e@(ALit t _)                                          = parens (pretty e <+> ":" <+> pretty t)
 
 
 isBinOp :: Builtin -> Bool
@@ -228,6 +229,7 @@ isBinOp Rot    = True
 isBinOp ConsE  = True
 isBinOp Snoc   = True
 isBinOp Scan   = True
+isBinOp Fold   = True
 isBinOp _      = False
 
 instance Pretty (E a) where
@@ -238,7 +240,7 @@ instance Pretty (E a) where
     pretty (EApp _ (Builtin _ (TAt i)) e)                           = pretty e <> "->" <> pretty i
     pretty (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (pretty e0 <+> pretty op)
     pretty (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (pretty e0 <+> pretty op <+> pretty e1)
-    pretty (EApp _ (EApp _ (EApp _ (Builtin _ (Fold n)) e0) e1) e2) = parens (pretty e0 <> "/" <> pretty n <+> pretty e1 <+> pretty e2)
+    pretty (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2) = parens (pretty e0 <> "/" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (Builtin _ (Map n)) e0) e1)              = parens (pretty e0 <> "'" <> pretty n <+> pretty e1)
@@ -275,13 +277,15 @@ instance Pretty ResVar where
     pretty X = "x"
     pretty Y = "y"
 
-data Idiom = FoldOfZip { seedI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
+data Idiom = FoldSOfZip { seedI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
+           | FoldOfZip { zopI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
            | AShLit { litSh :: [Int], esLit :: [E (T ())] }
            deriving (Generic)
 
 instance Pretty Idiom where
-    pretty (FoldOfZip seed op es) = parens ("fold-of-zip" <+> pretty seed <+> pretty op <+> pretty es)
-    pretty (AShLit re es)         = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
+    pretty (FoldSOfZip seed op es) = parens ("foldS-of-zip" <+> pretty seed <+> pretty op <+> pretty es)
+    pretty (FoldOfZip zop op es)   = parens ("fold-of-zip" <+> pretty zop <+> pretty op <+> pretty es)
+    pretty (AShLit re es)          = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          -- TODO: bool array

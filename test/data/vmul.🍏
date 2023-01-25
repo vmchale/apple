@@ -1,5 +1,5 @@
 λA.λx.
 {
-  dot ⇐ [(+)/1 0 ((*)`x y)];
+  dot ⇐ [(+)/ 0 ((*)`x y)];
   (dot x)`{1∘[2]} (A::Arr (i`Cons`j`Cons`Nil) float)
 }

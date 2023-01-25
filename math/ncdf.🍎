@@ -4,11 +4,11 @@
     {
       f11 ← λz.
       {
-        rf ← [(*)/1 1 (frange x (x+y-1) (⌊y))];
+        rf ← [(*)/ₒ 1 (frange x (x+y-1) (⌊y))];
         ix ← irange 0 99 1;
         -- FIXME: might be more efficient to have an frange too?
         mkIx ← [(z^x)%(rf 1.5 (itof x))];
-        (+)/1 0 (mkIx'1 ix)
+        (+)/ (mkIx'1 ix)
       };
       2*z*(e: (_(z^2)))*f11 (z^2)%(√𝜋)
     };

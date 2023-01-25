@@ -92,6 +92,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     snoc { TokSym $$ L.Snoc }
     trans { TokSym $$ Transp }
 
+    folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
     foldl { TokSym $$ L.Foldl }
     foldA { TokSym $$ L.FoldA }
@@ -215,6 +216,7 @@ BBin :: { E AlexPosn }
      | neq { Builtin $1 A.Neq }
      | pp { Builtin $1 CatE }
      | rot { Builtin $1 Rot }
+     | fold { Builtin $1 A.Fold }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
@@ -245,7 +247,7 @@ E :: { E AlexPosn }
   | colon { Builtin $1 Size }
   | i { Builtin $1 ItoF }
   | t { Builtin $1 Dim }
-  | E fold intLit E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 (A.Fold (fromInteger $ int $3))) $1) $4) $5 }
+  | E folds E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldS) $1) $3) $4 }
   | E foldl E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Foldl) $1) $3) $4 }
   | E foldA E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldA) $1) $3) $4 }
   | E scanS E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 ScanS) $1) $3) $4 }

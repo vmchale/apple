@@ -1,7 +1,7 @@
 λN.
 {
-  sum ← λn.λN.λf. (+)/1 0 (f'1 (irange n N 1));
-  fact ← [(*)/1 1 (frange 1 x (⌊x))];
+  sum ← λn.λN.λf. (+)/ 0 (f'1 (irange n N 1));
+  fact ← [(*)/ 1 (frange 1 x (⌊x))];
   ix ← λn. 1%(fact (𝑖n));
   sum 0 N ix
 }

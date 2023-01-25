@@ -1,6 +1,6 @@
 -- aₙ, bₙ, cₙ, dₙ in Kuhl+Giardina
 λxs.λys.λn.
-  { sum ← [(+)/1 0 x]
+  { sum ← [(+)/x]
   ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys

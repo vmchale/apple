@@ -103,6 +103,8 @@ tokens :-
         "^"                      { mkSym Caret }
 
         "/"                      { mkSym Fold }
+        "/ₒ"                     { mkSym FoldS }
+        "/o"                     { mkSym FoldS }
         "/l"                     { mkSym Foldl }
         "/*"                     { mkSym FoldA }
         '                        { mkSym Quot }
@@ -266,7 +268,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | Init
          | Geq | Gt | Eq | Neq | Leq | Lt
-         | FoldA | Tilde
+         | FoldA | FoldS | Tilde
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -274,6 +276,7 @@ instance Pretty Sym where
     pretty Minus        = "-"
     pretty Percent      = "%"
     pretty Fold         = "/"
+    pretty FoldS        = "/ₒ"
     pretty Foldl        = "/l"
     pretty FoldA        = "/*"
     pretty Pow          = "**"

@@ -3,7 +3,7 @@
   Y ⟜ ⟨0,1,1,0⟩;
   sigmoid ← [1+ℯ(_x)];
   sDdx ← [x*(1-x)];
-  dot ⇐ [(+)/1 0 ((*)`x y)]; sum ⇐ [(+)/1 0 x];
+  dot ⇐ [(+)/((*)`x y)]; sum ⇐ [(+)/x];
   vmul ⇐ λA.λx. (dot x)`{1∘[2]} A;
   forward ← λwh.λwo.λbh.λbo.
     -- ho: 4x2
