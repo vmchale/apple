@@ -49,8 +49,8 @@ import           Name
 import           Parser
 import           Parser.Rw
 import           Prettyprinter              (Doc, Pretty (..))
-import           R
 import           R.Dfn
+import           R.R
 import           Ty
 
 data Err a = PErr (ParseE a) | TyErr (TyE a) deriving (Generic)
@@ -106,8 +106,9 @@ ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t (optIR s),r)
 opt :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
 opt bsl =
     uncurry go <$> parseInline bsl where
-    go e = evalState (β'=<<optA=<<β'=<<eta=<<optA e)
+    go e = evalState (β'=<<optA'=<<β'=<<eta=<<optA' e)
     β' e = state (`β` e)
+    optA' e = state (\k -> runM k (optA e))
 
 parseInline :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline bsl =

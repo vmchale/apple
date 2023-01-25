@@ -101,8 +101,10 @@ type TyM a = StateT (TySt a) (Either (TyE a))
 mI :: I a -> I a -> Either (TyE b) (Subst a)
 mI (Ix _ i) (Ix _ j) | i == j = Right mempty
 mI (IVar _ (Name _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
+mI ix (IVar _ (Name _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
 mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
+mI i i' = error(show(i,i'))
 
 mSh :: Sh a -> Sh a -> Either (TyE b) (Subst a)
 mSh (SVar (Name _ (U i) _)) sh = Right $ Subst IM.empty IM.empty (IM.singleton i sh)

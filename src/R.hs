@@ -2,6 +2,7 @@
 
 module R ( Renames (..)
          , HasRenames (..)
+         , maxLens
          , rG
          , rE
          ) where

@@ -4,7 +4,10 @@ module A.Opt ( optA
              ) where
 
 import           A
-import           R.M
+import           Control.Monad.State.Strict (runState)
+import           Data.Bifunctor             (second)
+import           R
+import           R.R
 
 -- FIXME: fold-of-zip-of-map... as in dotprod.
 -- TODO zip-of-map->zip
@@ -62,16 +65,19 @@ optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (B
             arrTy = eAnn x'
         optA (EApp l0 (EApp undefined (EApp (Arrow arrTy l0) (Builtin (Arrow opTy (Arrow arrTy l0)) ho0) op') seed) x')
 optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ (Map 1)) f) x))
-    | Arrow dom fCod <- eAnn f
+    | fTy@(Arrow dom fCod) <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
-        f' <- optA f
+        f' <- optA f; f'' <- rE f'
         x' <- optA x
         x0 <- nextU "x" cod; x1 <- nextU "y" dom
+        x0' <- nextU "x" dom
         opA <- optA op
         let vx0 = Var cod x0; vx1 = Var dom x1
+            vx0' = Var dom x0'
             opT = Arrow cod (Arrow dom cod)
             op' = Lam opT x0 (Lam (Arrow dom cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f' vx1)))
-        pure $ Id l0 $ FoldOfZip f' op' [x']
+            f''' = Lam fTy x0' (EApp fCod f'' vx0')
+        pure $ Id l0 $ FoldOfZip f''' op' [x']
 optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ (Map 1)) f) xs)) (EApp _ (EApp _ (Builtin _ (Map 1)) g) ys))
     | Arrow dom0 _ <- eAnn f
     , Arrow dom1 _ <- eAnn g
@@ -112,14 +118,17 @@ optA (EApp t0 (EApp t1 (Builtin bt Fold) op) arr) = do
         (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) xs) ys)
             | fTy@(Arrow dom0 (Arrow dom1 dom2)) <- eAnn f
             , Arrow _ (Arrow _ cod) <- eAnn op -> do
-                f' <- optA f
+                f' <- optA f; f'' <- rE f'
                 xs' <- optA xs
                 ys' <- optA ys
                 x0 <- nextU "x" cod; x1 <- nextU "y" dom0; x2 <- nextU "z" dom1
+                x0' <- nextU "x" dom0; x1' <- nextU "y" dom1
                 let vx0 = Var cod x0; vx1 = Var dom0 x1; vx2 = Var dom1 x2
+                    vx0' = Var dom0 x0'; vx1' = Var dom1 x1'
                     opT = Arrow cod (Arrow dom0 (Arrow dom1 cod))
                     op' = Lam opT x0 (Lam undefined x1 (Lam (Arrow dom1 cod) x2 (EApp cod (EApp undefined opA vx0) (EApp dom2 (EApp undefined f' vx1) vx2))))
-                pure $ Id t0 $ FoldOfZip f' op' [xs',ys']
+                    f''' = Lam fTy x0' (Lam undefined x1' (EApp dom2 (EApp undefined f'' vx0') vx1'))
+                pure $ Id t0 $ FoldOfZip f''' op' [xs',ys']
         _ -> pure (EApp t0 (EApp t1 (Builtin bt Fold) opA) arr')
 optA (EApp l e0 e1) = EApp l <$> optA e0 <*> optA e1
 optA (ALit l es) = do

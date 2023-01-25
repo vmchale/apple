@@ -45,6 +45,7 @@
 # Bugs
 - [ ] `fsin` instruction requires reduction module 2pi or w/e
 - [ ] `⟨⟨1.0,0⟩,⟨0,1⟩,⟨0,0⟩⟩` fails (types, see FIXME in `src/Ty.hs`)
+- [ ] ` |: ⟨⟨1.0,2⟩,⟨3,4⟩,⟨5,6.0⟩⟩`
 - [ ] beta-reduction with 'rand' or w/e (needs to be llet ... in)
 - [ ]
 ```

@@ -778,6 +778,17 @@ eval (Id F (FoldOfZip zop op [p])) acc | f1 (eAnn p) = do
     loop <- fN1 i (Reg szR) step
     sseed <- writeRF zop [x] acc
     pure $ plP ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MX x (FAt (AP pR (Just$ConstI 16) iP)):sseed ++ loop
+eval (Id F (FoldOfZip zop op [p])) acc | i1 (eAnn p) = do
+    x <- newITemp
+    pR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (iP, plP) <- aeval p pR
+    ss <- writeRF op [acc, x] acc
+    let step = MT x (EAt (AP pR (Just$sib i) iP)):ss
+    loop <- fN1 i (Reg szR) step
+    sseed <- writeRF zop [x] acc
+    pure $ plP ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MT x (EAt (AP pR (Just$ConstI 16) iP)):sseed ++ loop
 eval (Id F (FoldSOfZip seed op [p, q])) acc | f1 (eAnn p) && f1 (eAnn q) = do
     x <- newFTemp; y <- newFTemp
     pR <- newITemp; qR <- newITemp
@@ -802,6 +813,28 @@ eval (Id F (FoldOfZip zop op [p, q])) acc | f1 (eAnn p) && f1 (eAnn q) = do
     loop <- fN1 i (Reg szR) step
     sseed <- writeRF zop [x, y] acc
     pure $ plP ++ plQ ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MX x (FAt (AP pR (Just$ConstI 16) iP)):MX y (FAt (AP qR (Just$ConstI 16) iQ)):sseed ++ loop
+eval (Id F (FoldOfZip zop op [p, q])) acc | f1 (eAnn p) && i1 (eAnn q) = do
+    x <- newFTemp; y <- newITemp
+    pR <- newITemp; qR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (iP, plP) <- aeval p pR; (iQ, plQ) <- aeval q qR
+    ss <- writeRF op [acc, x, y] acc
+    let step = MX x (FAt (AP pR (Just$sib i) iP)):MT y (EAt (AP qR (Just$sib i) iQ)):ss
+    loop <- fN1 i (Reg szR) step
+    sseed <- writeRF zop [x, y] acc
+    pure $ plP ++ plQ ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MX x (FAt (AP pR (Just$ConstI 16) iP)):MT y (EAt (AP qR (Just$ConstI 16) iQ)):sseed ++ loop
+eval (Id F (FoldOfZip zop op [p, q])) acc | i1 (eAnn p) && f1 (eAnn q) = do
+    x <- newITemp; y <- newFTemp
+    pR <- newITemp; qR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (iP, plP) <- aeval p pR; (iQ, plQ) <- aeval q qR
+    ss <- writeRF op [acc, x, y] acc
+    let step = MT x (EAt (AP pR (Just$sib i) iP)):MX y (FAt (AP qR (Just$sib i) iQ)):ss
+    loop <- fN1 i (Reg szR) step
+    sseed <- writeRF zop [x, y] acc
+    pure $ plP ++ plQ ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MT x (EAt (AP pR (Just$ConstI 16) iP)):MX y (FAt (AP qR (Just$ConstI 16) iQ)):sseed ++ loop
 eval (Id F (FoldSOfZip seed op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, Id ty (AShLit [_] qs)])) acc | f1 ty = do
     x <- newITemp
     i <- newITemp

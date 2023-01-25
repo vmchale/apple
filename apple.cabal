@@ -46,6 +46,7 @@ library
         LR
         R.Dfn
         R.M
+        R.R
         Parser
         Parser.Rw
         Ty.Clone
