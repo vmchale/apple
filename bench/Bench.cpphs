@@ -5,7 +5,7 @@ import           Control.Exception     (Exception, throw)
 import           Criterion.Main
 import qualified Data.ByteString.Lazy  as BSL
 import           Data.Functor          (($>))
-import           Data.Number.Erf       (erf)
+import           Data.Number.Erf       (erf, normcdf)
 import           Foreign.Marshal.Alloc (free, mallocBytes)
 import           Foreign.Ptr           (FunPtr, Ptr)
 import           Foreign.Storable      (Storable (..))
@@ -99,10 +99,12 @@ main = do
                       , bench "jit" $ nfIO (pure $ klFp xsPtr ysPtr)
 #endif
                       ]
-#ifdef x86_64_HOST_ARCH
                 , bgroup "ncdf"
-                      [ bench "jit" $ nfIO (pure $ ncdfFp 2) ]
+                      [ bench "lib" $ nf normcdf (2 :: Double)
+#ifdef x86_64_HOST_ARCH
+                      , bench "jit" $ nfIO (pure $ ncdfFp 2)
 #endif
+                      ]
                 , bgroup "Γ"
                       [ bench "hs" $ nf Math.gammaln (1.5 :: Double)
 #ifdef x86_64_HOST_ARCH
