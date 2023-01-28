@@ -2,15 +2,9 @@
 {
   erf ← λz.
     {
-      f11 ← λz.
-      {
-        rf ← [(*)/ₒ 1 (frange x (x+y-1) (⌊y))];
-        ix ← irange 0 99 1;
-        -- FIXME: might be more efficient to have an frange too?
-        mkIx ← [(z^x)%(rf 1.5 (itof x))];
-        (+)/ (mkIx'1 ix)
-      };
-      2*z*(e: (_(z^2)))*f11 (z^2)%(√𝜋)
+      ffact ← [(*)/ₒ 1 (frange 1 x (⌊x))];
+      Σ ← λN.λa. (+)/ₒ 0 (a'1 (⍳ 0 N 1));
+      (2%√𝜋)*Σ 30 (λn. {nf⟜ℝn; ((_1^n)*z^(2*n+1))%((ffact nf)*(2*nf+1))})
     };
   zz ⟜ z%(√2);
   0.5*(1+erf(zz))
