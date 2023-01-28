@@ -187,7 +187,6 @@ writeF e _ ret | isArr (eAnn e) = aeval e ret
 
 fop op e0 = EApp F (EApp (Arrow F F) (Builtin (Arrow F (Arrow F F)) op) e0)
 eMinus = fop Minus
-ePlus = fop Plus
 eDiv = fop Div
 
 aeval :: E (T ()) -> Temp -> IRM (Maybe Int, [Stmt])
@@ -284,11 +283,11 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t = do
     endR <- newITemp
     i <- newITemp
     putStart <- eval start startR; putEnd <- eval end endR
-    l <- newLabel; endL <- newLabel
     modify (addMT a t)
     let putN = MT n (IB IPlus (IB IMinus (Reg endR) (Reg startR)) (ConstI 1))
-    let loop = [MJ (IRel IGt (Reg startR) (Reg endR)) endL, Wr (AP t (Just (Reg i)) (Just a)) (Reg startR), MT startR (IB IPlus (Reg startR) (ConstI 1)), MT i (IB IPlus (Reg i) (ConstI 8))]
-    pure (Just a, putStart++putEnd++putN:Ma a t (IB IPlus (IB IAsl (Reg n) (ConstI 3)) (ConstI 24)):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (Reg n):MT i (ConstI 16):L l:loop ++ [J l, L endL])
+    let step = [Wr (AP t (Just (sib i)) (Just a)) (Reg startR), MT startR (IB IPlus (Reg startR) (ConstI 1))]
+    loop <- doN i (Reg n) step
+    pure (Just a, putStart++putEnd++putN:man (a, t) 1 (Reg n):dim1 (Just a) t (Reg n)++MT i (ConstI 16):loop)
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     a <- nextArr
     n <- newITemp
@@ -787,8 +786,9 @@ eval (Id F (FoldOfZip zop op [p])) acc | i1 (eAnn p) = do
     ss <- writeRF op [acc, x] acc
     let step = MT x (EAt (AP pR (Just$sib i) iP)):ss
     loop <- fN1 i (Reg szR) step
+    let x0 = EAt (AP pR (Just$ConstI 16) iP)
     sseed <- writeRF zop [x] acc
-    pure $ plP ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MT x (EAt (AP pR (Just$ConstI 16) iP)):sseed ++ loop
+    pure $ plP ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MT x x0:sseed ++ loop
 eval (Id F (FoldSOfZip seed op [p, q])) acc | f1 (eAnn p) && f1 (eAnn q) = do
     x <- newFTemp; y <- newFTemp
     pR <- newITemp; qR <- newITemp
@@ -824,6 +824,14 @@ eval (Id F (FoldOfZip zop op [p, q])) acc | f1 (eAnn p) && i1 (eAnn q) = do
     loop <- fN1 i (Reg szR) step
     sseed <- writeRF zop [x, y] acc
     pure $ plP ++ plQ ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MX x (FAt (AP pR (Just$ConstI 16) iP)):MT y (EAt (AP qR (Just$ConstI 16) iQ)):sseed ++ loop
+eval (Id F (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, Id ty (AShLit [_] qs)])) acc | f1 ty = do
+    x <- newITemp; y <- newFTemp
+    i <- newITemp
+    plX <- eval start x; plY <- eval (head qs) y; plI <- eval incr i
+    sseed <- writeRF zop [x, y] acc
+    step <- writeRF op [acc, x, y] acc
+    steps <- foldMapA (\q -> do {plYϵ <- eval q y; pure $ [MT x (IB IPlus (Reg x) (Reg i))] ++ plYϵ ++ step}) (tail qs)
+    pure $ plX ++ plY ++ sseed ++ plI ++ steps
 eval (Id F (FoldOfZip zop op [p, q])) acc | i1 (eAnn p) && f1 (eAnn q) = do
     x <- newITemp; y <- newFTemp
     pR <- newITemp; qR <- newITemp
