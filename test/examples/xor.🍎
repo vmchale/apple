@@ -3,13 +3,12 @@
   Y ⟜ ⟨0,1,1,0⟩;
   sigmoid ← [1+ℯ(_x)];
   sDdx ← [x*(1-x)];
-  dot ⇐ [(+)/((*)`x y)]; sum ⇐ [(+)/x];
-  vmul ⇐ λA.λx. (dot x)`{1∘[2]} A;
+  sum ⇐ [(+)/x];
   forward ← λwh.λwo.λbh.λbo.
     -- ho: 4x2
     { ho ← sigmoid`{0} ([(+)` bh x]'1 (X%.wh))
     -- prediction: 4
-    ; prediction ← sigmoid'1 ((+bo)'1 (vmul ho wo))
+    ; prediction ← sigmoid'1 ((+bo)'1 (ho%:wo))
     ; (ho,prediction)
     };
   -- wh: 2x2 wo: 2 bh: 2 bo: (scalar)
@@ -22,7 +21,7 @@
     ; he ← l1Δ (*)⊗ wo -- 4x2
     ; hΔ ← (*)`{0,0} (sDdx`{0} ho) he -- 4x2
     ; wha ← (+)`{0,0} wh ((|:X)%.hΔ)
-    ; woa ← vmul (|:ho) l1Δ
+    ; woa ← (|:ho)%:l1Δ
     ; bha ← sum'1 ((<|)`{0,1} bh hΔ)
     ; boa ← bo + sum l1Δ
     ; (wha,woa,bha,boa)

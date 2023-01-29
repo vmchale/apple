@@ -194,6 +194,7 @@ tokens :-
         "`Cons`"                 { mkBuiltin BuiltinCons }
         Nil                      { mkBuiltin BuiltinNil }
         "%."                     { mkBuiltin BuiltinMMul }
+        "%:"                     { mkBuiltin BuiltinVMul }
         Arr                      { mkBuiltin BuiltinArr }
         float                    { mkBuiltin BuiltinFloat }
         int                      { mkBuiltin BuiltinInt }
@@ -348,6 +349,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
+             | BuiltinVMul
              deriving (Generic, NFData)
 
 instance Pretty Builtin where

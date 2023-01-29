@@ -570,6 +570,12 @@ tyB l Mul = do
     pushVarConstraint a l IsNum
     let a' = TVar (void a)
     pure (Arrow (Arr (i `Cons` j `Cons` Nil) a') (Arrow (Arr (j `Cons` k `Cons` Nil) a') (Arr (i `Cons` k `Cons` Nil) a')), mempty)
+tyB l VMul = do
+    a <- freshName "a" l
+    i <- IVar () <$> freshName "i" (); j <- IVar () <$> freshName "j" ()
+    pushVarConstraint a l IsNum
+    let a' = TVar (void a)
+    pure (Arrow (Arr (i `Cons` j `Cons` Nil) a') (Arrow (Arr (i `Cons` Nil) a') (Arr (j `Cons` Nil) a')), mempty)
 tyB _ Sin = pure (Arrow F F, mempty)
 tyB _ Cos = pure (Arrow F F, mempty)
 tyB _ Tan = pure (Arrow F F, mempty)

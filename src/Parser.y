@@ -131,6 +131,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     scanS { TokB $$ BuiltinScanS }
     scan { TokB $$ BuiltinScan }
     mul { TokB $$ BuiltinMMul }
+    vmul { TokB $$ BuiltinVMul }
     r { TokB $$ BuiltinR }
     sin { TokB $$ BuiltinSin }
     cos { TokB $$ BuiltinCos }
@@ -207,6 +208,7 @@ BBin :: { E AlexPosn }
      | consS { Builtin $1 ConsE }
      | snoc { Builtin $1 A.Snoc }
      | mul { Builtin $1 Mul }
+     | vmul { Builtin $1 VMul }
      | do { Builtin $1 Iter }
      | geq { Builtin $1 Gte }
      | gt { Builtin $1 A.Gt }

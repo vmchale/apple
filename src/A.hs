@@ -147,6 +147,7 @@ instance Pretty Builtin where
     pretty ConsE     = "⊲"
     pretty Snoc      = "⊳"
     pretty Mul       = "%."
+    pretty VMul      = "%:"
     pretty Iter      = "^:"
     pretty Succ      = "\\~"
     pretty T         = "|:"
@@ -179,7 +180,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
-             | Mul | Outer | R | Head | HeadM | Tail | Init
+             | Mul | VMul | Outer | R | Head | HeadM | Tail | Init
              | Sin | Cos | Rot | Tan
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
@@ -225,6 +226,7 @@ isBinOp Xor    = True
 isBinOp DI{}   = True
 isBinOp Conv{} = True
 isBinOp Mul    = True
+isBinOp VMul   = True
 isBinOp Rot    = True
 isBinOp ConsE  = True
 isBinOp Snoc   = True
