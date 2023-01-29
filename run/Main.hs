@@ -27,7 +27,8 @@ import           L
 import           Prettyprinter             (hardline, pretty, (<+>))
 import           Prettyprinter.Render.Text (putDoc)
 import           Sys.DL
-import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, defaultSettings, getInputLine, historyFile, runInputT, setComplete, simpleCompletion)
+import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, completeFilename, defaultSettings, fallbackCompletion, getInputLine, historyFile, runInputT,
+                                            setComplete, simpleCompletion)
 import           System.Directory          (getHomeDirectory)
 import           System.FilePath           ((</>))
 
@@ -51,12 +52,12 @@ runRepl x = do
     histDir <- (</> ".apple_history") <$> getHomeDirectory
     mfϵ <- mem'
     let initSt = Env alexInitUserState M.empty mfϵ
-    let myCompleter = appleCompletions
+    let myCompleter = appleCompletions `fallbackCompletion` completeFilename
     let settings = setComplete myCompleter $ defaultSettings { historyFile = Just histDir }
     flip evalStateT initSt $ runInputT settings x
 
 appleCompletions :: CompletionFunc (StateT Env IO)
-appleCompletions (":","")         = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann"])
+appleCompletions (":","")         = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann", "y", "yank"])
 appleCompletions ("i:", "")       = pure ("i:", cyclicSimple ["r", "nspect", ""])
 appleCompletions ("ri:", "")      = pure ("ri:", cyclicSimple [""])
 appleCompletions ("ni:", "")      = pure ("ni:", [simpleCompletion "spect"])
@@ -65,8 +66,12 @@ appleCompletions ("psni:", "")    = pure ("psni:", [simpleCompletion "ect"])
 appleCompletions ("epsni:", "")   = pure ("epsni:", [simpleCompletion "ct"])
 appleCompletions ("cepsni:", "")  = pure ("cepsni:", [simpleCompletion "t"])
 appleCompletions ("tcepsni:", "") = pure ("tcepsni:", [simpleCompletion ""])
-appleCompletions ("t:", "")       = pure ("t:", cyclicSimple ["y", ""])
+appleCompletions ("t:", "")       = pure ("t:", cyclicSimple ["y"])
 appleCompletions ("yt:", "")      = pure ("yt:", cyclicSimple [""])
+appleCompletions ("y:", "")       = pure ("y:", cyclicSimple ["ank", ""])
+appleCompletions ("ay:", "")      = pure ("ay:", cyclicSimple ["nk"])
+appleCompletions ("nay:", "")     = pure ("nay:", cyclicSimple ["k"])
+appleCompletions ("knay:", "")    = pure ("knay:", cyclicSimple [""])
 appleCompletions ("d:", "")       = pure ("d:", [simpleCompletion "isasm"])
 appleCompletions ("id:", "")      = pure ("id:", [simpleCompletion "sasm"])
 appleCompletions ("sid:", "")     = pure ("sid:", [simpleCompletion "asm"])
@@ -111,6 +116,8 @@ loop = do
         Just (":ir":e)      -> irR (unwords e) *> loop
         Just (":disasm":e)  -> disasm (unwords e) *> loop
         Just (":inspect":e) -> inspect (unwords e) *> loop
+        Just (":yank":[fp]) -> do {contents <- liftIO $ readFile fp; printExpr contents} *> loop
+        Just (":y":[fp])    -> do {contents <- liftIO $ readFile fp; printExpr contents} *> loop
         Just e              -> printExpr (unwords e) *> loop
         Nothing             -> pure ()
 
@@ -121,6 +128,7 @@ showHelp = liftIO $ putStr $ concat
     , helpOption ":ann" "<expression>" "Annotate with types"
     , helpOption ":list" "" "List all names that are in scope"
     , helpOption ":quit, :q" "" "Quit REPL"
+    , helpOption ":yank, :y" "<filename>" "Evaluate file"
     , helpOption "\\l" "" "Show reference"
     -- TODO: dump debug state
     ]
