@@ -79,9 +79,6 @@ isI :: T a -> Bool
 isI I = True
 isI _ = False
 
-isT :: T a -> Bool
-isT P{} = True; isT _ = False
-
 isB :: T a -> Bool; isB B = True; isB _ = False
 
 isArr Arr{} = True
