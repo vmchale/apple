@@ -104,7 +104,8 @@ mI (IVar _ (Name _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.
 mI ix (IVar _ (Name _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
 mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
-mI i i' = error(show(i,i'))
+mI (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI i (Ix l (j-iϵ))
+mI (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI i (Ix l (iϵ-j))
 
 mSh :: Sh a -> Sh a -> Either (TyE b) (Subst a)
 mSh (SVar (Name _ (U i) _)) sh = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
