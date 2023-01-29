@@ -518,6 +518,8 @@ aeval (EApp oTy (Builtin _ Tail) x) t | f1 oTy = do
     pure (Just a, plX ++ MT nR (IB IMinus n (ConstI 1)):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 24) lX) (Reg nR)])
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t = do
     a <- nextArr
+    xR <- newITemp
+    (lX, plX) <- aeval xs xR
     pure (Just a, undefined)
 aeval e _ = error (show e)
 

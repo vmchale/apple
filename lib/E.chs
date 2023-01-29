@@ -54,10 +54,10 @@ harnessString oup src errPtr = do
         Right d -> tcstr (aText d)
 
 apple_dumpasm :: CString -> Ptr CString -> IO CString
-apple_dumpasm = harnessString dumpX86G
+apple_dumpasm = harnessString dumpX86GDef
 
 apple_dumpir :: CString -> Ptr CString -> IO CString
-apple_dumpir = harnessString dumpIR
+apple_dumpir = harnessString dumpIRDef
 
 apple_printty :: CString -> Ptr CString -> IO CString
 apple_printty = harnessString tyExpr
@@ -87,7 +87,7 @@ apple_ty src errPtr = do
 apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)
 apple_compile (IntPtr m) (IntPtr f) src szPtr = do
     bSrc <- BS.unsafePackCString src
-    (sz, fp) <- ctxFunP (m,f) (BSL.fromStrict bSrc)
+    (sz, fp) <- ctxFunDef (m,f) (BSL.fromStrict bSrc)
     poke szPtr (fromIntegral sz) $> castFunPtrToPtr fp
 
 foreign export ccall apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)

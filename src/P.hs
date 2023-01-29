@@ -12,11 +12,14 @@ module P ( Err (..)
          , parseRename
          , opt
          , ir
+         , irCtx
          , x86G
+         , x86GDef
          , x86L
          , bytes
          , funP
          , ctxFunP
+         , ctxFunDef
          ) where
 
 import           A
@@ -85,34 +88,43 @@ tyOfCtx st = fmap (first eAnn.discard) . tyConstrCtx st where discard (x, y, _) 
 tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
 tyOf = tyOfCtx alexInitUserState
 
-ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
-ctxFunP ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . x86G)
+ctxFunDef :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
+ctxFunDef = ctxFunP alexInitUserState
+
+ctxFunP :: AlexUserState -> (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
+ctxFunP st ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . x86G st)
 
 funP :: BSL.ByteString -> IO (Int, FunPtr a)
-funP = aFp <=< either throwIO pure . x86G
+funP = aFp <=< either throwIO pure . x86G alexInitUserState
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
-bytes = fmap assemble . x86G
+bytes = fmap assemble . x86G alexInitUserState
 
-x86L, x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
-x86G = walloc (uncurry X86.gallocFrame)
-x86L = walloc (X86.allocFrame . X86.mkIntervals . snd)
+x86GDef :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
+x86GDef = x86G alexInitUserState
 
-walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
+x86L, x86G :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
+x86G st = walloc st (uncurry X86.gallocFrame)
+x86L st = walloc st (X86.allocFrame . X86.mkIntervals . snd)
+
+walloc lSt f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . irCtx lSt
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
-ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t (optIR s),r)
+ir = irCtx alexInitUserState
 
-opt :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
-opt bsl =
-    uncurry go <$> parseInline bsl where
+irCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
+irCtx st = fmap (f.writeC) . opt st where f (s,r,t) = (frees t (optIR s),r)
+
+opt :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
+opt st bsl =
+    uncurry go <$> parseInline st bsl where
     go e = evalState (β'=<<optA'=<<β'=<<eta=<<optA' e)
     β' e = state (`β` e)
     optA' e = state (\k -> runM k (optA e))
 
-parseInline :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
-parseInline bsl =
-    (\(e, i) -> inline i e) <$> tyParse bsl
+parseInline :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
+parseInline st bsl =
+    (\(e, i) -> inline i e) <$> tyParseCtx st bsl
 
 tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
 tyConstrCtx st bsl =

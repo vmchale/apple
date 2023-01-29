@@ -11,6 +11,7 @@ import           Foreign.Ptr           (FunPtr, Ptr)
 import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           I
+import           L
 import qualified Math.Hypergeometric   as Hyper
 import qualified Math.SpecialFunction  as Math
 import           P
@@ -59,13 +60,9 @@ main = do
                       , bench "tyParse (xor)" $ nf tyParse x
                       , bench "bytes (gammaln)" $ nf bytes 𝛾
                       , bench "bytes (fcdf)" $ nf bytes ꜰ
-                      , bench "asm (A)" $ nf x86G ᴀ
+                      , bench "asm (A)" $ nf (x86G alexInitUserState) ᴀ
                       ]
                       -- TODO: thunks after type checking?
-                , env rfx86L $ \asm ->
-                  bgroup "asm"
-                      [ bench "risingFactorial" $ nf assemble asm
-                      ]
                 , env (fmap yeet erfParsed) $ \ast ->
                   bgroup "ty"
                       [ bench "tyClosed" $ nf (\(e, m) -> tyClosed m e) ast
@@ -127,7 +124,6 @@ main = do
           xor = BSL.readFile "test/examples/xor.🍎"
           fcdf = BSL.readFile "math/fcdf.🍎"
           offA = BSL.readFile "test/data/A.🍏"
-          rfx86L = yeet . x86L <$> rf
           files = (,,,,) <$> tcdf <*> xor <*> gamma <*> fcdf <*> offA
           erfParsed = parseRename <$> erfSrc
           erfTy = tyParse <$> erfSrc

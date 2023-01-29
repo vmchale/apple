@@ -9,6 +9,7 @@
              , runAlexSt
              , withAlexSt
              , freshName
+             , newIdent
              , AlexPosn (..)
              , Alex (..)
              , Token (..)

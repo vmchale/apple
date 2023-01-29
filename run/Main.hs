@@ -175,26 +175,27 @@ ubs :: String -> BSL.ByteString
 ubs = encodeUtf8 . TL.pack
 
 disasm :: String -> Repl AlexPosn ()
-disasm s = liftIO $ do
-    res <- dtxt (ubs s)
-    case res of
-        Left err -> putDoc (pretty err <> hardline)
-        Right b  -> TIO.putStr b
+disasm s = do
+    st <- lift $ gets _lex
+    liftIO $ do
+        res <- dtxt st (ubs s)
+        case res of
+            Left err -> putDoc (pretty err <> hardline)
+            Right b  -> TIO.putStr b
 
 irR :: String -> Repl AlexPosn ()
-irR s = case dumpIR (ubs s) of
-    Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right d  -> liftIO $ putDoc (d <> hardline)
+irR s = do
+    st <- lift $ gets _lex
+    case dumpIR st (ubs s) of
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right d  -> liftIO $ putDoc (d <> hardline)
 
 dumpAsmG :: String -> Repl AlexPosn ()
-dumpAsmG s = case dumpX86G (ubs s) of
-    Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right d  -> liftIO $ putDoc (d <> hardline)
-
-dumpAsmL :: String -> Repl AlexPosn ()
-dumpAsmL s = case dumpX86L (ubs s) of
-    Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right d  -> liftIO $ putDoc (d <> hardline)
+dumpAsmG s = do
+    st <- lift $ gets _lex
+    case dumpX86G st (ubs s) of
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right d  -> liftIO $ putDoc (d <> hardline)
 
 tyExprR :: String -> Repl AlexPosn ()
 tyExprR s = do
@@ -211,74 +212,78 @@ annR s = do
         Right (e,_) -> putDoc(prettyTyped e<>hardline)
 
 inspect :: String -> Repl AlexPosn ()
-inspect s = case tyParse bs of
-    Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right (e, _) -> do
-        let dbgPrint =
-                case eAnn e of
-                    (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) (castPtr p)
-                    (Arr _ F)         -> \p -> (dbgAB :: Ptr (Apple Double) -> IO T.Text) (castPtr p)
-                    (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
-        m <- lift $ gets mf
-        liftIO $ do
-            (sz, fp) <- ctxFunP m bs
-            p <- callFFI fp (retPtr undefined) []
-            TIO.putStrLn =<< dbgPrint p
-            free p *> freeFunPtr sz fp
-    where bs = ubs s
+inspect s = do
+    st <- lift $ gets _lex
+    case tyParseCtx st bs of
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right (e, _) -> do
+            let dbgPrint =
+                    case eAnn e of
+                        (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) (castPtr p)
+                        (Arr _ F)         -> \p -> (dbgAB :: Ptr (Apple Double) -> IO T.Text) (castPtr p)
+                        (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
+            m <- lift $ gets mf
+            liftIO $ do
+                (sz, fp) <- ctxFunP st m bs
+                p <- callFFI fp (retPtr undefined) []
+                TIO.putStrLn =<< dbgPrint p
+                free p *> freeFunPtr sz fp
+        where bs = ubs s
 
 printExpr :: String -> Repl AlexPosn ()
-printExpr s = case tyParse bs of
-    Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right (e, _) ->
-        case eAnn e of
-            I -> do
-              m <- lift $ gets mf
-              liftIO $ do
-                  (sz, fp) <- ctxFunP m bs
-                  print =<< callFFI fp retInt64 []
-                  freeFunPtr sz fp
-            F -> do
-                m <- lift $ gets mf
-                liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
-                    print =<< callFFI fp retCDouble []
-                    freeFunPtr sz fp
-            (Arr _ F) -> do
-                m <- lift $ gets mf
-                liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
-                    p <- callFFI fp (retPtr undefined) []
-                    putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
-                    free p *> freeFunPtr sz fp
-            (Arr _ I) -> do
-                m <- lift $ gets mf
-                liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
-                    p <- callFFI fp (retPtr undefined) []
-                    putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
-                    free p *> freeFunPtr sz fp
-            B -> do
-                m <- lift$gets mf
-                liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
-                    cb <- callFFI fp retWord8 []
-                    putStrLn (sB cb)
-                    freeFunPtr sz fp
-                where sB 1 = "#t"; sB 0 = "#f"
-            (Arr _ (P [F,F])) -> do
-                m <- lift $ gets mf
-                liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
-                    p <- callFFI fp (retPtr undefined) []
-                    putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Double Double)) -> IO (Apple (Pp Double Double))) p
-                    free p *> freeFunPtr sz fp
-            (Arr _ (P [I,I])) -> do
-                m <- lift $ gets mf
-                liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
-                    p <- callFFI fp (retPtr undefined) []
-                    putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Int64 Int64)) -> IO (Apple (Pp Int64 Int64))) p
-                    free p *> freeFunPtr sz fp
-            t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
-    where bs = ubs s
+printExpr s = do
+    st <- lift $ gets _lex
+    case tyParseCtx st bs of
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right (e, _) ->
+            case eAnn e of
+                I -> do
+                  m <- lift $ gets mf
+                  liftIO $ do
+                      (sz, fp) <- ctxFunP st m bs
+                      print =<< callFFI fp retInt64 []
+                      freeFunPtr sz fp
+                F -> do
+                    m <- lift $ gets mf
+                    liftIO $ do
+                        (sz, fp) <- ctxFunP st m bs
+                        print =<< callFFI fp retCDouble []
+                        freeFunPtr sz fp
+                (Arr _ F) -> do
+                    m <- lift $ gets mf
+                    liftIO $ do
+                        (sz, fp) <- ctxFunP st m bs
+                        p <- callFFI fp (retPtr undefined) []
+                        putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
+                        free p *> freeFunPtr sz fp
+                (Arr _ I) -> do
+                    m <- lift $ gets mf
+                    liftIO $ do
+                        (sz, fp) <- ctxFunP st m bs
+                        p <- callFFI fp (retPtr undefined) []
+                        putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
+                        free p *> freeFunPtr sz fp
+                B -> do
+                    m <- lift$gets mf
+                    liftIO $ do
+                        (sz, fp) <- ctxFunP st m bs
+                        cb <- callFFI fp retWord8 []
+                        putStrLn (sB cb)
+                        freeFunPtr sz fp
+                    where sB 1 = "#t"; sB 0 = "#f"
+                (Arr _ (P [F,F])) -> do
+                    m <- lift $ gets mf
+                    liftIO $ do
+                        (sz, fp) <- ctxFunP st m bs
+                        p <- callFFI fp (retPtr undefined) []
+                        putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Double Double)) -> IO (Apple (Pp Double Double))) p
+                        free p *> freeFunPtr sz fp
+                (Arr _ (P [I,I])) -> do
+                    m <- lift $ gets mf
+                    liftIO $ do
+                        (sz, fp) <- ctxFunP st m bs
+                        p <- callFFI fp (retPtr undefined) []
+                        putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Int64 Int64)) -> IO (Apple (Pp Int64 Int64))) p
+                        free p *> freeFunPtr sz fp
+                t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
+        where bs = ubs s

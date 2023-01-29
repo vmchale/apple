@@ -3,9 +3,11 @@
 
 module Dbg ( dumpX86G
            , dumpX86L
+           , dumpX86GDef
            , dumpX86Abs
            , dumpX86Liveness
            , dumpIR
+           , dumpIRDef
            , dumpIRI
            , dumpX86Intervals
            , dumpX86Ass
@@ -44,10 +46,10 @@ import           Prettyprinter.Ext
 import           Ty
 
 pBIO :: BSL.ByteString -> IO ()
-pBIO = either throwIO TIO.putStr <=< dtxt
+pBIO = either throwIO TIO.putStr <=< dtxt alexInitUserState
 
-dtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
-dtxt = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM dbgFp) . x86G
+dtxt :: AlexUserState -> BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
+dtxt st = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM dbgFp) . x86G st
     where comm :: Either a (IO b) -> IO (Either a b)
           comm (Left err) = pure(Left err)
           comm (Right x)  = Right <$> x
@@ -66,22 +68,28 @@ present (x, b) = rightPad 40 (ptxt x) <> he b
           pad s | T.length s == 1 = T.cons '0' s | otherwise = s
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
-nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86G
+nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86GDef
     where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
 
 dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.(\(x, st) -> irToX86 st x)) . ir
     where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 16)
 
-dumpX86G, dumpX86L :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86G = fmap prettyX86 . x86G
-dumpX86L = fmap prettyX86 . x86L
+dumpX86G, dumpX86L :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86G st = fmap prettyX86 . x86G st
+dumpX86L st = fmap prettyX86 . x86L st
+
+dumpX86GDef :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86GDef = dumpX86G alexInitUserState
 
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Abs = fmap (prettyX86 . (\(x, st) -> snd (irToX86 st x))) . ir
 
-dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpIR = fmap (prettyIR.fst) . ir
+dumpIRDef :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpIRDef = dumpIR alexInitUserState
+
+dumpIR :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpIR st = fmap (prettyIR.fst) . irCtx st
 
 dumpIRI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIRI = fmap (prettyIRI.live.fst).ir
@@ -107,4 +115,4 @@ printTypes bsl =
     where fst3 ~(x, _, _) = x
 
 topt :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-topt = fmap prettyTyped . opt
+topt = fmap prettyTyped . opt alexInitUserState
