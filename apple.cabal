@@ -27,6 +27,7 @@ library
         Name
         U
         L
+        Parser
         IR
         I
         A.Eta
@@ -47,7 +48,6 @@ library
         R.Dfn
         R.M
         R.R
-        Parser
         Parser.Rw
         Ty.Clone
         A.Opt
@@ -228,7 +228,8 @@ executable arepl
         transformers,
         text,
         directory,
-        filepath
+        filepath,
+        extra
 
     if !impl(ghc >=8.0)
         build-depends: semigroups

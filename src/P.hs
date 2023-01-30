@@ -18,8 +18,9 @@ module P ( Err (..)
          , x86L
          , bytes
          , funP
-         , ctxFunP
+         , eFunP
          , ctxFunDef
+         , tyECtx
          ) where
 
 import           A
@@ -36,7 +37,7 @@ import           Control.DeepSeq            (NFData)
 import           Control.Exception          (Exception, throwIO)
 import           Control.Monad              ((<=<))
 import           Control.Monad.State.Strict (evalState, state)
-import           Data.Bifunctor             (first, second)
+import           Data.Bifunctor             (first)
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
 import           Data.Typeable              (Typeable)
@@ -70,8 +71,11 @@ instance Pretty a => Pretty (Err a) where
     pretty (TyErr err) = pretty err
 
 parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
-parseRenameCtx st = fmap (go.second rewrite) . parseWithMaxCtx st where
-    go (i, ast) = let (e, m) = dedfn i ast in rG m e
+parseRenameCtx st = fmap (uncurry renameECtx) . parseWithMaxCtx st
+
+renameECtx :: Int -> E a -> (E a, Int)
+renameECtx k = go k.rewrite where
+    go i ast = let (e, m) = dedfn i ast in rG m e
 
 parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
 parseRename = parseRenameCtx alexInitUserState
@@ -91,6 +95,9 @@ tyOf = tyOfCtx alexInitUserState
 ctxFunDef :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
 ctxFunDef = ctxFunP alexInitUserState
 
+eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr a)
+eFunP m ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . ex86G m)
+
 ctxFunP :: AlexUserState -> (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
 ctxFunP st ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . x86G st)
 
@@ -107,13 +114,27 @@ x86L, x86G :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) [X86 X86R
 x86G st = walloc st (uncurry X86.gallocFrame)
 x86L st = walloc st (X86.allocFrame . X86.mkIntervals . snd)
 
+ex86G :: Int -> E a -> Either (TyE a)  [X86 X86Reg FX86Reg ()]
+ex86G i = wallocE i (uncurry X86.gallocFrame)
+
 walloc lSt f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . irCtx lSt
+wallocE i f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . eir i
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
 ir = irCtx alexInitUserState
 
 irCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
 irCtx st = fmap (f.writeC) . opt st where f (s,r,t) = (frees t (optIR s),r)
+
+eir :: Int -> E a -> Either (TyE a) ([Stmt], WSt)
+eir i = fmap (f.writeC) . optE i where f (s,r,t) = (frees t (optIR s),r)
+
+optE :: Int -> E a -> Either (TyE a) (E (T ()))
+optE i e =
+  uncurry go <$> eInline i e where
+  go eϵ = evalState (β'=<<optA'=<<β'=<<eta=<<optA' eϵ)
+  β' eϵ = state (`β` eϵ)
+  optA' eϵ = state (\k -> runM k (optA eϵ))
 
 opt :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
 opt st bsl =
@@ -122,9 +143,16 @@ opt st bsl =
     β' e = state (`β` e)
     optA' e = state (\k -> runM k (optA e))
 
+eInline :: Int -> E a -> Either (TyE a) (E (T ()), Int)
+eInline m e = (\(eϵ, i) -> inline i eϵ) . sel <$> tyECtx m e where sel ~(x, _, z) = (x, z)
+
 parseInline :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline st bsl =
     (\(e, i) -> inline i e) <$> tyParseCtx st bsl
+
+tyECtx :: Int -> E a -> Either (TyE a) (E (T ()), [(Name a, C)], Int)
+tyECtx m e =
+    let (ast, m') = renameECtx m e in tyClosed m' ast
 
 tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
 tyConstrCtx st bsl =

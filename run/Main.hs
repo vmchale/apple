@@ -8,7 +8,6 @@ import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.State       (StateT, evalStateT, gets, modify)
 import           Control.Monad.Trans.Class (lift)
 import qualified Data.ByteString.Lazy      as BSL
-import           Data.Functor              (($>))
 import           Data.Int                  (Int64)
 import           Data.List
 import           Data.Semigroup            ((<>))
@@ -16,6 +15,7 @@ import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
+import           Data.Tuple.Extra          (fst3)
 import           Dbg
 import           Foreign.LibFFI            (callFFI, retCDouble, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc     (free)
@@ -25,6 +25,7 @@ import           Hs.A
 import           Hs.FFI
 import           L
 import           Name
+import           Parser
 import           Prettyprinter             (hardline, pretty, (<+>))
 import           Prettyprinter.Render.Text (putDoc)
 import           Sys.DL
@@ -39,9 +40,9 @@ main = runRepl loop
 namesStr :: StateT Env IO [String]
 namesStr = gets (fmap (T.unpack.name.fst) . ee)
 
-data Env = Env { _lex :: AlexUserState, ee :: [(Name (T ()), E (T ()))], mf :: (Int, Int) }
+data Env = Env { _lex :: AlexUserState, ee :: [(Name AlexPosn, E AlexPosn)], mf :: (Int, Int) }
 
-aEe :: Name (T ()) -> E (T ()) -> Env -> Env
+aEe :: Name AlexPosn -> E AlexPosn -> Env -> Env
 aEe n e (Env l ees mm) = Env l ((n,e):ees) mm
 
 setL :: AlexUserState -> Env -> Env
@@ -229,7 +230,8 @@ inspect s = do
                         (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
             m <- lift $ gets mf
             liftIO $ do
-                (sz, fp) <- ctxFunP st m bs
+                let i = fst3 st
+                (sz, fp) <- eFunP i m e
                 p <- callFFI fp (retPtr undefined) []
                 TIO.putStrLn =<< dbgPrint p
                 free p *> freeFunPtr sz fp
@@ -241,66 +243,70 @@ iCtx f fp = do
     bs <- liftIO $ BSL.readFile fp
     case tyParseCtx st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
-        Right (x,i) -> do
-            let (st', nϵ) = newIdent undefined (T.pack f) (setM i st)
-                n = nϵ $> eAnn x
-            lift $ do {modify (aEe n x); modify (setL st')}
+        Right (_,i) -> do
+            let (st', n) = newIdent (AlexPn 0 0 0) (T.pack f) (setM i st)
+                x' = parseE st' bs
+            lift $ do {modify (aEe n x'); modify (setL st')}
     where setM i' (_, mm, im) = (i', mm, im)
 
 printExpr :: String -> Repl AlexPosn ()
 printExpr s = do
     st <- lift $ gets _lex
-    case tyParseCtx st bs of
+    case parseWithMaxCtx st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
-        Right (e, _) ->
-            case eAnn e of
-                I -> do
-                  m <- lift $ gets mf
-                  liftIO $ do
-                      (sz, fp) <- ctxFunP st m bs
-                      print =<< callFFI fp retInt64 []
-                      freeFunPtr sz fp
-                F -> do
+        Right (i, eP) -> do
+            ees <- lift $ gets ee
+            let eC = foldLet ees eP
+            case tyECtx i eC of
+                Left err -> liftIO $ putDoc (pretty err <> hardline)
+                Right (e, _, _) -> do
                     m <- lift $ gets mf
-                    liftIO $ do
-                        (sz, fp) <- ctxFunP st m bs
-                        print =<< callFFI fp retCDouble []
-                        freeFunPtr sz fp
-                (Arr _ F) -> do
-                    m <- lift $ gets mf
-                    liftIO $ do
-                        (sz, fp) <- ctxFunP st m bs
-                        p <- callFFI fp (retPtr undefined) []
-                        putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
-                        free p *> freeFunPtr sz fp
-                (Arr _ I) -> do
-                    m <- lift $ gets mf
-                    liftIO $ do
-                        (sz, fp) <- ctxFunP st m bs
-                        p <- callFFI fp (retPtr undefined) []
-                        putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
-                        free p *> freeFunPtr sz fp
-                B -> do
-                    m <- lift$gets mf
-                    liftIO $ do
-                        (sz, fp) <- ctxFunP st m bs
-                        cb <- callFFI fp retWord8 []
-                        putStrLn (sB cb)
-                        freeFunPtr sz fp
-                    where sB 1 = "#t"; sB 0 = "#f"
-                (Arr _ (P [F,F])) -> do
-                    m <- lift $ gets mf
-                    liftIO $ do
-                        (sz, fp) <- ctxFunP st m bs
-                        p <- callFFI fp (retPtr undefined) []
-                        putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Double Double)) -> IO (Apple (Pp Double Double))) p
-                        free p *> freeFunPtr sz fp
-                (Arr _ (P [I,I])) -> do
-                    m <- lift $ gets mf
-                    liftIO $ do
-                        (sz, fp) <- ctxFunP st m bs
-                        p <- callFFI fp (retPtr undefined) []
-                        putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Int64 Int64)) -> IO (Apple (Pp Int64 Int64))) p
-                        free p *> freeFunPtr sz fp
-                t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
-        where bs = ubs s
+                    case eAnn e of
+                        I ->
+                          liftIO $ do
+                              (sz, fp) <- eFunP i m eC
+                              print =<< callFFI fp retInt64 []
+                              freeFunPtr sz fp
+                        F ->
+                            liftIO $ do
+                                (sz, fp) <- eFunP i m eC
+                                print =<< callFFI fp retCDouble []
+                                freeFunPtr sz fp
+                        (Arr _ F) ->
+                            liftIO $ do
+                                (sz, fp) <- eFunP i m eC
+                                p <- callFFI fp (retPtr undefined) []
+                                putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
+                                free p *> freeFunPtr sz fp
+                        (Arr _ I) ->
+                            liftIO $ do
+                                (sz, fp) <- eFunP i m eC
+                                p <- callFFI fp (retPtr undefined) []
+                                putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
+                                free p *> freeFunPtr sz fp
+                        B ->
+                            liftIO $ do
+                                (sz, fp) <- eFunP i m eC
+                                cb <- callFFI fp retWord8 []
+                                putStrLn (sB cb)
+                                freeFunPtr sz fp
+                            where sB 1 = "#t"; sB 0 = "#f"
+                        (Arr _ (P [F,F])) ->
+                            liftIO $ do
+                                (sz, fp) <- eFunP i m eC
+                                p <- callFFI fp (retPtr undefined) []
+                                putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Double Double)) -> IO (Apple (Pp Double Double))) p
+                                free p *> freeFunPtr sz fp
+                        (Arr _ (P [I,I])) ->
+                            liftIO $ do
+                                (sz, fp) <- eFunP i m eC
+                                p <- callFFI fp (retPtr undefined) []
+                                putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Int64 Int64)) -> IO (Apple (Pp Int64 Int64))) p
+                                free p *> freeFunPtr sz fp
+                        t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
+    where bs = ubs s
+
+parseE st bs = snd . either (error "Internal error?") id $ parseWithMaxCtx st bs
+
+foldLet :: [(Name a, E a)] -> E a -> E a
+foldLet = thread . fmap (\b@(_,e) -> Let (eAnn e) b) where thread = foldr (.) id
