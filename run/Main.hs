@@ -255,8 +255,7 @@ printExpr s = do
     case parseWithMaxCtx st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (i, eP) -> do
-            ees <- lift $ gets ee
-            let eC = foldLet ees eP
+            eC <- eRepl eP
             case tyECtx i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, _) -> do
@@ -306,7 +305,8 @@ printExpr s = do
                         t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
     where bs = ubs s
 
-parseE st bs = snd . either (error "Internal error?") id $ parseWithMaxCtx st bs
+parseE st bs = snd . either (error "Internal error?") id $ rwP st bs
 
-foldLet :: [(Name a, E a)] -> E a -> E a
-foldLet = thread . fmap (\b@(_,e) -> Let (eAnn e) b) where thread = foldr (.) id
+eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
+eRepl e = do { ees <- lift $ gets ee; pure $ foldLet ees e }
+    where foldLet = thread . fmap (\b@(_,eϵ) -> Let (eAnn eϵ) b) where thread = foldr (.) id

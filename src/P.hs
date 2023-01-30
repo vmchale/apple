@@ -10,6 +10,7 @@ module P ( Err (..)
          , tyOf
          , parseInline
          , parseRename
+         , rwP
          , opt
          , ir
          , irCtx
@@ -37,7 +38,7 @@ import           Control.DeepSeq            (NFData)
 import           Control.Exception          (Exception, throwIO)
 import           Control.Monad              ((<=<))
 import           Control.Monad.State.Strict (evalState, state)
-import           Data.Bifunctor             (first)
+import           Data.Bifunctor             (first, second)
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
 import           Data.Typeable              (Typeable)
@@ -69,6 +70,8 @@ instance NFData a => NFData (Err a) where
 instance Pretty a => Pretty (Err a) where
     pretty (PErr err)  = pretty err
     pretty (TyErr err) = pretty err
+
+rwP st = fmap (second rewrite) . parseWithMaxCtx st
 
 parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
 parseRenameCtx st = fmap (uncurry renameECtx) . parseWithMaxCtx st
