@@ -329,37 +329,36 @@ benchC :: String -> Repl AlexPosn ()
 benchC s = case tyParse bs of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right _ -> do
+        st <- lift $ gets _lex
         m <- lift $ gets mf
-        liftIO $ benchmark (nfIO (do{(sz,fp) <- ctxFunP m bs; freeFunPtr sz fp}))
+        liftIO $ benchmark (nfIO (do{(sz,fp) <- ctxFunP st m bs; freeFunPtr sz fp}))
     where bs = ubs s
 
 benchE :: String -> Repl AlexPosn ()
 benchE s = case tyParse bs of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right (e, _) ->
+    Right (e, _) -> do
+        st <- lift $ gets _lex
+        m <- lift $ gets mf
         case eAnn e of
             (Arr _ F) -> do
-                m <- lift $ gets mf
                 liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
+                    (sz, fp) <- ctxFunP st m bs
                     benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                     freeFunPtr sz fp
             (Arr _ I) -> do
-                m <- lift $ gets mf
                 liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
+                    (sz, fp) <- ctxFunP st m bs
                     benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                     freeFunPtr sz fp
             I -> do
-                m <- lift $ gets mf
                 liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
+                    (sz, fp) <- ctxFunP st m bs
                     benchmark (nfIO $ callFFI fp retInt64 [])
                     freeFunPtr sz fp
             F -> do
-                m <- lift $ gets mf
                 liftIO $ do
-                    (sz, fp) <- ctxFunP m bs
+                    (sz, fp) <- ctxFunP st m bs
                     benchmark (nfIO $ callFFI fp retCDouble [])
                     freeFunPtr sz fp
     where bs = ubs s
