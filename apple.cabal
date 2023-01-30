@@ -223,7 +223,6 @@ executable arepl
         bytestring,
         libffi,
         prettyprinter,
-        containers,
         haskeline,
         mtl,
         transformers,

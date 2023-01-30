@@ -5,12 +5,12 @@ module Main (main) where
 
 import           A
 import           Control.Monad.IO.Class    (liftIO)
-import           Control.Monad.State       (StateT, evalStateT, gets)
+import           Control.Monad.State       (StateT, evalStateT, gets, modify)
 import           Control.Monad.Trans.Class (lift)
 import qualified Data.ByteString.Lazy      as BSL
+import           Data.Functor              (($>))
 import           Data.Int                  (Int64)
 import           Data.List
-import qualified Data.Map                  as M
 import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
@@ -24,6 +24,7 @@ import           Foreign.Storable          (peek)
 import           Hs.A
 import           Hs.FFI
 import           L
+import           Name
 import           Prettyprinter             (hardline, pretty, (<+>))
 import           Prettyprinter.Render.Text (putDoc)
 import           Sys.DL
@@ -35,12 +36,16 @@ import           System.FilePath           ((</>))
 main :: IO ()
 main = runRepl loop
 
-data EE = Fn (E AlexPosn) | CI !AI | CF !AF
-
 namesStr :: StateT Env IO [String]
-namesStr = gets (fmap T.unpack . M.keys . ee)
+namesStr = gets (fmap (T.unpack.name.fst) . ee)
 
-data Env = Env { _lex :: AlexUserState, ee :: M.Map T.Text EE, mf :: (Int, Int) }
+data Env = Env { _lex :: AlexUserState, ee :: [(Name (T ()), E (T ()))], mf :: (Int, Int) }
+
+aEe :: Name (T ()) -> E (T ()) -> Env -> Env
+aEe n e (Env l ees mm) = Env l ((n,e):ees) mm
+
+setL :: AlexUserState -> Env -> Env
+setL lSt (Env _ ees mm) = Env lSt ees mm
 
 type Repl a = InputT (StateT Env IO)
 
@@ -51,7 +56,7 @@ runRepl :: Repl a x -> IO x
 runRepl x = do
     histDir <- (</> ".apple_history") <$> getHomeDirectory
     mfϵ <- mem'
-    let initSt = Env alexInitUserState M.empty mfϵ
+    let initSt = Env alexInitUserState [] mfϵ
     let myCompleter = appleCompletions `fallbackCompletion` completeFilename
     let settings = setComplete myCompleter $ defaultSettings { historyFile = Just histDir }
     flip evalStateT initSt $ runInputT settings x
@@ -104,22 +109,22 @@ loop :: Repl AlexPosn ()
 loop = do
     inp <- getInputLine " > "
     case words <$> inp of
-        Just []             -> loop
-        Just (":h":_)       -> showHelp *> loop
-        Just (":help":_)    -> showHelp *> loop
-        Just ("\\l":_)      -> langHelp *> loop
-        Just (":ty":e)      -> tyExprR (unwords e) *> loop
-        Just [":q"]         -> pure ()
-        Just [":quit"]      -> pure ()
-        Just (":asm":e)     -> dumpAsmG (unwords e) *> loop
-        Just (":ann":e)     -> annR (unwords e) *> loop
-        Just (":ir":e)      -> irR (unwords e) *> loop
-        Just (":disasm":e)  -> disasm (unwords e) *> loop
-        Just (":inspect":e) -> inspect (unwords e) *> loop
-        Just (":yank":[fp]) -> do {contents <- liftIO $ readFile fp; printExpr contents} *> loop
-        Just (":y":[fp])    -> do {contents <- liftIO $ readFile fp; printExpr contents} *> loop
-        Just e              -> printExpr (unwords e) *> loop
-        Nothing             -> pure ()
+        Just []               -> loop
+        Just (":h":_)         -> showHelp *> loop
+        Just (":help":_)      -> showHelp *> loop
+        Just ("\\l":_)        -> langHelp *> loop
+        Just (":ty":e)        -> tyExprR (unwords e) *> loop
+        Just [":q"]           -> pure ()
+        Just [":quit"]        -> pure ()
+        Just (":asm":e)       -> dumpAsmG (unwords e) *> loop
+        Just (":ann":e)       -> annR (unwords e) *> loop
+        Just (":ir":e)        -> irR (unwords e) *> loop
+        Just (":disasm":e)    -> disasm (unwords e) *> loop
+        Just (":inspect":e)   -> inspect (unwords e) *> loop
+        Just (":yank":f:[fp]) -> iCtx f fp *> loop
+        Just (":y":f:[fp])    -> iCtx f fp *> loop
+        Just e                -> printExpr (unwords e) *> loop
+        Nothing               -> pure ()
 
 showHelp :: Repl AlexPosn ()
 showHelp = liftIO $ putStr $ concat
@@ -128,7 +133,7 @@ showHelp = liftIO $ putStr $ concat
     , helpOption ":ann" "<expression>" "Annotate with types"
     , helpOption ":list" "" "List all names that are in scope"
     , helpOption ":quit, :q" "" "Quit REPL"
-    , helpOption ":yank, :y" "<filename>" "Evaluate file"
+    , helpOption ":yank, :y" "<f> <file>" "Read file"
     , helpOption "\\l" "" "Show reference"
     -- TODO: dump debug state
     ]
@@ -229,6 +234,18 @@ inspect s = do
                 TIO.putStrLn =<< dbgPrint p
                 free p *> freeFunPtr sz fp
         where bs = ubs s
+
+iCtx :: String -> String -> Repl AlexPosn ()
+iCtx f fp = do
+    st <- lift $ gets _lex
+    bs <- liftIO $ BSL.readFile fp
+    case tyParseCtx st bs of
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right (x,i) -> do
+            let (st', nϵ) = newIdent undefined (T.pack f) (setM i st)
+                n = nϵ $> eAnn x
+            lift $ do {modify (aEe n x); modify (setL st')}
+    where setM i' (_, mm, im) = (i', mm, im)
 
 printExpr :: String -> Repl AlexPosn ()
 printExpr s = do
