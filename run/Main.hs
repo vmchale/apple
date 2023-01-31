@@ -252,7 +252,7 @@ iCtx f fp = do
 printExpr :: String -> Repl AlexPosn ()
 printExpr s = do
     st <- lift $ gets _lex
-    case parseWithMaxCtx st bs of
+    case rwP st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (i, eP) -> do
             eC <- eRepl eP

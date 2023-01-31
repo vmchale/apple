@@ -74,11 +74,10 @@ instance Pretty a => Pretty (Err a) where
 rwP st = fmap (second rewrite) . parseWithMaxCtx st
 
 parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
-parseRenameCtx st = fmap (uncurry renameECtx) . parseWithMaxCtx st
+parseRenameCtx st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
 
 renameECtx :: Int -> E a -> (E a, Int)
-renameECtx k = go k.rewrite where
-    go i ast = let (e, m) = dedfn i ast in rG m e
+renameECtx i ast = let (e, m) = dedfn i ast in rG m e
 
 parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
 parseRename = parseRenameCtx alexInitUserState
@@ -154,8 +153,7 @@ parseInline st bsl =
     (\(e, i) -> inline i e) <$> tyParseCtx st bsl
 
 tyECtx :: Int -> E a -> Either (TyE a) (E (T ()), [(Name a, C)], Int)
-tyECtx m e =
-    let (ast, m') = renameECtx m e in tyClosed m' ast
+tyECtx m e = let (ast, m') = renameECtx m e in tyClosed m' ast
 
 tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
 tyConstrCtx st bsl =
