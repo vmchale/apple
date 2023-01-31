@@ -33,6 +33,7 @@ import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, 
                                             setComplete, simpleCompletion)
 import           System.Directory          (getHomeDirectory)
 import           System.FilePath           ((</>))
+import           Ty
 
 main :: IO ()
 main = runRepl loop
@@ -254,9 +255,9 @@ printExpr s = do
     st <- lift $ gets _lex
     case rwP st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
-        Right (i, eP) -> do
+        Right (eP, i) -> do
             eC <- eRepl eP
-            case tyECtx i eC of
+            case tyClosed i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, _) -> do
                     m <- lift $ gets mf
@@ -305,7 +306,7 @@ printExpr s = do
                         t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
     where bs = ubs s
 
-parseE st bs = snd . either (error "Internal error?") id $ rwP st bs
+parseE st bs = fst . either (error "Internal error?") id $ rwP st bs
 
 eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
 eRepl e = do { ees <- lift $ gets ee; pure $ foldLet ees e }

@@ -21,7 +21,6 @@ module P ( Err (..)
          , funP
          , eFunP
          , ctxFunDef
-         , tyECtx
          ) where
 
 import           A
@@ -71,7 +70,7 @@ instance Pretty a => Pretty (Err a) where
     pretty (PErr err)  = pretty err
     pretty (TyErr err) = pretty err
 
-rwP st = fmap (second rewrite) . parseWithMaxCtx st
+rwP st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
 
 parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
 parseRenameCtx st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
@@ -146,14 +145,11 @@ opt st bsl =
     optA' e = state (\k -> runM k (optA e))
 
 eInline :: Int -> E a -> Either (TyE a) (E (T ()), Int)
-eInline m e = (\(eϵ, i) -> inline i eϵ) . sel <$> tyECtx m e where sel ~(x, _, z) = (x, z)
+eInline m e = (\(eϵ, i) -> inline i eϵ) . sel <$> tyClosed m e where sel ~(x, _, z) = (x, z)
 
 parseInline :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline st bsl =
     (\(e, i) -> inline i e) <$> tyParseCtx st bsl
-
-tyECtx :: Int -> E a -> Either (TyE a) (E (T ()), [(Name a, C)], Int)
-tyECtx m e = let (ast, m') = renameECtx m e in tyClosed m' ast
 
 tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
 tyConstrCtx st bsl =
