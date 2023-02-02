@@ -48,14 +48,15 @@ $digitsubscript = [₀-₉]
 
 $greek = [α-ωΑ-Ω]
 
-$mathgreek = [𝛼-𝜛]
+$mathgreek = [𝛢-𝛺𝛼-𝜛]
+$mathlatin = [𝐴-𝑍𝑎-𝑧]
 
 $letter = [$latin $greek]
 $sub = [$subscript $digitsubscript]
 
 @follow_char = [$letter $digit \_]
 
-@name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek $sub* | ∫)
+@name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek $sub* | $mathlatin $sub* | ∫ | 𝛻 | ∇)
 
 @exp = e\-?$digit+
 @float = $digit+\.$digit+@exp?
@@ -371,6 +372,7 @@ instance Pretty Builtin where
     pretty BuiltinCons   = "`Cons`"
     pretty BuiltinNil    = "Nil"
     pretty BuiltinMMul   = "%."
+    pretty BuiltinVMul   = "%:"
     pretty BuiltinArr    = "Arr"
     pretty BuiltinInt    = "int"
     pretty BuiltinFloat  = "float"
