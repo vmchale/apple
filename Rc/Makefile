@@ -1,0 +1,16 @@
+GHC_VER := 9.4.4
+HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
+
+all: libappler.so
+
+install: libappler.so
+	cp $^ /usr/local/lib
+
+%.o: %.c
+	gcc -O2 -c $< -I $(HS_INCLUDE_DIR) -o $@
+
+libappler.so: appler.o
+	gcc -shared $^ -o $@ -lapple
+
+clean:
+	rm -rf *.o *.so

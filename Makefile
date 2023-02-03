@@ -10,8 +10,11 @@ moddeps.svg: $(HS_SRC)
 install-lib: libapple.so
 	cp $^ /usr/local/lib
 
-install-py: libapple.so
+install-py:
 	make -C pyc install
+
+install-r:
+	make -C Rc install
 
 install:
 	cabal install -w ghc-9.4
