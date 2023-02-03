@@ -3,7 +3,7 @@
 #include <apple.h>
 #include<sys/mman.h>
 #include<numpy/arrayobject.h>
-#include<apple_abi.h>
+#include"../c/jit.h"
 
 #define U void*
 #define R return
@@ -110,14 +110,6 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
     R pyres;
 }
 
-typedef U (*Ufp)(void);
-typedef I (*Ifp)(void);typedef F(*Ffp)(void);
-typedef F (*Fffp)(F);typedef F(*Ifffp)(I,F);typedef F(*Ffffp)(F,F);
-typedef U (*Aafp)(U);
-typedef F (*Affp)(U);typedef I (*Aifp)(U);
-typedef F (*Aaffp)(U,U);
-typedef U (*Iafp)(I);
-
 typedef struct PyCacheObject {
     PyObject_HEAD
     U code;size_t code_sz;FnTy* ty;
@@ -208,6 +200,7 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         free(err);R NULL;
     };
     U fp;size_t f_sz;
+    // FIXME free ty?
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     PyObject* r;
     Sw(ty->res){

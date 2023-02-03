@@ -1,33 +1,70 @@
+#include<sys/mman.h>
 #include<R.h>
 #include<Rinternals.h>
 #include<HsFFI.h>
 #include"../include/apple.h"
+#include"../c/jit.h"
 
-#define R return
+#define Sw switch
+#define C case
+#define BR break;
 
-// https://github.com/jsoftware/stats_jserver4r/blob/d7bfb7de28bd94e3c5f5e8284be2648f69ad1304/source/lib/util.c#L38
-SEXP ss(char *s) {
-    SEXP r;
-    char *buf=strdup(s);
-    PROTECT(r = allocVector(STRSXP, 1));
-    SET_STRING_ELT(r, 0, mkChar(buf));
-    free(buf);
-    UNPROTECT(1);
-    R r;
+// asReal : SEXP -> double
+// asInteger : SEXP -> int
+// ScalarReal : double -> SEXP
+// ScalarInteger : int -> SEXP
+// SEXPTYPE = INTSXP | REALSXP
+
+// http://adv-r.had.co.nz/C-interface.html
+
+SEXP rf(U x) {
+    I* i_p=x;
+    I t=1;
+    I rnk=i_p[0];
+    SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
+    DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
+    SEXP ret=PROTECT(allocArray(REALSXP,dims));
+    size_t sz=8*t;
+    memcpy(REAL0(ret),i_p+rnk+1,sz);
+    UNPROTECT(2);
+    R ret;
 }
 
 SEXP hs_init_R(void) {
     hs_init(0,0);
-    R ss("...loaded GHC runtime");
+    R mkString("...loaded GHC runtime");
 }
 
 SEXP ty_R(SEXP a) {
     char* err;char** err_p=&err;
-    const char* inp=CHAR(STRING_ELT(a,0));
+    const char* inp=CHAR(asChar(a));
     char* ret=apple_printty(inp,err_p);
     if(ret==NULL) {
-        SEXP ret=ss(err);free(err);
+        SEXP ret=mkString(err);free(err);
         R ret;
     }
-    R ss(ret);
+    R mkString(ret);
+}
+
+SEXP apple_R(SEXP args) {
+    char* err;char** err_p=&err;
+    args=CDR(args);
+    SEXP str=CAR(args);
+    const char* inp=CHAR(asChar(str));
+    FnTy* ty=apple_ty(inp,err_p);
+    if(ty==NULL) {
+        SEXP ret=mkString(err);free(err);
+        R ret;
+    }
+    U fp; size_t f_sz;
+    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
+    U r;
+    Sw(ty->res){
+        C FA:
+            Sw(ty->argc){
+                C 0: {r=rf(((Ufp) fp)());BR}
+            };BR
+    }
+    munmap(fp,f_sz);
+    R r;
 }
