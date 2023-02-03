@@ -494,12 +494,10 @@ tyB _ (TAt i) = do
     a <- freshName "a" ()
     let aV = TVar a
     pure (Arrow (Ρ ρ (IM.singleton i aV)) aV, mempty)
-tyB _ (Map n) = do
-    -- for n the shape is i1,i2,...in `Cons` Nil (this forces it to have
-    -- enough indices)
-    ixList <- zipWithM (\_ c -> freshName (T.singleton c) ()) [1..n] ['i'..]
+tyB _ Map = do
+    ix <- freshName "i" ()
     a <- freshName "a" (); b <- freshName "b" ()
-    let arrSh = foldr Cons Nil (IVar () <$> ixList)
+    let arrSh = IVar () ix `Cons` Nil -- TODO: sh??
         a' = TVar a; b' = TVar b
         fTy = Arrow a' b'
         gTy = Arrow (Arr arrSh a') (Arr arrSh b')

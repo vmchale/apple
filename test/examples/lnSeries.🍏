@@ -6,5 +6,5 @@
 {
   iix ← irange 1 N 1;
   mkIx ← λn. (_((_ x)^n))%(𝑖n);
-  (+)/ 0 (mkIx'1 iix)
+  (+)/ 0 (mkIx'iix)
 }

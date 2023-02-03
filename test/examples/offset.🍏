@@ -5,7 +5,7 @@
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys
   ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λ dts
-  ; dtss ⟜ (-)\~((^2)'1 (0<|pts))
+  ; dtss ⟜ (-)\~((^2)'(0<|pts))
   ; T ⟜}. pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) pts)
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) pts)

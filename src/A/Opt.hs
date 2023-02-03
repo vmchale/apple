@@ -4,8 +4,6 @@ module A.Opt ( optA
              ) where
 
 import           A
-import           Control.Monad.State.Strict (runState)
-import           Data.Bifunctor             (second)
 import           R
 import           R.R
 
@@ -51,7 +49,7 @@ optA (EApp l op@(Builtin _ Sqrt) x) = do
         _        -> EApp l op xO
 optA (EApp _ (Builtin _ Floor) (EApp _ (Builtin _ ItoF) x)) = optA x
 optA (EApp ty (EApp _ (Builtin _ IntExp) x) (ILit _ 2)) = pure $ EApp ty (EApp (Arrow ty ty) (Builtin (Arrow ty (Arrow ty ty)) Times) x) x
-optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (Builtin _ (Map 1)) f) x))
+optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (Builtin _ Map) f) x))
     | Arrow dom fCod <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
         x' <- optA x
@@ -64,7 +62,7 @@ optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (B
             op' = Lam opTy x0 (Lam (Arrow dom cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f vx1)))
             arrTy = eAnn x'
         optA (EApp l0 (EApp undefined (EApp (Arrow arrTy l0) (Builtin (Arrow opTy (Arrow arrTy l0)) ho0) op') seed) x')
-optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ (Map 1)) f) x))
+optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ Map) f) x))
     | fTy@(Arrow dom fCod) <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
         f' <- optA f; f'' <- rE f'
@@ -78,7 +76,7 @@ optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ (Map 1)) f
             op' = Lam opT x0 (Lam (Arrow dom cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f' vx1)))
             f''' = Lam fTy x0' (EApp fCod f'' vx0')
         pure $ Id l0 $ FoldOfZip f''' op' [x']
-optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ (Map 1)) f) xs)) (EApp _ (EApp _ (Builtin _ (Map 1)) g) ys))
+optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map) f) xs)) (EApp _ (EApp _ (Builtin _ Map) g) ys))
     | Arrow dom0 _ <- eAnn f
     , Arrow dom1 _ <- eAnn g
     , Arrow _ (Arrow _ cod) <- eAnn op = do

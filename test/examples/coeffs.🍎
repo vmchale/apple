@@ -9,8 +9,8 @@
   ; coeffs ← λn.
     { n ⟜ ℝn; k ⟜ 2*n*𝜋
     ; scaleRad ← [k*x%T]
-    ; cosDiffs ⟜ (-)\~([cos.(scaleRad x)]'1 pts)
-    ; sinDiffs ⟜ (-)\~([sin.(scaleRad x)]'1 pts)
+    ; cosDiffs ⟜ (-)\~([cos.(scaleRad x)]' pts)
+    ; sinDiffs ⟜ (-)\~([sin.(scaleRad x)]' pts)
     ; c ⟜ T%(2*n^2*𝜋^2)
     ; aₙ ← c*sum ((*)`dxss cosDiffs)
     ; bₙ ← c*sum ((*)`dxss sinDiffs)

@@ -192,7 +192,7 @@ aeval (Var Arr{} x) t = do
     st <- gets avars
     let (i, r) = getT st x
     pure (i, [MT t (Reg r)])
-aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | f1 (eAnn e) && f1 res = do
+aeval (EApp res (EApp _ (Builtin _ Map) op) e) t | f1 (eAnn e) && f1 res = do
     a <- nextArr
     arrP <- newITemp
     (l, plE) <- aeval e arrP
@@ -260,7 +260,7 @@ aeval (EApp res (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | i1 (eAnn e) &
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
     pure (Just a, plE ++ plSeed ++ MT szR (IB IPlus sz (ConstI 1)):Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI 16)):dim1 (Just a) t (Reg szR) ++ loop)
-aeval (EApp res (EApp _ (Builtin _ (Map 1)) op) e) t | i1 (eAnn e) && i1 res = do
+aeval (EApp res (EApp _ (Builtin _ Map) op) e) t | i1 (eAnn e) && i1 res = do
     a <- nextArr
     arrP <- newITemp
     (l, plE) <- aeval e arrP

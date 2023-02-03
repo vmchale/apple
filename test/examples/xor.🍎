@@ -6,9 +6,9 @@
   sum ⇐ [(+)/x];
   forward ← λwh.λwo.λbh.λbo.
     -- ho: 4x2
-    { ho ← sigmoid`{0} ([(+)` bh x]'1 (X%.wh))
+    { ho ← sigmoid`{0} ([(+)`bh x]'(X%.wh))
     -- prediction: 4
-    ; prediction ← sigmoid'1 ((+bo)'1 (ho%:wo))
+    ; prediction ← sigmoid'((+bo)'(ho%:wo))
     ; (ho,prediction)
     };
   -- wh: 2x2 wo: 2 bh: 2 bo: (scalar)
@@ -17,12 +17,12 @@
     ; o ← forward wh wo bh bo
     ; ho ⟜ o->1; prediction ⟜ o->2
     ; l1E ← (-)`prediction Y
-    ; l1Δ ← (*)` (sDdx'1 prediction) l1E -- 4
+    ; l1Δ ← (*)`(sDdx'prediction) l1E -- 4
     ; he ← l1Δ (*)⊗ wo -- 4x2
     ; hΔ ← (*)`{0,0} (sDdx`{0} ho) he -- 4x2
     ; wha ← (+)`{0,0} wh ((|:X)%.hΔ)
     ; woa ← (|:ho)%:l1Δ
-    ; bha ← sum'1 ((<|)`{0,1} bh hΔ)
+    ; bha ← sum'((<|)`{0,1} bh hΔ)
     ; boa ← bo + sum l1Δ
     ; (wha,woa,bha,boa)
     };

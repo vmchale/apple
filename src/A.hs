@@ -119,7 +119,7 @@ instance Pretty Builtin where
     pretty Minus     = "-"
     pretty Max       = "⋉"
     pretty Min       = "⋊"
-    pretty (Map n)   = "\'" <> pretty n
+    pretty Map       = "\'"
     pretty Zip       = "`"
     pretty Div       = "%"
     pretty IntExp    = "^"
@@ -174,7 +174,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Filter -- TODO: filter by bitvector...
              | Grade -- TODO: sort
              | IRange | FRange
-             | Map !Int | FoldA | Zip
+             | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
              | Fold | FoldS | Foldl | Floor | ItoF | Iter
              | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
@@ -245,7 +245,7 @@ instance Pretty (E a) where
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2) = parens (pretty e0 <> "/" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
-    pretty (EApp _ (EApp _ (Builtin _ (Map n)) e0) e1)              = parens (pretty e0 <> "'" <> pretty n <+> pretty e1)
+    pretty (EApp _ (EApp _ (Builtin _ Map ) e0) e1)                 = parens (pretty e0 <> "'" <+> pretty e1)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)    = parens (pretty e0 <+> "Λₒ" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)
     pretty (EApp _ (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (pretty e1 <+> pretty e0 <+> "⊗" <+> pretty e1 <+> pretty e2)

@@ -198,7 +198,7 @@ BBin :: { E AlexPosn }
      | max { Builtin $1 Max }
      | min { Builtin $1 Min }
      | scan { Builtin $1 Scan }
-     | quot intLit { Builtin $1 (Map (fromInteger $ int $2)) }
+     | quot { Builtin $1 Map }
      | di intLit { Builtin $1 (DI (fromInteger $ int $2)) }
      | conv braces(sepBy(intLit,comma)) { Builtin $1 (A.Conv (reverse (fmap (fromInteger.int) $2))) }
      -- FIXME: not necessarily binary operator!!
