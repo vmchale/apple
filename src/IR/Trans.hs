@@ -123,6 +123,7 @@ sib1 ireg = IB IPlus (sd ireg) (ConstI 24)
 
 stadim a t ns = Wr (AP t Nothing a) (ConstI (fromIntegral$length ns)):zipWith (\o n -> Wr (AP t (Just (ConstI$8*o)) a) n) [1..] ns
 
+-- ir->ir pass? or sthg easier to debug...
 extrCell :: [Temp] -> [Temp] -> [Temp] -> (Temp, Maybe Label) -> Temp -> IRM [Stmt]
 extrCell fixedIxes dims sstrides src dest = do -- dims are bounds
     undefined
@@ -547,6 +548,11 @@ eval (LLet _ (n, e') e) t | (Arrow F F) <- eAnn e' = do
     ss <- writeRF e' [arg] ret
     modify (addFVar n (l, [(Nothing, arg)], (Nothing, ret)))
     (++ (J endL:L l:ss++[IR.R l, L endL])) <$> eval e t
+eval (LLet _ (n, e') e) t | (Arrow F (Arrow F F)) <- eAnn e' = do
+    l <- newLabel; endL <- newLabel; arg0 <- newFTemp; arg1 <- newFTemp; ret <- newFTemp
+    ss <- writeRF e' [arg0, arg1] ret
+    modify (addFVar n (l, [(Nothing, arg0), (Nothing, arg1)], (Nothing, ret)))
+    (++ (J endL:L l:ss++[IR.R l, L endL])) <$> eval e t
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ j))) acc = do
     i <- newITemp
     endR <- newITemp
@@ -961,6 +967,12 @@ eval (EApp F (Var _ f) e) t | isF (eAnn e) = do
     plE <- eval e arg
     retL <- newLabel
     pure $ plE ++ [C l, L retL, MX t (FReg ret)]
+eval (EApp F (EApp _ (Var _ f) e0) e1) t | isF (eAnn e0) && isF (eAnn e1) = do
+    st <- gets fvars
+    let (l, [(Nothing, arg0), (Nothing, arg1)], (Nothing, ret)) = getT st f
+    plE0 <- eval e0 arg0; plE1 <- eval e1 arg1
+    retL <- newLabel
+    pure $ plE0 ++ plE1 ++ [C l, L retL, MX t (FReg ret)]
 eval e _ = error (show e)
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
