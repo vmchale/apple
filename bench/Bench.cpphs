@@ -1,6 +1,5 @@
 module Main (main) where
 
-import           Asm.X86.Byte
 import           Control.Exception     (Exception, throw)
 import           Criterion.Main
 import qualified Data.ByteString.Lazy  as BSL

@@ -31,6 +31,9 @@ inline i = runI i . iM
 β :: Int -> E (T ()) -> (E (T ()), Int)
 β i = runI i . bM
 
+hRi :: Idiom -> Bool
+hRi (AShLit _ es) = any hR es
+
 hR :: E a -> Bool
 hR (EApp _ (EApp _ (Builtin _ R) _) _) = True
 hR Builtin{}                           = False
@@ -46,6 +49,7 @@ hR (Let _ (_, e') e)                   = hR e'||hR e
 hR (Def _ (_, e') e)                   = hR e'||hR e
 hR (LLet _ (_, e') e)                  = hR e'||hR e
 hR Var{}                               = False
+hR (Id _ i)                            = hRi i
 
 -- assumes globally renamed already
 -- | Inlining is easy because we don't have recursion

@@ -107,3 +107,4 @@ rE (EApp l e e') = EApp l <$> rE e <*> rE e'
 rE (Cond l e e' e'') = Cond l <$> rE e <*> rE e' <*> rE e''
 rE (Var l n) = Var l <$> replaceVar n
 rE (Ann l e t) = Ann l <$> rE e <*> liftR t
+rE (Id l (AShLit is es)) = Id l . AShLit is <$> traverse rE es

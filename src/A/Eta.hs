@@ -76,6 +76,7 @@ etaM e@(Builtin t@Arrow{} _) = mkLam (doms t) e
 etaM e@Builtin{}             = pure e
 etaM e@(EApp t@Arrow{} _ _)  = mkLam (doms t) e
 etaM e@EApp{}                = pure e
+etaM e@LLet{}                = pure e
 etaM e@(Lam t@Arrow{} _ _)   = do
     let l = length (doms t)
         (preL, e') = tuck e
