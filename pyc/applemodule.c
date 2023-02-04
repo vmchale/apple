@@ -68,6 +68,8 @@ PyObject* npy_f(U x) {
     free(x);R res;
 }
 
+void freety(FnTy* x){free(x->args);free(x);}
+
 static PyObject* apple_typeof(PyObject* self, PyObject *args) {
     const char* inp;
     PyArg_ParseTuple(args, "s", &inp);
@@ -221,7 +223,7 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
                 C 1: Sw(ty->args[0]){C IA: {U inp0=i_npy(arg0);r=PyLong_FromLongLong(((Aifp) fp)(inp0));BR};};BR
             };BR
     }
-    // FIXME free ty?
+    freety(ty);
     munmap(fp,f_sz);
     R r;
 }

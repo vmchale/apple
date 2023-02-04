@@ -39,6 +39,8 @@ U fr(SEXP x) {
     R ret;
 }
 
+void freety(FnTy* x){free(x->args);free(x);}
+
 SEXP hs_init_R(void) {
     hs_init(0,0);
     R mkString("...loaded GHC runtime");
@@ -94,6 +96,7 @@ SEXP apple_R(SEXP args) {
                     }BR;
             };BR
     }
+    freety(ty);
     munmap(fp,f_sz);
     R r;
 }
