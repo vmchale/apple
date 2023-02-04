@@ -200,7 +200,6 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         free(err);R NULL;
     };
     U fp;size_t f_sz;
-    // FIXME free ty?
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     PyObject* r;
     Sw(ty->res){
@@ -222,6 +221,7 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
                 C 1: Sw(ty->args[0]){C IA: {U inp0=i_npy(arg0);r=PyLong_FromLongLong(((Aifp) fp)(inp0));BR};};BR
             };BR
     }
+    // FIXME free ty?
     munmap(fp,f_sz);
     R r;
 }

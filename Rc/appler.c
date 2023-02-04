@@ -25,8 +25,17 @@ SEXP rf(U x) {
     DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
     SEXP ret=PROTECT(allocArray(REALSXP,dims));
     size_t sz=8*t;
-    memcpy(REAL0(ret),i_p+rnk+1,sz);
+    memcpy(REAL(ret),i_p+rnk+1,sz);
     UNPROTECT(2);
+    R ret;
+}
+
+// vector only
+U fr(SEXP x) {
+    I rnk=1;I dim=length(x);
+    I* ret=malloc(8*(2+dim));
+    ret[0]=rnk;ret[1]=dim;
+    memcpy(ret+2,REAL(x),dim*8);
     R ret;
 }
 
@@ -63,6 +72,26 @@ SEXP apple_R(SEXP args) {
         C FA:
             Sw(ty->argc){
                 C 0: {r=rf(((Ufp) fp)());BR}
+                C 1:
+                    Sw(ty->args[0]){
+                        C FA: {SEXP arg0=CADR(args);r=rf(((Aafp) fp)(fr(arg0)));BR}
+                    }
+            };BR
+        C F_t:
+            Sw(ty->argc){
+                C 0: {r=ScalarReal(((Ffp) fp)());BR}
+                C 1:
+                    Sw(ty->args[0]){
+                        C F_t: {SEXP arg0=CADR(args);r=ScalarReal(((Fffp) fp)(asReal(arg0)));BR}
+                    }BR;
+                C 2:
+                    Sw(ty->args[0]){
+                        C F_t: {
+                            Sw(ty->args[1]) {
+                                C F_t: {SEXP arg0=CADR(args);SEXP arg1=CADDR(args);r=ScalarReal(((Ffffp) fp)(asReal(arg0),asReal(arg1)));BR}
+                            }BR;
+                        }
+                    }BR;
             };BR
     }
     munmap(fp,f_sz);
