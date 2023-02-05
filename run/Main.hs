@@ -135,7 +135,7 @@ showHelp = liftIO $ putStr $ concat
     , helpOption ":ann" "<expression>" "Annotate with types"
     , helpOption ":list" "" "List all names that are in scope"
     , helpOption ":quit, :q" "" "Quit REPL"
-    , helpOption ":yank, :y" "<f> <file>" "Read file"
+    , helpOption ":yank, :y" "<fn> <file>" "Read file"
     , helpOption "\\l" "" "Show reference"
     -- TODO: dump debug state
     ]
@@ -166,6 +166,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "⊖" "rotate" "sin." "sine"
     , lOption "𝔯" "rand" "⍳" "range (int)"
     , lOption "/ₒ" "fold with seed" "Λₒ" "scan with seed"
+    , lOption "{x←y;z}" "let...in" "" ""
     ]
 
 lOption op0 desc0 op1 desc1 =
