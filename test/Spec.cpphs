@@ -47,6 +47,7 @@ rTy = testGroup "Regression tests"
     , tyF "test/examples/mul.🍏"
     , tyF "test/examples/offset.🍏"
     , tyF "test/examples/xor.🍎"
+    , tyF "test/examples/coeffs.🍎"
     ]
 
 tyT :: TestTree
