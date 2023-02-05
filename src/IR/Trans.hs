@@ -124,8 +124,11 @@ sib1 ireg = IB IPlus (sd ireg) (ConstI 24)
 stadim a t ns = Wr (AP t Nothing a) (ConstI (fromIntegral$length ns)):zipWith (\o n -> Wr (AP t (Just (ConstI$8*o)) a) n) [1..] ns
 
 -- ir->ir pass? or sthg easier to debug...
-extrCell :: [Temp] -> [Temp] -> [Temp] -> (Temp, Maybe Label) -> Temp -> IRM [Stmt]
-extrCell fixedIxes dims sstrides src dest = do -- dims are bounds
+--
+-- (think: makes transpose more intuitive...)
+extrCell :: [Either Exp Temp] -> [Temp] -> (Temp, Maybe Label) -> Temp -> IRM [Stmt]
+extrCell fixedIxesDims sstrides src dest = do -- dims are bounds
+    -- should pass ix / dim (iter over vs. don't iter over) as [Either Temp Temp]? that way one masks which should be fixed... I guess?
     undefined
 
 -- incr.
