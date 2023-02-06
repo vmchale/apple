@@ -7,6 +7,7 @@ import           A
 import           Control.Monad              (zipWithM, (<=<))
 import           Control.Monad.State.Strict (State, gets, modify, runState)
 import           Data.Bifunctor             (second)
+import           Data.Either                (rights)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
@@ -123,13 +124,20 @@ sib1 ireg = IB IPlus (sd ireg) (ConstI 24)
 
 stadim a t ns = Wr (AP t Nothing a) (ConstI (fromIntegral$length ns)):zipWith (\o n -> Wr (AP t (Just (ConstI$8*o)) a) n) [1..] ns
 
--- ir->ir pass? or sthg easier to debug...
---
--- (think: makes transpose more intuitive...)
-extrCell :: [Either Exp Temp] -> [Temp] -> (Temp, Maybe Label) -> Temp -> IRM [Stmt]
+extrCell :: [Either Exp Temp] -> [Temp] -> (Temp, Maybe Int) -> Temp -> IRM [Stmt]
 extrCell fixedIxesDims sstrides src dest = do -- dims are bounds
-    -- should pass ix / dim (iter over vs. don't iter over) as [Either Temp Temp]? that way one masks which should be fixed... I guess?
-    undefined
+    ts <- traverse (\_ -> newITemp) dims
+    t <- newITemp; i <- newITemp
+    fmap (MT i (ConstI 0):) $ threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) ts dims) $
+        let ixes = either id Reg <$> replaceZs fixedIxesDims ts
+            sp = xp (Reg <$> sstrides) ixes src
+            -- TODO: what if size of data is not 8?
+        in [MT t (EAt sp), Wr (AP dest (Just (IB IAsl (Reg i) (ConstI 3))) Nothing) (Reg t), tick i]
+    where dims = rights fixedIxesDims
+          replaceZs (f@Left{}:ds) ts    = f:replaceZs ds ts
+          replaceZs (Right{}:ds) (t:ts) = Right t:replaceZs ds ts
+          replaceZs [] []               = []
+          replaceZs _ _                 = error "Oh no! Internal error."
 
 -- incr.
 doI t el eu rel ss = do
