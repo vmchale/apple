@@ -72,6 +72,10 @@ isFFF :: T a -> Bool
 isFFF (Arrow F (Arrow F F)) = True
 isFFF _                     = False
 
+isAF :: T a -> Bool
+isAF (Arrow Arr{} F) = True
+isAF _ = False
+
 isF :: T a -> Bool
 isF F = True
 isF _ = False
@@ -137,7 +141,6 @@ extrCell fixedIxesDims sstrides src dest = do -- dims are bounds
           replaceZs (f@Left{}:ds) ts    = f:replaceZs ds ts
           replaceZs (Right{}:ds) (t:ts) = Right t:replaceZs ds ts
           replaceZs [] []               = []
-          replaceZs _ _                 = error "Oh no! Internal error."
 
 -- incr.
 doI t el eu rel ss = do
@@ -528,11 +531,14 @@ aeval (EApp oTy (Builtin _ Tail) x) t | f1 oTy = do
     modify (addMT a t)
     let n=EAt (AP xR (Just$ConstI 8) lX)
     pure (Just a, plX ++ MT nR (IB IMinus n (ConstI 1)):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 24) lX) (Reg nR)])
-aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t = do
+aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rnk) <- tRnk (eAnn xs), isAF (eAnn f) = do
     a <- nextArr
     xR <- newITemp
     (lX, plX) <- aeval xs xR
-    pure (Just a, undefined)
+    x <- newITemp; y <- newFTemp
+    ss <- writeRF f [x] y
+    -- loop over complementary axes...
+    pure (Just a, plX ++ undefined)
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
