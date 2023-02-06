@@ -57,7 +57,7 @@ apple_dumpasm :: CString -> Ptr CString -> IO CString
 apple_dumpasm = harnessString dumpX86GDef
 
 apple_dumpir :: CString -> Ptr CString -> IO CString
-apple_dumpir = harnessString dumpIRDef
+apple_dumpir = harnessString dumpIR
 
 apple_printty :: CString -> Ptr CString -> IO CString
 apple_printty = harnessString tyExpr

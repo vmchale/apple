@@ -7,7 +7,7 @@ module Dbg ( dumpX86G
            , dumpX86Abs
            , dumpX86Liveness
            , dumpIR
-           , dumpIRDef
+           , dumpIRSt
            , dumpIRI
            , dumpX86Intervals
            , dumpX86Ass
@@ -85,11 +85,11 @@ dumpX86GDef = dumpX86G alexInitUserState
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Abs = fmap (prettyX86 . (\(x, st) -> snd (irToX86 st x))) . ir
 
-dumpIRDef :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpIRDef = dumpIR alexInitUserState
+dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpIR = dumpIRSt alexInitUserState
 
-dumpIR :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpIR st = fmap (prettyIR.fst) . irCtx st
+dumpIRSt :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpIRSt st = fmap (prettyIR.fst) . irCtx st
 
 dumpIRI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIRI = fmap (prettyIRI.live.fst).ir

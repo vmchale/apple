@@ -194,7 +194,7 @@ disasm s = do
 irR :: String -> Repl AlexPosn ()
 irR s = do
     st <- lift $ gets _lex
-    case dumpIR st (ubs s) of
+    case dumpIRSt st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right d  -> liftIO $ putDoc (d <> hardline)
 
