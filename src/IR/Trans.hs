@@ -553,8 +553,8 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
     allts <- traverse (\i -> case i of {Right{} -> Right <$> newITemp; Left{} -> Left <$> newITemp}) allIx
     let complts = lefts allts
         allDims = zipWith (\ix dt -> case ix of {Right{} -> Right dt; Left{} -> Left dt}) allIx dts
-        complDims = lefts allDims
-        wrOSz = MT oSz (ConstI 1):[ MT oSz (IB ITimes (Reg oSz) (Reg dϵ)) | dϵ <- rights allDims ]
+        complDims = lefts allDims; oDims = rights allDims
+        wrOSz = MT oSz (ConstI 1):[ MT oSz (IB ITimes (Reg oSz) (Reg dϵ)) | dϵ <- oDims ]
         wrSlopSz = MT slopSz (ConstI 1):[ MT slopSz (IB ITimes (Reg slopSz) (Reg dϵ)) | dϵ <- complDims ]
     ss <- writeRF f [x] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (Right{},tϵ) -> Right tϵ; (Left dϵ,_) -> Left (Reg dϵ)) allDims dts
@@ -563,7 +563,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
     di <- newITemp
     let oRnk=rnk-fromIntegral cr
     loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [MX y (FAt (AP t (Just$IB IPlus (IB IAsl (Reg di) (ConstI 3)) (ConstI$8+8*oRnk)) (Just a))), tick di]
-    pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) rnk (Reg oSz):Wr (AP t (Just$ConstI 8) (Just a)) (ConstI oRnk):undefined ++ wrSlopSz ++ Sa slopP (Reg slopSz):sss ++ MT di (ConstI 0):loop ++ [Pop (Reg slopSz)])
+    pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) rnk (Reg oSz):Wr (AP t (Just$ConstI 8) (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI (16+i)) (Just a)) (Reg d)) oDims [0..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):sss ++ MT di (ConstI 0):loop ++ [Pop (Reg slopSz)])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
