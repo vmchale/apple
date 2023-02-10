@@ -201,7 +201,7 @@ irR s = do
 dumpAsmG :: String -> Repl AlexPosn ()
 dumpAsmG s = do
     st <- lift $ gets _lex
-    case dumpX86G st (ubs s) of
+    case dumpX86GSt st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right d  -> liftIO $ putDoc (d <> hardline)
 

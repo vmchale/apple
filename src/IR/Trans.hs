@@ -7,11 +7,12 @@ import           A
 import           Control.Monad              (zipWithM, (<=<))
 import           Control.Monad.State.Strict (State, gets, modify, runState)
 import           Data.Bifunctor             (second)
-import           Data.Either                (rights)
+import           Data.Either                (lefts, rights)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
+import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
 import           IR
 import           Name
@@ -74,7 +75,7 @@ isFFF _                     = False
 
 isAF :: T a -> Bool
 isAF (Arrow Arr{} F) = True
-isAF _ = False
+isAF _               = False
 
 isF :: T a -> Bool
 isF F = True
@@ -128,11 +129,13 @@ sib1 ireg = IB IPlus (sd ireg) (ConstI 24)
 
 stadim a t ns = Wr (AP t Nothing a) (ConstI (fromIntegral$length ns)):zipWith (\o n -> Wr (AP t (Just (ConstI$8*o)) a) n) [1..] ns
 
+-- each (Right t) specifies a dimension; each (Left e) specifies a (currently)
+-- fixed index; looping variables for copying are generated in the function body
 extrCell :: [Either Exp Temp] -> [Temp] -> (Temp, Maybe Int) -> Temp -> IRM [Stmt]
 extrCell fixedIxesDims sstrides src dest = do -- dims are bounds
     ts <- traverse (\_ -> newITemp) dims
     t <- newITemp; i <- newITemp
-    fmap (MT i (ConstI 0):) $ threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) ts dims) $
+    fmap (MT i (ConstI 0):) $ threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) dims ts) $
         let ixes = either id Reg <$> replaceZs fixedIxesDims ts
             sp = xp (Reg <$> sstrides) ixes src
             -- TODO: what if size of data is not 8?
@@ -161,6 +164,12 @@ tRnk (Arr sh t) = (t,) <$> staRnk sh
 tRnk _          = Nothing
 
 dimR rnk (t,l) = (\o -> EAt (AP t (Just$ConstI (8*o)) l)) <$> [1..rnk]
+
+plDim :: Int64 -> (Temp, Maybe Int) -> IRM ([Temp], [Stmt])
+plDim rnk (t,l) = do
+    let dimE = dimR rnk (t, l)
+    unzip <$> traverse (\e -> do {dt <- newITemp; pure (dt, MT dt e)}) dimE
+
 offByDim :: [Exp] -> IRM ([Temp], [Stmt])
 offByDim dims = do
     ts <- traverse (\_ -> newITemp) (undefined:dims)
@@ -476,8 +485,8 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     xR <- newITemp; xRd <- newITemp; td <- newITemp
     let dE = ConstI$8+8*rnk
     (l, plX) <- aeval x xR
-    let dimE = dimR rnk (xR, l); sze = bT ty
-    (dts, dss) <- unzip <$> traverse (\e -> do {dt <- newITemp; pure (dt, MT dt e)}) dimE
+    let sze = bT ty
+    (dts, dss) <- plDim rnk (xR, l)
     (sts, sss) <- offByDim (Reg <$> dts)
     (std, ssd) <- offByDim (Reg <$> reverse dts)
     let nOut:sstrides = sts; (_:dstrides) = std
@@ -536,9 +545,25 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     x <- newITemp; y <- newFTemp
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Right ix else Left ix | ix <- [1..fromIntegral rnk] ]
+    oSz <- newITemp; slopSz <- newITemp
+    (dts, dss) <- plDim rnk (xR, lX)
+    (sts, sss) <- offByDim (Reg <$> dts)
+    let _:sstrides = sts
+    allts <- traverse (\i -> case i of {Right{} -> Right <$> newITemp; Left{} -> Left <$> newITemp}) allIx
+    let complts = lefts allts
+        allDims = zipWith (\ix dt -> case ix of {Right{} -> Right dt; Left{} -> Left dt}) allIx dts
+        complDims = lefts allDims
+        wrOSz = MT oSz (ConstI 1):[ MT oSz (IB ITimes (Reg oSz) (Reg dϵ)) | dϵ <- rights allDims ]
+        wrSlopSz = MT slopSz (ConstI 1):[ MT slopSz (IB ITimes (Reg slopSz) (Reg dϵ)) | dϵ <- complDims ]
     ss <- writeRF f [x] y
-    -- loop over complementary axes...
-    pure (Just a, plX ++ undefined)
+    let ecArg = zipWith (\d tt -> case (d,tt) of (Right{},tϵ) -> Right tϵ; (Left dϵ,_) -> Left (Reg dϵ)) allDims dts
+    slopP <- newITemp
+    place <- extrCell ecArg sstrides (xR, lX) slopP
+    di <- newITemp
+    let oRnk=rnk-fromIntegral cr
+    loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [MX y (FAt (AP t (Just$IB IPlus (IB IAsl (Reg di) (ConstI 3)) (ConstI$8+8*oRnk)) (Just a))), tick di]
+    pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) rnk (Reg oSz):Wr (AP t (Just$ConstI 8) (Just a)) (ConstI oRnk):undefined ++ wrSlopSz ++ Sa slopP (Reg slopSz):sss ++ MT di (ConstI 0):loop ++ [Pop (Reg slopSz)])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a

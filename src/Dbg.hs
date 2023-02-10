@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
-module Dbg ( dumpX86G
-           , dumpX86L
-           , dumpX86GDef
+module Dbg ( dumpX86GSt
+           , dumpX86LSt
+           , dumpX86G
            , dumpX86Abs
            , dumpX86Liveness
            , dumpIR
@@ -75,12 +75,12 @@ dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.(\(x, st) -> irToX86 st x)) . ir
     where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 16)
 
-dumpX86G, dumpX86L :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86G st = fmap prettyX86 . x86G st
-dumpX86L st = fmap prettyX86 . x86L st
+dumpX86GSt, dumpX86LSt :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86GSt st = fmap prettyX86 . x86G st
+dumpX86LSt st = fmap prettyX86 . x86L st
 
-dumpX86GDef :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86GDef = dumpX86G alexInitUserState
+dumpX86G :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86G = dumpX86GSt alexInitUserState
 
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Abs = fmap (prettyX86 . (\(x, st) -> snd (irToX86 st x))) . ir

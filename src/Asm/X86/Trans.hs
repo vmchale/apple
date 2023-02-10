@@ -179,6 +179,14 @@ ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS (Just e) _) ne) = do
 -- https://www.cs.uaf.edu/2015/fall/cs301/lecture/09_23_allocation.html
 ir (IR.Sa t (IR.ConstI i))                              = pure [ISubRI () SP (saI i+8), MovRR () (absReg t) SP]
 ir (IR.Pop (IR.ConstI i))                               = pure [IAddRI () SP (saI i+8)]
+ir (IR.Sa t e)                                          = do
+    iR <- nextI; plE <- evalE e (IR.ITemp iR)
+    l <- nextL
+    pure $ plE ++ [TestI () (IReg iR) 0x8, Jne () l, IAddRI () (IReg iR) 8, Label () l, IAddRI () (IReg iR) 8, ISubRR () SP (IReg iR), MovRR () (absReg t) SP]
+ir (IR.Pop e)                                           = do
+    iR <- nextI; plE <- evalE e (IR.ITemp iR)
+    l <- nextL
+    pure $ plE ++ [TestI () (IReg iR) 0x8, Jne () l, IAddRI () (IReg iR) 8, Label () l, IAddRI () (IReg iR) 8, IAddRR () SP (IReg iR)]
 ir (IR.R l)                                             = pure [RetL () l]
 ir (IR.C l)                                             = pure [C () l]
 ir s                                                    = error (show s)

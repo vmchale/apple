@@ -54,7 +54,7 @@ harnessString oup src errPtr = do
         Right d -> tcstr (aText d)
 
 apple_dumpasm :: CString -> Ptr CString -> IO CString
-apple_dumpasm = harnessString dumpX86GDef
+apple_dumpasm = harnessString dumpX86G
 
 apple_dumpir :: CString -> Ptr CString -> IO CString
 apple_dumpir = harnessString dumpIR
