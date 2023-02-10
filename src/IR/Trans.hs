@@ -113,8 +113,8 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
              | isI (eAnn e) = eval e CRet
              | isB (eAnn e) = eval e CRet
              | isArr (eAnn e) = do{(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
-             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t 16:[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing)), Pop 16]}
-             | ty@P{} <- eAnn e = let b=bT ty; b64=fromIntegral b in do{t <- newITemp; a <- nextArr; pl <- eval e t; pure $ Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a]}
+             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t (ConstI 16):[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just$ConstI 8) Nothing)), Pop (ConstI 16)]}
+             | ty@P{} <- eAnn e = let b64=fromIntegral$bT ty; b=ConstI b64 in do{t <- newITemp; a <- nextArr; pl <- eval e t; pure $ Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a]}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
@@ -364,13 +364,13 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     (arrL, putX) <- aeval arr arrP
     -- cause f1 (skip rank)
     let sz = EAt (AP arrP (Just (ConstI 8)) arrL)
-        nIr = 16+n*8
+        nIr = fromIntegral$16+n*8
     iR <- newITemp
     ss <- writeRF op [slopP] fR
     let loopBody = Cpy (AP slopP (Just (ConstI 16)) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI$fromIntegral n+2):ss++[WrF (AP t (Just (sib iR)) arrL) (FReg fR)]
     loop <- doN iR (IB IMinus (Reg szR) (ConstI$fromIntegral n-1)) loopBody
     modify (addMT a t)
-    pure (Just a, putX++MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI (24-8*fromIntegral n))):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (IB IMinus (Reg szR) (ConstI$fromIntegral n-1)):Sa slopP nIr:Wr (AP slopP Nothing Nothing) (ConstI 1):Wr (AP slopP (Just (ConstI 8)) Nothing) (ConstI $ fromIntegral n):loop ++ [Pop nIr])
+    pure (Just a, putX++MT szR sz:Ma a t (IB IPlus (IB IAsl (Reg szR) (ConstI 3)) (ConstI (24-8*fromIntegral n))):Wr (AP t Nothing (Just a)) (ConstI 1):Wr (AP t (Just (ConstI 8)) (Just a)) (IB IMinus (Reg szR) (ConstI$fromIntegral n-1)):Sa slopP (ConstI nIr):Wr (AP slopP Nothing Nothing) (ConstI 1):Wr (AP slopP (Just (ConstI 8)) Nothing) (ConstI $ fromIntegral n):loop ++ [Pop (ConstI nIr)])
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do
     a <- nextArr
     arg <- newITemp
@@ -394,7 +394,7 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) (ILit _ n)) t | (Arr (
     l <- newLabel; endL <- newLabel
     ss <- writeRF op [arg] arg
     let loop = ss ++ [Cpy (AP t (Just (IB IPlus (IB ITimes (Reg i) pt) (ConstI 16))) (Just a)) (AP arg Nothing Nothing) (ConstI$ptN`div`8)]
-    pure (Just a, Ma a t sz:dim1 (Just a) t nE ++ Sa arg ptN:putSeed ++ MT i (ConstI 0):L l:MJ (IRel IGeq (Reg i) nE) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL, Pop ptN])
+    pure (Just a, Ma a t sz:dim1 (Just a) t nE ++ Sa arg pt:putSeed ++ MT i (ConstI 0):L l:MJ (IRel IGeq (Reg i) nE) endL:loop ++ [MT i (IB IPlus (Reg i) (ConstI 1)), J l, L endL, Pop pt])
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | (Arr (_ `Cons` Nil) ty@P{}) <- oTy = do
     a <- nextArr
     arg <- newITemp
@@ -407,7 +407,7 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | (Arr (_ `Cons` 
     ss <- writeRF op [arg] arg
     let loopBody = ss ++ [Cpy (AP t (Just (IB IPlus (IB ITimes (Reg i) pt) (ConstI 16))) (Just a)) (AP arg Nothing Nothing) (ConstI$ptN`div`8)]
     loop <- doN i (Reg nR) loopBody
-    pure (Just a, putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ Sa arg ptN:putSeed ++ loop ++ [Pop ptN])
+    pure (Just a, putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ Sa arg (ConstI ptN):putSeed ++ loop ++ [Pop (ConstI ptN)])
 aeval (EApp oTy (EApp _ (Builtin _ Re) n) x) t | f1 oTy = do
     a <- nextArr
     xR <- newFTemp
@@ -491,7 +491,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) =
     xR <- newITemp; xRd <- newITemp; slopP <- newITemp; ret <- newFTemp; td <- newITemp
     (l, plX) <- aeval x xR
     let rnk = length is; rnk64 = fromIntegral rnk; dE = ConstI$8+8*rnk64
-        nIr = 8+8*rnk+bT iTy*product is
+        nIr = fromIntegral$8+8*rnk+bT iTy*product is
         i64s = fromIntegral <$> is; slopStrides = tail (scanr (*) 1 i64s)
         dimEs = zipWith (IB IMinus) (dimR rnk64 (xR, l)) (ConstI . fromIntegral <$> is)
     (dts, dss) <- unzip <$> traverse (\e -> do {dt <- newITemp; pure (dt, MT dt e)}) dimEs
@@ -502,7 +502,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) =
     preCopy <- stacopy (Reg <$> strides) (ConstI <$> slopStrides) (Reg <$> ixs) i64s (td, Just a) (xRd, l)
     loop <- threadM (zipWith doN ixs (Reg <$> dts)) (preCopy ++ ss ++ [WrF (xp (Reg <$> sts) (Reg <$> ixs) (td, Just a)) (FReg ret)])
     modify (addMT a t)
-    pure (Just a, plX ++ Sa slopP nIr : dss ++ sss ++ man (a,t) (1+rnk64) (Reg nOut):Wr (AP t Nothing (Just a)) (ConstI 1):zipWith (\o t' -> Wr (AP t (Just$ConstI (8*o)) (Just a)) (Reg t')) [1..] dts ++ MT xRd (IB IPlus (Reg xR) dE):MT td (IB IPlus (Reg t) dE):loop ++ [Pop nIr])
+    pure (Just a, plX ++ Sa slopP (ConstI nIr) : dss ++ sss ++ man (a,t) (1+rnk64) (Reg nOut):Wr (AP t Nothing (Just a)) (ConstI 1):zipWith (\o t' -> Wr (AP t (Just$ConstI (8*o)) (Just a)) (Reg t')) [1..] dts ++ MT xRd (IB IPlus (Reg xR) dE):MT td (IB IPlus (Reg t) dE):loop ++ [Pop (ConstI nIr)])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr
     xR <- newITemp; yR <- newITemp
@@ -969,7 +969,7 @@ eval (EApp F (Builtin _ (TAt n)) e@Var{}) t = do
 eval (EApp F (Builtin _ (TAt n)) e) t = do
     let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
     r <- newITemp; pl <- eval e r
-    pure $ Sa r sz:pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop sz]
+    pure $ Sa r (ConstI sz):pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop (ConstI sz)]
 eval (EApp I (Builtin _ (TAt n)) e@Var{}) t = do
     let (P tys) = eAnn e; szs = szT tys
     r <- newITemp; pl <- eval e r
@@ -977,7 +977,7 @@ eval (EApp I (Builtin _ (TAt n)) e@Var{}) t = do
 eval (EApp I (Builtin _ (TAt n)) e) t = do
     let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
     r <- newITemp; pl <- eval e r
-    pure $ Sa r sz:pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop sz]
+    pure $ Sa r (ConstI sz):pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop (ConstI sz)]
 eval (EApp F (Var _ f) e) t | isF (eAnn e) = do
     st <- gets fvars
     let (l, [(Nothing, arg)], (Nothing, ret)) = getT st f
