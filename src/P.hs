@@ -6,7 +6,6 @@ module P ( Err (..)
          , tyParse
          , tyParseCtx
          , tyExpr
-         , tyExprCtx
          , tyOf
          , parseInline
          , parseRename
@@ -14,9 +13,11 @@ module P ( Err (..)
          , opt
          , ir
          , irCtx
+         , eDumpIR
          , x86G
          , x86GDef
          , x86L
+         , eDumpX86
          , bytes
          , funP
          , eFunP
@@ -81,17 +82,11 @@ renameECtx i ast = let (e, m) = dedfn i ast in rG m e
 parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
 parseRename = parseRenameCtx alexInitUserState
 
-tyExprCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-tyExprCtx st = fmap prettyC.tyOfCtx st
-
 tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-tyExpr = tyExprCtx alexInitUserState
-
-tyOfCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
-tyOfCtx st = fmap (first eAnn.discard) . tyConstrCtx st where discard (x, y, _) = (x, y)
+tyExpr = fmap prettyC.tyOf
 
 tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
-tyOf = tyOfCtx alexInitUserState
+tyOf = fmap (first eAnn.discard) . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
 ctxFunDef :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
 ctxFunDef = ctxFunP alexInitUserState
@@ -115,8 +110,11 @@ x86L, x86G :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) [X86 X86R
 x86G st = walloc st (uncurry X86.gallocFrame)
 x86L st = walloc st (X86.allocFrame . X86.mkIntervals . snd)
 
-ex86G :: Int -> E a -> Either (TyE a)  [X86 X86Reg FX86Reg ()]
+ex86G :: Int -> E a -> Either (TyE a) [X86 X86Reg FX86Reg ()]
 ex86G i = wallocE i (uncurry X86.gallocFrame)
+
+eDumpX86 :: Int -> E a -> Either (TyE a) (Doc ann)
+eDumpX86 i = fmap prettyX86 . ex86G i
 
 walloc lSt f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . irCtx lSt
 wallocE i f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . eir i
@@ -129,6 +127,9 @@ irCtx st = fmap (f.writeC) . opt st where f (s,r,t) = (frees t (optIR s),r)
 
 eir :: Int -> E a -> Either (TyE a) ([Stmt], WSt)
 eir i = fmap (f.writeC) . optE i where f (s,r,t) = (frees t (optIR s),r)
+
+eDumpIR :: Int -> E a -> Either (TyE a) (Doc ann)
+eDumpIR i = fmap (prettyIR.fst) . eir i
 
 optE :: Int -> E a -> Either (TyE a) (E (T ()))
 optE i e =

@@ -194,30 +194,42 @@ disasm s = do
 irR :: String -> Repl AlexPosn ()
 irR s = do
     st <- lift $ gets _lex
-    case dumpIRSt st (ubs s) of
+    case rwP st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
-        Right d  -> liftIO $ putDoc (d <> hardline)
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            liftIO $ case eDumpIR i eC of
+                Left err -> putDoc (pretty err <> hardline)
+                Right d  -> putDoc (d <> hardline)
 
 dumpAsmG :: String -> Repl AlexPosn ()
 dumpAsmG s = do
     st <- lift $ gets _lex
-    case dumpX86GSt st (ubs s) of
+    case rwP st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
-        Right d  -> liftIO $ putDoc (d <> hardline)
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            liftIO $ case eDumpX86 i eC of
+                Left err -> putDoc (pretty err <> hardline)
+                Right d  -> putDoc (d <> hardline)
 
 tyExprR :: String -> Repl AlexPosn ()
 tyExprR s = do
     st <- lift $ gets _lex
-    liftIO $ case tyExprCtx st (ubs s) of
-        Left err -> putDoc (pretty err <> hardline)
-        Right d  -> putDoc (d <> hardline)
+    case rwP st (ubs s) of
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            case tyClosed i eC of
+                Left err      -> liftIO $ putDoc (pretty err <> hardline)
+                Right (e,c,_) -> liftIO $ putDoc (prettyC (eAnn e, c) <> hardline)
 
 annR :: String -> Repl AlexPosn ()
 annR s = do
     st <- lift $ gets _lex
     liftIO $ case tyParseCtx st $ ubs s of
-        Left err    -> putDoc(pretty err<>hardline)
-        Right (e,_) -> putDoc(prettyTyped e<>hardline)
+        Left err    -> putDoc (pretty err<>hardline)
+        Right (e,_) -> putDoc (prettyTyped e<>hardline)
 
 inspect :: String -> Repl AlexPosn ()
 inspect s = do
@@ -245,10 +257,10 @@ iCtx f fp = do
     bs <- liftIO $ BSL.readFile fp
     case tyParseCtx st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
-        Right (_,i) -> do
+        Right (_,i) ->
             let (st', n) = newIdent (AlexPn 0 0 0) (T.pack f) (setM i st)
                 x' = parseE st' bs
-            lift $ do {modify (aEe n x'); modify (setL st')}
+            in lift $ do {modify (aEe n x'); modify (setL st')}
     where setM i' (_, mm, im) = (i', mm, im)
 
 printExpr :: String -> Repl AlexPosn ()
