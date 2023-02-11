@@ -519,9 +519,9 @@ tyB l (Rank as) = do
     cod <- TVar <$> freshName "c" ()
     let mArrs = zipWith Arr shs vs
         codTy = Arr (SVar codSh) cod
-        fTy = foldr Arrow cod $ zipWith3 (\ax sh t -> case ax of {(n,Nothing) -> Arr (tydrop n sh) t;(_,Just axs) -> Arr (del axs sh) t}) as shs vs
+        fTy = foldr Arrow cod $ zipWith3 (\ax sh t -> case ax of {(_,Nothing) -> Arr (trim sh) t;(_,Just axs) -> Arr (sel axs sh) t}) as shs vs
         rTy = foldr Arrow codTy mArrs
-        shsU = zipWith (\ax sh -> case ax of {(_,Nothing) -> trim sh;(_,Just axs) -> sel axs sh}) as shs
+        shsU = zipWith (\ax sh -> case ax of {(n,Nothing) -> tydrop n sh;(_,Just axs) -> del axs sh}) as shs
         shUHere sh sh' = liftEither $ mgShPrep l mempty (sh$>l) (sh'$>l)
     s <- zipWithM shUHere shsU (tail shsU++[SVar codSh])
     pure (Arrow fTy rTy, mconcat s)
