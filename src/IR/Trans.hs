@@ -563,7 +563,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
     di <- newITemp
     let oRnk=rnk-fromIntegral cr
     loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [MX y (FAt (AP t (Just$IB IPlus (IB IAsl (Reg di) (ConstI 3)) (ConstI$8+8*oRnk)) (Just a))), tick di]
-    pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) rnk (Reg oSz):Wr (AP t (Just$ConstI 8) (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI (16+i)) (Just a)) (Reg d)) oDims [0..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):sss ++ MT di (ConstI 0):loop ++ [Pop (Reg slopSz)])
+    pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) rnk (Reg oSz):Wr (AP t Nothing (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI (8+i)) (Just a)) (Reg d)) oDims [0..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):sss ++ MT di (ConstI 0):loop ++ [Pop (Reg slopSz)])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
