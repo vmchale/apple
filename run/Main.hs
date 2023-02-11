@@ -234,21 +234,24 @@ annR s = do
 inspect :: String -> Repl AlexPosn ()
 inspect s = do
     st <- lift $ gets _lex
-    case tyParseCtx st bs of
+    case rwP st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
-        Right (e, _) -> do
-            let dbgPrint =
-                    case eAnn e of
-                        (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) (castPtr p)
-                        (Arr _ F)         -> \p -> (dbgAB :: Ptr (Apple Double) -> IO T.Text) (castPtr p)
-                        (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
-            m <- lift $ gets mf
-            liftIO $ do
-                let i = fst3 st
-                (sz, fp) <- eFunP i m e
-                p <- callFFI fp (retPtr undefined) []
-                TIO.putStrLn =<< dbgPrint p
-                free p *> freeFunPtr sz fp
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            case tyClosed i eC of
+                Left err -> liftIO $ putDoc (pretty err <> hardline)
+                Right (e, _, i') -> do
+                    let dbgPrint =
+                            case eAnn e of
+                                (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) (castPtr p)
+                                (Arr _ F)         -> \p -> (dbgAB :: Ptr (Apple Double) -> IO T.Text) (castPtr p)
+                                (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
+                    m <- lift $ gets mf
+                    liftIO $ do
+                        (sz, fp) <- eFunP i' m e
+                        p <- callFFI fp (retPtr undefined) []
+                        TIO.putStrLn =<< dbgPrint p
+                        free p *> freeFunPtr sz fp
         where bs = ubs s
 
 iCtx :: String -> String -> Repl AlexPosn ()
