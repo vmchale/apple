@@ -1,0 +1,35 @@
+\documentclass{report}
+
+\usepackage{mathpartir}
+
+\begin{document}
+
+\title{Apple Type System}
+\author {Vanessa McHale}
+\maketitle
+
+% \tableofcontents
+
+\section{Introduction}
+
+This presents the Apple type system.
+
+% judgment schema
+
+\section{Judgments}
+
+\begin{mathpar}
+
+\inferrule
+{ \\ }
+{\Gamma \vdash ({\tt \#}) : ({\tt Arr}~sh~a \rightarrow bool) \rightarrow {\tt Arr}~(i:sh)~a \rightarrow \exists n.~{\tt Arr}~(n:sh)~a}
+\quad(\textsc {Filter})
+
+\inferrule
+{ \\ }
+{\Gamma \vdash ({\tt '}n) : (a \rightarrow b) \rightarrow {\tt Arr}~(i_1:\cdots:i_n:sh)~a \rightarrow {\tt Arr}~sh~a}
+\quad(\textsc {Map-N})
+
+\end{mathpar}
+
+\end{document}

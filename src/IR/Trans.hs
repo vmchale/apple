@@ -545,7 +545,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     x <- newITemp; y <- newFTemp
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Right ix else Left ix | ix <- [1..fromIntegral rnk] ]
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.notMember` ixsIs then Right ix else Left ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sss) <- offByDim (Reg <$> dts)
