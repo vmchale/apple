@@ -5,6 +5,8 @@
 #include"../include/apple.h"
 #include"../c/jit.h"
 
+typedef size_t S;
+
 #define Sw switch
 #define C case
 #define BR break;
@@ -24,7 +26,7 @@ SEXP rf(U x) {
     SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
     DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
     SEXP ret=PROTECT(allocArray(REALSXP,dims));
-    size_t sz=8*t;
+    S sz=8*t;
     memcpy(REAL(ret),i_p+rnk+1,sz);
     UNPROTECT(2);
     R ret;
@@ -57,6 +59,17 @@ SEXP ty_R(SEXP a) {
     R mkString(ret);
 }
 
+SEXP asm_R(SEXP a) {
+    char* err; char** err_p=&err;
+    const char* inp=CHAR(asChar(a));
+    char* ret=apple_dumpasm(inp,err_p);
+    if(ret==NULL) {
+        SEXP ret=mkString(err);free(err);
+        R ret;
+    }
+    R mkString(ret);
+}
+
 SEXP apple_R(SEXP args) {
     char* err;char** err_p=&err;
     args=CDR(args);
@@ -67,7 +80,7 @@ SEXP apple_R(SEXP args) {
         SEXP ret=mkString(err);free(err);
         R ret;
     }
-    U fp; size_t f_sz;
+    U fp; S f_sz;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     U r;
     Sw(ty->res){
