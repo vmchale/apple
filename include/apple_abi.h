@@ -1,10 +1,9 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #define R return
-#define I int64_t
-#define F double
-#define U void*
-#define B bool
+
+typedef double F;typedef int64_t I; typedef void* U; typedef bool B;
 
 #define DO(i,n,a) {I i;for(i=0;i<n;i++){a;}}
 

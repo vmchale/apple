@@ -1,5 +1,6 @@
 #include<stdint.h>
-#define P intptr_t
+typedef intptr_t P;
+
 void* apple_compile(P,P,const char*,size_t*);
 
 // NULL on error
