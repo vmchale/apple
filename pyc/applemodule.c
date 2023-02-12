@@ -2,7 +2,7 @@
 #include <Python.h>
 #include<sys/mman.h>
 #include<numpy/arrayobject.h>
-#include"../c/jit.h"
+#include"../include/apple_abi.h"
 #include"../c/ffi.c"
 
 typedef void* U;typedef PyObject* PO;
