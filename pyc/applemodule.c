@@ -5,7 +5,8 @@
 #include"../c/jit.h"
 #include"../c/ffi.c"
 
-#define U void*
+typedef void* U;typedef PyObject* PO;
+
 #define R return
 #define Sw switch
 #define C case
@@ -143,8 +144,7 @@ static PyObject* apple_cache(PyObject *self, PyObject *args) {
     cc->code=fp;cc->code_sz=f_sz;cc->ty=ty;
     Py_INCREF(cc);
     R (PyObject*)cc;
-};
-
+}
 
 static PyObject* apple_f(PyObject* self, PyObject* args) {
     PyCacheObject* c;PyObject* arg0;PyObject* arg1;PyObject* arg2; PyObject* arg3; PyObject* arg4;
@@ -206,23 +206,25 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
     };
     U fp;size_t f_sz;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
-    PyObject* r;
+    PO r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
     void** vals=malloc(sizeof(void*)*argc);
     ffi_arg ret;
+    U x;I xi;F xf;
     if(arg0 != NULL){
         Sw(ty->args[0]){
-            C IA: U xi=i_npy(arg0);vals[0]=&xi;BR
-            C FA: U xf=f_npy(arg0);vals[0]=&xf;BR
-            C I_t: I xii=PyLong_AsLong(arg0);vals[0]=&xii;BR
-            C F_t: F xff=PyFloat_AsDouble(arg0);vals[0]=&xff;BR
+            C IA: x=i_npy(arg0);vals[0]=&x;BR
+            C FA: x=f_npy(arg0);vals[0]=&x;BR
+            C I_t: xi=PyLong_AsLong(arg0);vals[0]=&xi;BR
+            C F_t: xf=PyFloat_AsDouble(arg0);vals[0]=&xf;BR
         }
     }
+    /* printf("here\n"); */
     ffi_call(cif,fp,&ret,vals);
     Sw(ty->res){
-        C IA: r=npy_i((void*)ret);BR
-        C FA: r=npy_f((void*)ret);BR
+        C IA: r=npy_i(ret);BR
+        C FA: r=npy_f(ret);BR
         C F_t: r=PyFloat_FromDouble(ret);BR
         C I_t: r=PyLong_FromLongLong(ret);BR
     }

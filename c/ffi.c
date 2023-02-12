@@ -12,10 +12,10 @@
 ffi_type* ftype(enum apple_t t) {
     ffi_type* r=malloc(sizeof(ffi_type));
     Sw(t){
-        C I_t: *r=ffi_type_sint64;
-        C F_t: *r=ffi_type_double;
-        C IA: *r=ffi_type_pointer;
-        C FA: *r=ffi_type_pointer;
+        C I_t: *r=ffi_type_sint64;BR
+        C F_t: *r=ffi_type_double;BR
+        C IA: *r=ffi_type_pointer;BR
+        C FA: *r=ffi_type_pointer;BR
     }
     R r;
 }
