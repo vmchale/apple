@@ -1,9 +1,9 @@
 #include <HsFFI.h>
 #include <Python.h>
-#include <apple.h>
 #include<sys/mman.h>
 #include<numpy/arrayobject.h>
 #include"../c/jit.h"
+#include"../c/ffi.c"
 
 #define U void*
 #define R return
@@ -145,6 +145,7 @@ static PyObject* apple_cache(PyObject *self, PyObject *args) {
     R (PyObject*)cc;
 };
 
+
 static PyObject* apple_f(PyObject* self, PyObject* args) {
     PyCacheObject* c;PyObject* arg0;PyObject* arg1;PyObject* arg2; PyObject* arg3; PyObject* arg4;
     PyArg_ParseTuple(args, "O|OOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4);
@@ -192,6 +193,8 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
     R r;
 };
 
+
+// file:///usr/share/doc/libffi8/html/The-Basics.html
 static PyObject* apple_apple(PyObject *self, PyObject *args) {
     const char* inp;PyObject* arg0;PyObject* arg1;PyObject* arg2; PyObject* arg3; PyObject* arg4; PyObject* arg5;
     PyArg_ParseTuple(args, "s|OOOOOO", &inp, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
@@ -204,24 +207,16 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
     U fp;size_t f_sz;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     PyObject* r;
+    ffi_cif* cif=apple_ffi(ty);
+    int argc=ty->argc;
+    void* vals=malloc(4*argc);
+    void* ret;
+    ffi_call(cif,fp,&ret,vals);
     Sw(ty->res){
-        C IA: r=npy_i(((Ufp) fp)());BR
-        C FA:
-            Sw(ty->argc){
-                C 0: {r=npy_f(((Ufp) fp)());BR}
-                C 1: Sw(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=npy_f(((Aafp) fp)(inp0));BR};};BR
-            };BR
-        C F_t:
-            Sw(ty->argc){
-                C 0: r=PyFloat_FromDouble(((Ffp) fp)());BR
-                C 1: Sw(ty->args[0]){C FA: {U inp0=f_npy(arg0);r=PyFloat_FromDouble(((Affp) fp)(inp0));BR}; C F_t: {r=PyFloat_FromDouble(((Fffp) fp)(PyFloat_AsDouble(arg0)));BR};};BR
-                C 2: Sw(ty->args[0]){C FA: Sw(ty->args[1]){C FA: {U inp0=f_npy(arg0);U inp1=f_npy(arg1);r=PyFloat_FromDouble(((Aaffp) fp)(inp0, inp1));BR};};};BR
-            };BR
-        C I_t:
-            Sw(ty->argc){
-                C 0: r=PyLong_FromLongLong(((Ifp) fp)());BR
-                C 1: Sw(ty->args[0]){C IA: {U inp0=i_npy(arg0);r=PyLong_FromLongLong(((Aifp) fp)(inp0));BR};};BR
-            };BR
+        C IA: r=npy_i(ret);BR
+        C FA: r=npy_f(ret);BR
+        /* C F_t: r=PyFloat_FromDouble(ret);BR */
+        C I_t: r=PyLong_FromLongLong((int64_t)ret);BR
     }
     freety(ty);
     munmap(fp,f_sz);
