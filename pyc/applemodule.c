@@ -5,7 +5,7 @@
 #include"../include/apple_abi.h"
 #include"../c/ffi.c"
 
-typedef void* U;typedef PyObject* PO;
+typedef void* U;typedef PyObject* PO;typedef size_t S;
 
 #define R return
 #define Sw switch
@@ -20,7 +20,7 @@ U f_npy(PyObject* o) {
     I sz_i=1+rnk+n;
     // FIXME: error when np.dtype /= float
     /* PyErr_SetString(PyExc_RuntimeError, "Expected array of floats"); */
-    size_t sz=sz_i*8;
+    S sz=sz_i*8;
     U x=malloc(sz);I* x_i=x; F* x_f=x;
     x_i[0]=rnk;
     DO(i,rnk,x_i[i+1]=(I)dims[i]);
@@ -34,7 +34,7 @@ U i_npy(PyObject* o) {
     npy_intp* dims=PyArray_DIMS(o);
     I n=PyArray_SIZE(o);
     I sz_i=1+rnk+n;
-    size_t sz=sz_i*8;
+    S sz=sz_i*8;
     U x=malloc(sz);I* x_i=x;
     x_i[0]=rnk;
     DO(i,rnk,x_i[i+1]=(I)dims[i]);
@@ -49,7 +49,7 @@ PyObject* npy_i(U x) {
     I rnk = i_p[0];
     long* dims=malloc(sizeof(long)*rnk);
     DO(i,rnk,t*=i_p[i+1];dims[i]=(long)i_p[i+1]);
-    size_t sz=8*t;
+    S sz=8*t;
     U data=malloc(sz);
     memcpy(data,i_p+rnk+1,sz);
     PyObject* res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);
@@ -62,7 +62,7 @@ PyObject* npy_f(U x) {
     I rnk = i_p[0];
     long* dims=malloc(sizeof(long)*rnk);
     DO(i,rnk,t*=i_p[i+1];dims[i]=(long)i_p[i+1]);
-    size_t sz=8*t;
+    S sz=8*t;
     U data=malloc(sz);
     memcpy(data,i_p+rnk+1,sz);
     PyObject* res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);
@@ -115,7 +115,7 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
 
 typedef struct PyCacheObject {
     PyObject_HEAD
-    U code;size_t code_sz;FnTy* ty;
+    U code;S code_sz;FnTy* ty;
 } PyCacheObject;
 
 static PyTypeObject CacheType = {
@@ -138,7 +138,7 @@ static PyObject* apple_cache(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, err);
         free(err);R NULL;
     };
-    U fp;size_t f_sz;
+    U fp;S f_sz;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     PyCacheObject* cc=PyObject_New(PyCacheObject, &CacheType);
     cc->code=fp;cc->code_sz=f_sz;cc->ty=ty;
@@ -153,7 +153,7 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
     PO r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
-    void** vals=malloc(sizeof(void*)*argc);
+    U* vals=malloc(sizeof(U)*argc);
     U ret= malloc(sizeof(F));
     U x;I xi;F xf;
     PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
@@ -171,8 +171,8 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
     ffi_call(cif,fp,ret,vals);
     free(vals);free(cif);
     Sw(ty->res){
-        C IA: r=npy_i(*(void**)ret);BR
-        C FA: r=npy_f(*(void**)ret);BR
+        C IA: r=npy_i(*(U*)ret);BR
+        C FA: r=npy_f(*(U*)ret);BR
         C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
         C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
     }
@@ -190,12 +190,12 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, err);
         free(err);R NULL;
     };
-    U fp;size_t f_sz;
+    U fp;S f_sz;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     PO r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
-    void** vals=malloc(sizeof(U)*argc);
+    U* vals=malloc(sizeof(U)*argc);
     U ret= malloc(sizeof(F));
     U x;I xi;F xf;
     PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
@@ -214,8 +214,8 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
     free(vals);free(cif);freety(ty);
     munmap(fp,f_sz);
     Sw(ty->res){
-        C IA: r=npy_i(*(void**)ret);BR
-        C FA: r=npy_f(*(void**)ret);BR
+        C IA: r=npy_i(*(U*)ret);BR
+        C FA: r=npy_f(*(U*)ret);BR
         C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
         C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
     }
