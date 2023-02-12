@@ -102,7 +102,7 @@ SEXP apple_R(SEXP args) {
         C FA: r=rf(*(U*)ret);BR
         C F_t: r=ScalarReal(*(F*)ret);BR
     }
-    freety(ty);
+    free(ret);freety(ty);
     munmap(fp,f_sz);
     R r;
 }
