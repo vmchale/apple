@@ -10,7 +10,7 @@ apple.o: applemodule.c
 	gcc -fPIC -O2 -c $< -I /usr/local/include/python3.11 -I ../include -I $(HS_INCLUDE_DIR) -o $@
 
 apple.so: apple.o
-	gcc -shared $^ -o $@ -lapple
+	gcc -shared $^ -o $@ -lapple -lffi
 
 clean:
 	rm -rf *.o *.so

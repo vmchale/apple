@@ -147,48 +147,34 @@ static PyObject* apple_cache(PyObject *self, PyObject *args) {
 }
 
 static PyObject* apple_f(PyObject* self, PyObject* args) {
-    PyCacheObject* c;PyObject* arg0;PyObject* arg1;PyObject* arg2; PyObject* arg3; PyObject* arg4;
-    PyArg_ParseTuple(args, "O|OOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4);
+    PyCacheObject* c;PO arg0=NULL;PO arg1=NULL;PO arg2=NULL;PO arg3=NULL;PO arg4=NULL;PO arg5=NULL;
+    PyArg_ParseTuple(args, "O|OOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     FnTy* ty=c->ty;U fp=c->code;
-    PyObject* r;
+    PO r;
+    ffi_cif* cif=apple_ffi(ty);
+    int argc=ty->argc;
+    void** vals=malloc(sizeof(void*)*argc);
+    U ret= malloc(sizeof(F));
+    U x;I xi;F xf;
+    PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
+    for(int k=0;k<6;k++){
+        pyarg=pyargs[k];
+        if(argc>k && pyarg!=NULL){
+            Sw(ty->args[k]){
+                C IA: x=i_npy(pyarg);vals[k]=&x;BR
+                C FA: x=f_npy(pyarg);vals[k]=&x;BR
+                C I_t: xi=PyLong_AsLong(pyarg);vals[k]=&xi;BR
+                C F_t: xf=PyFloat_AsDouble(pyarg);vals[k]=&xf;BR
+            }
+        }
+    }
+    ffi_call(cif,fp,ret,vals);
+    free(vals);free(cif);
     Sw(ty->res){
-        C IA:
-            Sw(ty->argc){
-                C 0: {r=npy_i(((Ufp) fp)());BR}
-            }BR;
-        C FA:
-            Sw(ty->argc){
-                C 0: {r=npy_f(((Ufp) fp)());BR}
-                C 1: Sw(ty->args[0]){
-                    C FA: {U inp0=f_npy(arg0);r=npy_f(((Aafp) fp)(inp0));BR};
-                };BR
-            };BR
-        C F_t:
-            Sw(ty->argc){
-                C 0: r=PyFloat_FromDouble(((Ffp) fp)());BR
-                C 1: Sw(ty->args[0]){
-                    C FA: {U inp0=f_npy(arg0);r=PyFloat_FromDouble(((Affp) fp)(inp0));BR};
-                    C F_t: {r=PyFloat_FromDouble(((Fffp) fp)(PyFloat_AsDouble(arg0)));BR};
-                };BR
-                C 2: Sw(ty->args[0]){
-                    C FA: Sw(ty->args[1]){
-                        C FA: {U inp0=f_npy(arg0);U inp1=f_npy(arg1);r=PyFloat_FromDouble(((Aaffp) fp)(inp0, inp1));BR};
-                    };BR
-                    C I_t: Sw(ty->args[1]){
-                        C F_t: {I inp0=PyLong_AsLong(arg0);F inp1=PyFloat_AsDouble(arg1);r=PyFloat_FromDouble(((Ifffp) fp)(inp0,inp1));BR};
-                    };BR
-                    C F_t: Sw(ty->args[1]){
-                        C F_t: {F inp0=PyFloat_AsDouble(arg0); F inp1=PyFloat_AsDouble(arg1);r=PyFloat_FromDouble(((Ffffp) fp)(inp0,inp1));BR};
-                    };BR
-                };BR
-            };BR
-        C I_t:
-            Sw(ty->argc){
-                C 0: r=PyLong_FromLongLong(((Ifp) fp)());BR
-                C 1: Sw(ty->args[0]){
-                    C IA: {U inp0=i_npy(arg0);r=PyLong_FromLongLong(((Aifp) fp)(inp0));BR};
-                };BR
-            };BR
+        C IA: r=npy_i(*(void**)ret);BR
+        C FA: r=npy_f(*(void**)ret);BR
+        C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
+        C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
     }
     R r;
 };
@@ -196,7 +182,7 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
 
 // file:///usr/share/doc/libffi8/html/The-Basics.html
 static PyObject* apple_apple(PyObject *self, PyObject *args) {
-    const char* inp;PyObject* arg0=NULL;PyObject* arg1;PyObject* arg2; PyObject* arg3; PyObject* arg4; PyObject* arg5;
+    const char* inp;PO arg0=NULL;PO arg1=NULL;PO arg2=NULL;PO arg3=NULL;PO arg4=NULL;PO arg5=NULL;
     PyArg_ParseTuple(args, "s|OOOOOO", &inp, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     char* err;char** err_p = &err;
     FnTy* ty=apple_ty(inp,err_p);
@@ -209,27 +195,32 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
     PO r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
-    void** vals=malloc(sizeof(void*)*argc);
-    ffi_arg ret;
+    void** vals=malloc(sizeof(U)*argc);
+    U ret= malloc(sizeof(F));
     U x;I xi;F xf;
-    if(arg0 != NULL){
-        Sw(ty->args[0]){
-            C IA: x=i_npy(arg0);vals[0]=&x;BR
-            C FA: x=f_npy(arg0);vals[0]=&x;BR
-            C I_t: xi=PyLong_AsLong(arg0);vals[0]=&xi;BR
-            C F_t: xf=PyFloat_AsDouble(arg0);vals[0]=&xf;BR
+    PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
+    for(int k=0;k<6;k++){
+        pyarg=pyargs[k];
+        if(argc>k && pyarg!=NULL){
+            Sw(ty->args[k]){
+                C IA: x=i_npy(pyarg);vals[k]=&x;BR
+                C FA: x=f_npy(pyarg);vals[k]=&x;BR
+                C I_t: xi=PyLong_AsLong(pyarg);vals[k]=&xi;BR
+                C F_t: xf=PyFloat_AsDouble(pyarg);vals[k]=&xf;BR
+            }
         }
     }
-    /* printf("here\n"); */
-    ffi_call(cif,fp,&ret,vals);
-    Sw(ty->res){
-        C IA: r=npy_i(ret);BR
-        C FA: r=npy_f(ret);BR
-        C F_t: r=PyFloat_FromDouble(ret);BR
-        C I_t: r=PyLong_FromLongLong(ret);BR
-    }
-    freety(ty);
+    ffi_call(cif,fp,ret,vals);
+    free(vals);free(cif);freety(ty);
     munmap(fp,f_sz);
+    Sw(ty->res){
+        C IA: r=npy_i(*(void**)ret);BR
+        C FA: r=npy_f(*(void**)ret);BR
+        C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
+        C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
+    }
+    // TODO: free other parts of cif (args)
+    free(ret);
     R r;
 }
 
