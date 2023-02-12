@@ -2,8 +2,9 @@
 #include<R.h>
 #include<Rinternals.h>
 #include<HsFFI.h>
+#include<ffi.h>
 #include"../include/apple.h"
-#include"../c/jit.h"
+#include"../include/apple_abi.h"
 
 typedef size_t S;
 
@@ -83,31 +84,21 @@ SEXP apple_R(SEXP args) {
     U fp; S f_sz;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     U r;
+    U* vals=malloc(sizeof(U)*argc);
+    U ret= malloc(sizeof(F));
+    U x;I xi;F xf;
+    for(int k=0;k<argc;k++){
+        SEXP arg=CADR(args);args=CDR(args);
+        Sw(ty->args[k]){
+            C FA: x=fr(arg);vals[k]=&x;BR
+            C F_t: xf=asReal(arg);vals[k]=&xf;BR
+        }
+    }
+    ffi_call(cif,fp,ret,vals);
+    free(vals);free(cif);
     Sw(ty->res){
-        C FA:
-            Sw(ty->argc){
-                C 0: {r=rf(((Ufp) fp)());BR}
-                C 1:
-                    Sw(ty->args[0]){
-                        C FA: {SEXP arg0=CADR(args);r=rf(((Aafp) fp)(fr(arg0)));BR}
-                    }
-            };BR
-        C F_t:
-            Sw(ty->argc){
-                C 0: {r=ScalarReal(((Ffp) fp)());BR}
-                C 1:
-                    Sw(ty->args[0]){
-                        C F_t: {SEXP arg0=CADR(args);r=ScalarReal(((Fffp) fp)(asReal(arg0)));BR}
-                    }BR;
-                C 2:
-                    Sw(ty->args[0]){
-                        C F_t: {
-                            Sw(ty->args[1]) {
-                                C F_t: {SEXP arg0=CADR(args);SEXP arg1=CADDR(args);r=ScalarReal(((Ffffp) fp)(asReal(arg0),asReal(arg1)));BR}
-                            }BR;
-                        }
-                    }BR;
-            };BR
+        C FA: r=rf(*(U*)ret);BR
+        C F_t: r=ScalarReal(*(F*)ret);BR
     }
     freety(ty);
     munmap(fp,f_sz);
