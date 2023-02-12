@@ -3,8 +3,8 @@
 #include<Rinternals.h>
 #include<HsFFI.h>
 #include<ffi.h>
-#include"../include/apple.h"
 #include"../include/apple_abi.h"
+#include"../c/ffi.c"
 
 typedef size_t S;
 
@@ -84,11 +84,13 @@ SEXP apple_R(SEXP args) {
     U fp; S f_sz;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
     U r;
+    ffi_cif* cif=apple_ffi(ty);
+    int argc=ty->argc;
     U* vals=malloc(sizeof(U)*argc);
     U ret= malloc(sizeof(F));
     U x;I xi;F xf;
     for(int k=0;k<argc;k++){
-        SEXP arg=CADR(args);args=CDR(args);
+        args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
             C FA: x=fr(arg);vals[k]=&x;BR
             C F_t: xf=asReal(arg);vals[k]=&xf;BR
