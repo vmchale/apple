@@ -148,18 +148,18 @@ static PyObject* apple_cache(PyObject *self, PyObject *args) {
 
 static PyObject* apple_f(PyObject* self, PyObject* args) {
     PyCacheObject* c;PO arg0=NULL;PO arg1=NULL;PO arg2=NULL;PO arg3=NULL;PO arg4=NULL;PO arg5=NULL;
-    PyArg_ParseTuple(args, "O|OOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
+    PyArg_ParseTuple(args, "O|OOOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     FnTy* ty=c->ty;U fp=c->code;
     PO r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
     U* vals=malloc(sizeof(U)*argc);
-    U ret= malloc(sizeof(F));
+    U ret=malloc(8);
     U x;I xi;F xf;
     PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
-    for(int k=0;k<6;k++){
+    for(int k=0;k<argc;k++){
         pyarg=pyargs[k];
-        if(argc>k && pyarg!=NULL){
+        if(pyarg!=NULL){
             Sw(ty->args[k]){
                 C IA: x=i_npy(pyarg);vals[k]=&x;BR
                 C FA: x=f_npy(pyarg);vals[k]=&x;BR
@@ -176,6 +176,7 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
         C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
         C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
     }
+    free(ret);
     R r;
 };
 
@@ -196,12 +197,13 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
     U* vals=malloc(sizeof(U)*argc);
-    U ret= malloc(sizeof(F));
+    U ret=malloc(8);
     U x;I xi;F xf;
     PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
-    for(int k=0;k<6;k++){
+    // FIXME: fails for 2 float args
+    for(int k=0;k<argc;k++){
         pyarg=pyargs[k];
-        if(argc>k && pyarg!=NULL){
+        if(pyarg!=NULL){
             Sw(ty->args[k]){
                 C IA: x=i_npy(pyarg);vals[k]=&x;BR
                 C FA: x=f_npy(pyarg);vals[k]=&x;BR
