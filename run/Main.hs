@@ -335,32 +335,37 @@ benchC s = case tyParse bs of
     where bs = ubs s
 
 benchE :: String -> Repl AlexPosn ()
-benchE s = case tyParse bs of
-    Left err -> liftIO $ putDoc (pretty err <> hardline)
-    Right (e, _) -> do
-        st <- lift $ gets _lex
-        m <- lift $ gets mf
-        case eAnn e of
-            (Arr _ F) -> do
-                liftIO $ do
-                    (sz, fp) <- ctxFunP st m bs
-                    benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
-                    freeFunPtr sz fp
-            (Arr _ I) -> do
-                liftIO $ do
-                    (sz, fp) <- ctxFunP st m bs
-                    benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
-                    freeFunPtr sz fp
-            I -> do
-                liftIO $ do
-                    (sz, fp) <- ctxFunP st m bs
-                    benchmark (nfIO $ callFFI fp retInt64 [])
-                    freeFunPtr sz fp
-            F -> do
-                liftIO $ do
-                    (sz, fp) <- ctxFunP st m bs
-                    benchmark (nfIO $ callFFI fp retCDouble [])
-                    freeFunPtr sz fp
+benchE s = do
+    st <- lift $ gets _lex
+    case rwP st bs of   
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            case tyClosed i eC of
+                Left err -> liftIO $ putDoc (pretty err <> hardline)
+                Right (e, _, i') -> do
+                    m <- lift $ gets mf
+                    case eAnn e of
+                        (Arr _ F) -> do
+                            liftIO $ do
+                                (sz, fp) <- eFunP i' m eC
+                                benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
+                                freeFunPtr sz fp
+                        (Arr _ I) -> do
+                            liftIO $ do
+                                (sz, fp) <- eFunP i' m eC
+                                benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
+                                freeFunPtr sz fp
+                        I -> do
+                            liftIO $ do
+                                (sz, fp) <- eFunP i' m eC
+                                benchmark (nfIO $ callFFI fp retInt64 [])
+                                freeFunPtr sz fp
+                        F -> do
+                            liftIO $ do
+                                (sz, fp) <- eFunP i' m eC
+                                benchmark (nfIO $ callFFI fp retCDouble [])
+                                freeFunPtr sz fp
     where bs = ubs s
 
 printExpr :: String -> Repl AlexPosn ()
