@@ -47,7 +47,7 @@ main = do
     erfFp <- fmap ff . leakFp =<< BSL.readFile "math/erf.🍏"
     entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
-    gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gammaln.🍏"
+    gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
     scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
     scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
     ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
@@ -57,7 +57,7 @@ main = do
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
                       , bench "tyParse (xor)" $ nf tyParse x
-                      , bench "bytes (gammaln)" $ nf bytes 𝛾
+                      , bench "bytes (gamma)" $ nf bytes 𝛾
                       , bench "bytes (fcdf)" $ nf bytes ꜰ
                       , bench "asm (A)" $ nf (x86G alexInitUserState) ᴀ
                       ]
@@ -102,7 +102,7 @@ main = do
 #endif
                       ]
                 , bgroup "Γ"
-                      [ bench "hs" $ nf Math.gammaln (1.5 :: Double)
+                      [ bench "hs" $ nf Math.gamma (1.5 :: Double)
 #ifdef x86_64_HOST_ARCH
                       , bench "jit" $ nfIO (pure $ gammaFp 1.5)
 #endif
@@ -117,7 +117,7 @@ main = do
 #endif
                 ]
     where erfSrc = BSL.readFile "math/erf.🍏"
-          gamma = BSL.readFile "math/gammaln.🍏"
+          gamma = BSL.readFile "math/gamma.🍏"
           tcdf = BSL.readFile "math/tcdf.🍎"
           xor = BSL.readFile "test/examples/xor.🍎"
           fcdf = BSL.readFile "math/fcdf.🍎"
