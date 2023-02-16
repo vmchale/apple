@@ -557,13 +557,13 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
         wrOSz = MT oSz (ConstI 1):[ MT oSz (IB ITimes (Reg oSz) (Reg dϵ)) | dϵ <- oDims ]
         wrSlopSz = MT slopSz (ConstI 1):[ MT slopSz (IB ITimes (Reg slopSz) (Reg dϵ)) | dϵ <- complDims ]
     ss <- writeRF f [x] y
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Right{}) -> Right dϵ; (_,Left tϵ) -> Left (Reg tϵ)) dts allts -- FIXME: is this (Right/Left) backwards
-    slopP <- newITemp
-    place <- extrCell ecArg sstrides (xR, lX) slopP
+    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Right{}) -> Right dϵ; (_,Left tϵ) -> Left (Reg tϵ)) dts allts
+    slopP <- newITemp; xRd <- newITemp; slopPd <- newITemp
+    place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
     loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [MX y (FAt (AP t (Just$IB IPlus (IB IAsl (Reg di) (ConstI 3)) (ConstI$8+8*oRnk)) (Just a))), tick di]
-    pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) oRnk (Reg oSz):Wr (AP t Nothing (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI (8+i)) (Just a)) (Reg d)) oDims [0..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):Wr (AP slopP Nothing Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (AP slopP (Just$ConstI(8+i)) Nothing) (Reg d)) complDims [0..] ++ sss ++ MT di (ConstI 0):loop ++ [Pop (Reg slopSz)])
+    pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) oRnk (Reg oSz):Wr (AP t Nothing (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI (8+i)) (Just a)) (Reg d)) oDims [0..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):Wr (AP slopP Nothing Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (AP slopP (Just$ConstI(8+i)) Nothing) (Reg d)) complDims [0..] ++ sss ++ [MT xRd (IB IPlus (Reg xR) (ConstI$8+8*rnk)), MT slopPd (IB IPlus (Reg slopP) (ConstI$8+8*slopRnk))] ++ MT di (ConstI 0):loop ++ [Pop (Reg slopSz)])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
