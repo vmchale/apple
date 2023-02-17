@@ -24,7 +24,6 @@ import           Hs.A
 import           Hs.FFI
 import           L
 import           Name
-import           Parser
 import           Prettyprinter             (hardline, pretty, (<+>))
 import           Prettyprinter.Render.Text (putDoc)
 import           Sys.DL
