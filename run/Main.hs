@@ -15,7 +15,6 @@ import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
-import           Data.Tuple.Extra          (fst3)
 import           Dbg
 import           Foreign.LibFFI            (callFFI, retCDouble, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc     (free)

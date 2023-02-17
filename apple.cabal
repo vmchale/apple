@@ -228,8 +228,7 @@ executable arepl
         transformers,
         text,
         directory,
-        filepath,
-        extra
+        filepath
 
     if !impl(ghc >=8.0)
         build-depends: semigroups
