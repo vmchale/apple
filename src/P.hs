@@ -57,8 +57,9 @@ import           Prettyprinter              (Doc, Pretty (..))
 import           R.Dfn
 import           R.R
 import           Ty
+import           Ty.M
 
-data Err a = PErr (ParseE a) | TyErr (TyE a) deriving (Generic)
+data Err a = PErr (ParseE a) | TyErr (TyE a) | RErr RE deriving (Generic)
 
 instance Pretty a => Show (Err a) where
     show = show . pretty
@@ -70,6 +71,7 @@ instance NFData a => NFData (Err a) where
 instance Pretty a => Pretty (Err a) where
     pretty (PErr err)  = pretty err
     pretty (TyErr err) = pretty err
+    pretty (RErr err) = pretty err
 
 rwP st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
 
@@ -110,10 +112,10 @@ x86L, x86G :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) [X86 X86R
 x86G st = walloc st (uncurry X86.gallocFrame)
 x86L st = walloc st (X86.allocFrame . X86.mkIntervals . snd)
 
-ex86G :: Int -> E a -> Either (TyE a) [X86 X86Reg FX86Reg ()]
+ex86G :: Int -> E a -> Either (Err a) [X86 X86Reg FX86Reg ()]
 ex86G i = wallocE i (uncurry X86.gallocFrame)
 
-eDumpX86 :: Int -> E a -> Either (TyE a) (Doc ann)
+eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpX86 i = fmap prettyX86 . ex86G i
 
 walloc lSt f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . irCtx lSt
@@ -125,13 +127,13 @@ ir = irCtx alexInitUserState
 irCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
 irCtx st = fmap (f.writeC) . opt st where f (s,r,t) = (frees t (optIR s),r)
 
-eir :: Int -> E a -> Either (TyE a) ([Stmt], WSt)
+eir :: Int -> E a -> Either (Err a) ([Stmt], WSt)
 eir i = fmap (f.writeC) . optE i where f (s,r,t) = (frees t (optIR s),r)
 
-eDumpIR :: Int -> E a -> Either (TyE a) (Doc ann)
+eDumpIR :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpIR i = fmap (prettyIR.fst) . eir i
 
-optE :: Int -> E a -> Either (TyE a) (E (T ()))
+optE :: Int -> E a -> Either (Err a) (E (T ()))
 optE i e =
   uncurry go <$> eInline i e where
   go eϵ = evalState (β'=<<optA'=<<β'=<<eta=<<optA' eϵ)
@@ -145,12 +147,15 @@ opt st bsl =
     β' e = state (`β` e)
     optA' e = state (\k -> runM k (optA e))
 
-eInline :: Int -> E a -> Either (TyE a) (E (T ()), Int)
-eInline m e = (\(eϵ, i) -> inline i eϵ) . sel <$> tyClosed m e where sel ~(x, _, z) = (x, z)
+eInline :: Int -> E a -> Either (Err a) (E (T ()), Int)
+eInline m e = (\(eϵ, i) -> inline i eϵ) <$> (eCheck =<< liftErr (fmap sel (tyClosed m e))) where sel ~(x, _, z) = (x, z); liftErr = first TyErr
+
+eCheck :: (E (T ()), b) -> Either (Err a) (E (T ()), b)
+eCheck e = maybe (Right e) (Left . RErr) $ check (fst e)
 
 parseInline :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline st bsl =
-    (\(e, i) -> inline i e) <$> tyParseCtx st bsl
+    (\(e, i) -> inline i e) <$> (eCheck =<< tyParseCtx st bsl)
 
 tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
 tyConstrCtx st bsl =

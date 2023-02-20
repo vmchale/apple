@@ -50,6 +50,7 @@ library
         R.R
         Parser.Rw
         Ty.Clone
+        Ty.M
         A.Opt
         IR.Alloc
         IR.CF
