@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Asm.Aarch64 ( AArch64 (..)
@@ -7,9 +7,9 @@ module Asm.Aarch64 ( AArch64 (..)
                    , FAReg (..)
                    ) where
 
-import Prettyprinter (Pretty (..))
-import GHC.Generics (Generic)
-import Control.DeepSeq (NFData (..))
+import           Control.DeepSeq (NFData (..))
+import           GHC.Generics    (Generic)
+import           Prettyprinter   (Pretty (..))
 
 type Label = Word
 
@@ -41,16 +41,16 @@ data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6|
 
 instance Pretty AbsReg where
     pretty (IReg i) = "T" <> pretty i
-    pretty LR = "LR"
-    pretty ASP = "SP"
-    pretty CArg0 = "X0"
-    pretty CArg1 = "X1"
-    pretty CArg2 = "X2"
-    pretty CArg3 = "X3"
-    pretty CArg4 = "X4"
-    pretty CArg5 = "X5"
-    pretty CArg6 = "X6"
-    pretty CArg7 = "X7"
+    pretty LR       = "LR"
+    pretty ASP      = "SP"
+    pretty CArg0    = "X0"
+    pretty CArg1    = "X1"
+    pretty CArg2    = "X2"
+    pretty CArg3    = "X3"
+    pretty CArg4    = "X4"
+    pretty CArg5    = "X5"
+    pretty CArg6    = "X6"
+    pretty CArg7    = "X7"
 
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Ret { ann :: a }

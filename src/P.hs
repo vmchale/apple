@@ -71,7 +71,7 @@ instance NFData a => NFData (Err a) where
 instance Pretty a => Pretty (Err a) where
     pretty (PErr err)  = pretty err
     pretty (TyErr err) = pretty err
-    pretty (RErr err) = pretty err
+    pretty (RErr err)  = pretty err
 
 rwP st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
 

@@ -1,20 +1,20 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Ty.M ( check, RE ) where
 
-import A
-import GHC.Generics (Generic)
-import Control.DeepSeq (NFData)
-import Control.Applicative (Alternative (..), asum)
-import Prettyprinter ((<+>), Pretty (..), squotes)
+import           A
+import           Control.Applicative (Alternative (..), asum)
+import           Control.DeepSeq     (NFData)
+import           GHC.Generics        (Generic)
+import           Prettyprinter       (Pretty (..), squotes, (<+>))
 
 data RE = MR (E (T ())) (T ()) | Unflat (E (T ())) (T ()) deriving (Generic)
 
 instance NFData RE where
 
 instance Pretty RE where
-    pretty (MR e t) = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "is not sufficiently monomorphic."
+    pretty (MR e t)     = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "is not sufficiently monomorphic."
     pretty (Unflat e t) = "Error in expression" <+> squotes (pretty e) <+> "of type" <+> squotes (pretty t) <> ": arrays of functions are not supported."
 
 check = cM
@@ -37,12 +37,12 @@ cM BLit{} = Nothing
 cM Var{} = Nothing
 
 mrT :: T a -> Maybe (T a)
-mrT t@TVar{} = Just t
-mrT (Arr _ t) = mrT t
+mrT t@TVar{}     = Just t
+mrT (Arr _ t)    = mrT t
 mrT (Arrow t t') = mrT t <|> mrT t'
-mrT (P ts) = foldMapAlternative mrT ts
-mrT t@Ρ{} = Just t
-mrT _ = Nothing
+mrT (P ts)       = foldMapAlternative mrT ts
+mrT t@Ρ{}        = Just t
+mrT _            = Nothing
 
 flT :: T a -> Maybe (T a)
 flT t@(Arr _ tϵ) | ha tϵ = Just t
@@ -52,11 +52,11 @@ flT (Ρ _ ls) = foldMapAlternative flT ls
 flT _ = Nothing
 
 ha :: T a -> Bool
-ha Arrow{} = True
-ha (P ts) = any ha ts
-ha (Ρ _ ls) = any ha ls
+ha Arrow{}   = True
+ha (P ts)    = any ha ts
+ha (Ρ _ ls)  = any ha ls
 ha (Arr _ t) = ha t
-ha _ = False
+ha _         = False
 
 foldMapAlternative :: (Traversable t, Alternative f) => (a -> f b) -> t a -> f b
 foldMapAlternative f xs = asum (f <$> xs)
