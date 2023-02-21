@@ -188,6 +188,7 @@ tokens :-
         √                        { mkBuiltin BuiltinSqrt }
         𝜋                        { mkBuiltin BuiltinPi }
         "gen."                   { mkBuiltin BuiltinGen }
+        "cyc."                   { mkBuiltin BuiltinCyc }
         "re:"                    { mkBuiltin BuiltinRep }
         Λ                        { mkBuiltin BuiltinScan }
         Λₒ                       { mkBuiltin BuiltinScanS }
@@ -351,7 +352,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
-             | BuiltinVMul
+             | BuiltinVMul | BuiltinCyc
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -381,6 +382,7 @@ instance Pretty Builtin where
     pretty BuiltinSin    = "sin."
     pretty BuiltinCos    = "cos."
     pretty BuiltinTan    = "tan."
+    pretty BuiltinCyc    = "cyc."
 
 data Token a = EOF { loc :: a }
              | TokSym { loc :: a, sym :: Sym }

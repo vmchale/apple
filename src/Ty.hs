@@ -402,6 +402,12 @@ tyB _ Rot = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
     pure (Arrow I (Arrow (Arr (i `Cons` Nil) a) (Arr (i `Cons` Nil) a)), mempty)
+tyB _ Cyc = do
+    sh <- SVar <$> freshName "sh" ()
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    n <- IEVar () <$> freshName "n" ()
+    pure (Arrow (Arr (i `Cons` sh) a) (Arrow I (Arr (n `Cons` sh) a)), mempty)
 tyB _ HeadM = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
@@ -729,6 +735,11 @@ tyE s (EApp _ (EApp _ (EApp _ (Builtin _ Gen) x) f) (ILit _ n)) = do
         lX = eAnn x; lF = eAnn f
     s1' <- liftEither $ mguPrep (lF, f) s1 (Arrow (tyX $> lX) (tyX $> lX)) (tyF $> lF)
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow tyF (Arrow I arrTy)) (Builtin (Arrow tyX (Arrow tyF (Arrow I arrTy))) Gen) x') f') (ILit I n), s1')
+tyE s (EApp _ (EApp _ (Builtin _ Cyc) e@(ALit _ es)) (ILit _ m)) = do
+    (e0, s0) <- tyE s e
+    let t@(Arr (Ix () n `Cons` Nil) a) = eAnn e0
+        arrTy = Arr (Ix () (fromIntegral m*n) `Cons` Nil) a
+    pure (EApp arrTy (EApp (Arrow I arrTy) (Builtin (Arrow t (Arrow I arrTy)) Cyc) e0) (ILit I m), s0)
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _ si)) = do
     let arrTy = Arr (vx (Ix () (fromInteger ((e-b+si) `div` si)))) I
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow I (Arrow I arrTy)) (Builtin (Arrow I (Arrow I (Arrow I arrTy))) IRange) (ILit I b)) (ILit I e)) (ILit I si), s)

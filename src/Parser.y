@@ -136,6 +136,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     sin { TokB $$ BuiltinSin }
     cos { TokB $$ BuiltinCos }
     tan { TokB $$ BuiltinTan }
+    cyc { TokB $$ BuiltinCyc }
 
 %left paren
 %nonassoc leq geq gt lt neq eq
@@ -274,6 +275,7 @@ E :: { E AlexPosn }
   | sin { Builtin $1 Sin }
   | cos { Builtin $1 Cos }
   | tan { Builtin $1 Tan }
+  | cyc { Builtin $1 Cyc }
   | tilde { Builtin $1 Flip }
 
 {

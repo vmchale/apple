@@ -166,6 +166,7 @@ instance Pretty Builtin where
     pretty CatE      = "⧺"
     pretty R         = "𝔯"
     pretty Rot       = "⊖"
+    pretty Cyc       = "cyc."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -181,7 +182,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init
-             | Sin | Cos | Rot | Tan
+             | Sin | Cos | Rot | Tan | Cyc
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 
