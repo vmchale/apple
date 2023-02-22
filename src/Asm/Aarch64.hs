@@ -8,6 +8,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Control.DeepSeq (NFData (..))
+import           Data.Semigroup  ((<>))
 import           GHC.Generics    (Generic)
 import           Prettyprinter   (Pretty (..))
 

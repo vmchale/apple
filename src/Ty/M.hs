@@ -6,6 +6,7 @@ module Ty.M ( check, RE ) where
 import           A
 import           Control.Applicative (Alternative (..))
 import           Control.DeepSeq     (NFData)
+import Data.Semigroup ((<>))
 import           Data.Foldable       (asum)
 import           GHC.Generics        (Generic)
 import           Prettyprinter       (Pretty (..), squotes, (<+>))
