@@ -91,6 +91,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     consS { TokSym $$ L.Cons }
     snoc { TokSym $$ L.Snoc }
     trans { TokSym $$ Transp }
+    bcyc { TokSym $$ L.Cyc }
 
     folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
@@ -220,6 +221,7 @@ BBin :: { E AlexPosn }
      | pp { Builtin $1 CatE }
      | rot { Builtin $1 Rot }
      | fold { Builtin $1 A.Fold }
+     | bcyc { Builtin $1 A.Cyc }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
@@ -275,7 +277,7 @@ E :: { E AlexPosn }
   | sin { Builtin $1 Sin }
   | cos { Builtin $1 Cos }
   | tan { Builtin $1 Tan }
-  | cyc { Builtin $1 Cyc }
+  | cyc { Builtin $1 A.Cyc }
   | tilde { Builtin $1 Flip }
 
 {

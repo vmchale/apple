@@ -168,6 +168,7 @@ tokens :-
         ⧺                        { mkSym PlusPlus }
         "++"                     { mkSym PlusPlus }
         ⊖                        { mkSym Rotate }
+        ⊙                        { mkSym Cyc }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -272,7 +273,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | Init
          | Geq | Gt | Eq | Neq | Leq | Lt
-         | FoldA | FoldS | Tilde
+         | FoldA | FoldS | Tilde | Cyc
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -339,6 +340,7 @@ instance Pretty Sym where
     pretty Tail         = "{:"
     pretty Init         = "}:"
     pretty Rotate       = "⊖"
+    pretty Cyc          = "⊙"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

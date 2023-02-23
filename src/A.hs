@@ -166,7 +166,7 @@ instance Pretty Builtin where
     pretty CatE      = "⧺"
     pretty R         = "𝔯"
     pretty Rot       = "⊖"
-    pretty Cyc       = "cyc."
+    pretty Cyc       = "⊙"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -233,6 +233,7 @@ isBinOp ConsE  = True
 isBinOp Snoc   = True
 isBinOp Scan   = True
 isBinOp Fold   = True
+isBinOp Cyc    = True
 isBinOp _      = False
 
 instance Pretty (E a) where
