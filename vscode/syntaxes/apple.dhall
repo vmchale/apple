@@ -4,7 +4,7 @@
 , scopeName = "source.apple"
 , patterns =
   [ { match = "(Arr|float|int)", name = "storage.type" }
-  , { match = "(frange|irange|itof|gen\\.|sin\\.|rand\\.|re:)"
+  , { match = "(frange|irange|itof|gen\\.|sin\\.|rand\\.|cyc\\.|re:)"
     , name = "keyword.other"
     }
   , { match = "--.*\$", name = "comment.line.double-dash" }
