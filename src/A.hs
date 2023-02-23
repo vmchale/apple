@@ -168,6 +168,8 @@ instance Pretty Builtin where
     pretty Rot       = "⊖"
     pretty Cyc       = "⊙"
     pretty A1        = "˙"
+    pretty Even      = "even."
+    pretty Odd       = "odd."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -183,7 +185,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init
-             | Sin | Cos | Rot | Tan | Cyc | A1
+             | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 

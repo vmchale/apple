@@ -86,6 +86,12 @@ ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = p
 ir (IR.MJ (IR.FRel IR.FGeq (IR.FReg r0) (IR.FReg r1)) l) = do
     f <- nextF; r <- nextR
     pure [Vcmppd () f (fabsReg r0) (fabsReg r1) Nltus, MovqRX () r f, TestI () r maxBound, Jne () l]
+ir (IR.MJ (IR.IU IR.IOdd e) l) = do
+    i <- nextI; plE <- evalE e (IR.ITemp i)
+    pure $ plE ++ [TestI () (IReg i) 1, Jne () l]
+ir (IR.MJ (IR.IU IR.IEven e) l) = do
+    i <- nextI; plE <- evalE e (IR.ITemp i)
+    pure $ plE ++ [TestI () (IReg i) 1, Je () l]
 ir (IR.J l)                                             = pure [J () l]
 -- see https://www.agner.org/optimize/optimizing_assembly.pdf, p. 125
 ir (IR.MX t e)                                          = feval e t

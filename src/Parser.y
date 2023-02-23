@@ -139,6 +139,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     cos { TokB $$ BuiltinCos }
     tan { TokB $$ BuiltinTan }
     cyc { TokB $$ BuiltinCyc }
+    even { TokB $$ BuiltinEven }
+    odd { TokB $$ BuiltinOdd }
 
 %left paren
 %nonassoc leq geq gt lt neq eq
@@ -281,6 +283,8 @@ E :: { E AlexPosn }
   | tan { Builtin $1 Tan }
   | cyc { Builtin $1 A.Cyc }
   | tilde { Builtin $1 Flip }
+  | odd { Builtin $1 Odd }
+  | even { Builtin $1 Even }
 
 {
 

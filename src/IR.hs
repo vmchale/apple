@@ -145,7 +145,7 @@ instance Show Exp where show = show.pretty
 
 data FUn = FSqrt | FLog | FSin | FCos
 
-data IUn = ISgn | INot
+data IUn = ISgn | INot | IEven | IOdd
 
 data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp
 
@@ -194,7 +194,7 @@ instance Pretty FUn where
     pretty FSin  = "sin"; pretty FCos  = "cos"
 
 instance Pretty IUn where
-    pretty ISgn = "sgn"; pretty INot = "¬"
+    pretty ISgn = "sgn"; pretty INot = "¬"; pretty IEven = "even"; pretty IOdd = "odd"
 
 prettyIR :: [Stmt] -> Doc ann
 prettyIR = prettyLines . fmap pretty

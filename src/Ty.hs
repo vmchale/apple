@@ -364,6 +364,8 @@ roll = foldr Cons
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (Arrow F I, mempty)
 tyB _ ItoF = pure (Arrow I F, mempty)
+tyB _ Even = pure (Arrow I B, mempty)
+tyB _ Odd = pure (Arrow I B, mempty)
 tyB l R = do
     n <- freshName "a" l; sh <- freshName "sh" ()
     let n' = TVar (void n)

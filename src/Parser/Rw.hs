@@ -29,6 +29,8 @@ isBinOp Outer   = False
 isBinOp R       = False
 isBinOp Tail    = False
 isBinOp Init    = False
+isBinOp Even    = False
+isBinOp Odd     = False
 isBinOp _       = True
 
 fi :: Builtin -> Int
