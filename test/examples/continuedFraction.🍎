@@ -1,1 +1,1 @@
-λas. [y+1%x]/ 0 (as::Arr (i `Cons` Nil) float)
+λas. [y+1%x]/ₒ 0 (as::Arr (i `Cons` Nil) float)
