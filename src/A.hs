@@ -167,6 +167,7 @@ instance Pretty Builtin where
     pretty R         = "𝔯"
     pretty Rot       = "⊖"
     pretty Cyc       = "⊙"
+    pretty A1        = "˙"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -182,7 +183,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init
-             | Sin | Cos | Rot | Tan | Cyc
+             | Sin | Cos | Rot | Tan | Cyc | A1
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 
@@ -234,6 +235,7 @@ isBinOp Snoc   = True
 isBinOp Scan   = True
 isBinOp Fold   = True
 isBinOp Cyc    = True
+isBinOp A1     = True
 isBinOp _      = False
 
 instance Pretty (E a) where

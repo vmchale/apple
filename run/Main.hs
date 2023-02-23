@@ -165,6 +165,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "𝔯" "rand" "⍳" "range (int)"
     , lOption "/ₒ" "fold with seed" "Λₒ" "scan with seed"
     , lOption "{x←y;z}" "let...in" "⊙" "cycle"
+    , lOption "˙" "at" "" ""
     ]
 
 lOption op0 desc0 op1 desc1 =

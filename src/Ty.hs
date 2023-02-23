@@ -378,6 +378,11 @@ tyB _ ConsE = do
     i <- IVar () <$> freshName "i" ()
     pure (Arrow a (Arrow (Arr (i `Cons` Nil) a) (Arr (StaPlus () i (Ix()1) `Cons` Nil) a)), mempty)
 tyB l Snoc = tyB l ConsE
+tyB _ A1 = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    pure (Arrow (Arr (i `Cons` sh) a) (Arrow I (Arr sh a)), mempty)
 tyB _ LastM = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()

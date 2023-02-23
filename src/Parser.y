@@ -92,6 +92,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     snoc { TokSym $$ L.Snoc }
     trans { TokSym $$ Transp }
     bcyc { TokSym $$ L.Cyc }
+    iat { TokSym $$ L.A1 }
 
     folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
@@ -222,6 +223,7 @@ BBin :: { E AlexPosn }
      | rot { Builtin $1 Rot }
      | fold { Builtin $1 A.Fold }
      | bcyc { Builtin $1 A.Cyc }
+     | iat { Builtin $1 A.A1 }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
