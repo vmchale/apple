@@ -1034,6 +1034,10 @@ eval (EApp F (EApp _ (Var _ f) e0) e1) t | isF (eAnn e0) && isF (eAnn e1) = do
     plE0 <- eval e0 arg0; plE1 <- eval e1 arg1
     retL <- newLabel
     pure $ plE0 ++ plE1 ++ [C l, L retL, MX t (FReg ret)]
+eval (EApp F (EApp _ (Builtin _ A1) e) i) t = do
+    eR <- newITemp; iR <- newITemp
+    (lE, plE) <- aeval e eR; plI <- eval i iR
+    pure $ plE ++ plI ++ [MX t (FAt (AP eR (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) lE))]
 eval e _ = error (show e)
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
