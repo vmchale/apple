@@ -39,6 +39,7 @@ fi IntExp = 8
 fi Exp    = 8
 fi Times  = 7
 fi Div    = 7
+fi Mod    = 7
 fi Plus   = 6
 fi Minus  = 6
 fi Map{}  = 5
@@ -49,6 +50,7 @@ lassoc :: Builtin -> Bool
 lassoc IntExp = False
 lassoc Exp    = False
 lassoc Div    = True
+lassoc Mod    = True
 lassoc Times  = True
 lassoc Mul    = True
 lassoc Plus   = True

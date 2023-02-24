@@ -43,6 +43,8 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ] `xmm0` and `xmm1` incorrectly marked as clobbered when return value is not
+  actually in `xmm0`/`xmm1` or whatever
 - [ ] `fsin` instruction requires reduction module 2pi or w/e
 - [ ] `⟨⟨1.0,0⟩,⟨0,1⟩,⟨0,0⟩⟩` fails (types, see FIXME in `src/Ty.hs`)
 - [ ] ` |: ⟨⟨1.0,2⟩,⟨3,4⟩,⟨5,6.0⟩⟩`
@@ -75,15 +77,13 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 - [ ] Warn if irange or frange will exceed?
 - [ ] Sanity check pass to make sure xmm0 doesn't end up target of `movtemp` etc.
 # Examples
-- [ ] median
+- [ ] color!
 - [ ] https://optimized-einsum.readthedocs.io/en/stable/
 - [ ] polynomial evaluation
 - [ ] modulo
-- [ ] http://blog.vmchale.com/article/numba-why
 - [ ] https://mathworld.wolfram.com/MotzkinNumber.html
 - [ ] perceptual hash
-- [ ] elliptic fourier series
-  - [ ] http://www.sci.utah.edu/~gerig/CS7960-S2010/handouts/Kuhl-Giardina-CGIP1982.pdf
+  - [ ] median lol (indexing?)
 - [ ] Pascal's triangle
 - [ ] FFT
 - [ ] generating functions
@@ -93,12 +93,12 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 - [ ] neural net!
 - [ ] think: inner/outer product, wedge products (?)
   - [ ] permutations/indices (determinant...)
+  - [ ] discrete cosine transformation (gen2.)
 - [ ] https://en.wikipedia.org/wiki/Arithmetic–geometric_mean#Complete_elliptic_integral_K(sinα)
 - [ ] https://github.com/justin2004/image-processing#image-processing-with-apl
 - [ ] http://shvbsle.in/computers-are-fast-but-you-dont-know-it-p1/
 - [ ] Python FFI: modify a numpy array or something; regression->matplotlib?
 - [ ] SciPy t-test
-- [ ] discrete cosine transformation
 - [ ] full hypergeometric (analytically extended?)
 - [ ] https://www.shamusyoung.com/twentysidedtale/?p=11874
 - [ ] ANOVA
@@ -112,3 +112,6 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 - [ ] j901 integration:
   - [ ] `viewmat 100 100 $ 1 2 1` `viewmat */~i:5` `viewmat +/~i.10`
 - [ ] https://www.cygnus-software.com/downloads/downloads.htm
+- [ ] https://laustep.github.io/stlahblog/posts/OnAMobiusTransformation.html
+- [ ] https://laustep.github.io/stlahblog/posts/beautifulComplexFunctions.html
+- [ ] https://hackage.haskell.org/package/weierstrass-functions-0.1.0.0
