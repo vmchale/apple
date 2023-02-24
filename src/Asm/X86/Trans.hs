@@ -312,11 +312,15 @@ evalE (IR.IB IR.ITimes e0 e1) rD = do
     pure $ plE0 ++ plE1 ++ [MovRR () rD' (IReg e0R), IMulRR () rD' (IReg e1R)]
 evalE (IR.IB IR.IDiv e0 e1) rD                       = do
     let rD' = absReg rD
-    e0R <- nextI
-    e1R <- nextI
+    e0R <- nextI; e1R <- nextI
     plE0 <- evalE e0 (IR.ITemp e0R)
     plE1 <- evalE e1 (IR.ITemp e1R)
-    pure $ plE0 ++ plE1 ++ [MovRR () Quot (IReg e0R), IDiv () (IReg e1R), MovRR () rD' Quot]
+    pure $ plE0 ++ plE1 ++ [XorRR () Rem Rem, MovRR () Quot (IReg e0R), IDiv () (IReg e1R), MovRR () rD' Quot]
+evalE (IR.IB IR.IRem e0 e1) rD                       = do
+    let rD' = absReg rD
+    e0R <- nextI; e1R <- nextI
+    plE0 <- evalE e0 (IR.ITemp e0R); plE1 <- evalE e1 (IR.ITemp e1R)
+    pure $ plE0 ++ plE1 ++ [XorRR () Rem Rem, MovRR () Quot (IReg e0R), IDiv () (IReg e1R), MovRR () rD' Rem]
 evalE (IR.IRFloor (IR.FReg r)) t                     = let r' = fabsReg r in pure [Roundsd () r' r' RDown, Cvttsd2si () (absReg t) r']
 evalE (IR.EAt (IR.AP m (Just (IR.ConstI i)) _)) rD | Just i8 <- mi8 i = pure [MovRA () (absReg rD) (RC (absReg m) i8)]
 evalE (IR.EAt (IR.AP m (Just (IR.Reg i)) _)) rD = pure [MovRA () (absReg rD) (RS (absReg m) One (absReg i))]

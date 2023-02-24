@@ -673,6 +673,10 @@ eval (EApp _ (EApp _ (Builtin (Arrow I _) Times) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MT t (IB ITimes (Reg t0) (Reg t1))]
+eval (EApp _ (EApp _ (Builtin _ Mod) e0) e1) t = do
+    t0 <- newITemp; t1 <- newITemp
+    pl0 <- eval e0 t0; pl1 <- eval e1 t1
+    pure $ pl0 ++ pl1 ++ [MT t (IB IRem (Reg t0) (Reg t1))]
 eval (EApp _ (EApp _ (Builtin _ Minus) e) (ILit F i)) t = do
     tϵ <- newFTemp
     pl <- eval e tϵ

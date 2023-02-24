@@ -170,6 +170,7 @@ instance Pretty Builtin where
     pretty A1        = "˙"
     pretty Even      = "even."
     pretty Odd       = "odd."
+    pretty Mod       = "mod"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -238,6 +239,7 @@ isBinOp Scan   = True
 isBinOp Fold   = True
 isBinOp Cyc    = True
 isBinOp A1     = True
+isBinOp Mod    = True
 isBinOp _      = False
 
 instance Pretty (E a) where

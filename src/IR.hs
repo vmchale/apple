@@ -149,7 +149,7 @@ data IUn = ISgn | INot | IEven | IOdd
 
 data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp
 
-data IBin = IPlus | IMinus | ITimes | IAsr | IAnd | IMax | IMin | IDiv | IAsl
+data IBin = IPlus | IMinus | ITimes | IAsr | IAnd | IMax | IMin | IDiv | IAsl | IRem
 
 data IRel = IEq | INeq | IGt | ILt | ILeq | IGeq
 data FRel = FEq | FNeq | FGt | FLt | FLeq | FGeq
@@ -178,6 +178,7 @@ instance Pretty IBin where
     pretty IAsl   = "asl"; pretty IAsr   = "asr"
     pretty IMax   = "max"; pretty IMin   = "min"
     pretty IAnd   = "∧"
+    pretty IRem   = "rem"
 
 instance Pretty FBin where
     pretty FPlus  = "+"

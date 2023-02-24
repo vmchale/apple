@@ -460,6 +460,7 @@ tyB l Neg = do
 tyB _ Sqrt = pure (Arrow F F, mempty)
 tyB _ Log = pure (Arrow F F, mempty)
 tyB _ Div = pure (Arrow F (Arrow F F), mempty)
+tyB _ Mod = pure (Arrow I (Arrow I I), mempty)
 tyB _ Outer = do
     sh0 <- SVar <$> freshName "sh0" (); sh1 <- SVar <$> freshName "sh1" ()
     a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" (); c <- TVar <$> freshName "c" ()
