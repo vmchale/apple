@@ -7,7 +7,7 @@ import           A
 import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.State       (StateT, evalStateT, gets, modify)
 import           Control.Monad.Trans.Class (lift)
-import           Criterion                 (bench, benchmark, nfIO)
+import           Criterion                 (benchmark, nfIO)
 import qualified Data.ByteString.Lazy      as BSL
 import           Data.Foldable             (traverse_)
 import           Data.Int                  (Int64)
@@ -330,9 +330,8 @@ benchC :: String -> Repl AlexPosn ()
 benchC s = case tyParse bs of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right _ -> do
-        st <- lift $ gets _lex
         m <- lift $ gets mf
-        liftIO $ benchmark (nfIO (do{(sz,fp) <- ctxFunP st m bs; freeFunPtr sz fp}))
+        liftIO $ benchmark (nfIO (do{(sz,fp) <- ctxFunP m bs; freeFunPtr sz fp}))
     where bs = ubs s
 
 benchE :: String -> Repl AlexPosn ()
