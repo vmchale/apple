@@ -220,16 +220,20 @@ tyExprR s = do
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            case tyClosed i eC of
-                Left err      -> liftIO $ putDoc (pretty err <> hardline)
-                Right (e,c,_) -> liftIO $ putDoc (prettyC (eAnn e, c) <> hardline)
+            liftIO $ case tyClosed i eC of
+                Left err      -> putDoc (pretty err <> hardline)
+                Right (e,c,_) -> putDoc (prettyC (eAnn e, c) <> hardline)
 
 annR :: String -> Repl AlexPosn ()
 annR s = do
     st <- lift $ gets _lex
-    liftIO $ case tyParseCtx st $ ubs s of
-        Left err    -> putDoc (pretty err<>hardline)
-        Right (e,_) -> putDoc (prettyTyped e<>hardline)
+    case rwP st (ubs s) of
+        Left err    -> liftIO $ putDoc (pretty err <> hardline)
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            liftIO $ case tyClosed i eC of
+                Left err      -> putDoc (pretty err <> hardline)
+                Right (e,_,_) -> putDoc (prettyTyped e <> hardline)
 
 inspect :: String -> Repl AlexPosn ()
 inspect s = do
