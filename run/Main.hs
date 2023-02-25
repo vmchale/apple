@@ -183,13 +183,11 @@ ubs :: String -> BSL.ByteString
 ubs = encodeUtf8 . TL.pack
 
 disasm :: String -> Repl AlexPosn ()
-disasm s = do
-    st <- lift $ gets _lex
-    liftIO $ do
-        res <- dtxt st (ubs s)
-        case res of
-            Left err -> putDoc (pretty err <> hardline)
-            Right b  -> TIO.putStr b
+disasm s = liftIO $ do
+    res <- dtxt (ubs s)
+    case res of
+        Left err -> putDoc (pretty err <> hardline)
+        Right b  -> TIO.putStr b
 
 irR :: String -> Repl AlexPosn ()
 irR s = do

@@ -87,7 +87,7 @@ apple_ty src errPtr = do
 apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)
 apple_compile (IntPtr m) (IntPtr f) src szPtr = do
     bSrc <- BS.unsafePackCString src
-    (sz, fp) <- ctxFunDef (m,f) (BSL.fromStrict bSrc)
+    (sz, fp) <- ctxFunP (m,f) (BSL.fromStrict bSrc)
     poke szPtr (fromIntegral sz) $> castFunPtrToPtr fp
 
 foreign export ccall apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)

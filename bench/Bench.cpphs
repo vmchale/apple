@@ -10,7 +10,6 @@ import           Foreign.Ptr           (FunPtr, Ptr)
 import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           I
-import           L
 import qualified Math.Hypergeometric   as Hyper
 import qualified Math.SpecialFunction  as Math
 import           P
@@ -59,7 +58,7 @@ main = do
                       , bench "tyParse (xor)" $ nf tyParse x
                       , bench "bytes (gamma)" $ nf bytes 𝛾
                       , bench "bytes (fcdf)" $ nf bytes ꜰ
-                      , bench "asm (A)" $ nf (x86G alexInitUserState) ᴀ
+                      , bench "asm (A)" $ nf x86G ᴀ
                       ]
                       -- TODO: thunks after type checking?
                 , env (fmap yeet erfParsed) $ \ast ->

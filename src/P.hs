@@ -12,16 +12,14 @@ module P ( Err (..)
          , rwP
          , opt
          , ir
-         , irCtx
          , eDumpIR
          , x86G
-         , x86GDef
          , x86L
          , eDumpX86
          , bytes
          , funP
          , eFunP
-         , ctxFunDef
+         , ctxFunP
          ) where
 
 import           A
@@ -90,27 +88,21 @@ tyExpr = fmap prettyC.tyOf
 tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
 tyOf = fmap (first eAnn.discard) . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
-ctxFunDef :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
-ctxFunDef = ctxFunP alexInitUserState
-
 eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr a)
 eFunP m ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . ex86G m)
 
-ctxFunP :: AlexUserState -> (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
-ctxFunP st ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . x86G st)
+ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
+ctxFunP ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . x86G)
 
 funP :: BSL.ByteString -> IO (Int, FunPtr a)
-funP = aFp <=< either throwIO pure . x86G alexInitUserState
+funP = aFp <=< either throwIO pure . x86G
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
-bytes = fmap assemble . x86G alexInitUserState
+bytes = fmap assemble . x86G
 
-x86GDef :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
-x86GDef = x86G alexInitUserState
-
-x86L, x86G :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
-x86G st = walloc st (uncurry X86.gallocFrame)
-x86L st = walloc st (X86.allocFrame . X86.mkIntervals . snd)
+x86L, x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
+x86G = walloc (uncurry X86.gallocFrame)
+x86L = walloc (X86.allocFrame . X86.mkIntervals . snd)
 
 ex86G :: Int -> E a -> Either (Err a) [X86 X86Reg FX86Reg ()]
 ex86G i = wallocE i (uncurry X86.gallocFrame)
@@ -118,14 +110,11 @@ ex86G i = wallocE i (uncurry X86.gallocFrame)
 eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpX86 i = fmap prettyX86 . ex86G i
 
-walloc lSt f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . irCtx lSt
+walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
 wallocE i f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . eir i
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
-ir = irCtx alexInitUserState
-
-irCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
-irCtx st = fmap (f.writeC) . opt st where f (s,r,t) = (frees t (optIR s),r)
+ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t (optIR s),r)
 
 eir :: Int -> E a -> Either (Err a) ([Stmt], WSt)
 eir i = fmap (f.writeC) . optE i where f (s,r,t) = (frees t (optIR s),r)
@@ -140,9 +129,9 @@ optE i e =
   β' eϵ = state (`β` eϵ)
   optA' eϵ = state (\k -> runM k (optA eϵ))
 
-opt :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
-opt st bsl =
-    uncurry go <$> parseInline st bsl where
+opt :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
+opt bsl =
+    uncurry go <$> parseInline bsl where
     go e = evalState (β'=<<optA'=<<β'=<<eta=<<optA' e)
     β' e = state (`β` e)
     optA' e = state (\k -> runM k (optA e))
@@ -153,9 +142,9 @@ eInline m e = (\(eϵ, i) -> inline i eϵ) <$> (eCheck =<< liftErr (fmap sel (tyC
 eCheck :: (E (T ()), b) -> Either (Err a) (E (T ()), b)
 eCheck e = maybe (Right e) (Left . RErr) $ check (fst e)
 
-parseInline :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
-parseInline st bsl =
-    (\(e, i) -> inline i e) <$> (eCheck =<< tyParseCtx st bsl)
+parseInline :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
+parseInline bsl =
+    (\(e, i) -> inline i e) <$> (eCheck =<< tyParse bsl)
 
 tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
 tyConstrCtx st bsl =
