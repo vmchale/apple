@@ -53,6 +53,8 @@ flT (P ts) = foldMapAlternative flT ts
 flT (Ρ _ ls) = foldMapAlternative flT ls
 flT _ = Nothing
 
+-- TODO pass for insufficiently known shape 𝔯
+
 ha :: T a -> Bool
 ha Arrow{}   = True
 ha (P ts)    = any ha ts

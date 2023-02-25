@@ -1,2 +1,3 @@
 λas.λbs.
-  { sum ⇐ [(+)/x]; 0.5*(sum((*)`as (1 ⊖ bs)) - sum((*)` (1 ⊖ as) bs)) }
+  -- FIXME fails with ⇐ (polymorphic bind)
+  { sum ← [(+)/x]; 0.5*(sum((*)`as (1 ⊖ bs)) - sum((*)` (1 ⊖ as) bs)) }
