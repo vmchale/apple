@@ -188,6 +188,12 @@ ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS (Just e) _) ne) = do
     i <- nextR; t <- nextR
     l <- nextL; endL <- nextL
     pure $ plE ++ plN ++ [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, Label () l, CmpRR () i (IReg nR), Jg () endL, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tD) Eight i) t, IAddRI () i 1, J () l, Label () endL]
+ir (IR.Cpy (IR.AP tD (Just (IR.ConstI n)) _) (IR.AP tS (Just e) _) ne) | Just n8 <- mi8 n = do
+    iR <- nextI; plE <- evalE e (IR.ITemp iR)
+    nR <- nextI; plN <- evalE (IR.IB IR.IMinus ne (IR.ConstI 1)) (IR.ITemp nR)
+    i <- nextR; t <- nextR
+    l <- nextL; endL <- nextL
+    pure $ plE ++ plN ++ [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, Label () l, CmpRR () i (IReg nR), Jg () endL, MovRA () t (RS (IReg iR) Eight i), MovAR () (RSD (absReg tD) Eight i n8) t, IAddRI () i 1, J () l, Label () endL]
 -- https://www.cs.uaf.edu/2015/fall/cs301/lecture/09_23_allocation.html
 ir (IR.Sa t (IR.ConstI i))                              = pure [ISubRI () SP (saI i+8), MovRR () (absReg t) SP]
 ir (IR.Pop (IR.ConstI i))                               = pure [IAddRI () SP (saI i+8)]

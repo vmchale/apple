@@ -573,6 +573,13 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
     loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [MX y (FAt (AP t (Just$IB IPlus (IB IAsl (Reg di) (ConstI 3)) (ConstI$8+8*oRnk)) (Just a))), tick di]
     pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) oRnk (Reg oSz):Wr (AP t Nothing (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI (8+i)) (Just a)) (Reg d)) oDims [0..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):Wr (AP slopP Nothing Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (AP slopP (Just$ConstI(8+i)) Nothing) (Reg d)) complDims [0..] ++ sss ++ [MT xRd (IB IPlus (Reg xR) (ConstI$8+8*rnk)), MT slopPd (IB IPlus (Reg slopP) (ConstI$8+8*slopRnk))] ++ MT di (ConstI 0):loop ++ [Pop (Reg slopSz)])
+aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in f1 ty||i1 ty = do
+    a <- nextArr
+    xR <- newITemp; iR <- newITemp; szR <- newITemp; iC <- newITemp
+    plI <- eval i iR
+    (lX, plX) <- aeval xs xR
+    -- TODO: edge cases: negative/wrap (just need modulo idk)
+    pure (Just a, plX ++ plI ++ MT szR (gd1 lX xR):man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ [MT iC (IB IMinus (Reg szR) (Reg iR)), Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just(IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) lX) (Reg iC), Cpy (AP t (Just(IB IPlus (IB IAsl (Reg iC) (ConstI 3)) (ConstI 16))) (Just a)) (AP xR (Just$ConstI 16) lX) (Reg iR)])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
@@ -900,6 +907,17 @@ eval (Id F (FoldOfZip zop op [p, q])) acc | i1 (eAnn p) && f1 (eAnn q) = do
     loop <- fN1 i (Reg szR) step
     sseed <- writeRF zop [x, y] acc
     pure $ plP ++ plQ ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MT x (EAt (AP pR (Just$ConstI 16) iP)):MX y (FAt (AP qR (Just$ConstI 16) iQ)):sseed ++ loop
+eval (Id F (FoldOfZip zop op [p, q])) acc | f1 (eAnn p) && f1 (eAnn q) = do
+    x <- newFTemp; y <- newFTemp
+    pR <- newITemp; qR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (iP, plP) <- aeval p pR; (iQ, plQ) <- aeval q qR
+    ss <- writeRF op [acc, x, y] acc
+    let step = MX x (FAt (AP pR (Just$sib i) iP)):MX y (FAt (AP qR (Just$sib i) iQ)):ss
+    loop <- fN1 i (Reg szR) step
+    sseed <- writeRF zop [x, y] acc
+    pure $ plP ++ plQ ++ MT szR (EAt (AP pR (Just$ConstI 8) iP)):MX x (FAt (AP pR (Just$ConstI 16) iP)):MX y (FAt (AP qR (Just$ConstI 16) iQ)):sseed ++ loop
 eval (Id F (FoldSOfZip seed op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, Id ty (AShLit [_] qs)])) acc | f1 ty = do
     x <- newITemp
     i <- newITemp
