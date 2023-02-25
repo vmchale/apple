@@ -385,6 +385,11 @@ tyB _ A1 = do
     i <- IVar () <$> freshName "i" ()
     sh <- SVar <$> freshName "sh" ()
     pure (Arrow (Arr (i `Cons` sh) a) (Arrow I (Arr sh a)), mempty)
+tyB _ IOf = do
+    a <- TVar <$> freshName "a" ()
+    i <- IVar () <$> freshName "i" ()
+    sh <- SVar <$> freshName "sh" ()
+    pure (Arrow (Arrow a B) (Arrow (Arr (i `Cons` Nil) a) I), mempty)
 tyB _ LastM = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()

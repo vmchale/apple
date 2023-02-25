@@ -94,6 +94,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     bcyc { TokSym $$ L.Cyc }
     iat { TokSym $$ L.A1 }
     mod { TokSym $$ L.Mod }
+    atDot { TokSym $$ AtDot }
 
     folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
@@ -228,6 +229,7 @@ BBin :: { E AlexPosn }
      | bcyc { Builtin $1 A.Cyc }
      | iat { Builtin $1 A.A1 }
      | mod { Builtin $1 A.Mod }
+     | atDot { Builtin $1 IOf }
 
 B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }

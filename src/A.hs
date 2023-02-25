@@ -171,6 +171,7 @@ instance Pretty Builtin where
     pretty Even      = "even."
     pretty Odd       = "odd."
     pretty Mod       = "mod"
+    pretty IOf       = "@."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -186,7 +187,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init
-             | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd
+             | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd | IOf
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 
@@ -240,6 +241,7 @@ isBinOp Fold   = True
 isBinOp Cyc    = True
 isBinOp A1     = True
 isBinOp Mod    = True
+isBinOp IOf    = True
 isBinOp _      = False
 
 instance Pretty (E a) where
