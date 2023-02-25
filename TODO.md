@@ -115,3 +115,4 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 - [ ] https://laustep.github.io/stlahblog/posts/OnAMobiusTransformation.html
 - [ ] https://laustep.github.io/stlahblog/posts/beautifulComplexFunctions.html
 - [ ] https://hackage.haskell.org/package/weierstrass-functions-0.1.0.0
+- [ ] n-body (benchmarks)
