@@ -188,6 +188,7 @@ usesF IDiv{}                   = IS.empty
 usesF Test{}                   = IS.empty
 usesF Push{}                   = IS.empty
 usesF Pop{}                    = IS.empty
+usesF Rdrand{}                 = IS.empty
 
 uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)    = singleton r
@@ -316,6 +317,7 @@ defsF IDiv{}                = IS.empty
 defsF Test{}                = IS.empty
 defsF Pop{}                 = IS.empty
 defsF Push{}                = IS.empty
+defsF Rdrand{}              = IS.empty
 
 defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r

@@ -279,6 +279,7 @@ mkIx ix (MovRA _ _ RC32{}:asms)               = mkIx (ix+7) asms
 mkIx ix (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
 mkIx ix (Not{}:asms)                          = mkIx (ix+3) asms
+mkIx ix (Rdrand{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
 mkIx ix (Fninit{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (IDiv{}:asms)                         = mkIx (ix+3) asms
@@ -807,6 +808,11 @@ asm ix st (Not _ r:asms) =
         opc = 0xf7
         modB = 3 `shiftL` 6 .|. 2 `shiftL` 3 .|. b
     in [pre,opc,modB]:asm (ix+3) st asms
+asm ix st (Rdrand _ r:asms) =
+    let (e, b) = modRM r
+        pre = 0x48 .|. e
+        modB = 3 `shiftL` 6 .|. 6 `shiftL` 3 .|. b
+    in [pre,0xf,0xc7,modB]:asm (ix+4) st asms
 asm ix st@(self, Just (m, _), _) (Call _ Malloc:asms) | Just i32 <- mi32 (m-(self+ix+5)) =
     let instr = 0xe8:le i32
     in instr:asm (ix+5) st asms
