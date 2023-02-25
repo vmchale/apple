@@ -77,6 +77,7 @@ data Stmt = L Label
           | Pop Exp -- pop salloc
           | Cpy AE AE Exp -- bytes
           | C Label | R Label
+          | IRnd Temp
           -- TODO: ccall?
 
 instance Pretty Stmt where
@@ -96,6 +97,7 @@ instance Pretty Stmt where
     pretty (Cpy p p' e) = parens ("cpy" <+> pretty p <> "," <+> pretty p' <+> pretty e)
     pretty (C l)        = parens ("call" <+> prettyLabel l)
     pretty R{}          = parens "ret" <> hardline
+    pretty (IRnd t)     = parens (pretty t <+> "<- rnd")
 
 instance Show Stmt where show = show . pretty
 

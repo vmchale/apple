@@ -1060,6 +1060,10 @@ eval (EApp F (EApp _ (Builtin _ A1) e) i) t = do
     eR <- newITemp; iR <- newITemp
     (lE, plE) <- aeval e eR; plI <- eval i iR
     pure $ plE ++ plI ++ [MX t (FAt (AP eR (Just (IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) lE))]
+eval (EApp I (EApp _ (Builtin _ A.R) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [IRnd t, MT t (IB IMinus (IB IRem (Reg t) (IB IMinus (Reg e1R) (Reg e0R))) (Reg e0R))]
 eval e _ = error (show e)
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
