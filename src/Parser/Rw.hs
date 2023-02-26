@@ -31,6 +31,7 @@ isBinOp Tail    = False
 isBinOp Init    = False
 isBinOp Even    = False
 isBinOp Odd     = False
+isBinOp Abs     = False
 isBinOp _       = True
 
 fi :: Builtin -> Int

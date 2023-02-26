@@ -462,6 +462,11 @@ tyB l Neg = do
     let n' = TVar (void n)
     pushVarConstraint n l IsNum
     pure (Arrow n' n', mempty)
+tyB l Abs = do
+    n <- freshName "a" l
+    let n' = TVar (void n)
+    pushVarConstraint n l IsNum
+    pure (Arrow n' n', mempty)
 tyB _ Sqrt = pure (Arrow F F, mempty)
 tyB _ Log = pure (Arrow F F, mempty)
 tyB _ Div = pure (Arrow F (Arrow F F), mempty)

@@ -312,6 +312,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | And { ann :: a, rDest :: reg, rSrc :: reg }
                     | Cmovnle { ann :: a, rDest :: reg, rSrc :: reg }
                     | Rdrand { ann :: a, rDest :: reg }
+                    | Neg { ann :: a, rDest :: reg }
                     deriving (Functor, Generic)
 
 instance (NFData a, NFData reg, NFData freg) => NFData (X86 reg freg a) where
@@ -412,6 +413,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (Vcmppd _ xr0 xr1 xr2 Ordq)   = i4 ("vcmpordpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
     pretty (C _ l)                       = i4 ("call" <+> prettyLabel l)
     pretty RetL{}                        = i4 "ret"
+    pretty (Neg _ r)                     = i4 ("neg" <+> pretty r)
 
 instance (Pretty reg, Pretty freg) => Show (X86 reg freg a) where show = show . pretty
 
@@ -511,6 +513,7 @@ mapR _ (Fcos l)                    = Fcos l
 mapR f (XorRR l r0 r1)             = XorRR l (f r0) (f r1)
 mapR _ (C a l)                     = C a l
 mapR _ (RetL a l)                  = RetL a l
+mapR f (Neg a r)                   = Neg a (f r)
 
 fR :: (Semigroup m, Monoid m) => (reg -> m) -> X86 reg freg a -> m
 fR _ Jg{}              = mempty
@@ -760,3 +763,4 @@ mapFR _ (Fcos l)                    = Fcos l
 mapFR _ (XorRR l r0 r1)             = XorRR l r0 r1
 mapFR _ (C a l)                     = C a l
 mapFR _ (RetL a l)                  = RetL a l
+mapFR _ (Neg a r)                   = Neg a r

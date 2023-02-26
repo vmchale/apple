@@ -283,6 +283,7 @@ mkIx ix (Rdrand{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
 mkIx ix (Fninit{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (IDiv{}:asms)                         = mkIx (ix+3) asms
+mkIx ix (Neg{}:asms)                          = mkIx (ix+3) asms
 mkIx ix []                                    = (ix, M.empty)
 mkIx _ (instr:_) = error (show instr)
 
@@ -805,14 +806,18 @@ asm ix st (MovAR _ (RS rb s ri) r:asms) =
 asm ix st (Not _ r:asms) =
     let (e, b) = modRM r
         pre = 0x48 .|. e
-        opc = 0xf7
         modB = 3 `shiftL` 6 .|. 2 `shiftL` 3 .|. b
-    in [pre,opc,modB]:asm (ix+3) st asms
+    in [pre,0xf7,modB]:asm (ix+3) st asms
+asm ix st (Neg _ r:asms) =
+    let (e, b) = modRM r
+        pre = 0x48 .|. e
+        modB = 3 `shiftL` 6 .|. 3 `shiftL` 3 .|. b
+    in [pre,0xf7,modB]:asm(ix+3) st asms
 asm ix st (Rdrand _ r:asms) =
     let (e, b) = modRM r
         pre = 0x48 .|. e
         modB = 3 `shiftL` 6 .|. 6 `shiftL` 3 .|. b
-    in [pre,0xf,0xc7,modB]:asm (ix+4) st asms
+    in [pre,0xf,0xc7,modB]:asm(ix+4) st asms
 asm ix st@(self, Just (m, _), _) (Call _ Malloc:asms) | Just i32 <- mi32 (m-(self+ix+5)) =
     let instr = 0xe8:le i32
     in instr:asm (ix+5) st asms

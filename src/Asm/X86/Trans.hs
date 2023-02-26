@@ -83,9 +83,10 @@ ir (IR.MJ (IR.IRel IR.IGeq (IR.Reg r0) e1) l) = do
 ir (IR.MJ (IR.IRel IR.IGt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jg () l]
 ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jl () l]
 ir (IR.MJ (IR.IRel IR.ILt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jl () l]
-ir (IR.MJ (IR.FRel IR.FGeq (IR.FReg r0) (IR.FReg r1)) l) = do
+ir (IR.MJ (IR.FRel IR.FGeq (IR.FReg r0) e1) l) = do
+    i1 <- nextI; plE0 <- feval e1 (IR.FTemp i1)
     f <- nextF; r <- nextR
-    pure [Vcmppd () f (fabsReg r0) (fabsReg r1) Nltus, MovqRX () r f, TestI () r maxBound, Jne () l]
+    pure $ plE0 ++ [Vcmppd () f (fabsReg r0) (FReg i1) Nltus, MovqRX () r f, TestI () r maxBound, Jne () l]
 ir (IR.MJ (IR.IU IR.IOdd e) l) = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (IReg i) 1, Jne () l]
@@ -292,6 +293,10 @@ evalE (IR.IB IR.IAsr e (IR.ConstI i)) rD | Just i8 <- mi8 i = do
     let rD' = absReg rD
     eR <- nextI; plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (IReg eR), Sar () rD' i8]
+evalE (IR.IB IR.IMinus (IR.ConstI 0) e) rD           = do
+    let rD' = absReg rD
+    plE <- evalE e rD
+    pure $ plE ++ [Neg () rD']
 evalE (IR.IB IR.IMinus e (IR.ConstI i)) rD           = do
     let rD' = absReg rD
     eR <- nextI

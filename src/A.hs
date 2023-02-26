@@ -172,6 +172,7 @@ instance Pretty Builtin where
     pretty Odd       = "odd."
     pretty Mod       = "mod"
     pretty IOf       = "@."
+    pretty Abs       = "abs."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -187,7 +188,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init
-             | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd | IOf
+             | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd | IOf | Abs
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 

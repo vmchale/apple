@@ -189,6 +189,7 @@ usesF Test{}                   = IS.empty
 usesF Push{}                   = IS.empty
 usesF Pop{}                    = IS.empty
 usesF Rdrand{}                 = IS.empty
+usesF Neg{}                    = IS.empty
 
 uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)    = singleton r
@@ -254,6 +255,7 @@ uses (XorRR _ r0 r1)  = fromList [r0, r1]
 uses (Test _ r0 r1)   = fromList [r0, r1]
 uses (Push _ r)       = singleton r
 uses Pop{}            = IS.empty
+uses (Neg _ r)        = singleton r
 
 defsF :: E freg => X86 reg freg ann -> IS.IntSet
 defsF (Movapd _ r _)        = singleton r
@@ -318,6 +320,7 @@ defsF Test{}                = IS.empty
 defsF Pop{}                 = IS.empty
 defsF Push{}                = IS.empty
 defsF Rdrand{}              = IS.empty
+defsF Neg{}                 = IS.empty
 
 defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r
@@ -383,6 +386,7 @@ defs (XorRR _ r _)     = singleton r
 defs Test{}            = IS.empty
 defs Push{}            = IS.empty
 defs (Pop _ r)         = singleton r
+defs (Neg _ r)         = singleton r
 
 next :: (E reg, E freg) => [X86 reg freg ()] -> FreshM ([Int] -> [Int], [X86 reg freg ControlAnn])
 next asms = do
