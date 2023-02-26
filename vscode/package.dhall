@@ -1,7 +1,7 @@
 { name = "apple"
 , displayName = "Apple Array System for VSCode"
 , publisher = "vmchale"
-, version = "0.1.2"
+, version = "0.1.3"
 , engines.vscode = "^1.0.0"
 , description = "Syntax highlighting for Apple"
 , categories = [ "Programming Languages" ]
