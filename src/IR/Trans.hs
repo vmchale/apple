@@ -73,6 +73,10 @@ isFFF :: T a -> Bool
 isFFF (Arrow F (Arrow F F)) = True
 isFFF _                     = False
 
+isFF :: T a -> Bool
+isFF (Arrow F F) = True
+isFF _           = False
+
 isAF :: T a -> Bool
 isAF (Arrow Arr{} F) = True
 isAF _               = False
@@ -549,10 +553,21 @@ aeval (EApp oTy (Builtin _ Tail) x) t | f1 oTy = do
     modify (addMT a t)
     let n=gd1 lX xR
     pure (Just a, plX ++ MT nR (IB IMinus n (ConstI 1)):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just$ConstI 24) lX) (Reg nR)])
+aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | isFF (eAnn f) = do
+    a <- nextArr; xR <- newITemp; rnkR <- newITemp; szR <- newITemp; j <- newITemp
+    i <- newITemp; x <- newFTemp; y <- newFTemp; xRd <- newITemp; tD <- newITemp; offsR <- newITemp
+    (lX, plX) <- aeval xs xR
+    ss <- writeRF f [x] y
+    let step = MX x (FAt (AP xRd (Just (IB IAsl (Reg i) (ConstI 3))) lX)):ss++[WrF (AP tD (Just (IB IAsl (Reg i) (ConstI 3))) (Just a)) (FReg y)]
+    loop <- doN i (Reg szR) step
+    mSz <- doN j (Reg rnkR) [MT szR (IB ITimes (Reg szR) (EAt (AP t (Just (IB IPlus (IB IAsl (Reg j) (ConstI 3)) (ConstI 8))) (Just a))))]
+    modify (addMT a t)
+    pure (Just a, plX ++ MT rnkR (EAt (AP xR Nothing lX)):MT szR (ConstI 1):mSz++[Ma a t (IB IPlus (IB IAsl (IB IPlus (Reg rnkR) (Reg szR)) (ConstI 3)) (ConstI 8)), Cpy (AP t Nothing (Just a)) (AP xR Nothing lX) (IB IPlus (Reg rnkR) (ConstI 1)), MT offsR (IB IPlus (IB IAsl (Reg rnkR) (ConstI 3)) (ConstI 8)), MT xRd (IB IPlus (Reg xR) (Reg offsR)), MT tD (IB IPlus (Reg t) (Reg offsR))] ++ loop)
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rnk) <- tRnk (eAnn xs), isAF (eAnn f) = do
     a <- nextArr
     xR <- newITemp
     (lX, plX) <- aeval xs xR
+    modify (addMT a t)
     x <- newITemp; y <- newFTemp
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.notMember` ixsIs then Right ix else Left ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
@@ -578,6 +593,7 @@ aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in f1 ty||i1 ty 
     xR <- newITemp; iR <- newITemp; szR <- newITemp; iC <- newITemp
     plI <- eval i iR
     (lX, plX) <- aeval xs xR
+    modify (addMT a t)
     -- TODO: edge cases: negative/wrap (just need modulo idk)
     pure (Just a, plX ++ plI ++ MT szR (gd1 lX xR):man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ [MT iC (IB IMinus (Reg szR) (Reg iR)), Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just(IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) lX) (Reg iC), Cpy (AP t (Just(IB IPlus (IB IAsl (Reg iC) (ConstI 3)) (ConstI 16))) (Just a)) (AP xR (Just$ConstI 16) lX) (Reg iR)])
 aeval e _ = error (show e)
@@ -1026,7 +1042,7 @@ eval (EApp ty@P{} (Builtin _ Last) arr) t = do
     pure $ plArr ++ [Cpy (AP t Nothing Nothing) (AP r (Just (IB IPlus (IB ITimes (IB IMinus (gd1 l r) (ConstI 1)) (ConstI$bT ty)) (ConstI 16))) l) (ConstI$bT ty `div` 8)]
 eval (Tup _ es) t = do
     let szs = szT (eAnn<$>es)
-    pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]};I -> do{r <- newITemp; p <- eval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}}) es szs
+    pls <- zipWithM (\e sz -> case eAnn e of {F -> do{fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]};I -> do{r <- newITemp; p <- eval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}; Arr{} -> do{r <- newITemp; (_, p) <- aeval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}}) es szs
     pure$concat pls
 eval (EApp F (Builtin _ (TAt n)) e@Var{}) t = do
     let (P tys) = eAnn e; szs = szT tys
