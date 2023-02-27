@@ -596,6 +596,16 @@ aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in f1 ty||i1 ty 
     modify (addMT a t)
     -- TODO: edge cases: negative/wrap (just need modulo idk)
     pure (Just a, plX ++ plI ++ MT szR (gd1 lX xR):man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ [MT iC (IB IMinus (Reg szR) (Reg iR)), Cpy (AP t (Just$ConstI 16) (Just a)) (AP xR (Just(IB IPlus (IB IAsl (Reg iR) (ConstI 3)) (ConstI 16))) lX) (Reg iC), Cpy (AP t (Just(IB IPlus (IB IAsl (Reg iC) (ConstI 3)) (ConstI 16))) (Just a)) (AP xR (Just$ConstI 16) lX) (Reg iR)])
+aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
+    aL <- nextArr
+    xR <- newITemp; aR <- newITemp; i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
+    (lA, plA) <- aeval a aR
+    (lX, plX) <- aeval x xR
+    let aAddr=AP aR (Just (IB IPlus (IB IAsl (IB IPlus (IB ITimes (Reg n) (Reg i)) (Reg j)) (ConstI 3)) (ConstI 24))) lA; xAddr=AP xR (Just (IB IPlus (IB IAsl (Reg j) (ConstI 3)) (ConstI 16))) lX
+    loop <- doN i (Reg m) =<< do
+        loopϵ <- doN j (Reg n) [MX z (FB FPlus (FReg z) (FB FTimes (FAt aAddr) (FAt xAddr)))]
+        pure $ MX z (ConstF 0):loopϵ ++ [WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just aL)) (FReg z)]
+    pure (Just aL, plA ++ plX ++ MT m (EAt (AP aR (Just$ConstI 8) lA)):man (aL,t) 1 (Reg m):dim1 (Just aL) t (Reg m)++MT n (EAt (AP aR (Just$ConstI 16) lA)):loop)
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
