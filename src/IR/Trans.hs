@@ -601,11 +601,22 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
     xR <- newITemp; aR <- newITemp; i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
     (lA, plA) <- aeval a aR
     (lX, plX) <- aeval x xR
+    modify (addMT aL t)
     let aAddr=AP aR (Just (IB IPlus (IB IAsl (IB IPlus (IB ITimes (Reg n) (Reg i)) (Reg j)) (ConstI 3)) (ConstI 24))) lA; xAddr=AP xR (Just (IB IPlus (IB IAsl (Reg j) (ConstI 3)) (ConstI 16))) lX
     loop <- doN i (Reg m) =<< do
         loopϵ <- doN j (Reg n) [MX z (FB FPlus (FReg z) (FB FTimes (FAt aAddr) (FAt xAddr)))]
         pure $ MX z (ConstF 0):loopϵ ++ [WrF (AP t (Just (IB IPlus (IB IAsl (Reg i) (ConstI 3)) (ConstI 16))) (Just aL)) (FReg z)]
     pure (Just aL, plA ++ plX ++ MT m (EAt (AP aR (Just$ConstI 8) lA)):man (aL,t) 1 (Reg m):dim1 (Just aL) t (Reg m)++MT n (EAt (AP aR (Just$ConstI 16) lA)):loop)
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | isFFF (eAnn op) = do
+    a <- nextArr
+    x <- newFTemp; y <- newFTemp; z <- newFTemp
+    xR <- newITemp; yR <- newITemp; szXR <- newITemp; szYR <- newITemp; i <- newITemp; j <- newITemp; k <- newITemp
+    (lX, plX) <- aeval xs xR
+    (lY, plY) <- aeval ys yR
+    modify (addMT a t)
+    ss <- writeRF op [x, y] z
+    loop <- doN i (Reg szXR) =<< doN j (Reg szYR) (MX x (FAt (AP xR (Just (sib i)) lX)):MX y (FAt (AP yR (Just (sib j)) lY)):ss ++ [WrF (AP t (Just (sib1 k)) (Just a)) (FReg z), tick k])
+    pure (Just a, plX ++ plY ++ MT szXR (gd1 lX xR):MT szYR (gd1 lY yR):Ma a t (IB IPlus (IB IAsl (IB ITimes (Reg szXR) (Reg szYR)) (ConstI 3)) (ConstI 24)):Wr (AP t Nothing (Just a)) (ConstI 2):Wr (AP t (Just (ConstI 8)) (Just a)) (Reg szXR):Wr (AP t (Just (ConstI 16)) (Just a)) (Reg szYR):MT k (ConstI 0):loop)
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
