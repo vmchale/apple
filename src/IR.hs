@@ -115,10 +115,10 @@ data FExp = ConstF Double
           | FAt AE
 
 instance Num Exp where
-    (+) = IB IPlus
-    (*) = IB ITimes
-    (-) = IB IMinus
-    fromInteger = ConstI . fromInteger
+    (+) = IB IPlus; (*) = IB ITimes; (-) = IB IMinus; fromInteger = ConstI . fromInteger
+
+instance Num FExp where
+    (+) = FB FPlus; (*) = FB FTimes; (-) = FB FMinus; fromInteger = ConstF . fromInteger
 
 data Exp = ConstI Int64
          | Reg Temp

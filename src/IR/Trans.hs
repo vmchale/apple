@@ -350,7 +350,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) t = do
     putStart <- eval start startR; putN <- eval nSteps n
     modify (addMT a t)
     putIncr <- eval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)) incrR
-    let loopBody = [WrF (AP t (Just (sib i)) (Just a)) (FReg startR), MX startR (FB FPlus (FReg startR) (FReg incrR))]
+    let loopBody = [WrF (AP t (Just (sib i)) (Just a)) (FReg startR), MX startR (FReg startR + FReg incrR)]
     loop <- doN i (Reg n) loopBody
     pure (Just a, putStart ++ putIncr ++ putN ++ man (a,t) 1 (Reg n):dim1 (Just a) t (Reg n) ++ loop)
 aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | f1 (eAnn arr) && f1 oTy = do
@@ -608,8 +608,8 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
     modify (addMT aL t)
     let aAddr=AP aR (Just (IB IAsl ((Reg n * Reg i) + Reg j) 3 + 24)) lA; xAddr=AP xR (Just (IB IAsl (Reg j) 3 + 16)) lX
     loop <- doN i (Reg m) =<< do
-        loopϵ <- doN j (Reg n) [MX z (FB FPlus (FReg z) (FB FTimes (FAt aAddr) (FAt xAddr)))]
-        pure $ MX z (ConstF 0):loopϵ ++ [WrF (AP t (Just (IB IAsl (Reg i) 3 + 16)) (Just aL)) (FReg z)]
+        loopϵ <- doN j (Reg n) [MX z (FReg z + (FAt aAddr + FAt xAddr))]
+        pure $ MX z 0:loopϵ ++ [WrF (AP t (Just (IB IAsl (Reg i) 3 + 16)) (Just aL)) (FReg z)]
     pure (Just aL, plA ++ plX ++ MT m (EAt (AP aR (Just$ConstI 8) lA)):man (aL,t) 1 (Reg m):dim1 (Just aL) t (Reg m)++MT n (EAt (AP aR (Just 16) lA)):loop)
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | isFFF (eAnn op) = do
     a <- nextArr
@@ -685,7 +685,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _
     xR <- newFTemp
     putAcc <- eval seed acc
     step <- writeRF op [acc, xR] acc
-    pure $ putAcc ++ (MX xR (ConstF $ fromIntegral start):MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (ConstI $ asI nSteps)) endL:step) ++ [tick i, MX xR (FB FPlus (FReg xR) (ConstF incr)), J l, L endL]
+    pure $ putAcc ++ (MX xR (ConstF $ fromIntegral start):MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (ConstI $ asI nSteps)) endL:step) ++ [tick i, MX xR (FReg xR + ConstF incr), J l, L endL]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps@(EApp _ (Builtin _ Floor) nStepsF))) acc = do
     i <- newITemp
     startR <- newFTemp
@@ -697,7 +697,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _
     putIncr <- eval ((end `eMinus` start) `eDiv` (nStepsF `eMinus` FLit F 1)) incrR
     -- step the accumulating value
     step <- writeRF op [acc, xR] acc
-    pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [tick i, MX xR (FB FPlus (FReg xR) (FReg incrR)), J l, L endL]
+    pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [tick i, MX xR (FReg xR + FReg incrR), J l, L endL]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps)) acc = do
     i <- newITemp
     startR <- newFTemp
@@ -711,7 +711,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _
     putIncr <- eval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)) incrR
     -- step the accumulating value
     step <- writeRF op [acc, xR] acc
-    pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [tick i, MX xR (FB FPlus (FReg xR) (FReg incrR)), J l, L endL]
+    pure $ putStart ++ (MX xR (FReg startR):putIEnd) ++ putIncr ++ putAcc ++ (MT i (ConstI 1):L l:MJ (IRel IGt (Reg i) (Reg endI)) endL:step) ++ [tick i, MX xR (FReg xR + FReg incrR), J l, L endL]
 eval (EApp _ (EApp _ (Builtin (Arrow I _) Plus) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
@@ -720,11 +720,11 @@ eval (EApp _ (EApp _ (Builtin _ Plus) (Var F x)) (EApp _ (EApp _ (Builtin _ Time
     st <- gets vars
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MX t (FB FPlus (FReg $ getT st x) (FB FTimes (FReg t0) (FReg t1)))]
+    pure $ pl0 ++ pl1 ++ [MX t (FReg (getT st x) + (FReg t0 * FReg t1))]
 eval (EApp _ (EApp _ (Builtin (Arrow F _) Plus) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MX t (FB FPlus (FReg t0) (FReg t1))]
+    pure $ pl0 ++ pl1 ++ [MX t (FReg t0 + FReg t1)]
 eval (EApp _ (EApp _ (Builtin (Arrow I _) Times) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
@@ -736,7 +736,7 @@ eval (EApp _ (EApp _ (Builtin _ Mod) e0) e1) t = do
 eval (EApp _ (EApp _ (Builtin _ Minus) e) (ILit F i)) t = do
     tϵ <- newFTemp
     pl <- eval e tϵ
-    pure $ pl ++ [MX t (FB FMinus (FReg tϵ) (ConstF $ fromIntegral i))]
+    pure $ pl ++ [MX t (FReg tϵ - ConstF (fromIntegral i))]
 eval (EApp _ (EApp _ (Builtin _ Minus) e) (ILit I i)) t = do
     tϵ <- newITemp
     pl <- eval e tϵ
@@ -774,11 +774,11 @@ eval (EApp _ (EApp _ (Builtin _ A.IDiv) e0) e1) t = do
 eval (EApp F (EApp _ (Builtin _ Times) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MX t (FB FTimes (FReg t0) (FReg t1))]
+    pure $ pl0 ++ pl1 ++ [MX t (FReg t0 * FReg t1)]
 eval (EApp F (EApp _ (Builtin _ Minus) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MX t (FB FMinus (FReg t0) (FReg t1))]
+    pure $ pl0 ++ pl1 ++ [MX t (FReg t0 - FReg t1)]
 eval (EApp F (EApp _ (Builtin _ Exp) (FLit _ x)) e) t = do
     f <- newFTemp
     plE <- eval e f
@@ -793,7 +793,7 @@ eval (EApp F (EApp _ (Builtin _ IntExp) x) n) t = do
     xR <- newFTemp
     plR <- eval n nR; plX <- eval x xR
     l <- newLabel; endL <- newLabel
-    pure $ plR ++ plX ++ [MX t (ConstF 1), MT i (Reg nR), L l, MJ (IRel IEq (Reg i) (ConstI 0)) endL, MX t (FB FTimes (FReg t) (FReg xR)), MT i (Reg i - 1), J l, L endL]
+    pure $ plR ++ plX ++ [MX t 1, MT i (Reg nR), L l, MJ (IRel IEq (Reg i) (ConstI 0)) endL, MX t (FReg t * FReg xR), MT i (Reg i - 1), J l, L endL]
 eval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
     i <- newITemp
     nR <- newITemp
@@ -811,7 +811,7 @@ eval (EApp _ (Builtin _ Floor) x) t = do
 eval (EApp _ (Builtin (Arrow F _) Neg) x) t = do
     fR <- newFTemp
     plX <- eval x fR
-    pure $ plX ++ [MX t (FB FMinus (ConstF 0) (FReg fR))]
+    pure $ plX ++ [MX t (negate (FReg fR))]
 eval (FLit _ x) t = pure [MX t (ConstF x)]
 eval (EApp _ (Builtin _ Sqrt) (FLit _ x)) t =
     pure [MX t (ConstF (sqrt x))]
@@ -1116,7 +1116,7 @@ eval (EApp I (EApp _ (Builtin _ A.R) e0) e1) t = do
 eval (EApp F (Builtin _ Abs) e) t = do
     plE <- eval e t
     l <- newLabel
-    pure $ plE ++ [MJ (FRel FGeq (FReg t) (ConstF 0)) l, MX t (FB FMinus (ConstF 0) (FReg t)), L l]
+    pure $ plE ++ [MJ (FRel FGeq (FReg t) 0) l, MX t (negate (FReg t)), L l]
 eval (EApp I (Builtin _ Abs) e) t = do
     plE <- eval e t
     l <- newLabel
