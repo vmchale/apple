@@ -114,6 +114,12 @@ data FExp = ConstF Double
           | FU FUn FExp
           | FAt AE
 
+instance Num Exp where
+    (+) = IB IPlus
+    (*) = IB ITimes
+    (-) = IB IMinus
+    fromInteger = ConstI . fromInteger
+
 data Exp = ConstI Int64
          | Reg Temp
          | IB IBin Exp Exp
