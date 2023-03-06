@@ -121,8 +121,8 @@ writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
     go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX FRet (FReg f)]) <$> eval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = eval e CRet
              | isB (eAnn e) = eval e CRet
-             | isArr (eAnn e) = do {(l,r) <- aeval e CRet; pure$case l of {Just m -> r++[RA m]}}
-             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t 16:[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just 8) Nothing)), Pop 16]}
+             | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$case l of {Just m -> r++[MT CRet (Reg i), RA m]}}
+             | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t 16:p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just 8) Nothing)), Pop 16]}
              | ty@P{} <- eAnn e = let b64=fromIntegral$bT ty; b=ConstI b64 in do {t <- newITemp; a <- nextArr; pl <- eval e t; pure $ Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a]}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
@@ -628,9 +628,11 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (F, F) <- mA1A1 (eAnn f) =
     (lX, plX) <- aeval xs xR
     modify (addMT a t)
     (lY0, ss0) <- writeF f [(Nothing, slopP)] y0
-    (lY, ss) <- writeF f [(Nothing, slopP)] y -- NOTE: writeF ... f/ss is "linear" it can only be placed once otherwise infinite loop ?? from assembler down the line
-    loop <- doN i (Reg szXR) $ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just (IB IAsl (Reg i * Reg szSlopR) 3 + 24)) lX) (Reg szSlopR):ss++[Cpy (AP t (Just (IB IAsl (Reg i * Reg szYR) 3 + 24)) (Just a)) (AP y (Just 16) lY) (Reg szYR)]
-    pure (Just a, plX ++ MT szXR (gd1 lX xR):MT szSlopR (EAt (AP xR (Just 16) lX)):Sa slopP (IB IAsl (Reg szSlopR) 3 + 16):dim1 Nothing slopP (Reg szSlopR) ++ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just 24) lX) (Reg szSlopR):ss0 ++ [MT szYR (gd1 lY0 y0), Ma a t (IB IAsl (Reg szXR * Reg szYR) 3 + 24), Wr (AP t Nothing (Just a)) 2, Wr (AP t (Just 8) (Just a)) (Reg szXR), Wr (AP t (Just 16) (Just a)) (Reg szYR)] ++ loop ++ [Pop (IB IAsl (Reg szSlopR) 3 + 16)])
+    (lY, ss) <- writeF f [(Nothing, slopP)] y -- writeF ... f/ss is "linear" it can only be placed once b/c assembler needs unique labels
+    -- FIXME: lR should be just szXR
+    lR <- newITemp
+    loop <- doN i (Reg lR) $ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just (IB IAsl (Reg i * Reg szSlopR) 3 + 24)) lX) (Reg szSlopR):ss++[Cpy (AP t (Just (IB IAsl (Reg i * Reg szYR) 3 + 24)) (Just a)) (AP y (Just 16) lY) (Reg szYR)]
+    pure (Just a, plX ++ MT szXR (gd1 lX xR):MT szSlopR (EAt (AP xR (Just 16) lX)):Sa slopP (IB IAsl (Reg szSlopR) 3 + 16):dim1 Nothing slopP (Reg szSlopR) ++ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just 24) lX) (Reg szSlopR):ss0 ++ [MT szYR (gd1 lY0 y0), Ma a t (IB IAsl (Reg szXR * Reg szYR) 3 + 24), Wr (AP t Nothing (Just a)) 2, Wr (AP t (Just 8) (Just a)) (Reg szXR), Wr (AP t (Just 16) (Just a)) (Reg szYR), MT lR (Reg szXR)] ++ loop ++ [Pop (IB IAsl (Reg szSlopR) 3 + 16)])
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
