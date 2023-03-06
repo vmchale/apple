@@ -123,8 +123,14 @@ loop = do
         Just (":inspect":e)   -> inspect (unwords e) *> loop
         Just (":yank":f:[fp]) -> iCtx f fp *> loop
         Just (":y":f:[fp])    -> iCtx f fp *> loop
+        Just (":graph":e)     -> graph (unwords e) *> loop
         Just e                -> printExpr (unwords e) *> loop
         Nothing               -> pure ()
+
+graph :: String -> Repl AlexPosn ()
+graph s = liftIO $ case dumpX86Ass (ubs s) of
+    Left err -> putDoc (pretty err <> hardline)
+    Right d  -> putDoc (d <> hardline)
 
 showHelp :: Repl AlexPosn ()
 showHelp = liftIO $ putStr $ concat
