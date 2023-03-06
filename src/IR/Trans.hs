@@ -103,7 +103,9 @@ writeC = π.flip runState (IRSt [0..] [0..] [0..] IM.empty IM.empty IM.empty IM.
 
 -- %xmm0 – %xmm7
 writeCM :: E (T ()) -> IRM [Stmt]
-writeCM e' = go e' [F0,F1,F2,F3,F4,F5] [C0,C1,C2,C3,C4,C5] where
+writeCM e' = do
+    cs <- traverse (\_ -> newITemp) [(0::Int)..5]; fs <- traverse (\_ -> newFTemp) [(0::Int)..5]
+    (zipWith (\xr xr' -> MX xr' (FReg xr)) [F0,F1,F2,F3,F4,F5] fs ++) . (zipWith (\r r' -> MT r' (Reg r)) [C0,C1,C2,C3,C4,C5] cs ++) <$> go e' fs cs where
     go (Lam _ x@(Name _ _ F) e) (fr:frs) rs = do
         modify (addVar x fr)
         go e frs rs

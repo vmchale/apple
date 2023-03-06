@@ -97,6 +97,7 @@ x64T = testGroup "x64"
     , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
     , testCase "A (elliptic fourier)" $ do { res <- fpAaf "test/data/A.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= 2.5000000000000004 }
     , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
+    , testCase "shoelace" $ do { res <- fpAaf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
