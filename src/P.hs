@@ -86,7 +86,10 @@ tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 tyExpr = fmap prettyC.tyOf
 
 tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
-tyOf = fmap (first eAnn.discard) . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
+tyOf = fmap (first eAnn) . eCheck <=< annTy
+
+annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)])
+annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
 eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr a)
 eFunP m ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . ex86G m)
