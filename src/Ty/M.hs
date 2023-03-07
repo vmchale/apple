@@ -18,7 +18,7 @@ instance NFData RE where
 instance Pretty RE where
     pretty (MR e t)     = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "is not sufficiently monomorphic."
     pretty (Unflat e t) = "Error in expression" <+> squotes (pretty e) <+> "of type" <+> squotes (pretty t) <> ": arrays of functions are not supported."
-    pretty (UT e t)     = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "tuples of arrays of tuples are not supported 🤷"
+    pretty (UT e t)     = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "tuples of arrays of tuples are not supported"
     pretty (IS s)       = squotes (pretty s) <+> "𝔯 requires statically known dimensions."
 
 check = cM
