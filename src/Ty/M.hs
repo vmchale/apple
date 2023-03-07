@@ -27,7 +27,7 @@ cM :: E (T ()) -> Maybe RE
 cM e | Just t <- mrT (eAnn e) = Just (MR e t)
 cM e | Just t <- flT (eAnn e) = Just (Unflat e t)
 cM e | Just t <- ata (eAnn e) = Just (UT e t)
-cM (Builtin (Arr sh _) R) | dynSh sh = Just (IS sh)
+cM (Builtin (Arrow _ (Arrow _ (Arr sh _))) R) | dynSh sh = Just (IS sh)
 cM (Let _ (_, e) e') = cM e <|> cM e'
 cM (LLet _ (_, e) e') = cM e <|> cM e'
 cM (Def _ _ e') = cM e' -- FIXME hm
