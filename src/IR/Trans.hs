@@ -610,9 +610,20 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
     modify (addMT aL t)
     let aAddr=AP aR (Just (IB IAsl ((Reg n * Reg i) + Reg j) 3 + 24)) lA; xAddr=AP xR (Just (IB IAsl (Reg j) 3 + 16)) lX
     loop <- doN i (Reg m) =<< do
-        loopϵ <- doN j (Reg n) [MX z (FReg z + (FAt aAddr + FAt xAddr))]
+        loopϵ <- doN j (Reg n) [MX z (FReg z + (FAt aAddr * FAt xAddr))]
         pure $ MX z 0:loopϵ ++ [WrF (AP t (Just (IB IAsl (Reg i) 3 + 16)) (Just aL)) (FReg z)]
     pure (Just aL, plA ++ plX ++ MT m (EAt (AP aR (Just 8) lA)):man (aL,t) 1 (Reg m):dim1 (Just aL) t (Reg m)++MT n (EAt (AP aR (Just 16) lA)):loop)
+aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk (eAnn a) = do
+    aL <- nextArr
+    aR <- newITemp; bR <- newITemp; i <- newITemp; j <- newITemp; k <- newITemp; m <- newITemp; n <- newITemp; o <- newITemp; z <- newFTemp
+    (lA, plA) <- aeval a aR
+    (lB, plB) <- aeval b bR
+    modify (addMT aL t)
+    let aAddr=AP aR (Just (IB IAsl (Reg n * Reg i + Reg k) 3 + 24)) lA;bAddr=AP bR (Just (IB IAsl (Reg k + Reg j * Reg n) 3 + 24)) lB
+    loop <- doN i (Reg m) =<< doN j (Reg o) =<< do
+        loopϵ <- doN k (Reg n) [MX z (FReg z + FAt aAddr * FAt bAddr)]
+        pure $ MX z 0:loopϵ ++ [WrF (AP t (Just (IB IAsl (Reg i * Reg o + Reg j) 3 + 24)) (Just aL)) (FReg z)]
+    pure (Just aL, plA ++ plB ++ MT m (gd1 lA aR):MT n (gd1 lB bR):MT o (EAt (AP bR (Just 16) lB)):Ma aL t (IB IAsl (Reg m * Reg o) 3 + 24):Wr (AP t Nothing (Just aL)) 2:Wr (AP t (Just 8) (Just aL)) (Reg m):Wr (AP t (Just 16) (Just aL)) (Reg o):loop)
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | isFFF (eAnn op) = do
     a <- nextArr
     x <- newFTemp; y <- newFTemp; z <- newFTemp

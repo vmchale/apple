@@ -122,7 +122,7 @@ ir (IR.WrF (IR.AP m (Just ei) _) (IR.FReg r)) = do
     let m' = absReg m
     eR <- nextI
     plE <- evalE ei (IR.ITemp eR)
-    pure $ plE ++ [IAddRR () m' (IReg eR), MovqAX () (R m') (fabsReg r)]
+    pure $ plE ++ [IAddRR () (IReg eR) m', MovqAX () (R (IReg eR)) (fabsReg r)]
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) rD (IR.Reg rS)) = pure [CmpRR () (absReg r0) (absReg r1), Cmovnle () (absReg rD) (absReg rS)]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just eI) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just sd8 <- mi8 sD = do
     iT <- nextI
@@ -241,10 +241,10 @@ feval (IR.FB IR.FMinus e (IR.FReg r)) t            = do
     pure $ putR ++ [Vsubsd () (fabsReg t) (FReg i) (fabsReg r)]
 feval (IR.FB IR.FPlus (IR.FReg r0) (IR.FB IR.FTimes (IR.FReg r1) (IR.FReg r2))) t =
     pure [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sd () (fabsReg t) (fabsReg r1) (fabsReg r2)]
-feval (IR.FB IR.FPlus (IR.FReg r0) e) t            = do
-    i <- nextI
-    putR <- feval e (IR.FTemp i)
-    pure $ putR ++ [Vaddsd () (fabsReg t) (fabsReg r0) (FReg i)]
+feval (IR.FB IR.FPlus e0 e1) t                     = do
+    i0 <- nextI; i1 <- nextI
+    putR0 <- feval e0 (IR.FTemp i0); putR1 <- feval e1 (IR.FTemp i1)
+    pure $ putR0 ++ putR1 ++ [Vaddsd () (fabsReg t) (FReg i0) (FReg i1)]
 feval (IR.FB IR.FMax e0 e1) t                      = do
     i0 <- nextI; i1 <- nextI
     putR0 <- feval e0 (IR.FTemp i0); putR1 <- feval e1 (IR.FTemp i1)
