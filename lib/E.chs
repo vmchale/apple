@@ -65,7 +65,7 @@ apple_printty = harnessString tyExpr
 apple_ty :: CString -> Ptr CString -> IO (Ptr FnTy)
 apple_ty src errPtr = do
     bSrc <- BS.unsafePackCString src
-    let b = tyOf (BSL.fromStrict bSrc)
+    let b = getTy (BSL.fromStrict bSrc)
     case b of
         Left err -> do
             poke errPtr =<< tcstr (ptxt err)

@@ -7,6 +7,7 @@ module P ( Err (..)
          , tyParseCtx
          , tyExpr
          , tyOf
+         , getTy
          , parseInline
          , parseRename
          , rwP
@@ -86,7 +87,10 @@ tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 tyExpr = fmap prettyC.tyOf
 
 tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
-tyOf = fmap (first eAnn) . eCheck <=< annTy
+tyOf = fmap (first eAnn) . annTy
+
+getTy :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
+getTy = fmap (first eAnn) . eCheck <=< annTy
 
 annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)

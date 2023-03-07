@@ -41,7 +41,7 @@ main = run =<< execParser wrapper
 run :: (FilePath, T.Text) -> IO ()
 run (fpϵ, n) = do
     contents <- BSL.readFile fpϵ
-    t <- either throwIO (pure.fst) (tyOf contents)
+    t <- either throwIO (pure.fst) (getTy contents)
     ct <- either throwIO pure $ pCty n t
     writeO n contents True
     withFile (T.unpack n <> ".h") WriteMode $ \h -> hPutDoc h ct
