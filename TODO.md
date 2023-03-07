@@ -43,6 +43,7 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ] `:asm [x(%.)(y::Arr(i`Cons`j`Cons`Nil)float)]` type inference??
 - [ ] `xmm0` and `xmm1` incorrectly marked as clobbered when return value is not
   actually in `xmm0`/`xmm1` or whatever
 - [ ] `fsin` instruction requires reduction module 2pi or w/e
@@ -68,19 +69,19 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
  > ((+1)'1) (frange 1 5 5)
 Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 ```
+- [ ] check in assembler phase for labels not being duplicate
 ## Type system
 - [ ] Check that bindings are not too polymorphic
-- [ ] `LLet` should not contain functions, add a pass to check
-- [ ] print constraints
+  - [ ] after inlining
+  - [ ] add a pass to prevent arrays of tuples of arrays
 - [ ] indexing with tuples (3-tuple for rank 3 array...)
 # Checks/Passes
 - [ ] Warn if irange or frange will exceed?
-- [ ] Sanity check pass to make sure xmm0 doesn't end up target of `movtemp` etc.
 # Examples
 - [ ] color!
+  - [ ] https://en.wikipedia.org/wiki/YUV
 - [ ] https://optimized-einsum.readthedocs.io/en/stable/
 - [ ] polynomial evaluation
-- [ ] modulo
 - [ ] https://mathworld.wolfram.com/MotzkinNumber.html
 - [ ] perceptual hash
   - [ ] median lol (indexing?)
@@ -102,6 +103,7 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 - [ ] full hypergeometric (analytically extended?)
 - [ ] https://www.shamusyoung.com/twentysidedtale/?p=11874
 - [ ] ANOVA
+  - [x] F-distribution CDF
 - [ ] http://www.paulbourke.net/fractals/burnship/
 - [ ] kaplan-meier, clopper-pearson?
 - [ ] https://forem.julialang.org/inphyt/ann-juliaepi-collaborative-computational-epidemiology-in-julia-19ng
