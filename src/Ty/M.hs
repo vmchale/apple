@@ -11,19 +11,23 @@ import           Data.Semigroup      ((<>))
 import           GHC.Generics        (Generic)
 import           Prettyprinter       (Pretty (..), squotes, (<+>))
 
-data RE = MR (E (T ())) (T ()) | Unflat (E (T ())) (T ()) deriving (Generic)
+data RE = MR (E (T ())) (T ()) | Unflat (E (T ())) (T ()) | UT (E (T ())) (T ()) | IS (Sh ()) deriving (Generic)
 
 instance NFData RE where
 
 instance Pretty RE where
     pretty (MR e t)     = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "is not sufficiently monomorphic."
     pretty (Unflat e t) = "Error in expression" <+> squotes (pretty e) <+> "of type" <+> squotes (pretty t) <> ": arrays of functions are not supported."
+    pretty (UT e t)     = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "tuples of arrays of tuples are not supported 🤷"
+    pretty (IS s)       = squotes (pretty s) <+> "𝔯 requires statically known dimensions."
 
 check = cM
 
 cM :: E (T ()) -> Maybe RE
 cM e | Just t <- mrT (eAnn e) = Just (MR e t)
 cM e | Just t <- flT (eAnn e) = Just (Unflat e t)
+cM e | Just t <- ata (eAnn e) = Just (UT e t)
+cM (Builtin (Arr sh _) R) | dynSh sh = Just (IS sh)
 cM (Let _ (_, e) e') = cM e <|> cM e'
 cM (LLet _ (_, e) e') = cM e <|> cM e'
 cM (Def _ _ e') = cM e' -- FIXME hm
@@ -50,17 +54,32 @@ flT :: T a -> Maybe (T a)
 flT t@(Arr _ tϵ) | ha tϵ = Just t
 flT (Arrow t t') = flT t <|> flT t'
 flT (P ts) = foldMapAlternative flT ts
-flT (Ρ _ ls) = foldMapAlternative flT ls
 flT _ = Nothing
-
--- TODO pass for insufficiently known shape 𝔯
 
 ha :: T a -> Bool
 ha Arrow{}   = True
 ha (P ts)    = any ha ts
-ha (Ρ _ ls)  = any ha ls
 ha (Arr _ t) = ha t
 ha _         = False
+
+har :: T a -> Bool
+har Arr{} = True; har (P ts) = any har ts; har _ = False
+
+ata :: T a -> Maybe (T a)
+ata t@(Arr _ (P ts)) | any har ts = Just t
+ata (Arrow t t') = ata t <|> ata t'
+ata (P t) = foldMapAlternative ata t
+ata _ = Nothing
+
+dynI :: I a -> Bool
+dynI Ix{}    = False
+dynI IVar{}  = True
+dynI IEVar{} = True
+
+dynSh :: Sh a -> Bool
+dynSh SVar{}      = True
+dynSh Nil         = False
+dynSh (Cons i sh) = dynI i || dynSh sh
 
 foldMapAlternative :: (Traversable t, Alternative f) => (a -> f b) -> t a -> f b
 foldMapAlternative f xs = asum (f <$> xs)
