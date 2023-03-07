@@ -25,9 +25,10 @@ galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!)
 {-# SCC frame #-}
 frame :: S.Set X86Reg -> [X86 X86Reg FX86Reg ()] -> [X86 X86Reg FX86Reg ()]
 frame clob asms = pre++asms++post++[Ret()] where
-    pre = Push () <$> clobs
-    post = Pop () <$> reverse clobs
+    pre = save$Push () <$> clobs
+    post = restore$Pop () <$> reverse clobs
     clobs = S.toList (clob `S.intersection` S.fromList (Rbp:[R12 .. Rbx]))
+    scratch=odd(length clobs); save=if scratch then (++[ISubRI () Rsp 8]) else id; restore=if scratch then (IAddRI () Rsp 8:) else id
     -- TODO: https://eli.thegreenplace.net/2011/09/06/stack-frame-layout-on-x86-64/
     -- https://stackoverflow.com/questions/51523127/why-does-the-compiler-reserve-a-little-stack-space-but-not-the-whole-array-size
 
