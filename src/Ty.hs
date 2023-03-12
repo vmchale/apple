@@ -7,7 +7,6 @@ module Ty ( TyE
           , tyClosed
           , match
           -- * Substitutions
-          , Subst
           , aT
           ) where
 
@@ -124,9 +123,10 @@ maM (TVar n) (TVar n') | n == n'  = Right mempty
 maM (TVar (Name _ (U i) _)) t     = Right $ Subst (IM.singleton i t) IM.empty IM.empty
 maM (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM t0 t0' <*> maM t1 t1' -- FIXME: use <\> over <>
 maM (Arr sh t) (Arr sh' t')       = (<>) <$> mSh sh sh' <*> maM t t'
-maM (Arr sh t) t'                 = (<>) <$> mSh sh Nil <*> maM t t' -- FIXME ?
+maM (Arr sh t) t'                 = (<>) <$> mSh sh Nil <*> maM t t'
 maM (P ts) (P ts')                = mconcat <$> zipWithM maM ts ts'
-maM Ρ{} Ρ{}                       = undefined
+maM (Ρ _ rs) (Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = mconcat <$> traverse (uncurry maM) (IM.elems (IM.intersectionWith (,) rs rs'))
+maM Ρ{} P{}                       = undefined
 maM t t'                          = Left $ MatchFailed (void t) (void t')
 
 shSubst :: Subst a -> Sh a -> Sh a
@@ -166,7 +166,7 @@ aT s@(Subst ts is ss) (Ρ n rs) =
     let u = unU (unique n) in
     case IM.lookup u ts of
         Just ty@Ρ{}    -> aT (Subst (IM.delete u ts) is ss) ty
-        Just ty@TVar{} -> undefined
+        Just ty@TVar{} -> aT (Subst (IM.delete u ts) is ss) ty
         Just ty        -> aT s ty
         Nothing        -> Ρ n (aT s<$>rs)
 aT _ ty = ty
@@ -300,7 +300,7 @@ mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 -- TODO: rho occurs check
 mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mapTySubst (IM.insert (unU$unique n) t') <$> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
                                      | otherwise = Left$UF lϵ e t t'
-mgu l s t@P{} t'@Ρ{} = mguPrep l s t' t
+mgu l s t@P{} t'@Ρ{} = mgu l s t' t
 mgu l s (Ρ n rs) (Ρ n' rs') = do
     rss <- tS (\sϵ (t0,t1) -> mguPrep l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     pure $ mapTySubst (IM.insert (unU$unique n) (Ρ n' (rs<>rs'))) rss
@@ -388,7 +388,6 @@ tyB _ A1 = do
 tyB _ IOf = do
     a <- TVar <$> freshName "a" ()
     i <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
     pure (Arrow (Arrow a B) (Arrow (Arr (i `Cons` Nil) a) I), mempty)
 tyB _ LastM = do
     a <- TVar <$> freshName "a" ()
@@ -689,9 +688,9 @@ checkClass s i c =
 tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Name a, C)], Int)
 tyClosed u e = do
     (((e', s), scs), i) <- runTyM u (do { res@(_, s) <- tyE mempty e ; cvs <- gets varConstr ; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs) ; pure (res, scs) })
-    let eS = {-# SCC "applySubst" #-} fmap (rwArr.aT (void s)) e'
-    eS' <- do {(e'', s') <- {-# SCC "match" #-} rAn eS; pure (fmap (rwArr.aT s') e'') }
-    let vs = foldMap occ eS'; scs' = filter (\(Name _ (U i) _, _) -> i `IS.member` vs) scs
+    let eS = fmap (rwArr.aT (void s)) e'
+    eS' <- do {(e'', s') <- rAn eS; pure (fmap (rwArr.aT s') e'') }
+    let vs = foldMap occ eS'; scs' = filter (\(Name _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
     chkE (eAnn eS') $> (eS', nubOrd scs', i)
 
 rAn :: E (T ()) -> Either (TyE a) (E (T ()), Subst ())
@@ -753,7 +752,7 @@ tyE s (EApp _ (EApp _ (EApp _ (Builtin _ Gen) x) f) (ILit _ n)) = do
         lX = eAnn x; lF = eAnn f
     s1' <- liftEither $ mguPrep (lF, f) s1 (Arrow (tyX $> lX) (tyX $> lX)) (tyF $> lF)
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow tyF (Arrow I arrTy)) (Builtin (Arrow tyX (Arrow tyF (Arrow I arrTy))) Gen) x') f') (ILit I n), s1')
-tyE s (EApp _ (EApp _ (Builtin _ Cyc) e@(ALit _ es)) (ILit _ m)) = do
+tyE s (EApp _ (EApp _ (Builtin _ Cyc) e@ALit{}) (ILit _ m)) = do
     (e0, s0) <- tyE s e
     let t@(Arr (Ix () n `Cons` Nil) a) = eAnn e0
         arrTy = Arr (Ix () (fromIntegral m*n) `Cons` Nil) a
