@@ -125,6 +125,7 @@ maM (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM t0 t0' <*> maM t1 t1' -- FIXME:
 maM (Arr sh t) (Arr sh' t')       = (<>) <$> mSh sh sh' <*> maM t t'
 maM (Arr sh t) t'                 = (<>) <$> mSh sh Nil <*> maM t t'
 maM (P ts) (P ts')                = mconcat <$> zipWithM maM ts ts'
+maM (Ρ n _) (Ρ n' _) | n == n'    = Right mempty
 maM (Ρ _ rs) (Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = mconcat <$> traverse (uncurry maM) (IM.elems (IM.intersectionWith (,) rs rs'))
 maM Ρ{} P{}                       = undefined
 maM t t'                          = Left $ MatchFailed (void t) (void t')
