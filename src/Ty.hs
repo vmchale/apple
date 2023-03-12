@@ -795,10 +795,9 @@ tyE s e@(ALit l es) = do
     a <- TVar <$> freshName "a" ()
     (es', s') <- sSt s es
     let eTys = a : fmap eAnn es'
-        uHere t t' = liftEither $ mguPrep (l,e) s' (t$>l) (t'$>l)
-    -- FIXME: not stateful enough... apply substs forward?
-    ss' <- zipWithM uHere eTys (tail eTys)
-    pure (ALit (Arr (vx (Ix () $ length es)) a) es', mconcat ss')
+        uHere sϵ t t' = mguPrep (l,e) sϵ (t$>l) (t'$>l)
+    ss' <- liftEither $ zS uHere s' eTys (tail eTys)
+    pure (ALit (Arr (vx (Ix () $ length es)) a) es', ss')
 tyE s (EApp l e0 e1) = do
     a <- TVar <$> freshName "a" l
     b <- TVar <$> freshName "b" l
