@@ -196,8 +196,8 @@ addVarConstr tn = addVarConstrI (unU$unique tn)
 pushVarConstraint :: TyNm a -> a -> C -> TyM a ()
 pushVarConstraint tn l c = modify (addVarConstr tn l c)
 
-freshName :: T.Text -> b -> TyM a (Nm b)
-freshName n l = do
+freshN :: T.Text -> b -> TyM a (Nm b)
+freshN n l = do
     st <- gets maxU
     Nm n (U$st+1) l
         <$ modify (mapMaxU (+1))
@@ -322,21 +322,21 @@ vx i = Cons i Nil
 
 tyNumBinOp :: a -> TyM a (T (), Subst a)
 tyNumBinOp l = do
-    n <- freshName "a" l
+    n <- freshN "a" l
     let n' = TVar (void n)
     pushVarConstraint n l IsNum
     pure (Arrow n' (Arrow n' n'), mempty)
 
 mm :: a -> TyM a (T (), Subst a)
 mm l = do
-    n <- freshName "o" l
+    n <- freshN "o" l
     let n' = TVar (void n)
     pushVarConstraint n l IsOrd
     pure (Arrow n' (Arrow n' n'), mempty)
 
 tyOrdBinRel :: a -> TyM a (T (), Subst a)
 tyOrdBinRel l = do
-    n <- freshName "o" l
+    n <- freshN "o" l
     let n' = TVar (void n)
     pushVarConstraint n l IsOrd
     pure (Arrow n' (Arrow n' B), mempty)
@@ -368,77 +368,77 @@ tyB _ ItoF = pure (Arrow I F, mempty)
 tyB _ Even = pure (Arrow I B, mempty)
 tyB _ Odd = pure (Arrow I B, mempty)
 tyB l R = do
-    n <- freshName "a" l; sh <- freshName "sh" ()
+    n <- freshN "a" l; sh <- freshN "sh" ()
     let n' = TVar (void n)
     pushVarConstraint n l IsNum
     pure (Arrow n' (Arrow n' (Arr (SVar sh) n')), mempty)
-tyB _ Iter = do{a <- TVar<$>freshName "a"(); let s = Arrow a a in pure (Arrow s (Arrow I s), mempty)}
+tyB _ Iter = do{a <- TVar<$>freshN "a"(); let s = Arrow a a in pure (Arrow s (Arrow I s), mempty)}
 tyB _ Flip = do
-    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" (); c <- TVar <$> freshName "c" ()
+    a <- TVar <$> freshN "a" (); b <- TVar <$> freshN "b" (); c <- TVar <$> freshN "c" ()
     pure (Arrow (Arrow a (Arrow b c)) (Arrow b (Arrow a c)), mempty)
 tyB _ ConsE = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow a (Arrow (Arr (i `Cons` Nil) a) (Arr (StaPlus () i (Ix()1) `Cons` Nil) a)), mempty)
 tyB l Snoc = tyB l ConsE
 tyB _ A1 = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
+    sh <- SVar <$> freshN "sh" ()
     pure (Arrow (Arr (i `Cons` sh) a) (Arrow I (Arr sh a)), mempty)
 tyB _ IOf = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow (Arrow a B) (Arrow (Arr (i `Cons` Nil) a) I), mempty)
 tyB _ LastM = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow (Arr (i `Cons` Nil) a) a, mempty)
 tyB _ Last = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` Nil) a) a, mempty)
 tyB _ Head = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` Nil) a) a, mempty)
 tyB _ Init = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` Nil) a) (Arr (i `Cons` Nil) a), mempty)
 tyB _ Tail = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow (Arr (StaPlus () i (Ix()1) `Cons` Nil) a) (Arr (i `Cons` Nil) a), mempty)
 tyB _ Rot = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow I (Arrow (Arr (i `Cons` Nil) a) (Arr (i `Cons` Nil) a)), mempty)
 tyB _ Cyc = do
-    sh <- SVar <$> freshName "sh" ()
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
-    n <- IEVar () <$> freshName "n" ()
+    sh <- SVar <$> freshN "sh" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
+    n <- IEVar () <$> freshN "n" ()
     pure (Arrow (Arr (i `Cons` sh) a) (Arrow I (Arr (n `Cons` sh) a)), mempty)
 tyB _ HeadM = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
     pure (Arrow (Arr (i `Cons` Nil) a) a, mempty)
 tyB _ Re = do
-    a <- TVar <$> freshName "a" ()
-    n <- IEVar () <$> freshName "n" ()
+    a <- TVar <$> freshN "a" ()
+    n <- IEVar () <$> freshN "n" ()
     pure (Arrow I (Arrow a (Arr (n `Cons` Nil) a)), mempty)
 tyB _ FRange = do
-    n <- IEVar () <$> freshName "n" ()
+    n <- IEVar () <$> freshN "n" ()
     pure (Arrow F (Arrow F (Arrow I (Arr (n `Cons` Nil) F))), mempty)
 tyB _ Fib = do
-    n <- IEVar () <$> freshName "n" ()
-    a <- freshName "a" ()
+    n <- IEVar () <$> freshN "n" ()
+    a <- freshN "a" ()
     let a' = TVar a
         arrTy = Arr (n `Cons` Nil) a'
     pure (Arrow a' (Arrow a' (Arrow (Arrow a' (Arrow a' a')) (Arrow I arrTy))), mempty)
 tyB _ IRange = do
-    n <- IEVar () <$> freshName "n" ()
+    n <- IEVar () <$> freshN "n" ()
     pure (Arrow I (Arrow I (Arrow I (Arr (n `Cons` Nil) I))), mempty)
 tyB l Plus = tyNumBinOp l
 tyB l Minus = tyNumBinOp l
@@ -453,17 +453,17 @@ tyB _ Exp = pure (Arrow F (Arrow F F), mempty)
 tyB l Min = mm l
 tyB l Max = mm l
 tyB l IntExp = do
-    n <- freshName "a" l
+    n <- freshN "a" l
     let n' = TVar (void n)
     pushVarConstraint n l IsNum
     pure (Arrow n' (Arrow I n'), mempty)
 tyB l Neg = do
-    n <- freshName "a" l
+    n <- freshN "a" l
     let n' = TVar (void n)
     pushVarConstraint n l IsNum
     pure (Arrow n' n', mempty)
 tyB l Abs = do
-    n <- freshName "a" l
+    n <- freshN "a" l
     let n' = TVar (void n)
     pushVarConstraint n l IsNum
     pure (Arrow n' n', mempty)
@@ -472,55 +472,55 @@ tyB _ Log = pure (Arrow F F, mempty)
 tyB _ Div = pure (Arrow F (Arrow F F), mempty)
 tyB _ Mod = pure (Arrow I (Arrow I I), mempty)
 tyB _ Outer = do
-    sh0 <- SVar <$> freshName "sh0" (); sh1 <- SVar <$> freshName "sh1" ()
-    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" (); c <- TVar <$> freshName "c" ()
+    sh0 <- SVar <$> freshN "sh0" (); sh1 <- SVar <$> freshN "sh1" ()
+    a <- TVar <$> freshN "a" (); b <- TVar <$> freshN "b" (); c <- TVar <$> freshN "c" ()
     pure (Arrow (Arrow a (Arrow b c)) (Arrow (Arr sh0 a) (Arrow (Arr sh1 b) (Arr (Cat sh0 sh1) c))), mempty)
 tyB _ T = do
-    sh <- SVar <$> freshName "sh" (); a <- TVar <$> freshName "a" ()
+    sh <- SVar <$> freshN "sh" (); a <- TVar <$> freshN "a" ()
     pure (Arrow (Arr sh a) (Arr (Rev sh) a), mempty)
 tyB _ CatE = do
-    i <- freshName "i" (); j <- freshName "j" ()
-    n <- freshName "a" ()
+    i <- freshN "i" (); j <- freshN "j" ()
+    n <- freshN "a" ()
     let i' = IVar () i; j' = IVar () j; n' = TVar n
     pure (Arrow (Arr (vx i') n') (Arrow (Arr (vx j') n') (Arr (vx $ StaPlus () i' j') n')), mempty)
 tyB _ Scan = do
-    a <- TVar <$> freshName "a" ()
-    i <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
+    sh <- SVar <$> freshN "sh" ()
     let i1 = StaPlus () i (Ix()1)
         arrTy = Arr (Cons i1 sh) a
     pure (Arrow (Arrow a (Arrow a a)) (Arrow arrTy arrTy), mempty)
 tyB _ ScanS = do
-    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" ()
-    i <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
+    a <- TVar <$> freshN "a" (); b <- TVar <$> freshN "b" ()
+    i <- IVar () <$> freshN "i" ()
+    sh <- SVar <$> freshN "sh" ()
     let opTy = Arrow b (Arrow a b)
         arrTy = Arr (Cons i sh); rarrTy = Arr (Cons (StaPlus () i (Ix()1)) sh)
         -- FIXME: 1+1?
     pure (Arrow opTy (Arrow b (Arrow (arrTy a) (rarrTy b))), mempty)
 tyB l (DI n) = tyB l (Conv [n])
 tyB _ (Conv ns) = do
-    sh <- SVar <$> freshName "sh" ()
-    is <- zipWithM (\_ t -> IVar () <$> freshName (T.singleton t) ()) ns ['i'..]
-    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" ()
+    sh <- SVar <$> freshN "sh" ()
+    is <- zipWithM (\_ t -> IVar () <$> freshN (T.singleton t) ()) ns ['i'..]
+    a <- TVar <$> freshN "a" (); b <- TVar <$> freshN "b" ()
     let nx = Ix () <$> ns
         opTy = Arrow (Arr (foldr Cons sh nx) a) b
         t = Arrow (Arr (foldr Cons sh (zipWith (StaPlus ()) is nx)) a) (Arr (foldr Cons Nil is) b)
     pure (Arrow opTy t, mempty)
 tyB _ Succ = do
-    sh <- SVar <$> freshName "sh" ()
-    i <- IVar () <$> freshName "i" ()
-    a <- TVar <$> freshName "a" (); b <- TVar <$> freshName "b" ()
+    sh <- SVar <$> freshN "sh" ()
+    i <- IVar () <$> freshN "i" ()
+    a <- TVar <$> freshN "a" (); b <- TVar <$> freshN "b" ()
     let opTy = Arrow a (Arrow a b)
     pure (Arrow opTy (Arrow (Arr (StaPlus () i (Ix () 1) `Cons` sh) a) (Arr (i `Cons` sh) b)), mempty)
 tyB _ (TAt i) = do
-    ρ <- freshName "ρ" ()
-    a <- freshName "a" ()
+    ρ <- freshN "ρ" ()
+    a <- freshN "a" ()
     let aV = TVar a
     pure (Arrow (Ρ ρ (IM.singleton i aV)) aV, mempty)
 tyB _ Map = do
-    ix <- freshName "i" ()
-    a <- freshName "a" (); b <- freshName "b" ()
+    ix <- freshN "i" ()
+    a <- freshN "a" (); b <- freshN "b" ()
     let arrSh = IVar () ix `Cons` Nil -- TODO: sh??
         a' = TVar a; b' = TVar b
         fTy = Arrow a' b'
@@ -528,19 +528,19 @@ tyB _ Map = do
     -- depends on Arr nil a = a, Arr (i+j) a = Arr i (Arr j sh)
     pure (Arrow fTy gTy, mempty)
 tyB _ Zip = do
-    i <- freshName "i" ()
-    a <- freshName "a" (); b <- freshName "b" (); c <- freshName "c" ()
+    i <- freshN "i" ()
+    a <- freshN "a" (); b <- freshN "b" (); c <- freshN "c" ()
     let arrSh = IVar () i `Cons` Nil
         a' = TVar a; b' = TVar b; c' = TVar c
         fTy = Arrow a' (Arrow b' c')
         gTy = Arrow (Arr arrSh a') (Arrow (Arr arrSh b') (Arr arrSh c'))
     pure (Arrow fTy gTy, mempty)
 tyB l (Rank as) = do
-    let ixN n = zipWithM (\_ c -> freshName (T.singleton c) ()) [1..n] ['i'..]
-    shs <- traverse (\(i,ax) -> do {is <- ixN (maybe i maximum ax); sh <- SVar <$> freshName "sh" (); pure $ foldr Cons sh (IVar () <$> is)}) as
-    vs <- zipWithM (\_ c -> TVar <$> freshName (T.singleton c) ()) as ['a'..]
-    codSh <- freshName "sh" ()
-    cod <- TVar <$> freshName "c" ()
+    let ixN n = zipWithM (\_ c -> freshN (T.singleton c) ()) [1..n] ['i'..]
+    shs <- traverse (\(i,ax) -> do {is <- ixN (maybe i maximum ax); sh <- SVar <$> freshN "sh" (); pure $ foldr Cons sh (IVar () <$> is)}) as
+    vs <- zipWithM (\_ c -> TVar <$> freshN (T.singleton c) ()) as ['a'..]
+    codSh <- freshN "sh" ()
+    cod <- TVar <$> freshN "c" ()
     let mArrs = zipWith Arr shs vs
         codTy = Arr (SVar codSh) cod
         fTy = foldr Arrow cod $ zipWith3 (\ax sh t -> case ax of {(_,Nothing) -> Arr (trim sh) t;(_,Just axs) -> Arr (sel axs sh) t}) as shs vs
@@ -550,52 +550,52 @@ tyB l (Rank as) = do
     s <- zipWithM shUHere shsU (tail shsU++[SVar codSh])
     pure (Arrow fTy rTy, mconcat s)
 tyB _ Fold = do
-    ix <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
-    a <- freshName "a" ()
+    ix <- IVar () <$> freshN "i" ()
+    sh <- SVar <$> freshN "sh" ()
+    a <- freshN "a" ()
     let sh1 = StaPlus () ix (Ix()1) `Cons` sh
         a' = TVar a
     pure (Arrow (Arrow a' (Arrow a' a')) (Arrow (Arr sh1 a') (Arr sh a')), mempty)
 tyB _ FoldS = do
-    ix <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
-    a <- freshName "a" ()
+    ix <- IVar () <$> freshN "i" ()
+    sh <- SVar <$> freshN "sh" ()
+    a <- freshN "a" ()
     let sh1 = ix `Cons` sh
         a' = TVar a
     pure (Arrow (Arrow a' (Arrow a' a')) (Arrow a' (Arrow (Arr sh1 a') (Arr sh a'))), mempty)
 tyB _ Foldl = do
-    ix <- IVar () <$> freshName "i" ()
-    sh <- SVar <$> freshName "sh" ()
-    a <- TVar <$> freshName "a" ()
+    ix <- IVar () <$> freshN "i" ()
+    sh <- SVar <$> freshN "sh" ()
+    a <- TVar <$> freshN "a" ()
     let sh1 = ix `Cons` sh
     pure (Arrow (Arrow a (Arrow a a)) (Arrow a (Arrow (Arr sh1 a) (Arr sh a))), mempty)
 tyB _ FoldA = do
-    sh <- SVar <$> freshName "sh" ()
-    a <- TVar <$> freshName "a" ()
+    sh <- SVar <$> freshN "sh" ()
+    a <- TVar <$> freshN "a" ()
     pure (Arrow (Arrow a (Arrow a a)) (Arrow a (Arrow (Arr sh a) a)), mempty)
 tyB _ Dim = do
-    iV <- IVar () <$> freshName "i" ()
-    shV <- SVar <$> freshName "sh" ()
-    a <- TVar <$> freshName "a" ()
+    iV <- IVar () <$> freshN "i" ()
+    shV <- SVar <$> freshN "sh" ()
+    a <- TVar <$> freshN "a" ()
     pure (Arrow (Arr (iV `Cons` shV) a) I, mempty)
 tyB _ Size = do
-    shV <- SVar <$> freshName "sh" ()
-    a <- TVar <$> freshName "a" ()
+    shV <- SVar <$> freshN "sh" ()
+    a <- TVar <$> freshN "a" ()
     pure (Arrow (Arr shV a) I, mempty)
 tyB _ Gen = do
-    a <- TVar <$> freshName "a" ()
-    n <- IEVar () <$> freshName "n" ()
+    a <- TVar <$> freshN "a" ()
+    n <- IEVar () <$> freshN "n" ()
     let arrTy = Arr (n `Cons` Nil) a
     pure (Arrow a (Arrow (Arrow a a) (Arrow I arrTy)), mempty)
 tyB l Mul = do
-    a <- freshName "a" l
-    i <- IVar () <$> freshName "i" (); j <- IVar () <$> freshName "j" (); k <- IVar () <$> freshName "k" ()
+    a <- freshN "a" l
+    i <- IVar () <$> freshN "i" (); j <- IVar () <$> freshN "j" (); k <- IVar () <$> freshN "k" ()
     pushVarConstraint a l IsNum
     let a' = TVar (void a)
     pure (Arrow (Arr (i `Cons` j `Cons` Nil) a') (Arrow (Arr (j `Cons` k `Cons` Nil) a') (Arr (i `Cons` k `Cons` Nil) a')), mempty)
 tyB l VMul = do
-    a <- freshName "a" l
-    i <- IVar () <$> freshName "i" (); j <- IVar () <$> freshName "j" ()
+    a <- freshN "a" l
+    i <- IVar () <$> freshN "i" (); j <- IVar () <$> freshN "j" ()
     pushVarConstraint a l IsNum
     let a' = TVar (void a)
     pure (Arrow (Arr (i `Cons` j `Cons` Nil) a') (Arrow (Arr (j `Cons` Nil) a') (Arr (i `Cons` Nil) a')), mempty)
@@ -736,7 +736,7 @@ rAn (Cond t p e0 e1) = do
 
 tyE :: Subst a -> E a -> TyM a (E (T ()), Subst a)
 tyE s (EApp _ (Builtin _ Re) (ILit _ n)) = do
-    a <- TVar <$> freshName "a" ()
+    a <- TVar <$> freshN "a" ()
     let arrTy = Arrow a (Arr (vx $ Ix () (fromInteger n)) a)
     pure (EApp arrTy (Builtin (Arrow I arrTy) Re) (ILit I n), s)
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ FRange) e0) e1) (ILit _ n)) = do
@@ -764,12 +764,12 @@ tyE s (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _
 tyE s (FLit _ x) = pure (FLit F x, s)
 tyE s (BLit _ x) = pure (BLit B x, s)
 tyE s (ILit l m) = do
-    n <- freshName "a" l
+    n <- freshN "a" l
     pushVarConstraint n l IsNum
     pure (ILit (TVar (void n)) m, s)
 tyE s (Builtin l b) = do {(t,sϵ) <- tyB l b ; pure (Builtin t b, sϵ<>s)}
 tyE s (Lam _ nϵ e) = do
-    n <- TVar <$> freshName "a" ()
+    n <- TVar <$> freshN "a" ()
     modify (addStaEnv nϵ n)
     (e', s') <- tyE s e
     let lamTy = Arrow n (eAnn e')
@@ -793,15 +793,15 @@ tyE s (LLet _ (n, e') e) = do
     (eRes, s'') <- tyE s' e
     pure (LLet (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s'')
 tyE s e@(ALit l es) = do
-    a <- TVar <$> freshName "a" ()
+    a <- TVar <$> freshN "a" ()
     (es', s') <- sSt s es
     let eTys = a : fmap eAnn es'
         uHere sϵ t t' = mguPrep (l,e) sϵ (t$>l) (t'$>l)
     ss' <- liftEither $ zS uHere s' eTys (tail eTys)
     pure (ALit (Arr (vx (Ix () $ length es)) a) es', ss')
 tyE s (EApp l e0 e1) = do
-    a <- TVar <$> freshName "a" l
-    b <- TVar <$> freshName "b" l
+    a <- TVar <$> freshN "a" l
+    b <- TVar <$> freshN "b" l
     (e0', s0) <- tyE s e0
     (e1', s1) <- tyE s0 e1
     let e0Ty = Arrow a b
