@@ -5,14 +5,14 @@ module R.Dfn ( dedfn ) where
 import           A
 import           Control.Monad.State.Strict (get, modify)
 import qualified Data.Text                  as T
-import           Name
+import           Nm
 import           R.M
 import           U
 
-dummyName :: T.Text -> RM (a -> Name a)
+dummyName :: T.Text -> RM (a -> Nm a)
 dummyName n = do
     st <- get
-    Name n (U$st+1) <$ modify (+1)
+    Nm n (U$st+1) <$ modify (+1)
 
 dedfn :: Int -> E a -> (E a, Int)
 dedfn i = runR i . dedfnM
@@ -52,8 +52,8 @@ dedfnM (Dfn l e) = do
 dedfnM (Parens _ e) = dedfnM e
 
 -- this approach is criminally inefficient
-replaceXY :: (a -> Name a) -- ^ x
-          -> (a -> Name a) -- ^ y
+replaceXY :: (a -> Nm a) -- ^ x
+          -> (a -> Nm a) -- ^ y
           -> E a -> (E a, Bool) -- True if it has 'y'
 replaceXY _ y (ResVar l Y) = (Var l (y l), True)
 replaceXY x _ (ResVar l X) = (Var l (x l), False)

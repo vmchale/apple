@@ -15,7 +15,7 @@ import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
 import           IR
-import           Name
+import           Nm
 import           U
 
 data IRSt = IRSt { labels :: [Label]
@@ -27,8 +27,8 @@ data IRSt = IRSt { labels :: [Label]
                  , mts    :: IM.IntMap Temp
                  }
 
-getT :: IM.IntMap b -> Name a -> b
-getT st n@(Name _ (U i) _) = IM.findWithDefault (error ("Internal error: variable " ++ show n ++ " not mapped to register.")) i st
+getT :: IM.IntMap b -> Nm a -> b
+getT st n@(Nm _ (U i) _) = IM.findWithDefault (error ("Internal error: variable " ++ show n ++ " not mapped to register.")) i st
 
 nextI :: IRM Int
 nextI = do
@@ -54,14 +54,14 @@ newLabel = do
 addMT :: Int -> Temp -> IRSt -> IRSt
 addMT i tϵ (IRSt l t ar v a f ts) = IRSt l t ar v a f (IM.insert i tϵ ts)
 
-addVar :: Name a -> Temp -> IRSt -> IRSt
-addVar (Name _ (U i) _) r (IRSt l t ar v a f ts) = IRSt l t ar (IM.insert i r v) a f ts
+addVar :: Nm a -> Temp -> IRSt -> IRSt
+addVar (Nm _ (U i) _) r (IRSt l t ar v a f ts) = IRSt l t ar (IM.insert i r v) a f ts
 
-addAVar :: Name a -> (Maybe Int, Temp) -> IRSt -> IRSt
-addAVar (Name _ (U i) _) r (IRSt l t ar v a f ts) = IRSt l t ar v (IM.insert i r a) f ts
+addAVar :: Nm a -> (Maybe Int, Temp) -> IRSt -> IRSt
+addAVar (Nm _ (U i) _) r (IRSt l t ar v a f ts) = IRSt l t ar v (IM.insert i r a) f ts
 
-addFVar :: Name a -> (Label, [(Maybe Int, Temp)], (Maybe Int, Temp)) -> IRSt -> IRSt
-addFVar (Name _ (U i) _) x (IRSt l t ar v a f ts) = IRSt l t ar v a (IM.insert i x f) ts
+addFVar :: Nm a -> (Label, [(Maybe Int, Temp)], (Maybe Int, Temp)) -> IRSt -> IRSt
+addFVar (Nm _ (U i) _) x (IRSt l t ar v a f ts) = IRSt l t ar v a (IM.insert i x f) ts
 
 type IRM = State IRSt
 
@@ -106,17 +106,17 @@ writeCM :: E (T ()) -> IRM [Stmt]
 writeCM e' = do
     cs <- traverse (\_ -> newITemp) [(0::Int)..5]; fs <- traverse (\_ -> newFTemp) [(0::Int)..5]
     (zipWith (\xr xr' -> MX xr' (FReg xr)) [F0,F1,F2,F3,F4,F5] fs ++) . (zipWith (\r r' -> MT r' (Reg r)) [C0,C1,C2,C3,C4,C5] cs ++) <$> go e' fs cs where
-    go (Lam _ x@(Name _ _ F) e) (fr:frs) rs = do
+    go (Lam _ x@(Nm _ _ F) e) (fr:frs) rs = do
         modify (addVar x fr)
         go e frs rs
-    go (Lam _ (Name _ _ F) _) [] _ = error "Not enough floating-point registers!"
-    go (Lam _ x@(Name _ _ I) e) frs (r:rs) = do
+    go (Lam _ (Nm _ _ F) _) [] _ = error "Not enough floating-point registers!"
+    go (Lam _ x@(Nm _ _ I) e) frs (r:rs) = do
         modify (addVar x r)
         go e frs rs
-    go (Lam _ x@(Name _ _ P{}) e) frs (r:rs) = do
+    go (Lam _ x@(Nm _ _ P{}) e) frs (r:rs) = do
         modify (addVar x r)
         go e frs rs
-    go (Lam _ x@(Name _ _ Arr{}) e) frs (r:rs) = do
+    go (Lam _ x@(Nm _ _ Arr{}) e) frs (r:rs) = do
         modify (addAVar x (Nothing, r))
         go e frs rs
     go Lam{} _ [] = error "Not enough registers!"

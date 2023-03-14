@@ -6,7 +6,7 @@ import           A
 import           Control.Monad.State.Strict (State, gets, modify, runState)
 import           Data.Bifunctor             (second)
 import qualified Data.IntMap                as IM
-import           Name
+import           Nm
 import           R
 import           Ty
 import           U
@@ -20,8 +20,8 @@ instance HasRenames (ISt a) where
 
 type M a = State (ISt a)
 
-bind :: Name a -> E a -> ISt a -> ISt a
-bind (Name _ (U u) _) e (ISt r bs) = ISt r (IM.insert u e bs)
+bind :: Nm a -> E a -> ISt a -> ISt a
+bind (Nm _ (U u) _) e (ISt r bs) = ISt r (IM.insert u e bs)
 
 runI i = second (max_.renames) . flip runState (ISt (Renames i mempty) mempty)
 
@@ -74,7 +74,7 @@ iM (Let l (n, e') e) | not(hR e')= do
 iM (Def _ (n, e') e) = do
     eI <- iM e'
     modify (bind n eI) *> iM e
-iM e@(Var t (Name _ (U i) _)) = do
+iM e@(Var t (Nm _ (U i) _)) = do
     st <- gets binds
     case IM.lookup i st of
         Just e' -> do {er <- rE e'; pure $ fmap (aT (match (eAnn er) t)) er}
@@ -102,7 +102,7 @@ bM (EApp l e0 e1) = do
         Lam{} -> bM (EApp l e0' e1')
         _     -> pure $ EApp l e0' e1'
 bM (Lam l n e) = Lam l n <$> bM e
-bM e@(Var _ (Name _ (U i) _)) = do
+bM e@(Var _ (Nm _ (U i) _)) = do
     st <- gets binds
     case IM.lookup i st of
         Just e' -> rE e'

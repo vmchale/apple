@@ -21,7 +21,7 @@ import           Control.DeepSeq   (NFData)
 import qualified Data.IntMap       as IM
 import           Data.Semigroup    ((<>))
 import           GHC.Generics      (Generic)
-import           Name
+import           Nm
 import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket,
                                     tupled, (<+>))
 import           Prettyprinter.Ext
@@ -33,8 +33,8 @@ instance Pretty (I a) where
     pretty (IEVar _ n)     = "#" <> pretty n
 
 data I a = Ix a !Int
-         | IVar a (Name a)
-         | IEVar a (Name a) -- existential
+         | IVar a (Nm a)
+         | IEVar a (Nm a) -- existential
          | StaPlus a (I a) (I a)
          deriving (Functor, Generic)
 
@@ -59,7 +59,7 @@ instance Show C where show = show.pretty
 tupledArr = group . encloseSep (flatAlt "⟨ " "⟨") (flatAlt " ⟩" "⟩") ", "
 
 data Sh a = Nil
-          | SVar (Name a)
+          | SVar (Nm a)
           | Cons (I a) (Sh a)
           | Rev (Sh a)
           | Cat (Sh a) (Sh a)
@@ -81,10 +81,10 @@ data T a = Arr (Sh a) (T a)
          | F -- | double
          | I -- | int
          | B -- | bool
-         | TVar (Name a) -- | Kind \(*\), 'F' or 'I'
+         | TVar (Nm a) -- | Kind \(*\), 'F' or 'I'
          | Arrow (T a) (T a)
          | P [T a]
-         | Ρ (TyName a) (IM.IntMap (T a))
+         | Ρ (TyNm a) (IM.IntMap (T a))
          deriving (Functor, Generic)
 
 instance Show (T a) where
@@ -192,10 +192,10 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 
-ptName :: Name (T a) -> Doc ann
-ptName n@(Name _ _ t) = parens (pretty n <+> ":" <+> pretty t)
+ptName :: Nm (T a) -> Doc ann
+ptName n@(Nm _ _ t) = parens (pretty n <+> ":" <+> pretty t)
 
-prettyC :: (T (), [(Name a, C)]) -> Doc ann
+prettyC :: (T (), [(Nm a, C)]) -> Doc ann
 prettyC (t, []) = pretty t
 prettyC (t, cs) = tupled (pc<$>cs) <+> ":=>" <+> pretty t
     where pc (n, c) = pretty c <+> pretty n
@@ -206,7 +206,7 @@ prettyTyped (Var t n)                                             = parens (pret
 prettyTyped (Builtin t b)                                         = parens (pretty b <+> ":" <+> pretty t)
 prettyTyped (ILit t n)                                            = parens (pretty n <+> ":" <+> pretty t)
 prettyTyped (FLit t x)                                            = parens (pretty x <+> ":" <+> pretty t)
-prettyTyped (Lam _ n@(Name _ _ xt) e)                             = parens ("λ" <> parens (pretty n <+> ":" <+> pretty xt) <> "." <+> prettyTyped e)
+prettyTyped (Lam _ n@(Nm _ _ xt) e)                               = parens ("λ" <> parens (pretty n <+> ":" <+> pretty xt) <> "." <+> prettyTyped e)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2) = parens (prettyTyped e0 <> "/" <+> prettyTyped e1 <+> prettyTyped e2)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2) = parens (prettyTyped e0 <> "/*" <+> prettyTyped e1 <+> prettyTyped e2)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2) = parens (prettyTyped e0 <> "/l" <+> prettyTyped e1 <+> prettyTyped e2)
@@ -302,17 +302,17 @@ instance Pretty Idiom where
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          -- TODO: bool array
-         | Var { eAnn :: a, eVar :: Name a }
+         | Var { eAnn :: a, eVar :: Nm a }
          | Builtin { eAnn :: a, eBuiltin :: !Builtin }
          | EApp { eAnn :: a, eF :: E a, eArg :: E a }
-         | Lam { eAnn :: a, eVar :: Name a, eIn :: E a }
+         | Lam { eAnn :: a, eVar :: Nm a, eIn :: E a }
          | ILit { eAnn :: a, eILit :: !Integer }
          | FLit { eAnn :: a, eFLit :: !Double }
          | BLit { eAnn :: a, eBLit :: !Bool }
          | Cond { eAnn :: a, prop :: E a, ifBranch :: E a, elseBranch :: E a }
-         | Let { eAnn :: a, eBnd :: (Name a, E a), eIn :: E a }
-         | Def { eAnn :: a, eBnd :: (Name a, E a), eIn :: E a }
-         | LLet { eAnn :: a, eBnd :: (Name a, E a), eIn :: E a }
+         | Let { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
+         | Def { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
+         | LLet { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
          | Dfn { eAnn :: a, eIn :: E a }
          | ResVar { eAnn :: a, eXY :: ResVar }
          | Parens { eAnn :: a, eExp :: E a }

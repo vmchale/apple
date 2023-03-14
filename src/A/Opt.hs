@@ -132,8 +132,8 @@ optA (EApp l e0 e1) = EApp l <$> optA e0 <*> optA e1
 optA (ALit l es) = do
     es' <- traverse optA es
     pure $ case unzip <$> traverse mShLit es' of
-        Nothing       -> Id l $ AShLit [length es] es'
-        Just (ds, es) -> Id l $ AShLit (length ds : head ds) (concat es)
+        Nothing        -> Id l $ AShLit [length es] es'
+        Just (ds, esϵ) -> Id l $ AShLit (length ds : head ds) (concat esϵ)
 optA (Tup l es) = Tup l <$> traverse optA es
 optA (Let l (n, e') e) = do
     e'Opt <- optA e'

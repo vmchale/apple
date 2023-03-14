@@ -32,7 +32,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import GHC.Generics (Generic)
 import Prettyprinter (Pretty (pretty), (<+>), colon, squotes)
-import Name
+import Nm
 import U
 
 }
@@ -252,7 +252,7 @@ deriving instance Generic AlexPosn
 deriving instance NFData AlexPosn
 
 -- functional bimap?
-type AlexUserState = (Int, M.Map T.Text Int, IM.IntMap (Name AlexPosn))
+type AlexUserState = (Int, M.Map T.Text Int, IM.IntMap (Nm AlexPosn))
 
 alexInitUserState :: AlexUserState
 alexInitUserState = (0, mempty, mempty)
@@ -402,7 +402,7 @@ instance Pretty Builtin where
 
 data Token a = EOF { loc :: a }
              | TokSym { loc :: a, sym :: Sym }
-             | TokName { loc :: a, _name :: Name a }
+             | TokName { loc :: a, _name :: Nm a }
              | TokB { loc :: a, _builtin :: Builtin }
              | TokResVar { loc :: a, _var :: Var }
              | TokInt { loc :: a, int :: Integer }
@@ -418,23 +418,23 @@ instance Pretty (Token a) where
     pretty (TokResVar _ v) = "reserved variable" <+> squotes (pretty v)
     pretty (TokFloat _ f)  = pretty f
 
-freshName :: T.Text -> Alex (Name AlexPosn)
+freshName :: T.Text -> Alex (Nm AlexPosn)
 freshName t = do
     pos <- get_pos
     newIdentAlex pos t
 
-newIdentAlex :: AlexPosn -> T.Text -> Alex (Name AlexPosn)
+newIdentAlex :: AlexPosn -> T.Text -> Alex (Nm AlexPosn)
 newIdentAlex pos t = do
     st <- get_ust
     let (st', n) = newIdent pos t st
     set_ust st' $> (n $> pos)
 
-newIdent :: AlexPosn -> T.Text -> AlexUserState -> (AlexUserState, Name AlexPosn)
+newIdent :: AlexPosn -> T.Text -> AlexUserState -> (AlexUserState, Nm AlexPosn)
 newIdent pos t pre@(max', names, uniqs) =
     case M.lookup t names of
-        Just i -> (pre, Name t (U i) pos)
+        Just i -> (pre, Nm t (U i) pos)
         Nothing -> let i = max' + 1
-            in let newName = Name t (U i) pos
+            in let newName = Nm t (U i) pos
                 in ((i, M.insert t i names, IM.insert i newName uniqs), newName)
 
 runAlexSt :: BSL.ByteString -> Alex a -> Either String (AlexUserState, a)

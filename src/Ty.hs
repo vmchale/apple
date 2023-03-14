@@ -27,7 +27,7 @@ import           Data.Semigroup             (Semigroup (..))
 import qualified Data.Text                  as T
 import           Data.Typeable              (Typeable)
 import           GHC.Generics               (Generic)
-import           Name
+import           Nm
 import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, (<+>))
 import           Prettyprinter.Ext
 import           Ty.Clone
@@ -44,7 +44,7 @@ data Subst a = Subst { tySubst :: IM.IntMap (T a)
                      , sSubst  :: IM.IntMap (Sh a) -- ^ Shape variables
                      } deriving (Functor)
 
-data TyE a = IllScoped a (Name a)
+data TyE a = IllScoped a (Nm a)
            | UF a (E a) (T a) (T a)
            | UI a (I a) (I a)
            | USh a (Sh a) (Sh a)
@@ -99,18 +99,18 @@ type TyM a = StateT (TySt a) (Either (TyE a))
 
 mI :: I a -> I a -> Either (TyE b) (Subst a)
 mI (Ix _ i) (Ix _ j) | i == j = Right mempty
-mI (IVar _ (Name _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
-mI ix (IVar _ (Name _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
+mI (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
+mI ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
 mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
 mI (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI i (Ix l (j-iϵ))
 mI (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI i (Ix l (iϵ-j))
 
 mSh :: Sh a -> Sh a -> Either (TyE b) (Subst a)
-mSh (SVar (Name _ (U i) _)) sh = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
-mSh Nil Nil                    = Right mempty
-mSh (Cons i sh) (Cons i' sh')  = (<>) <$> mI i i' <*> mSh sh sh'
-mSh sh sh'                     = Left $ MatchShFailed (void sh) (void sh')
+mSh (SVar (Nm _ (U i) _)) sh  = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
+mSh Nil Nil                   = Right mempty
+mSh (Cons i sh) (Cons i' sh') = (<>) <$> mI i i' <*> mSh sh sh'
+mSh sh sh'                    = Left $ MatchShFailed (void sh) (void sh')
 
 match :: T a -> T a -> Subst a
 match t t' = either (throw :: TyE () -> Subst a) id (maM t t')
@@ -120,7 +120,7 @@ maM I I                           = Right mempty
 maM F F                           = Right mempty
 maM B B                           = Right mempty
 maM (TVar n) (TVar n') | n == n'  = Right mempty
-maM (TVar (Name _ (U i) _)) t     = Right $ Subst (IM.singleton i t) IM.empty IM.empty
+maM (TVar (Nm _ (U i) _)) t     = Right $ Subst (IM.singleton i t) IM.empty IM.empty
 maM (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM t0 t0' <*> maM t1 t1' -- FIXME: use <\> over <>
 maM (Arr sh t) (Arr sh' t')       = (<>) <$> mSh sh sh' <*> maM t t'
 maM (Arr sh t) t'                 = (<>) <$> mSh sh Nil <*> maM t t'
@@ -135,7 +135,7 @@ shSubst _ Nil           = Nil
 shSubst s (Cons i sh)   = Cons (iSubst s !> i) (shSubst s sh)
 shSubst s (Cat sh0 sh1) = Cat (shSubst s sh0) (shSubst s sh1)
 shSubst s (Rev sh)      = Rev (shSubst s sh)
-shSubst s@(Subst ts is ss) sh'@(SVar (Name _ (U u) _)) =
+shSubst s@(Subst ts is ss) sh'@(SVar (Nm _ (U u) _)) =
     case IM.lookup u ss of
         Just sh''@SVar{} -> shSubst (Subst ts is (IM.delete u ss)) sh''
         Just sh          -> shSubst s sh
@@ -143,7 +143,7 @@ shSubst s@(Subst ts is ss) sh'@(SVar (Name _ (U u) _)) =
 
 infixr 4 !>
 (!>) :: IM.IntMap (I a) -> I a -> I a
-(!>) ixes ix'@(IVar _ (Name _ (U u) _)) =
+(!>) ixes ix'@(IVar _ (Nm _ (U u) _)) =
     case IM.lookup u ixes of
         Just ix@IVar{} -> IM.delete u ixes !> ix
         Just ix        -> ixes !>ix
@@ -181,25 +181,25 @@ mapMaxU f (TySt u l v vcs) = TySt (f u) l v vcs
 setMaxU :: Int -> TySt a -> TySt a
 setMaxU i (TySt _ l v vcs) = TySt i l v vcs
 
-addStaEnv :: Name a -> T () -> TySt a -> TySt a
-addStaEnv (Name _ (U i) _) t (TySt u l v vcs) = TySt u (IM.insert i t l) v vcs
+addStaEnv :: Nm a -> T () -> TySt a -> TySt a
+addStaEnv (Nm _ (U i) _) t (TySt u l v vcs) = TySt u (IM.insert i t l) v vcs
 
-addPolyEnv :: Name a -> T () -> TySt a -> TySt a
-addPolyEnv (Name _ (U i) _) t (TySt u l v vcs) = TySt u l (IM.insert i t v) vcs
+addPolyEnv :: Nm a -> T () -> TySt a -> TySt a
+addPolyEnv (Nm _ (U i) _) t (TySt u l v vcs) = TySt u l (IM.insert i t v) vcs
 
 addVarConstrI :: Int -> a -> C -> TySt a -> TySt a
 addVarConstrI i ann c (TySt u l v vcs) = TySt u l v (IM.insert i (c, ann) vcs)
 
-addVarConstr :: TyName a -> a -> C -> TySt a -> TySt a
+addVarConstr :: TyNm a -> a -> C -> TySt a -> TySt a
 addVarConstr tn = addVarConstrI (unU$unique tn)
 
-pushVarConstraint :: TyName a -> a -> C -> TyM a ()
+pushVarConstraint :: TyNm a -> a -> C -> TyM a ()
 pushVarConstraint tn l c = modify (addVarConstr tn l c)
 
-freshName :: T.Text -> b -> TyM a (Name b)
+freshName :: T.Text -> b -> TyM a (Nm b)
 freshName n l = do
     st <- gets maxU
-    Name n (U$st+1) l
+    Nm n (U$st+1) l
         <$ modify (mapMaxU (+1))
 
 mapTySubst f (Subst t i sh) = Subst (f t) i sh
@@ -218,9 +218,9 @@ mguI inp i0@(Ix l i) i1@(Ix _ j) | i == j = Right inp
 mguI inp ix0@(IEVar l i) ix1@(IEVar _ j) | i == j = Right inp
                                          | otherwise = Left $ UI l ix0 ix1
 mguI inp (IVar _ i) (IVar _ j) | i == j = Right inp
-mguI inp iix@(IVar l (Name _ (U i) _)) ix | i `IS.member` occI ix = Left $ OI l iix ix
+mguI inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = Left $ OI l iix ix
                                           | otherwise = Right $ IM.insert i ix inp
-mguI inp ix iix@(IVar l (Name _ (U i) _)) | i `IS.member` occI ix = Left$ OI l ix iix
+mguI inp ix iix@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = Left$ OI l ix iix
                                           | otherwise = Right $ IM.insert i ix inp
 mguI inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep inp i0 i1
 mguI inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguIPrep inp i (Ix lk (j-k))
@@ -239,9 +239,9 @@ mgSh l inp (Cons i sh) (Cons i' sh') = do
     sI <- mguIPrep (iSubst inp) i i'
     mgShPrep l (inp { iSubst = sI }) sh sh'
 mgSh _ inp (SVar sh) (SVar sh') | sh == sh' = Right inp
-mgSh l inp s@(SVar (Name _ (U i) _)) sh | i `IS.member` occSh sh = Left$ OSh l s sh
+mgSh l inp s@(SVar (Nm _ (U i) _)) sh | i `IS.member` occSh sh = Left$ OSh l s sh
                                         | otherwise = Right$ mapShSubst (IM.insert i sh) inp
-mgSh l inp sh s@(SVar (Name _ (U i) _)) | i `IS.member` occSh sh = Left$ OSh l sh s
+mgSh l inp sh s@(SVar (Nm _ (U i) _)) | i `IS.member` occSh sh = Left$ OSh l sh s
                                         | otherwise = Right$ mapShSubst (IM.insert i sh) inp
 mgSh l _ sh@Nil sh'@Cons{} = Left $ USh l sh sh'
 mgSh l _ sh@Cons{} sh'@Nil{} = Left $ USh l sh' sh
@@ -253,26 +253,26 @@ mguPrep l s t0 t1 =
     in mgu l s ({-# SCC "rwArr" #-} rwArr t0') ({-# SCC "rwArr" #-} rwArr t1')
 
 occSh :: Sh a -> IS.IntSet
-occSh (SVar (Name _ (U i) _)) = IS.singleton i
-occSh (Cat sh0 sh1)           = occSh sh0 <> occSh sh1
-occSh (_ `Cons` sh)           = occSh sh
-occSh Nil{}                   = IS.empty
+occSh (SVar (Nm _ (U i) _)) = IS.singleton i
+occSh (Cat sh0 sh1)         = occSh sh0 <> occSh sh1
+occSh (_ `Cons` sh)         = occSh sh
+occSh Nil{}                 = IS.empty
 
 occI :: I a -> IS.IntSet
-occI Ix{}                      = IS.empty
-occI (IVar _ (Name _ (U i) _)) = IS.singleton i
-occI (StaPlus _ i j)           = occI i <> occI j
-occI IEVar{}                   = IS.empty
+occI Ix{}                    = IS.empty
+occI (IVar _ (Nm _ (U i) _)) = IS.singleton i
+occI (StaPlus _ i j)         = occI i <> occI j
+occI IEVar{}                 = IS.empty
 
 occ :: T a -> IS.IntSet
-occ (TVar (Name _ (U i) _)) = IS.singleton i
-occ (Arrow t t')            = occ t <> occ t'
-occ (Arr _ a)               = occ a -- shouldn't need shape?
-occ I                       = IS.empty
-occ F                       = IS.empty
-occ B                       = IS.empty
-occ (P ts)                  = foldMap occ ts
-occ (Ρ (Name _ (U i) _) rs) = IS.insert i $ foldMap occ rs
+occ (TVar (Nm _ (U i) _)) = IS.singleton i
+occ (Arrow t t')          = occ t <> occ t'
+occ (Arr _ a)             = occ a -- shouldn't need shape?
+occ I                     = IS.empty
+occ F                     = IS.empty
+occ B                     = IS.empty
+occ (P ts)                = foldMap occ ts
+occ (Ρ (Nm _ (U i) _) rs) = IS.insert i $ foldMap occ rs
 
 mgu :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mgu l s (Arrow t0 t1) (Arrow t0' t1') = do
@@ -282,9 +282,9 @@ mgu _ s I I = Right s
 mgu _ s F F = Right s
 mgu _ s B B = Right s
 mgu _ s (TVar n) (TVar n') | n == n' = Right s
-mgu (l, _) s t'@(TVar (Name _ (U i) _)) t | i `IS.member` occ t = Left$ OT l t' t
+mgu (l, _) s t'@(TVar (Nm _ (U i) _)) t | i `IS.member` occ t = Left$ OT l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
-mgu (l, _) s t t'@(TVar (Name _ (U i) _)) | i `IS.member` occ t = Left$ OT l t' t
+mgu (l, _) s t t'@(TVar (Nm _ (U i) _)) | i `IS.member` occ t = Left$ OT l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
 mgu (l, e) _ t0@Arrow{} t1 = Left $ UF l e t0 t1
 mgu (l, e) _ t0 t1@Arrow{} = Left $ UF l e t0 t1
@@ -293,10 +293,10 @@ mgu l s (Arr sh t) (Arr sh' t') = do
     mgShPrep (fst l) s0 sh sh'
 mgu (l, e) _ F I = Left$ UF l e F I
 mgu (l, e) _ I F = Left$ UF l e I F
-mgu l s (Arr (SVar (Name _ (U i) _)) t) F = mapShSubst (IM.insert i Nil) <$> mguPrep l s t F
-mgu l s (Arr (SVar (Name _ (U i) _)) t) I = mapShSubst (IM.insert i Nil) <$> mguPrep l s t I
-mgu l s F (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s F t
-mgu l s I (Arr (SVar (Name _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s I t
+mgu l s (Arr (SVar (Nm _ (U i) _)) t) F = mapShSubst (IM.insert i Nil) <$> mguPrep l s t F
+mgu l s (Arr (SVar (Nm _ (U i) _)) t) I = mapShSubst (IM.insert i Nil) <$> mguPrep l s t I
+mgu l s F (Arr (SVar (Nm _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s F t
+mgu l s I (Arr (SVar (Nm _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s I t
 mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 -- TODO: rho occurs check
 mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mapTySubst (IM.insert (unU$unique n) t') <$> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
@@ -664,7 +664,7 @@ chkE :: T () -> Either (TyE a) ()
 chkE t@Arrow{} | hasE t = Left (ExistentialArg t)
 chkE _ = Right ()
 
-checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Name a, C))
+checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
 checkTy (TVar n) (c, _) = pure $ Just(n, c)
 checkTy I (IsNum, _)    = pure Nothing
 checkTy F (IsNum, _)    = pure Nothing
@@ -680,18 +680,18 @@ substI s@(Subst ts is sh) i =
         Nothing        -> Nothing
 
 
-checkClass :: Subst a -> Int -> (C, a) -> Either (TyE a) (Maybe (Name a, C))
+checkClass :: Subst a -> Int -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
 checkClass s i c =
     case substI s i of
         Just ty -> checkTy (rwArr ty) c
         Nothing -> pure Nothing
 
-tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Name a, C)], Int)
+tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Nm a, C)], Int)
 tyClosed u e = do
     (((e', s), scs), i) <- runTyM u (do { res@(_, s) <- tyE mempty e ; cvs <- gets varConstr ; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs) ; pure (res, scs) })
     let eS = fmap (rwArr.aT (void s)) e'
     eS' <- do {(e'', s') <- rAn eS; pure (fmap (rwArr.aT s') e'') }
-    let vs = foldMap occ eS'; scs' = filter (\(Name _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
+    let vs = foldMap occ eS'; scs' = filter (\(Nm _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
     chkE (eAnn eS') $> (eS', nubOrd scs', i)
 
 rAn :: E (T ()) -> Either (TyE a) (E (T ()), Subst ())
@@ -814,7 +814,7 @@ tyE s (Cond l p e0 e1) = do
     (e1',s1) <- tyE s0 e1
     sP' <- liftEither $ mguPrep (eAnn p,p) s1 B (eAnn p'$>eAnn p); s0' <- liftEither $ mguPrep (l,e0) sP' (eAnn e0'$>l) (eAnn e1'$>eAnn e1)
     pure (Cond (eAnn e0') p' e0' e1', s0')
-tyE s (Var l n@(Name _ (U u) _)) = do
+tyE s (Var l n@(Nm _ (U u) _)) = do
     lSt<- gets staEnv
     case IM.lookup u lSt of
         Just t  -> pure (Var t (n $> t), s)

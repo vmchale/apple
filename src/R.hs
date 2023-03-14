@@ -14,7 +14,7 @@ import           Data.Functor               (($>))
 import qualified Data.IntMap                as IM
 import           Lens.Micro                 (Lens')
 import           Lens.Micro.Mtl             (use, (%=), (.=))
-import           Name
+import           Nm
 import           Ty.Clone
 import           U
 
@@ -46,10 +46,10 @@ replaceUnique u@(U i) = do
         Nothing -> pure u
         Just j  -> replaceUnique (U j)
 
-replaceVar :: (MonadState s m, HasRenames s) => Name a -> m (Name a)
-replaceVar (Name n u l) = do
+replaceVar :: (MonadState s m, HasRenames s) => Nm a -> m (Nm a)
+replaceVar (Nm n u l) = do
     u' <- replaceUnique u
-    pure $ Name n u' l
+    pure $ Nm n u' l
 
 withRenames :: (HasRenames s, MonadState s m) => (Renames -> Renames) -> m a -> m a
 withRenames modSt act = do
@@ -61,13 +61,13 @@ withRenames modSt act = do
     pure res
 
 withName :: (HasRenames s, MonadState s m)
-         => Name a
-         -> m (Name a, Renames -> Renames)
-withName (Name t (U i) l) = do
+         => Nm a
+         -> m (Nm a, Renames -> Renames)
+withName (Nm t (U i) l) = do
     m <- use (rename.maxLens)
     let newUniq = m+1
     rename.maxLens .= newUniq
-    pure (Name t (U newUniq) l, mapBound (IM.insert i (m+1)))
+    pure (Nm t (U newUniq) l, mapBound (IM.insert i (m+1)))
 
 -- globally unique
 rG :: Int -> E a -> (E a, Int)

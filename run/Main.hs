@@ -23,7 +23,7 @@ import           Foreign.Storable          (peek)
 import           Hs.A
 import           Hs.FFI
 import           L
-import           Name
+import           Nm
 import           Prettyprinter             (hardline, pretty, (<+>))
 import           Prettyprinter.Render.Text (putDoc)
 import           Sys.DL
@@ -39,9 +39,9 @@ main = runRepl loop
 namesStr :: StateT Env IO [String]
 namesStr = gets (fmap (T.unpack.name.fst) . ee)
 
-data Env = Env { _lex :: AlexUserState, ee :: [(Name AlexPosn, E AlexPosn)], mf :: (Int, Int) }
+data Env = Env { _lex :: AlexUserState, ee :: [(Nm AlexPosn, E AlexPosn)], mf :: (Int, Int) }
 
-aEe :: Name AlexPosn -> E AlexPosn -> Env -> Env
+aEe :: Nm AlexPosn -> E AlexPosn -> Env -> Env
 aEe n e (Env l ees mm) = Env l ((n,e):ees) mm
 
 setL :: AlexUserState -> Env -> Env

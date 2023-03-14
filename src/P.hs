@@ -49,7 +49,7 @@ import           IR.Alloc
 import           IR.Opt
 import           IR.Trans
 import           L
-import           Name
+import           Nm
 import           Parser
 import           Parser.Rw
 import           Prettyprinter              (Doc, Pretty (..))
@@ -86,13 +86,13 @@ parseRename = parseRenameCtx alexInitUserState
 tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 tyExpr = fmap prettyC.tyOf
 
-tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
+tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Nm AlexPosn, C)])
 tyOf = fmap (first eAnn) . annTy
 
-getTy :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Name AlexPosn, C)])
+getTy :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Nm AlexPosn, C)])
 getTy = fmap (first eAnn) . eCheck <=< annTy
 
-annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)])
+annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
 eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr a)
@@ -153,7 +153,7 @@ parseInline :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline bsl =
     (\(e, i) -> inline i e) <$> (eCheck =<< tyParse bsl)
 
-tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Name AlexPosn, C)], Int)
+tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)], Int)
 tyConstrCtx st bsl =
     case parseRenameCtx st bsl of
         Left err       -> Left $ PErr err

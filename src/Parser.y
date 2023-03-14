@@ -18,8 +18,8 @@ import Data.Functor (void)
 import qualified Data.Text as T
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
-import qualified Name
-import Name hiding (loc)
+import qualified Nm
+import Nm hiding (loc)
 import A
 import L
 import Prettyprinter (Pretty (pretty), (<+>))
@@ -176,7 +176,7 @@ flipSeq(p,q)
 
 I :: { I AlexPosn }
   : intLit { Ix (loc $1) (fromInteger $ int $1) }
-  | name { IVar (Name.loc $1) $1 }
+  | name { IVar (Nm.loc $1) $1 }
   | I plus I { StaPlus $2 $1 $3 }
 
 Sh :: { Sh AlexPosn }
@@ -232,13 +232,13 @@ BBin :: { E AlexPosn }
      | mod { Builtin $1 A.Mod }
      | atDot { Builtin $1 IOf }
 
-B :: { (Bnd, (Name AlexPosn, E AlexPosn)) }
+B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
   | name lbind E { (LL, ($1, $3)) }
   | name polybind E { (D, ($1, $3)) }
 
 E :: { E AlexPosn }
-  : name { Var (Name.loc $1) $1 }
+  : name { Var (Nm.loc $1) $1 }
   | intLit { ILit (loc $1) (int $1) }
   | floatLit { FLit (loc $1) (float $1) }
   | pi { FLit $1 pi }
@@ -246,7 +246,7 @@ E :: { E AlexPosn }
   | ff { BLit $1 False }
   | parens(BBin) { $1 }
   | lparen E BBin rparen { EApp $1 $3 $2 }
-  | lparen BBin E rparen {% do { n <- lift $ freshName "x" ; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Name.loc n) n)) $3)) } }
+  | lparen BBin E rparen {% do { n <- lift $ freshName "x" ; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Nm.loc n) n)) $3)) } }
   | E BBin E { EApp (eAnn $1) (EApp (eAnn $3) $2 $1) $3 }
   | parens(E) { Parens (eAnn $1) $1 }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
@@ -299,7 +299,7 @@ parseError = throwError . Unexpected
 
 data Bnd = L | LL | D
 
-mkLet :: a -> [(Bnd, (Name a, E a))] -> E a -> E a
+mkLet :: a -> [(Bnd, (Nm a, E a))] -> E a -> E a
 mkLet _ [] e            = e
 mkLet l ((L, b):bs) e   = Let l b (mkLet l bs e)
 mkLet l ((LL, b):bs) e  = LLet l b (mkLet l bs e)

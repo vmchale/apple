@@ -9,7 +9,7 @@ import           Data.Functor               (($>))
 import qualified Data.IntMap                as IM
 import           Lens.Micro                 (Lens')
 import           Lens.Micro.Mtl             (modifying, use)
-import           Name
+import           Nm
 import           U
 
 data TRenames = TRenames { maxT    :: Int
@@ -34,17 +34,17 @@ boundIxLens f s = fmap (\x -> s { boundIx = x }) (f (boundIx s))
 
 -- for clone
 freshen :: Lens' TRenames (IM.IntMap Int) -- ^ TVars, shape var, etc.
-        -> Name a -> CM (Name a)
-freshen lens (Name n (U i) l) = do
+        -> Nm a -> CM (Nm a)
+freshen lens (Nm n (U i) l) = do
     j <- gets maxT
     modifying lens (IM.insert i (j+1))
-    modifying maxTLens (+1) $> Name n (U$j+1) l
+    modifying maxTLens (+1) $> Nm n (U$j+1) l
 
-tryReplaceInT :: Lens' TRenames (IM.IntMap Int) -> Name a -> CM (Name a)
-tryReplaceInT lens n@(Name t (U i) l) = do
+tryReplaceInT :: Lens' TRenames (IM.IntMap Int) -> Nm a -> CM (Nm a)
+tryReplaceInT lens n@(Nm t (U i) l) = do
     st <- use lens
     case IM.lookup i st of
-        Just j  -> pure (Name t (U j) l)
+        Just j  -> pure (Nm t (U j) l)
         Nothing -> freshen lens n
 
 cloneTClosed :: Int -> T a
