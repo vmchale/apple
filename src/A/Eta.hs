@@ -35,19 +35,19 @@ tuck (Lam l n e) = let (f, e') = tuck e in (Lam l n . f, e')
 tuck e           = (id, e)
 
 etaAt :: E (T ()) -> RM (E (T ()))
-etaAt (EApp t ho@(Builtin _ Scan{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ ScanS{}) op)  = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Zip{}) op)    = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Succ{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ FoldS) op)    = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Fold) op)     = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ FoldA) op)    = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Foldl) op)    = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Filter{}) op) = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Map{}) op)    = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Rank{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ DI{}) op)     = EApp t ho <$> (etaM =<< etaAt op)
-etaAt (EApp t ho@(Builtin _ Conv{}) op)   = EApp t ho <$> (etaM =<< etaAt op)
+etaAt (EApp t ho@(Builtin _ Scan{}) op)   = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ ScanS{}) op)  = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Zip{}) op)    = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Succ{}) op)   = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ FoldS) op)    = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Fold) op)     = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ FoldA) op)    = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Foldl) op)    = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Filter{}) op) = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Map{}) op)    = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Rank{}) op)   = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ DI{}) op)     = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Conv{}) op)   = EApp t ho <$> eta op
 etaAt (EApp t e0 e1)                      = EApp t <$> etaAt e0 <*> etaAt e1
 etaAt (Lam l n e)                         = Lam l n <$> etaAt e
 etaAt (Cond l p e e')                     = Cond l <$> etaAt p <*> etaAt e <*> etaAt e'
