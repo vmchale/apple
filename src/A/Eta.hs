@@ -31,7 +31,7 @@ eta :: E (T ()) -> RM (E (T ()))
 eta = etaM <=< etaAt
 
 tuck :: E a -> (E a -> E a, E a)
-tuck (Lam l n e) = let (f, e') = tuck e in (Lam l n . f, e')
+tuck (Lam l n e) = let (f, e') = tuck e in (Lam l n.f, e')
 tuck e           = (id, e)
 
 etaAt :: E (T ()) -> RM (E (T ()))
