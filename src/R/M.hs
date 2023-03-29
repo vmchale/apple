@@ -15,7 +15,7 @@ import           U
 type RM = State Int
 
 nextU :: T.Text -> a -> RM (Nm a)
-nextU n l = do { i <- get; modify (+1) $> Nm n (U$i+1) l }
+nextU n l = do {i <- get; modify (+1) $> Nm n (U$i+1) l}
 
 nextN :: a -> RM (Nm a)
 nextN = nextU "x"
