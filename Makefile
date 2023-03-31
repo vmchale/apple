@@ -17,7 +17,7 @@ install-r:
 	make -C Rc install
 
 install:
-	cabal install -w ghc-9.4
+	cabal install
 	strip $$(readlink -f $$(which atc))
 	strip $$(readlink -f $$(which writeo))
 	strip $$(readlink -f $$(which arepl))
