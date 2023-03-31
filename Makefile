@@ -30,6 +30,7 @@ clean:
 	make -C pyc clean
 	make -C vscode clean
 	make -C Rc clean
+	make -C janet clean
 	rm -rf dist-newstyle tags tags.mtime moddeps.svg *.hp *.o *.prof *.tix *.svg *.so py/__pycache__
 
 fmt:
