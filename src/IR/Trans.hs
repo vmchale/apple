@@ -163,7 +163,7 @@ doI t el eu rel ss = do
 
 doN t e = doI t 0 e IGeq; doN1 t e = doI t 1 e IGt; fN1 t e = doI t 1 e IGeq
 
-man (a, t) rnk n = Ma a t (IB IAsl n 3 + ConstI (8+8*rnk))
+man (a,t) rnk n = Ma a t (IB IAsl n 3 + ConstI (8+8*rnk))
 
 staRnk :: Integral b => Sh a -> Maybe b
 staRnk Nil           = Just 0
@@ -177,8 +177,8 @@ tRnk _          = Nothing
 dimR rnk (t,l) = (\o -> EAt (AP t (Just$ConstI (8*o)) l)) <$> [1..rnk]
 
 plDim :: Int64 -> (Temp, Maybe Int) -> IRM ([Temp], [Stmt])
-plDim rnk (t,l) = do
-    let dimE = dimR rnk (t, l)
+plDim rnk (t,l) =
+    let dimE = dimR rnk (t,l) in
     unzip <$> traverse (\e -> do {dt <- newITemp; pure (dt, MT dt e)}) dimE
 
 offByDim :: [Exp] -> IRM ([Temp], [Stmt])
@@ -584,8 +584,8 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
     let complts = lefts allts
         allDims = zipWith (\ix dt -> case ix of {Right{} -> Right dt; Left{} -> Left dt}) allIx dts
         complDims = lefts allDims; oDims = rights allDims
-        wrOSz = MT oSz 1:[ MT oSz (Reg oSz * Reg dϵ) | dϵ <- oDims ]
-        wrSlopSz = MT slopSz 1:[ MT slopSz (Reg slopSz * Reg dϵ) | dϵ <- complDims ]
+        wrOSz = MT oSz 1:[MT oSz (Reg oSz * Reg dϵ) | dϵ <- oDims]
+        wrSlopSz = MT slopSz 1:[MT slopSz (Reg slopSz * Reg dϵ) | dϵ <- complDims]
     (_, ss) <- writeF f [(Nothing, slopP)] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Right{}) -> Right dϵ; (_,Left tϵ) -> Left (Reg tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
@@ -600,8 +600,8 @@ aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in f1 ty||i1 ty 
     plI <- eval i iR
     (lX, plX) <- aeval xs xR
     modify (addMT a t)
-    -- TODO: edge cases: negative/wrap (just need modulo idk)
-    pure (Just a, plX ++ plI ++ MT szR (gd1 lX xR):man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ [MT iC (Reg szR - Reg iR), Cpy (AP t (Just 16) (Just a)) (AP xR (Just (IB IAsl (Reg iR) 3 + 16)) lX) (Reg iC), Cpy (AP t (Just (IB IAsl (Reg iC) 3 + 16)) (Just a)) (AP xR (Just 16) lX) (Reg iR)])
+    nL <- newLabel
+    pure (Just a, plX ++ plI ++ MT szR (gd1 lX xR):man (a,t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ [MJ (IRel IGeq (Reg iR) 0) nL, MT iR (negate$Reg iR), L nL, MT iC (Reg szR-Reg iR), Cpy (AP t (Just 16) (Just a)) (AP xR (Just (IB IAsl (Reg iR) 3 + 16)) lX) (Reg iC), Cpy (AP t (Just (IB IAsl (Reg iC) 3 + 16)) (Just a)) (AP xR (Just 16) lX) (Reg iR)])
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
     aL <- nextArr
     xR <- newITemp; aR <- newITemp; i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
@@ -641,7 +641,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (F, F) <- mA1A1 (eAnn f) =
     (lX, plX) <- aeval xs xR
     modify (addMT a t)
     (lY0, ss0) <- writeF f [(Nothing, slopP)] y0
-    (lY, ss) <- writeF f [(Nothing, slopP)] y -- writeF ... f/ss is "linear" it can only be placed once b/c assembler needs unique labels
+    (lY, ss) <- writeF f [(Nothing, slopP)] y -- writeF ... f/ss is "linear" it can only be placed once b/c assembler needs unique labels LABELS ARE LINEAR... cool
     loop <- doN i (Reg szXR) $ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just (IB IAsl (Reg i * Reg szSlopR) 3 + 24)) lX) (Reg szSlopR):ss++[Cpy (AP t (Just (IB IAsl (Reg i * Reg szYR) 3 + 24)) (Just a)) (AP y (Just 16) lY) (Reg szYR)]
     pure (Just a, plX ++ MT szXR (gd1 lX xR):MT szSlopR (EAt (AP xR (Just 16) lX)):Sa slopP (IB IAsl (Reg szSlopR) 3 + 16):dim1 Nothing slopP (Reg szSlopR) ++ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just 24) lX) (Reg szSlopR):ss0 ++ [MT szYR (gd1 lY0 y0), Ma a t (IB IAsl (Reg szXR * Reg szYR) 3 + 24), Wr (AP t Nothing (Just a)) 2, Wr (AP t (Just 8) (Just a)) (Reg szXR), Wr (AP t (Just 16) (Just a)) (Reg szYR)] ++ loop ++ [Pop (IB IAsl (Reg szSlopR) 3 + 16)])
 aeval e _ = error (show e)
