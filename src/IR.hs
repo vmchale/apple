@@ -120,6 +120,9 @@ instance Num Exp where
 instance Num FExp where
     (+) = FB FPlus; (*) = FB FTimes; (-) = FB FMinus; fromInteger = ConstF . fromInteger
 
+instance Fractional FExp where
+    (/) = FB FDiv; fromRational = ConstF . fromRational
+
 data Exp = ConstI Int64
          | Reg Temp
          | IB IBin Exp Exp

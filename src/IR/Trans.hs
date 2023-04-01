@@ -1128,6 +1128,10 @@ eval (EApp I (EApp _ (Builtin _ A.R) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
     pure $ plE0 ++ plE1 ++ [IRnd t, MT t (IB IRem (Reg t) (Reg e1R - Reg e0R) - Reg e0R)]
+eval (EApp F (EApp _ (Builtin _ A.R) e0) e1) t = do
+    e0R <- newFTemp; e1R <- newFTemp; iR <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [IRnd iR, MX t (FConv $ Reg iR), MX t ((FReg e1R - FReg e0R) * (FReg t / (2*9223372036854775807) + 0.5) + FReg e0R)]
 eval (EApp F (Builtin _ Abs) e) t = do
     plE <- eval e t
     l <- newLabel
