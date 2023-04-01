@@ -619,7 +619,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk (eAnn a) = d
     (lA, plA) <- aeval a aR
     (lB, plB) <- aeval b bR
     modify (addMT aL t)
-    let aAddr=AP aR (Just (IB IAsl (Reg n * Reg i + Reg k) 3 + 24)) lA;bAddr=AP bR (Just (IB IAsl (Reg k + Reg j * Reg n) 3 + 24)) lB
+    let aAddr=AP aR (Just (IB IAsl (Reg n * Reg i + Reg k) 3 + 24)) lA;bAddr=AP bR (Just (IB IAsl (Reg k * Reg n + Reg j) 3 + 24)) lB
     loop <- doN i (Reg m) =<< doN j (Reg o) =<< do
         loopϵ <- doN k (Reg n) [MX z (FReg z + FAt aAddr * FAt bAddr)]
         pure $ MX z 0:loopϵ ++ [WrF (AP t (Just (IB IAsl (Reg i * Reg o + Reg j) 3 + 24)) (Just aL)) (FReg z)]
