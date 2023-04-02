@@ -187,6 +187,7 @@ mkIx ix (MovqXR{}:asms)                       = mkIx (ix+5) asms
 mkIx ix (MovqRX{}:asms)                       = mkIx (ix+5) asms
 mkIx ix (TestI{}:asms)                        = mkIx (ix+7) asms
 mkIx ix ((CmpRI _ _ i):asms) | Just{} <- mi64i8 (fromIntegral i) = mkIx (ix+4) asms
+                             | otherwise      = mkIx (ix+7) asms
 mkIx ix ((IAddRI _ _ i):asms) | Just{} <- mi64i8 i = mkIx (ix+4) asms
 mkIx ix ((IAddRI _ _ i):asms) | Just{} <- mi64i32 i = mkIx (ix+7) asms
 mkIx ix ((ISubRI _ _ i):asms) | Just{} <- mi64i8 i = mkIx (ix+4) asms
@@ -566,6 +567,11 @@ asm ix st (CmpRI _ r i:asms) | Just i8 <- mi64i8 (fromIntegral i) =
         prefix = 0x48 .|. e
         modRMB = (0x3 `shiftL` 6) .|. (0o7 `shiftL` 3) .|. b
     in (prefix:0x83:modRMB:le i8):asm (ix+4) st asms
+asm ix st (CmpRI _ r i32:asms) =
+    let (e, b) = modRM r
+        prefix = 0x48 .|. e
+        modRMB = (0x3 `shiftL` 6) .|. (0o7 `shiftL` 3) .|. b
+    in (prefix:0x81:modRMB:le i32):asm (ix+7) st asms
 asm ix st (IAddRI _ r i:asms) | Just i8 <- mi64i8 i =
     let (e, b) = modRM r
         prefix = 0x48 .|. e
