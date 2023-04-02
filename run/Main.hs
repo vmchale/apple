@@ -256,7 +256,7 @@ inspect s = do
                                 (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
                     m <- lift $ gets mf
                     liftIO $ do
-                        (sz, fp) <- eFunP i' m e
+                        (sz, fp) <- eFunP i' m eC
                         p <- callFFI fp (retPtr undefined) []
                         TIO.putStrLn =<< dbgPrint p
                         free p *> freeFunPtr sz fp
@@ -283,47 +283,47 @@ printExpr s = do
             eC <- eRepl eP
             case tyClosed i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
-                Right (e, _, _) -> do
+                Right (e, _, i') -> do
                     m <- lift $ gets mf
                     case eAnn e of
                         I ->
                           liftIO $ do
-                              (sz, fp) <- eFunP i m eC
+                              (sz, fp) <- eFunP i' m eC -- TODO: i after tyClosed gets discarded?
                               print =<< callFFI fp retInt64 []
                               freeFunPtr sz fp
                         F ->
                             liftIO $ do
-                                (sz, fp) <- eFunP i m eC
+                                (sz, fp) <- eFunP i' m eC
                                 print =<< callFFI fp retCDouble []
                                 freeFunPtr sz fp
                         (Arr _ F) ->
                             liftIO $ do
-                                (sz, fp) <- eFunP i m eC
+                                (sz, fp) <- eFunP i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
                                 free p *> freeFunPtr sz fp
                         (Arr _ I) ->
                             liftIO $ do
-                                (sz, fp) <- eFunP i m eC
+                                (sz, fp) <- eFunP i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
                                 free p *> freeFunPtr sz fp
                         B ->
                             liftIO $ do
-                                (sz, fp) <- eFunP i m eC
+                                (sz, fp) <- eFunP i' m eC
                                 cb <- callFFI fp retWord8 []
                                 putStrLn (sB cb)
                                 freeFunPtr sz fp
                             where sB 1 = "#t"; sB 0 = "#f"
                         (Arr _ (P [F,F])) ->
                             liftIO $ do
-                                (sz, fp) <- eFunP i m eC
+                                (sz, fp) <- eFunP i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Double Double)) -> IO (Apple (Pp Double Double))) p
                                 free p *> freeFunPtr sz fp
                         (Arr _ (P [I,I])) ->
                             liftIO $ do
-                                (sz, fp) <- eFunP i m eC
+                                (sz, fp) <- eFunP i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Int64 Int64)) -> IO (Apple (Pp Int64 Int64))) p
                                 free p *> freeFunPtr sz fp
