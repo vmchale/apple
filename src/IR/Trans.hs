@@ -658,6 +658,14 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
         plRnd = [IRnd iR, MT iR (IB IRem (Reg iR) (Reg e1R - Reg e0R) - Reg e0R)]
     loop <- doN j (ConstI n) (plRnd ++ [Wr (AP t (Just$IB IAsl (Reg j) 3+8*ConstI (rnk+1)) (Just a)) (Reg iR)])
     pure (Just a, plE0 ++ plE1 ++ man (a,t) rnk (ConstI n):Wr (AP t Nothing (Just a)) (ConstI rnk):zipWith (\k d -> Wr (AP t (Just$ConstI$k*8) (Just a)) (ConstI d)) [1..] ixs++loop)
+aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
+    a <- nextArr
+    e0R <- newFTemp; e1R <- newFTemp; iR <- newITemp; xR <- newFTemp; j <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    let rnk=fromIntegral$length ixs; n=product ixs
+        plRnd = [IRnd iR, MX xR (FConv $ Reg iR), MX xR ((FReg e1R - FReg e0R) * (FReg xR / (2*9223372036854775807) + 0.5) + FReg e0R)]
+    loop <- doN j (ConstI n) (plRnd ++ [WrF (AP t (Just$IB IAsl (Reg j) 3+8*ConstI (rnk+1)) (Just a)) (FReg xR)])
+    pure (Just a, plE0 ++ plE1 ++ man (a,t) rnk (ConstI n):Wr (AP t Nothing (Just a)) (ConstI rnk):zipWith (\k d -> Wr (AP t (Just$ConstI$k*8) (Just a)) (ConstI d)) [1..] ixs++loop)
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
