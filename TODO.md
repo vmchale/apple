@@ -18,6 +18,7 @@
   - [ ] quickcheck!
   - [ ] automatic differentiation (pytorch eh)
 # Features
+- [ ] special case for `𝔯 0 1 :: float` etc.
 - [ ] folds/scans shouldn't take seeds
 - [ ] allow type signatures in lambdas?
 - [ ] mko executable - compile expression into .o file, with some name
@@ -43,11 +44,12 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ]  `> (𝔯 _10 10) :: int 26`
+- [ ] `> ⟨⟨2,1,1⟩,⟨5,4,1⟩⟩%.⟨⟨2,0⟩,⟨2,0⟩,⟨7,3::float⟩⟩ -> Arr (2×2) [6.0, 10.0, 12.0, 31.0]`
 - [ ] `:asm [x(%.)(y::Arr(i`Cons`j`Cons`Nil)float)]` type inference??
 - [ ] `xmm0` and `xmm1` incorrectly marked as clobbered when return value is not
   actually in `xmm0`/`xmm1` or whatever
 - [ ] `fsin` instruction requires reduction module 2pi or w/e
-- [ ] `⟨⟨1.0,0⟩,⟨0,1⟩,⟨0,0⟩⟩` fails (types, see FIXME in `src/Ty.hs`)
 - [ ] ` |: ⟨⟨1.0,2⟩,⟨3,4⟩,⟨5,6.0⟩⟩`
 - [ ] beta-reduction with 'rand' or w/e (needs to be llet ... in)
 - [ ]
@@ -60,20 +62,11 @@
 - [ ] `((2 ^ (3 * 1)) + 2` (parses `2^3*1+2` wrong)
 - [ ] `(+)/1 0 ((_.'1) frange 2 6 5)`
 - [ ] match doesn't check constraints on annotations
-```
-vanessa@vanessa-desktop /development/haskell/apple 🌸 arepl
- > ((+1)'1) (frange 1 5 5)
-Arr (5) [1.0, 2.0, 3.0, 4.0, 5.0]
- > ((+1)'1) (frange 1 5 5)
-Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
- > ((+1)'1) (frange 1 5 5)
-Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
-```
 - [ ] check in assembler phase for labels not being duplicate
 ## Type system
-- [ ] Check that bindings are not too polymorphic
+- [x] Check that bindings are not too polymorphic
   - [ ] after inlining
-  - [ ] add a pass to prevent arrays of tuples of arrays
+  - [x] add a pass to prevent arrays of tuples of arrays
 - [ ] indexing with tuples (3-tuple for rank 3 array...)
 # Checks/Passes
 - [ ] Warn if irange or frange will exceed?
@@ -98,7 +91,6 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 - [ ] https://en.wikipedia.org/wiki/Arithmetic–geometric_mean#Complete_elliptic_integral_K(sinα)
 - [ ] https://github.com/justin2004/image-processing#image-processing-with-apl
 - [ ] http://shvbsle.in/computers-are-fast-but-you-dont-know-it-p1/
-- [ ] Python FFI: modify a numpy array or something; regression->matplotlib?
 - [ ] SciPy t-test
 - [ ] full hypergeometric (analytically extended?)
 - [ ] https://www.shamusyoung.com/twentysidedtale/?p=11874
@@ -111,7 +103,7 @@ Arr (5) [2.0, 3.0, 4.0, 5.0, 6.0]
 - [ ] https://palaiologos.rocks/posts/linalg-apl/
 - [ ] FFI https://code.jsoftware.com/wiki/Guides/DLLs/Calling_DLLs
 - [ ] https://code.jsoftware.com/wiki/Essays
-- [ ] j901 integration:
+- [ ] J integration:
   - [ ] `viewmat 100 100 $ 1 2 1` `viewmat */~i:5` `viewmat +/~i.10`
 - [ ] https://www.cygnus-software.com/downloads/downloads.htm
 - [ ] https://laustep.github.io/stlahblog/posts/OnAMobiusTransformation.html

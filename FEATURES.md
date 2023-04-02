@@ -8,11 +8,12 @@
 - [x] concat
 - [x] array literals
   - [ ] multidimensional arrays
+- [x] matmul
 ## Add Features
-- [ ] outer product
-- [ ] matmul
+- [x] outer product
 - [ ] reverse
 - [ ] `reshape`
+- [◦] random
 # Performance
 - [ ] lift constants out of loops
 - [ ] lift `fninit` out of loops
