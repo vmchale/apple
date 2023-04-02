@@ -1169,12 +1169,10 @@ foldMapA = (fmap fold .) . traverse
 
 -- 1-dim'l array of floats
 f1 :: T a -> Bool
-f1 (Arr (_ `Cons` Nil) F) = True
-f1 _                      = False
+f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
 i1 :: T a -> Bool
-i1 (Arr (_ `Cons` Nil) I) = True
-i1 _                      = False
+i1 (Arr (_ `Cons` Nil) I) = True; i1 _ = False
 
 bT :: Integral b => T a -> b
 bT (P ts) = sum (bT<$>ts)
