@@ -174,6 +174,12 @@ tRnk :: T a -> Maybe (T a, Int64)
 tRnk (Arr sh t) = (t,) <$> staRnk sh
 tRnk _          = Nothing
 
+staR :: Sh a -> [Int64]
+staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s
+
+tRnd :: T a -> (T a, [Int64])
+tRnd (Arr sh t) = (t, staR sh)
+
 dimR rnk (t,l) = (\o -> EAt (AP t (Just$ConstI (8*o)) l)) <$> [1..rnk]
 
 plDim :: Int64 -> (Temp, Maybe Int) -> IRM ([Temp], [Stmt])
@@ -644,6 +650,14 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (F, F) <- mA1A1 (eAnn f) =
     (lY, ss) <- writeF f [(Nothing, slopP)] y -- writeF ... f/ss is "linear" it can only be placed once b/c assembler needs unique labels LABELS ARE LINEAR... cool
     loop <- doN i (Reg szXR) $ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just (IB IAsl (Reg i * Reg szSlopR) 3 + 24)) lX) (Reg szSlopR):ss++[Cpy (AP t (Just (IB IAsl (Reg i * Reg szYR) 3 + 24)) (Just a)) (AP y (Just 16) lY) (Reg szYR)]
     pure (Just a, plX ++ MT szXR (gd1 lX xR):MT szSlopR (EAt (AP xR (Just 16) lX)):Sa slopP (IB IAsl (Reg szSlopR) 3 + 16):dim1 Nothing slopP (Reg szSlopR) ++ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just 24) lX) (Reg szSlopR):ss0 ++ [MT szYR (gd1 lY0 y0), Ma a t (IB IAsl (Reg szXR * Reg szYR) 3 + 24), Wr (AP t Nothing (Just a)) 2, Wr (AP t (Just 8) (Just a)) (Reg szXR), Wr (AP t (Just 16) (Just a)) (Reg szYR)] ++ loop ++ [Pop (IB IAsl (Reg szSlopR) 3 + 16)])
+aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
+    a <- nextArr
+    e0R <- newITemp; e1R <- newITemp; iR <- newITemp; j <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    let rnk=fromIntegral$length ixs; n=product ixs
+        plRnd = [IRnd iR, MT iR (IB IRem (Reg iR) (Reg e1R - Reg e0R) - Reg e0R)]
+    loop <- doN j (ConstI n) (plRnd ++ [Wr (AP t (Just$IB IAsl (Reg j) 3+8*ConstI (rnk+1)) (Just a)) (Reg iR)])
+    pure (Just a, plE0 ++ plE1 ++ man (a,t) rnk (ConstI n):Wr (AP t Nothing (Just a)) (ConstI rnk):zipWith (\k d -> Wr (AP t (Just$ConstI$k*8) (Just a)) (ConstI d)) [1..] ixs++loop)
 aeval e _ = error (show e)
 
 threadM :: Monad m => [a -> m a] -> a -> m a
