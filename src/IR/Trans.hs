@@ -245,7 +245,7 @@ aeval (EApp res (EApp _ (Builtin _ Map) op) e) t | f1 (eAnn e) && f1 res = do
     arrP <- newITemp
     (l, plE) <- aeval e arrP
     -- cause f1 (skip rank)
-    let sz = EAt (AP arrP (Just 8) l)
+    let sz=gd1 l arrP
     f <- newFTemp
     ss <- writeRF op [f] f
     iR <- newITemp; szR <- newITemp
@@ -313,7 +313,7 @@ aeval (EApp res (EApp _ (Builtin _ Map) op) e) t | i1 (eAnn e) && i1 res = do
     arrP <- newITemp
     (l, plE) <- aeval e arrP
     -- cause f1 (skip rank)
-    let sz = EAt (AP arrP (Just 8) l)
+    let sz=gd1 l arrP
     m <- newITemp
     ss <- writeRF op [m] m
     iR <- newITemp
@@ -382,7 +382,7 @@ aeval (EApp oTy (EApp _ (Builtin _ Succ) op) arr) t | i1 (eAnn arr) && i1 oTy = 
     arg0R <- newITemp; arg1R <- newITemp; retR <- newITemp
     (arrL, putX) <- aeval arr arrP
     -- f1 (skip rank)
-    let sz = EAt (AP arrP (Just 8) arrL)
+    let sz=gd1 arrL arrP
     i <- newITemp
     ss <- writeRF op [arg0R, arg1R] retR
     let loopBody = MT arg1R (EAt (AP arrP (Just (sib i)) arrL)):MT arg0R (EAt (AP arrP (Just (sib1 i)) arrL)):ss++[Wr (AP t (Just (sib i)) (Just a)) (Reg retR)]
@@ -397,7 +397,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     fR <- newFTemp
     (arrL, putX) <- aeval arr arrP
     -- cause f1 (skip rank)
-    let sz = EAt (AP arrP (Just 8) arrL)
+    let sz=gd1 arrL arrP
         nIr = fromIntegral$16+n*8
     iR <- newITemp
     ss <- writeRF op [slopP] fR
@@ -484,7 +484,7 @@ aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | i1 res = do
     plX <- eval x xR
     (l, plXs) <- aeval xs xsR
     nR <- newITemp; nϵR <- newITemp
-    let nϵ = EAt (AP xsR (Just 8) l); n = Reg nϵR + 1
+    let nϵ=gd1 l xsR; n=Reg nϵR + 1
     modify (addMT a t)
     pure (Just a, plX ++ plXs ++ MT nϵR nϵ:MT nR n:man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just 24) (Just a)) (AP xsR (Just 16) l) (Reg nϵR), Wr (AP t (Just 16) (Just a)) (Reg xR)])
 aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | f1 res = do
@@ -493,7 +493,7 @@ aeval (EApp res (EApp _ (Builtin _ ConsE) x) xs) t | f1 res = do
     plX <- eval x xR
     (l, plXs) <- aeval xs xsR
     nR <- newITemp; nϵR <- newITemp
-    let nϵ = EAt (AP xsR (Just 8) l); n = Reg nϵR + 1
+    let nϵ=gd1 l xsR; n=Reg nϵR + 1
     modify (addMT a t)
     pure (Just a, plXs ++ MT nϵR nϵ:MT nR n:man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ plX ++ [Cpy (AP t (Just 24) (Just a)) (AP xsR (Just 16) l) (Reg nϵR), WrF (AP t (Just 16) (Just a)) (FReg xR)])
 aeval (EApp res (EApp _ (Builtin _ Snoc) x) xs) t | f1 res = do
@@ -502,7 +502,7 @@ aeval (EApp res (EApp _ (Builtin _ Snoc) x) xs) t | f1 res = do
     plX <- eval x xR
     (l, plXs) <- aeval xs xsR
     nR <- newITemp; nϵR <- newITemp
-    let nϵ=EAt (AP xsR (Just 8) l); n=Reg nϵR + 1
+    let nϵ=gd1 l xsR; n=Reg nϵR + 1
     modify (addMT a t)
     pure (Just a, plXs ++ plX ++ MT nϵR nϵ:MT nR n:man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just 16) (Just a)) (AP xsR (Just 16) l) (Reg nϵR), WrF (AP t (Just (IB IAsl (Reg nR) 3 + 8)) (Just a)) (FReg xR)])
 aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
@@ -557,14 +557,14 @@ aeval (EApp oTy (Builtin _ Init) x) t | f1 oTy = do
     (lX, plX) <- aeval x xR
     modify (addMT a t)
     let n=gd1 lX xR
-    pure (Just a, plX ++ MT nR (n - 1):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just 16) (Just a)) (AP xR (Just 16) lX) (Reg nR)])
+    pure (Just a, plX ++ MT nR (n-1):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just 16) (Just a)) (AP xR (Just 16) lX) (Reg nR)])
 aeval (EApp oTy (Builtin _ Tail) x) t | f1 oTy = do
     a <- nextArr
     xR <- newITemp; nR <- newITemp
     (lX, plX) <- aeval x xR
     modify (addMT a t)
     let n=gd1 lX xR
-    pure (Just a, plX ++ MT nR (n - 1):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just 16) (Just a)) (AP xR (Just 24) lX) (Reg nR)])
+    pure (Just a, plX ++ MT nR (n-1):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just 16) (Just a)) (AP xR (Just 24) lX) (Reg nR)])
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | isFF (eAnn f) = do
     a <- nextArr; xR <- newITemp; rnkR <- newITemp; szR <- newITemp; j <- newITemp
     i <- newITemp; x <- newFTemp; y <- newFTemp; xRd <- newITemp; tD <- newITemp; offsR <- newITemp
@@ -647,7 +647,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (F, F) <- mA1A1 (eAnn f) =
     (lX, plX) <- aeval xs xR
     modify (addMT a t)
     (lY0, ss0) <- writeF f [(Nothing, slopP)] y0
-    (lY, ss) <- writeF f [(Nothing, slopP)] y -- writeF ... f/ss is "linear" it can only be placed once b/c assembler needs unique labels LABELS ARE LINEAR... cool
+    (lY, ss) <- writeF f [(Nothing, slopP)] y -- writeF ... f/ss is "linear" it can only be placed once b/c assembler needs unique labels (labels are linear)
     loop <- doN i (Reg szXR) $ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just (IB IAsl (Reg i * Reg szSlopR) 3 + 24)) lX) (Reg szSlopR):ss++[Cpy (AP t (Just (IB IAsl (Reg i * Reg szYR) 3 + 24)) (Just a)) (AP y (Just 16) lY) (Reg szYR)]
     pure (Just a, plX ++ MT szXR (gd1 lX xR):MT szSlopR (EAt (AP xR (Just 16) lX)):Sa slopP (IB IAsl (Reg szSlopR) 3 + 16):dim1 Nothing slopP (Reg szSlopR) ++ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just 24) lX) (Reg szSlopR):ss0 ++ [MT szYR (gd1 lY0 y0), Ma a t (IB IAsl (Reg szXR * Reg szYR) 3 + 24), Wr (AP t Nothing (Just a)) 2, Wr (AP t (Just 8) (Just a)) (Reg szXR), Wr (AP t (Just 16) (Just a)) (Reg szYR)] ++ loop ++ [Pop (IB IAsl (Reg szSlopR) 3 + 16)])
 aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
@@ -714,7 +714,6 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _
     step <- writeRF op [acc, i] acc
     -- TODO: is this shortest loop?
     pure $ putStart ++ putAcc ++ irEnd ++ irIncr ++ (L l:MJ (IRel IGt (Reg i) (Reg endR)) endL:step) ++ [MT i (Reg i + Reg incrR), J l, L endL]
--- TODO: start, end, nSteps a literal
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) (ILit _ start)) (ILit _ end)) (ILit _ nSteps))) acc = do
     i <- newITemp
     l <- newLabel; endL <- newLabel
@@ -878,7 +877,7 @@ eval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | f1 (eAnn e) = do
     ss <- writeRF op [acc, x] acc
     let step = MX x (FAt (AP arrP (Just$sib i) l)):ss
     loop <- fN1 i (Reg szR) step
-    let sz = EAt (AP arrP (Just 8) l)
+    let sz=gd1 l arrP
     pure (plE ++ MT szR sz:MX acc (FAt (AP arrP (Just 16) l)):loop)
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) e) acc | isFFF (eAnn op) = do
     x <- newFTemp
@@ -992,7 +991,7 @@ eval (Id F (FoldOfZip zop op [p, q])) acc | i1 (eAnn p) && f1 (eAnn q) = do
     let step = MT x (EAt (AP pR (Just$sib i) iP)):MX y (FAt (AP qR (Just$sib i) iQ)):ss
     loop <- fN1 i (Reg szR) step
     sseed <- writeRF zop [x, y] acc
-    pure $ plP ++ plQ ++ MT szR (EAt (AP pR (Just 8) iP)):MT x (EAt (AP pR (Just 16) iP)):MX y (FAt (AP qR (Just 16) iQ)):sseed ++ loop
+    pure $ plP ++ plQ ++ MT szR (gd1 iP pR):MT x (EAt (AP pR (Just 16) iP)):MX y (FAt (AP qR (Just 16) iQ)):sseed ++ loop
 eval (Id F (FoldOfZip zop op [p, q])) acc | f1 (eAnn p) && f1 (eAnn q) = do
     x <- newFTemp; y <- newFTemp
     pR <- newITemp; qR <- newITemp
