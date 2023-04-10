@@ -48,6 +48,7 @@ etaAt (EApp t ho@(Builtin _ Map{}) op)    = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ Rank{}) op)   = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ DI{}) op)     = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ Conv{}) op)   = EApp t ho <$> eta op
+etaAt (EApp t ho@(Builtin _ Outer) op)    = EApp t ho <$> eta op
 etaAt (EApp t e0 e1)                      = EApp t <$> etaAt e0 <*> etaAt e1
 etaAt (Lam l n e)                         = Lam l n <$> etaAt e
 etaAt (Cond l p e e')                     = Cond l <$> etaAt p <*> etaAt e <*> etaAt e'
