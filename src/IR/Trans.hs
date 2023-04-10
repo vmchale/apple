@@ -423,16 +423,16 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     loop <- doN iR (Reg szR - ConstI (fromIntegral n-1)) loopBody
     modify (addMT a t)
     pure (Just a, putX++MT szR sz:Ma a t (IB IAsl (Reg szR) 3+ConstI (24-8*fromIntegral n)):Wr (AP t Nothing (Just a)) 1:Wr (AP t (Just 8) (Just a)) (Reg szR - ConstI (fromIntegral n-1)):Sa slopP (ConstI nIr):Wr (AP slopP Nothing Nothing) 1:Wr (AP slopP (Just 8) Nothing) (ConstI $ fromIntegral n):loop ++ [Pop (ConstI nIr)])
-aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | i1 oTy = do
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tX <- eAnn seed, isIF tX = do
     a <- nextArr
-    arg <- newITemp
+    arg <- tTemp tX
     i <- newITemp
     nR <- newITemp
     let sz = Reg nR + 16
     modify (addMT a t)
     putSeed <- eval seed arg; putN <- eval n nR
     ss <- writeRF op [arg] arg
-    let loopBody = Wr (AP t (Just (sib i)) (Just a)) (Reg arg):ss
+    let loopBody = wt tX (AP t (Just (sib i)) (Just a)) arg:ss
     loop <- doN i (Reg nR) loopBody
     pure (Just a, putSeed ++ putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ loop)
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) (ILit _ n)) t | (Arr (_ `Cons` Nil) ty@P{}) <- oTy = do
