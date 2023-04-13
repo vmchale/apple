@@ -66,20 +66,10 @@ addFVar (Nm _ (U i) _) x (IRSt l t ar v a f ts) = IRSt l t ar v a (IM.insert i x
 type IRM = State IRSt
 
 mAF :: T a -> Maybe (T a)
-mAF (Arrow (Arr _ t) F) = Just t
-mAF _                   = Nothing
-
-isFFF :: T a -> Bool
-isFFF (Arrow F (Arrow F F)) = True
-isFFF _                     = False
-
-isFF :: T a -> Bool
-isFF (Arrow F F) = True
-isFF _           = False
+mAF (Arrow (Arr _ t) F) = Just t; mAF _ = Nothing
 
 isAF :: T a -> Bool
-isAF (Arrow Arr{} F) = True
-isAF _               = False
+isAF (Arrow Arr{} F) = True; isAF _ = False
 
 mA1A1 :: T a -> Maybe (T a, T a)
 mA1A1 (Arrow (Arr (_ `Cons` Nil) t0) (Arr (_ `Cons` Nil) t1)) = Just (t0, t1)
