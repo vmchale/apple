@@ -26,10 +26,10 @@ bind (Nm _ (U u) _) e (ISt r bs) = ISt r (IM.insert u e bs)
 runI i = second (max_.renames) . flip runState (ISt (Renames i mempty) mempty)
 
 inline :: Int -> E (T ()) -> (E (T ()), Int)
-inline i = runI i . iM
+inline i = runI i.iM
 
 β :: Int -> E (T ()) -> (E (T ()), Int)
-β i = runI i . bM
+β i = runI i.bM
 
 hRi :: Idiom -> Bool
 hRi (AShLit _ es) = any hR es
@@ -105,7 +105,7 @@ bM (Lam l n e) = Lam l n <$> bM e
 bM e@(Var _ (Nm _ (U i) _)) = do
     st <- gets binds
     case IM.lookup i st of
-        Just e' -> rE e'
+        Just e' -> rE e' -- rE vs. match ... t?
         Nothing -> pure e
 bM (LLet l (n, e') e) = do
     e'B <- bM e'

@@ -1,7 +1,7 @@
 # Fix IR-gen step
 ## Broken/Core Features
-- [ ] map(-n)
-- [ ] fold
+- [½] map
+- [½] fold
 - [ ] rank
 - [ ] convolve
 - [◦] transpose
@@ -14,6 +14,7 @@
 - [ ] reverse
 - [ ] `reshape`
 - [◦] random
+- [ ] at/index of
 # Performance
 - [ ] lift constants out of loops
 - [ ] lift `fninit` out of loops

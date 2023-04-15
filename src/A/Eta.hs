@@ -43,7 +43,6 @@ etaAt (EApp t ho@(Builtin _ FoldS) op)    = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ Fold) op)     = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ FoldA) op)    = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ Foldl) op)    = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Filter{}) op) = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ Map{}) op)    = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ Rank{}) op)   = EApp t ho <$> eta op
 etaAt (EApp t ho@(Builtin _ DI{}) op)     = EApp t ho <$> eta op

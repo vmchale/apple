@@ -177,9 +177,6 @@ instance Pretty Builtin where
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
              | Max | Min | Neg | Sqrt | T | Flip
-             | Reverse -- also rank infinity... https://code.jsoftware.com/wiki/Vocabulary/bardot
-             | Filter -- TODO: filter by bitvector...
-             | Grade -- TODO: sort
              | IRange | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
@@ -217,7 +214,6 @@ prettyTyped (LLet t (n, e) e')                                    = parens (brac
 prettyTyped (Def t (n, e) e')                                     = parens (braces (ptName n <+> "⇐" <+> prettyTyped e <> ";" <+> prettyTyped e') <+> pretty t)
 prettyTyped (Tup _ es)                                            = tupled (prettyTyped <$> es)
 prettyTyped e@(ALit t _)                                          = parens (pretty e <+> ":" <+> pretty t)
-
 
 isBinOp :: Builtin -> Bool
 isBinOp Plus   = True

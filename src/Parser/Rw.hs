@@ -6,10 +6,8 @@ import           A
 rewrite = rw
 
 isBinOp :: Builtin -> Bool
-isBinOp Grade   = False
 isBinOp FRange  = False
 isBinOp IRange  = False
-isBinOp Reverse = False
 isBinOp T       = False
 isBinOp Zip     = False
 isBinOp Rank{}  = False
