@@ -16,9 +16,8 @@ class Arch arch reg freg where
 
 instance Arch X86.X86 X86.AbsReg X86.FAbsReg where
 
-    mI (X86.MovRR _ r0 r1)   = Just (r1, r0)
-    mI (X86.Cmovnle _ r0 r1) = Just (r0, r1)
-    mI _                     = Nothing
+    mI (X86.MovRR _ r0 r1) = Just (r1, r0)
+    mI _                   = Nothing
 
     mf (X86.Movapd _ r0 r1) = Just (r1, r0)
     mf _                    = Nothing

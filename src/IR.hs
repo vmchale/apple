@@ -127,7 +127,7 @@ data Exp = ConstI Int64
          | Reg Temp
          | IB IBin Exp Exp
          | FRel FRel FExp FExp
-         | IRel IRel Exp Exp
+         | IRel IRel Exp Exp | Is Temp
          | IU IUn Exp
          | IRFloor FExp
          | EAt AE
@@ -151,6 +151,7 @@ instance Pretty Exp where
     pretty (IRFloor e)    = parens ("floor" <+> pretty e)
     pretty (EAt p)        = "@" <> pretty p
     pretty (FRel op e e') = parens (pretty op <+> pretty e <+> pretty e')
+    pretty (Is e)         = parens ("is?" <+> pretty e)
 
 instance Show Exp where show = show.pretty
 

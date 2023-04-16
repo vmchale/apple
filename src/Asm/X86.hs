@@ -311,6 +311,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Not { ann :: a, rSrc :: reg }
                     | And { ann :: a, rDest :: reg, rSrc :: reg }
                     | Cmovnle { ann :: a, rDest :: reg, rSrc :: reg }
+                    | Cmovne { ann :: a, rDest  :: reg, rSrc :: reg }
                     | Rdrand { ann :: a, rDest :: reg }
                     | Neg { ann :: a, rDest :: reg }
                     deriving (Functor, Generic)
@@ -399,6 +400,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (Not _ r)                     = i4 ("not" <+> pretty r)
     pretty (And _ r0 r1)                 = i4 ("and" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Cmovnle _ r0 r1)             = i4 ("cmovnle" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Cmovne _ r0 r1)              = i4 ("cmovne" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Rdrand _ r)                  = i4 ("rdrand" <+> pretty r)
     pretty (Test _ r0 r1)                = i4 ("test" <+> pretty r0 <> "," <+> pretty r1)
     pretty (TestI _ r0 i)                = i4 ("test" <+> pretty r0 <> "," <+> pretty i)
@@ -503,6 +505,7 @@ mapR f (Not l r)                   = Not l (f r)
 mapR f (And l r0 r1)               = And l (f r0) (f r1)
 mapR f (Rdrand l r)                = Rdrand l (f r)
 mapR f (Cmovnle l r0 r1)           = Cmovnle l (f r0) (f r1)
+mapR f (Cmovne l r0 r1)            = Cmovne l (f r0) (f r1)
 mapR _ (Fninit l)                  = Fninit l
 mapR f (Test l r0 r1)              = Test l (f r0) (f r1)
 mapR f (TestI l r i)               = TestI l (f r) i
@@ -753,6 +756,7 @@ mapFR f (Vfmsub132sd l xr0 xr1 xr2) = Vfmsub132sd l (f xr0) (f xr1) (f xr2)
 mapFR f (Sqrtsd l xr0 xr1)          = Sqrtsd l (f xr0) (f xr1)
 mapFR _ (And l r0 r1)               = And l r0 r1
 mapFR _ (Cmovnle l r0 r1)           = Cmovnle l r0 r1
+mapFR _ (Cmovne l r0 r1)            = Cmovnle l r0 r1
 mapFR _ (Rdrand l r)                = Rdrand l r
 mapFR _ (TestI l r i)               = TestI l r i
 mapFR _ (Test l r0 r1)              = Test l r0 r1

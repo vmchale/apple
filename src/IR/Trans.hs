@@ -917,6 +917,20 @@ eval (EApp I (EApp _ (Builtin _ Max) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
     pure $ plE0 ++ plE1 ++ [MT t (Reg e1R), Cmov (IRel IGt (Reg e0R) (Reg e1R)) t (Reg e0R)]
+eval (EApp _ (EApp _ (Builtin _ IOf) op) xs) t | (Arrow tD _) <- eAnn op, isIF tD = do
+    xsR <- newITemp; x <- tTemp tD; pR <- newITemp
+    (lX, plX) <- aeval xs xsR
+    ss <- writeRF op [x] pR
+    l <- newLabel; endL <- newLabel
+    pure $ plX ++ MT t 0:L l:mt tD (AP xsR (Just$sib t) lX) x:ss ++ [MJ (Is pR) endL, tick t, J l, L endL]
+eval (EApp _ (EApp _ (Builtin (Arrow F _) Gt) e0) e1) t = do
+    e0R <- newFTemp; e1R <- newFTemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [MT t 0, Cmov (FRel FGt (FReg e0R) (FReg e1R)) t 1]
+eval (EApp _ (EApp _ (Builtin (Arrow I _) Gt) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [MT t 0, Cmov (IRel IGt (Reg e0R) (Reg e1R)) t 1]
 eval (Cond _ (EApp _ (EApp _ (Builtin (Arrow F _) Gte) c0) c1) e0 e1) t = do
     c0R <- newFTemp; c1R <- newFTemp
     plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
@@ -1017,10 +1031,10 @@ eval (EApp F (EApp _ (Var _ f) e0) e1) t | isF (eAnn e0) && isF (eAnn e1) = do
     plE0 <- eval e0 arg0; plE1 <- eval e1 arg1
     retL <- newLabel
     pure $ plE0 ++ plE1 ++ [C l, L retL, MX t (FReg ret)]
-eval (EApp F (EApp _ (Builtin _ A1) e) i) t = do
+eval (EApp ty (EApp _ (Builtin _ A1) e) i) t | isIF ty = do
     eR <- newITemp; iR <- newITemp
     (lE, plE) <- aeval e eR; plI <- eval i iR
-    pure $ plE ++ plI ++ [MX t (FAt (AP eR (Just (IB IAsl (Reg iR) 3+16)) lE))]
+    pure $ plE ++ plI ++ [mt ty (AP eR (Just (IB IAsl (Reg iR) 3+16)) lE) t]
 eval (EApp I (EApp _ (Builtin _ A.R) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
@@ -1037,6 +1051,8 @@ eval (EApp I (Builtin _ Abs) e) t = do
     plE <- eval e t
     l <- newLabel
     pure $ plE ++ [MJ (IRel IGeq (Reg t) 0) l, MT t (negate $ Reg t), L l]
+eval (BLit _ True) t = pure [MT t 1]
+eval (BLit _ False) t = pure [MT t 0]
 eval e _ = error (show e)
 
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m

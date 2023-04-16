@@ -282,6 +282,7 @@ mkIx ix (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
 mkIx ix (Not{}:asms)                          = mkIx (ix+3) asms
 mkIx ix (Rdrand{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
+mkIx ix (Cmovne{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Fninit{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (IDiv{}:asms)                         = mkIx (ix+3) asms
 mkIx ix (Neg{}:asms)                          = mkIx (ix+3) asms
@@ -799,6 +800,8 @@ asm ix st (MovRA l r (R Rbp):asms) = asm ix st (MovRA l r (RC Rbp 0):asms)
 asm ix st (MovRA l r (R R13):asms) = asm ix st (MovRA l r (RC R13 0):asms)
 asm ix st (MovRA _ r (R ar):asms) =
     mkAR [0x8b] 0 ar r:asm (ix+3) st asms
+asm ix st (Cmovne _ r0 r1:asms) =
+    mkRR [0xf,0x45] r1 r0:asm (ix+4) st asms
 asm ix st (Cmovnle _ r0 r1:asms) =
     mkRR [0xf,0x4f] r1 r0:asm (ix+4) st asms
 asm ix st (MovAR _ (RS rb s ri) r:asms) =

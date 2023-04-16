@@ -81,6 +81,7 @@ uE (EAt (AP _ (Just e) Nothing))  = uE e
 uE (IRel _ e0 e1)                 = uE e0<>uE e1
 uE Reg{}                          = IS.empty
 uE ConstI{}                       = IS.empty
+uE Is{}                           = IS.empty
 uE (IB _ e0 e1)                   = uE e0<>uE e1
 uE (FRel _ e0 e1)                 = uF e0 <> uF e1
 uE (IRFloor e)                    = uF e
