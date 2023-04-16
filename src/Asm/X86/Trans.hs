@@ -131,6 +131,10 @@ ir (IR.Cmov (IR.FRel IR.FGt (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nextI; plE <- evalE e (IR.ITemp i1)
     f <- nextF; r <- nextR
     pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Nleus, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
+ir (IR.Cmov (IR.FRel IR.FGeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
+    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
+    f <- nextF; r <- nextR
+    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Nltus, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just eI) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just sd8 <- mi8 sD = do
     iT <- nextI
     plE <- evalE (IR.IB IR.IPlus (IR.Reg tS) eI) (IR.ITemp iT)
