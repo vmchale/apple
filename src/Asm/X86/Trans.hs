@@ -127,6 +127,9 @@ ir (IR.WrF (IR.AP m (Just ei) _) (IR.FReg r)) = do
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
     iS <- nextI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovnle () (absReg rD) (IReg iS)]
+ir (IR.Cmov (IR.IRel IR.INeq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
+    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovne () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.FRel IR.FGt (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nextI; plE <- evalE e (IR.ITemp i1)
     f <- nextF; r <- nextR
@@ -135,6 +138,22 @@ ir (IR.Cmov (IR.FRel IR.FGeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nextI; plE <- evalE e (IR.ITemp i1)
     f <- nextF; r <- nextR
     pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Nltus, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
+ir (IR.Cmov (IR.FRel IR.FEq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
+    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
+    f <- nextF; r <- nextR
+    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Eqoq, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
+ir (IR.Cmov (IR.FRel IR.FNeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
+    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
+    f <- nextF; r <- nextR
+    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Nequq, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
+ir (IR.Cmov (IR.FRel IR.FLt (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
+    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
+    f <- nextF; r <- nextR
+    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Ltos, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
+ir (IR.Cmov (IR.FRel IR.FLeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
+    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
+    f <- nextF; r <- nextR
+    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Leos, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just eI) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just sd8 <- mi8 sD = do
     iT <- nextI
     plE <- evalE (IR.IB IR.IPlus (IR.Reg tS) eI) (IR.ITemp iT)
