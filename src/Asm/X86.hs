@@ -311,7 +311,11 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Not { ann :: a, rSrc :: reg }
                     | And { ann :: a, rDest :: reg, rSrc :: reg }
                     | Cmovnle { ann :: a, rDest :: reg, rSrc :: reg }
+                    | Cmovnl { ann :: a, rDest :: reg, rSrc :: reg }
                     | Cmovne { ann :: a, rDest  :: reg, rSrc :: reg }
+                    | Cmove { ann :: a, rDest :: reg, rSrc :: reg }
+                    | Cmovl { ann :: a, rDest :: reg, rSrc :: reg }
+                    | Cmovle { ann :: a, rDest :: reg, rSrc :: reg }
                     | Rdrand { ann :: a, rDest :: reg }
                     | Neg { ann :: a, rDest :: reg }
                     deriving (Functor, Generic)
@@ -400,7 +404,11 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (Not _ r)                     = i4 ("not" <+> pretty r)
     pretty (And _ r0 r1)                 = i4 ("and" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Cmovnle _ r0 r1)             = i4 ("cmovnle" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Cmovnl _ r0 r1)              = i4 ("cmovnl" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Cmovne _ r0 r1)              = i4 ("cmovne" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Cmove _ r0 r1)               = i4 ("cmove" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Cmovl _ r0 r1)               = i4 ("cmovl" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Cmovle _ r0 r1)              = i4 ("cmovle" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Rdrand _ r)                  = i4 ("rdrand" <+> pretty r)
     pretty (Test _ r0 r1)                = i4 ("test" <+> pretty r0 <> "," <+> pretty r1)
     pretty (TestI _ r0 i)                = i4 ("test" <+> pretty r0 <> "," <+> pretty i)
@@ -505,7 +513,11 @@ mapR f (Not l r)                   = Not l (f r)
 mapR f (And l r0 r1)               = And l (f r0) (f r1)
 mapR f (Rdrand l r)                = Rdrand l (f r)
 mapR f (Cmovnle l r0 r1)           = Cmovnle l (f r0) (f r1)
+mapR f (Cmovnl l r0 r1)            = Cmovnl l (f r0) (f r1)
 mapR f (Cmovne l r0 r1)            = Cmovne l (f r0) (f r1)
+mapR f (Cmove l r0 r1)             = Cmove l (f r0) (f r1)
+mapR f (Cmovl l r0 r1)             = Cmovl l (f r0) (f r1)
+mapR f (Cmovle l r0 r1)            = Cmovle l (f r0) (f r1)
 mapR _ (Fninit l)                  = Fninit l
 mapR f (Test l r0 r1)              = Test l (f r0) (f r1)
 mapR f (TestI l r i)               = TestI l (f r) i
@@ -597,94 +609,13 @@ fR _ Vminsd{}          = mempty
 fR f (Not _ r)         = f r
 fR f (And _ r0 r1)     = f r0 <> f r1
 fR f (Cmovnle _ r0 r1) = f r0 <> f r1
+fR f (Cmovnl _ r0 r1)  = f r0 <> f r1
+fR f (Cmovne _ r0 r1)  = f r0 <> f r1
+fR f (Cmove _ r0 r1)   = f r0 <> f r1
+fR f (Cmovl _ r0 r1)   = f r0 <> f r1
+fR f (Cmovle _ r0 r1)  = f r0 <> f r1
 fR f (Rdrand _ r)      = f r
-
-(@*) :: Applicative f => (reg0 -> f reg1) -> Addr reg0 -> f (Addr reg1)
-f @* (R r)           = R <$> f r
-f @* (RC r i)        = RC <$> f r <*> pure i
-f @* (RS r0 s r1)    = RS <$> f r0 <*> pure s <*> f r1
-f @* (RSD r0 s r1 d) = RSD <$> f r0 <*> pure s <*> f r1 <*> pure d
-
-tR :: Applicative f => (reg0 -> f reg1) -> X86 reg0 freg a -> f (X86 reg1 freg a)
-tR _ (J x l)                     = pure (J x l)
-tR f (MovRR x r0 r1)             = MovRR x <$> f r0 <*> f r1
-tR _ (Label x l)                 = pure (Label x l)
-tR f (IAddRR l r0 r1)            = IAddRR l <$> f r0 <*> f r1
-tR f (ISubRR l r0 r1)            = ISubRR l <$> f r0 <*> f r1
-tR f (IMulRR l r0 r1)            = IMulRR l <$> f r0 <*> f r1
-tR f (XorRR l r0 r1)             = XorRR l <$> f r0 <*> f r1
-tR f (IAddRI l r i)              = IAddRI l <$> f r <*> pure i
-tR f (ISubRI l r i)              = ISubRI l <$> f r <*> pure i
-tR f (MovRI l r i)               = MovRI l <$> f r <*> pure i
-tR f (MovRA l r a)               = MovRA l <$> f r <*> f @* a
-tR f (MovAR l a r)               = MovAR l <$> f @* a <*> f r
-tR f (MovAI32 l a i)             = MovAI32 l <$> f @* a <*> pure i
-tR f (MovqXR l xr r)             = MovqXR l xr <$> f r
-tR f (MovqXA l xr a)             = MovqXA l xr <$> f @* a
-tR f (MovqAX l a xr)             = MovqAX l <$> f @* a <*> pure xr
-tR f (MovqRX l r xr)             = MovqRX l <$> f r <*> pure xr
-tR f (Fld l a)                   = Fld l <$> f @* a
-tR _ (FldS l s)                  = pure (FldS l s)
-tR _ (Fldl2e l)                  = pure (Fldl2e l)
-tR _ (Fldln2 l)                  = pure (Fldln2 l)
-tR _ (Fld1 l)                    = pure (Fld1 l)
-tR _ (Fyl2x l)                   = pure (Fyl2x l)
-tR _ (Fsin l)                    = pure (Fsin l)
-tR _ (Fcos l)                    = pure (Fcos l)
-tR f (Fstp l a)                  = Fstp l <$> f @* a
-tR _ (F2xm1 l)                   = pure (F2xm1 l)
-tR _ (Fmulp l)                   = pure (Fmulp l)
-tR _ (Fprem l)                   = pure (Fprem l)
-tR _ (Faddp l)                   = pure (Faddp l)
-tR _ (Fscale l)                  = pure (Fscale l)
-tR _ (Fninit l)                  = pure (Fninit l)
-tR _ (Fxch l s)                  = pure (Fxch l s)
-tR _ (Je x l)                    = pure (Je x l)
-tR _ (Jne x l)                   = pure (Jne x l)
-tR _ (Jg x l)                    = pure (Jg x l)
-tR _ (Jge x l)                   = pure (Jge x l)
-tR _ (Jl x l)                    = pure (Jl x l)
-tR _ (Jle x l)                   = pure (Jle x l)
-tR _ (C x l)                     = pure (C x l)
-tR f (CmpRR l r0 r1)             = CmpRR l <$> f r0 <*> f r1
-tR f (CmpRI l r i)               = CmpRI l <$> f r <*> pure i
-tR _ (Vcmppd l xr0 xr1 xr2 c)    = pure (Vcmppd l xr0 xr1 xr2 c)
-tR f (Test l r0 r1)              = Test l <$> f r0 <*> f r1
-tR f (TestI l r i)               = TestI l <$> f r <*> pure i
-tR _ (Ret l)                     = pure (Ret l)
-tR _ (RetL x l)                  = pure (RetL x l)
-tR _ (Vdivsd l xr0 xr1 xr2)      = pure (Vdivsd l xr0 xr1 xr2)
-tR _ (Vaddsd l xr0 xr1 xr2)      = pure (Vaddsd l xr0 xr1 xr2)
-tR _ (Vmulsd l xr0 xr1 xr2)      = pure (Vmulsd l xr0 xr1 xr2)
-tR _ (Vsubsd l xr0 xr1 xr2)      = pure (Vsubsd l xr0 xr1 xr2)
-tR _ (Roundsd l xr0 xr1 m)       = pure (Roundsd l xr0 xr1 m)
-tR _ (Mulsd l xr0 xr1)           = pure (Mulsd l xr0 xr1)
-tR _ (Addsd l xr0 xr1)           = pure (Addsd l xr0 xr1)
-tR _ (Subsd l xr0 xr1)           = pure (Subsd l xr0 xr1)
-tR _ (Divsd l xr0 xr1)           = pure (Divsd l xr0 xr1)
-tR _ (Movapd l xr0 xr1)          = pure (Movapd l xr0 xr1)
-tR _ (Vfmadd231sd l xr0 xr1 xr2) = pure (Vfmadd231sd l xr0 xr1 xr2)
-tR _ (Vfmadd213sd l xr0 xr1 xr2) = pure (Vfmadd213sd l xr0 xr1 xr2)
-tR _ (Vfmsub213sd l xr0 xr1 xr2) = pure (Vfmsub213sd l xr0 xr1 xr2)
-tR _ (Vfmsub231sd l xr0 xr1 xr2) = pure (Vfmsub231sd l xr0 xr1 xr2)
-tR _ (Vfmsub132sd l xr0 xr1 xr2) = pure (Vfmsub132sd l xr0 xr1 xr2)
-tR f (Cvttsd2si l r xr)          = Cvttsd2si l <$> f r <*> pure xr
-tR f (Cvtsi2sd l xr r)           = Cvtsi2sd l xr <$> f r
-tR f (Push l r)                  = Push l <$> f r
-tR f (Pop l r)                   = Pop l <$> f r
-tR _ (Call l f)                  = pure (Call l f)
-tR f (IDiv l r)                  = IDiv l <$> f r
-tR f (Sal l r i)                 = Sal l <$> f r <*> pure i
-tR f (Sar l r i)                 = Sar l <$> f r <*> pure i
-tR _ (Sqrtsd l xr0 xr1)          = pure (Sqrtsd l xr0 xr1)
-tR _ (Maxsd l xr0 xr1)           = pure (Maxsd l xr0 xr1)
-tR _ (Minsd l xr0 xr1)           = pure (Minsd l xr0 xr1)
-tR _ (Vminsd l xr0 xr1 xr2)      = pure (Vminsd l xr0 xr1 xr2)
-tR _ (Vmaxsd l xr0 xr1 xr2)      = pure (Vmaxsd l xr0 xr1 xr2)
-tR f (Not l r)                   = Not l <$> f r
-tR f (And l r0 r1)               = And l <$> f r0 <*> f r1
-tR f (Cmovnle l r0 r1)           = Cmovnle l <$> f r0 <*> f r1
-tR f (Rdrand l r)                = Rdrand l <$> f r
+fR f (Neg _ r)         = f r
 
 mapFR :: (afreg -> freg) -> X86 areg afreg a -> X86 areg freg a
 mapFR _ (Jg x l)                    = Jg x l
@@ -756,7 +687,11 @@ mapFR f (Vfmsub132sd l xr0 xr1 xr2) = Vfmsub132sd l (f xr0) (f xr1) (f xr2)
 mapFR f (Sqrtsd l xr0 xr1)          = Sqrtsd l (f xr0) (f xr1)
 mapFR _ (And l r0 r1)               = And l r0 r1
 mapFR _ (Cmovnle l r0 r1)           = Cmovnle l r0 r1
-mapFR _ (Cmovne l r0 r1)            = Cmovnle l r0 r1
+mapFR _ (Cmovnl l r0 r1)            = Cmovnl l r0 r1
+mapFR _ (Cmovne l r0 r1)            = Cmovne l r0 r1
+mapFR _ (Cmove l r0 r1)             = Cmove l r0 r1
+mapFR _ (Cmovl l r0 r1)             = Cmovl l r0 r1
+mapFR _ (Cmovle l r0 r1)            = Cmovle l r0 r1
 mapFR _ (Rdrand l r)                = Rdrand l r
 mapFR _ (TestI l r i)               = TestI l r i
 mapFR _ (Test l r0 r1)              = Test l r0 r1

@@ -282,7 +282,11 @@ mkIx ix (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
 mkIx ix (Not{}:asms)                          = mkIx (ix+3) asms
 mkIx ix (Rdrand{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
+mkIx ix (Cmovnl{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Cmovne{}:asms)                       = mkIx (ix+4) asms
+mkIx ix (Cmove{}:asms)                        = mkIx (ix+4) asms
+mkIx ix (Cmovl{}:asms)                        = mkIx (ix+4) asms
+mkIx ix (Cmovle{}:asms)                       = mkIx (ix+4) asms
 mkIx ix (Fninit{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (IDiv{}:asms)                         = mkIx (ix+3) asms
 mkIx ix (Neg{}:asms)                          = mkIx (ix+3) asms
@@ -804,6 +808,14 @@ asm ix st (Cmovne _ r0 r1:asms) =
     mkRR [0xf,0x45] r1 r0:asm (ix+4) st asms
 asm ix st (Cmovnle _ r0 r1:asms) =
     mkRR [0xf,0x4f] r1 r0:asm (ix+4) st asms
+asm ix st (Cmovnl _ r0 r1:asms) =
+    mkRR [0xf,0x4d] r1 r0:asm (ix+4) st asms
+asm ix st (Cmovle _ r0 r1:asms) =
+    mkRR [0xf,0x4e] r1 r0:asm (ix+4) st asms
+asm ix st (Cmovl _ r0 r1:asms) =
+    mkRR [0xf,0x4c] r1 r0:asm (ix+4) st asms
+asm ix st (Cmove _ r0 r1:asms) =
+    mkRR [0xf,0x44] r1 r0:asm (ix+4) st asms
 asm ix st (MovAR _ (RS rb s ri) r:asms) =
     let (eb, bb) = modRM rb
         (ei, bi) = modRM ri

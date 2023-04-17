@@ -127,9 +127,21 @@ ir (IR.WrF (IR.AP m (Just ei) _) (IR.FReg r)) = do
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
     iS <- nextI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovnle () (absReg rD) (IReg iS)]
+ir (IR.Cmov (IR.IRel IR.IGeq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
+    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovnl () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.IRel IR.INeq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
     iS <- nextI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovne () (absReg rD) (IReg iS)]
+ir (IR.Cmov (IR.IRel IR.IEq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
+    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmove () (absReg rD) (IReg iS)]
+ir (IR.Cmov (IR.IRel IR.ILeq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
+    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovle () (absReg rD) (IReg iS)]
+ir (IR.Cmov (IR.IRel IR.ILt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
+    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovl () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.FRel IR.FGt (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nextI; plE <- evalE e (IR.ITemp i1)
     f <- nextF; r <- nextR
