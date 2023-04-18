@@ -14,7 +14,7 @@ import qualified Data.ByteString  as BS
 import           Data.Int         (Int32, Int64, Int8)
 import qualified Data.Map.Strict  as M
 import           Data.Word
-import           Foreign.Ptr      (FunPtr, IntPtr (..), Ptr, castFunPtrToPtr, ptrToIntPtr)
+import           Foreign.Ptr      (FunPtr, IntPtr (..), Ptr, ptrToIntPtr)
 import           Foreign.Storable (Storable, sizeOf)
 import           Hs.FFI
 import           Sys.DL
@@ -919,14 +919,8 @@ instance RMB FX86Reg where
     modRM XMM14 = (1, 0o6)
     modRM XMM15 = (1, 0o7)
 
-cb :: (Integral a) => a -> [Word8]
-cb x = le (fromIntegral x :: Int8)
-
 cd :: (Integral a) => a -> [Word8]
 cd x = le (fromIntegral x :: Word32)
-
-dlB :: FunPtr a -> IntPtr
-dlB = ptrToIntPtr . castFunPtrToPtr
 
 -- little endian
 le :: (Storable a, Integral a, Bits a) => a -> [Word8]
