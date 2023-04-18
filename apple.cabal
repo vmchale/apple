@@ -83,7 +83,7 @@ library
 
     ghc-options:        -Wall -fno-warn-missing-signatures
     build-depends:
-        base >=4.10 && <5,
+        base >=4.11 && <5,
         prettyprinter >=1.7.0,
         deepseq,
         text,

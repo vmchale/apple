@@ -6,13 +6,16 @@ module Asm.Aarch64 ( AArch64 (..)
                    , FAbsReg (..)
                    , AReg (..)
                    , FAReg (..)
+                   , dc
                    ) where
 
 import           Asm.M
 import           Control.DeepSeq (NFData (..))
 import           Data.Semigroup  ((<>))
+import           GHC.Float       (castDoubleToWord64)
 import           GHC.Generics    (Generic)
-import           Prettyprinter   (Pretty (..), (<+>))
+import           Numeric         (showHex)
+import           Prettyprinter   (Doc, Pretty (..), (<+>))
 
 data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | X31 | SP deriving (Eq, Ord, Enum, Generic)
 
@@ -60,7 +63,16 @@ instance Pretty FAbsReg where
 
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | B { ann :: a, label :: Label }
+                        | FMovXX { ann :: a, dDest :: freg, dSrc :: freg }
+                        | FMovXC { ann :: a, dDest :: freg, dC :: Double }
+                        | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
+
+dc :: Double -> Doc ann
+dc = pretty . ($ "") . (("#0x"++).) . showHex . castDoubleToWord64
 
 instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
-    pretty (Label _ l) = prettyLabel l
-    pretty (B _ l)     = i4 ("b" <+> prettyLabel l)
+    pretty (Label _ l)        = prettyLabel l
+    pretty (B _ l)            = i4 ("b" <+> prettyLabel l)
+    pretty (FMovXX _ xr0 xr1) = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
+    pretty (FMovXC _ xr c)    = i4 ("fmov" <+> pretty xr <> "," <+> dc c)
+    pretty (MovRR _ r0 r1)    = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
