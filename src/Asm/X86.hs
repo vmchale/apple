@@ -17,7 +17,6 @@ module Asm.X86 ( X86 (..)
                , RoundMode (..)
                , Label
                , CFunc (..)
-               , prettyX86
                , prettyDebugX86
                , toInt
                , fToInt
@@ -28,16 +27,15 @@ module Asm.X86 ( X86 (..)
                , fR
                ) where
 
+import           Asm.M
 import           Control.DeepSeq   (NFData (..))
 import           Data.Copointed
 import           Data.Int          (Int32, Int64, Int8)
 import           Data.Semigroup    (Semigroup (..))
 import           Data.Word         (Word8)
 import           GHC.Generics      (Generic)
-import           Prettyprinter     (Doc, Pretty (..), brackets, colon, indent, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), brackets, colon, (<+>))
 import           Prettyprinter.Ext
-
-type Label = Word
 
 -- TODO: consider separate FX86Reg etc. type
 data X86Reg = Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15 | Rbx | Rax | Rbp | Rsp
@@ -325,12 +323,6 @@ instance (NFData a, NFData reg, NFData freg) => NFData (X86 reg freg a) where
 instance Copointed (X86 reg freg) where
     copoint = ann
 
-prettyLabel :: Label -> Doc ann
-prettyLabel l = "apple_" <> pretty l
-
-i4 :: Doc ann -> Doc ann
-i4 = indent 4
-
 instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (J _ l)                       = i4 ("jmp" <+> prettyLabel l)
     pretty (Label _ l)                   = prettyLabel l <> colon
@@ -429,9 +421,6 @@ instance (Pretty reg, Pretty freg) => Show (X86 reg freg a) where show = show . 
 
 prettyLive :: (Pretty reg, Pretty freg, Pretty o) => X86 reg freg o -> Doc ann
 prettyLive r = pretty r <+> pretty (ann r)
-
-prettyX86 :: (Pretty reg, Pretty freg) => [X86 reg freg a] -> Doc ann
-prettyX86 = prettyLines . fmap pretty
 
 prettyDebugX86 :: (Pretty freg, Pretty reg, Pretty o) => [X86 reg freg o] -> Doc ann
 prettyDebugX86 = prettyLines . fmap prettyLive

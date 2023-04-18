@@ -3,16 +3,16 @@
 
 module Asm.Aarch64 ( AArch64 (..)
                    , AbsReg (..)
+                   , FAbsReg (..)
                    , AReg (..)
                    , FAReg (..)
                    ) where
 
+import           Asm.M
 import           Control.DeepSeq (NFData (..))
 import           Data.Semigroup  ((<>))
 import           GHC.Generics    (Generic)
-import           Prettyprinter   (Pretty (..))
-
-type Label = Word
+import           Prettyprinter   (Pretty (..), (<+>))
 
 data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | X31 | SP deriving (Eq, Ord, Enum, Generic)
 
@@ -53,5 +53,14 @@ instance Pretty AbsReg where
     pretty CArg6    = "X6"
     pretty CArg7    = "X7"
 
+data FAbsReg = FReg !Int
+
+instance Pretty FAbsReg where
+    pretty (FReg i) = "F" <> pretty i
+
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
-                        | Ret { ann :: a }
+                        | B { ann :: a, label :: Label }
+
+instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
+    pretty (Label _ l) = prettyLabel l
+    pretty (B _ l)     = i4 ("b" <+> prettyLabel l)

@@ -17,6 +17,8 @@ module Dbg ( dumpX86G
            ) where
 
 import           A
+import           Asm.Aarch64.T
+import           Asm.M
 import           Asm.X86
 import           Asm.X86.Byte
 import qualified Asm.X86.CF           as X86
@@ -65,7 +67,7 @@ present (x, b) = rightPad 40 (ptxt x) <> he b
           pad s | T.length s == 1 = T.cons '0' s | otherwise = s
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
-nasm f = (prolegomena <#>) . prettyX86 . either throw id . x86G
+nasm f = (prolegomena <#>) . prettyAsm . either throw id . x86G
     where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
 
 dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
@@ -73,11 +75,14 @@ dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.
     where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 16)
 
 dumpX86G, dumpX86L :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86G = fmap prettyX86 . x86G
-dumpX86L = fmap prettyX86 . x86L
+dumpX86G = fmap prettyAsm . x86G
+dumpX86L = fmap prettyAsm . x86L
 
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Abs = fmap (prettyX86 . (\(x, st) -> snd (irToX86 st x))) . ir
+dumpX86Abs = fmap (prettyAsm . (\(x, st) -> snd (irToX86 st x))) . ir
+
+dumpAAbs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpAAbs = fmap (prettyAsm . (\(x, st) -> snd (irToAarch64 st x))) . ir
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.fst) . ir

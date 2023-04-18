@@ -1,19 +1,16 @@
 module Asm.X86.Trans ( irToX86 ) where
 
+import           Asm.M
 import           Asm.X86
-import           Control.Monad.State.Strict (State, gets, modify, runState)
+import           Control.Monad.State.Strict (runState)
 import           Data.Bifunctor             (second)
 import           Data.ByteString.Internal   (accursedUnutterablePerformIO)
-import           Data.Foldable              (fold)
-import           Data.Functor               (($>))
 import           Data.Int                   (Int32, Int64, Int8)
 import           Data.Tuple                 (swap)
 import           Foreign.Marshal.Alloc      (alloca)
 import           Foreign.Ptr                (castPtr)
 import           Foreign.Storable           (peek, poke)
 import qualified IR
-
-type WM = State IR.WSt
 
 absReg :: IR.Temp -> AbsReg
 absReg (IR.ITemp i) = IReg i
@@ -37,17 +34,8 @@ fabsReg IR.F5        = FArg5
 fabsReg IR.FRet      = FRet0
 fabsReg IR.FRet1     = FRet1
 
-foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
-foldMapA = (fmap fold .) . traverse
-
 irToX86 :: IR.WSt -> [IR.Stmt] -> (Int, [X86 AbsReg FAbsReg ()])
 irToX86 st = swap . second (head.IR.wtemps) . flip runState st . foldMapA ir
-
-nextI :: WM Int
-nextI = do { i <- gets (head.IR.wtemps); modify (\(IR.WSt l (_:t)) -> IR.WSt l t) $> i }
-
-nextL :: WM Label
-nextL = do { i <- gets (head.IR.wlabels); modify (\(IR.WSt (_:l) t) -> IR.WSt l t) $> i }
 
 nextR :: WM AbsReg
 nextR = IReg <$> nextI; nextF = FReg <$> nextI

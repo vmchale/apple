@@ -26,6 +26,7 @@ module P ( Err (..)
 import           A
 import           A.Eta
 import           A.Opt
+import           Asm.M
 import           Asm.X86
 import qualified Asm.X86.Alloc              as X86
 import           Asm.X86.Byte
@@ -115,7 +116,7 @@ ex86G :: Int -> E a -> Either (Err a) [X86 X86Reg FX86Reg ()]
 ex86G i = wallocE i (uncurry X86.gallocFrame)
 
 eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
-eDumpX86 i = fmap prettyX86 . ex86G i
+eDumpX86 i = fmap prettyAsm . ex86G i
 
 walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
 wallocE i f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . eir i
