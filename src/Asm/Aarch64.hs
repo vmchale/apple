@@ -1,7 +1,11 @@
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE InstanceSigs      #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Asm.Aarch64 ( AArch64 (..)
+                   , Addr (..)
+                   , Cond (..)
+                   , Shift (..)
                    , AbsReg (..)
                    , FAbsReg (..)
                    , AReg (..)
@@ -11,11 +15,13 @@ module Asm.Aarch64 ( AArch64 (..)
 
 import           Asm.M
 import           Control.DeepSeq (NFData (..))
+import           Data.Int        (Int16)
 import           Data.Semigroup  ((<>))
+import           Data.Word       (Word16, Word8)
 import           GHC.Float       (castDoubleToWord64)
 import           GHC.Generics    (Generic)
 import           Numeric         (showHex)
-import           Prettyprinter   (Doc, Pretty (..), (<+>))
+import           Prettyprinter   (Doc, Pretty (..), brackets, (<+>))
 
 data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | X31 | SP deriving (Eq, Ord, Enum, Generic)
 
@@ -40,7 +46,7 @@ instance Pretty FAReg where
 
 instance Show FAReg where show = show.pretty
 
-data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6| CArg7 | LR | ASP
+data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 | CArg7 | LR | ASP
 -- r0-r7 used for return values as well
 
 instance Pretty AbsReg where
@@ -56,23 +62,96 @@ instance Pretty AbsReg where
     pretty CArg6    = "X6"
     pretty CArg7    = "X7"
 
-data FAbsReg = FReg !Int
+data FAbsReg = FReg !Int | FArg0 | FArg1 | FArg2 | FArg3 | FArg4 | FArg5 | FArg6 | FArg7
 
 instance Pretty FAbsReg where
     pretty (FReg i) = "F" <> pretty i
+    pretty FArg0    = "D0"
+    pretty FArg1    = "D1"
+    pretty FArg2    = "D2"
+    pretty FArg3    = "D3"
+    pretty FArg4    = "D4"
+    pretty FArg5    = "D5"
+    pretty FArg6    = "D6"
+    pretty FArg7    = "D7"
 
+data Shift = Zero | Three
+
+instance Pretty Shift where
+    pretty Zero = "#0"; pretty Three = "#3"
+
+data Addr reg = R reg | RP reg Word16 | BI reg reg Shift
+
+instance Pretty reg => Pretty (Addr reg) where
+    pretty (R r)      = brackets (pretty r)
+    pretty (RP r u)   = brackets (pretty r <> "," <+> hexd u)
+    pretty (BI b i s) = brackets (pretty b <> "," <+> pretty i <+> "LSL" <+> pretty s)
+
+data Cond = Eq | Neq | ULeq | UGeq | ULt
+          | Geq | Lt | Gt | Leq
+
+instance Pretty Cond where
+    pretty Eq = "EQ"; pretty Neq = "NE"; pretty ULeq = "LS"; pretty Geq = "GE"
+    pretty Lt = "LT"; pretty Gt = "GT"; pretty Leq = "LE"; pretty ULt = "LO"
+
+-- https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | B { ann :: a, label :: Label }
+                        | Bc { ann :: a, cond :: Cond, label :: Label }
+                        | Bl { ann :: a, cfunc :: CFunc }
                         | FMovXX { ann :: a, dDest :: freg, dSrc :: freg }
                         | FMovXC { ann :: a, dDest :: freg, dC :: Double }
                         | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
+                        | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
+                        | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
+                        | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
+                        | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
+                        | SubRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
+                        | AddRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
+                        | AddRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
+                        | SubRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
+                        | Lsl { ann :: a, rDest :: reg, rSrc :: reg, sC :: Word8 }
+                        | CmpRC { ann :: a, rSrc :: reg, cSrc :: Word16 }
+                        | CmpRR { ann :: a, rSrc1 :: reg, rSrc2 :: reg }
+                        | Neg { ann :: a, rDest :: reg, rSrc :: reg }
+                        | CpyfP { ann :: a, rDest :: reg, rSrc :: reg, rNb :: reg }
+                        | CpyfM { ann :: a, rDest :: reg, rSrc :: reg, rNb :: reg }
+                        | CpyfE { ann :: a, rDest :: reg, rSrc :: reg, rNb :: reg }
+                        | Fmul { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
+                        | Fadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
+                        | Fsub { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
+                        | FcmpZ { ann :: a, dSrc :: freg }
+
+hexd :: Integral a => a -> Doc ann
+hexd = pretty.($"").(("#0x"++).).showHex
 
 dc :: Double -> Doc ann
-dc = pretty . ($ "") . (("#0x"++).) . showHex . castDoubleToWord64
+dc = hexd.castDoubleToWord64
 
 instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
-    pretty (Label _ l)        = prettyLabel l
-    pretty (B _ l)            = i4 ("b" <+> prettyLabel l)
-    pretty (FMovXX _ xr0 xr1) = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
-    pretty (FMovXC _ xr c)    = i4 ("fmov" <+> pretty xr <> "," <+> dc c)
-    pretty (MovRR _ r0 r1)    = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Label _ l)         = prettyLabel l
+    pretty (B _ l)             = i4 ("b" <+> prettyLabel l)
+    pretty (Bc _ c l)          = i4 ("b." <> pretty c <+> prettyLabel l)
+    pretty (Bl _ l)            = i4 ("bl" <+> pretty l)
+    pretty (FMovXX _ xr0 xr1)  = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
+    pretty (FMovXC _ xr c)     = i4 ("fmov" <+> pretty xr <> "," <+> dc c)
+    pretty (MovRR _ r0 r1)     = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (MovRC _ r u)       = i4 ("mov" <+> pretty r <> "," <+> hexd u)
+    pretty (Ldr _ r a)         = i4 ("ldr" <+> pretty r <> "," <+> pretty a)
+    pretty (Str _ r a)         = i4 ("str" <+> pretty r <> "," <+> pretty a)
+    pretty (LdrD _ xr a)       = i4 ("ldr" <+> pretty xr <> "," <+> pretty a)
+    pretty (AddRR _ rD rS rS') = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (SubRR _ rD rS rS') = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (SubRC _ rD rS u)   = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
+    pretty (AddRC _ rD rS u)   = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
+    pretty (Lsl _ rD rS u)     = i4 ("lsl" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
+    pretty (CmpRC _ r u)       = i4 ("cmp" <+> pretty r <> "," <+> hexd u)
+    pretty (CmpRR _ r0 r1)     = i4 ("cmp" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Neg _ rD rS)       = i4 ("neg" <+> pretty rD <> "," <+> pretty rS)
+    pretty (CpyfP _ rD rS rN)  = i4 ("cpyfp" <+> brackets (pretty rD) <> "!," <+> brackets (pretty (rS)) <> "!," <+> pretty rN <> "!")
+    pretty (CpyfM _ rD rS rN)  = i4 ("cpyfm" <+> brackets (pretty rD) <> "!," <+> brackets (pretty (rS)) <> "!," <+> pretty rN <> "!")
+    pretty (CpyfE _ rD rS rN)  = i4 ("cpyfe" <+> brackets (pretty rD) <> "!," <+> brackets (pretty (rS)) <> "!," <+> pretty rN <> "!")
+    pretty (Fmul _ rD r0 r1)   = i4 ("fmul" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Fadd _ rD r0 r1)   = i4 ("fadd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Fsub _ rD r0 r1)   = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (FcmpZ _ xr)        = i4 ("fcmp" <+> pretty xr <> "," <+> "#0")

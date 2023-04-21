@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
-module Dbg ( dumpX86G
+module Dbg ( dumpAAbs
+           , dumpX86G
            , dumpX86Abs
            , dumpX86Liveness
            , dumpIR

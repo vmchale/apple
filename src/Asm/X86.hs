@@ -224,14 +224,6 @@ instance Pretty reg => Pretty (Addr reg) where
     pretty (RSD b One i d) = brackets (pretty b <> pretty i <> pix d)
     pretty (RSD b s i d)   = brackets (pretty b <> "+" <> pretty s <> "*" <> pretty i <> pix d)
 
-data CFunc = Malloc | Free deriving (Generic)
-
-instance NFData CFunc where
-
-instance Pretty CFunc where
-    pretty Malloc = "malloc"
-    pretty Free   = "free"
-
 data X86 reg freg a = Label { ann :: a, label :: Label }
                     | IAddRR { ann :: a, rAdd1 :: reg, rAdd2 :: reg }
                     | IAddRI { ann :: a, rAdd1 :: reg, rAddI :: Int64 }

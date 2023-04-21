@@ -1,6 +1,8 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Asm.M ( WM
+module Asm.M ( CFunc (..)
+             , WM
              , Label
              , nextI
              , nextL
@@ -10,9 +12,11 @@ module Asm.M ( WM
              , prettyAsm
              ) where
 
+import           Control.DeepSeq            (NFData)
 import           Control.Monad.State.Strict (State, gets, modify, runState)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
+import           GHC.Generics               (Generic)
 import qualified IR
 import           Prettyprinter              (Doc, Pretty (pretty), indent)
 import           Prettyprinter.Ext
@@ -38,3 +42,10 @@ nextI = do { i <- gets (head.IR.wtemps); modify (\(IR.WSt l (_:t)) -> IR.WSt l t
 nextL :: WM Label
 nextL = do { i <- gets (head.IR.wlabels); modify (\(IR.WSt (_:l) t) -> IR.WSt l t) $> i }
 
+data CFunc = Malloc | Free deriving (Generic)
+
+instance NFData CFunc where
+
+instance Pretty CFunc where
+    pretty Malloc = "malloc"
+    pretty Free   = "free"
