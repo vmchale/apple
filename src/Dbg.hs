@@ -79,6 +79,9 @@ dumpX86G, dumpX86L :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86G = fmap prettyAsm . x86G
 dumpX86L = fmap prettyAsm . x86L
 
+dumpAarch64 :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpAarch64 = fmap prettyAsm . aarch64
+
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Abs = fmap (prettyAsm . (\(x, st) -> snd (irToX86 st x))) . ir
 

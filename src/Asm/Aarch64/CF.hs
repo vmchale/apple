@@ -32,6 +32,11 @@ addControlFlow ((B _ l):asms) = do
     ; l_i <- lookupLabel l
     ; pure (B (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
     }
+addControlFlow (Ret{}:asms) = do
+    { i <- getFresh
+    ; nextAsms <- addControlFlow asms
+    ; pure (Ret (ControlAnn i [] (singleton CArg0) (fromList [FArg0, FArg1]) IS.empty IS.empty) : nextAsms)
+    }
 addControlFlow (asm:asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms

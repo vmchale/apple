@@ -72,9 +72,12 @@ library
         Asm.X86.Sp
         Asm.X86.Trans
         Asm.Aarch64
+        Asm.Aarch64.B
         Asm.Aarch64.CF
         Asm.Aarch64.LI
+        Asm.Aarch64.Fr
         Asm.Aarch64.P
+        Asm.Aarch64.Opt
         Asm.Aarch64.T
         Asm.G
         Asm.M

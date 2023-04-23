@@ -14,6 +14,7 @@ module P ( Err (..)
          , opt
          , ir
          , eDumpIR
+         , aarch64
          , x86G
          , x86L
          , eDumpX86
@@ -26,6 +27,10 @@ module P ( Err (..)
 import           A
 import           A.Eta
 import           A.Opt
+import           Asm.Aarch64
+import qualified Asm.Aarch64.Opt            as Aarch64
+import qualified Asm.Aarch64.P              as Aarch64
+import           Asm.Aarch64.T
 import           Asm.M
 import           Asm.X86
 import qualified Asm.X86.Alloc              as X86
@@ -107,6 +112,9 @@ funP = aFp <=< either throwIO pure . x86G
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86G
+
+aarch64 :: BSL.ByteString -> Either (Err AlexPosn) [AArch64 AReg FAReg ()]
+aarch64 = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x, st) -> irToAarch64 st x)) . ir
 
 x86L, x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
 x86G = walloc (uncurry X86.gallocFrame)

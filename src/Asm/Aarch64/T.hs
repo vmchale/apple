@@ -39,8 +39,8 @@ ir (IR.L l)      = pure [Label () l]
 ir (IR.J l)      = pure [B () l]
 ir (IR.MX t e)   = feval e t
 ir (IR.MT t e)   = eval e t
-ir (IR.Ma _ t e) = do {plE <- eval e IR.C0; pure $ plE ++ pu ++ [Bl () Malloc, MovRR () (absReg t) CArg0] ++ po}
-ir (IR.Free t) = pure $ pu ++ [MovRR () CArg0 (absReg t), Bl () Free] ++ po
+ir (IR.Ma _ t e) = do {plE <- eval e IR.C0; pure $ plE ++ puL ++ [Bl () Malloc, MovRR () (absReg t) CArg0] ++ poL}
+ir (IR.Free t) = pure $ puL ++ [MovRR () CArg0 (absReg t), Bl () Free] ++ poL
 ir (IR.Wr (IR.AP t Nothing _) e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Str () (IReg r) (R $ absReg t)]
@@ -110,10 +110,9 @@ eval (IR.IB IR.IPlus e0 e1) t = do
     pure $ plE0 ++ plE1 ++ [AddRR () (absReg t) (IReg r0) (IReg r1)]
 eval e _            = error (show e)
 
-pu, po :: [AArch64 AbsReg freg ()]
-pu = [SubRC () ASP ASP 16, Str () LR (R ASP)]
-
-po = [Ldr () LR (R ASP), AddRC () ASP ASP 16]
+puL, poL :: [AArch64 AbsReg freg ()]
+puL = [SubRC () ASP ASP 16, Str () LR (R ASP)]
+poL = [Ldr () LR (R ASP), AddRC () ASP ASP 16]
 
 m12, mu16 :: Integral a => a -> Maybe Word16
 m12 i | i >= 0 && i < 4096 = Just (fromIntegral i) | otherwise = Nothing

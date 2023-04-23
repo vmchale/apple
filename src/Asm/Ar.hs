@@ -3,6 +3,7 @@
 module Asm.Ar ( Arch (..) ) where
 
 import qualified Asm.Aarch64    as AArch64
+import qualified Asm.Aarch64.B  as AArch64
 import qualified Asm.Aarch64.CF as AArch64
 import qualified Asm.X86        as X86
 import qualified Asm.X86.B      as X86
@@ -35,3 +36,4 @@ instance Arch AArch64.AArch64 AArch64.AbsReg AArch64.FAbsReg where
     mf _                        = Nothing
 
     cf = AArch64.mkControlFlow
+    bb = AArch64.bb

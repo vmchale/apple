@@ -1,10 +1,16 @@
-module Asm.Aarch64.P ( galloc, gallocOn ) where
+module Asm.Aarch64.P ( gallocFrame, gallocOn ) where
 
 import           Asm.Aarch64
+import           Asm.Aarch64.Fr
+import           Asm.Aarch64.LI
 import           Asm.Ar.P
 import           Asm.G
-import qualified Data.IntMap as IM
-import qualified Data.Set    as S
+import qualified Data.IntMap    as IM
+import qualified Data.Set       as S
+
+gallocFrame :: Int -- ^ int supply for spilling
+            -> [AArch64 AbsReg FAbsReg ()] -> [AArch64 AReg FAReg ()]
+gallocFrame u = frameC . mkIntervals . galloc u
 
 galloc :: Int -> [AArch64 AbsReg FAbsReg ()] -> [AArch64 AReg FAReg ()]
 galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt)) isns')
@@ -18,10 +24,6 @@ frame clob asms = pre++asms++post++[Ret ()] where
     post = restore $ concatMap po (reverse clobs)
     clobs = S.toList (clob `S.intersection` S.fromList [X19 .. X29])
     scratch=odd(length clobs); save=if scratch then (++[SubRC () SP SP 8]) else id; restore=if scratch then (AddRC () SP SP 8:) else id
-
-pu, po :: AReg -> [AArch64 AReg freg ()]
-pu r = [SubRC () SP SP 8, Str () r (R SP)]
-po r = [Ldr () r (R SP), AddRC () SP SP 8]
 
 gallocOn :: Int -> [AArch64 AbsReg FAbsReg ()] -> (IM.IntMap AReg, IM.IntMap FAReg, [AArch64 AbsReg FAbsReg ()])
 gallocOn u = go u 0 pres

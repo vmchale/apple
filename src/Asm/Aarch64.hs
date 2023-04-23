@@ -6,6 +6,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , Addr (..)
                    , Cond (..)
                    , Shift (..)
+                   , CFunc (..)
                    , AbsReg (..)
                    , FAbsReg (..)
                    , AReg (..)
@@ -14,6 +15,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , mapFR
                    , toInt
                    , fToInt
+                   , pu, po
                    , dc
                    ) where
 
@@ -27,7 +29,7 @@ import           GHC.Generics    (Generic)
 import           Numeric         (showHex)
 import           Prettyprinter   (Doc, Pretty (..), brackets, (<+>))
 
-data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | X31 | SP deriving (Eq, Ord, Enum, Generic)
+data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
 
 instance NFData AReg where
 
@@ -35,8 +37,7 @@ instance Pretty AReg where
     pretty X0 = "X0"; pretty X1 = "X1"; pretty X2 = "X2"; pretty X3 = "X3"; pretty X4 = "X4"; pretty X5 = "X5"; pretty X6 = "X6"; pretty X7 = "X7"
     pretty X8 = "X8"; pretty X9 = "X9"; pretty X10 = "X10"; pretty X11 = "X11"; pretty X12 = "X12"; pretty X13 = "X13"; pretty X14 = "X14"; pretty X15 = "X15"
     pretty X16 = "X16"; pretty X17 = "X17"; pretty X18 = "X18"; pretty X19 = "X19"; pretty X20 = "X20"; pretty X21 = "X21"; pretty X22 = "X22"; pretty X23 = "X23"
-    pretty X24 = "X24"; pretty X25 = "X25"; pretty X26 = "X26"; pretty X27 = "X27"; pretty X28 = "X28"; pretty X29 = "X29"; pretty X30 = "X30"; pretty X31 = "X31"
-    pretty SP = "SP"
+    pretty X24 = "X24"; pretty X25 = "X25"; pretty X26 = "X26"; pretty X27 = "X27"; pretty X28 = "X28"; pretty X29 = "X29"; pretty X30 = "X30"; pretty SP = "SP"
 
 instance Show AReg where show = show.pretty
 
@@ -135,6 +136,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
                         | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
                         | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
+                        | StrD { ann :: a, dSrc :: freg, aDest :: Addr reg }
                         | SubRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
                         | AddRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
                         | AddRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
@@ -152,8 +154,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | FcmpZ { ann :: a, dSrc :: freg }
                         deriving (Functor)
 
-instance Copointed (AArch64 reg freg) where
-    copoint = ann
+instance Copointed (AArch64 reg freg) where copoint = ann
 
 mapR :: (areg -> reg) -> AArch64 areg afreg a -> AArch64 reg afreg a
 mapR _ (Label x l)          = Label x l
@@ -213,6 +214,10 @@ mapFR f (Fsub l xr0 xr1 xr2) = Fsub l (f xr0) (f xr1) (f xr2)
 mapFR f (FcmpZ l xr)         = FcmpZ l (f xr)
 mapFR _ (Ret l)              = Ret l
 
+pu, po :: AReg -> [AArch64 AReg freg ()]
+pu r = [SubRC () SP SP 8, Str () r (R SP)]
+po r = [Ldr () r (R SP), AddRC () SP SP 8]
+
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
 
@@ -231,6 +236,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Ldr _ r a)         = i4 ("ldr" <+> pretty r <> "," <+> pretty a)
     pretty (Str _ r a)         = i4 ("str" <+> pretty r <> "," <+> pretty a)
     pretty (LdrD _ xr a)       = i4 ("ldr" <+> pretty xr <> "," <+> pretty a)
+    pretty (StrD _ xr a)       = i4 ("str" <+> pretty xr <> "," <+> pretty a)
     pretty (AddRR _ rD rS rS') = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (SubRR _ rD rS rS') = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (SubRC _ rD rS u)   = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
