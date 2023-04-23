@@ -4,46 +4,17 @@ module Asm.X86.CF ( mkControlFlow
                   , defs, uses
                   ) where
 
-import           Asm.X86                    as X86
+import           Asm.CF
+import           Asm.X86        as X86
 import           CF
 -- seems to pretty clearly be faster
-import           Class.E                    as E
-import           Control.Monad.State.Strict (State, evalState, gets, modify)
-import           Data.Functor               (($>))
-import qualified Data.IntSet                as IS
-import qualified Data.Map                   as M
-import           Data.Semigroup             ((<>))
-import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
-
--- map of labels by node
-type FreshM = State (Int, M.Map Label Int, M.Map Label [Int])
-
-runFreshM :: FreshM a -> a
-runFreshM = flip evalState (0, mempty, mempty)
+import           Class.E        as E
+import           Data.Functor   (($>))
+import qualified Data.IntSet    as IS
+import           Data.Semigroup ((<>))
 
 mkControlFlow :: (E reg, E freg) => [X86 reg freg ()] -> [X86 reg freg ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
-
-getFresh :: FreshM Int
-getFresh = gets fst3 <* modify (first3 (+1))
-
-lookupLabel :: Label -> FreshM Int
-lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
-
-lC :: Label -> FreshM [Int]
-lC l = gets (M.findWithDefault (error "Internal error in CF graph: node label not in map.") l . thd3)
-
-broadcast :: Int -> Label -> FreshM ()
-broadcast i l = modify (second3 (M.insert l i))
-
-b3 :: Int -> Label -> FreshM ()
-b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is -> i:is}) l))
-
-singleton :: E reg => reg -> IS.IntSet
-singleton = IS.singleton . E.toInt
-
-fromList :: E reg => [reg] -> IS.IntSet
-fromList = foldMap singleton
 
 -- | Annotate instructions with a unique node name and a list of all possible
 -- destinations.

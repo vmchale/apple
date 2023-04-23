@@ -1,5 +1,5 @@
+{-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE InstanceSigs      #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Asm.Aarch64 ( AArch64 (..)
@@ -10,12 +10,16 @@ module Asm.Aarch64 ( AArch64 (..)
                    , FAbsReg (..)
                    , AReg (..)
                    , FAReg (..)
+                   , mapR
+                   , mapFR
+                   , toInt
+                   , fToInt
                    , dc
                    ) where
 
 import           Asm.M
 import           Control.DeepSeq (NFData (..))
-import           Data.Int        (Int16)
+import           Data.Copointed
 import           Data.Semigroup  ((<>))
 import           Data.Word       (Word16, Word8)
 import           GHC.Float       (castDoubleToWord64)
@@ -75,12 +79,36 @@ instance Pretty FAbsReg where
     pretty FArg6    = "D6"
     pretty FArg7    = "D7"
 
+toInt :: AbsReg -> Int
+toInt CArg0    = 0
+toInt CArg1    = 1
+toInt CArg2    = 2
+toInt CArg3    = 3
+toInt CArg4    = 4
+toInt CArg5    = 5
+toInt CArg6    = 6
+toInt CArg7    = 7
+toInt LR       = 8
+toInt ASP      = 9
+toInt (IReg i) = 18+i
+
+fToInt :: FAbsReg -> Int
+fToInt FArg0    = 10
+fToInt FArg1    = 11
+fToInt FArg2    = 12
+fToInt FArg3    = 13
+fToInt FArg4    = 14
+fToInt FArg5    = 15
+fToInt FArg6    = 16
+fToInt FArg7    = 17
+fToInt (FReg i) = 18+i
+
 data Shift = Zero | Three
 
 instance Pretty Shift where
     pretty Zero = "#0"; pretty Three = "#3"
 
-data Addr reg = R reg | RP reg Word16 | BI reg reg Shift
+data Addr reg = R reg | RP reg Word16 | BI reg reg Shift deriving Functor
 
 instance Pretty reg => Pretty (Addr reg) where
     pretty (R r)      = brackets (pretty r)
@@ -99,6 +127,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | B { ann :: a, label :: Label }
                         | Bc { ann :: a, cond :: Cond, label :: Label }
                         | Bl { ann :: a, cfunc :: CFunc }
+                        | Ret { ann :: a }
                         | FMovXX { ann :: a, dDest :: freg, dSrc :: freg }
                         | FMovXC { ann :: a, dDest :: freg, dC :: Double }
                         | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
@@ -121,6 +150,68 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Fadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
                         | Fsub { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
                         | FcmpZ { ann :: a, dSrc :: freg }
+                        deriving (Functor)
+
+instance Copointed (AArch64 reg freg) where
+    copoint = ann
+
+mapR :: (areg -> reg) -> AArch64 areg afreg a -> AArch64 reg afreg a
+mapR _ (Label x l)          = Label x l
+mapR _ (B x l)              = B x l
+mapR _ (Bc x c l)           = Bc x c l
+mapR _ (Bl x f)             = Bl x f
+mapR _ (FMovXX l r0 r1)     = FMovXX l r0 r1
+mapR _ (FMovXC l r0 c)      = FMovXC l r0 c
+mapR f (MovRR l r0 r1)      = MovRR l (f r0) (f r1)
+mapR f (MovRC l r c)        = MovRC l (f r) c
+mapR f (Ldr l r a)          = Ldr l (f r) (f <$> a)
+mapR f (Str l r a)          = Str l (f r) (f <$> a)
+mapR f (LdrD l xr a)        = LdrD l xr (f <$> a)
+mapR f (AddRR l r0 r1 r2)   = AddRR l (f r0) (f r1) (f r2)
+mapR f (SubRR l r0 r1 r2)   = SubRR l (f r0) (f r1) (f r2)
+mapR f (AddRC l r0 r1 c)    = AddRC l (f r0) (f r1) c
+mapR f (SubRC l r0 r1 c)    = SubRC l (f r0) (f r1) c
+mapR f (Lsl l r0 r1 s)      = Lsl l (f r0) (f r1) s
+mapR f (CmpRR l r0 r1)      = CmpRR l (f r0) (f r1)
+mapR f (CmpRC l r c)        = CmpRC l (f r) c
+mapR f (Neg l r0 r1)        = Neg l (f r0) (f r1)
+mapR f (CpyfP l r0 r1 r2)   = CpyfP l (f r0) (f r1) (f r2)
+mapR f (CpyfM l r0 r1 r2)   = CpyfM l (f r0) (f r1) (f r2)
+mapR f (CpyfE l r0 r1 r2)   = CpyfE l (f r0) (f r1) (f r2)
+mapR _ (Fadd l xr0 xr1 xr2) = Fadd l xr0 xr1 xr2
+mapR _ (Fsub l xr0 xr1 xr2) = Fsub l xr0 xr1 xr2
+mapR _ (Fmul l xr0 xr1 xr2) = Fmul l xr0 xr1 xr2
+mapR _ (FcmpZ l xr)         = FcmpZ l xr
+mapR _ (Ret l)              = Ret l
+
+mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
+mapFR _ (Label x l)          = Label x l
+mapFR _ (B x l)              = B x l
+mapFR _ (Bc x c l)           = Bc x c l
+mapFR _ (Bl x f)             = Bl x f
+mapFR f (FMovXX l xr0 xr1)   = FMovXX l (f xr0) (f xr1)
+mapFR f (FMovXC l xr c)      = FMovXC l (f xr) c
+mapFR _ (MovRR l r0 r1)      = MovRR l r0 r1
+mapFR _ (MovRC l r0 c)       = MovRC l r0 c
+mapFR _ (Ldr l r a)          = Ldr l r a
+mapFR _ (Str l r a)          = Str l r a
+mapFR f (LdrD l xr a)        = LdrD l (f xr) a
+mapFR _ (AddRR l r0 r1 r2)   = AddRR l r0 r1 r2
+mapFR _ (AddRC l r0 r1 c)    = AddRC l r0 r1 c
+mapFR _ (SubRR l r0 r1 r2)   = SubRR l r0 r1 r2
+mapFR _ (SubRC l r0 r1 c)    = SubRC l r0 r1 c
+mapFR _ (Lsl l r0 r1 s)      = Lsl l r0 r1 s
+mapFR _ (CmpRC l r c)        = CmpRC l r c
+mapFR _ (CmpRR l r0 r1)      = CmpRR l r0 r1
+mapFR _ (Neg l r0 r1)        = Neg l r0 r1
+mapFR _ (CpyfP l r0 r1 r2)   = CpyfP l r0 r1 r2
+mapFR _ (CpyfM l r0 r1 r2)   = CpyfM l r0 r1 r2
+mapFR _ (CpyfE l r0 r1 r2)   = CpyfE l r0 r1 r2
+mapFR f (Fmul l xr0 xr1 xr2) = Fmul l (f xr0) (f xr1) (f xr2)
+mapFR f (Fadd l xr0 xr1 xr2) = Fadd l (f xr0) (f xr1) (f xr2)
+mapFR f (Fsub l xr0 xr1 xr2) = Fsub l (f xr0) (f xr1) (f xr2)
+mapFR f (FcmpZ l xr)         = FcmpZ l (f xr)
+mapFR _ (Ret l)              = Ret l
 
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
@@ -155,3 +246,4 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fadd _ rD r0 r1)   = i4 ("fadd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fsub _ rD r0 r1)   = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (FcmpZ _ xr)        = i4 ("fcmp" <+> pretty xr <> "," <+> "#0")
+    pretty Ret{}               = i4 "ret"

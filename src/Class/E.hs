@@ -1,6 +1,7 @@
 module Class.E ( E (..) ) where
 
-import qualified Asm.X86 as X86
+import qualified Asm.Aarch64 as AArch64
+import qualified Asm.X86     as X86
 
 class E a where
     toInt :: a -> Int
@@ -46,3 +47,9 @@ instance E X86.AbsReg where
 
 instance E X86.FAbsReg where
     toInt = X86.fToInt
+
+instance E AArch64.AbsReg where
+    toInt = AArch64.toInt
+
+instance E AArch64.FAbsReg where
+    toInt = AArch64.fToInt
