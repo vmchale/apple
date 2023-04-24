@@ -15,7 +15,6 @@ module Asm.Aarch64 ( AArch64 (..)
                    , toInt
                    , fToInt
                    , pu, po
-                   , dc
                    ) where
 
 import           Asm.M
@@ -130,9 +129,11 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Bl { ann :: a, cfunc :: CFunc }
                         | Ret { ann :: a }
                         | FMovXX { ann :: a, dDest :: freg, dSrc :: freg }
+                        | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                         | FMovXC { ann :: a, dDest :: freg, dC :: Double }
                         | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
                         | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
+                        | MovK { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                         | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
                         | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
                         | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
@@ -193,6 +194,8 @@ mapR f (StrD l d a)         = StrD l d (f <$> a)
 mapR _ (Fdiv l d0 d1 d2)    = Fdiv l d0 d1 d2
 mapR f (Scvtf l d r)        = Scvtf l d (f r)
 mapR f (Fcvtms l r d)       = Fcvtms l (f r) d
+mapR f (MovK l r u s)       = MovK l (f r) u s
+mapR f (FMovDR l d r)       = FMovDR l d (f r)
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)          = Label x l
@@ -227,6 +230,8 @@ mapFR _ (MulRR l r0 r1 r2)   = MulRR l r0 r1 r2
 mapFR f (StrD l d a)         = StrD l (f d) a
 mapFR f (Scvtf l d r)        = Scvtf l (f d) r
 mapFR f (Fcvtms l r d)       = Fcvtms l r (f d)
+mapFR _ (MovK l r u s)       = MovK l r u s
+mapFR f (FMovDR l d r)       = FMovDR l (f d) r
 
 pu, po :: AReg -> [AArch64 AReg freg ()]
 pu r = [SubRC () SP SP 8, Str () r (R SP)]
@@ -235,8 +240,6 @@ po r = [Ldr () r (R SP), AddRC () SP SP 8]
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
 
-dc :: Double -> Doc ann
-dc = hexd.castDoubleToWord64
 
 instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Label _ l)         = prettyLabel l <> ":"
@@ -244,7 +247,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Bc _ c l)          = i4 ("b." <> pretty c <+> prettyLabel l)
     pretty (Bl _ l)            = i4 ("bl" <+> pretty l)
     pretty (FMovXX _ xr0 xr1)  = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
-    pretty (FMovXC _ xr c)     = i4 ("fmov" <+> pretty xr <> "," <+> dc c)
+    pretty (FMovDR _ d r)      = i4 ("fmov" <+> pretty d <> "," <+> pretty r)
     pretty (MovRR _ r0 r1)     = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
     pretty (MovRC _ r u)       = i4 ("mov" <+> pretty r <> "," <+> hexd u)
     pretty (Ldr _ r a)         = i4 ("ldr" <+> pretty r <> "," <+> pretty a)
@@ -270,4 +273,5 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (FcmpZ _ xr)        = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
     pretty Ret{}               = i4 "ret"
     pretty (Scvtf _ d r)       = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
-    pretty (Fcvtms _ r d)      = i4 ("fcvtms" <+> pretty r <+> "," <+> pretty d)
+    pretty (Fcvtms _ r d)      = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
+    pretty (MovK _ r i s)      = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s )

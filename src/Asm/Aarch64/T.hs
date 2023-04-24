@@ -4,9 +4,10 @@ import           Asm.Aarch64
 import           Asm.M
 import           Control.Monad.State.Strict (runState)
 import           Data.Bifunctor             (second)
-import           Data.Int                   (Int64)
+import           Data.Bits                  (rotateR, (.&.))
 import           Data.Tuple                 (swap)
-import           Data.Word                  (Word16, Word8)
+import           Data.Word                  (Word16)
+import           GHC.Float                  (castDoubleToWord64)
 import qualified IR
 
 absReg :: IR.Temp -> AbsReg
@@ -75,7 +76,12 @@ ir s             = error (show s)
 
 feval :: IR.FExp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
-feval (IR.ConstF d) t = pure [FMovXC () (fabsReg t) d]
+feval (IR.ConstF d) t = do
+    i <- nextI
+    let r=IReg i
+        w=castDoubleToWord64 d
+        w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
+    pure [MovRC () r (fromIntegral w0), MovK () r (fromIntegral w1) 16, MovK () r (fromIntegral w2) 32, MovK () r (fromIntegral w3) 48, FMovDR () (fabsReg t) r]
 feval (IR.FAt (IR.AP tS (Just (IR.ConstI i)) _)) tD | Just i8 <- mp i = pure [LdrD () (fabsReg tD) (RP (absReg tS) i8)]
 feval (IR.FB IR.FPlus e0 e1) t = do
     i1 <- nextI; i2 <- nextI

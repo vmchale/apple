@@ -2,6 +2,7 @@
 {-# LANGUAGE TupleSections     #-}
 
 module Dbg ( dumpAAbs
+           , dumpAarch64
            , dumpX86G
            , dumpX86Abs
            , dumpX86Liveness
