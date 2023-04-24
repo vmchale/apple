@@ -75,6 +75,11 @@ uses FcmpZ{}            = IS.empty
 uses (CpyfP _ r0 r1 r2) = fromList [r0, r1, r2]
 uses (CpyfM _ r0 r1 r2) = fromList [r0, r1, r2]
 uses (CpyfE _ r0 r1 r2) = fromList [r0, r1, r2]
+uses (StrD _ _ a)       = uA a
+uses (MulRR _ _ r0 r1)  = fromList [r0, r1]
+uses Fdiv{}             = IS.empty
+uses (Scvtf _ _ r)      = singleton r
+uses Fcvtms{}           = IS.empty
 
 defs Label{}         = IS.empty
 defs B{}             = IS.empty
@@ -102,6 +107,11 @@ defs FcmpZ{}         = IS.empty
 defs CpyfP{}         = IS.empty
 defs CpyfM{}         = IS.empty
 defs CpyfE{}         = IS.empty
+defs StrD{}          = IS.empty
+defs (MulRR _ r _ _) = singleton r
+defs Fdiv{}          = IS.empty
+defs Scvtf{}         = IS.empty
+defs (Fcvtms _ r _)  = singleton r
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
 defsF Label{}        = IS.empty
@@ -130,6 +140,11 @@ defsF (Fmul _ r _ _) = singleton r
 defsF (Fadd _ r _ _) = singleton r
 defsF (Fsub _ r _ _) = singleton r
 defsF FcmpZ{}        = IS.empty
+defsF (Fdiv _ d _ _) = singleton d
+defsF StrD{}         = IS.empty
+defsF MulRR{}        = IS.empty
+defsF (Scvtf _ r _)  = singleton r
+defsF Fcvtms{}       = IS.empty
 
 usesF Label{}          = IS.empty
 usesF B{}              = IS.empty
@@ -157,6 +172,11 @@ usesF (Fadd _ _ r0 r1) = fromList [r0, r1]
 usesF (Fsub _ _ r0 r1) = fromList [r0, r1]
 usesF (Fmul _ _ r0 r1) = fromList [r0, r1]
 usesF (FcmpZ _ r)      = singleton r
+usesF (Fdiv _ _ r0 r1) = fromList [r0, r1]
+usesF (StrD _ r _)     = singleton r
+usesF MulRR{}          = IS.empty
+usesF Scvtf{}          = IS.empty
+usesF (Fcvtms _ _ r)   = singleton r
 
 next :: (E reg, E freg) => [AArch64 reg freg ()] -> FreshM ([Int] -> [Int], [AArch64 reg freg ControlAnn])
 next asms = do

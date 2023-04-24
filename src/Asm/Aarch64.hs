@@ -139,6 +139,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | StrD { ann :: a, dSrc :: freg, aDest :: Addr reg }
                         | SubRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
                         | AddRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
+                        | MulRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
                         | AddRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
                         | SubRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
                         | Lsl { ann :: a, rDest :: reg, rSrc :: reg, sC :: Word8 }
@@ -151,7 +152,10 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Fmul { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
                         | Fadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
                         | Fsub { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
+                        | Fdiv { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
                         | FcmpZ { ann :: a, dSrc :: freg }
+                        | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
+                        | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
                         deriving (Functor)
 
 instance Copointed (AArch64 reg freg) where copoint = ann
@@ -184,6 +188,11 @@ mapR _ (Fsub l xr0 xr1 xr2) = Fsub l xr0 xr1 xr2
 mapR _ (Fmul l xr0 xr1 xr2) = Fmul l xr0 xr1 xr2
 mapR _ (FcmpZ l xr)         = FcmpZ l xr
 mapR _ (Ret l)              = Ret l
+mapR f (MulRR l r0 r1 r2)   = MulRR l (f r0) (f r1) (f r2)
+mapR f (StrD l d a)         = StrD l d (f <$> a)
+mapR _ (Fdiv l d0 d1 d2)    = Fdiv l d0 d1 d2
+mapR f (Scvtf l d r)        = Scvtf l d (f r)
+mapR f (Fcvtms l r d)       = Fcvtms l (f r) d
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)          = Label x l
@@ -213,6 +222,11 @@ mapFR f (Fadd l xr0 xr1 xr2) = Fadd l (f xr0) (f xr1) (f xr2)
 mapFR f (Fsub l xr0 xr1 xr2) = Fsub l (f xr0) (f xr1) (f xr2)
 mapFR f (FcmpZ l xr)         = FcmpZ l (f xr)
 mapFR _ (Ret l)              = Ret l
+mapFR f (Fdiv l d0 d1 d2)    = Fdiv l (f d0) (f d1) (f d2)
+mapFR _ (MulRR l r0 r1 r2)   = MulRR l r0 r1 r2
+mapFR f (StrD l d a)         = StrD l (f d) a
+mapFR f (Scvtf l d r)        = Scvtf l (f d) r
+mapFR f (Fcvtms l r d)       = Fcvtms l r (f d)
 
 pu, po :: AReg -> [AArch64 AReg freg ()]
 pu r = [SubRC () SP SP 8, Str () r (R SP)]
@@ -239,6 +253,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (StrD _ xr a)       = i4 ("str" <+> pretty xr <> "," <+> pretty a)
     pretty (AddRR _ rD rS rS') = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (SubRR _ rD rS rS') = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (MulRR _ rD rS rS') = i4 ("mul" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (SubRC _ rD rS u)   = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
     pretty (AddRC _ rD rS u)   = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
     pretty (Lsl _ rD rS u)     = i4 ("lsl" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
@@ -251,5 +266,8 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fmul _ rD r0 r1)   = i4 ("fmul" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fadd _ rD r0 r1)   = i4 ("fadd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fsub _ rD r0 r1)   = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Fdiv _ rD r0 r1)   = i4 ("fdiv" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (FcmpZ _ xr)        = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
     pretty Ret{}               = i4 "ret"
+    pretty (Scvtf _ d r)       = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
+    pretty (Fcvtms _ r d)      = i4 ("fcvtms" <+> pretty r <+> "," <+> pretty d)

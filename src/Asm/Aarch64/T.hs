@@ -50,10 +50,17 @@ ir (IR.Wr (IR.AP t (Just (IR.ConstI i)) _) e) | Just p <- mp i = do
 ir (IR.MJ (IR.IRel IR.IGeq e (IR.ConstI i)) l) | Just u <- m12 i = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [CmpRC () (IReg r) u, Bc () Geq l]
+ir (IR.MJ (IR.IRel IR.IEq e (IR.ConstI i)) l) | Just u <- m12 i = do
+    r <- nextI; plE <- eval e (IR.ITemp r)
+    pure $ plE ++ [CmpRC () (IReg r) u, Bc () Eq l]
 ir (IR.MJ (IR.IRel IR.IGeq e0 e1) l) = do
     r0 <- nextI; r1 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
     pure $ plE0 ++ plE1 ++ [CmpRR () (IReg r0) (IReg r1), Bc () Geq l]
+ir (IR.MJ (IR.IRel IR.IGt e0 e1) l) = do
+    r0 <- nextI; r1 <- nextI
+    plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
+    pure $ plE0 ++ plE1 ++ [CmpRR () (IReg r0) (IReg r1), Bc () Gt l]
 ir (IR.MJ (IR.FRel IR.FGeq e (IR.ConstF 0)) l) = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [FcmpZ () (FReg i), Bc () Geq l]
@@ -63,7 +70,7 @@ ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
     plES <- eval (IR.IB IR.IPlus (IR.Reg tS) eS) (IR.ITemp rS)
     plEN <- eval eN (IR.ITemp rN)
     let rDA=IReg rD; rSA=IReg rS; rNA=IReg rN
-    pure $ plES ++ plES ++ plEN ++ [CpyfP () rDA rSA rNA, CpyfM () rDA rSA rNA, CpyfE () rDA rSA rNA]
+    pure $ plED ++ plES ++ plEN ++ [CpyfP () rDA rSA rNA, CpyfM () rDA rSA rNA, CpyfE () rDA rSA rNA]
 ir s             = error (show s)
 
 feval :: IR.FExp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
@@ -82,9 +89,14 @@ feval (IR.FB IR.FMinus e0 e1) t = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
     pure $ plE0 ++ plE1 ++ [Fsub () (fabsReg t) (FReg i1) (FReg i2)]
+feval (IR.FB IR.FDiv e0 e1) t = do
+    i1 <- nextI; i2 <- nextI
+    plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
+    pure $ plE0 ++ plE1 ++ [Fdiv () (fabsReg t) (FReg i1) (FReg i2)]
 feval (IR.FAt (IR.AP tB (Just e) _)) tD = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [LdrD () (fabsReg tD) (BI (absReg tB) (IReg i) Zero)]
+feval (IR.FConv (IR.Reg r)) tD = pure [Scvtf () (fabsReg tD) (absReg r)]
 feval e _             = error (show e)
 
 eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
@@ -108,6 +120,11 @@ eval (IR.IB IR.IPlus e0 e1) t = do
     r0 <- nextI; r1 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
     pure $ plE0 ++ plE1 ++ [AddRR () (absReg t) (IReg r0) (IReg r1)]
+eval (IR.IB IR.ITimes e0 e1) t = do
+    r0 <- nextI; r1 <- nextI
+    plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
+    pure $ plE0 ++ plE1 ++ [MulRR () (absReg t) (IReg r0) (IReg r1)]
+eval (IR.IRFloor (IR.FReg r)) t = pure [Fcvtms () (absReg t) (fabsReg r)]
 eval e _            = error (show e)
 
 puL, poL :: [AArch64 AbsReg freg ()]
