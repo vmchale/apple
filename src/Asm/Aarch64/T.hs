@@ -65,6 +65,10 @@ ir (IR.MJ (IR.IRel IR.IGt e0 e1) l) = do
 ir (IR.MJ (IR.FRel IR.FGeq e (IR.ConstF 0)) l) = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [FcmpZ () (FReg i), Bc () Geq l]
+ir (IR.MJ (IR.FRel IR.FGeq e0 e1) l) = do
+    r0 <- nextI; r1 <- nextI
+    plE0 <- feval e0 (IR.FTemp r0); plE1 <- feval e1 (IR.FTemp r1)
+    pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () Geq l]
 ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
     rD <- nextI; rS <- nextI; rN <- nextI
     plED <- eval (IR.IB IR.IPlus (IR.Reg tD) eD) (IR.ITemp rD)
