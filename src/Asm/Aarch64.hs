@@ -6,7 +6,6 @@ module Asm.Aarch64 ( AArch64 (..)
                    , Addr (..)
                    , Cond (..)
                    , Shift (..)
-                   , CFunc (..)
                    , AbsReg (..)
                    , FAbsReg (..)
                    , AReg (..)
@@ -29,7 +28,7 @@ import           GHC.Generics    (Generic)
 import           Numeric         (showHex)
 import           Prettyprinter   (Doc, Pretty (..), brackets, (<+>))
 
-data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
+data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | X31 | SP deriving (Eq, Ord, Enum, Generic)
 
 instance NFData AReg where
 
@@ -37,7 +36,8 @@ instance Pretty AReg where
     pretty X0 = "X0"; pretty X1 = "X1"; pretty X2 = "X2"; pretty X3 = "X3"; pretty X4 = "X4"; pretty X5 = "X5"; pretty X6 = "X6"; pretty X7 = "X7"
     pretty X8 = "X8"; pretty X9 = "X9"; pretty X10 = "X10"; pretty X11 = "X11"; pretty X12 = "X12"; pretty X13 = "X13"; pretty X14 = "X14"; pretty X15 = "X15"
     pretty X16 = "X16"; pretty X17 = "X17"; pretty X18 = "X18"; pretty X19 = "X19"; pretty X20 = "X20"; pretty X21 = "X21"; pretty X22 = "X22"; pretty X23 = "X23"
-    pretty X24 = "X24"; pretty X25 = "X25"; pretty X26 = "X26"; pretty X27 = "X27"; pretty X28 = "X28"; pretty X29 = "X29"; pretty X30 = "X30"; pretty SP = "SP"
+    pretty X24 = "X24"; pretty X25 = "X25"; pretty X26 = "X26"; pretty X27 = "X27"; pretty X28 = "X28"; pretty X29 = "X29"; pretty X30 = "X30"; pretty X31 = "X31"
+    pretty SP = "SP"
 
 instance Show AReg where show = show.pretty
 
@@ -114,7 +114,7 @@ data Addr reg = R reg | RP reg Word16 | BI reg reg Shift deriving Functor
 instance Pretty reg => Pretty (Addr reg) where
     pretty (R r)      = brackets (pretty r)
     pretty (RP r u)   = brackets (pretty r <> "," <+> hexd u)
-    pretty (BI b i s) = brackets (pretty b <> "," <+> pretty i <+> "LSL" <+> pretty s)
+    pretty (BI b i s) = brackets (pretty b <> "," <+> pretty i <> "," <+> "LSL" <+> pretty s)
 
 data Cond = Eq | Neq | ULeq | UGeq | ULt
           | Geq | Lt | Gt | Leq
@@ -225,7 +225,7 @@ dc :: Double -> Doc ann
 dc = hexd.castDoubleToWord64
 
 instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
-    pretty (Label _ l)         = prettyLabel l
+    pretty (Label _ l)         = prettyLabel l <> ":"
     pretty (B _ l)             = i4 ("b" <+> prettyLabel l)
     pretty (Bc _ c l)          = i4 ("b." <> pretty c <+> prettyLabel l)
     pretty (Bl _ l)            = i4 ("bl" <+> pretty l)
@@ -251,5 +251,5 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fmul _ rD r0 r1)   = i4 ("fmul" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fadd _ rD r0 r1)   = i4 ("fadd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fsub _ rD r0 r1)   = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (FcmpZ _ xr)        = i4 ("fcmp" <+> pretty xr <> "," <+> "#0")
+    pretty (FcmpZ _ xr)        = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
     pretty Ret{}               = i4 "ret"

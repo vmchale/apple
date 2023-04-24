@@ -1,5 +1,6 @@
-{-# LANGUAGE DeriveGeneric    #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- pipeline
 module P ( Err (..)
@@ -15,6 +16,7 @@ module P ( Err (..)
          , ir
          , eDumpIR
          , aarch64
+         , as
          , x86G
          , x86L
          , eDumpX86
@@ -40,12 +42,13 @@ import           Asm.X86.Opt
 import qualified Asm.X86.P                  as X86
 import           Asm.X86.Trans
 import           Control.DeepSeq            (NFData)
-import           Control.Exception          (Exception, throwIO)
+import           Control.Exception          (Exception, throw, throwIO)
 import           Control.Monad              ((<=<))
 import           Control.Monad.State.Strict (evalState, state)
 import           Data.Bifunctor             (first, second)
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
+import qualified Data.Text                  as T
 import           Data.Typeable              (Typeable)
 import           Foreign.Ptr                (FunPtr)
 import           GHC.Generics               (Generic)
@@ -59,6 +62,7 @@ import           Nm
 import           Parser
 import           Parser.Rw
 import           Prettyprinter              (Doc, Pretty (..))
+import           Prettyprinter.Ext
 import           R.Dfn
 import           R.R
 import           Ty
@@ -112,6 +116,10 @@ funP = aFp <=< either throwIO pure . x86G
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86G
+
+as :: T.Text -> BSL.ByteString -> Doc ann
+as f = (prolegomena <#>) . prettyAsm . either throw id . aarch64
+    where prolegomena = ".p2align 2\n\n.text\n\n.global _" <> pretty f <#> "_" <> pretty f <> ":"
 
 aarch64 :: BSL.ByteString -> Either (Err AlexPosn) [AArch64 AReg FAReg ()]
 aarch64 = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x, st) -> irToAarch64 st x)) . ir

@@ -1,6 +1,7 @@
 module Asm.Aarch64.Fr ( frameC ) where
 
 import           Asm.Aarch64
+import           Asm.M
 import           CF
 import           Data.Copointed
 import           Data.Functor   (void)

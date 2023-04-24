@@ -80,6 +80,7 @@ instance E AArch64.AReg where
     toInt AArch64.X28 = -21
     toInt AArch64.X29 = -22
     toInt AArch64.X30 = 8
+    toInt AArch64.X31 = -47
     toInt AArch64.SP  = 9
 
 instance E AArch64.FAReg where
@@ -99,6 +100,22 @@ instance E AArch64.FAReg where
     toInt AArch64.D13 = -28
     toInt AArch64.D14 = -29
     toInt AArch64.D15 = -30
+    toInt AArch64.D16 = -31
+    toInt AArch64.D17 = -32
+    toInt AArch64.D18 = -33
+    toInt AArch64.D19 = -34
+    toInt AArch64.D20 = -35
+    toInt AArch64.D21 = -36
+    toInt AArch64.D22 = -37
+    toInt AArch64.D23 = -38
+    toInt AArch64.D24 = -39
+    toInt AArch64.D25 = -40
+    toInt AArch64.D26 = -41
+    toInt AArch64.D27 = -42
+    toInt AArch64.D28 = -43
+    toInt AArch64.D29 = -44
+    toInt AArch64.D30 = -45
+    toInt AArch64.D31 = -46
 
 instance E AArch64.AbsReg where
     toInt = AArch64.toInt

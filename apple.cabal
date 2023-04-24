@@ -190,6 +190,7 @@ executable writeo
     main-is:          Main.hs
     hs-source-dirs:   exe
     other-modules:
+        As
         Nasm
         Paths_apple
 

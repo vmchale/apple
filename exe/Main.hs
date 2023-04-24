@@ -6,7 +6,8 @@ import qualified Data.ByteString.Lazy      as BSL
 import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
 import qualified Data.Version              as V
-import           Nasm
+import qualified Nasm
+import qualified As
 import           Options.Applicative
 import           P
 import qualified Paths_apple               as P
@@ -43,5 +44,6 @@ run (fpϵ, n) = do
     contents <- BSL.readFile fpϵ
     t <- either throwIO (pure.fst) (getTy contents)
     ct <- either throwIO pure $ pCty n t
-    writeO n contents True
+    -- Nasm.writeO n contents True
+    As.writeO n contents True
     withFile (T.unpack n <> ".h") WriteMode $ \h -> hPutDoc h ct
