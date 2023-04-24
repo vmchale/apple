@@ -81,7 +81,7 @@ feval (IR.ConstF d) t = do
     let r=IReg i
         w=castDoubleToWord64 d
         w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
-    pure [MovRC () r (fromIntegral w0), MovK () r (fromIntegral w1) 16, MovK () r (fromIntegral w2) 32, MovK () r (fromIntegral w3) 48, FMovDR () (fabsReg t) r]
+    pure $ MovRC () r (fromIntegral w0):[MovK () r (fromIntegral wi) s | (wi, s) <- [(w1, 16), (w2, 32), (w3, 48)], wi /= 0 ] ++ [FMovDR () (fabsReg t) r]
 feval (IR.FAt (IR.AP tS (Just (IR.ConstI i)) _)) tD | Just i8 <- mp i = pure [LdrD () (fabsReg tD) (RP (absReg tS) i8)]
 feval (IR.FB IR.FPlus e0 e1) t = do
     i1 <- nextI; i2 <- nextI
