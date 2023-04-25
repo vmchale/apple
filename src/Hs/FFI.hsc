@@ -27,7 +27,7 @@ allocNear i sz =
 
 allocExec :: CSize -> IO (Ptr a)
 allocExec sz =
-    mmap nullPtr sz #{const PROT_WRITE} (#{const MAP_32BIT} .|. #{const MAP_PRIVATE} .|. #{const MAP_ANONYMOUS} .|. #{const MAP_JIT}) (-1) 0
+    mmap nullPtr sz #{const PROT_WRITE} (#{const MAP_PRIVATE} .|. #{const MAP_ANONYMOUS} .|. #{const MAP_JIT}) (-1) 0
 
 finish :: BS.ByteString -> Ptr CChar -> IO (FunPtr a)
 finish bs fAt = BS.unsafeUseAsCStringLen bs $ \(b, sz) -> do
