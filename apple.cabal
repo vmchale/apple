@@ -73,6 +73,7 @@ library
         Asm.X86.Trans
         Asm.Aarch64
         Asm.Aarch64.B
+        Asm.Aarch64.Byte
         Asm.Aarch64.CF
         Asm.Aarch64.LI
         Asm.Aarch64.Fr

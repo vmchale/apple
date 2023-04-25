@@ -31,6 +31,7 @@ import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, 
                                             setComplete, simpleCompletion)
 import           System.Directory          (getHomeDirectory)
 import           System.FilePath           ((</>))
+import           System.Info               (arch)
 import           Ty
 
 main :: IO ()
@@ -39,13 +40,15 @@ main = runRepl loop
 namesStr :: StateT Env IO [String]
 namesStr = gets (fmap (T.unpack.name.fst) . ee)
 
-data Env = Env { _lex :: AlexUserState, ee :: [(Nm AlexPosn, E AlexPosn)], mf :: (Int, Int) }
+data Arch = X64 | AArch64
+
+data Env = Env { _lex :: AlexUserState, ee :: [(Nm AlexPosn, E AlexPosn)], mf :: (Int, Int), _arch :: Arch }
 
 aEe :: Nm AlexPosn -> E AlexPosn -> Env -> Env
-aEe n e (Env l ees mm) = Env l ((n,e):ees) mm
+aEe n e (Env l ees mm a) = Env l ((n,e):ees) mm a
 
 setL :: AlexUserState -> Env -> Env
-setL lSt (Env _ ees mm) = Env lSt ees mm
+setL lSt (Env _ ees mm a) = Env lSt ees mm a
 
 type Repl a = InputT (StateT Env IO)
 
@@ -56,7 +59,7 @@ runRepl :: Repl a x -> IO x
 runRepl x = do
     histDir <- (</> ".apple_history") <$> getHomeDirectory
     mfϵ <- mem'
-    let initSt = Env alexInitUserState [] mfϵ
+    let initSt = Env alexInitUserState [] mfϵ (case arch of {"x86_64" -> X64; "aarch64" -> AArch64; _ -> error "Unsupported architecture!"})
     let myCompleter = appleCompletions `fallbackCompletion` completeFilename
     let settings = setComplete myCompleter $ defaultSettings { historyFile = Just histDir }
     flip evalStateT initSt $ runInputT settings x
@@ -189,11 +192,14 @@ ubs :: String -> BSL.ByteString
 ubs = encodeUtf8 . TL.pack
 
 disasm :: String -> Repl AlexPosn ()
-disasm s = liftIO $ do
-    res <- dtxt (ubs s)
-    case res of
-        Left err -> putDoc (pretty err <> hardline)
-        Right b  -> TIO.putStr b
+disasm s = do
+    a <- lift $ gets _arch
+    let d=case a of {X64 -> dtxt; AArch64 -> dAtxt}
+    liftIO $ do
+        res <- d (ubs s)
+        case res of
+            Left err -> putDoc (pretty err <> hardline)
+            Right b  -> TIO.putStr b
 
 irR :: String -> Repl AlexPosn ()
 irR s = do
@@ -208,12 +214,13 @@ irR s = do
 
 dumpAsmG :: String -> Repl AlexPosn ()
 dumpAsmG s = do
-    st <- lift $ gets _lex
+    st <- lift $ gets _lex; a <- lift $ gets _arch
+    let dump = case a of {X64 -> eDumpX86; AArch64 -> eDumpAarch64}
     case rwP st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            liftIO $ case eDumpX86 i eC of
+            liftIO $ case dump i eC of
                 Left err -> putDoc (pretty err <> hardline)
                 Right d  -> putDoc (d <> hardline)
 

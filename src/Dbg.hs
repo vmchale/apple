@@ -14,14 +14,16 @@ module Dbg ( dumpAAbs
            , printTypes
            , topt
            , nasm
-           , pBIO, dtxt
+           , pBIO, dtxt, dAtxt
            , module P
            ) where
 
 import           A
+import qualified Asm.Aarch64          as Aarch64
+import qualified Asm.Aarch64.Byte     as Aarch64
 import           Asm.Aarch64.T
 import           Asm.M
-import           Asm.X86
+import qualified Asm.X86              as X86
 import           Asm.X86.Byte
 import qualified Asm.X86.CF           as X86
 import           Asm.X86.P
@@ -56,9 +58,20 @@ dtxt = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM dbg
           comm (Right x)  = Right <$> x
           wIdM :: Functor m => (a -> m b) -> a -> m (a, b)
           wIdM f x = (x,)<$>f x
-          zipS [] []             = []
-          zipS (x@Label{}:xs) ys = (x,BS.empty):zipS xs ys
-          zipS (x:xs) (y:ys)     = (x,y):zipS xs ys
+          zipS [] []                 = []
+          zipS (x@X86.Label{}:xs) ys = (x,BS.empty):zipS xs ys
+          zipS (x:xs) (y:ys)         = (x,y):zipS xs ys
+
+dAtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
+dAtxt = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM Aarch64.dbgFp) . aarch64
+    where comm :: Either a (IO b) -> IO (Either a b)
+          comm (Left err) = pure(Left err)
+          comm (Right x)  = Right <$> x
+          wIdM :: Functor m => (a -> m b) -> a -> m (a, b)
+          wIdM f x = (x,)<$>f x
+          zipS [] []                     = []
+          zipS (x@Aarch64.Label{}:xs) ys = (x,BS.empty):zipS xs ys
+          zipS (x:xs) (y:ys)             = (x,y):zipS xs ys
 
 rightPad :: Int -> T.Text -> T.Text
 rightPad n str = T.take n (str <> T.replicate n " ")
@@ -96,12 +109,12 @@ dumpIRI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIRI = fmap (prettyIRI.live.fst).ir
 
 dumpX86Intervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Intervals = fmap prettyDebugX86 . x86Iv
+dumpX86Intervals = fmap X86.prettyDebugX86 . x86Iv
 
 dumpX86Liveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Liveness = fmap (prettyDebugX86 . fmap (fmap liveness) . reconstruct . X86.mkControlFlow . (\(x, st) -> snd (irToX86 st x))) . ir
+dumpX86Liveness = fmap (X86.prettyDebugX86 . fmap (fmap liveness) . reconstruct . X86.mkControlFlow . (\(x, st) -> snd (irToX86 st x))) . ir
 
-x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86 AbsReg FAbsReg Interval]
+x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Interval]
 x86Iv = fmap (intervals . reconstruct . X86.mkControlFlow . (\(x, st) -> snd (irToX86 st x))) . ir
 
 printParsed :: BSL.ByteString -> Doc ann

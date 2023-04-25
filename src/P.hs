@@ -16,20 +16,19 @@ module P ( Err (..)
          , ir
          , eDumpIR
          , aarch64
-         , as
-         , x86G
-         , x86L
-         , eDumpX86
+         , as, x86G, x86L
+         , eDumpX86, eDumpAarch64
          , bytes
          , funP
-         , eFunP
-         , ctxFunP
+         , eFunP, eAFunP
+         , ctxFunP, actxFunP
          ) where
 
 import           A
 import           A.Eta
 import           A.Opt
 import           Asm.Aarch64
+import qualified Asm.Aarch64.Byte           as Aarch64
 import qualified Asm.Aarch64.Opt            as Aarch64
 import qualified Asm.Aarch64.P              as Aarch64
 import           Asm.Aarch64.T
@@ -105,11 +104,21 @@ getTy = fmap (first eAnn) . eCheck <=< annTy
 annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
-eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr a)
-eFunP m ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . ex86G m)
+eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b)
+eFunP = eFunPG assembleCtx ex86G
+
+eAFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b)
+eAFunP = eFunPG Aarch64.assembleCtx eAarch64
+
+eFunPG jit asm m ctx = fmap (first BS.length) . (jit ctx <=< either throwIO pure . asm m)
 
 ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
-ctxFunP ctx = fmap (first BS.length) . (assembleCtx ctx <=< either throwIO pure . x86G)
+ctxFunP = ctxFunPG assembleCtx x86G
+
+actxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
+actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
+
+ctxFunPG jit asm ctx = fmap (first BS.length) . (jit ctx <=< either throwIO pure . asm)
 
 funP :: BSL.ByteString -> IO (Int, FunPtr a)
 funP = aFp <=< either throwIO pure . x86G
@@ -128,11 +137,17 @@ x86L, x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
 x86G = walloc (uncurry X86.gallocFrame)
 x86L = walloc (X86.allocFrame . X86.mkIntervals . snd)
 
+eAarch64 :: Int -> E a -> Either (Err a) [AArch64 AReg FAReg ()]
+eAarch64 i = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x, st) -> irToAarch64 st x)) . eir i
+
 ex86G :: Int -> E a -> Either (Err a) [X86 X86Reg FX86Reg ()]
 ex86G i = wallocE i (uncurry X86.gallocFrame)
 
 eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpX86 i = fmap prettyAsm . ex86G i
+
+eDumpAarch64 :: Int -> E a -> Either (Err a) (Doc ann)
+eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 
 walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
 wallocE i f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . eir i
