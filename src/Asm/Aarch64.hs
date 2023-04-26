@@ -14,7 +14,8 @@ module Asm.Aarch64 ( AArch64 (..)
                    , mapFR
                    , toInt
                    , fToInt
-                   , pu, po
+                   , pus, pos
+                   , puds, pods
                    ) where
 
 import           Asm.M
@@ -158,6 +159,10 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Fcmp { ann :: a, dSrc1 :: freg, dSrc2 :: freg }
                         | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
                         | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
+                        | Stp { ann :: a, rSrc1 :: reg, rSrc2 :: reg, aDest :: Addr reg }
+                        | Ldp { ann :: a, rDest1 :: reg, rDest2 :: reg, aSrc :: Addr reg }
+                        | StpD { ann :: a, dSrc1 :: freg, dSrc2 :: freg, aDest :: Addr reg }
+                        | LdpD { ann :: a, dDest1 :: freg, dDest2 :: freg, aSrc :: Addr reg }
                         deriving (Functor)
 
 instance Copointed (AArch64 reg freg) where copoint = ann
@@ -198,6 +203,10 @@ mapR f (Fcvtms l r d)       = Fcvtms l (f r) d
 mapR f (MovK l r u s)       = MovK l (f r) u s
 mapR f (FMovDR l d r)       = FMovDR l d (f r)
 mapR _ (Fcmp l d0 d1)       = Fcmp l d0 d1
+mapR f (Ldp l r0 r1 a)      = Ldp l (f r0) (f r1) (f <$> a)
+mapR f (Stp l r0 r1 a)      = Stp l (f r0) (f r1) (f <$> a)
+mapR f (LdpD l d0 d1 a)     = LdpD l d0 d1 (f <$> a)
+mapR f (StpD l d0 d1 a)     = StpD l d0 d1 (f <$> a)
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)          = Label x l
@@ -235,10 +244,23 @@ mapFR f (Fcvtms l r d)       = Fcvtms l r (f d)
 mapFR _ (MovK l r u s)       = MovK l r u s
 mapFR f (FMovDR l d r)       = FMovDR l (f d) r
 mapFR f (Fcmp l d0 d1)       = Fcmp l (f d0) (f d1)
+mapFR _ (Stp l r0 r1 a)      = Stp l r0 r1 a
+mapFR _ (Ldp l r0 r1 a)      = Ldp l r0 r1 a
+mapFR f (StpD l d0 d1 a)     = StpD l (f d0) (f d1) a
+mapFR f (LdpD l d0 d1 a)     = LdpD l (f d0) (f d1) a
 
-pu, po :: AReg -> [AArch64 AReg freg ()]
-pu r = [SubRC () SP SP 8, Str () r (R SP)]
-po r = [Ldr () r (R SP), AddRC () SP SP 8]
+s2 :: [a] -> [(a, Maybe a)]
+s2 (r0:r1:rs) = (r0, Just r1):s2 rs
+s2 [r]        = [(r, Nothing)]
+s2 []         = []
+
+pus, pos :: [AReg] -> [AArch64 AReg freg ()]
+pus = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 16, Stp () r0 r1 (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, Str () r (R SP)]
+pos = concatMap go.reverse.s2 where go (r0, Just r1) = [Ldp () r0 r1 (R SP), AddRC () SP SP 16]; go (r, Nothing) = [Ldr () r (R SP), AddRC () SP SP 16]
+
+puds, pods :: [freg] -> [AArch64 AReg freg ()]
+puds = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 16, StpD () r0 r1 (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, StrD () r (R SP)]
+pods = concatMap go.reverse.s2 where go (r0, Just r1) = [LdpD () r0 r1 (R SP), AddRC () SP SP 16]; go (r, Nothing) = [LdrD () r (R SP), AddRC () SP SP 16]
 
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
@@ -278,5 +300,9 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fcvtms _ r d)      = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
     pretty (MovK _ r i s)      = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s )
     pretty (Fcmp _ d0 d1)      = i4 ("fcmp" <+> pretty d0 <> "," <+> pretty d1)
+    pretty (Stp _ r0 r1 a)     = i4 ("stp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
+    pretty (Ldp _ r0 r1 a)     = i4 ("ldp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
+    pretty (StpD _ d0 d1 a)    = i4 ("stp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
+    pretty (LdpD _ d0 d1 a)    = i4 ("ldp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
 
 instance (Pretty reg, Pretty freg) => Show (AArch64 reg freg a) where show=show.pretty

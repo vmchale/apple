@@ -21,16 +21,12 @@ frameC = concat.go IS.empty IS.empty
                         cs = handleX0 cf $ mapMaybe fromInt $ IS.toList s
                         ds = mapMaybe fInt $ IS.toList fs
                         scratch = odd (length cs+length ds)
-                        save = (if scratch then (++[SubRC () SP SP 8]) else id)$concatMap pu cs
-                        restore = (if scratch then (AddRC () SP SP 8:) else id)$concatMap po (reverse cs)
-                        saved = concatMap pud ds
-                        restored = concatMap pod (reverse ds)
+                        save = pus cs; restore = pos cs
+                        saved = puds ds; restored = pods ds
                     in (save ++ saved ++ void isn : restored ++ restore) : go s' fs' isns
                 _ -> [void isn] : go s' fs' isns
           handleX0 Malloc = filter (/=X0)
           handleX0 Free   = id
-          pud r = [SubRC () SP SP 8, StrD () r (R SP)]
-          pod r = [LdrD () r (R SP), AddRC () SP SP 8]
 
 fromInt :: Int -> Maybe AReg
 fromInt 0    = Just X0

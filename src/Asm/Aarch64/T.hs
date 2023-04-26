@@ -48,6 +48,10 @@ ir (IR.Wr (IR.AP t Nothing _) e) = do
 ir (IR.Wr (IR.AP t (Just (IR.ConstI i)) _) e) | Just p <- mp i = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Str () (IReg r) (RP (absReg t) p)]
+ir (IR.Wr (IR.AP t (Just eI) _) e) = do
+    r <- nextI; rI <- nextI
+    plE <- eval e (IR.ITemp r); plEI <- eval eI (IR.ITemp rI)
+    pure $ plE ++ plEI ++ [Str () (IReg r) (BI (absReg t) (IReg rI) Zero)]
 ir (IR.MJ (IR.IRel IR.IGeq e (IR.ConstI i)) l) | Just u <- m12 i = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [CmpRC () (IReg r) u, Bc () Geq l]

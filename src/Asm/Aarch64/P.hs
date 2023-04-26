@@ -20,10 +20,8 @@ galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!)
 {-# SCC frame #-}
 frame :: S.Set AReg -> [AArch64 AReg FAReg ()] -> [AArch64 AReg FAReg ()]
 frame clob asms = pre++asms++post++[Ret ()] where
-    pre = save $ concatMap pu clobs
-    post = restore $ concatMap po (reverse clobs)
+    pre = pus clobs; post = pos clobs
     clobs = S.toList (clob `S.intersection` S.fromList [X19 .. X29])
-    scratch=odd(length clobs); save=if scratch then (++[SubRC () SP SP 8]) else id; restore=if scratch then (AddRC () SP SP 8:) else id
 
 gallocOn :: Int -> [AArch64 AbsReg FAbsReg ()] -> (IM.IntMap AReg, IM.IntMap FAReg, [AArch64 AbsReg FAbsReg ()])
 gallocOn u = go u 0 pres
