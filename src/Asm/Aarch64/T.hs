@@ -32,6 +32,9 @@ fabsReg IR.F5        = FArg5
 fabsReg IR.FRet      = FArg0
 fabsReg IR.FRet1     = FArg1
 
+nextR :: WM AbsReg
+nextR = IReg <$> nextI
+
 irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
 irToAarch64 st = swap . second (head.IR.wtemps) . flip runState st . foldMapA ir
 
@@ -74,12 +77,13 @@ ir (IR.MJ (IR.FRel IR.FGeq e0 e1) l) = do
     plE0 <- feval e0 (IR.FTemp r0); plE1 <- feval e1 (IR.FTemp r1)
     pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () Geq l]
 ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
-    rD <- nextI; rS <- nextI; rN <- nextI
+    rD <- nextI; rS <- nextI; rN <- nextI; i <- nextR; t <- nextR
     plED <- eval (IR.IB IR.IPlus (IR.Reg tD) eD) (IR.ITemp rD)
     plES <- eval (IR.IB IR.IPlus (IR.Reg tS) eS) (IR.ITemp rS)
     plEN <- eval eN (IR.ITemp rN)
     let rDA=IReg rD; rSA=IReg rS; rNA=IReg rN
-    pure $ plED ++ plES ++ plEN ++ [CpyfP () rDA rSA rNA, CpyfM () rDA rSA rNA, CpyfE () rDA rSA rNA]
+    l <- nextL; endL <- nextL
+    pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, Label () l, CmpRR () i rNA, Bc () Geq l, Ldr () t (BI rSA i Three), Str () t (BI rDA i Three), AddRC () i i 1, Label () endL]
 ir s             = error (show s)
 
 feval :: IR.FExp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]

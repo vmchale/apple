@@ -22,5 +22,5 @@ writeO f contents dbg = withSystemTempFile "apple.S" $ \fp h -> do
     hFlush h
     let debugFlag = if dbg then ("-g":) else id
     -- -O1 is signed byte optimization but no multi-passes
-    void $ readCreateProcess ((proc "as" (debugFlag [fp, "-O1", "-mcpu=apple-m1+mops", "-o", fpO])) { std_err = Inherit }) ""
+    void $ readCreateProcess ((proc "as" (debugFlag [fp, "-O1", "-o", fpO])) { std_err = Inherit }) ""
     where fpO = T.unpack f <> ".o"

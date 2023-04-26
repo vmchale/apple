@@ -23,7 +23,6 @@ import           Control.DeepSeq (NFData (..))
 import           Data.Copointed
 import           Data.Semigroup  ((<>))
 import           Data.Word       (Word16, Word8)
-import           GHC.Float       (castDoubleToWord64)
 import           GHC.Generics    (Generic)
 import           Numeric         (showHex)
 import           Prettyprinter   (Doc, Pretty (..), brackets, (<+>))
@@ -148,9 +147,6 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | CmpRC { ann :: a, rSrc :: reg, cSrc :: Word16 }
                         | CmpRR { ann :: a, rSrc1 :: reg, rSrc2 :: reg }
                         | Neg { ann :: a, rDest :: reg, rSrc :: reg }
-                        | CpyfP { ann :: a, rDest :: reg, rSrc :: reg, rNb :: reg }
-                        | CpyfM { ann :: a, rDest :: reg, rSrc :: reg, rNb :: reg }
-                        | CpyfE { ann :: a, rDest :: reg, rSrc :: reg, rNb :: reg }
                         | Fmul { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
                         | Fadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
                         | Fsub { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
@@ -187,9 +183,6 @@ mapR f (Lsl l r0 r1 s)      = Lsl l (f r0) (f r1) s
 mapR f (CmpRR l r0 r1)      = CmpRR l (f r0) (f r1)
 mapR f (CmpRC l r c)        = CmpRC l (f r) c
 mapR f (Neg l r0 r1)        = Neg l (f r0) (f r1)
-mapR f (CpyfP l r0 r1 r2)   = CpyfP l (f r0) (f r1) (f r2)
-mapR f (CpyfM l r0 r1 r2)   = CpyfM l (f r0) (f r1) (f r2)
-mapR f (CpyfE l r0 r1 r2)   = CpyfE l (f r0) (f r1) (f r2)
 mapR _ (Fadd l xr0 xr1 xr2) = Fadd l xr0 xr1 xr2
 mapR _ (Fsub l xr0 xr1 xr2) = Fsub l xr0 xr1 xr2
 mapR _ (Fmul l xr0 xr1 xr2) = Fmul l xr0 xr1 xr2
@@ -228,9 +221,6 @@ mapFR _ (Lsl l r0 r1 s)      = Lsl l r0 r1 s
 mapFR _ (CmpRC l r c)        = CmpRC l r c
 mapFR _ (CmpRR l r0 r1)      = CmpRR l r0 r1
 mapFR _ (Neg l r0 r1)        = Neg l r0 r1
-mapFR _ (CpyfP l r0 r1 r2)   = CpyfP l r0 r1 r2
-mapFR _ (CpyfM l r0 r1 r2)   = CpyfM l r0 r1 r2
-mapFR _ (CpyfE l r0 r1 r2)   = CpyfE l r0 r1 r2
 mapFR f (Fmul l xr0 xr1 xr2) = Fmul l (f xr0) (f xr1) (f xr2)
 mapFR f (Fadd l xr0 xr1 xr2) = Fadd l (f xr0) (f xr1) (f xr2)
 mapFR f (Fsub l xr0 xr1 xr2) = Fsub l (f xr0) (f xr1) (f xr2)
@@ -287,9 +277,6 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (CmpRC _ r u)       = i4 ("cmp" <+> pretty r <> "," <+> hexd u)
     pretty (CmpRR _ r0 r1)     = i4 ("cmp" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Neg _ rD rS)       = i4 ("neg" <+> pretty rD <> "," <+> pretty rS)
-    pretty (CpyfP _ rD rS rN)  = i4 ("cpyfp" <+> brackets (pretty rD) <> "!," <+> brackets (pretty (rS)) <> "!," <+> pretty rN <> "!")
-    pretty (CpyfM _ rD rS rN)  = i4 ("cpyfm" <+> brackets (pretty rD) <> "!," <+> brackets (pretty (rS)) <> "!," <+> pretty rN <> "!")
-    pretty (CpyfE _ rD rS rN)  = i4 ("cpyfe" <+> brackets (pretty rD) <> "!," <+> brackets (pretty (rS)) <> "!," <+> pretty rN <> "!")
     pretty (Fmul _ rD r0 r1)   = i4 ("fmul" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fadd _ rD r0 r1)   = i4 ("fadd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fsub _ rD r0 r1)   = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)

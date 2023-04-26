@@ -20,7 +20,6 @@ frameC = concat.go IS.empty IS.empty
                     let
                         cs = handleX0 cf $ mapMaybe fromInt $ IS.toList s
                         ds = mapMaybe fInt $ IS.toList fs
-                        scratch = odd (length cs+length ds)
                         save = pus cs; restore = pos cs
                         saved = puds ds; restored = pods ds
                     in (save ++ saved ++ void isn : restored ++ restore) : go s' fs' isns

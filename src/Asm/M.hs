@@ -13,7 +13,7 @@ module Asm.M ( CFunc (..)
              ) where
 
 import           Control.DeepSeq            (NFData)
-import           Control.Monad.State.Strict (State, gets, modify, runState)
+import           Control.Monad.State.Strict (State, gets, modify)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           GHC.Generics               (Generic)
