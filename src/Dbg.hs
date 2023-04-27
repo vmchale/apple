@@ -51,25 +51,22 @@ import           Ty
 pBIO :: BSL.ByteString -> IO ()
 pBIO = either throwIO TIO.putStr <=< dtxt
 
+comm :: Either a (IO b) -> IO (Either a b)
+comm (Left err) = pure(Left err)
+comm (Right x)  = Right <$> x
+
+wIdM :: Functor m => (a -> m b) -> a -> m (a, b)
+wIdM f x = (x,)<$>f x
+
 dtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
 dtxt = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM dbgFp) . x86G
-    where comm :: Either a (IO b) -> IO (Either a b)
-          comm (Left err) = pure(Left err)
-          comm (Right x)  = Right <$> x
-          wIdM :: Functor m => (a -> m b) -> a -> m (a, b)
-          wIdM f x = (x,)<$>f x
-          zipS [] []                 = []
+    where zipS [] []                 = []
           zipS (x@X86.Label{}:xs) ys = (x,BS.empty):zipS xs ys
           zipS (x:xs) (y:ys)         = (x,y):zipS xs ys
 
 dAtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
 dAtxt = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM Aarch64.dbgFp) . aarch64
-    where comm :: Either a (IO b) -> IO (Either a b)
-          comm (Left err) = pure(Left err)
-          comm (Right x)  = Right <$> x
-          wIdM :: Functor m => (a -> m b) -> a -> m (a, b)
-          wIdM f x = (x,)<$>f x
-          zipS [] []                     = []
+    where zipS [] []                     = []
           zipS (x@Aarch64.Label{}:xs) ys = (x,BS.empty):zipS xs ys
           zipS (x:xs) (y:ys)             = (x,y):zipS xs ys
 
