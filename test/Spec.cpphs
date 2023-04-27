@@ -69,8 +69,8 @@ allT :: TestTree
 allT = testGroup "jit"
     [ testCase "dotprod" $ do { res <- fpAaf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
     , testCase "map/alloc" $ do { res <- sSq 25 ; res @?= [ i^(2::Int) | i <- [0..25] ] }
-    -- , testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
-    -- , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
+    , testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
+    , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
     , testCase "shoelace" $ do { res <- fpAaf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
     ]
 
