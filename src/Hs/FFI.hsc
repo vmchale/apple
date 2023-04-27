@@ -9,6 +9,7 @@ module Hs.FFI ( pI
 
 import Data.Bits ((.|.))
 import Data.Functor (void)
+import Control.Monad (when)
 import Foreign.C.Types (CInt (..), CSize (..), CChar)
 import Foreign.Ptr (FunPtr, IntPtr (..), castFunPtrToPtr, castPtrToFunPtr, Ptr, intPtrToPtr, ptrToIntPtr, nullPtr)
 import qualified Data.ByteString as BS
@@ -33,7 +34,8 @@ finish :: BS.ByteString -> Ptr CChar -> IO (FunPtr a)
 finish bs fAt = BS.unsafeUseAsCStringLen bs $ \(b, sz) -> do
     let sz' = fromIntegral sz
     _ <- memcpy fAt b sz'
-    _ <- mprotect fAt sz' #{const PROT_EXEC}
+    r <- mprotect fAt sz' #{const PROT_EXEC}
+    when (r == -1) $ error "call to mprotect failed."
     pure (castPtrToFunPtr fAt)
 
 bsFp :: BS.ByteString -> IO (FunPtr a, CSize)
