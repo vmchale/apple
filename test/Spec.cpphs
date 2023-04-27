@@ -16,6 +16,7 @@ import           Math.SpecialFunction  (agm, bessel1, chisqcdf, completeElliptic
 import           P
 import           Test.Tasty
 import           Test.Tasty.HUnit
+import System.Info (arch)
 
 hsEntropy :: Floating a => [a] -> a
 hsEntropy xs = sum [ x * log x | x <- xs ]
@@ -29,11 +30,11 @@ infixl 1 .?=
 x .?= y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-15&&(y-x)/y<1e-15)
 
 main :: IO ()
-main = defaultMain $ testGroup "All" $ rTy:
+main = defaultMain $ testGroup "All" $ rTy:tyT:allT:
 #ifdef x86_64_HOST_ARCH
     [x64T]
 #else
-    [tyT]
+    []
 #endif
 
 rTy :: TestTree
@@ -64,17 +65,23 @@ tyT = testGroup "Type system"
     , tyS "((-)\\~)"
     ]
 
+allT :: TestTree
+allT = testGroup "jit"
+    [ testCase "dotprod" $ do { res <- fpAaf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
+    , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
+    , testCase "shoelace" $ do { res <- fpAaf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
+    ]
+
 x64T :: TestTree
 x64T = testGroup "x64"
     [ rfTest
     , testCase "entropy" $ do { res <- jitEntropy [0.25, 0.25, 0.5] ; res @?= hsEntropy [0.25, 0.25, 0.5] }
     , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
-    , testCase "ℯ_" $ do { (_, fp) <- funP "[e:(_x)]"; ff fp 1 @?= exp (-1) }
+    , testCase "ℯ_" $ do { fp <- funP "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
     , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
     , testCase "gamma" $ do { res <- gammaJit (-3.5) ; res @?= gamma (-3.5) }
-    , testCase "dotprod" $ do { res <- fpAaf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
     , testCase "euclidean" $ do { res <- fpAaf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
     , testCase "twoSum" $ do { res <- fpAaf "test/data/twoSum.🍎" [1,2,3] [2,4,5] ; res @?= 17 }
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
@@ -82,7 +89,6 @@ x64T = testGroup "x64"
     , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
     , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
-    , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res @?= 0.6339381452606089 }
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
@@ -97,18 +103,17 @@ x64T = testGroup "x64"
     , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
     , testCase "A (elliptic fourier)" $ do { res <- fpAaf "test/data/A.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= 2.5000000000000004 }
     , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
-    , testCase "shoelace" $ do { res <- fpAaf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
 x ≈ y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-4&&(y-x)/y<1e-4)
 
 scan i = do
-    f <- ia.snd <$> funP "[(+) /\\o 0 (irange 1 x 1)]"
+    f <- ia <$> funP "[(+) /\\o 0 (irange 1 x 1)]"
     asI (f i)
 
 sSq i = do
-    f <- ia.snd <$> funP "[(^2)'(irange 0 x 1)]"
+    f <- ia <$> funP "[(^2)'(irange 0 x 1)]"
     asI (f i)
 
 asI :: Ptr (Apple Int) -> IO [Int]
@@ -123,13 +128,13 @@ aaaFp fp xs ys =
     in
     wA xA $ \pX ->
         wA yA $ \pY -> do
-            f <- fmap (aaa.snd) . funP =<< BSL.readFile fp
+            f <- fmap aaa.funP =<< BSL.readFile fp
             asN (f pX pY)
 
 aaFp fp xs =
     let xA = AA 1 [fromIntegral(length xs)] xs in
     wA xA $ \p -> do
-        f <- fmap (aa.snd) . funP =<< BSL.readFile fp
+        f <- fmap aa.funP =<< BSL.readFile fp
         asN (f p)
 
 tyS :: BSL.ByteString -> TestTree
@@ -166,21 +171,23 @@ fpFaf fp x ys = do
 
 fpAait :: FilePath -> [Double] -> [Double] -> Int -> IO (Double, Double, Double, Double)
 fpAait fp xs ys n = do
-    f <- fmap snd.funP =<< BSL.readFile fp
+    f <- funP =<< BSL.readFile fp
     let a=AA 1 [fromIntegral(length xs)] xs; b=AA 1 [fromIntegral(length ys)] ys
     wA a $ \p -> wA b $ \q -> do
         hs4 <$> peek (aait f p q n)
 
 fpAaft :: FilePath -> [Double] -> [Double] -> Double -> IO (Double, Double, Double, Double)
 fpAaft fp xs ys n = do
-    f <- fmap snd.funP =<< BSL.readFile fp
+    f <- funP =<< BSL.readFile fp
     let a=AA 1 [fromIntegral(length xs)] xs; b=AA 1 [fromIntegral(length ys)] ys
     wA a $ \p -> wA b $ \q -> do
         hs4 <$> peek (aaft f p q n)
 
+fpn = case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
+
 fpAaf :: FilePath -> [Double] -> [Double] -> IO Double
 fpAaf fp xs ys = do
-    f <- fmap snd.funP =<< BSL.readFile fp
+    f <- fpn =<< BSL.readFile fp
     jitAaf f xs ys
 
 fpAaff :: FilePath -> [Double] -> [Double] -> Double -> IO Double
@@ -217,7 +224,7 @@ jitAf code xs =
 
 jitE :: Double -> IO Double
 jitE x = do
-    (_, fp) <- funP "[e:x]"
+    fp <- funP "[e:x]"
     pure $ ff fp x
 
 jitExp :: Int64 -> Double -> IO Double
@@ -225,27 +232,27 @@ jitExp = fpIff "test/examples/exp.🍏"
 
 fpFf :: FilePath -> Double -> IO Double
 fpFf fp x = do
-    (_, f) <- funP =<< BSL.readFile fp
+    f <- fpn =<< BSL.readFile fp
     pure $ ff f x
 
 fpIff :: FilePath -> Int64 -> Double -> IO Double
 fpIff fp x y = do
-    (_, f) <- funP =<< BSL.readFile fp
+    f <- funP =<< BSL.readFile fp
     pure $ iff f x y
 
 fpFfa :: Storable a => FilePath -> Double -> Double -> IO [a]
 fpFfa fp x y = do
-    (_, f) <- funP =<< BSL.readFile fp
+    f <- funP =<< BSL.readFile fp
     asN (ffa f x y)
 
 fpFff :: FilePath -> Double -> Double -> IO Double
 fpFff fp x y = do
-    (_, f) <- funP =<< BSL.readFile fp
+    f <- funP =<< BSL.readFile fp
     pure $ fff f x y
 
 fpFfff :: FilePath -> Double -> Double -> Double -> IO Double
 fpFfff fp x y z = do
-    (_, f) <- funP =<< BSL.readFile fp
+    f <- funP =<< BSL.readFile fp
     pure $ ffff f x y z
 
 gammaJit = fpFf "math/gamma.🍏"
@@ -259,7 +266,7 @@ jitFact = fpFf "test/examples/ffact.🍎"
 
 jitRF :: Int -> Int -> IO Int
 jitRF m n = do
-    (_, fp) <- funP =<< BSL.readFile "test/examples/risingFactorial.🍎"
+    fp <- funP =<< BSL.readFile "test/examples/risingFactorial.🍎"
     pure $ runRF fp m n
 
 wA :: Storable a => Apple a -> (Ptr (Apple a) -> IO b) -> IO b

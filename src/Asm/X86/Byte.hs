@@ -5,7 +5,7 @@
 
 {-# LANGUAGE TupleSections #-}
 
-module Asm.X86.Byte ( aFp, assemble, assembleCtx, dbgFp ) where
+module Asm.X86.Byte ( allFp, assemble, assembleCtx, dbgFp ) where
 
 import           Asm.X86
 import           Data.Bifunctor   (first, second)
@@ -25,7 +25,6 @@ hasMa = any g where g Call{} = True; g _ = False
 prepAddrs :: [X86 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
-aFp = fmap (first (BS.length.mconcat)) . allFp
 dbgFp = fmap fst . allFp
 
 assembleCtx :: (Int, Int) -> [X86 X86Reg FX86Reg a] -> IO (BS.ByteString, FunPtr b)

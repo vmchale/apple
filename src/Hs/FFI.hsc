@@ -22,12 +22,12 @@ pI = (\(IntPtr i) -> i) . ptrToIntPtr
 
 allocNear :: Int -> CSize -> IO (Ptr a)
 allocNear i sz =
-    mmap (intPtrToPtr (IntPtr$i+6*1024*104)) sz #{const PROT_WRITE} (#{const MAP_PRIVATE} .|. #{const MAP_ANONYMOUS} .|. #{const MAP_JIT}) (-1) 0
+    mmap (intPtrToPtr (IntPtr$i+6*1024*104)) sz #{const PROT_WRITE} (#{const MAP_PRIVATE} .|. #{const MAP_ANONYMOUS}) (-1) 0
     -- libc.so is 2.1MB, libm is 918kB
 
 allocExec :: CSize -> IO (Ptr a)
 allocExec sz =
-    mmap nullPtr sz #{const PROT_WRITE} (#{const MAP_PRIVATE} .|. #{const MAP_ANONYMOUS} .|. #{const MAP_JIT}) (-1) 0
+    mmap nullPtr sz #{const PROT_WRITE} (#{const MAP_PRIVATE} .|. #{const MAP_ANONYMOUS}) (-1) 0
 
 finish :: BS.ByteString -> Ptr CChar -> IO (FunPtr a)
 finish bs fAt = BS.unsafeUseAsCStringLen bs $ \(b, sz) -> do

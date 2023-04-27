@@ -19,7 +19,7 @@ module P ( Err (..)
          , as, x86G, x86L
          , eDumpX86, eDumpAarch64
          , bytes
-         , funP
+         , funP, aFunP
          , eFunP, eAFunP
          , ctxFunP, actxFunP
          ) where
@@ -120,8 +120,11 @@ actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
 
 ctxFunPG jit asm ctx = fmap (first BS.length) . (jit ctx <=< either throwIO pure . asm)
 
-funP :: BSL.ByteString -> IO (Int, FunPtr a)
-funP = aFp <=< either throwIO pure . x86G
+funP :: BSL.ByteString -> IO (FunPtr a)
+funP = fmap snd.allFp <=< either throwIO pure . x86G
+
+aFunP :: BSL.ByteString -> IO (FunPtr a)
+aFunP = fmap snd.Aarch64.allFp <=< either throwIO pure . aarch64
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86G

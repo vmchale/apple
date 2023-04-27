@@ -115,12 +115,11 @@ instance Pretty reg => Pretty (Addr reg) where
     pretty (RP r u)   = brackets (pretty r <> "," <+> hexd u)
     pretty (BI b i s) = brackets (pretty b <> "," <+> pretty i <> "," <+> "LSL" <+> pretty s)
 
-data Cond = Eq | Neq | ULeq | UGeq | ULt
-          | Geq | Lt | Gt | Leq
+data Cond = Eq | Neq | Geq | Lt | Gt | Leq
 
 instance Pretty Cond where
-    pretty Eq = "EQ"; pretty Neq = "NE"; pretty ULeq = "LS"; pretty Geq = "GE"
-    pretty Lt = "LT"; pretty Gt = "GT"; pretty Leq = "LE"; pretty ULt = "LO"
+    pretty Eq = "EQ"; pretty Neq = "NE"; pretty Geq = "GE"
+    pretty Lt = "LT"; pretty Gt = "GT"; pretty Leq = "LE"
 
 -- https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
@@ -159,85 +158,88 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Ldp { ann :: a, rDest1 :: reg, rDest2 :: reg, aSrc :: Addr reg }
                         | StpD { ann :: a, dSrc1 :: freg, dSrc2 :: freg, aDest :: Addr reg }
                         | LdpD { ann :: a, dDest1 :: freg, dDest2 :: freg, aSrc :: Addr reg }
+                        | Fmadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, dSrc3 :: freg }
                         deriving (Functor)
 
 instance Copointed (AArch64 reg freg) where copoint = ann
 
 mapR :: (areg -> reg) -> AArch64 areg afreg a -> AArch64 reg afreg a
-mapR _ (Label x l)          = Label x l
-mapR _ (B x l)              = B x l
-mapR _ (Bc x c l)           = Bc x c l
-mapR _ (Bl x f)             = Bl x f
-mapR _ (FMovXX l r0 r1)     = FMovXX l r0 r1
-mapR _ (FMovXC l r0 c)      = FMovXC l r0 c
-mapR f (MovRR l r0 r1)      = MovRR l (f r0) (f r1)
-mapR f (MovRC l r c)        = MovRC l (f r) c
-mapR f (Ldr l r a)          = Ldr l (f r) (f <$> a)
-mapR f (Str l r a)          = Str l (f r) (f <$> a)
-mapR f (LdrD l xr a)        = LdrD l xr (f <$> a)
-mapR f (AddRR l r0 r1 r2)   = AddRR l (f r0) (f r1) (f r2)
-mapR f (SubRR l r0 r1 r2)   = SubRR l (f r0) (f r1) (f r2)
-mapR f (AddRC l r0 r1 c)    = AddRC l (f r0) (f r1) c
-mapR f (SubRC l r0 r1 c)    = SubRC l (f r0) (f r1) c
-mapR f (Lsl l r0 r1 s)      = Lsl l (f r0) (f r1) s
-mapR f (CmpRR l r0 r1)      = CmpRR l (f r0) (f r1)
-mapR f (CmpRC l r c)        = CmpRC l (f r) c
-mapR f (Neg l r0 r1)        = Neg l (f r0) (f r1)
-mapR _ (Fadd l xr0 xr1 xr2) = Fadd l xr0 xr1 xr2
-mapR _ (Fsub l xr0 xr1 xr2) = Fsub l xr0 xr1 xr2
-mapR _ (Fmul l xr0 xr1 xr2) = Fmul l xr0 xr1 xr2
-mapR _ (FcmpZ l xr)         = FcmpZ l xr
-mapR _ (Ret l)              = Ret l
-mapR f (MulRR l r0 r1 r2)   = MulRR l (f r0) (f r1) (f r2)
-mapR f (StrD l d a)         = StrD l d (f <$> a)
-mapR _ (Fdiv l d0 d1 d2)    = Fdiv l d0 d1 d2
-mapR f (Scvtf l d r)        = Scvtf l d (f r)
-mapR f (Fcvtms l r d)       = Fcvtms l (f r) d
-mapR f (MovK l r u s)       = MovK l (f r) u s
-mapR f (FMovDR l d r)       = FMovDR l d (f r)
-mapR _ (Fcmp l d0 d1)       = Fcmp l d0 d1
-mapR f (Ldp l r0 r1 a)      = Ldp l (f r0) (f r1) (f <$> a)
-mapR f (Stp l r0 r1 a)      = Stp l (f r0) (f r1) (f <$> a)
-mapR f (LdpD l d0 d1 a)     = LdpD l d0 d1 (f <$> a)
-mapR f (StpD l d0 d1 a)     = StpD l d0 d1 (f <$> a)
+mapR _ (Label x l)           = Label x l
+mapR _ (B x l)               = B x l
+mapR _ (Bc x c l)            = Bc x c l
+mapR _ (Bl x f)              = Bl x f
+mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
+mapR _ (FMovXC l r0 c)       = FMovXC l r0 c
+mapR f (MovRR l r0 r1)       = MovRR l (f r0) (f r1)
+mapR f (MovRC l r c)         = MovRC l (f r) c
+mapR f (Ldr l r a)           = Ldr l (f r) (f <$> a)
+mapR f (Str l r a)           = Str l (f r) (f <$> a)
+mapR f (LdrD l xr a)         = LdrD l xr (f <$> a)
+mapR f (AddRR l r0 r1 r2)    = AddRR l (f r0) (f r1) (f r2)
+mapR f (SubRR l r0 r1 r2)    = SubRR l (f r0) (f r1) (f r2)
+mapR f (AddRC l r0 r1 c)     = AddRC l (f r0) (f r1) c
+mapR f (SubRC l r0 r1 c)     = SubRC l (f r0) (f r1) c
+mapR f (Lsl l r0 r1 s)       = Lsl l (f r0) (f r1) s
+mapR f (CmpRR l r0 r1)       = CmpRR l (f r0) (f r1)
+mapR f (CmpRC l r c)         = CmpRC l (f r) c
+mapR f (Neg l r0 r1)         = Neg l (f r0) (f r1)
+mapR _ (Fadd l xr0 xr1 xr2)  = Fadd l xr0 xr1 xr2
+mapR _ (Fsub l xr0 xr1 xr2)  = Fsub l xr0 xr1 xr2
+mapR _ (Fmul l xr0 xr1 xr2)  = Fmul l xr0 xr1 xr2
+mapR _ (FcmpZ l xr)          = FcmpZ l xr
+mapR _ (Ret l)               = Ret l
+mapR f (MulRR l r0 r1 r2)    = MulRR l (f r0) (f r1) (f r2)
+mapR f (StrD l d a)          = StrD l d (f <$> a)
+mapR _ (Fdiv l d0 d1 d2)     = Fdiv l d0 d1 d2
+mapR f (Scvtf l d r)         = Scvtf l d (f r)
+mapR f (Fcvtms l r d)        = Fcvtms l (f r) d
+mapR f (MovK l r u s)        = MovK l (f r) u s
+mapR f (FMovDR l d r)        = FMovDR l d (f r)
+mapR _ (Fcmp l d0 d1)        = Fcmp l d0 d1
+mapR f (Ldp l r0 r1 a)       = Ldp l (f r0) (f r1) (f <$> a)
+mapR f (Stp l r0 r1 a)       = Stp l (f r0) (f r1) (f <$> a)
+mapR f (LdpD l d0 d1 a)      = LdpD l d0 d1 (f <$> a)
+mapR f (StpD l d0 d1 a)      = StpD l d0 d1 (f <$> a)
+mapR f (Fmadd l d0 d1 d2 d3) = Fmadd l d0 d1 d2 d3
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
-mapFR _ (Label x l)          = Label x l
-mapFR _ (B x l)              = B x l
-mapFR _ (Bc x c l)           = Bc x c l
-mapFR _ (Bl x f)             = Bl x f
-mapFR f (FMovXX l xr0 xr1)   = FMovXX l (f xr0) (f xr1)
-mapFR f (FMovXC l xr c)      = FMovXC l (f xr) c
-mapFR _ (MovRR l r0 r1)      = MovRR l r0 r1
-mapFR _ (MovRC l r0 c)       = MovRC l r0 c
-mapFR _ (Ldr l r a)          = Ldr l r a
-mapFR _ (Str l r a)          = Str l r a
-mapFR f (LdrD l xr a)        = LdrD l (f xr) a
-mapFR _ (AddRR l r0 r1 r2)   = AddRR l r0 r1 r2
-mapFR _ (AddRC l r0 r1 c)    = AddRC l r0 r1 c
-mapFR _ (SubRR l r0 r1 r2)   = SubRR l r0 r1 r2
-mapFR _ (SubRC l r0 r1 c)    = SubRC l r0 r1 c
-mapFR _ (Lsl l r0 r1 s)      = Lsl l r0 r1 s
-mapFR _ (CmpRC l r c)        = CmpRC l r c
-mapFR _ (CmpRR l r0 r1)      = CmpRR l r0 r1
-mapFR _ (Neg l r0 r1)        = Neg l r0 r1
-mapFR f (Fmul l xr0 xr1 xr2) = Fmul l (f xr0) (f xr1) (f xr2)
-mapFR f (Fadd l xr0 xr1 xr2) = Fadd l (f xr0) (f xr1) (f xr2)
-mapFR f (Fsub l xr0 xr1 xr2) = Fsub l (f xr0) (f xr1) (f xr2)
-mapFR f (FcmpZ l xr)         = FcmpZ l (f xr)
-mapFR _ (Ret l)              = Ret l
-mapFR f (Fdiv l d0 d1 d2)    = Fdiv l (f d0) (f d1) (f d2)
-mapFR _ (MulRR l r0 r1 r2)   = MulRR l r0 r1 r2
-mapFR f (StrD l d a)         = StrD l (f d) a
-mapFR f (Scvtf l d r)        = Scvtf l (f d) r
-mapFR f (Fcvtms l r d)       = Fcvtms l r (f d)
-mapFR _ (MovK l r u s)       = MovK l r u s
-mapFR f (FMovDR l d r)       = FMovDR l (f d) r
-mapFR f (Fcmp l d0 d1)       = Fcmp l (f d0) (f d1)
-mapFR _ (Stp l r0 r1 a)      = Stp l r0 r1 a
-mapFR _ (Ldp l r0 r1 a)      = Ldp l r0 r1 a
-mapFR f (StpD l d0 d1 a)     = StpD l (f d0) (f d1) a
-mapFR f (LdpD l d0 d1 a)     = LdpD l (f d0) (f d1) a
+mapFR _ (Label x l)           = Label x l
+mapFR _ (B x l)               = B x l
+mapFR _ (Bc x c l)            = Bc x c l
+mapFR _ (Bl x f)              = Bl x f
+mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
+mapFR f (FMovXC l xr c)       = FMovXC l (f xr) c
+mapFR _ (MovRR l r0 r1)       = MovRR l r0 r1
+mapFR _ (MovRC l r0 c)        = MovRC l r0 c
+mapFR _ (Ldr l r a)           = Ldr l r a
+mapFR _ (Str l r a)           = Str l r a
+mapFR f (LdrD l xr a)         = LdrD l (f xr) a
+mapFR _ (AddRR l r0 r1 r2)    = AddRR l r0 r1 r2
+mapFR _ (AddRC l r0 r1 c)     = AddRC l r0 r1 c
+mapFR _ (SubRR l r0 r1 r2)    = SubRR l r0 r1 r2
+mapFR _ (SubRC l r0 r1 c)     = SubRC l r0 r1 c
+mapFR _ (Lsl l r0 r1 s)       = Lsl l r0 r1 s
+mapFR _ (CmpRC l r c)         = CmpRC l r c
+mapFR _ (CmpRR l r0 r1)       = CmpRR l r0 r1
+mapFR _ (Neg l r0 r1)         = Neg l r0 r1
+mapFR f (Fmul l xr0 xr1 xr2)  = Fmul l (f xr0) (f xr1) (f xr2)
+mapFR f (Fadd l xr0 xr1 xr2)  = Fadd l (f xr0) (f xr1) (f xr2)
+mapFR f (Fsub l xr0 xr1 xr2)  = Fsub l (f xr0) (f xr1) (f xr2)
+mapFR f (FcmpZ l xr)          = FcmpZ l (f xr)
+mapFR _ (Ret l)               = Ret l
+mapFR f (Fdiv l d0 d1 d2)     = Fdiv l (f d0) (f d1) (f d2)
+mapFR _ (MulRR l r0 r1 r2)    = MulRR l r0 r1 r2
+mapFR f (StrD l d a)          = StrD l (f d) a
+mapFR f (Scvtf l d r)         = Scvtf l (f d) r
+mapFR f (Fcvtms l r d)        = Fcvtms l r (f d)
+mapFR _ (MovK l r u s)        = MovK l r u s
+mapFR f (FMovDR l d r)        = FMovDR l (f d) r
+mapFR f (Fcmp l d0 d1)        = Fcmp l (f d0) (f d1)
+mapFR _ (Stp l r0 r1 a)       = Stp l r0 r1 a
+mapFR _ (Ldp l r0 r1 a)       = Ldp l r0 r1 a
+mapFR f (StpD l d0 d1 a)      = StpD l (f d0) (f d1) a
+mapFR f (LdpD l d0 d1 a)      = LdpD l (f d0) (f d1) a
+mapFR f (Fmadd l d0 d1 d2 d3) = Fmadd l (f d0) (f d1) (f d2) (f d3)
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -256,40 +258,41 @@ hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
 
 instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
-    pretty (Label _ l)         = prettyLabel l <> ":"
-    pretty (B _ l)             = i4 ("b" <+> prettyLabel l)
-    pretty (Bc _ c l)          = i4 ("b." <> pretty c <+> prettyLabel l)
-    pretty (Bl _ l)            = i4 ("bl" <+> pretty l)
-    pretty (FMovXX _ xr0 xr1)  = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
-    pretty (FMovDR _ d r)      = i4 ("fmov" <+> pretty d <> "," <+> pretty r)
-    pretty (MovRR _ r0 r1)     = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (MovRC _ r u)       = i4 ("mov" <+> pretty r <> "," <+> hexd u)
-    pretty (Ldr _ r a)         = i4 ("ldr" <+> pretty r <> "," <+> pretty a)
-    pretty (Str _ r a)         = i4 ("str" <+> pretty r <> "," <+> pretty a)
-    pretty (LdrD _ xr a)       = i4 ("ldr" <+> pretty xr <> "," <+> pretty a)
-    pretty (StrD _ xr a)       = i4 ("str" <+> pretty xr <> "," <+> pretty a)
-    pretty (AddRR _ rD rS rS') = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
-    pretty (SubRR _ rD rS rS') = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
-    pretty (MulRR _ rD rS rS') = i4 ("mul" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
-    pretty (SubRC _ rD rS u)   = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
-    pretty (AddRC _ rD rS u)   = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
-    pretty (Lsl _ rD rS u)     = i4 ("lsl" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
-    pretty (CmpRC _ r u)       = i4 ("cmp" <+> pretty r <> "," <+> hexd u)
-    pretty (CmpRR _ r0 r1)     = i4 ("cmp" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Neg _ rD rS)       = i4 ("neg" <+> pretty rD <> "," <+> pretty rS)
-    pretty (Fmul _ rD r0 r1)   = i4 ("fmul" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Fadd _ rD r0 r1)   = i4 ("fadd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Fsub _ rD r0 r1)   = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Fdiv _ rD r0 r1)   = i4 ("fdiv" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (FcmpZ _ xr)        = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
-    pretty Ret{}               = i4 "ret"
-    pretty (Scvtf _ d r)       = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
-    pretty (Fcvtms _ r d)      = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
-    pretty (MovK _ r i s)      = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s )
-    pretty (Fcmp _ d0 d1)      = i4 ("fcmp" <+> pretty d0 <> "," <+> pretty d1)
-    pretty (Stp _ r0 r1 a)     = i4 ("stp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
-    pretty (Ldp _ r0 r1 a)     = i4 ("ldp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
-    pretty (StpD _ d0 d1 a)    = i4 ("stp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
-    pretty (LdpD _ d0 d1 a)    = i4 ("ldp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
+    pretty (Label _ l)           = prettyLabel l <> ":"
+    pretty (B _ l)               = i4 ("b" <+> prettyLabel l)
+    pretty (Bc _ c l)            = i4 ("b." <> pretty c <+> prettyLabel l)
+    pretty (Bl _ l)              = i4 ("bl" <+> pretty l)
+    pretty (FMovXX _ xr0 xr1)    = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
+    pretty (FMovDR _ d r)        = i4 ("fmov" <+> pretty d <> "," <+> pretty r)
+    pretty (MovRR _ r0 r1)       = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (MovRC _ r u)         = i4 ("mov" <+> pretty r <> "," <+> hexd u)
+    pretty (Ldr _ r a)           = i4 ("ldr" <+> pretty r <> "," <+> pretty a)
+    pretty (Str _ r a)           = i4 ("str" <+> pretty r <> "," <+> pretty a)
+    pretty (LdrD _ xr a)         = i4 ("ldr" <+> pretty xr <> "," <+> pretty a)
+    pretty (StrD _ xr a)         = i4 ("str" <+> pretty xr <> "," <+> pretty a)
+    pretty (AddRR _ rD rS rS')   = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (SubRR _ rD rS rS')   = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (MulRR _ rD rS rS')   = i4 ("mul" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (SubRC _ rD rS u)     = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
+    pretty (AddRC _ rD rS u)     = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
+    pretty (Lsl _ rD rS u)       = i4 ("lsl" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
+    pretty (CmpRC _ r u)         = i4 ("cmp" <+> pretty r <> "," <+> hexd u)
+    pretty (CmpRR _ r0 r1)       = i4 ("cmp" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Neg _ rD rS)         = i4 ("neg" <+> pretty rD <> "," <+> pretty rS)
+    pretty (Fmul _ rD r0 r1)     = i4 ("fmul" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Fadd _ rD r0 r1)     = i4 ("fadd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Fsub _ rD r0 r1)     = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Fdiv _ rD r0 r1)     = i4 ("fdiv" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (FcmpZ _ xr)          = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
+    pretty Ret{}                 = i4 "ret"
+    pretty (Scvtf _ d r)         = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
+    pretty (Fcvtms _ r d)        = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
+    pretty (MovK _ r i s)        = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s )
+    pretty (Fcmp _ d0 d1)        = i4 ("fcmp" <+> pretty d0 <> "," <+> pretty d1)
+    pretty (Stp _ r0 r1 a)       = i4 ("stp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
+    pretty (Ldp _ r0 r1 a)       = i4 ("ldp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
+    pretty (StpD _ d0 d1 a)      = i4 ("stp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
+    pretty (LdpD _ d0 d1 a)      = i4 ("ldp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
+    pretty (Fmadd _ d0 d1 d2 d3) = i4 ("fmadd" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
 
 instance (Pretty reg, Pretty freg) => Show (AArch64 reg freg a) where show=show.pretty
