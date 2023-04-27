@@ -134,7 +134,7 @@ eval (IR.IB IR.IPlus e (IR.ConstI i)) t | Just u <- m12 i = do
     pure $ plE ++ [AddRC () (absReg t) (IReg r) u]
 eval (IR.IB IR.IAsl e (IR.ConstI i)) t = do
     r <- nextI; plE <- eval e (IR.ITemp r)
-    pure $ plE ++ [Lsl () (IReg r) (absReg t) (fromIntegral (i `mod` 64))]
+    pure $ plE ++ [Lsl () (absReg t) (IReg r) (fromIntegral (i `mod` 64))]
 eval (IR.IB IR.IMinus (IR.ConstI 0) e) t = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Neg () (absReg t) (IReg r)]

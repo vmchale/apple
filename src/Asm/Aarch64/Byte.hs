@@ -56,6 +56,9 @@ be = fromIntegral.fromEnum
 bp :: Cond -> Word8
 bp Eq=0b0000; bp Neq=0b0001; bp Gt=0b1100; bp Leq=0b1101; bp Geq=0b1010; bp Lt=0b1011
 
+bs :: Shift -> Word8
+bs Zero=0b0; bs Three=0b1
+
 lsr :: Int -> Int -> Int
 lsr (I# n) (I# k) = I# (iShiftRL# n k)
 
@@ -69,19 +72,28 @@ asm ix st (Fadd _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b0010
 asm ix st (Fmul _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0x2 `shiftL` 2 .|. (be d1 `shiftR` 3), (0x7 .&. be d1) `shiftL` 5 .|. be d0]:asm (ix+4) st asms
 asm ix st (Fsub _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b1110 `shiftL` 2 .|. (be d1 `shiftR` 3), (0x7 .&. be d1) `shiftL` 5 .|. be d0]:asm (ix+4) st asms
 asm ix st (Fdiv _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b110 `shiftL` 2 .|. (be d1 `shiftR` 3), (0x7 .&. be d1) `shiftL` 5 .|. be d0]:asm (ix+4) st asms
+asm ix st (Fmadd _ d0 d1 d2 d3:asms) = [0b00011111, 0x2 `shiftL` 5 .|. be d2, be d3 `shiftL` 6 .|. be d1 `shiftR` 3, (0x7 .&. be d1) `shiftL` 5 .|. be d0]:asm (ix+4) st asms
 asm ix st (Label{}:asms) = asm ix st asms
 asm ix st (Ret{}:asms) = [0b11010110, 0b01011111, be X30 `shiftR` 3, (0x7 .&. (be X30)) `shiftL` 5]:asm (ix+4) st asms
 asm ix st (SubRR _ r0 r1 r2:asms) = [0b11001011, be r2, be r1 `shiftR` 3, (0x7 .&. be r1) `shiftL` 5 .|. be r0]:asm (ix+4) st asms
+asm ix st (Neg _ r0 r1:asms) = [0b11001011, be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (MulRR _ r0 r1 r2:asms) = [0b10011011, be r2, 0b11111 `shiftL` 2 .|. be r1 `shiftR` 5, (0x7 .&. be r1) `shiftL` 5 .|. be r0]: asm (ix+4) st asms
 asm ix st (AddRR _ r0 r1 r2:asms) = [0b10001011, be r2, be r1 `shiftR` 3, (0x7 .&. be r1) `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (AddRC _ r0 r1 i:asms) = [0b10010001, fromIntegral (i `shiftR` 6), fromIntegral (0b111111 .&. i) `shiftL` 2 .|. (be r1 `shiftR` 3), (0x7 .&. be r1) `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (SubRC _ r0 r1 i:asms) = [0b11010001, fromIntegral (i `shiftR` 6), fromIntegral (0b111111 .&. i) `shiftL` 2 .|. be r1 `shiftR` 5, (be r1 .&. 0x7) `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (MovRR _ r0 r1:asms) = [0b10101010, be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
-asm ix st (Ldr _ r (RP rb u):asms) = [0b11111000, 0x2 `shiftL` 5 .|. fromIntegral (u `shiftR` 5), fromIntegral (0xf .&. u) `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 2, (0x7 .&. be rb) `shiftL` 5 .|. be r]:asm (ix+4) st asms
-asm ix st (Str _ r (R rb):asms) = [0b11111000, 0x1 `shiftL` 5, 0x2 `shiftL` 2 .|. be rb `shiftR` 5, (0x7 .&. be rb) `shiftL` 5.|.  be r]:asm (ix+4) st asms
+asm ix st (Ldr _ r (RP rb u):asms) = [0b11111000, 0x2 `shiftL` 5 .|. fromIntegral (u `shiftR` 4), fromIntegral (0xf .&. u) `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 3, (0x7 .&. be rb) `shiftL` 5 .|. be r]:asm (ix+4) st asms
+asm ix st (Ldr _ r (R rb):asms) = [0b11111000, 0x3 `shiftL` 5, 0x2 `shiftL` 2 .|. (be rb `shiftR` 5), (0x7 .&. be rb) `shiftL` 5 .|. be r]:asm (ix+4) st asms
+asm ix st (Ldr _ r (BI rb ri s):asms) = [0b11111000, 0x3 `shiftL` 5 .|. be ri, 0x3 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0x2 `shiftL` 2 .|. (be rb `shiftR` 5), (0x7 .&. be rb) `shiftL` 5 .|. be r]:asm (ix+4) st asms
+asm ix st (Ldp _ r0 r1 (R rb):asms) = [0b10101000, 0x3 `shiftL` 6, be r1 `shiftL` 2 .|. be rb `shiftR` 5, (0x7 .&. be rb) `shiftL` 5 .|. be r0]:asm (ix+4) st asms
+asm ix st (Str _ r (R rb):asms) = [0b11111000, 0x1 `shiftL` 5, 0x2 `shiftL` 2 .|. be rb `shiftR` 5, (0x7 .&. be rb) `shiftL` 5 .|.  be r]:asm (ix+4) st asms
+asm ix st (Str _ r (BI rb ri s):asms) = [0b11111000, 0x1 `shiftL` 5 .|. be ri, 0x3 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0x2 `shiftL` 2 .|. be rb `shiftR` 5, (0x7 .&. be rb) `shiftL` 5 .|. be r]:asm (ix+4) st asms
+asm ix st (Str _ r (RP rb u):asms) = [0b11111000, fromIntegral (u `shiftR` 4), fromIntegral (0xf .&. u) `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 2, (0x7 .&. be rb) `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (Stp _ r0 r1 (R rb):asms) = [0b10101000, 0x1 `shiftL` 7, be r1 `shiftL` 2 .|. be rb `shiftR` 5, (0x7 .&. be rb) `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (StpD _ d0 d1 (R rb):asms) = [0b01101100, 0x1 `shiftL` 7, be d1 `shiftL` 2 .|. be rb `shiftR` 5, (0x7 .&. be rb) `shiftL` 5 .|. be d0]:asm (ix+4) st asms
-asm ix st (LdrD _ d (RP rb u):asms) = [0b11111100, 0x2 `shiftL` 5 .|. fromIntegral (u `shiftR` 5), fromIntegral (0xf .&. u) `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 2, (0x7 .&. be rb) `shiftL` 5 .|. be d]:asm (ix+4) st asms
+asm ix st (LdrD _ d (RP rb u):asms) = [0b11111100, 0x2 `shiftL` 5 .|. fromIntegral (u `shiftR` 4), fromIntegral (0xf .&. u) `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 3, (0x7 .&. be rb) `shiftL` 5 .|. be d]:asm (ix+4) st asms
+asm ix st (LdrD _ d (BI rb ri s):asms) = [0b11111100, 0x3 `shiftL` 5 .|. be ri, 0x3 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0x2 `shiftL` 2 .|. be rb `shiftR` 3, (0x7 .&. be rb) `shiftL` 5 .|. be d]:asm (ix+4) st asms
+asm ix st (LdpD _ d0 d1 (R rb):asms) = [0b011011000, 0x3 `shiftL` 6, be d1 `shiftL` 2 .|. be rb `shiftR` 5, (0x7 .&. be rb) `shiftL` 5 .|. be d0]:asm (ix+4) st asms
 asm ix st (CmpRR _ r0 r1:asms) = [0b11101011, be r1, be r0 `shiftR` 3, (0x7 .&. be r0) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
 asm ix st (CmpRC _ r u:asms) = [0b11110001, fromIntegral (u `shiftR` 6), (0b111111 .&. fromIntegral u) `shiftL` 2 .|. (be r `shiftR` 3), (0x7 .&. be r) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
 asm ix st (Scvtf _ d r:asms) = [0b10011110, 0b01100010, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5 .|. be d]:asm (ix+4) st asms
@@ -89,7 +101,7 @@ asm ix st (Fcvtms _ r d:asms) = [0b10011110, 0x1 `shiftL` 6 .|. 0b1100000, be d 
 asm ix st (Lsl _ r0 r1 s:asms) =
     let immr= (-s) `mod` 64
         imms=63-s
-    in [0b11010011, 0x1 `shiftL` 6 .|. immr, imms `shiftL` 2 .|. be r1 `shiftR` 3, (0x7 .&. be r1) .|. be r0]:asm (ix+4) st asms
+    in [0b11010011, 0x1 `shiftL` 6 .|. immr, imms `shiftL` 2 .|. be r1 `shiftR` 3, (0x7 .&. be r1) `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (Bc _ p l:asms) =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
@@ -99,6 +111,14 @@ asm ix st (B _ l:asms) =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
         isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
+    in isn:asm (ix+4) st asms
+asm ix st@(self, Just (m, _), _) (Bl _ Malloc:asms) =
+    let offs=(m-(self+ix)) `quot` 4
+        isn=[0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
+    in isn:asm (ix+4) st asms
+asm ix st@(self, Just (_, f), _) (Bl _ Free:asms) =
+    let offs=(f-(self+ix)) `quot` 4
+        isn=[0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
     in isn:asm (ix+4) st asms
 asm _ _ (isn:_) = error(show isn)
 
