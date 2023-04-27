@@ -80,7 +80,6 @@ instance E AArch64.AReg where
     toInt AArch64.X28 = -21
     toInt AArch64.X29 = -22
     toInt AArch64.X30 = 8
-    toInt AArch64.X31 = -47
     toInt AArch64.SP  = 9
 
 instance E AArch64.FAReg where

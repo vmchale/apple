@@ -27,7 +27,8 @@ import           GHC.Generics    (Generic)
 import           Numeric         (showHex)
 import           Prettyprinter   (Doc, Pretty (..), brackets, (<+>))
 
-data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | X31 | SP deriving (Eq, Ord, Enum, Generic)
+-- https://developer.arm.com/documentation/102374/0101/Registers-in-AArch64---other-registers
+data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
 
 instance NFData AReg where
 
@@ -35,8 +36,7 @@ instance Pretty AReg where
     pretty X0 = "X0"; pretty X1 = "X1"; pretty X2 = "X2"; pretty X3 = "X3"; pretty X4 = "X4"; pretty X5 = "X5"; pretty X6 = "X6"; pretty X7 = "X7"
     pretty X8 = "X8"; pretty X9 = "X9"; pretty X10 = "X10"; pretty X11 = "X11"; pretty X12 = "X12"; pretty X13 = "X13"; pretty X14 = "X14"; pretty X15 = "X15"
     pretty X16 = "X16"; pretty X17 = "X17"; pretty X18 = "X18"; pretty X19 = "X19"; pretty X20 = "X20"; pretty X21 = "X21"; pretty X22 = "X22"; pretty X23 = "X23"
-    pretty X24 = "X24"; pretty X25 = "X25"; pretty X26 = "X26"; pretty X27 = "X27"; pretty X28 = "X28"; pretty X29 = "X29"; pretty X30 = "X30"; pretty X31 = "X31"
-    pretty SP = "SP"
+    pretty X24 = "X24"; pretty X25 = "X25"; pretty X26 = "X26"; pretty X27 = "X27"; pretty X28 = "X28"; pretty X29 = "X29"; pretty X30 = "X30"; pretty SP = "SP"
 
 instance Show AReg where show = show.pretty
 
@@ -200,7 +200,7 @@ mapR f (Ldp l r0 r1 a)       = Ldp l (f r0) (f r1) (f <$> a)
 mapR f (Stp l r0 r1 a)       = Stp l (f r0) (f r1) (f <$> a)
 mapR f (LdpD l d0 d1 a)      = LdpD l d0 d1 (f <$> a)
 mapR f (StpD l d0 d1 a)      = StpD l d0 d1 (f <$> a)
-mapR f (Fmadd l d0 d1 d2 d3) = Fmadd l d0 d1 d2 d3
+mapR _ (Fmadd l d0 d1 d2 d3) = Fmadd l d0 d1 d2 d3
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
