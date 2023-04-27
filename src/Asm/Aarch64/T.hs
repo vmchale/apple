@@ -147,6 +147,9 @@ eval (IR.IB IR.ITimes e0 e1) t = do
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
     pure $ plE0 ++ plE1 ++ [MulRR () (absReg t) (IReg r0) (IReg r1)]
 eval (IR.IRFloor (IR.FReg r)) t = pure [Fcvtms () (absReg t) (fabsReg r)]
+eval (IR.EAt (IR.AP rB (Just e) _)) t = do
+    i <- nextI; plE <- eval e (IR.ITemp i)
+    pure $ plE ++ [Ldr () (absReg t) (BI (absReg rB) (IReg i) Zero)]
 eval e _            = error (show e)
 
 puL, poL :: [AArch64 AbsReg freg ()]

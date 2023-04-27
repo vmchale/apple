@@ -18,6 +18,7 @@ module P ( Err (..)
          , aarch64
          , as, x86G, x86L
          , eDumpX86, eDumpAarch64
+         , ex86G, eAarch64
          , bytes
          , funP, aFunP
          , eFunP, eAFunP

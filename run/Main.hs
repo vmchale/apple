@@ -193,13 +193,17 @@ ubs = encodeUtf8 . TL.pack
 
 disasm :: String -> Repl AlexPosn ()
 disasm s = do
+    st <- lift $ gets _lex
     a <- lift $ gets _arch
-    let d=case a of {X64 -> dtxt; AArch64 -> dAtxt}
-    liftIO $ do
-        res <- d (ubs s)
-        case res of
-            Left err -> putDoc (pretty err <> hardline)
-            Right b  -> TIO.putStr b
+    let d=case a of {X64 -> eDtxt; AArch64 -> edAtxt}
+    case rwP st (ubs s) of
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            res <- liftIO $ d i eC
+            liftIO $ case res of
+                Left err -> putDoc (pretty err <> hardline)
+                Right b  -> TIO.putStr b
 
 irR :: String -> Repl AlexPosn ()
 irR s = do
