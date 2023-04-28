@@ -124,6 +124,10 @@ feval (IR.FB IR.FDiv e0 e1) t = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
     pure $ plE0 ++ plE1 ++ [Fdiv () (fabsReg t) (FReg i1) (FReg i2)]
+feval (IR.FB IR.FMax e0 e1) t = do
+    i1 <- nextI; i2 <- nextI
+    plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
+    pure $ plE0 ++ plE1 ++ [Fmax () (fabsReg t) (FReg i1) (FReg i2)]
 feval (IR.FAt (IR.AP tB (Just e) _)) tD = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [LdrD () (fabsReg tD) (BI (absReg tB) (IReg i) Zero)]

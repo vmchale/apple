@@ -13,6 +13,7 @@ import           I
 import qualified Math.Hypergeometric   as Hyper
 import qualified Math.SpecialFunction  as Math
 import           P
+import           System.Info           (arch)
 import           Ty
 
 risingFactorial :: Integral a => a -> a -> a
@@ -30,7 +31,7 @@ aA x = do
     p <- mallocBytes (sizeOf x)
     poke p x $> p
 
-leakFp = funP
+leakFp = case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
 
 main :: IO ()
 main = do
@@ -43,15 +44,15 @@ main = do
     p1Ptr <- aA (AA 1 [3] [0.0::Double,0.3])
 #ifdef x86_64_HOST_ARCH
     fp <- fmap iii . leakFp =<< BSL.readFile "test/examples/risingFactorial.🍎"
-    erfFp <- fmap ff . leakFp =<< BSL.readFile "math/erf.🍏"
     entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
     gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
     scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
-    scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
-    ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
     ᴀFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/offset.🍏"
 #endif
+    erfFp <- fmap ff . leakFp =<< BSL.readFile "math/erf.🍏"
+    ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
+    scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
@@ -72,9 +73,7 @@ main = do
                 , bgroup "erf"
                       [ bench "erf (libm)" $ nf erf (1 :: Double)
                       , bench "erf (hypergeometric)" $ nf Hyper.erf (1 :: Double)
-#ifdef x86_64_HOST_ARCH
                       , bench "erf (jit)" $ nfIO (pure $ erfFp 1)
-#endif
                       ]
                 , bgroup "risingFactorial"
                       [ bench "hs" $ nf (risingFactorial 5) (15 :: Int)
@@ -96,9 +95,7 @@ main = do
                       ]
                 , bgroup "ncdf"
                       [ bench "lib" $ nf normcdf (2 :: Double)
-#ifdef x86_64_HOST_ARCH
                       , bench "jit" $ nfIO (pure $ ncdfFp 2)
-#endif
                       ]
                 , bgroup "Γ"
                       [ bench "hs" $ nf Math.gamma (1.5 :: Double)
@@ -106,11 +103,11 @@ main = do
                       , bench "jit" $ nfIO (pure $ gammaFp 1.5)
 #endif
                       ]
-#ifdef x86_64_HOST_ARCH
                 , bgroup "scanmax"
-                      [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
-                      , bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
+                      [ bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
+                      -- bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
                       ]
+#ifdef x86_64_HOST_ARCH
                 , bgroup "elliptic"
                       [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
 #endif
