@@ -88,6 +88,7 @@ ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
     let rDA=IReg rD; rSA=IReg rS; rNA=IReg rN
     l <- nextL; endL <- nextL
     pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, Label () l, CmpRR () i rNA, Bc () Geq l, Ldr () t (BI rSA i Three), Str () t (BI rDA i Three), AddRC () i i 1, Label () endL]
+ir (IR.IRnd t) = pure [MrsR () (absReg t)]
 ir s             = error (show s)
 
 feval :: IR.FExp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
@@ -103,6 +104,10 @@ feval (IR.FB IR.FPlus e0 (IR.FB IR.FTimes e1 e2)) t = do
     i0 <- nextI; i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1); plE2 <- feval e2 (IR.FTemp i2)
     pure $ plE0 ++ plE1 ++ plE2 ++ [Fmadd () (fabsReg t) (FReg i1) (FReg i2) (FReg i0)]
+feval (IR.FB IR.FPlus (IR.FB IR.FTimes e0 e1) e2) t = do
+    i0 <- nextI; i1 <- nextI; i2 <- nextI
+    plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1); plE2 <- feval e2 (IR.FTemp i2)
+    pure $ plE0 ++ plE1 ++ plE2 ++ [Fmadd () (fabsReg t) (FReg i0) (FReg i1) (FReg i2)]
 feval (IR.FB IR.FPlus e0 e1) t = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
