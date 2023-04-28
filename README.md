@@ -30,7 +30,7 @@ array([3., 4., 5., 6.])
 
 ## Dimension As a Functor
 
-This is based on J (and APL?). Looping is replaced by functoriality (rerank);
+This is based on J (and APL?). Looping is replaced by functoriality (rerank).
 
 ## Moving Code vs. Moving Data
 
