@@ -85,6 +85,7 @@ uses Fcmp{}            = IS.empty
 uses (StpD _ _ _ a)    = uA a
 uses (LdpD _ _ _ a)    = uA a
 uses Fmadd{}           = IS.empty
+uses Fsqrt{}           = IS.empty
 
 defs Label{}         = IS.empty
 defs B{}             = IS.empty
@@ -122,6 +123,7 @@ defs FMovDR{}        = IS.empty
 defs (MovK _ r _ _)  = singleton r
 defs Fcmp{}          = IS.empty
 defs Fmadd{}         = IS.empty
+defs Fsqrt{}         = IS.empty
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
 defsF Label{}            = IS.empty
@@ -160,6 +162,7 @@ defsF Ldp{}              = IS.empty
 defsF Stp{}              = IS.empty
 defsF StpD{}             = IS.empty
 defsF (Fmadd _ d0 _ _ _) = singleton d0
+defsF (Fsqrt _ d _)      = singleton d
 
 usesF Label{}              = IS.empty
 usesF B{}                  = IS.empty
@@ -197,6 +200,7 @@ usesF Stp{}                = IS.empty
 usesF Ldp{}                = IS.empty
 usesF LdpD{}               = IS.empty
 usesF (Fmadd _ _ d0 d1 d2) = fromList [d0, d1, d2]
+usesF (Fsqrt _ _ d)        = singleton d
 
 next :: (E reg, E freg) => [AArch64 reg freg ()] -> FreshM ([Int] -> [Int], [AArch64 reg freg ControlAnn])
 next asms = do

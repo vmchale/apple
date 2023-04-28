@@ -123,6 +123,7 @@ feval (IR.FAt (IR.AP tB (Just e) _)) tD = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [LdrD () (fabsReg tD) (BI (absReg tB) (IReg i) Zero)]
 feval (IR.FConv (IR.Reg r)) tD = pure [Scvtf () (fabsReg tD) (absReg r)]
+feval (IR.FU IR.FSqrt (IR.FReg r)) t = pure [Fsqrt () (fabsReg t) (fabsReg r)]
 feval e _             = error (show e)
 
 eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]

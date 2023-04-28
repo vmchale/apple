@@ -159,6 +159,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | StpD { ann :: a, dSrc1 :: freg, dSrc2 :: freg, aDest :: Addr reg }
                         | LdpD { ann :: a, dDest1 :: freg, dDest2 :: freg, aSrc :: Addr reg }
                         | Fmadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, dSrc3 :: freg }
+                        | Fsqrt { ann :: a, dDest :: freg, dSrc :: freg }
                         deriving (Functor)
 
 instance Copointed (AArch64 reg freg) where copoint = ann
@@ -201,6 +202,7 @@ mapR f (Stp l r0 r1 a)       = Stp l (f r0) (f r1) (f <$> a)
 mapR f (LdpD l d0 d1 a)      = LdpD l d0 d1 (f <$> a)
 mapR f (StpD l d0 d1 a)      = StpD l d0 d1 (f <$> a)
 mapR _ (Fmadd l d0 d1 d2 d3) = Fmadd l d0 d1 d2 d3
+mapR _ (Fsqrt l d0 d1)       = Fsqrt l d0 d1
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -240,6 +242,7 @@ mapFR _ (Ldp l r0 r1 a)       = Ldp l r0 r1 a
 mapFR f (StpD l d0 d1 a)      = StpD l (f d0) (f d1) a
 mapFR f (LdpD l d0 d1 a)      = LdpD l (f d0) (f d1) a
 mapFR f (Fmadd l d0 d1 d2 d3) = Fmadd l (f d0) (f d1) (f d2) (f d3)
+mapFR f (Fsqrt l d0 d1)       = Fsqrt l (f d0) (f d1)
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -294,5 +297,6 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (StpD _ d0 d1 a)      = i4 ("stp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
     pretty (LdpD _ d0 d1 a)      = i4 ("ldp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
     pretty (Fmadd _ d0 d1 d2 d3) = i4 ("fmadd" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
+    pretty (Fsqrt _ d0 d1)       = i4 ("fsqrt" <+> pretty d0 <> "," <+> pretty d1)
 
 instance (Pretty reg, Pretty freg) => Show (AArch64 reg freg a) where show=show.pretty
