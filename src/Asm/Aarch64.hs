@@ -33,20 +33,20 @@ data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | 
 instance NFData AReg where
 
 instance Pretty AReg where
-    pretty X0 = "X0"; pretty X1 = "X1"; pretty X2 = "X2"; pretty X3 = "X3"; pretty X4 = "X4"; pretty X5 = "X5"; pretty X6 = "X6"; pretty X7 = "X7"
-    pretty X8 = "X8"; pretty X9 = "X9"; pretty X10 = "X10"; pretty X11 = "X11"; pretty X12 = "X12"; pretty X13 = "X13"; pretty X14 = "X14"; pretty X15 = "X15"
-    pretty X16 = "X16"; pretty X17 = "X17"; pretty X18 = "X18"; pretty X19 = "X19"; pretty X20 = "X20"; pretty X21 = "X21"; pretty X22 = "X22"; pretty X23 = "X23"
-    pretty X24 = "X24"; pretty X25 = "X25"; pretty X26 = "X26"; pretty X27 = "X27"; pretty X28 = "X28"; pretty X29 = "X29"; pretty X30 = "X30"; pretty SP = "SP"
+    pretty X0 = "x0"; pretty X1 = "x1"; pretty X2 = "x2"; pretty X3 = "x3"; pretty X4 = "x4"; pretty X5 = "x5"; pretty X6 = "x6"; pretty X7 = "x7"
+    pretty X8 = "x8"; pretty X9 = "x9"; pretty X10 = "x10"; pretty X11 = "x11"; pretty X12 = "x12"; pretty X13 = "x13"; pretty X14 = "x14"; pretty X15 = "x15"
+    pretty X16 = "x16"; pretty X17 = "x17"; pretty X18 = "x18"; pretty X19 = "x19"; pretty X20 = "x20"; pretty X21 = "x21"; pretty X22 = "x22"; pretty X23 = "x23"
+    pretty X24 = "x24"; pretty X25 = "x25"; pretty X26 = "x26"; pretty X27 = "x27"; pretty X28 = "x28"; pretty X29 = "x29"; pretty X30 = "x30"; pretty SP = "sp"
 
 instance Show AReg where show = show.pretty
 
 data FAReg = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9 | D10 | D11 | D12 | D13 | D14 | D15 | D16 | D17 | D18 | D19 | D20 | D21 | D22 | D23 | D24 | D25 | D26 | D27 | D28 | D29 | D30 | D31 deriving (Eq, Ord, Enum, Generic)
 
 instance Pretty FAReg where
-    pretty D0 = "D0"; pretty D1 = "D1"; pretty D2 = "D2"; pretty D3 = "D3"; pretty D4 = "D4"; pretty D5 = "D5"; pretty D6 = "D6"; pretty D7 = "D7"
-    pretty D8 = "D8"; pretty D9 = "D9"; pretty D10 = "D10"; pretty D11 = "D11"; pretty D12 = "D12"; pretty D13 = "D13"; pretty D14 = "D14"; pretty D15 = "D15"
-    pretty D16 = "D16"; pretty D17 = "D17"; pretty D18 = "D18"; pretty D19 = "D19"; pretty D20 = "D20"; pretty D21 = "D21"; pretty D22 = "D22"; pretty D23 = "D23"
-    pretty D24 = "D24"; pretty D25 = "D25"; pretty D26 = "D26"; pretty D27 = "D27"; pretty D28 = "D28"; pretty D29 = "D29"; pretty D30 = "D30"; pretty D31 = "D31"
+    pretty D0 = "d0"; pretty D1 = "d1"; pretty D2 = "d2"; pretty D3 = "d3"; pretty D4 = "d4"; pretty D5 = "d5"; pretty D6 = "d6"; pretty D7 = "d7"
+    pretty D8 = "d8"; pretty D9 = "d9"; pretty D10 = "d10"; pretty D11 = "d11"; pretty D12 = "d12"; pretty D13 = "d13"; pretty D14 = "d14"; pretty D15 = "d15"
+    pretty D16 = "d16"; pretty D17 = "d17"; pretty D18 = "d18"; pretty D19 = "d19"; pretty D20 = "d20"; pretty D21 = "d21"; pretty D22 = "d22"; pretty D23 = "d23"
+    pretty D24 = "d24"; pretty D25 = "d25"; pretty D26 = "d26"; pretty D27 = "d27"; pretty D28 = "d28"; pretty D29 = "d29"; pretty D30 = "d30"; pretty D31 = "d31"
 
 instance Show FAReg where show = show.pretty
 
