@@ -19,12 +19,12 @@ import           Hs.FFI
 import           Sys.DL
 
 hasMa :: [AArch64 reg freg a] -> Bool
-hasMa = any g where g Bl{}=True; g _=False
+hasMa = any g where g MovRCf{}=True; g _=False
 
 prepAddrs :: [AArch64 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
-assembleCtx :: (Int, Int) -> [AArch64 AReg FAReg a] -> IO (BS.ByteString, FunPtr b)
+assembleCtx :: (Int, Int) -> [AArch64 AReg FAReg ()] -> IO (BS.ByteString, FunPtr b)
 assembleCtx ctx isns = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
@@ -33,7 +33,7 @@ assembleCtx ctx isns = do
     (b,)<$>finish b p
 
 dbgFp = fmap fst . allFp
-allFp :: [AArch64 AReg FAReg a] -> IO ([BS.ByteString], FunPtr b)
+allFp :: [AArch64 AReg FAReg ()] -> IO ([BS.ByteString], FunPtr b)
 allFp instrs = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
@@ -46,6 +46,7 @@ allFp instrs = do
 
 mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
 mkIx ix (Label _ l:asms) = second (M.insert l ix) $ mkIx ix asms
+mkIx ix (MovRCf{}:asms)  = mkIx (ix+16) asms
 mkIx ix (_:asms)         = mkIx (ix+4) asms
 mkIx ix []               = (ix, M.empty)
 
@@ -64,7 +65,7 @@ lsr (I# n) (I# k) = I# (iShiftRL# n k)
 
 lb r rD = (0x7 .&. be r) `shiftL` 5 .|. be rD
 
-asm :: Int -> (Int, Maybe (Int, Int), M.Map Label Int) -> [AArch64 AReg FAReg a] -> [[Word8]]
+asm :: Int -> (Int, Maybe (Int, Int), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (MovRC _ r i:asms) = [0b11010010, 0b100 `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral (0xff .&. (i `shiftR` 3)), (fromIntegral (0x7 .&. i)) `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (MovK _ r i s:asms) = [0b11110010, 0b1 `shiftL` 7 .|. (fromIntegral (s `quot` 16)) `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral ((i `shiftR` 3)), (fromIntegral (0x7 .&. i) `shiftL` 5) .|. be r]:asm (ix+4) st asms
@@ -119,14 +120,13 @@ asm ix st (B _ l:asms) =
         offs=(lIx-ix) `quot` 4
         isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
     in isn:asm (ix+4) st asms
-asm ix st@(self, Just (m, _), _) (Bl _ Malloc:asms) =
-    let offs=(m-(self+ix)) `quot` 4
-        isn=[0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
-    in isn:asm (ix+4) st asms
-asm ix st@(self, Just (_, f), _) (Bl _ Free:asms) =
-    let offs=(f-(self+ix)) `quot` 4
-        isn=[0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
-    in isn:asm (ix+4) st asms
+asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
+asm ix st@(_, Just (m, _), _) (MovRCf _ r Malloc:asms) =
+    let w0=m .&. 0xffff; w1=(m .&. 0xffff0000) `lsr` 16; w2=(m .&. 0xFFFF00000000) `lsr` 32; w3=(m .&. 0xFFFF000000000000) `lsr` 48
+    in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
+asm ix st@(_, Just (_, f), _) (MovRCf _ r Free:asms) =
+    let w0=f .&. 0xffff; w1=(f .&. 0xffff0000) `lsr` 16; w2=(f .&. 0xFFFF00000000) `lsr` 32; w3=(f .&. 0xFFFF000000000000) `lsr` 48
+    in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
 asm _ _ (isn:_) = error(show isn)
 
 get :: Label -> (Int, Maybe (Int, Int), M.Map Label Int) -> Int

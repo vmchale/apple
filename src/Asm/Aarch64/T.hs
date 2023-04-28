@@ -43,8 +43,8 @@ ir (IR.L l)      = pure [Label () l]
 ir (IR.J l)      = pure [B () l]
 ir (IR.MX t e)   = feval e t
 ir (IR.MT t e)   = eval e t
-ir (IR.Ma _ t e) = do {plE <- eval e IR.C0; pure $ plE ++ puL ++ [Bl () Malloc, MovRR () (absReg t) CArg0] ++ poL}
-ir (IR.Free t) = pure $ puL ++ [MovRR () CArg0 (absReg t), Bl () Free] ++ poL
+ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}
+ir (IR.Free t) = do {r <- nextR; pure $ puL ++ [MovRR () CArg0 (absReg t), MovRCf () r Malloc, Blr () r] ++ poL}
 ir (IR.Wr (IR.AP t Nothing _) e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Str () (IReg r) (R $ absReg t)]

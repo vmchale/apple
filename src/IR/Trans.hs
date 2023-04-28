@@ -369,7 +369,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t = do
     let putN = MT n ((Reg endR-Reg startR) + 1)
     let step = [Wr (AP t (Just (sib i)) (Just a)) (Reg startR), tick startR]
     loop <- doN i (Reg n) step
-    pure (Just a, putStart++putEnd++putN:man (a, t) 1 (Reg n):dim1 (Just a) t (Reg n)++MT i 16:loop)
+    pure (Just a, putStart++putEnd++putN:man (a, t) 1 (Reg n):dim1 (Just a) t (Reg n)++loop)
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     a <- nextArr
     n <- newITemp

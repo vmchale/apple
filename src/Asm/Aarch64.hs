@@ -124,14 +124,15 @@ instance Pretty Cond where
 -- https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | B { ann :: a, label :: Label }
+                        | Blr { ann :: a, rSrc :: reg }
                         | Bc { ann :: a, cond :: Cond, label :: Label }
-                        | Bl { ann :: a, cfunc :: CFunc }
                         | Ret { ann :: a }
                         | FMovXX { ann :: a, dDest :: freg, dSrc :: freg }
                         | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                         | FMovXC { ann :: a, dDest :: freg, dC :: Double }
                         | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
                         | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
+                        | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
                         | MovK { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                         | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
                         | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
@@ -169,7 +170,6 @@ mapR :: (areg -> reg) -> AArch64 areg afreg a -> AArch64 reg afreg a
 mapR _ (Label x l)           = Label x l
 mapR _ (B x l)               = B x l
 mapR _ (Bc x c l)            = Bc x c l
-mapR _ (Bl x f)              = Bl x f
 mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
 mapR _ (FMovXC l r0 c)       = FMovXC l r0 c
 mapR f (MovRR l r0 r1)       = MovRR l (f r0) (f r1)
@@ -205,12 +205,13 @@ mapR f (StpD l d0 d1 a)      = StpD l d0 d1 (f <$> a)
 mapR _ (Fmadd l d0 d1 d2 d3) = Fmadd l d0 d1 d2 d3
 mapR _ (Fsqrt l d0 d1)       = Fsqrt l d0 d1
 mapR f (MrsR l r)            = MrsR l (f r)
+mapR f (MovRCf l r cf)       = MovRCf l (f r) cf
+mapR f (Blr l r)             = Blr l (f r)
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
 mapFR _ (B x l)               = B x l
 mapFR _ (Bc x c l)            = Bc x c l
-mapFR _ (Bl x f)              = Bl x f
 mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
 mapFR f (FMovXC l xr c)       = FMovXC l (f xr) c
 mapFR _ (MovRR l r0 r1)       = MovRR l r0 r1
@@ -246,6 +247,8 @@ mapFR f (LdpD l d0 d1 a)      = LdpD l (f d0) (f d1) a
 mapFR f (Fmadd l d0 d1 d2 d3) = Fmadd l (f d0) (f d1) (f d2) (f d3)
 mapFR f (Fsqrt l d0 d1)       = Fsqrt l (f d0) (f d1)
 mapFR _ (MrsR l r)            = MrsR l r
+mapFR _ (Blr l r)             = Blr l r
+mapFR _ (MovRCf l r cf)       = MovRCf l r cf
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -266,8 +269,8 @@ hexd = pretty.($"").(("#0x"++).).showHex
 instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Label _ l)           = prettyLabel l <> ":"
     pretty (B _ l)               = i4 ("b" <+> prettyLabel l)
+    pretty (Blr _ r)             = i4 ("blr" <+> pretty r)
     pretty (Bc _ c l)            = i4 ("b." <> pretty c <+> prettyLabel l)
-    pretty (Bl _ l)              = i4 ("bl" <+> pretty l)
     pretty (FMovXX _ xr0 xr1)    = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
     pretty (FMovDR _ d r)        = i4 ("fmov" <+> pretty d <> "," <+> pretty r)
     pretty (MovRR _ r0 r1)       = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
@@ -302,5 +305,6 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fmadd _ d0 d1 d2 d3) = i4 ("fmadd" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
     pretty (Fsqrt _ d0 d1)       = i4 ("fsqrt" <+> pretty d0 <> "," <+> pretty d1)
     pretty (MrsR _ r)            = i4 ("mrs" <+> pretty r <> "," <+> "rndr")
+    pretty (MovRCf _ r cf)       = i4 ("mov" <+> pretty r <> "," <+> pretty cf)
 
 instance (Pretty reg, Pretty freg) => Show (AArch64 reg freg a) where show=show.pretty

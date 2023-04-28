@@ -77,9 +77,10 @@ dAtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
 dAtxt = aAsmTxt aarch64
 
 aAsmTxt f = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM Aarch64.dbgFp) . f
-    where zipS [] []                     = []
-          zipS (x@Aarch64.Label{}:xs) ys = (x,BS.empty):zipS xs ys
-          zipS (x:xs) (y:ys)             = (x,y):zipS xs ys
+    where zipS [] []                                    = []
+          zipS (x@Aarch64.MovRCf{}:xs) (y0:y1:y2:y3:ys) = (x,y0):(x,y1):(x,y2):(x,y3):zipS xs ys
+          zipS (x@Aarch64.Label{}:xs) ys                = (x,BS.empty):zipS xs ys
+          zipS (x:xs) (y:ys)                            = (x,y):zipS xs ys
 
 rightPad :: Int -> T.Text -> T.Text
 rightPad n str = T.take n (str <> T.replicate n " ")
