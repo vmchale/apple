@@ -30,7 +30,7 @@ aA x = do
     p <- mallocBytes (sizeOf x)
     poke p x $> p
 
-leakFp = fmap snd.funP
+leakFp = funP
 
 main :: IO ()
 main = do
