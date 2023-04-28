@@ -128,7 +128,7 @@ defs Fmadd{}             = IS.empty
 defs Fsqrt{}             = IS.empty
 defs (MrsR _ r)          = singleton r
 defs Blr{}               = IS.empty
-defs (MovRCf _ r Free)   = singleton r
+defs (MovRCf _ _ Free{}) = IS.empty
 defs (MovRCf _ r Malloc) = singleton r <> singleton CArg0
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet

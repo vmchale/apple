@@ -17,14 +17,13 @@ frameC = concat.go IS.empty IS.empty
                 s' = s `IS.union` new i `IS.difference` done i
                 fs' = fs `IS.union` fnew i `IS.difference` fdone i
             in case (isn0, isn1) of
-                -- FIXME: blr
                 (MovRCf _ _ cf, Blr{}) ->
                     let
                         cs = handleX0 cf $ mapMaybe fromInt $ IS.toList s
                         ds = mapMaybe fInt $ IS.toList fs
                         save = pus cs; restore = pos cs
                         saved = puds ds; restored = pods ds
-                    in (save ++ saved ++ void isn0 : void isn1 : restored ++ restore) : go s' fs' isns
+                    in (save ++ saved ++ void isn0:void isn1:restored ++ restore) : go s' fs' isns
                 _ -> [void isn0, void isn1] : go s' fs' isns
           handleX0 Malloc = filter (/=X0)
           handleX0 Free   = id

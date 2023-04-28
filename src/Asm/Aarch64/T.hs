@@ -43,7 +43,7 @@ ir (IR.L l)      = pure [Label () l]
 ir (IR.J l)      = pure [B () l]
 ir (IR.MX t e)   = feval e t
 ir (IR.MT t e)   = eval e t
-ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}
+ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}
 ir (IR.Free t) = do {r <- nextR; pure $ puL ++ [MovRR () CArg0 (absReg t), MovRCf () r Malloc, Blr () r] ++ poL}
 ir (IR.Wr (IR.AP t Nothing _) e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
@@ -163,8 +163,8 @@ eval (IR.EAt (IR.AP rB (Just e) _)) t = do
 eval e _            = error (show e)
 
 puL, poL :: [AArch64 AbsReg freg ()]
-puL = [SubRC () ASP ASP 16, Str () LR (R ASP)]
-poL = [Ldr () LR (R ASP), AddRC () ASP ASP 16]
+puL = [SubRC () ASP ASP 16, Stp () FP LR (R ASP)]
+poL = [Ldp () FP LR (R ASP), AddRC () ASP ASP 16]
 
 m12, mu16 :: Integral a => a -> Maybe Word16
 m12 i | i >= 0 && i < 4096 = Just (fromIntegral i) | otherwise = Nothing

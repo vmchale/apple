@@ -50,7 +50,7 @@ instance Pretty FAReg where
 
 instance Show FAReg where show = show.pretty
 
-data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 | CArg7 | LR | ASP
+data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 | CArg7 | LR | FP | ASP
 -- r0-r7 used for return values as well
 
 instance Pretty AbsReg where
@@ -65,6 +65,7 @@ instance Pretty AbsReg where
     pretty CArg5    = "X5"
     pretty CArg6    = "X6"
     pretty CArg7    = "X7"
+    pretty FP       = "FP"
 
 data FAbsReg = FReg !Int | FArg0 | FArg1 | FArg2 | FArg3 | FArg4 | FArg5 | FArg6 | FArg7
 
@@ -90,7 +91,8 @@ toInt CArg6    = 6
 toInt CArg7    = 7
 toInt LR       = 8
 toInt ASP      = 9
-toInt (IReg i) = 18+i
+toInt FP       = 18
+toInt (IReg i) = 19+i
 
 fToInt :: FAbsReg -> Int
 fToInt FArg0    = 10
@@ -101,7 +103,7 @@ fToInt FArg4    = 14
 fToInt FArg5    = 15
 fToInt FArg6    = 16
 fToInt FArg7    = 17
-fToInt (FReg i) = 18+i
+fToInt (FReg i) = 19+i
 
 data Shift = Zero | Three
 
