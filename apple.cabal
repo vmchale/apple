@@ -64,7 +64,6 @@ library
         Asm.X86.B
         Asm.X86.Alloc
         Asm.X86.CF
-        Asm.X86.G
         Asm.X86.Opt
         Asm.X86.LI
         Asm.X86.Frame
