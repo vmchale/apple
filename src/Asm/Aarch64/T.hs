@@ -55,6 +55,10 @@ ir (IR.Wr (IR.AP t (Just eI) _) e) = do
     r <- nextI; rI <- nextI
     plE <- eval e (IR.ITemp r); plEI <- eval eI (IR.ITemp rI)
     pure $ plE ++ plEI ++ [Str () (IReg r) (BI (absReg t) (IReg rI) Zero)]
+ir (IR.WrF (IR.AP tB (Just (IR.IB IR.IPlus (IR.IB IR.IAsl eI (IR.ConstI 3)) (IR.ConstI ix8))) _) e) | (ix, 0) <- ix8 `quotRem` 8 = do
+    iI <- nextI; i <- nextI
+    plE <- feval e (IR.FTemp i); plEI <- eval (eI+IR.ConstI ix) (IR.ITemp iI)
+    pure $ plE ++ plEI ++ [StrD () (FReg i) (BI (absReg tB) (IReg iI) Three)]
 ir (IR.WrF (IR.AP t (Just eI) _) e) = do
     i <- nextI; iI <- nextI
     plE <- feval e (IR.FTemp i); plEI <- eval eI (IR.ITemp iI)
@@ -128,6 +132,9 @@ feval (IR.FB IR.FMax e0 e1) t = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
     pure $ plE0 ++ plE1 ++ [Fmax () (fabsReg t) (FReg i1) (FReg i2)]
+feval (IR.FAt (IR.AP tB (Just (IR.IB IR.IPlus (IR.IB IR.IAsl eI (IR.ConstI 3)) (IR.ConstI ix8))) _)) tD | (ix, 0) <- ix8 `quotRem` 8 = do
+    i <- nextI; plE <- eval (eI+IR.ConstI ix) (IR.ITemp i)
+    pure $ plE ++ [LdrD () (fabsReg tD) (BI (absReg tB) (IReg i) Three)]
 feval (IR.FAt (IR.AP tB (Just e) _)) tD = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [LdrD () (fabsReg tD) (BI (absReg tB) (IReg i) Zero)]
