@@ -50,9 +50,6 @@ uA (RP r _)   = singleton r
 uA (BI b i _) = fromList [b, i]
 
 defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
-uses Label{}           = IS.empty
-uses B{}               = IS.empty
-uses Bc{}              = IS.empty
 uses (MovRR _ _ r)     = singleton r
 uses MovRC{}           = IS.empty
 uses FMovXX{}          = IS.empty
@@ -92,9 +89,6 @@ uses (Blr _ r)         = singleton r
 uses Fmax{}            = IS.empty
 uses Fabs{}            = IS.empty
 
-defs Label{}             = IS.empty
-defs B{}                 = IS.empty
-defs Bc{}                = IS.empty
 defs FMovXX{}            = IS.empty
 defs FMovXC{}            = IS.empty
 defs (MovRC _ r _)       = singleton r
@@ -136,9 +130,6 @@ defs Fmax{}              = IS.empty
 defs Fabs{}              = IS.empty
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
-defsF Label{}            = IS.empty
-defsF B{}                = IS.empty
-defsF Bc{}               = IS.empty
 defsF (FMovXX _ r _)     = singleton r
 defsF (FMovXC _ r _)     = singleton r
 defsF MovRR{}            = IS.empty
@@ -178,9 +169,6 @@ defsF MovRCf{}           = IS.empty
 defsF (Fmax _ d _ _)     = singleton d
 defsF (Fabs _ d _)       = singleton d
 
-usesF Label{}              = IS.empty
-usesF B{}                  = IS.empty
-usesF Bc{}                 = IS.empty
 usesF (FMovXX _ _ r)       = singleton r
 usesF FMovXC{}             = IS.empty
 usesF MovRR{}              = IS.empty

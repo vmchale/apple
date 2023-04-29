@@ -3,12 +3,15 @@
 
 module Dbg ( dumpAAbs
            , dumpAarch64
+           , dumpAAss
            , dumpX86G
            , dumpX86Abs
            , dumpX86Liveness
            , dumpIR
            , dumpIRI
            , dumpX86Intervals
+           , dumpALiveness
+           , dumpAIntervals
            , dumpX86Ass
            , printParsed
            , printTypes
@@ -22,11 +25,15 @@ module Dbg ( dumpAAbs
 import           A
 import qualified Asm.Aarch64          as Aarch64
 import qualified Asm.Aarch64.Byte     as Aarch64
+import qualified Asm.Aarch64.CF       as Aarch64
+import qualified Asm.Aarch64.LI       as Aarch64
+import qualified Asm.Aarch64.P        as Aarch64
 import           Asm.Aarch64.T
 import           Asm.M
 import qualified Asm.X86              as X86
 import           Asm.X86.Byte
 import qualified Asm.X86.CF           as X86
+import qualified Asm.X86.LI           as X86
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           CF
@@ -41,7 +48,6 @@ import qualified Data.Text.IO         as TIO
 import           IR
 import           IR.Alloc
 import           L
-import           LI
 import           LR
 import           Numeric              (showHex)
 import           P
@@ -98,6 +104,10 @@ dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.(\(x, st) -> irToX86 st x)) . ir
     where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 16)
 
+dumpAAss :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpAAss = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry Aarch64.gallocOn.(\(x, st) -> irToAarch64 st x)) . ir
+    where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 19)
+
 dumpX86G, dumpX86L :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86G = fmap prettyAsm . x86G
 dumpX86L = fmap prettyAsm . x86L
@@ -120,11 +130,20 @@ dumpIRI = fmap (prettyIRI.live.fst).ir
 dumpX86Intervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Intervals = fmap X86.prettyDebugX86 . x86Iv
 
+dumpAIntervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpAIntervals = fmap Aarch64.prettyDebug . aarch64Iv
+
 dumpX86Liveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Liveness = fmap (X86.prettyDebugX86 . fmap (fmap liveness) . reconstruct . X86.mkControlFlow . (\(x, st) -> snd (irToX86 st x))) . ir
 
+dumpALiveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpALiveness = fmap (Aarch64.prettyDebug . fmap (fmap liveness) . reconstruct . Aarch64.mkControlFlow . (\(x, st) -> snd (irToAarch64 st x))) . ir
+
 x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Interval]
-x86Iv = fmap (intervals . reconstruct . X86.mkControlFlow . (\(x, st) -> snd (irToX86 st x))) . ir
+x86Iv = fmap (X86.mkIntervals . (\(x, st) -> snd (irToX86 st x))) . ir
+
+aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Interval]
+aarch64Iv = fmap (Aarch64.mkIntervals . (\(x, st) -> snd (irToAarch64 st x))) . ir
 
 printParsed :: BSL.ByteString -> Doc ann
 printParsed = pretty . fst . either throw id . parseRename

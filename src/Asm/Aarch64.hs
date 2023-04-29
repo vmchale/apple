@@ -10,6 +10,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , FAbsReg (..)
                    , AReg (..)
                    , FAReg (..)
+                   , prettyDebug
                    , mapR
                    , mapFR
                    , toInt
@@ -19,13 +20,14 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
-import           Control.DeepSeq (NFData (..))
+import           Control.DeepSeq   (NFData (..))
 import           Data.Copointed
-import           Data.Semigroup  ((<>))
-import           Data.Word       (Word16, Word8)
-import           GHC.Generics    (Generic)
-import           Numeric         (showHex)
-import           Prettyprinter   (Doc, Pretty (..), brackets, (<+>))
+import           Data.Semigroup    ((<>))
+import           Data.Word         (Word16, Word8)
+import           GHC.Generics      (Generic)
+import           Numeric           (showHex)
+import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
+import           Prettyprinter.Ext
 
 -- https://developer.arm.com/documentation/102374/0101/Registers-in-AArch64---other-registers
 data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
@@ -318,3 +320,9 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fabs _ d0 d1)        = i4 ("fabs" <+> pretty d0 <> "," <+> pretty d1)
 
 instance (Pretty reg, Pretty freg) => Show (AArch64 reg freg a) where show=show.pretty
+
+prettyLive :: (Pretty reg, Pretty freg, Pretty o) => AArch64 reg freg o -> Doc ann
+prettyLive r = pretty r <+> pretty (ann r)
+
+prettyDebug :: (Pretty freg, Pretty reg, Pretty o) => [AArch64 reg freg o] -> Doc ann
+prettyDebug = prettyLines . fmap prettyLive

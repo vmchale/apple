@@ -91,7 +91,7 @@ ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
     plEN <- eval eN (IR.ITemp rN)
     let rDA=IReg rD; rSA=IReg rS; rNA=IReg rN
     l <- nextL; endL <- nextL
-    pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, Label () l, CmpRR () i rNA, Bc () Geq l, Ldr () t (BI rSA i Three), Str () t (BI rDA i Three), AddRC () i i 1, Label () endL]
+    pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, Label () l, CmpRR () i rNA, Bc () Geq endL, Ldr () t (BI rSA i Three), Str () t (BI rDA i Three), AddRC () i i 1, B () l,  Label () endL]
 ir (IR.IRnd t) = pure [MrsR () (absReg t)]
 ir s             = error (show s)
 
