@@ -17,6 +17,7 @@ import Foreign.Ptr (IntPtr(..), Ptr, castPtr, castFunPtrToPtr, nullPtr)
 import Foreign.Storable (poke, pokeByteOff, sizeOf)
 import Prettyprinter (Doc, Pretty)
 import Prettyprinter.Ext
+import System.Info (arch)
 
 #include <string.h>
 #include <sys/mman.h>
@@ -84,10 +85,12 @@ apple_ty src errPtr = do
                     {# set FnTy.args #} sp ip
                     pure sp
 
+cfp = case arch of {"aarch64" -> actxFunP; "x86_64" -> ctxFunP}
+
 apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)
 apple_compile (IntPtr m) (IntPtr f) src szPtr = do
     bSrc <- BS.unsafePackCString src
-    (sz, fp) <- ctxFunP (m,f) (BSL.fromStrict bSrc)
+    (sz, fp) <- cfp (m,f) (BSL.fromStrict bSrc)
     poke szPtr (fromIntegral sz) $> castFunPtrToPtr fp
 
 foreign export ccall apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)
