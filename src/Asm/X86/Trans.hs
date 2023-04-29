@@ -290,6 +290,12 @@ feval (IR.FB IR.FTimes e0 e1) t                    = do
 feval (IR.ConstF x) t = do
     iR <- nextR
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]
+feval (IR.FU IR.FAbs e) t = do
+    i <- nextI; plE <- feval e (IR.FTemp i)
+    l <- nextL
+    let nextIR=[IR.MJ (IR.FRel IR.FGeq (IR.FReg t) 0) l, IR.MX t (negate (IR.FReg t)), IR.L l]
+    nextX86 <- foldMapA ir nextIR
+    pure $ plE ++ nextX86
 feval (IR.FU IR.FLog (IR.FReg r0)) t =
     let sa = RC SP (-8) in
     pure [Fldln2 (), MovqAX () sa (fabsReg r0), Fld () sa, Fyl2x (), Fstp () sa, MovqXA () (fabsReg t) sa]

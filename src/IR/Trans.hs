@@ -1090,8 +1090,7 @@ eval (EApp F (EApp _ (Builtin _ A.R) e0) e1) t = do
     pure $ plE0 ++ plE1 ++ [IRnd iR, MX t (FConv $ Reg iR), MX t ((FReg e1R - FReg e0R) * (FReg t / (2*9223372036854775807) + 0.5) + FReg e0R)]
 eval (EApp F (Builtin _ Abs) e) t = do
     plE <- eval e t
-    l <- newLabel
-    pure $ plE ++ [MJ (FRel FGeq (FReg t) 0) l, MX t (negate (FReg t)), L l]
+    pure $ plE ++ [MX t (FU FAbs (FReg t))]
 eval (EApp I (Builtin _ Abs) e) t = do
     plE <- eval e t
     l <- newLabel

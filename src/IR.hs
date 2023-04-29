@@ -155,7 +155,7 @@ instance Pretty Exp where
 
 instance Show Exp where show = show.pretty
 
-data FUn = FSqrt | FLog | FSin | FCos
+data FUn = FSqrt | FLog | FSin | FCos | FAbs
 
 data IUn = ISgn | INot | IEven | IOdd
 
@@ -205,6 +205,7 @@ instance Pretty FUn where
     pretty FSqrt = "sqrt"
     pretty FLog  = "log"
     pretty FSin  = "sin"; pretty FCos  = "cos"
+    pretty FAbs  = "abs"
 
 instance Pretty IUn where
     pretty ISgn = "sgn"; pretty INot = "¬"; pretty IEven = "even"; pretty IOdd = "odd"
