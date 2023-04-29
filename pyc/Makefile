@@ -9,7 +9,7 @@ install: apple.so
 	cp $^ $$(python3 -m site --user-site)
 
 apple.o: applemodule.c
-	gcc -fPIC -O2 -c $< -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/include/python$(PY_VER) -I ../include -I $(HS_INCLUDE_DIR) -o $@
+	gcc -fPIC -O2 -c $< -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/include/python$(PY_VER) -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/lib/python$(PY_VER)/site-packages/numpy/core/include -I ../include -I $(HS_INCLUDE_DIR) -o $@
 
 apple.so: apple.o
 	gcc -shared $^ -o $@ -lapple -lffi -L /usr/local/lib -rpath /usr/local/lib -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR) -rpath $(HS_LIBDIR) /Library/Frameworks/Python.framework/Versions/$(PY_VER)/Python
