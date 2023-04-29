@@ -84,6 +84,8 @@ ir (IR.MJ (IR.FRel IR.FGeq e0 e1) l) = do
     r0 <- nextI; r1 <- nextI
     plE0 <- feval e0 (IR.FTemp r0); plE1 <- feval e1 (IR.FTemp r1)
     pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () Geq l]
+ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) t (IR.Reg r)) = do
+    pure $ [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (absReg r) (absReg t) Gt]
 ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
     rD <- nextI; rS <- nextI; rN <- nextI; i <- nextR; t <- nextR
     plED <- eval (IR.IB IR.IPlus (IR.Reg tD) eD) (IR.ITemp rD)

@@ -168,6 +168,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | MrsR { ann :: a, rDest :: reg }
                         | Fmax { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
                         | Fabs { ann :: a, dDest :: freg, dSrc :: freg }
+                        | Csel { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg, cond :: Cond }
                         deriving (Functor)
 
 instance Copointed (AArch64 reg freg) where copoint = ann
@@ -215,6 +216,7 @@ mapR f (MovRCf l r cf)       = MovRCf l (f r) cf
 mapR f (Blr l r)             = Blr l (f r)
 mapR _ (Fmax l d0 d1 d2)     = Fmax l d0 d1 d2
 mapR _ (Fabs l d0 d1)        = Fabs l d0 d1
+mapR f (Csel l r0 r1 r2 p)   = Csel l (f r0) (f r1) (f r2) p
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -259,6 +261,7 @@ mapFR _ (Blr l r)             = Blr l r
 mapFR _ (MovRCf l r cf)       = MovRCf l r cf
 mapFR f (Fmax l d0 d1 d2)     = Fmax l (f d0) (f d1) (f d2)
 mapFR f (Fabs l d0 d1)        = Fabs l (f d0) (f d1)
+mapFR _ (Csel l r0 r1 r2 p)   = Csel l r0 r1 r2 p
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -318,6 +321,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (MovRCf _ r cf)       = i4 ("mov" <+> pretty r <> "," <+> pretty cf)
     pretty (Fmax _ d0 d1 d2)     = i4 ("fmax" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2)
     pretty (Fabs _ d0 d1)        = i4 ("fabs" <+> pretty d0 <> "," <+> pretty d1)
+    pretty (Csel _ r0 r1 r2 p)   = i4 ("csel" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty p)
 
 instance (Pretty reg, Pretty freg) => Show (AArch64 reg freg a) where show=show.pretty
 

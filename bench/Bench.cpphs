@@ -47,11 +47,11 @@ main = do
     entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
     gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
-    scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
     ᴀFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/offset.🍏"
 #endif
     erfFp <- fmap ff . leakFp =<< BSL.readFile "math/erf.🍏"
     ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
+    scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
     scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
@@ -104,8 +104,8 @@ main = do
 #endif
                       ]
                 , bgroup "scanmax"
-                      [ bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
-                      -- bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
+                      [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
+                      , bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
                       ]
 #ifdef x86_64_HOST_ARCH
                 , bgroup "elliptic"
