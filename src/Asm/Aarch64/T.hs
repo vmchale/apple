@@ -6,7 +6,7 @@ import           Control.Monad.State.Strict (runState)
 import           Data.Bifunctor             (second)
 import           Data.Bits                  (rotateR, (.&.))
 import           Data.Tuple                 (swap)
-import           Data.Word                  (Word16)
+import           Data.Word                  (Word16, Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import qualified IR
 
@@ -45,6 +45,8 @@ ir (IR.MX t e)   = feval e t
 ir (IR.MT t e)   = eval e t
 ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}
 ir (IR.Free t) = do {r <- nextR; pure $ puL ++ [MovRR () CArg0 (absReg t), MovRCf () r Free, Blr () r] ++ poL}
+ir (IR.Sa t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u, MovRR () (absReg t) ASP]
+ir (IR.Pop (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [AddRC () ASP ASP u]
 ir (IR.Wr (IR.AP t Nothing _) e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Str () (IReg r) (R $ absReg t)]
@@ -97,14 +99,20 @@ ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
 ir (IR.IRnd t) = pure [MrsR () (absReg t)]
 ir s             = error (show s)
 
+sai i | i `rem` 16 == 0 = i | otherwise = i+8
+
+mw64 :: Word64 -> AbsReg -> [AArch64 AbsReg freg ()]
+mw64 w r =
+    let w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
+    in MovRC () r (fromIntegral w0):[MovK () r (fromIntegral wi) s | (wi, s) <- [(w1, 16), (w2, 32), (w3, 48)], wi /= 0 ]
+
 feval :: IR.FExp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
 feval (IR.ConstF d) t = do
     i <- nextI
     let r=IReg i
         w=castDoubleToWord64 d
-        w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
-    pure $ MovRC () r (fromIntegral w0):[MovK () r (fromIntegral wi) s | (wi, s) <- [(w1, 16), (w2, 32), (w3, 48)], wi /= 0 ] ++ [FMovDR () (fabsReg t) r]
+    pure $ mw64 w r ++ [FMovDR () (fabsReg t) r]
 feval (IR.FAt (IR.AP tS (Just (IR.ConstI i)) _)) tD | Just i8 <- mp i = pure [LdrD () (fabsReg tD) (RP (absReg tS) i8)]
 feval (IR.FB IR.FPlus e0 (IR.FB IR.FTimes e1 e2)) t = do
     i0 <- nextI; i1 <- nextI; i2 <- nextI
@@ -150,6 +158,7 @@ feval e _             = error (show e)
 eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
 eval (IR.Reg tS) tD = pure [MovRR () (absReg tD) (absReg tS)]
 eval (IR.ConstI i) tD | Just u <- mu16 i = pure [MovRC () (absReg tD) u]
+eval (IR.ConstI i) tD = pure $ mw64 (fromIntegral i) (absReg tD)
 eval (IR.EAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [Ldr () (absReg tD) (RP (absReg tB) p)]
 eval (IR.IB IR.IPlus e (IR.ConstI i)) t | Just u <- m12 i = do
     r <- nextI; plE <- eval e (IR.ITemp r)

@@ -87,6 +87,8 @@ asm ix st (MulRR _ r0 r1 r2:asms) = [0b10011011, be r2, 0b11111 `shiftL` 2 .|. b
 asm ix st (AddRR _ r0 r1 r2:asms) = [0b10001011, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (AddRC _ r0 r1 i:asms) = [0b10010001, fromIntegral (i `shiftR` 6), fromIntegral (0b111111 .&. i) `shiftL` 2 .|. (be r1 `shiftR` 3), lb r1 r0]:asm (ix+4) st asms
 asm ix st (SubRC _ r0 r1 i:asms) = [0b11010001, fromIntegral (i `shiftR` 6), fromIntegral (0b111111 .&. i) `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
+asm ix st (MovRR x r0 SP:asms) = asm ix st (AddRC x r0 SP 0:asms)
+asm ix st (MovRR x SP r1:asms) = asm ix st (AddRC x SP r1 0:asms)
 asm ix st (MovRR _ r0 r1:asms) = [0b10101010, be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (Csel _ r0 r1 r2 p:asms) = [0b10011010, 0x1 `shiftL` 7 .|. be r2, bp p `shiftL` 4 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Ldr _ r (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 8 = [0b11111001, 0x1 `shiftL` 6 .|. fromIntegral (uϵ `shiftR` 6), fromIntegral (0b111111 .&. uϵ) `shiftL` 2 .|. be rb `shiftR` 3, lb rb r]:asm (ix+4) st asms
@@ -130,7 +132,7 @@ asm ix st@(_, Just (m, _), _) (MovRCf _ r Malloc:asms) =
 asm ix st@(_, Just (_, f), _) (MovRCf _ r Free:asms) =
     let w0=f .&. 0xffff; w1=(f .&. 0xffff0000) `lsr` 16; w2=(f .&. 0xFFFF00000000) `lsr` 32; w3=(f .&. 0xFFFF000000000000) `lsr` 48
     in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
-asm _ _ (isn:_) = error(show isn)
+asm _ _ (isn:_) = error (show isn)
 
 get :: Label -> (Int, Maybe (Int, Int), M.Map Label Int) -> Int
 get l =
