@@ -162,6 +162,8 @@ feval (IR.FAt (IR.AP tB (Just (IR.IB IR.IPlus (IR.IB IR.IAsl eI (IR.ConstI 3)) (
 feval (IR.FAt (IR.AP tB (Just e) _)) tD = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [LdrD () (fabsReg tD) (BI (absReg tB) (IReg i) Zero)]
+feval (IR.FAt (IR.AP tB Nothing _)) tD =
+    pure [LdrD () (fabsReg tD) (R (absReg tB))]
 feval (IR.FConv (IR.Reg r)) tD = pure [Scvtf () (fabsReg tD) (absReg r)]
 feval (IR.FU IR.FSqrt (IR.FReg r)) t = pure [Fsqrt () (fabsReg t) (fabsReg r)]
 feval e _             = error (show e)
