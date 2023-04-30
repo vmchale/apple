@@ -115,6 +115,8 @@ uses (WrF a e)      = uA a <> uF e
 uses (Cpy d s e)    = uA d <> uA s <> uE e
 uses Pop{}          = IS.empty
 uses IRnd{}         = IS.empty
+uses (Cmov e _ e')  = uE e <> uE e'
+uses (Cset _ e)     = uE e
 
 defs :: Stmt -> IS.IntSet
 defs (Ma a _ _) = IS.singleton a
