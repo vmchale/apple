@@ -14,6 +14,7 @@ import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
+import           Data.Maybe                 (catMaybes)
 import           IR
 import           Nm
 import           U
@@ -116,7 +117,7 @@ writeCM e' = do
              | isB (eAnn e) = eval e CRet
              | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$case l of {Just m -> r++[MT CRet (Reg i), RA m]}}
              | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t 16:p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just 8) Nothing)), Pop 16]}
-             | ty@P{} <- eAnn e = let b64=fromIntegral$bT ty; b=ConstI b64 in do {t <- newITemp; a <- nextArr; pl <- eval e t; pure $ Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a]}
+             | ty@P{} <- eAnn e = let b64=fromIntegral$bT ty; b=ConstI b64 in do {t <- newITemp; a <- nextArr; (ls, pl) <- peval e t; pure (Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a] ++ (RA<$>ls))}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
@@ -606,6 +607,26 @@ aeval e _ = error (show e)
 threadM :: Monad m => [a -> m a] -> a -> m a
 threadM = foldr (<=<) pure
 
+peval (Tup _ es) t = do
+    let szs = szT (eAnn<$>es)
+    (ls, pls) <- unzip <$> zipWithM (\e sz -> case eAnn e of {F -> do {fr <- newFTemp; p <- eval e fr; pure (Nothing, p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)])};I -> do {r <- newITemp; p <- eval e r; pure (Nothing, p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)])}; Arr{} -> do {r <- newITemp; (l, p) <- aeval e r; pure (l, p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)])}}) es szs
+    pure (catMaybes ls, concat pls)
+peval (LLet _ (n, e') e) t | isF (eAnn e') = do
+    f <- newFTemp
+    plF <- eval e' f
+    modify (addVar n f)
+    second (plF ++) <$> peval e t
+peval (LLet _ (n, e') e) t | isArr (eAnn e') = do
+    t' <- newITemp
+    (l, ss) <- aeval e' t'
+    modify (addAVar n (l, t'))
+    second (ss ++) <$> peval e t
+peval (LLet _ (n, e') e) t | isI (eAnn e') = do
+    t' <- newITemp
+    plT <- eval e' t'
+    modify (addVar n t')
+    second (plT ++) <$> peval e t
+
 eval :: E (T ()) -> Temp -> IRM [Stmt]
 eval (LLet _ (n, e') e) t | isF (eAnn e') = do
     f <- newFTemp
@@ -1044,10 +1065,7 @@ eval (EApp ty@P{} (Builtin _ Last) arr) t = do
     r <- newITemp
     (l, plArr) <- aeval arr r
     pure $ plArr ++ [Cpy (AP t Nothing Nothing) (AP r (Just (((gd1 l r-1)*ConstI (bT ty))+16)) l) (ConstI$bT ty `div` 8)]
-eval (Tup _ es) t = do
-    let szs = szT (eAnn<$>es)
-    pls <- zipWithM (\e sz -> case eAnn e of {F -> do {fr <- newFTemp; p <- eval e fr; pure$p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)]};I -> do {r <- newITemp; p <- eval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}; Arr{} -> do {r <- newITemp; (_, p) <- aeval e r; pure$p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)]}}) es szs
-    pure$concat pls
+eval e@Tup{} t = snd <$> peval e t
 eval (EApp F (Builtin _ (TAt n)) e@Var{}) t = do
     let (P tys) = eAnn e; szs = szT tys
     r <- newITemp; pl <- eval e r
