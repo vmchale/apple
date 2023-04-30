@@ -308,10 +308,11 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arro
     let sz = EAt (AP arrP (Just 8) l)
     ss <- writeRF op [acc, n] acc
     iR <- newITemp; szR <- newITemp
-    let loopBody = wt tX (AP t (Just (sib iR)) (Just a)) acc:mt tY (AP arrP (Just$sib iR) l) n:ss
+    arrPl <- newITemp; tl <- newITemp
+    let loopBody = wt tX (AP tl (Just (sd iR)) (Just a)) acc:mt tY (AP arrPl (Just$sd iR) l) n:ss
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
-    pure (Just a, plE ++ plSeed ++ MT szR (sz+1):Ma a t (IB IAsl (Reg szR) 3 + 16):dim1 (Just a) t (Reg szR) ++ loop)
+    pure (Just a, plE ++ plSeed ++ MT szR (sz+1):Ma a t (IB IAsl (Reg szR) 3 + 16):dim1 (Just a) t (Reg szR) ++ MT arrPl (Reg arrP+16):MT tl (Reg t+16):loop)
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (ta0, ta1) <- mA1A1 (eAnn f), isIF ta0 && isIF ta1 = do
     a <- nextArr
     slopP <- newITemp; y <- newITemp; y0 <- newITemp
@@ -972,10 +973,11 @@ eval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <- 
     i <- newITemp
     (iP, plP) <- aeval p pR; (iQ, plQ) <- aeval q qR
     ss <- writeRF op [acc, x, y] acc
-    let step = mt tP (AP pR (Just$sib i) iP) x:mt tQ (AP qR (Just$sib i) iQ) y:ss
+    pRl <- newITemp; qRl <- newITemp
+    let step = mt tP (AP pRl (Just$sd i) iP) x:mt tQ (AP qRl (Just$sd i) iQ) y:ss
     loop <- fN1 i (Reg szR) step
     sseed <- writeRF zop [x, y] acc
-    pure $ plP ++ plQ ++ MT szR (gd1 iP pR):mt tP (AP pR (Just 16) iP) x:mt tQ (AP qR (Just 16) iQ) y:sseed ++ loop
+    pure $ plP ++ plQ ++ MT szR (gd1 iP pR):mt tP (AP pR (Just 16) iP) x:mt tQ (AP qR (Just 16) iQ) y:MT pRl (Reg pR+16):MT qRl (Reg qR+16):sseed ++ loop
 eval (Id _ (FoldSOfZip seed op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, Id ty (AShLit [_] qs)])) acc | Just tQ <- if1 ty = do
     x <- newITemp
     i <- newITemp
