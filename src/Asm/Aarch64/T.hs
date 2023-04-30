@@ -88,6 +88,17 @@ ir (IR.MJ (IR.FRel IR.FGeq e0 e1) l) = do
     pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () Geq l]
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) t (IR.Reg r)) = do
     pure $ [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (absReg r) (absReg t) Gt]
+ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 2, n' <= 4 = do
+    t0 <- nextR; t1 <- nextR
+    pure $ concat [ [Ldp () t0 t1 (RP (absReg tS) (i*16)), Stp () t0 t1 (RP (absReg tD) (i*16))] | i <- [0..fromIntegral (n'-1)] ]
+ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | n <= 4 = do
+    t <- nextR
+    pure $ concat [ [Ldr () t (RP (absReg tS) (i*8)), Str () t (RP (absReg tD) (i*8))] | i <- [0..fromIntegral (n-1)] ]
+ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) eN) = do
+    rN <- nextI; i <- nextR; t <- nextR
+    plEN <- eval eN (IR.ITemp rN)
+    l <- nextL; endL <- nextL
+    pure $ plEN ++ [MovRC () i 0, Label () l, CmpRR () i (IReg rN), Bc () Geq endL, Ldr () t (BI (absReg tS) i Three), Str () t (BI (absReg tD) i Three), AddRC () i i 1, B () l, Label () endL]
 ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
     rD <- nextI; rS <- nextI; rN <- nextI; i <- nextR; t <- nextR
     plED <- eval (IR.IB IR.IPlus (IR.Reg tD) eD) (IR.ITemp rD)
