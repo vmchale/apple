@@ -1,6 +1,5 @@
 -- https://eli.thegreenplace.net/2013/11/05/how-to-jit-an-introduction
-module Hs.FFI ( pI
-              , bsFp
+module Hs.FFI ( bsFp
               , allocNear
               , allocExec
               , finish
@@ -17,9 +16,6 @@ import qualified Data.ByteString.Unsafe as BS
 import System.Posix.Types (COff (..))
 
 #include <sys/mman.h>
-
-pI :: Ptr a -> Int
-pI = (\(IntPtr i) -> i) . ptrToIntPtr
 
 allocNear :: Int -> CSize -> IO (Ptr a)
 allocNear i sz =

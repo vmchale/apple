@@ -19,6 +19,9 @@ import           Foreign.Storable (Storable, sizeOf)
 import           Hs.FFI
 import           Sys.DL
 
+pI :: Ptr a -> Int
+pI = (\(IntPtr i) -> i) . ptrToIntPtr
+
 hasMa :: [X86 reg freg a] -> Bool
 hasMa = any g where g Call{} = True; g _ = False
 

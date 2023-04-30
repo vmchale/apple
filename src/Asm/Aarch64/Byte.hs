@@ -29,7 +29,7 @@ assembleCtx ctx isns = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
     when (p==nullPtr) $ error "failed to allocate memory for JIT"
-    let b = BS.pack.concatMap reverse$asm 0 (pI p, Just ctx, lbls) isns
+    let b = BS.pack.concatMap reverse$asm 0 (Just ctx, lbls) isns
     (b,)<$>finish b p
 
 dbgFp = fmap fst . allFp
@@ -41,7 +41,7 @@ allFp instrs = do
         case res of
             Just (m, _) -> (res,) <$> allocNear m (fromIntegral sz)
             _           -> (res,) <$> allocExec (fromIntegral sz)
-    let is = asm 0 (pI p, fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bs = BS.pack.reverse<$>is
+    let is = asm 0 (fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bs = BS.pack.reverse<$>is
     (bs,)<$>finish b p
 
 mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
@@ -65,7 +65,7 @@ lsr (I# n) (I# k) = I# (iShiftRL# n k)
 
 lb r rD = (0x7 .&. be r) `shiftL` 5 .|. be rD
 
-asm :: Int -> (Int, Maybe (Int, Int), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
+asm :: Int -> (Maybe (Int, Int), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (MovRC _ r i:asms) = [0b11010010, 0b100 `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral (0xff .&. (i `shiftR` 3)), (fromIntegral (0x7 .&. i)) `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (MovK _ r i s:asms) = [0b11110010, 0b1 `shiftL` 7 .|. (fromIntegral (s `quot` 16)) `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral ((i `shiftR` 3)), (fromIntegral (0x7 .&. i) `shiftL` 5) .|. be r]:asm (ix+4) st asms
@@ -126,14 +126,14 @@ asm ix st (B _ l:asms) =
         isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
     in isn:asm (ix+4) st asms
 asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
-asm ix st@(_, Just (m, _), _) (MovRCf _ r Malloc:asms) =
+asm ix st@(Just (m, _), _) (MovRCf _ r Malloc:asms) =
     let w0=m .&. 0xffff; w1=(m .&. 0xffff0000) `lsr` 16; w2=(m .&. 0xFFFF00000000) `lsr` 32; w3=(m .&. 0xFFFF000000000000) `lsr` 48
     in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
-asm ix st@(_, Just (_, f), _) (MovRCf _ r Free:asms) =
+asm ix st@(Just (_, f), _) (MovRCf _ r Free:asms) =
     let w0=f .&. 0xffff; w1=(f .&. 0xffff0000) `lsr` 16; w2=(f .&. 0xFFFF00000000) `lsr` 32; w3=(f .&. 0xFFFF000000000000) `lsr` 48
     in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
 asm _ _ (isn:_) = error (show isn)
 
-get :: Label -> (Int, Maybe (Int, Int), M.Map Label Int) -> Int
+get :: Label -> (Maybe (Int, Int), M.Map Label Int) -> Int
 get l =
-    M.findWithDefault (error "Internal error: label not found") l . thd where thd (_, _, z) = z
+    M.findWithDefault (error "Internal error: label not found") l . snd
