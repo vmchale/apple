@@ -17,7 +17,7 @@ frameC = concat.go IS.empty IS.empty
                 s' = s `IS.union` new i0 `IS.difference` done i0
                 s'' = s' `IS.union` new i1 `IS.difference` done i1
                 fs' = fs `IS.union` fnew i0 `IS.difference` fdone i0
-                fs'' = fs `IS.union` fnew i1 `IS.difference` fdone i1
+                fs'' = fs' `IS.union` fnew i1 `IS.difference` fdone i1
                 cs = handleX0 cf $ mapMaybe fromInt $ IS.toList s
                 ds = mapMaybe fInt $ IS.toList fs
                 save = pus cs; restore = pos cs
