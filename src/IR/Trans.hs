@@ -148,10 +148,12 @@ extrCell fixedIxesDims sstrides src dest = do -- dims are bounds
           replaceZs (Right{}:ds) (t:ts) = Right t:replaceZs ds ts
           replaceZs [] []               = []
 
+nr IGeq=ILt; nr IGt=ILeq; nr ILt=ILeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
+
 -- incr.
 doI t el eu rel ss = do
-    l <- newLabel; endL <- newLabel
-    pure $ MT t el:L l:MJ (IRel rel (Reg t) eu) endL:ss++[tick t, J l, L endL]
+    l <- newLabel; eL <- newLabel
+    pure $ MT t el:MJ (IRel rel (Reg t) eu) eL:L l:ss++[tick t, MJ (IRel (nr rel) (Reg t) eu) l, L eL]
 
 doN t e = doI t 0 e IGeq; doN1 t e = doI t 1 e IGt; fN1 t e = doI t 1 e IGeq
 
