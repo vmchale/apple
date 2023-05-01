@@ -415,7 +415,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     let loopBody = Cpy (AP slopP (Just 16) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI$fromIntegral n+2):ss++[WrF (AP t (Just (sib iR)) arrL) (FReg fR)]
     loop <- doN iR (Reg szR - ConstI (fromIntegral n-1)) loopBody
     modify (addMT a t)
-    pure (Just a, putX++MT szR sz:Ma a t (IB IAsl (Reg szR) 3+ConstI (24-8*fromIntegral n)):Wr (AP t Nothing (Just a)) 1:Wr (AP t (Just 8) (Just a)) (Reg szR - ConstI (fromIntegral n-1)):Sa slopP (ConstI nIr):Wr (AP slopP Nothing Nothing) 1:Wr (AP slopP (Just 8) Nothing) (ConstI $ fromIntegral n):loop ++ [Pop (ConstI nIr)])
+    pure (Just a, putX++MT szR sz:Ma a t (IB IAsl (Reg szR) 3-ConstI (8*fromIntegral n-24)):Wr (AP t Nothing (Just a)) 1:Wr (AP t (Just 8) (Just a)) (Reg szR-ConstI (fromIntegral n-1)):Sa slopP (ConstI nIr):Wr (AP slopP Nothing Nothing) 1:Wr (AP slopP (Just 8) Nothing) (ConstI$fromIntegral n):loop ++ [Pop (ConstI nIr)])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tX <- eAnn seed, isIF tX = do
     a <- nextArr
     arg <- tTemp tX
