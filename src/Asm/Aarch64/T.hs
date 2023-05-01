@@ -87,6 +87,14 @@ ir (IR.MJ (IR.IRel IR.IGt e0 e1) l) = do
     r0 <- nextI; r1 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
     pure $ plE0 ++ plE1 ++ [CmpRR () (IReg r0) (IReg r1), Bc () Gt l]
+ir (IR.MJ (IR.IRel IR.ILt e0 e1) l) = do
+    r0 <- nextI; r1 <- nextI
+    plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
+    pure $ plE0 ++ plE1 ++ [CmpRR () (IReg r0) (IReg r1), Bc () Lt l]
+ir (IR.MJ (IR.IRel IR.ILeq e0 e1) l) = do
+    r0 <- nextI; r1 <- nextI
+    plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
+    pure $ plE0 ++ plE1 ++ [CmpRR () (IReg r0) (IReg r1), Bc () Leq l]
 ir (IR.MJ (IR.FRel IR.FGeq e (IR.ConstF 0)) l) = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [FcmpZ () (FReg i), Bc () Geq l]
@@ -105,16 +113,16 @@ ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | n <= 4 = d
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) eN) = do
     rN <- nextI; i <- nextR; t <- nextR
     plEN <- eval eN (IR.ITemp rN)
-    l <- nextL; endL <- nextL
-    pure $ plEN ++ [MovRC () i 0, Label () l, CmpRR () i (IReg rN), Bc () Geq endL, Ldr () t (BI (absReg tS) i Three), Str () t (BI (absReg tD) i Three), AddRC () i i 1, B () l, Label () endL]
+    l <- nextL; eL <- nextL
+    pure $ plEN ++ [MovRC () i 0, Label () l, CmpRR () i (IReg rN), Bc () Geq eL, Ldr () t (BI (absReg tS) i Three), Str () t (BI (absReg tD) i Three), AddRC () i i 1, B () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
     rD <- nextI; rS <- nextI; rN <- nextI; i <- nextR; t <- nextR
     plED <- eval (IR.IB IR.IPlus (IR.Reg tD) eD) (IR.ITemp rD)
     plES <- eval (IR.IB IR.IPlus (IR.Reg tS) eS) (IR.ITemp rS)
     plEN <- eval eN (IR.ITemp rN)
     let rDA=IReg rD; rSA=IReg rS; rNA=IReg rN
-    l <- nextL; endL <- nextL
-    pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, Label () l, CmpRR () i rNA, Bc () Geq endL, Ldr () t (BI rSA i Three), Str () t (BI rDA i Three), AddRC () i i 1, B () l,  Label () endL]
+    l <- nextL; eL <- nextL
+    pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, CmpRR () i rNA, Bc () Geq eL, Label () l, Ldr () t (BI rSA i Three), Str () t (BI rDA i Three), AddRC () i i 1, CmpRR () i rNA, Bc () Lt l, Label () eL]
 ir (IR.IRnd t) = pure [MrsR () (absReg t)]
 ir s             = error (show s)
 
