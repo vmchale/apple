@@ -383,11 +383,11 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     putStart <- eval start startR
     putEnd <- eval end endR
     putIncr <- eval incr incrR
-    l <- newLabel; endL <- newLabel
+    l <- newLabel; eL <- newLabel
     modify (addMT a t)
     let putN = MT n (IB IR.IDiv (Reg endR - Reg startR) (Reg incrR))
-    let loop = [MJ (IRel IGt (Reg startR) (Reg endR)) endL, Wr (AP t (Just (Reg i)) (Just a)) (Reg startR), MT startR (Reg startR+Reg incrR), MT i (Reg i + 8)]
-    pure (Just a, putStart++putEnd++putIncr++putN:Ma a t (IB IAsl (Reg n) 3 + 24):Wr (AP t Nothing (Just a)) 1:Wr (AP t (Just 8) (Just a)) (Reg n):MT i 16:L l:loop ++ [J l, L endL])
+    let loop = [MJ (IRel IGt (Reg startR) (Reg endR)) eL, Wr (AP t (Just (Reg i)) (Just a)) (Reg startR), MT startR (Reg startR+Reg incrR), MT i (Reg i+8)]
+    pure (Just a, putStart++putEnd++putIncr++putN:Ma a t (IB IAsl (Reg n) 3 + 24):Wr (AP t Nothing (Just a)) 1:Wr (AP t (Just 8) (Just a)) (Reg n):MT i 16:loop ++ [MJ (IRel ILeq (Reg startR) (Reg endR)) l, L eL])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) t = do
     a <- nextArr
     i <- newITemp
