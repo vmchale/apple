@@ -338,6 +338,14 @@ printExpr s = do
                                 a0 <- peek pa0; a1 <- peek pa1
                                 putDoc$(<>hardline)$pretty (a0, a1)
                                 free p *> free pa0 *> free pa1 *> freeFunPtr sz fp
+                        (P [Arr _ I, Arr _ I]) ->
+                            liftIO $ do
+                                (sz, fp) <- efp i' m eC
+                                p <- callFFI fp (retPtr undefined) []
+                                (Pp pa0 pa1) <- (peek :: Ptr (Pp (Ptr (Apple Int64)) (Ptr (Apple Int64))) -> IO (Pp (Ptr (Apple Int64)) (Ptr (Apple Int64)))) p
+                                a0 <- peek pa0; a1 <- peek pa1
+                                putDoc$(<>hardline)$pretty (a0, a1)
+                                free p *> free pa0 *> free pa1 *> freeFunPtr sz fp
                         (Arr _ (P [F,F])) ->
                             liftIO $ do
                                 (sz, fp) <- efp i' m eC
