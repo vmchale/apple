@@ -787,7 +787,7 @@ asm ix st (MovAR _ (R ar@Rsp) r:asms) =
     let (0, bi) = modRM ar
         (e0, b0) = modRM r
         pre = 0x48 .|. e0 `shiftL` 2
-        modRMB = 0x1 `shiftL` 1 .|. b0 `shiftL` 3 .|. 4; sib = bi `shiftL` 3 .|. bi
+        modRMB = b0 `shiftL` 3 .|. 4; sib = bi `shiftL` 3 .|. bi
         isn = [pre,0x89,modRMB,sib]
     in isn:asm (ix+4) st asms
 asm ix st (MovRA _ r (R ar@Rsp):asms) =
