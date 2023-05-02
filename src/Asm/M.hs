@@ -46,6 +46,4 @@ data CFunc = Malloc | Free deriving (Generic)
 
 instance NFData CFunc where
 
-instance Pretty CFunc where
-    pretty Malloc = "_malloc"
-    pretty Free   = "_free"
+instance Pretty CFunc where pretty Malloc = "malloc"; pretty Free = "free"
