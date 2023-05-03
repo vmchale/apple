@@ -786,19 +786,17 @@ eval (EApp F (EApp _ (Builtin _ Exp) e0) e1) t = do
     plE0 <- eval e0 f0; plE1 <- eval e1 f1ϵ
     pure $ plE0 ++ plE1 ++ [MX t (FB FExp (FReg f0) (FReg f1ϵ))]
 eval (EApp F (EApp _ (Builtin _ IntExp) x) n) t = do
-    i <- newITemp
     nR <- newITemp
     xR <- newFTemp
     plR <- eval n nR; plX <- eval x xR
-    l <- newLabel; endL <- newLabel
-    pure $ plR ++ plX ++ [MX t 1, MT i (Reg nR), L l, MJ (IRel IEq (Reg i) 0) endL, MX t (FReg t * FReg xR), MT i (Reg i - 1), J l, L endL]
+    l <- newLabel; evenL <- newLabel; eL <- newLabel
+    pure $ plR ++ plX ++ [MX t 1, MJ (IRel ILeq (Reg nR) 0) eL, L l, MJ (IU IEven (Reg nR)) evenL, MX t (FReg t*FReg xR), L evenL, MT nR (IB IAsr (Reg nR) 1), MX xR (FReg xR*FReg xR), MJ (IRel IGt (Reg nR) 0) l, L eL]
 eval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
-    i <- newITemp
     nR <- newITemp
     xR <- newITemp
     plR <- eval n nR; plX <- eval x xR
-    l <- newLabel; endL <- newLabel
-    pure $ plR ++ plX ++ [MT t 1, MT i (Reg nR), L l, MJ (IRel IEq (Reg i) 0) endL, MT t (Reg t * Reg xR), MT i (Reg i - 1), J l, L endL]
+    l <- newLabel; evenL <- newLabel; eL <- newLabel
+    pure $ plR ++ plX ++ [MT t 1, MJ (IRel ILeq (Reg nR) 0) eL, L l, MJ (IU IEven (Reg nR)) evenL, MT t (Reg t*Reg xR), L evenL, MT nR (IB IAsr (Reg nR) 1), MT xR (Reg xR*Reg xR), MJ (IRel IGt (Reg nR) 0) l, L eL]
 eval (EApp _ (Builtin _ Floor) (Var _ x)) t = do
     st <- gets vars
     pure [MT t (IRFloor (FReg $ getT st x))]

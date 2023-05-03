@@ -5,9 +5,6 @@
 - [ ] sign by parity: AND with 0x1 to find parity, then use this to set sign bit? lol.
   (-1)^n
 - [ ] avx512 has: https://www.felixcloutier.com/x86/vexp2pd
-- [ ] https://www.felixcloutier.com/x86/f2xm1
-  - [ ] thence: x^y=s^(y \* (log_2 x))
-- [ ] https://www.felixcloutier.com/x86/setcc
 - [ ] https://www.felixcloutier.com/x86/leave
 # Min/max
 - [ ] http://web.archive.org/web/20130821015554/http://bob.allegronetwork.com/prog/tricks.html
