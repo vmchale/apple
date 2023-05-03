@@ -6,7 +6,7 @@ import           Control.Monad.State.Strict (runState)
 import           Data.Bifunctor             (second)
 import           Data.Bits                  (rotateR, (.&.))
 import           Data.Tuple                 (swap)
-import           Data.Word                  (Word16, Word64)
+import           Data.Word                  (Word16, Word64, Word8)
 import           GHC.Float                  (castDoubleToWord64)
 import qualified IR
 
@@ -73,6 +73,10 @@ ir (IR.WrF (IR.AP t (Just eI) _) e) = do
     i <- nextI; iI <- nextI
     plE <- feval e (IR.FTemp i); plEI <- eval eI (IR.ITemp iI)
     pure $ plE ++ plEI ++ [StrD () (FReg i) (BI (absReg t) (IReg iI) Zero)]
+ir (IR.MJ (IR.IRel IR.INeq (IR.Reg r) (IR.ConstI 0)) l) =
+    pure [Cbnz () (absReg r) l]
+ir (IR.MJ (IR.IU IR.IEven (IR.Reg r)) l) =
+    pure [Tbz () (absReg r) 0 l]
 ir (IR.MJ (IR.IRel IR.IGeq e (IR.ConstI i)) l) | Just u <- m12 i = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [CmpRC () (IReg r) u, Bc () Geq l]
@@ -220,11 +224,15 @@ eval (IR.EAt (IR.AP rB (Just (IR.IB IR.IAsl eI (IR.ConstI 3))) _)) t = do
 eval (IR.EAt (IR.AP rB (Just e) _)) t = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [Ldr () (absReg t) (BI (absReg rB) (IReg i) Zero)]
+eval (IR.IB IR.IAsr (IR.Reg r) (IR.ConstI i)) t | Just s <- ms i = pure [Asr () (absReg t) (absReg r) s]
 eval e _            = error (show e)
 
 puL, poL :: [AArch64 AbsReg freg ()]
 puL = [SubRC () ASP ASP 16, Stp () FP LR (R ASP)]
 poL = [Ldp () FP LR (R ASP), AddRC () ASP ASP 16]
+
+ms :: Integral a => a -> Maybe Word8
+ms i | i >=0 && i <= 63 = Just (fromIntegral i) | otherwise = Nothing
 
 m12, mu16 :: Integral a => a -> Maybe Word16
 m12 i | i >= 0 && i < 4096 = Just (fromIntegral i) | otherwise = Nothing

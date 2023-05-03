@@ -33,6 +33,24 @@ addControlFlow ((B _ l):asms) = do
     ; l_i <- lookupLabel l
     ; pure (B (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
     }
+addControlFlow ((Cbnz _ r l):asms) = do
+    { i <- getFresh
+    ; (f, asms') <- next asms
+    ; l_i <- lookupLabel l
+    ; pure (Cbnz (ControlAnn i (f [l_i]) (singleton r) IS.empty IS.empty IS.empty) r l: asms')
+    }
+addControlFlow ((Tbnz _ r n l):asms) = do
+    { i <- getFresh
+    ; (f, asms') <- next asms
+    ; l_i <- lookupLabel l
+    ; pure (Tbnz (ControlAnn i (f [l_i]) (singleton r) IS.empty IS.empty IS.empty) r n l: asms')
+    }
+addControlFlow ((Tbz _ r n l):asms) = do
+    { i <- getFresh
+    ; (f, asms') <- next asms
+    ; l_i <- lookupLabel l
+    ; pure (Tbz (ControlAnn i (f [l_i]) (singleton r) IS.empty IS.empty IS.empty) r n l: asms')
+    }
 addControlFlow (Ret{}:asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
@@ -64,6 +82,7 @@ uses (AddRR _ _ r0 r1)  = fromList [r0, r1]
 uses (AddRC _ _ r _)    = singleton r
 uses (SubRC _ _ r _)    = singleton r
 uses (Lsl _ _ r _)      = singleton r
+uses (Asr _ _ r _)      = singleton r
 uses (CmpRR _ r0 r1)    = fromList [r0, r1]
 uses (CmpRC _ r _)      = singleton r
 uses (Neg _ _ r)        = singleton r
@@ -106,6 +125,7 @@ defs (AddRR _ r _ _)     = singleton r
 defs (AddRC _ r _ _)     = singleton r
 defs (SubRC _ r _ _)     = singleton r
 defs (Lsl _ r _ _)       = singleton r
+defs (Asr _ r _ _)       = singleton r
 defs CmpRC{}             = IS.empty
 defs CmpRR{}             = IS.empty
 defs (Neg _ r _)         = singleton r
@@ -144,6 +164,7 @@ defsF SubRR{}            = IS.empty
 defsF AddRC{}            = IS.empty
 defsF SubRC{}            = IS.empty
 defsF Lsl{}              = IS.empty
+defsF Asr{}              = IS.empty
 defsF CmpRR{}            = IS.empty
 defsF CmpRC{}            = IS.empty
 defsF Neg{}              = IS.empty
@@ -184,6 +205,7 @@ usesF SubRR{}              = IS.empty
 usesF AddRC{}              = IS.empty
 usesF SubRC{}              = IS.empty
 usesF Lsl{}                = IS.empty
+usesF Asr{}                = IS.empty
 usesF CmpRR{}              = IS.empty
 usesF CmpRC{}              = IS.empty
 usesF Neg{}                = IS.empty
