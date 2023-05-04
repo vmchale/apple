@@ -277,6 +277,10 @@ feval (IR.FB IR.FMinus e (IR.FReg r)) t            = do
     pure $ putR ++ [Vsubsd () (fabsReg t) (FReg i) (fabsReg r)]
 feval (IR.FB IR.FPlus (IR.FReg r0) (IR.FB IR.FTimes (IR.FReg r1) (IR.FReg r2))) t =
     pure [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sd () (fabsReg t) (fabsReg r1) (fabsReg r2)]
+feval (IR.FB IR.FPlus (IR.FReg r0) (IR.FB IR.FTimes e0 e1)) t = do
+    i0 <- nextI; i1 <- nextI
+    plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1)
+    pure $ plE0 ++ plE1 ++ [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sd () (fabsReg t) (FReg i0) (FReg i1)]
 feval (IR.FB IR.FPlus e0 e1) t                     = do
     i0 <- nextI; i1 <- nextI
     putR0 <- feval e0 (IR.FTemp i0); putR1 <- feval e1 (IR.FTemp i1)
@@ -339,6 +343,7 @@ evalE (IR.Reg r) rD                                  = pure [MovRR () (absReg rD
 evalE (IR.ConstI 0) rD                               = pure [XorRR () (absReg rD) (absReg rD)]
 evalE (IR.ConstI i) rD                               = pure [MovRI () (absReg rD) i]
 evalE (IR.IB IR.IPlus (IR.Reg r0) (IR.ConstI i)) rD  = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRI () rD' i]
+evalE (IR.IB IR.IPlus (IR.IB IR.ITimes (IR.Reg r0) (IR.Reg r1)) (IR.Reg r2)) rD = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IMulRR () rD' (absReg r1), IAddRR () rD' (absReg r2)]
 evalE (IR.IB IR.ITimes (IR.Reg r0) (IR.Reg r1)) rD   = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IMulRR () rD' (absReg r1)]
 evalE (IR.IB IR.IAsl e (IR.ConstI i)) rD | Just i8 <- mi8 i = do
     let rD' = absReg rD
