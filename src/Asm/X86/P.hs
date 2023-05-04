@@ -28,7 +28,7 @@ frame clob asms = pre++asms++post++[Ret()] where
     pre = save$Push () <$> clobs
     post = restore$Pop () <$> reverse clobs
     clobs = S.toList (clob `S.intersection` S.fromList (Rbp:[R12 .. Rbx]))
-    scratch=odd(length clobs); save=if scratch then (++[ISubRI () Rsp 8]) else id; restore=if scratch then (IAddRI () Rsp 8:) else id
+    scratch=even(length clobs); save=if scratch then (++[ISubRI () Rsp 8]) else id; restore=if scratch then (IAddRI () Rsp 8:) else id
     -- TODO: https://eli.thegreenplace.net/2011/09/06/stack-frame-layout-on-x86-64/
     -- https://stackoverflow.com/questions/51523127/why-does-the-compiler-reserve-a-little-stack-space-but-not-the-whole-array-size
 
@@ -37,7 +37,7 @@ gallocOn :: Int -> [X86 AbsReg FAbsReg ()] -> (IM.IntMap X86Reg, IM.IntMap FX86R
 gallocOn u = go u 16 pres True
     where go uϵ offs pres' i isns = rmaps
               where rmaps = case (regsM, fregsM) of
-                        (Right regs, Right fregs) -> let saa = saI 8*fromIntegral offs; saaP = if i then init else (++[IAddRI () SP saa]).init.(ISubRI () SP saa:).(ISubRI () BP saa:) in (regs, fregs, saaP isns)
+                        (Right regs, Right fregs) -> let saa = saI$8*fromIntegral offs; saaP = if i then init else (++[IAddRI () SP saa]).init.(ISubRI () SP saa:).(ISubRI () BP saa:) in (regs, fregs, saaP isns)
                         (Left s, Right fregs) ->
                             let (uϵ', offs', isns') = spill uϵ offs s isns
                             in go uϵ' offs' (IM.insert (-16) Rbp pres') False isns'
@@ -46,7 +46,7 @@ gallocOn u = go u 16 pres True
                     (aIsns, aFIsns) = bundle isns
 
 saI :: Int64 -> Int64
-saI i | i+8 `rem` 16 == 0 = i | otherwise = i+8
+saI i | i`rem`16 == 0 = i | otherwise = i+8
 
 pres :: IM.IntMap X86Reg
 pres = IM.fromList [(0, Rdi), (1, Rsi), (2, Rdx), (3, Rcx), (4, R8), (5, R9), (6, Rax), (7, Rsp)]

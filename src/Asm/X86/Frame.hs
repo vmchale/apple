@@ -19,7 +19,7 @@ frameC = concat . go IS.empty IS.empty
                     let
                         cs = handleRax cf $ mapMaybe fromInt $ IS.toList s
                         xms = mx cf $ mapMaybe fInt $ IS.toList fs
-                        scratch = even(length cs+length xms)
+                        scratch = odd(length cs+length xms)
                         save = (if scratch then (++[ISubRI () Rsp 8]) else id)$fmap (Push ()) cs
                         restore = (if scratch then (IAddRI () Rsp 8:) else id)$fmap (Pop ()) (reverse cs)
                         savex = concatMap puxmm xms

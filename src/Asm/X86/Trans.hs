@@ -237,22 +237,22 @@ ir (IR.Cpy (IR.AP tD (Just (IR.ConstI n)) _) (IR.AP tS (Just e) _) ne) | Just n8
     l <- nextL; eL <- nextL
     pure $ plE ++ plN ++ [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, CmpRR () i (IReg nR), Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RSD (absReg tD) Eight i n8) t, IAddRI () i 1, CmpRR () i (IReg nR), Jl () l, Label () eL]
 -- https://www.cs.uaf.edu/2015/fall/cs301/lecture/09_23_allocation.html
-ir (IR.Sa t (IR.ConstI i))                              = pure [ISubRI () SP (saI i+8), MovRR () (absReg t) SP]
-ir (IR.Pop (IR.ConstI i))                               = pure [IAddRI () SP (saI i+8)]
+ir (IR.Sa t (IR.ConstI i))                              = pure [ISubRI () SP (saI$i+8), MovRR () (absReg t) SP]
+ir (IR.Pop (IR.ConstI i))                               = pure [IAddRI () SP (saI$i+8)]
 ir (IR.Sa t e)                                          = do
     iR <- nextI; plE <- evalE e (IR.ITemp iR)
     l <- nextL
-    pure $ plE ++ [TestI () (IReg iR) 0x8, Jne () l, IAddRI () (IReg iR) 8, Label () l, IAddRI () (IReg iR) 8, ISubRR () SP (IReg iR), MovRR () (absReg t) SP]
+    pure $ plE ++ [TestI () (IReg iR) 0x8, Je () l, IAddRI () (IReg iR) 8, Label () l, ISubRR () SP (IReg iR), MovRR () (absReg t) SP]
 ir (IR.Pop e)                                           = do
     iR <- nextI; plE <- evalE e (IR.ITemp iR)
     l <- nextL
-    pure $ plE ++ [TestI () (IReg iR) 0x8, Jne () l, IAddRI () (IReg iR) 8, Label () l, IAddRI () (IReg iR) 8, IAddRR () SP (IReg iR)]
+    pure $ plE ++ [TestI () (IReg iR) 0x8, Je () l, IAddRI () (IReg iR) 8, Label () l, IAddRR () SP (IReg iR)]
 ir (IR.IRnd t)                                          = pure [Rdrand () (absReg t)]
 ir (IR.R l)                                             = pure [RetL () l]
 ir (IR.C l)                                             = pure [C () l]
 ir s                                                    = error (show s)
 
-saI i | i+8 `rem` 16 == 0 = fromIntegral i | otherwise = fromIntegral i+8
+saI i | i`rem`16 == 0 = fromIntegral i | otherwise = fromIntegral i+8
 
 feval :: IR.FExp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()] -- TODO: feval 0 (xor?)
 feval (IR.FB IR.FDiv (IR.FReg r0) (IR.FReg r1)) t   | t == r0 = pure [Divsd () (fabsReg t) (fabsReg r1)]
