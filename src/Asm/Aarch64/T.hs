@@ -209,6 +209,10 @@ eval (IR.IB IR.IMinus e0 e1) t = do
     r0 <- nextI; r1 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
     pure $ plE0 ++ plE1 ++ [SubRR () (absReg t) (IReg r0) (IReg r1)]
+eval (IR.IB IR.IPlus (IR.IB IR.ITimes e0 e1) e2) t = do
+    r0 <- nextI; r1 <- nextI; r2 <- nextI
+    plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1); plE2 <- eval e2 (IR.ITemp r2)
+    pure $ plE0 ++ plE1 ++ plE2 ++ [Madd () (absReg t) (IReg r0) (IReg r1) (IReg r2)]
 eval (IR.IB IR.IPlus e0 e1) t = do
     r0 <- nextI; r1 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)

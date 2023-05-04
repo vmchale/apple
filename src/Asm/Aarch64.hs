@@ -145,6 +145,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | SubRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
                         | AddRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
                         | MulRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
+                        | Madd { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg, rSrc3 :: reg }
                         | AddRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
                         | SubRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
                         | Lsl { ann :: a, rDest :: reg, rSrc :: reg, sC :: Word8 }
@@ -203,6 +204,7 @@ mapR _ (Fmul l xr0 xr1 xr2)  = Fmul l xr0 xr1 xr2
 mapR _ (FcmpZ l xr)          = FcmpZ l xr
 mapR _ (Ret l)               = Ret l
 mapR f (MulRR l r0 r1 r2)    = MulRR l (f r0) (f r1) (f r2)
+mapR f (Madd l r0 r1 r2 r3)  = Madd l (f r0) (f r1) (f r2) (f r3)
 mapR f (StrD l d a)          = StrD l d (f <$> a)
 mapR _ (Fdiv l d0 d1 d2)     = Fdiv l d0 d1 d2
 mapR f (Scvtf l d r)         = Scvtf l d (f r)
@@ -253,6 +255,7 @@ mapFR f (FcmpZ l xr)          = FcmpZ l (f xr)
 mapFR _ (Ret l)               = Ret l
 mapFR f (Fdiv l d0 d1 d2)     = Fdiv l (f d0) (f d1) (f d2)
 mapFR _ (MulRR l r0 r1 r2)    = MulRR l r0 r1 r2
+mapFR _ (Madd l r0 r1 r2 r3)  = Madd l r0 r1 r2 r3
 mapFR f (StrD l d a)          = StrD l (f d) a
 mapFR f (Scvtf l d r)         = Scvtf l (f d) r
 mapFR f (Fcvtms l r d)        = Fcvtms l r (f d)
@@ -329,6 +332,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (StpD _ d0 d1 a)      = i4 ("stp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
     pretty (LdpD _ d0 d1 a)      = i4 ("ldp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
     pretty (Fmadd _ d0 d1 d2 d3) = i4 ("fmadd" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
+    pretty (Madd _ r0 r1 r2 r3)  = i4 ("madd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3)
     pretty (Fsqrt _ d0 d1)       = i4 ("fsqrt" <+> pretty d0 <> "," <+> pretty d1)
     pretty (MrsR _ r)            = i4 ("mrs" <+> pretty r <> "," <+> "rndr")
     pretty (MovRCf _ r cf)       = i4 ("mov" <+> pretty r <> "," <+> pretty cf)
