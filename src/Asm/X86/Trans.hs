@@ -118,6 +118,9 @@ ir (IR.WrF (IR.AP m (Just ei) _) (IR.FReg r)) = do
     plE <- evalE ei (IR.ITemp eR)
     pure $ plE ++ [IAddRR () (IReg eR) m', MovqAX () (R (IReg eR)) (fabsReg r)]
 ir (IR.Cset t p) = foldMapA ir [IR.MT t 0, IR.Cmov p t 1]
+ir (IR.Fcmov (IR.IU IR.IOdd (IR.Reg r0)) t e) = do
+    plE <- feval e t; l <- nextL
+    pure $ [TestI () (absReg r0) 1, Je () l] ++ plE ++ [Label () l]
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
     iS <- nextI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovnle () (absReg rD) (IReg iS)]
