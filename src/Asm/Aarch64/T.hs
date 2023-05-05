@@ -57,6 +57,10 @@ ir (IR.Wr (IR.AP t (Just (IR.IB IR.IAsl eI (IR.ConstI 3))) _) e) = do
     r <- nextI; rI <- nextI
     plE <- eval e (IR.ITemp r); plEI <- eval eI (IR.ITemp rI)
     pure $ plE ++ plEI ++ [Str () (IReg r) (BI (absReg t) (IReg rI) Three)]
+ir (IR.Wr (IR.AP t (Just (IR.IB IR.IPlus (IR.IB IR.IAsl eI (IR.ConstI 3)) (IR.ConstI i))) _) e) | (ix, 0) <- i `quotRem` 8 = do
+    r <- nextI; rI <- nextI
+    plE <- eval e (IR.ITemp r); plEI <- eval (eI+IR.ConstI ix) (IR.ITemp rI)
+    pure $ plE ++ plEI ++ [Str () (IReg r) (BI (absReg t) (IReg rI) Three)]
 ir (IR.Wr (IR.AP t (Just eI) _) e) = do
     r <- nextI; rI <- nextI
     plE <- eval e (IR.ITemp r); plEI <- eval eI (IR.ITemp rI)
