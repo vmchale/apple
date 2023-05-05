@@ -104,19 +104,19 @@ uA (AP _ Nothing (Just m))  = IS.singleton m
 uA _                        = IS.empty
 
 uses :: Stmt -> IS.IntSet
-uses (Ma _ _ e)     = uE e
-uses (MX _ e)       = uF e
-uses (MT _ e)       = uE e
-uses (Wr a e)       = uA a <> uE e
-uses (RA l)         = IS.singleton l
-uses (Cmov e0 _ e1) = uE e0<>uE e1
-uses Sa{}           = IS.empty
-uses (WrF a e)      = uA a <> uF e
-uses (Cpy d s e)    = uA d <> uA s <> uE e
-uses Pop{}          = IS.empty
-uses IRnd{}         = IS.empty
-uses (Cmov e _ e')  = uE e <> uE e'
-uses (Cset _ e)     = uE e
+uses (Ma _ _ e)      = uE e
+uses (MX _ e)        = uF e
+uses (MT _ e)        = uE e
+uses (Wr a e)        = uA a <> uE e
+uses (RA l)          = IS.singleton l
+uses (Cmov e0 _ e1)  = uE e0<>uE e1
+uses (Fcmov e0 _ e1) = uE e0<>uF e1
+uses Sa{}            = IS.empty
+uses (WrF a e)       = uA a <> uF e
+uses (Cpy d s e)     = uA d <> uA s <> uE e
+uses Pop{}           = IS.empty
+uses IRnd{}          = IS.empty
+uses (Cset _ e)      = uE e
 
 defs :: Stmt -> IS.IntSet
 defs (Ma a _ _) = IS.singleton a

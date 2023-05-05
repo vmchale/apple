@@ -72,7 +72,7 @@ data Stmt = L Label
           | Free Temp | RA !Int -- "return array" no-op (takes label)
           | Wr AE Exp
           | WrF AE FExp
-          | Cmov Exp Temp Exp
+          | Cmov Exp Temp Exp | Fcmov Exp Temp FExp
           | Cset Temp Exp
           | Sa Temp Exp -- register, size
           | Pop Exp -- pop salloc
@@ -82,24 +82,25 @@ data Stmt = L Label
           -- TODO: ccall?
 
 instance Pretty Stmt where
-    pretty (L l)        = hardline <> prettyLabel l <> ":"
-    pretty (MT t e)     = parens ("movtemp" <+> pretty t <+> pretty e)
-    pretty (MX t e)     = parens ("movf" <+> pretty t <+> pretty e)
-    pretty (MJ e l)     = parens ("mjump" <+> pretty e <+> prettyLabel l)
-    pretty (J l)        = parens ("j" <+> prettyLabel l)
-    pretty (Wr p e)     = parens ("write" <+> pretty p <+> pretty e)
-    pretty (WrF p e)    = parens ("write" <+> pretty p <+> pretty e)
-    pretty (Ma _ t e)   = parens ("malloc" <+> pretty t <+> ":" <+> pretty e)
-    pretty (Free t)     = parens ("free" <+> pretty t)
-    pretty (Cmov p t e) = parens ("cmov" <+> pretty p <+> pretty t <+> pretty e)
-    pretty RA{}         = parens "return-array"
-    pretty (Sa t e)     = parens ("salloc" <+> pretty t <+> ":" <+> pretty e)
-    pretty (Pop e)      = parens ("spop" <+> pretty e)
-    pretty (Cpy p p' e) = parens ("cpy" <+> pretty p <> "," <+> pretty p' <+> pretty e)
-    pretty (C l)        = parens ("call" <+> prettyLabel l)
-    pretty R{}          = parens "ret" <> hardline
-    pretty (IRnd t)     = parens (pretty t <+> "<- rnd")
-    pretty (Cset t e)   = parens ("cset" <+> pretty t <+> "<-" <+> pretty e)
+    pretty (L l)         = hardline <> prettyLabel l <> ":"
+    pretty (MT t e)      = parens ("movtemp" <+> pretty t <+> pretty e)
+    pretty (MX t e)      = parens ("movf" <+> pretty t <+> pretty e)
+    pretty (MJ e l)      = parens ("mjump" <+> pretty e <+> prettyLabel l)
+    pretty (J l)         = parens ("j" <+> prettyLabel l)
+    pretty (Wr p e)      = parens ("write" <+> pretty p <+> pretty e)
+    pretty (WrF p e)     = parens ("write" <+> pretty p <+> pretty e)
+    pretty (Ma _ t e)    = parens ("malloc" <+> pretty t <+> ":" <+> pretty e)
+    pretty (Free t)      = parens ("free" <+> pretty t)
+    pretty (Cmov p t e)  = parens ("cmov" <+> pretty p <+> pretty t <+> pretty e)
+    pretty (Fcmov p t e) = parens ("fcmov" <+> pretty p <+> pretty t <+> pretty e)
+    pretty RA{}          = parens "return-array"
+    pretty (Sa t e)      = parens ("salloc" <+> pretty t <+> ":" <+> pretty e)
+    pretty (Pop e)       = parens ("spop" <+> pretty e)
+    pretty (Cpy p p' e)  = parens ("cpy" <+> pretty p <> "," <+> pretty p' <+> pretty e)
+    pretty (C l)         = parens ("call" <+> prettyLabel l)
+    pretty R{}           = parens "ret" <> hardline
+    pretty (IRnd t)      = parens (pretty t <+> "<- rnd")
+    pretty (Cset t e)    = parens ("cset" <+> pretty t <+> "<-" <+> pretty e)
 
 instance Show Stmt where show = show . pretty
 

@@ -785,6 +785,10 @@ eval (EApp F (EApp _ (Builtin _ Exp) e0) e1) t = do
     f0 <- newFTemp; f1ϵ <- newFTemp
     plE0 <- eval e0 f0; plE1 <- eval e1 f1ϵ
     pure $ plE0 ++ plE1 ++ [MX t (FB FExp (FReg f0) (FReg f1ϵ))]
+eval (EApp F (EApp _ (Builtin _ IntExp) (FLit _ (-1))) n) t = do
+    nR <- newITemp
+    plR <- eval n nR
+    pure $ plR ++ [MX t 1, Fcmov (IU IOdd (Reg nR)) t (IR.ConstF (-1))]
 eval (EApp F (EApp _ (Builtin _ IntExp) x) n) t = do
     nR <- newITemp
     xR <- newFTemp

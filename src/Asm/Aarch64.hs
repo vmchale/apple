@@ -174,6 +174,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Tbnz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                         | Tbz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                         | Cbnz { ann :: a, rSrc :: reg, label :: Label }
+                        | Fcsel { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, cond :: Cond }
+                        | TstI { ann :: a, rSrc1 :: reg, cSrc :: Word16 }
                         deriving (Functor)
 
 instance Copointed (AArch64 reg freg) where copoint = ann
@@ -227,6 +229,8 @@ mapR f (Csel l r0 r1 r2 p)   = Csel l (f r0) (f r1) (f r2) p
 mapR f (Tbnz l r n p)        = Tbnz l (f r) n p
 mapR f (Tbz l r n p)         = Tbz l (f r) n p
 mapR f (Cbnz x r l)          = Cbnz x (f r) l
+mapR _ (Fcsel l d0 d1 d2 p)  = Fcsel l d0 d1 d2 p
+mapR f (TstI l r i)          = TstI l (f r) i
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -277,6 +281,8 @@ mapFR _ (Csel l r0 r1 r2 p)   = Csel l r0 r1 r2 p
 mapFR _ (Tbnz l r n p)        = Tbnz l r n p
 mapFR _ (Tbz l r n p)         = Tbz l r n p
 mapFR _ (Cbnz x r l)          = Cbnz x r l
+mapFR f (Fcsel l d0 d1 d2 p)  = Fcsel l (f d0) (f d1) (f d2) p
+mapFR _ (TstI l r i)          = TstI l r i
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -342,6 +348,8 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Tbnz _ r n l)        = i4 ("tbnz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l)
     pretty (Tbz _ r n l)         = i4 ("tbz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l)
     pretty (Cbnz _ r l)          = i4 ("cbnz" <+> pretty r <> "," <+> prettyLabel l)
+    pretty (Fcsel _ d0 d1 d2 p)  = i4 ("fcsel" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty p)
+    pretty (TstI _ r i)          = i4 ("tst" <+> pretty r <> "," <+> pretty i)
 
 instance (Pretty reg, Pretty freg) => Show (AArch64 reg freg a) where show=show.pretty
 

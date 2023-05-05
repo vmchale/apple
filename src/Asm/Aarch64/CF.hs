@@ -109,6 +109,8 @@ uses (Blr _ r)           = singleton r
 uses Fmax{}              = IS.empty
 uses Fabs{}              = IS.empty
 uses (Csel _ _ r1 r2 _)  = fromList [r1, r2]
+uses Fcsel{}             = IS.empty
+uses (TstI _ r _)        = singleton r
 
 defs FMovXX{}            = IS.empty
 defs FMovXC{}            = IS.empty
@@ -152,6 +154,8 @@ defs (MovRCf _ r Malloc) = singleton r <> singleton CArg0
 defs Fmax{}              = IS.empty
 defs Fabs{}              = IS.empty
 defs (Csel _ r _ _ _)    = singleton r
+defs Fcsel{}             = IS.empty
+defs TstI{}              = IS.empty
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
@@ -195,6 +199,8 @@ defsF MovRCf{}           = IS.empty
 defsF (Fmax _ d _ _)     = singleton d
 defsF (Fabs _ d _)       = singleton d
 defsF Csel{}             = IS.empty
+defsF TstI{}             = IS.empty
+defsF (Fcsel _ d0 _ _ _) = singleton d0
 
 usesF (FMovXX _ _ r)       = singleton r
 usesF FMovXC{}             = IS.empty
@@ -237,6 +243,8 @@ usesF MovRCf{}             = IS.empty
 usesF (Fmax _ _ d0 d1)     = fromList [d0, d1]
 usesF (Fabs _ _ d)         = singleton d
 usesF Csel{}               = IS.empty
+usesF TstI{}               = IS.empty
+usesF (Fcsel _ _ d0 d1 _)  = fromList [d0, d1]
 
 next :: (E reg, E freg) => [AArch64 reg freg ()] -> FreshM ([Int] -> [Int], [AArch64 reg freg ControlAnn])
 next asms = do

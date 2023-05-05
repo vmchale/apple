@@ -107,7 +107,10 @@ ir (IR.MJ (IR.FRel IR.FGeq e0 e1) l) = do
     plE0 <- feval e0 (IR.FTemp r0); plE1 <- feval e1 (IR.FTemp r1)
     pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () Geq l]
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) t (IR.Reg r)) = do
-    pure $ [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (absReg r) (absReg t) Gt]
+    pure [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (absReg r) (absReg t) Gt]
+ir (IR.Fcmov (IR.IU IR.IOdd (IR.Reg r0)) t e) = do
+    i <- nextI; plE <- feval e (IR.FTemp i)
+    pure $ plE ++ [TstI () (absReg r0) 1, Fcsel () (fabsReg t) (FReg i) (fabsReg t) Neq]
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 2, n' <= 4 = do
     t0 <- nextR; t1 <- nextR
     pure $ concat [ [Ldp () t0 t1 (RP (absReg tS) (i*16)), Stp () t0 t1 (RP (absReg tD) (i*16))] | i <- [0..fromIntegral (n'-1)] ]
