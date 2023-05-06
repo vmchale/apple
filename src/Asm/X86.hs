@@ -514,7 +514,7 @@ mapR _ (C a l)                      = C a l
 mapR _ (RetL a l)                   = RetL a l
 mapR f (Neg a r)                    = Neg a (f r)
 
-fR :: (Semigroup m, Monoid m) => (reg -> m) -> X86 reg freg a -> m
+fR :: (Monoid m) => (reg -> m) -> X86 reg freg a -> m
 fR _ Jg{}              = mempty
 fR _ J{}               = mempty
 fR f (MovAR _ a r)     = f @<> a <> f r
