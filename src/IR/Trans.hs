@@ -719,6 +719,10 @@ eval (EApp _ (EApp _ (Builtin (Arrow F _) Plus) e0) (EApp _ (EApp _ (Builtin _ T
     t0 <- newFTemp; t1 <- newFTemp; t2 <- newFTemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1; pl2 <- eval e2 t2
     pure $ pl0 ++ pl1 ++ pl2 ++ [MX t (FReg t0 + (FReg t1*FReg t2))]
+eval (EApp _ (EApp _ (Builtin (Arrow F _) Minus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
+    t0 <- newFTemp; t1 <- newFTemp; t2 <- newFTemp
+    pl0 <- eval e0 t0; pl1 <- eval e1 t1; pl2 <- eval e2 t2
+    pure $ pl0 ++ pl1 ++ pl2 ++ [MX t (FReg t0 - (FReg t1*FReg t2))]
 eval (EApp _ (EApp _ (Builtin (Arrow F _) Plus) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
