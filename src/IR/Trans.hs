@@ -773,6 +773,11 @@ eval (EApp _ (EApp _ (Builtin _ A.IDiv) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MT t (IB IR.IDiv (Reg t0) (Reg t1))]
+eval (EApp F (EApp _ (Builtin _ Times) e0) (Var _ x)) t = do
+    st <- gets vars
+    t0 <- newFTemp
+    pl0 <- eval e0 t0
+    pure $ pl0 ++ [MX t (FReg t0 * FReg (getT st x))]
 eval (EApp F (EApp _ (Builtin _ Times) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
