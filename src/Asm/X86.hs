@@ -281,6 +281,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Vmulsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
                     | Vaddsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
                     | Vsubsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
+                    | VaddsdA { ann :: a, fDest :: freg, fSrc :: freg, aSrc :: Addr reg }
                     | Cvtsi2sd { ann :: a, fDest :: freg, rSrc :: reg }
                     | Vfmadd231sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
                     | Vfmadd213sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
@@ -341,6 +342,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (Cvttsd2si _ r0 r1)           = i4 ("cvttsd2si" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Vmulsd _ rD r0 r1)           = i4 ("vmulsd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Vaddsd _ rD r0 r1)           = i4 ("vaddsd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
+    pretty (VaddsdA _ rD r a)            = i4 ("vaddsd" <+> pretty rD <> "," <+> pretty r <> "," <+> pretty a)
     pretty (Vsubsd _ rD r0 r1)           = i4 ("vsubsd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Cvtsi2sd _ r0 r1)            = i4 ("cvtsi2sd" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Roundsd _ r0 r1 m)           = i4 ("roundsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty m)
@@ -472,6 +474,7 @@ mapR _ (Subsd l xr0 xr1)            = Subsd l xr0 xr1
 mapR _ (Divsd l xr0 xr1)            = Divsd l xr0 xr1
 mapR _ (Vmulsd l xr0 xr1 xr2)       = Vmulsd l xr0 xr1 xr2
 mapR _ (Vaddsd l xr0 xr1 xr2)       = Vaddsd l xr0 xr1 xr2
+mapR f (VaddsdA l xr0 xr1 a)        = VaddsdA l xr0 xr1 (f<$>a)
 mapR _ (Vsubsd l xr0 xr1 xr2)       = Vsubsd l xr0 xr1 xr2
 mapR f (Cvttsd2si l r xr)           = Cvttsd2si l (f r) xr
 mapR f (Push l r)                   = Push l (f r)
@@ -572,6 +575,7 @@ fR _ Subsd{}           = mempty
 fR _ Divsd{}           = mempty
 fR _ Vmulsd{}          = mempty
 fR _ Vaddsd{}          = mempty
+fR f (VaddsdA _ _ _ a) = f @<> a
 fR _ Vsubsd{}          = mempty
 fR f (Cvtsi2sd _ _ r)  = f r
 fR _ Vfmadd231sd{}     = mempty
@@ -616,6 +620,7 @@ mapFR f (Roundsd l xr0 xr1 s)        = Roundsd l (f xr0) (f xr1) s
 mapFR f (Cvttsd2si l r xr)           = Cvttsd2si l r (f xr)
 mapFR f (Vsubsd l xr0 xr1 xr2)       = Vsubsd l (f xr0) (f xr1) (f xr2)
 mapFR f (Vaddsd l xr0 xr1 xr2)       = Vaddsd l (f xr0) (f xr1) (f xr2)
+mapFR f (VaddsdA l xr0 xr1 r)        = VaddsdA l (f xr0) (f xr1) r
 mapFR f (Vdivsd l xr0 xr1 xr2)       = Vdivsd l (f xr0) (f xr1) (f xr2)
 mapFR _ (CmpRR l r0 r1)              = CmpRR l r0 r1
 mapFR f (Addsd l xr0 xr1)            = Addsd l (f xr0) (f xr1)
