@@ -92,7 +92,7 @@ rightPad :: Int -> T.Text -> T.Text
 rightPad n str = T.take n (str <> T.replicate n " ")
 
 present :: Pretty a => (a, BS.ByteString) -> T.Text
-present (x, b) = rightPad 40 (ptxt x) <> he b
+present (x, b) = rightPad 45 (ptxt x) <> he b
     where he = T.unwords.fmap (pad.T.pack.($"").showHex).BS.unpack
           pad s | T.length s == 1 = T.cons '0' s | otherwise = s
 

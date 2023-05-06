@@ -270,6 +270,10 @@ feval (IR.FConv (IR.Reg r)) t                       = pure [Cvtsi2sd () (fabsReg
 feval (IR.FReg r) t                                 = pure [Movapd () (fabsReg t) (fabsReg r)]
 feval (IR.FB IR.FPlus (IR.FReg r0) (IR.FB IR.FTimes (IR.FReg r1) (IR.FReg r2))) t =
     pure [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sd () (fabsReg t) (fabsReg r1) (fabsReg r2)]
+feval (IR.FB IR.FPlus (IR.FReg r0) (IR.FB IR.FTimes e (IR.FAt (IR.AP b (Just (IR.IB IR.IPlus (IR.IB IR.IAsl eI (IR.ConstI 3)) (IR.ConstI s))) _)))) t | Just i8 <- mi8 s = do
+    i <- nextI; iI <- nextI
+    plE <- feval e (IR.FTemp i); plEI <- evalE eI (IR.ITemp iI)
+    pure $ plE ++ plEI ++ [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sdA () (fabsReg t) (FReg i) (RSD (absReg b) Eight (IReg iI) i8)]
 feval (IR.FB IR.FPlus (IR.FReg r0) (IR.FB IR.FTimes e0 e1)) t = do
     i0 <- nextI; i1 <- nextI
     plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1)
