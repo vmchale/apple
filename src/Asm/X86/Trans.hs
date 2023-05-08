@@ -332,7 +332,7 @@ feval (IR.FB IR.FExp (IR.ConstF 2.718281828459045) e) t = do
     putE <- feval e (IR.FTemp i)
     let sa = RC SP (-8)
     -- https://www.madwizard.org/programming/snippets?id=36
-    pure $ putE ++ [MovqAX () sa (FReg i), Fld () sa, Fldl2e (), Fmulp (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa, MovqXA () (fabsReg t) sa]
+    pure $ putE ++ [MovqAX () sa (FReg i), Fninit (), Fld () sa, Fldl2e (), Fmulp (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FB IR.FExp e0 e1) t = do
     i0 <- nextI
     i1 <- nextI
