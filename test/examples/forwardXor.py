@@ -11,7 +11,7 @@ inputs = np.array([[0,0],[0,1],[1,0],[1,1]])
 hidden_weights=np.array([[0.51426693,0.56885825],[0.48725347,0.15041493]])
 hidden_bias=np.array([0.79726405,0.67601843])
 output_weights=np.array([[0.14801747],[0.37182892]])
-output_bias=np.array([0.57823076])
+output_bias=0.57823076
 print(hidden_weights)
 print(output_weights)
 print(hidden_bias)
