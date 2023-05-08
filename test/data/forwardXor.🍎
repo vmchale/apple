@@ -1,0 +1,9 @@
+-- wh: 2x2 wo: 2x1 bh: 2 bo: (scalar)
+-- ho: 4x2
+λwh.λwo.λbh.λbo.
+  { X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩
+  ; ho ← ([(+)`bh x]'(X%.wh))
+  -- prediction: 4x1
+  ; prediction ← [1%(1+ℯ(_x))]`{0}((+bo)`{0}(ho%.wo))
+  ; (ho,prediction)
+  }

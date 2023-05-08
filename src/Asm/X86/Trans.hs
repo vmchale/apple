@@ -194,13 +194,18 @@ ir (IR.Cpy (IR.AP tD (Just (IR.IB IR.IAsl eid (IR.ConstI 3))) _) (IR.AP tS (Just
     diR <- nextI; siR <- nextI
     plD <- evalE eid (IR.ITemp diR); plS <- evalE eis (IR.ITemp siR)
     t <- nextR
-    -- TODO: plS only when needed
     pure $ plD ++ plS ++ concat [ [ MovRA () t (RSD (absReg tS) Eight (IReg siR) (i*8)), MovAR () (RSD (absReg tD) Eight (IReg diR) (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
 ir (IR.Cpy (IR.AP tD (Just ed) _) (IR.AP tS (Just es) _) (IR.ConstI n)) | n <= 4 = do
     dR <- nextI; sR <- nextI
     plD <- evalE ed (IR.ITemp dR); plS <- evalE es (IR.ITemp sR)
     t <- nextR
     pure $ plD ++ plS ++ IAddRR () (IReg dR) (absReg tD):IAddRR () (IReg sR) (absReg tS):concat [ [MovRA () t (RC (IReg sR) (i*8)), MovAR () (RC (IReg dR) (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
+ir (IR.Cpy (IR.AP tD (Just (IR.IB IR.IPlus ed (IR.ConstI sS))) _) (IR.AP tS (Just (IR.ConstI dS)) _) k) | Just dS8 <- mi8 dS, Just sS8 <- mi8 sS = do
+    dR <- nextI; kR <- nextI
+    plK <- evalE k (IR.ITemp kR); plD <- evalE ed (IR.ITemp dR)
+    i <- nextR; t <- nextR
+    l <- nextL; eL <- nextL
+    pure $ plD ++ plK ++ IAddRR () (IReg dR) (absReg tD):[MovRI () i 0, CmpRR () i (IReg kR), Jge () eL, Label () l, MovRA () t (RSD (absReg tS) Eight i dS8), MovAR () (RSD (IReg dR) Eight i sS8) t, IAddRI () i 1, CmpRR () i (IReg kR), Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just ed) _) (IR.AP tS (Just (IR.ConstI dS)) _) k) | Just dS8 <- mi8 dS = do
     dR <- nextI; kR <- nextI
     plK <- evalE k (IR.ITemp kR); plD <- evalE ed (IR.ITemp dR)
