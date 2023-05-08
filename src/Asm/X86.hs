@@ -230,6 +230,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | ISubRR { ann :: a, rSub1 :: reg, rSub2 :: reg }
                     | ISubRI { ann :: a, rSub :: reg, rSubI :: Int64 }
                     | IMulRR { ann :: a, rMul1 :: reg, rMul2 :: reg }
+                    | IMulRA { ann :: a, rMul :: reg, aSrc :: Addr reg }
                     | XorRR { ann :: a, rXor1 :: reg, rXor2 :: reg }
                     | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
                     | MovRA { ann :: a, rDest :: reg, aSrc :: Addr reg }
@@ -331,6 +332,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (ISubRR _ r0 r1)              = i4 ("sub" <+> pretty r0 <> "," <+> pretty r1)
     pretty (ISubRI _ r i)                = i4 ("sub" <+> pretty r <> "," <+> pretty i)
     pretty (IMulRR _ r0 r1)              = i4 ("imul" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (IMulRA _ r a)                = i4 ("imul" <+> pretty r <> "," <+> pretty a)
     pretty (Jne _ l)                     = i4 ("jne" <+> prettyLabel l)
     pretty (Jle _ l)                     = i4 ("jle" <+> prettyLabel l)
     pretty (Je _ l)                      = i4 ("je" <+> prettyLabel l)
@@ -441,6 +443,7 @@ mapR _ (Jl x l)                     = Jl x l
 mapR _ (Jle x l)                    = Jle x l
 mapR _ (Label x l)                  = Label x l
 mapR f (IMulRR l r0 r1)             = IMulRR l (f r0) (f r1)
+mapR f (IMulRA l r a)               = IMulRA l (f r) (f<$>a)
 mapR f (IAddRR l r0 r1)             = IAddRR l (f r0) (f r1)
 mapR f (ISubRR l r0 r1)             = ISubRR l (f r0) (f r1)
 mapR f (CmpRR l r0 r1)              = CmpRR l (f r0) (f r1)
@@ -532,6 +535,7 @@ fR f (IAddRI _ r _)         = f r
 fR f (ISubRR _ r0 r1)       = f r0 <> f r1
 fR f (ISubRI _ r _)         = f r
 fR f (IMulRR _ r0 r1)       = f r0 <> f r1
+fR f (IMulRA _ r a)         = f r <> f @<> a
 fR f (XorRR _ r0 r1)        = f r0 <> f r1
 fR f (MovAI32 _ a _)        = f @<> a
 fR f (MovRI _ r _)          = f r
@@ -631,6 +635,7 @@ mapFR f (Addsd l xr0 xr1)            = Addsd l (f xr0) (f xr1)
 mapFR _ (IAddRR l r0 r1)             = IAddRR l r0 r1
 mapFR _ (ISubRR l r0 r1)             = ISubRR l r0 r1
 mapFR _ (IMulRR l r0 r1)             = IMulRR l r0 r1
+mapFR _ (IMulRA l r a)               = IMulRA l r a
 mapFR _ (ISubRI l r i)               = ISubRI l r i
 mapFR _ (MovRA l r a)                = MovRA l r a
 mapFR _ (MovAI32 l r i)              = MovAI32 l r i

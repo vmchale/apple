@@ -389,6 +389,10 @@ evalE (IR.IB IR.IPlus e e') rD                       = do
     eR <- nextI; e'R <- nextI
     plE <- evalE e (IR.ITemp eR); plE' <- evalE e' (IR.ITemp e'R)
     pure $ plE ++ plE' ++ [MovRR () rD' (IReg eR), IAddRR () rD' (IReg e'R)]
+evalE (IR.IB IR.ITimes e (IR.EAt (IR.AP m (Just (IR.IB IR.IPlus (IR.IB IR.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _))) rD | Just d8 <- mi8 d = do
+    let rD'=absReg rD
+    eR <- nextI; plE <- evalE e (IR.ITemp eR)
+    pure $ plE ++ [MovRR () rD' (IReg eR), IMulRA () rD' (RSD (absReg m) Eight (absReg i) d8)]
 evalE (IR.IB IR.ITimes e0 e1) rD = do
     let rD' = absReg rD
     e0R <- nextI; plE0 <- evalE e0 (IR.ITemp e0R)
