@@ -8,7 +8,7 @@
 module Asm.X86.Byte ( allFp, assemble, assembleCtx, dbgFp ) where
 
 import           Asm.X86
-import           Data.Bifunctor   (first, second)
+import           Data.Bifunctor   (second)
 import           Data.Bits        (Bits, rotateR, shiftL, (.&.), (.|.))
 import qualified Data.ByteString  as BS
 import           Data.Int         (Int32, Int64, Int8)
@@ -744,7 +744,7 @@ asm ix st (MovAI32 _ (RC r i8) i32:asms) =
 asm ix st (MovAR _ (RC Rsp i8) r:asms) =
     let (e, b) = modRM r
         (0, bi) = modRM Rsp
-        pre = 0x48 .|. e `shiftL` 3
+        pre = 0x48 .|. e `shiftL` 2
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = bi `shiftL` 3 .|. bi
         instr = pre:0x89:modB:sib:le i8
@@ -752,7 +752,7 @@ asm ix st (MovAR _ (RC Rsp i8) r:asms) =
 asm ix st (MovAR _ (RC32 Rsp i32) r:asms) =
     let (e, b) = modRM r
         (0, bi) = modRM Rsp
-        pre = 0x48 .|. e `shiftL` 3
+        pre = 0x48 .|. e `shiftL` 2
         modB = 0x2 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = bi `shiftL` 3 .|. bi
         instr = pre:0x89:modB:sib:le i32
@@ -760,7 +760,7 @@ asm ix st (MovAR _ (RC32 Rsp i32) r:asms) =
 asm ix st (MovAR _ (RC R12 i8) r:asms) =
     let (e, b) = modRM r
         (ei, bi) = modRM R12
-        pre = 0x48 .|. e `shiftL` 3 .|. ei
+        pre = 0x48 .|. e `shiftL` 2 .|. ei
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
         sib = bi `shiftL` 3 .|. bi
         instr = pre:0x89:modB:sib:le i8
