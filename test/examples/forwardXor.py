@@ -23,9 +23,7 @@ hidden_layer_activation += hidden_bias
 hidden_layer_output = sigmoid(hidden_layer_activation)
 print(hidden_layer_output)
 
-# 4x2, 2x2 -> 4??
 output_layer_activation = np.dot(hidden_layer_output,output_weights)
-#  print(hidden_layer_output.shape,output_weights.shape,output_layer_activation.shape)
 output_layer_activation += output_bias
 predicted_output = sigmoid(output_layer_activation)
 print(predicted_output)
