@@ -520,9 +520,9 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eA
     ss <- writeRF f [x] y
     let step = mt tX (AP xRd (Just (IB IAsl (Reg i) 3)) lX) x:ss++[wt tY (AP tD (Just (IB IAsl (Reg i) 3)) (Just a)) y]
     loop <- doN i (Reg szR) step
-    mSz <- doN j (Reg rnkR) [MT szR (Reg szR * EAt (AP t (Just (IB IAsl (Reg j) 3 + 8)) (Just a)))]
+    mSz <- doN j (Reg rnkR) [MT szR (Reg szR * EAt (AP xR (Just (IB IAsl (Reg j) 3 + 8)) lX))]
     modify (addMT a t)
-    pure (Just a, plX ++ MT rnkR (EAt (AP xR Nothing lX)):MT szR 1:mSz++[Ma a t (IB IAsl (Reg rnkR + Reg szR) 3 + 8), Cpy (AP t Nothing (Just a)) (AP xR Nothing lX) (Reg rnkR + 1), MT offsR (IB IAsl (Reg rnkR) 3 + 8), MT xRd (Reg xR + Reg offsR), MT tD (Reg t + Reg offsR)] ++ loop)
+    pure (Just a, plX ++ MT rnkR (EAt (AP xR Nothing lX)):MT szR 1:mSz++[Ma a t (IB IAsl (Reg rnkR + Reg szR) 3 + 8), Cpy (AP t Nothing (Just a)) (AP xR Nothing lX) (Reg rnkR+1), MT offsR (IB IAsl (Reg rnkR) 3 + 8), MT xRd (Reg xR + Reg offsR), MT tD (Reg t + Reg offsR)] ++ loop)
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rnk) <- tRnk (eAnn xs), isAF (eAnn f) = do
     a <- nextArr
     xR <- newITemp
