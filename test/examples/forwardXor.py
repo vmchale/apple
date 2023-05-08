@@ -1,6 +1,6 @@
 # from https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d
 
-import numpy as np 
+import numpy as np
 
 def sigmoid (x):
     return 1/(1+np.exp(-x))
