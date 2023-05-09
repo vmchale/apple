@@ -336,7 +336,7 @@ benchC s = case tyParse bs of
 benchE :: String -> Repl AlexPosn ()
 benchE s = do
     st <- lift $ gets _lex
-    case rwP st bs of   
+    case rwP st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
@@ -345,12 +345,7 @@ benchE s = do
                 Right (e, _, i') -> do
                     m <- lift $ gets mf
                     case eAnn e of
-                        (Arr _ F) -> do
-                            liftIO $ do
-                                (sz, fp) <- eFunP i' m eC
-                                benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
-                                freeFunPtr sz fp
-                        (Arr _ I) -> do
+                        Arr{} -> do
                             liftIO $ do
                                 (sz, fp) <- eFunP i' m eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
@@ -364,6 +359,11 @@ benchE s = do
                             liftIO $ do
                                 (sz, fp) <- eFunP i' m eC
                                 benchmark (nfIO $ callFFI fp retCDouble [])
+                                freeFunPtr sz fp
+                        (P [Arr{}, Arr{}]) ->
+                            liftIO $ do
+                                (sz, fp) <- eFunP i' m eC
+                                benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                                 freeFunPtr sz fp
     where bs = ubs s
 
