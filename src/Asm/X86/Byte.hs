@@ -204,8 +204,8 @@ mkIx ix ((CmpRI _ _ i):asms) | Just{} <- mi64i8 (fromIntegral i) = mkIx (ix+4) a
 mkIx ix ((IAddRI _ _ i):asms) | Just{} <- mi64i8 i = mkIx (ix+4) asms
 mkIx ix ((IAddRI _ _ i):asms) | Just{} <- mi64i32 i = mkIx (ix+7) asms
 mkIx ix ((ISubRI _ _ i):asms) | Just{} <- mi64i8 i = mkIx (ix+4) asms
-                              | otherwise     = mkIx (ix+7) asms
-mkIx ix (MovRI _ r i:asms) | Just{} <- mi64i32 i, i >= 0 && (r < R8 || r == Rax) = mkIx (ix+5) asms
+                              | Just{} <- mi64i32 i = mkIx (ix+7) asms
+mkIx ix (MovRI _ r i:asms) | Just{} <- mi64i32 i, i >= 0 && fits r = mkIx (ix+5) asms
 mkIx ix (MovRI{}:asms)                        = mkIx (ix+10) asms
 mkIx ix (Roundsd _ r0 r1 _:asms) | fits r0 && fits r1 = mkIx (ix+6) asms
 mkIx ix (Roundsd{}:asms)                      = mkIx (ix+7) asms
