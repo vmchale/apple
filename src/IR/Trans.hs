@@ -533,7 +533,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (0, _)])) op) xs) ys) t 
     let step = mt tX (AP xRd (Just (IB IAsl (Reg i) 3)) lX) x:mt tY (AP yRd (Just (IB IAsl (Reg i) 3)) lY) y:ss++[wt tC (AP tD (Just (IB IAsl (Reg i) 3)) (Just a)) z]
     loop <- doN i (Reg szR) step
     mSz <- doN j (Reg rnkR) [MT szR (Reg szR * EAt (AP xR (Just (IB IAsl (Reg j) 3 + 8)) lX))]
-    modify (addMT a t )
+    modify (addMT a t)
     pure (Just a, plX ++ plY ++ MT rnkR (EAt (AP xR Nothing lX)):MT szR 1:mSz++[Ma a t (IB IAsl (Reg rnkR+Reg szR) 3 + 8), Cpy (AP t Nothing (Just a)) (AP xR Nothing lX) (Reg rnkR+1), MT offsR (IB IAsl (Reg rnkR) 3 + 8), MT xRd (Reg xR+Reg offsR), MT yRd (Reg yR+Reg offsR), MT tD (Reg t+Reg offsR)] ++ loop)
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rnk) <- tRnk (eAnn xs), isAF (eAnn f) = do
     a <- nextArr
