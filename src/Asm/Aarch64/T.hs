@@ -127,13 +127,14 @@ ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) eN) = do
     l <- nextL; eL <- nextL
     pure $ plEN ++ [MovRC () i 0, Label () l, CmpRR () i (IReg rN), Bc () Geq eL, Ldr () t (BI (absReg tS) i Three), Str () t (BI (absReg tD) i Three), AddRC () i i 1, B () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
-    rD <- nextI; rS <- nextI; rN <- nextI; i <- nextR; t <- nextR
+    rD <- nextI; rS <- nextI; rN <- nextI; i <- nextR
+    t0 <- nextR; t1 <- nextR
     plED <- eval (IR.IB IR.IPlus (IR.Reg tD) eD) (IR.ITemp rD)
     plES <- eval (IR.IB IR.IPlus (IR.Reg tS) eS) (IR.ITemp rS)
     plEN <- eval eN (IR.ITemp rN)
     let rDA=IReg rD; rSA=IReg rS; rNA=IReg rN
     l <- nextL; eL <- nextL
-    pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, CmpRR () i rNA, Bc () Geq eL, Label () l, Ldr () t (BI rSA i Three), Str () t (BI rDA i Three), AddRC () i i 1, CmpRR () i rNA, Bc () Lt l, Label () eL]
+    pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, CmpRR () i rNA, Bc () Geq eL, Tbz () rNA 0 l, Ldr () t0 (R rSA), Str () t0 (R rDA), MovRC () i 1, AddRC () rSA rSA 8, AddRC () rDA rDA 8, Label () l, Ldp () t0 t1 (R rSA), Stp () t0 t1 (R rDA), AddRC () rSA rSA 16, AddRC () rDA rDA 16, AddRC () i i 2, CmpRR () i rNA, Bc () Lt l, Label () eL]
 ir (IR.IRnd t) = pure [MrsR () (absReg t)]
 ir s             = error (show s)
 
