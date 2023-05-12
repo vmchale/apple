@@ -44,7 +44,7 @@ ir (IR.J l)      = pure [B () l]
 ir (IR.MX t e)   = feval e t
 ir (IR.MT t e)   = eval e t
 ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}
-ir (IR.Free t) = do {r <- nextR; pure $ puL ++ [MovRR () CArg0 (absReg t), MovRCf () r Free, Blr () r] ++ poL}
+ir (IR.Free t) = do {r <- nextR; pure $ puL ++ [MovRR () CArg0 (absReg t), AddRC () FP ASP 16, MovRCf () r Free, Blr () r] ++ poL}
 ir (IR.Sa t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u, MovRR () (absReg t) ASP]
 ir (IR.Pop (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [AddRC () ASP ASP u]
 ir (IR.Wr (IR.AP t Nothing _) e) = do
@@ -137,7 +137,8 @@ ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) eN) = do
 ir (IR.IRnd t) = pure [MrsR () (absReg t)]
 ir s             = error (show s)
 
-sai i | i `rem` 16 == 0 = i | otherwise = i+8
+sai i | i `rem` 16 == 0 = i+16 | otherwise = i+24
+-- FIXME: only do +16 when necessary
 
 mw64 :: Word64 -> AbsReg -> [AArch64 AbsReg freg ()]
 mw64 w r =
@@ -168,6 +169,10 @@ feval (IR.FB IR.FPlus e0 e1) t = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
     pure $ plE0 ++ plE1 ++ [Fadd () (fabsReg t) (FReg i1) (FReg i2)]
+-- feval (IR.FB IR.FTimes e (IR.FReg r)) t = do
+    -- i <- nextI
+    -- plE <- feval e (IR.FTemp i)
+    -- pure $ plE ++ [Fmul () (fabsReg t) (FReg i) (fabsReg r)]
 feval (IR.FB IR.FTimes e0 e1) t = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
