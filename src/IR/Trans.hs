@@ -478,10 +478,10 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     (std, ssd) <- offByDim (Reg <$> reverse dts)
     let nOut:sstrides = sts; (_:dstrides) = std
     ixs <- traverse (\_ -> newITemp) [1..rnk]
-    loop <- threadM (zipWith doN ixs (Reg <$> dts)) [Cpy (xp (Reg <$> dstrides) (Reg <$> reverse ixs) (td, Just a)) (xp (Reg <$> sstrides) (Reg <$> ixs) (xRd, l)) (ConstI$sze`div`8)]
+    loop <- threadM (zipWith doN ixs (Reg <$> dts)) [Cpy (xp (Reg <$> dstrides) (Reg <$> ixs) (td, Just a)) (xp (Reg <$> sstrides) (Reg <$> reverse ixs) (xRd, l)) (ConstI$sze`div`8)]
     modify (addMT a t)
-    -- FIXME: data not of size 8 lol
-    pure (Just a, plX ++ dss ++ sss ++ man (a,t) (1+rnk) (Reg nOut):Wr (AP t Nothing (Just a)) (ConstI rnk):zipWith (\tϵ o -> Wr (AP t (Just (ConstI$8*o)) (Just a)) (Reg tϵ)) (reverse dts) [1..] ++ ssd ++ MT xRd (Reg xR + dE):MT td (Reg t + dE):loop)
+    -- FIXME: data not of size 8
+    pure (Just a, plX ++ dss ++ sss ++ man (a,t) (1+rnk) (Reg nOut):Wr (AP t Nothing (Just a)) (ConstI rnk):zipWith (\tϵ o -> Wr (AP t (Just (ConstI$8*o)) (Just a)) (Reg tϵ)) (reverse dts) [1..] ++ ssd ++ MT xRd (Reg xR+dE):MT td (Reg t+dE):loop)
 aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just iTy <- mAF (eAnn f) = do
     a <- nextArr
     xR <- newITemp; xRd <- newITemp; slopP <- newITemp; ret <- newFTemp; td <- newITemp
