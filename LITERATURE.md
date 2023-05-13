@@ -9,14 +9,13 @@
 - [ ] https://vim.fandom.com/wiki/Folding#Opening_and_closing_folds
 - [ ] https://en.wikipedia.org/wiki/Double-precision_floating-point_format
 
-# Haskal
-- [ ] https://hackage.haskell.org/package/linearscan-1.0.0/docs/LinearScan.html
-- [ ] https://hackage.haskell.org/package/reg-alloc-graph-color
-
 # JIT
 - [ ] https://stackoverflow.com/questions/19552158/call-an-absolute-pointer-in-x86-machine-code
 - [ ] https://stackoverflow.com/questions/54947302/handling-calls-to-potentially-far-away-ahead-of-time-compiled-functions-from-j
 - [ ] https://stackoverflow.com/questions/64852711/how-do-i-call-puts-in-a-jit
+
+# ARM
+- [ ] https://github.com/ARM-software/abi-aa#abi-for-the-arm-64-bit-architecture
 
 # Python?
 - [ ] https://github.com/pola-rs/polars/
