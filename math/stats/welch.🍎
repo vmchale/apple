@@ -4,7 +4,11 @@
   𝜇 ⇐ λxs.λn. sum xs%n;
   𝜎 ⇐ λxs.λn. {𝜇 ⟜ 𝜇 xs n; sum ([(x-𝜇)^2]'xs)%(n-1)};
   xsn ⟜ ℝ(:xs); ysn ⟜ ℝ(:ys);
-  sd ← √((𝜎 xs xsn)%xsn+(𝜎 ys ysn)%ysn);
-  t ← (𝜇 xs xsn-𝜇 ys ysn)%sd;
-  t
+  s₁ ⟜ 𝜎 xs xsn; s₂ ⟜ 𝜎 ys ysn;
+  sn₁ ⟜ s₁%xsn; sn₂ ⟜ s₂%ysn;
+  s ⟜ (sn₁+sn₂);
+  t ← (𝜇 xs xsn-𝜇 ys ysn)%√s;
+  -- Welch–Satterthwaite equation
+  𝜈 ← s^2%((sn₁^2)%(xsn-1)+(sn₂^2)%(ysn-1));
+  (t,𝜈)
 }
