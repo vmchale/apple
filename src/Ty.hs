@@ -691,7 +691,7 @@ tyClosed u e = do
     (((e', s), scs), i) <- runTyM u (do { res@(_, s) <- tyE mempty e ; cvs <- gets varConstr ; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs) ; pure (res, scs) })
     let eS = fmap (rwArr.aT (void s)) e'
     eS' <- do {(e'', s') <- rAn eS; pure (fmap (rwArr.aT s') e'') }
-    let vs = foldMap occ eS'; scs' = filter (\(Nm _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
+    let vs = occ (eAnn eS'); scs' = filter (\(Nm _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
     chkE (eAnn eS') $> (eS', nubOrd scs', i)
 
 rAn :: E (T ()) -> Either (TyE a) (E (T ()), Subst ())
