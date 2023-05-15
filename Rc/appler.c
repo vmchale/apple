@@ -87,16 +87,17 @@ SEXP apple_R(SEXP args) {
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
     U* vals=malloc(sizeof(U)*argc);
-    U ret= malloc(sizeof(F));
+    U ret=malloc(sizeof(F));
     U x;I xi;F xf;
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
-            C FA: x=fr(arg);vals[k]=&x;BR
-            C F_t: xf=asReal(arg);vals[k]=&xf;BR
+            C FA: {U* x=malloc(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
+            C F_t: {F* xf=malloc(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
         }
     }
     ffi_call(cif,fp,ret,vals);
+    DO(k,argc,free(vals[k]));
     free(vals);free(cif);
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR

@@ -161,14 +161,15 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             Sw(ty->args[k]){
-                C IA: x=i_npy(pyarg);vals[k]=&x;BR
-                C FA: x=f_npy(pyarg);vals[k]=&x;BR
-                C I_t: xi=PyLong_AsLong(pyarg);vals[k]=&xi;BR
-                C F_t: xf=PyFloat_AsDouble(pyarg);vals[k]=&xf;BR
+                C IA: {U* x=malloc(sizeof(U));x[0]=i_npy(pyarg);vals[k]=x;};BR
+                C FA: {U* x=malloc(sizeof(U));x[0]=f_npy(pyarg);vals[k]=x;};BR
+                C I_t: {I* xi=malloc(sizeof(I));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
+                C F_t: {F* xf=malloc(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
             }
         }
     }
     ffi_call(cif,fp,ret,vals);
+    DO(k,argc,free(vals[k]));
     free(vals);free(cif);
     Sw(ty->res){
         C IA: r=npy_i(*(U*)ret);BR
@@ -205,14 +206,15 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             Sw(ty->args[k]){
-                C IA: x=i_npy(pyarg);vals[k]=&x;BR
-                C FA: x=f_npy(pyarg);vals[k]=&x;BR
-                C I_t: xi=PyLong_AsLong(pyarg);vals[k]=&xi;BR
-                C F_t: xf=PyFloat_AsDouble(pyarg);vals[k]=&xf;BR
+                C IA: {U* x=malloc(sizeof(U));x[0]=i_npy(pyarg);vals[k]=x;};BR
+                C FA: {U* x=malloc(sizeof(U));x[0]=f_npy(pyarg);vals[k]=x;};BR
+                C I_t: {I* xi=malloc(sizeof(I));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
+                C F_t: {F* xf=malloc(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
             }
         }
     }
     ffi_call(cif,fp,ret,vals);
+    DO(k,argc,free(vals[k]));
     free(vals);free(cif);freety(ty);
     munmap(fp,f_sz);
     Sw(ty->res){
