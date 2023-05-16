@@ -360,7 +360,8 @@ benchE s = do
                                 (sz, fp) <- eFunP i' m eC
                                 benchmark (nfIO $ callFFI fp retCDouble [])
                                 freeFunPtr sz fp
-                        (P [Arr{}, Arr{}]) ->
+                        P [F,F] -> error "Haskell support for float ABI is poor :("
+                        P{} ->
                             liftIO $ do
                                 (sz, fp) <- eFunP i' m eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
