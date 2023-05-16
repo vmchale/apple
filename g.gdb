@@ -3,3 +3,4 @@
 set  disassemble-next-line on
 show disassemble-next-line
 set disassembly-flavor intel
+layout asm
