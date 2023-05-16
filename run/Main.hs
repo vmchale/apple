@@ -24,7 +24,7 @@ import           Hs.A
 import           Hs.FFI
 import           L
 import           Nm
-import           Prettyprinter             (hardline, pretty, (<+>))
+import           Prettyprinter             (hardline, pretty, tupled, (<+>))
 import           Prettyprinter.Render.Text (putDoc)
 import           Sys.DL
 import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, completeFilename, defaultSettings, fallbackCompletion, getInputLine, historyFile, runInputT,
@@ -338,6 +338,14 @@ printExpr s = do
                                 a0 <- peek pa0; a1 <- peek pa1
                                 putDoc$(<>hardline)$pretty (a0, a1)
                                 free p *> free pa0 *> free pa1 *> freeFunPtr sz fp
+                        (P [Arr _ F, Arr _ F, Arr _ F, F]) ->
+                            liftIO $ do
+                                (sz, fp) <- efp i' m eC
+                                p <- callFFI fp (retPtr undefined) []
+                                (P4 pa0 pa1 pa2 f) <- (peek :: Ptr (P4 (Ptr (Apple Double)) (Ptr (Apple Double)) (Ptr (Apple Double)) Double) -> IO (P4 (Ptr (Apple Double)) (Ptr (Apple Double)) (Ptr (Apple Double)) Double)) p
+                                a0 <- peek pa0; a1 <- peek pa1; a2 <- peek pa2
+                                putDoc$(<>hardline)$tupled [pretty a0, pretty a1, pretty a2, pretty f]
+                                free p *> free pa0 *> free pa1 *> free pa2 *> freeFunPtr sz fp
                         (P [Arr _ I, Arr _ I]) ->
                             liftIO $ do
                                 (sz, fp) <- efp i' m eC
