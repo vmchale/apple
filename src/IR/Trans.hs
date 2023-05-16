@@ -76,6 +76,10 @@ mA1A1 :: T a -> Maybe (T a, T a)
 mA1A1 (Arrow (Arr (_ `Cons` Nil) t0) (Arr (_ `Cons` Nil) t1)) = Just (t0, t1)
 mA1A1 _                                                       = Nothing
 
+mA1F :: T a -> Maybe (T a)
+mA1F (Arrow (Arr (_ `Cons` Nil) t) F) = Just t
+mA1F _                                = Nothing
+
 isIF :: T a -> Bool
 isIF I = True; isIF F = True; isIF _ = False
 
@@ -304,6 +308,15 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (F, F) <- mA1A1 (eAnn f) =
     (lY, ss) <- writeF f [(Nothing, slopP)] y -- writeF ... f/ss is "linear" it can only be placed once b/c assembler needs unique labels (labels are linear)
     loop <- doN i (Reg szXR) $ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just (IB IAsl (Reg i * Reg szSlopR) 3 + 24)) lX) (Reg szSlopR):ss++[Cpy (AP t (Just (IB IAsl (Reg i * Reg szYR) 3 + 24)) (Just a)) (AP y (Just 16) lY) (Reg szYR)]
     pure (Just a, plX ++ MT szXR (gd1 lX xR):MT szSlopR (EAt (AP xR (Just 16) lX)):Sa slopP (IB IAsl (Reg szSlopR) 3 + 16):dim1 Nothing slopP (Reg szSlopR) ++ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just 24) lX) (Reg szSlopR):ss0 ++ [MT szYR (gd1 lY0 y0), Ma a t (IB IAsl (Reg szXR * Reg szYR) 3 + 24), Wr (AP t Nothing (Just a)) 2, Wr (AP t (Just 8) (Just a)) (Reg szXR), Wr (AP t (Just 16) (Just a)) (Reg szYR)] ++ loop ++ [Pop (IB IAsl (Reg szSlopR) 3 + 16)])
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just F <- mAF (eAnn f) = do
+    a <- nextArr
+    slopP <- newITemp; y <- newFTemp
+    xR <- newITemp; szXR <- newITemp; szSlopR <- newITemp; i <- newITemp
+    (lX, plX) <- aeval xs xR
+    modify (addMT a t)
+    (_, ss) <- writeF f [(Nothing, slopP)] y
+    loop <- doN i (Reg szXR) $ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just (IB IAsl (Reg i * Reg szSlopR) 3 + 24)) lX) (Reg szSlopR):ss++[WrF (AP t (Just (IB IAsl (Reg i) 3 + 16)) (Just a)) (FReg y)]
+    pure (Just a, plX ++ MT szXR (gd1 lX xR):MT szSlopR (EAt (AP xR (Just 16) lX)):Sa slopP (IB IAsl (Reg szSlopR) 3 + 16):dim1 Nothing slopP (Reg szSlopR) ++ [Ma a t (IB IAsl (Reg szXR) 3 + 24), Wr (AP t Nothing (Just a)) 1, Wr (AP t (Just 8) (Just a)) (Reg szXR)] ++ loop ++ [Pop (IB IAsl (Reg szSlopR) 3 + 16)])
 aeval (EApp _ (EApp _ (Builtin _ Succ) op) arr) t | Arrow tX (Arrow _ tD) <- eAnn op, isIF tX && isIF tD= do
     a <- nextArr
     arrP <- newITemp
