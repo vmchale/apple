@@ -7,7 +7,7 @@ module Ty ( TyE
           , tyClosed
           , match
           -- * Substitutions
-          , aT
+          , aT, rwArr
           ) where
 
 import           A

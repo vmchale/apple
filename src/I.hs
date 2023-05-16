@@ -77,7 +77,7 @@ iM (Def _ (n, e') e) = do
 iM e@(Var t (Nm _ (U i) _)) = do
     st <- gets binds
     case IM.lookup i st of
-        Just e' -> do {er <- rE e'; pure $ fmap (aT (match (eAnn er) t)) er}
+        Just e' -> do {er <- rE e'; pure $ fmap (rwArr.aT (match (eAnn er) t)) er}
         Nothing -> pure e
 
 -- beta reduction
