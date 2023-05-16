@@ -2,9 +2,9 @@
 ## Broken/Core Features
 - [½] map
 - [½] fold
-- [ ] rank
+- [½] rank
 - [ ] convolve
-- [◦] transpose
+- [x] transpose
 - [x] concat
 - [x] array literals
   - [ ] multidimensional arrays
