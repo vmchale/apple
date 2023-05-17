@@ -94,6 +94,7 @@ SEXP apple_R(SEXP args) {
         Sw(ty->args[k]){
             C FA: {U* x=malloc(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
             C F_t: {F* xf=malloc(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
+            C I_t: {I* xi=malloc(sizeof(I));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
         }
     }
     ffi_call(cif,fp,ret,vals);
@@ -102,6 +103,7 @@ SEXP apple_R(SEXP args) {
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR
         C F_t: r=ScalarReal(*(F*)ret);BR
+        C I_t: r=ScalarInteger((int)(*(I*)ret));BR
     }
     free(ret);freety(ty);
     munmap(fp,f_sz);
