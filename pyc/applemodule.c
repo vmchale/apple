@@ -155,7 +155,6 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
     int argc=ty->argc;
     U* vals=malloc(sizeof(U)*argc);
     U ret=malloc(8);
-    U x;I xi;F xf;
     PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
     for(int k=0;k<argc;k++){
         pyarg=pyargs[k];
@@ -199,7 +198,6 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
     int argc=ty->argc;
     U* vals=malloc(sizeof(U)*argc);
     U ret=malloc(8);
-    U x;I xi;F xf;
     PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
     // FIXME: fails for 2 float args
     for(int k=0;k<argc;k++){
