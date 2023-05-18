@@ -54,8 +54,12 @@ harnessString oup src errPtr = do
             (poke errPtr =<< tcstr (ptxt err)) $> nullPtr
         Right d -> tcstr (aText d)
 
-apple_dumpasm :: CString -> Ptr CString -> IO CString
-apple_dumpasm = harnessString dumpX86G
+apple_dumpasm, apple_x86, apple_aarch64 :: CString -> Ptr CString -> IO CString
+apple_dumpasm = case arch of {"aarch64" -> apple_aarch64; "x86_64" -> apple_x86}
+
+apple_x86 = harnessString dumpX86G
+
+apple_aarch64 = harnessString dumpAarch64
 
 apple_dumpir :: CString -> Ptr CString -> IO CString
 apple_dumpir = harnessString dumpIR
