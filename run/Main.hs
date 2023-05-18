@@ -143,7 +143,7 @@ showHelp = liftIO $ putStr $ concat
     , helpOption ":list" "" "List all names that are in scope"
     , helpOption ":quit, :q" "" "Quit REPL"
     , helpOption ":yank, :y" "<fn> <file>" "Read file"
-    , helpOption "\\l" "" "Show reference"
+    , helpOption "\\l" "" "Reference card"
     -- TODO: dump debug state
     ]
 
