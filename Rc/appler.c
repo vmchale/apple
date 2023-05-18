@@ -17,8 +17,13 @@ typedef size_t S;
 // ScalarReal : double -> SEXP
 // ScalarInteger : int -> SEXP
 // SEXPTYPE = INTSXP | REALSXP
+// EXTPTR_PTR : SEXP -> void*
 
 // http://adv-r.had.co.nz/C-interface.html
+
+typedef struct AppleCache {
+    U code;S code_sz;FnTy* ty;
+} AppleCache;
 
 SEXP rf(U x) {
     I* i_p=x;
@@ -60,6 +65,24 @@ SEXP ty_R(SEXP a) {
     R mkString(ret);
 }
 
+SEXP cache_R(SEXP a){
+    char* err; char** err_p=&err;
+    const char* inp=CHAR(asChar(a));
+    FnTy* ty=apple_ty(inp,err_p);
+    if(ty == NULL){
+        SEXP ret=mkString(err);free(err);
+        R ret;
+    };
+    U fp;S f_sz;
+    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
+    AppleCache* rc=malloc(sizeof(AppleCache));
+    rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;
+    // http://homepage.divms.uiowa.edu/~luke/R/simpleref.html
+    // https://github.com/hadley/r-internals/blob/master/external-pointers.md
+    SEXP r=R_MakeExternalPtr((U)rc,R_NilValue,R_NilValue);
+    R r;
+}
+
 SEXP asm_R(SEXP a) {
     char* err; char** err_p=&err;
     const char* inp=CHAR(asChar(a));
@@ -69,6 +92,36 @@ SEXP asm_R(SEXP a) {
         R ret;
     }
     R mkString(ret);
+}
+
+SEXP run_R(SEXP args){
+    args=CDR(args);
+    SEXP rc=CAR(args);
+    AppleCache* c=(AppleCache*)(R_ExternalPtrAddr(rc));
+    FnTy* ty=c->ty;U fp=c->code;
+    SEXP r;
+    ffi_cif* cif=apple_ffi(ty);
+    int argc=ty->argc;
+    U* vals=malloc(sizeof(U)*argc);
+    U ret=malloc(8);
+    for(int k=0;k<argc;k++){
+        args=CDR(args);SEXP arg=CAR(args);
+        Sw(ty->args[k]){
+            C FA: {U* x=malloc(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
+            C F_t: {F* xf=malloc(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
+            C I_t: {I* xi=malloc(sizeof(I));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
+        }
+    }
+    ffi_call(cif,fp,ret,vals);
+    DO(k,argc,free(vals[k]));
+    free(vals);free(cif);
+    Sw(ty->res){
+        C FA: r=rf(*(U*)ret);BR
+        C F_t: r=ScalarReal(*(F*)ret);BR
+        C I_t: r=ScalarInteger((int)(*(I*)ret));BR
+    }
+    free(ret);
+    R r;
 }
 
 SEXP apple_R(SEXP args) {
@@ -83,12 +136,11 @@ SEXP apple_R(SEXP args) {
     }
     U fp; S f_sz;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
-    U r;
+    SEXP r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
     U* vals=malloc(sizeof(U)*argc);
     U ret=malloc(sizeof(F));
-    U x;I xi;F xf;
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
