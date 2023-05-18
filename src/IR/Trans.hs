@@ -159,6 +159,8 @@ doI t el eu rel ss = do
     l <- newLabel; eL <- newLabel
     pure $ MT t el:MJ (IRel rel (Reg t) eu) eL:L l:ss++[tick t, MJ (IRel (nr rel) (Reg t) eu) l, L eL]
 
+doNI t eu ss = do {iR <- newITemp; (MT iR eu:)<$>doI t 0 (Reg iR) IGeq ss}
+
 doN t e = doI t 0 e IGeq; doN1 t e = doI t 1 e IGt; fN1 t e = doI t 1 e IGeq
 
 man (a,t) rnk n = Ma a t (IB IAsl n 3 + ConstI (8+8*rnk))
@@ -426,7 +428,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy 
     iR <- newITemp
     ss <- writeRF op [slopP] fR
     let loopBody = Cpy (AP slopP (Just 16) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI$fromIntegral n+2):ss++[WrF (AP t (Just (sib iR)) arrL) (FReg fR)]
-    loop <- doN iR (Reg szR - ConstI (fromIntegral n-1)) loopBody
+    loop <- doNI iR (Reg szR - ConstI (fromIntegral n-1)) loopBody
     modify (addMT a t)
     pure (Just a, putX++MT szR sz:Ma a t (IB IAsl (Reg szR) 3-ConstI (8*fromIntegral n-24)):Wr (AP t Nothing (Just a)) 1:Wr (AP t (Just 8) (Just a)) (Reg szR-ConstI (fromIntegral n-1)):Sa slopP (ConstI nIr):Wr (AP slopP Nothing Nothing) 1:Wr (AP slopP (Just 8) Nothing) (ConstI$fromIntegral n):loop ++ [Pop (ConstI nIr)])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tX <- eAnn seed, isIF tX = do
