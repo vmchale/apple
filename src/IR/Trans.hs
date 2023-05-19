@@ -415,19 +415,19 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) t = do
     let loopBody = [WrF (AP t (Just (sib i)) (Just a)) (FReg startR), MX startR (FReg startR + FReg incrR)]
     loop <- doN i (Reg n) loopBody
     pure (Just a, putStart ++ putIncr ++ putN ++ man (a,t) 1 (Reg n):dim1 (Just a) t (Reg n) ++ loop)
-aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | f1 (eAnn arr) && f1 oTy = do
+aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) arr) t | Just{} <- if1 (eAnn arr), Just ot <- if1 oTy = do
     a <- nextArr
     arrP <- newITemp
     slopP <- newITemp
     szR <- newITemp
-    fR <- newFTemp
+    fR <- tTemp ot
     (arrL, putX) <- aeval arr arrP
     -- rank 1
     let sz=gd1 arrL arrP
         nIr = fromIntegral$16+n*8
     iR <- newITemp
     ss <- writeRF op [slopP] fR
-    let loopBody = Cpy (AP slopP (Just 16) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI$fromIntegral n+2):ss++[WrF (AP t (Just (sib iR)) arrL) (FReg fR)]
+    let loopBody = Cpy (AP slopP (Just 16) Nothing) (AP arrP (Just (sib iR)) arrL) (ConstI$fromIntegral n+2):ss++[wt ot (AP t (Just (sib iR)) arrL) fR]
     loop <- doNI iR (Reg szR - ConstI (fromIntegral n-1)) loopBody
     modify (addMT a t)
     pure (Just a, putX++MT szR sz:Ma a t (IB IAsl (Reg szR) 3-ConstI (8*fromIntegral n-24)):Wr (AP t Nothing (Just a)) 1:Wr (AP t (Just 8) (Just a)) (Reg szR-ConstI (fromIntegral n-1)):Sa slopP (ConstI nIr):Wr (AP slopP Nothing Nothing) 1:Wr (AP slopP (Just 8) Nothing) (ConstI$fromIntegral n):loop ++ [Pop (ConstI nIr)])
