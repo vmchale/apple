@@ -25,7 +25,7 @@ U f_npy(PyObject* o) {
     x_i[0]=rnk;
     DO(i,rnk,x_i[i+1]=(I)dims[i]);
     U data=PyArray_DATA(o);
-    memcpy(x_f+rnk+1,data,sz);
+    memcpy(x_f+rnk+1,data,n*8);
     R x;
 }
 
@@ -39,7 +39,7 @@ U i_npy(PyObject* o) {
     x_i[0]=rnk;
     DO(i,rnk,x_i[i+1]=(I)dims[i]);
     U data=PyArray_DATA(o);
-    memcpy(x_i+rnk+1,data,sz);
+    memcpy(x_i+rnk+1,data,n*8);
     R x;
 }
 
