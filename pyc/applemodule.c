@@ -44,28 +44,30 @@ U i_npy(PyObject* o) {
 }
 
 PyObject* npy_i(U x) {
-    I* i_p = x;
-    I t = 1;
-    I rnk = i_p[0];
+    I* i_p=x;
+    I t=1;
+    I rnk=i_p[0];
     long* dims=malloc(sizeof(long)*rnk);
     DO(i,rnk,t*=i_p[i+1];dims[i]=(long)i_p[i+1]);
     S sz=8*t;
     U data=malloc(sz);
     memcpy(data,i_p+rnk+1,sz);
     PyObject* res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);
+    PyArray_ENABLEFLAGS((PyArrayObject*)res,NPY_ARRAY_OWNDATA);
     free(x);R res;
 }
 
 PyObject* npy_f(U x) {
-    I* i_p = x;
-    I t = 1;
-    I rnk = i_p[0];
+    I* i_p=x;
+    I t=1;
+    I rnk=i_p[0];
     long* dims=malloc(sizeof(long)*rnk);
     DO(i,rnk,t*=i_p[i+1];dims[i]=(long)i_p[i+1]);
     S sz=8*t;
     U data=malloc(sz);
     memcpy(data,i_p+rnk+1,sz);
     PyObject* res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);
+    PyArray_ENABLEFLAGS((PyArrayObject*)res,NPY_ARRAY_OWNDATA);
     free(x);R res;
 }
 
