@@ -550,12 +550,12 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (0, _)])) op) xs) ys) t 
     mSz <- doN j (Reg rnkR) [MT szR (Reg szR * EAt (AP xR (Just (IB IAsl (Reg j) 3 + 8)) lX))]
     modify (addMT a t)
     pure (Just a, plX ++ plY ++ MT rnkR (EAt (AP xR Nothing lX)):MT szR 1:mSz++[Ma a t (IB IAsl (Reg rnkR+Reg szR) 3 + 8), Cpy (AP t Nothing (Just a)) (AP xR Nothing lX) (Reg rnkR+1), MT offsR (IB IAsl (Reg rnkR) 3 + 8), MT xRd (Reg xR+Reg offsR), MT yRd (Reg yR+Reg offsR), MT tD (Reg t+Reg offsR)] ++ loop)
-aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rnk) <- tRnk (eAnn xs), isAF (eAnn f) = do
+aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs), isIF tA && isAF (eAnn f) = do
     a <- nextArr
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     modify (addMT a t)
-    slopP <- newITemp; y <- newFTemp
+    slopP <- newITemp; y <- tTemp tA
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.notMember` ixsIs then Right ix else Left ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
@@ -573,7 +573,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (F, rn
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
-    loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [MX y (FAt (AP t (Just$IB IAsl (Reg di) 3 + ConstI (8+8*oRnk)) (Just a))), tick di]
+    loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [mt tA (AP t (Just$IB IAsl (Reg di) 3 + ConstI (8+8*oRnk)) (Just a)) y, tick di]
     pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) oRnk (Reg oSz):Wr (AP t Nothing (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI (8+i)) (Just a)) (Reg d)) oDims [0..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):Wr (AP slopP Nothing Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (AP slopP (Just$ConstI (8+i)) Nothing) (Reg d)) complDims [0..] ++ sss ++ [MT xRd (Reg xR + ConstI (8+8*rnk)), MT slopPd (Reg slopP + ConstI (8+8*slopRnk))] ++ MT di 0:loop ++ [Pop (Reg slopSz)])
 aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in f1 ty||i1 ty = do
     a <- nextArr
