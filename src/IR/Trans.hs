@@ -67,7 +67,7 @@ addFVar (Nm _ (U i) _) x (IRSt l t ar v a f ts) = IRSt l t ar v a (IM.insert i x
 type IRM = State IRSt
 
 mAR :: T a -> Maybe (T a, T a)
-mAR (Arrow (Arr _ t) F) = Just (t, F); mAR (Arrow (Arr _ t) I) = Just (t, F); mAR _ = Nothing
+mAR (Arrow (Arr _ t) F) = Just (t, F); mAR (Arrow (Arr _ t) I) = Just (t, I); mAR _ = Nothing
 
 isAF :: T a -> Bool
 isAF (Arrow Arr{} F) = True; isAF _ = False
@@ -300,7 +300,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arro
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
     pure (Just a, plE ++ plSeed ++ MT szR (sz+1):Ma a t (IB IAsl (Reg szR) 3 + 16):dim1 (Just a) t (Reg szR) ++ loop)
-aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (ta0, ta1) <- mA1A1 (eAnn f), isAF ta0 && isAF ta1 = do
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (ta0, ta1) <- mA1A1 (eAnn f), isIF ta0 && isIF ta1 = do
     a <- nextArr
     slopP <- newITemp; y <- newITemp; y0 <- newITemp
     xR <- newITemp; szXR <- newITemp; szSlopR <- newITemp; szYR <- newITemp; i <- newITemp
@@ -310,7 +310,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (ta0, ta1) <- mA1A1 (eAnn 
     (lY, ss) <- writeF f [(Nothing, slopP)] y -- writeF ... f/ss is "linear" it can only be placed once b/c assembler needs unique labels (labels are linear)
     loop <- doN i (Reg szXR) $ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just (IB IAsl (Reg i * Reg szSlopR) 3 + 24)) lX) (Reg szSlopR):ss++[Cpy (AP t (Just (IB IAsl (Reg i * Reg szYR) 3 + 24)) (Just a)) (AP y (Just 16) lY) (Reg szYR)]
     pure (Just a, plX ++ MT szXR (gd1 lX xR):MT szSlopR (EAt (AP xR (Just 16) lX)):Sa slopP (IB IAsl (Reg szSlopR) 3 + 16):dim1 Nothing slopP (Reg szSlopR) ++ Cpy (AP slopP (Just 16) Nothing) (AP xR (Just 24) lX) (Reg szSlopR):ss0 ++ [MT szYR (gd1 lY0 y0), Ma a t (IB IAsl (Reg szXR * Reg szYR) 3 + 24), Wr (AP t Nothing (Just a)) 2, Wr (AP t (Just 8) (Just a)) (Reg szXR), Wr (AP t (Just 16) (Just a)) (Reg szYR)] ++ loop ++ [Pop (IB IAsl (Reg szSlopR) 3 + 16)])
-aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (ta, tR) <- mAR (eAnn f), isAF ta = do
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (ta, tR) <- mAR (eAnn f), isIF ta = do
     a <- nextArr
     slopP <- newITemp; y <- tTemp tR
     xR <- newITemp; szXR <- newITemp; szSlopR <- newITemp; i <- newITemp
