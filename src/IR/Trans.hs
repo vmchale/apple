@@ -338,7 +338,7 @@ aeval (EApp _ (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isIF tX = do
     xR <- tTemp tX
     nR <- newITemp
     i <- newITemp
-    let sz = Reg nR + 16
+    let sz = IB IAsl (Reg nR) 3 + 16
     putN <- eval n nR; putX <- eval x xR
     let step = wt tX (AP t (Just (sib i)) (Just a)) xR
     loop <- doN i (Reg nR) [step]
@@ -436,7 +436,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tX <- eAnn seed, 
     arg <- tTemp tX
     i <- newITemp
     nR <- newITemp
-    let sz = Reg nR + 16
+    let sz = IB IAsl (Reg nR) 3 + 16
     modify (addMT a t)
     putSeed <- eval seed arg; putN <- eval n nR
     ss <- writeRF op [arg] arg
