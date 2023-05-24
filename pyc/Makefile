@@ -1,4 +1,4 @@
-GHC_VER := 9.6.1
+GHC_VER := 9.6.2
 HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
 
 all: apple.so
