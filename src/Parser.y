@@ -127,6 +127,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     gen { TokB $$ BuiltinGen }
     log { TokSym $$ SymLog }
     re { TokB $$ BuiltinRep }
+    diag { TokB $$ BuiltinD }
     nil { TokB $$ BuiltinNil }
     cons { TokB $$ BuiltinCons }
     arr { TokB $$ BuiltinArr }
@@ -274,6 +275,7 @@ E :: { E AlexPosn }
   | tail { Builtin $1 A.Tail }
   | init { Builtin $1 A.Init }
   | re { Builtin $1 Re }
+  | diag { Builtin $1 Di }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 (void $3) }
   | E tsig parens(Sh) {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (void$Arr $3 (TVar a))} }

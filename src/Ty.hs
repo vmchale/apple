@@ -390,6 +390,10 @@ tyB _ IOf = do
     a <- TVar <$> freshN "a" ()
     i <- IVar () <$> freshN "i" ()
     pure (Arrow (Arrow a B) (Arrow (Arr (i `Cons` Nil) a) I), mempty)
+tyB _ Di = do
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
+    pure (Arrow (Arr (i `Cons` i `Cons` Nil) a) (Arr (i `Cons` Nil) a), mempty)
 tyB _ LastM = do
     a <- TVar <$> freshN "a" ()
     i <- IVar () <$> freshN "i" ()

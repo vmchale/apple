@@ -173,10 +173,11 @@ instance Pretty Builtin where
     pretty Mod       = "mod"
     pretty IOf       = "@."
     pretty Abs       = "abs."
+    pretty Di        = "di."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
-             | Max | Min | Neg | Sqrt | T | Flip
+             | Max | Min | Neg | Sqrt | T | Flip | Di
              | IRange | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
