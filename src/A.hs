@@ -81,6 +81,7 @@ data T a = Arr (Sh a) (T a)
          | F -- | double
          | I -- | int
          | B -- | bool
+         | Li (I a)
          | TVar (Nm a) -- | Kind \(*\), 'F' or 'I'
          | Arrow (T a) (T a)
          | P [T a]
@@ -94,6 +95,7 @@ instance Pretty (T a) where
     pretty (Arr i t)     = "Arr" <+> parens (pretty i) <+> pretty t
     pretty F             = "float"
     pretty I             = "int"
+    pretty (Li i)        = "int" <> parens (pretty i)
     pretty B             = "bool"
     pretty (TVar n)      = pretty n
     pretty (Arrow t0 t1) = parens (pretty t0 <+> "→" <+> pretty t1)

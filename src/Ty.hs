@@ -273,6 +273,7 @@ occ (Arr _ a)             = occ a -- shouldn't need shape?
 occ I                     = IS.empty
 occ F                     = IS.empty
 occ B                     = IS.empty
+occ Li{}                  = IS.empty
 occ (P ts)                = foldMap occ ts
 occ (Ρ (Nm _ (U i) _) rs) = IS.insert i $ foldMap occ rs
 
@@ -283,6 +284,9 @@ mgu l s (Arrow t0 t1) (Arrow t0' t1') = do
 mgu _ s I I = Right s
 mgu _ s F F = Right s
 mgu _ s B B = Right s
+mgu _ s Li{} I = Right s
+mgu _ s I Li{} = Right s
+mgu _ s (Li i0) (Li i1) = do {iS <- mguI (iSubst s) i0 i1; pure $ Subst mempty iS mempty <> s}
 mgu _ s (TVar n) (TVar n') | n == n' = Right s
 mgu (l, _) s t'@(TVar (Nm _ (U i) _)) t | i `IS.member` occ t = Left$ OT l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
@@ -311,6 +315,7 @@ mgu (l, e) _ F t@Arr{} = Left $ UF l e F t
 mgu (l, e) _ t@Arr{} F = Left $ UF l e t F
 mgu (l, e) _ I t@Arr{} = Left $ UF l e I t
 mgu (l, e) _ t@Arr{} I = Left $ UF l e t I
+-- mgu _ _ t0 t1 = error (show (t0,t1))
 
 zS _ s [] _           = pure s
 zS _ s _ []           = pure s
@@ -583,7 +588,7 @@ tyB _ Dim = do
     iV <- IVar () <$> freshN "i" ()
     shV <- SVar <$> freshN "sh" ()
     a <- TVar <$> freshN "a" ()
-    pure (Arrow (Arr (iV `Cons` shV) a) I, mempty)
+    pure (Arrow (Arr (iV `Cons` shV) a) (Li iV), mempty)
 tyB _ Size = do
     shV <- SVar <$> freshN "sh" ()
     a <- TVar <$> freshN "a" ()
@@ -644,6 +649,7 @@ rwArr (Arrow t t') = Arrow (rwArr t) (rwArr t')
 rwArr I            = I
 rwArr B            = B
 rwArr F            = F
+rwArr t@Li{}       = t
 rwArr t@TVar{}     = t
 rwArr (P ts)       = P (rwArr<$>ts)
 rwArr (Arr Nil t)  = rwArr t
@@ -751,6 +757,24 @@ tyE s (EApp _ (EApp _ (EApp _ (Builtin _ FRange) e0) e1) (ILit _ n)) = do
         l0 = eAnn e0; l1 = eAnn e1
     s0' <- liftEither $ mguPrep (l0,e0) s1 F (eAnn e0' $> l0); s1' <- liftEither $ mguPrep (l1,e1) s0' F (eAnn e1' $> l1)
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow tyE1 (Arrow I arrTy)) (Builtin (Arrow tyE0 (Arrow tyE1 (Arrow I arrTy))) FRange) e0') e1') (ILit I n), s1')
+tyE s (EApp l eϵ@(EApp _ (EApp _ (Builtin _ FRange) e0) e1) n) = do
+    (nA, sϵ) <- tyE s n
+    case aT (void sϵ) $ eAnn nA of
+        iT@(Li ix) -> do
+            (e0',s0) <- tyE sϵ e0; (e1',s1) <- tyE s0 e1
+            let tyE0 = eAnn e0'; tyE1 = eAnn e1'
+                arrTy = Arr (vx ix) F
+                l0 = eAnn e0; l1 = eAnn e1
+            s0' <- liftEither $ mguPrep (l0,e0) s1 F (eAnn e0' $> l0); s1' <- liftEither $ mguPrep (l1,e1) s0' F (eAnn e1' $> l1)
+            pure (EApp arrTy (EApp (Arrow iT arrTy) (EApp (Arrow tyE1 (Arrow iT arrTy)) (Builtin (Arrow tyE0 (Arrow tyE1 (Arrow iT arrTy))) FRange) e0') e1') nA, s1')
+        _ -> do
+            a <- TVar <$> freshN "a" l
+            b <- TVar <$> freshN "b" l
+            (eϵ', s0) <- tyE sϵ eϵ
+            let eϵTy = Arrow a b
+            s1 <- liftEither $ mguPrep (l,eϵ) s0 (eAnn eϵ'$>l) eϵTy
+            s2 <- liftEither $ mguPrep (l,n) s1 (eAnn nA$>l) a
+            pure (EApp (void b) eϵ' nA, s2)
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ Gen) x) f) (ILit _ n)) = do
     (x',s0) <- tyE s x; (f',s1) <- tyE s0 f
     let tyX = eAnn x'; tyF = eAnn f'
@@ -758,6 +782,24 @@ tyE s (EApp _ (EApp _ (EApp _ (Builtin _ Gen) x) f) (ILit _ n)) = do
         lX = eAnn x; lF = eAnn f
     s1' <- liftEither $ mguPrep (lF, f) s1 (Arrow (tyX $> lX) (tyX $> lX)) (tyF $> lF)
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow tyF (Arrow I arrTy)) (Builtin (Arrow tyX (Arrow tyF (Arrow I arrTy))) Gen) x') f') (ILit I n), s1')
+tyE s (EApp l e@(EApp _ (EApp _ (Builtin _ Gen) x) f) n) = do
+    (nA, sϵ) <- tyE s n
+    case aT (void sϵ) $ eAnn nA of
+        iT@(Li ix) -> do
+            (x',s0) <- tyE sϵ x; (f',s1) <- tyE s0 f
+            let tyX = eAnn x'; tyF = eAnn f'
+                arrTy = Arr (vx ix) tyX
+                lX = eAnn x; lF = eAnn f
+            s1' <- liftEither $ mguPrep (lF, f) s1 (Arrow (tyX $> lX) (tyX $> lX)) (tyF $> lF)
+            pure (EApp arrTy (EApp (Arrow iT arrTy) (EApp (Arrow tyF (Arrow iT arrTy)) (Builtin (Arrow tyX (Arrow tyF (Arrow iT arrTy))) Gen) x') f') nA, s1')
+        _ -> do
+            a <- TVar <$> freshN "a" l
+            b <- TVar <$> freshN "b" l
+            (e', s0) <- tyE sϵ e
+            let eTy = Arrow a b
+            s1 <- liftEither $ mguPrep (l,e) s0 (eAnn e'$>l) eTy
+            s2 <- liftEither $ mguPrep (l,n) s1 (eAnn nA$>l) a
+            pure (EApp (void b) e' nA, s2)
 tyE s (EApp _ (EApp _ (Builtin _ Cyc) e@ALit{}) (ILit _ m)) = do
     (e0, s0) <- tyE s e
     let t@(Arr (Ix () n `Cons` Nil) a) = eAnn e0
