@@ -344,7 +344,7 @@ benchE s = do
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
                     m <- lift $ gets mf
-                    case eAnn e of
+                    case rLi $ eAnn e of
                         Arr{} -> do
                             liftIO $ do
                                 (sz, fp) <- eFunP i' m eC
