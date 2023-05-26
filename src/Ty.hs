@@ -226,6 +226,8 @@ mguI inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep
 mguI inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguIPrep inp i (Ix lk (j-k))
                                                 | otherwise = Left $ UI l i0 i1
 mguI inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguIPrep inp i1 i0
+mguI _ i0@(IEVar l _) i1@Ix{} = Left $ UI l i0 i1
+mguI _ i0@(Ix l _) i1@IEVar{} = Left $ UI l i0 i1
 
 mgShPrep :: a -> Subst a -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mgShPrep l s sh0 sh1 =
@@ -665,8 +667,7 @@ hasE _                    = False
 
 -- {-# SCC chkE #-}
 chkE :: T () -> Either (TyE a) ()
-chkE t@Arrow{} | hasE t = Left (ExistentialArg t)
-chkE _ = Right ()
+chkE t = if hasE t then Left (ExistentialArg t) else Right ()
 
 checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
 checkTy (TVar n) (c, _) = pure $ Just(n, c)
