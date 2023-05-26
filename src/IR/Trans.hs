@@ -529,6 +529,11 @@ aeval (LLet _ (n, e') e) t | isArr (eAnn e') = do
     (l, ss) <- aeval e' t'
     modify (addAVar n (l, t'))
     second (ss ++) <$> aeval e t
+aeval (LLet _ (n, e') e) t | ty <- eAnn e', isIF ty = do
+    eR <- tTemp ty
+    plE <- eval e' eR
+    modify (addVar n eR)
+    second (plE ++) <$> aeval e t
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eAnn f, isIF tX && isIF tY = do
     a <- nextArr; xR <- newITemp; rnkR <- newITemp; szR <- newITemp; j <- newITemp
     i <- newITemp; x <- tTemp tX; y <- tTemp tY; xRd <- newITemp; tD <- newITemp; offsR <- newITemp
@@ -650,33 +655,23 @@ peval (Tup _ es) t = do
     let szs = szT (eAnn<$>es)
     (ls, pls) <- unzip <$> zipWithM (\e sz -> case eAnn e of {F -> do {fr <- newFTemp; p <- eval e fr; pure (Nothing, p++[WrF (AP t (Just$ConstI sz) Nothing) (FReg fr)])};I -> do {r <- newITemp; p <- eval e r; pure (Nothing, p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)])}; Arr{} -> do {r <- newITemp; (l, p) <- aeval e r; pure (l, p++[Wr (AP t (Just$ConstI sz) Nothing) (Reg r)])}}) es szs
     pure (catMaybes ls, concat pls)
-peval (LLet _ (n, e') e) t | isF (eAnn e') = do
-    f <- newFTemp
-    plF <- eval e' f
-    modify (addVar n f)
-    second (plF ++) <$> peval e t
+peval (LLet _ (n, e') e) t | ty <- eAnn e', isIF ty = do
+    eR <- tTemp ty
+    plE <- eval e' eR
+    modify (addVar n eR)
+    second (plE ++) <$> peval e t
 peval (LLet _ (n, e') e) t | isArr (eAnn e') = do
     t' <- newITemp
     (l, ss) <- aeval e' t'
     modify (addAVar n (l, t'))
     second (ss ++) <$> peval e t
-peval (LLet _ (n, e') e) t | isI (eAnn e') = do
-    t' <- newITemp
-    plT <- eval e' t'
-    modify (addVar n t')
-    second (plT ++) <$> peval e t
 
 eval :: E (T ()) -> Temp -> IRM [Stmt]
-eval (LLet _ (n, e') e) t | isF (eAnn e') = do
-    f <- newFTemp
-    plF <- eval e' f
-    modify (addVar n f)
-    (plF ++) <$> eval e t
-eval (LLet _ (n, e') e) t | isI (eAnn e') = do
-    t' <- newITemp
-    plT <- eval e' t'
-    modify (addVar n t')
-    (plT ++) <$> eval e t
+eval (LLet _ (n, e') e) t | ty <- eAnn e', isIF ty = do
+    eR <- tTemp ty
+    plE <- eval e' eR
+    modify (addVar n eR)
+    (plE ++) <$> eval e t
 eval (LLet _ (n, e') e) t | isArr (eAnn e') = do
     t' <- newITemp
     (l, ss) <- aeval e' t'
