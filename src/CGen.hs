@@ -32,10 +32,10 @@ pCty :: T.Text -> T a -> Either TTE (Doc ann)
 pCty nm t = ("#include<apple_abi.h>" <#>) . pretty <$> nmtCTy nm t
 
 nmtCTy :: T.Text -> T a -> Either TTE CF
-nmtCTy nm t = do{(ins,out) <- irTy t; CF nm<$>traverse cTy ins<*>cTy out}
+nmtCTy nm t = do{(ins,out) <- irTy (rLi t); CF nm<$>traverse cTy ins<*>cTy out}
 
 tCTy :: T a -> Either TTE ([CType], CType)
-tCTy t = do{(ins,out) <- irTy t; (,)<$>traverse cTy ins<*>cTy out}
+tCTy t = do{(ins,out) <- irTy (rLi t); (,)<$>traverse cTy ins<*>cTy out}
 
 cTy :: T a -> Either TTE CType
 cTy F               = pure CR

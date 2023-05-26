@@ -15,6 +15,7 @@ import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
+import           Data.Tuple.Extra          (first3)
 import           Dbg
 import           Foreign.LibFFI            (callFFI, retCDouble, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc     (free)
@@ -296,7 +297,7 @@ printExpr s = do
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            case tyClosed i eC of
+            case first3 (fmap rLi) <$> tyClosed i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
                     m <- lift $ gets mf

@@ -15,6 +15,7 @@ module A ( T (..)
          , ResVar (..)
          , prettyTyped
          , prettyC
+         , rLi
          ) where
 
 import           Control.DeepSeq   (NFData)
@@ -101,6 +102,14 @@ instance Pretty (T a) where
     pretty (Arrow t0 t1) = parens (pretty t0 <+> "→" <+> pretty t1)
     pretty (P ts)        = tupledBy " * " (pretty <$> ts)
     pretty (Ρ n fs)      = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
+
+rLi :: T a -> T a
+rLi Li{}          = I
+rLi (Arrow t0 t1) = Arrow (rLi t0) (rLi t1)
+rLi (Arr sh t)    = Arr sh (rLi t)
+rLi (Ρ n ts)      = Ρ n (rLi <$> ts)
+rLi (P ts)        = P (rLi <$> ts)
+rLi t             = t
 
 prettyFields :: [(Int, T a)] -> Doc ann
 prettyFields = mconcat . punctuate "," . fmap g where g (i, t) = pretty i <> ":" <+> pretty t

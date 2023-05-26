@@ -95,7 +95,7 @@ isArr Arr{} = True
 isArr _     = False
 
 writeC :: E (T ()) -> ([Stmt], WSt, IM.IntMap Temp)
-writeC = π.flip runState (IRSt [0..] [0..] [0..] IM.empty IM.empty IM.empty IM.empty) . writeCM where π (s, IRSt l t _ _ _ _ a) = (s, WSt l t, a)
+writeC = π.flip runState (IRSt [0..] [0..] [0..] IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, IRSt l t _ _ _ _ a) = (s, WSt l t, a)
 
 -- %xmm0 – %xmm7
 writeCM :: E (T ()) -> IRM [Stmt]
