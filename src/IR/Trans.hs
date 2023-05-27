@@ -975,7 +975,7 @@ eval (EApp _ (Builtin _ Cos) e) t = do
 eval (EApp _ (Builtin _ Size) e) t | unDim (eAnn e) = do
     r <- newITemp
     (mI, plE) <- aeval e r
-    pure $ plE ++ [MT t (EAt (AP r (Just 8) mI))]
+    pure $ plE ++ [MT t (gd1 mI r)]
 eval (EApp _ (Builtin _ Size) e) t = do
     r <- newITemp
     (mI, plE) <- aeval e r
@@ -983,6 +983,10 @@ eval (EApp _ (Builtin _ Size) e) t = do
     l <- newLabel; endL <- newLabel
     i <- newITemp
     pure $ plE ++ [MT rnkR (EAt (AP r Nothing mI)), MT i 8, MT t (EAt (AP r (Just 8) mI)), L l, MJ (IRel IGt (Reg i) (Reg rnkR)) endL, MT i (Reg i + 8), MT t (Reg t * EAt (AP r (Just (Reg i)) mI)),J l, L endL]
+eval (EApp _ (Builtin _ Dim) e) t = do
+    r <- newITemp
+    (mI, plE) <- aeval e r
+    pure $ plE ++ [MT t (gd1 mI r)]
 eval (EApp I (EApp _ (Builtin _ Max) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
