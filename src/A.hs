@@ -173,7 +173,6 @@ instance Pretty Builtin where
     pretty Eq        = "="
     pretty Neq       = "≠"
     pretty Lte       = "≤"
-    pretty Flip      = "~"
     pretty CatE      = "⧺"
     pretty R         = "𝔯"
     pretty Rot       = "⊖"
@@ -185,10 +184,11 @@ instance Pretty Builtin where
     pretty IOf       = "@."
     pretty Abs       = "abs."
     pretty Di        = "di."
+    pretty RevE      = "~"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
-             | Max | Min | Neg | Sqrt | T | Flip | Di
+             | Max | Min | Neg | Sqrt | T | Di
              | IRange | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
@@ -196,7 +196,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
-             | Mul | VMul | Outer | R | Head | HeadM | Tail | Init
+             | Mul | VMul | Outer | R | Head | HeadM | Tail | Init | RevE
              | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd | IOf | Abs
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?

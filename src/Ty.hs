@@ -380,9 +380,6 @@ tyB l R = do
     pushVarConstraint n l IsNum
     pure (Arrow n' (Arrow n' (Arr (SVar sh) n')), mempty)
 tyB _ Iter = do{a <- TVar<$>freshN "a"(); let s = Arrow a a in pure (Arrow s (Arrow I s), mempty)}
-tyB _ Flip = do
-    a <- TVar <$> freshN "a" (); b <- TVar <$> freshN "b" (); c <- TVar <$> freshN "c" ()
-    pure (Arrow (Arrow a (Arrow b c)) (Arrow b (Arrow a c)), mempty)
 tyB _ ConsE = do
     a <- TVar <$> freshN "a" ()
     i <- IVar () <$> freshN "i" ()
@@ -589,6 +586,12 @@ tyB _ Dim = do
     shV <- SVar <$> freshN "sh" ()
     a <- TVar <$> freshN "a" ()
     pure (Arrow (Arr (iV `Cons` shV) a) (Li iV), mempty)
+tyB _ RevE = do
+    iV <- IVar () <$> freshN "i" ()
+    shV <- SVar <$> freshN "sh" ()
+    a <- TVar <$> freshN "a" ()
+    let aTy = Arr (iV `Cons` shV) a
+    pure (Arrow aTy aTy, mempty)
 tyB _ Size = do
     shV <- SVar <$> freshN "sh" ()
     a <- TVar <$> freshN "a" ()

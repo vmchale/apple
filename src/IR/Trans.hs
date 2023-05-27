@@ -132,6 +132,7 @@ tick reg = MT reg (Reg reg + 1)
 sd ireg = IB IAsl (Reg ireg) 3
 sib ireg = sd ireg+16
 sib1 ireg = sd ireg+24
+sibE e = IB IAsl e 3+16
 sibE1 e = IB IAsl e 3+24
 gd1 l a = EAt (AP a (Just 8) l)
 
@@ -639,6 +640,13 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
     modify (addMT a t)
     loop <- doN j (ConstI n) (plRnd ++ [WrF (AP t (Just$IB IAsl (Reg j) 3+8*ConstI (rnk+1)) (Just a)) (FReg xR)])
     pure (Just a, plE0 ++ plE1 ++ man (a,t) rnk (ConstI n):Wr (AP t Nothing (Just a)) (ConstI rnk):zipWith (\k d -> Wr (AP t (Just$ConstI$k*8) (Just a)) (ConstI d)) [1..] ixs++loop)
+aeval (EApp ty (Builtin _ RevE) e) t | if1p ty = do
+    a <- nextArr
+    eR <- newITemp; n <- newITemp; n1 <- newITemp; i <- newITemp; o <- tTemp ty
+    (lE, plE) <- aeval e eR
+    modify (addMT a t)
+    loop <- doN i (Reg n) [mt ty (AP eR (Just (sibE$Reg n1-Reg i)) lE) o, wt ty (AP t (Just$sib i) (Just a)) o]
+    pure (Just a, plE ++ MT n (gd1 lE eR):man (a,t) 1 (Reg n):dim1 lE t (Reg n)++MT n1 (Reg n-1):loop)
 aeval (EApp (Arr _ ty) (Builtin _ A.Di) e) t | isIF ty = do
     a <- nextArr
     eR <- newITemp; n <- newITemp; i <- newITemp; o <- tTemp ty

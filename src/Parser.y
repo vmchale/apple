@@ -289,7 +289,7 @@ E :: { E AlexPosn }
   | cos { Builtin $1 Cos }
   | tan { Builtin $1 Tan }
   | cyc { Builtin $1 A.Cyc }
-  | tilde { Builtin $1 Flip }
+  | tilde { Builtin $1 RevE }
   | odd { Builtin $1 Odd }
   | even { Builtin $1 Even }
   | abs { Builtin $1 Abs }
