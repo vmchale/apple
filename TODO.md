@@ -29,6 +29,7 @@
 - [ ] reshape arrays
 - [ ] clz? (count leading zeroes = floor(log) -> digits)
 - [ ] flatness check (arrays)
+- [ ] generalize "diagonal"?
 ## Syntax
 - [ ] more laconic syntax for type signatures (no Arr... Cons)
 - [x] `zipWith` builtin (2-ary)
@@ -44,6 +45,11 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ] currying
+```
+ > gen. 1 (2*)
+1:10: occurs check failed when unifying 'a' and '(a → a)'
+```
 - [ ]  `> (𝔯 _10 10) :: int 26`
 - [ ] `> ⟨⟨2,1,1⟩,⟨5,4,1⟩⟩%.⟨⟨2,0⟩,⟨2,0⟩,⟨7,3::float⟩⟩ -> Arr (2×2) [6.0, 10.0, 12.0, 31.0]`
 - [ ] `:asm [x(%.)(y::Arr(i`Cons`j`Cons`Nil)float)]` type inference??

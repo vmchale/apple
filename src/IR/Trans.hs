@@ -67,7 +67,7 @@ addFVar (Nm _ (U i) _) x (IRSt l t ar v a f ts) = IRSt l t ar v a (IM.insert i x
 type IRM = State IRSt
 
 mAR :: T a -> Maybe (T a, T a)
-mAR (Arrow (Arr _ t) F) = Just (t, F); mAR (Arrow (Arr _ t) I) = Just (t, I); mAR _ = Nothing
+mAR (Arrow (Arr (_ `Cons` Nil) t) F) = Just (t, F); mAR (Arrow (Arr (_ `Cons` Nil) t) I) = Just (t, I); mAR _ = Nothing
 
 isAF :: T a -> Bool
 isAF (Arrow Arr{} F) = True; isAF _ = False
@@ -75,10 +75,6 @@ isAF (Arrow Arr{} F) = True; isAF _ = False
 mA1A1 :: T a -> Maybe (T a, T a)
 mA1A1 (Arrow (Arr (_ `Cons` Nil) t0) (Arr (_ `Cons` Nil) t1)) = Just (t0, t1)
 mA1A1 _                                                       = Nothing
-
-mA1F :: T a -> Maybe (T a)
-mA1F (Arrow (Arr (_ `Cons` Nil) t) F) = Just t
-mA1F _                                = Nothing
 
 isIF :: T a -> Bool
 isIF I = True; isIF F = True; isIF _ = False
@@ -243,7 +239,7 @@ aeval (Var Arr{} x) t = do
     st <- gets avars
     let (i, r) = getT st x
     pure (i, [MT t (Reg r)])
-aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | i1 res || f1 res = do
+aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
     a <- nextArr
     xR <- newITemp; i <- newITemp; nR <- newITemp; nO <- newITemp
     (lX, plX) <- aeval xs xR
@@ -364,14 +360,14 @@ aeval (EApp _ (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isIF tX = do
     let nϵ=gd1 l xsR; n=Reg nϵR + 1
     modify (addMT a t)
     pure (Just a, plXs ++ plX ++ MT nϵR nϵ:MT nR n:man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just 16) (Just a)) (AP xsR (Just 16) l) (Reg nϵR), wt tX (AP t (Just (IB IAsl (Reg nR) 3 + 8)) (Just a)) xR])
-aeval (EApp oTy (Builtin _ Init) x) t | f1 oTy || i1 oTy = do
+aeval (EApp oTy (Builtin _ Init) x) t | if1p oTy = do
     a <- nextArr
     xR <- newITemp; nR <- newITemp
     (lX, plX) <- aeval x xR
     modify (addMT a t)
     let n=gd1 lX xR
     pure (Just a, plX ++ MT nR (n-1):man (a,t) 1 (Reg nR):dim1 (Just a) t (Reg nR) ++ [Cpy (AP t (Just 16) (Just a)) (AP xR (Just 16) lX) (Reg nR)])
-aeval (EApp oTy (Builtin _ Tail) x) t | f1 oTy || i1 oTy = do
+aeval (EApp oTy (Builtin _ Tail) x) t | if1p oTy = do
     a <- nextArr
     xR <- newITemp; nR <- newITemp
     (lX, plX) <- aeval x xR
@@ -582,7 +578,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
     loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [mt tA (AP t (Just$IB IAsl (Reg di) 3 + ConstI (8+8*oRnk)) (Just a)) y, tick di]
     pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) oRnk (Reg oSz):Wr (AP t Nothing (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI (8+i)) (Just a)) (Reg d)) oDims [0..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):Wr (AP slopP Nothing Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (AP slopP (Just$ConstI (8+i)) Nothing) (Reg d)) complDims [0..] ++ sss ++ [MT xRd (Reg xR + ConstI (8+8*rnk)), MT slopPd (Reg slopP + ConstI (8+8*slopRnk))] ++ MT di 0:loop ++ [Pop (Reg slopSz)])
-aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in f1 ty||i1 ty = do
+aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in if1p ty = do
     a <- nextArr
     xR <- newITemp; iR <- newITemp; szR <- newITemp; iC <- newITemp
     plI <- eval i iR
@@ -640,7 +636,7 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
     modify (addMT a t)
     loop <- doN j (ConstI n) (plRnd ++ [WrF (AP t (Just$IB IAsl (Reg j) 3+8*ConstI (rnk+1)) (Just a)) (FReg xR)])
     pure (Just a, plE0 ++ plE1 ++ man (a,t) rnk (ConstI n):Wr (AP t Nothing (Just a)) (ConstI rnk):zipWith (\k d -> Wr (AP t (Just$ConstI$k*8) (Just a)) (ConstI d)) [1..] ixs++loop)
-aeval (EApp ty (Builtin _ RevE) e) t | if1p ty = do
+aeval (EApp oTy (Builtin _ RevE) e) t | Just ty <- if1 oTy = do
     a <- nextArr
     eR <- newITemp; n <- newITemp; n1 <- newITemp; i <- newITemp; o <- tTemp ty
     (lE, plE) <- aeval e eR
@@ -652,7 +648,7 @@ aeval (EApp (Arr _ ty) (Builtin _ A.Di) e) t | isIF ty = do
     eR <- newITemp; n <- newITemp; i <- newITemp; o <- tTemp ty
     (lE, plE) <- aeval e eR
     modify (addMT a t)
-    loop <- doN i (Reg n) $ [mt ty (AP eR (Just (sibE1$Reg i*Reg n+Reg i)) lE) o, wt ty (AP t (Just$sib i) (Just a)) o]
+    loop <- doN i (Reg n) [mt ty (AP eR (Just (sibE1$Reg i*Reg n+Reg i)) lE) o, wt ty (AP t (Just$sib i) (Just a)) o]
     pure (Just a, plE ++ MT n (gd1 lE eR):man (a,t) 1 (Reg n):dim1 lE t (Reg n)++loop)
 aeval e _ = error (show e)
 
@@ -1181,15 +1177,14 @@ eval e _ = error (show e)
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
 foldMapA = (fmap fold .) . traverse
 
--- 1-dim'l array of floats
-f1 :: T a -> Bool
-f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
-
-i1 :: T a -> Bool
-i1 (Arr (_ `Cons` Nil) I) = True; i1 _ = False
-
 if1 :: T a -> Maybe (T a)
 if1 (Arr (_ `Cons` Nil) I) = Just I; if1 (Arr (_ `Cons` Nil) F) = Just F; if1 _ = Nothing
+
+if1p :: T a -> Bool
+if1p t | Just{} <- if1 t = True | otherwise = False
+
+f1 :: T a -> Bool
+f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
 bT :: Integral b => T a -> b
 bT (P ts) = sum (bT<$>ts)
