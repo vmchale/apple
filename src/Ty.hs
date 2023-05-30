@@ -799,8 +799,8 @@ tyE s (EApp l e@(EApp _ (EApp _ (Builtin _ Gen) x) f) n) = do
             a <- TVar <$> freshN "a" l
             b <- TVar <$> freshN "b" l
             (e', s0) <- tyE sϵ e
-            let eTy = Arrow a b
-            s1 <- liftEither $ mguPrep (l,e) s0 (eAnn e'$>l) eTy
+            let eT = Arrow a b
+            s1 <- liftEither $ mguPrep (l,e) s0 (eAnn e'$>l) eT
             s2 <- liftEither $ mguPrep (l,n) s1 (eAnn nA$>l) a
             pure (EApp (void b) e' nA, s2)
 tyE s (EApp _ (EApp _ (Builtin _ Cyc) e@ALit{}) (ILit _ m)) = do
