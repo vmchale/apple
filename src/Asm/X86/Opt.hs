@@ -1,11 +1,11 @@
 module Asm.X86.Opt ( optX86 ) where
 
-import           Asm.X86     hiding (toInt)
+import           Asm.X86      hiding (toInt)
+import           Asm.L
+import           CF
 import           Class.E
-import Data.Functor (void)
-import qualified Data.IntSet as IS
-import CF
-import Asm.X86.LI
+import           Data.Functor (void)
+import qualified Data.IntSet  as IS
 
 {-# SCC optAddr #-}
 optAddr :: Addr reg -> Addr reg
@@ -18,13 +18,14 @@ occ r a = toInt r `IS.member` foldMap (IS.singleton.toInt) a
 
 -- remove noops
 optX86 :: (E reg, E freg, Eq reg, Eq freg) => [X86 reg freg ()] -> [X86 reg freg ()]
-optX86 = opt.mkIntervals
+optX86 = opt.mkLive
 
-opt :: (E reg, E freg, Eq reg, Eq freg) => [X86 reg freg Interval] -> [X86 reg freg ()]
+opt :: (E reg, E freg, Eq reg, Eq freg) => [X86 reg freg Liveness] -> [X86 reg freg ()]
 opt [] = []
 opt (ISubRI _ _ 0:asms) = opt asms
-opt (MovqXA _ xrϵ a:Vfmadd231sd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2 `IS.member` fdone l) = Vfmadd231sdA () xr0 xr1 (optAddr a):opt asms
-opt (MovqXA _ xrϵ a:Vmaxsd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2 `IS.member` fdone l) = VmaxsdA () xr0 xr1 (optAddr a):opt asms
+opt (MovqXA _ xrϵ a:Vfmadd231sd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2 `IS.notMember` fout l) = Vfmadd231sdA () xr0 xr1 (optAddr a):opt asms
+opt (MovqXA _ xrϵ a:Vmaxsd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2 `IS.notMember` fout l) = VmaxsdA () xr0 xr1 (optAddr a):opt asms
+opt (MovqXA _ xrϵ a:Vaddsd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2 `IS.notMember` fout l) = VaddsdA () xr0 xr1 (optAddr a):opt asms
 opt ((MovqAX _ a r):asms) = MovqAX () (optAddr a) r:opt asms
 opt ((MovqXA _ r a):asms) = MovqXA () r (optAddr a):opt asms
 opt (isn@(MovRA _ r0 a0):MovAR _ a1 r1:asms) | r0 == r1 && not (occ r0 a0) && optAddr a0 == optAddr a1 = opt (isn:asms)
