@@ -191,6 +191,7 @@ mkIx ix (Vmulsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
 mkIx ix (Vmaxsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
+mkIx ix (VaddsdA{}:asms)                      = mkIx (ix+7) asms
 mkIx ix (VmaxsdA{}:asms)                      = mkIx (ix+7) asms
 mkIx ix (Vcmppd _ _ _ r _ :asms) | fits r     = mkIx (ix+5) asms
                                  | otherwise  = mkIx (ix+6) asms
@@ -547,6 +548,8 @@ asm ix st (Vmaxsd _ r0 r1 r2:asms) | fits r2 =
     mkVex 0x5f F2 r0 r1 r2:asm (ix+4) st asms
                                    | otherwise =
     mkVex3 0x5f F2 F r0 r1 r2:asm (ix+5) st asms
+asm ix st (VaddsdA _ r0 r1 a:asms) =
+    mkVexA 0x58 F2 F r0 r1 a:asm (ix+7) st asms
 asm ix st (VmaxsdA _ r0 r1 a:asms) =
     mkVexA 0x5f F2 F r0 r1 a:asm (ix+7) st asms
 asm ix st (Vcmppd _ r0 r1 r2 p:asms) | fits r2 =
