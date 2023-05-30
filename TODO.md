@@ -45,10 +45,16 @@
 # Performance
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
-- [ ] currying
+- [ ] special lexemes
 ```
  > gen. 1 (2*)
 1:10: occurs check failed when unifying 'a' and '(a → a)'
+```
+```
+ > (\x. gen. 1 (*x) 3) (2::int)
+((λx. (((gen. 1) (λx. (x * x))) 3)) 2) : Arr (3 `Cons` Nil) b
+ > (\s. gen. 1 (*s) 3) (2::int)
+Arr (3) [1, 2, 4]
 ```
 - [ ]  `> (𝔯 _10 10) :: int 26`
 - [ ] `> ⟨⟨2,1,1⟩,⟨5,4,1⟩⟩%.⟨⟨2,0⟩,⟨2,0⟩,⟨7,3::float⟩⟩ -> Arr (2×2) [6.0, 10.0, 12.0, 31.0]`
