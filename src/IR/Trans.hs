@@ -281,7 +281,7 @@ aeval (EApp _ (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- 
     let sz = EAt (AP arrP (Just 8) l)
     ss <- writeRF op [acc, x] acc
     iR <- newITemp; szR <- newITemp
-    let loopBody = mt tX (AP arrP (Just$sib iR) l) x:wt tAcc (AP t (Just (IB IAsl (Reg iR) 3 + 8)) (Just a)) acc:ss
+    let loopBody = wt tAcc (AP t (Just (IB IAsl (Reg iR) 3 + 8)) (Just a)) acc:mt tX (AP arrP (Just$sib iR) l) x:ss
     loop <- doN1 iR (Reg szR) loopBody
     modify (addMT a t)
     pure (Just a, plE ++ MT szR sz:man (a, t) 1 (Reg szR):dim1 (Just a) t (Reg szR) ++ MX acc (FAt (AP arrP (Just 16) l)):loop)
@@ -294,7 +294,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arro
     let sz = EAt (AP arrP (Just 8) l)
     ss <- writeRF op [acc, n] acc
     iR <- newITemp; szR <- newITemp
-    let loopBody = mt tY (AP arrP (Just$sib iR) l) n:wt tX (AP t (Just (sib iR)) (Just a)) acc:ss
+    let loopBody = wt tX (AP t (Just (sib iR)) (Just a)) acc:mt tY (AP arrP (Just$sib iR) l) n:ss
     loop <- doN iR (Reg szR) loopBody
     modify (addMT a t)
     pure (Just a, plE ++ plSeed ++ MT szR (sz+1):Ma a t (IB IAsl (Reg szR) 3 + 16):dim1 (Just a) t (Reg szR) ++ loop)

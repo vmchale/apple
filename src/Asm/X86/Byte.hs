@@ -154,6 +154,14 @@ mkVexA opc pp mm xr0 xr1 (RSD b s i d)=
           (ei, bi) = modRM i
           modRMB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 0x4
           sib = encS s `shiftL` 6 .|. bi `shiftL` 3 .|. bb
+mkVexA opc pp mm xr0 xr1 (RC b@Rsp i) =
+    [0xc4,by0,by1,opc,modRMB,sib]++le i
+    where by0 = bitC e0 `shiftL` 7 .|. bitC eb `shiftL` 6 .|. bitC eb `shiftL` 5 .|. bitsm mm
+          by1 = 1 `shiftL` 7 .|. vexV4 xr1 `shiftL` 3 .|. ppbits pp
+          (e0,b0) = modRM xr0
+          (eb,bb) = modRM b
+          modRMB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 0x4
+          sib = bb `shiftL` 3 .|. bb
 
 mkIx :: Int -> [X86 X86Reg FX86Reg a] -> (Int, M.Map Label Int)
 mkIx ix (Pop _ r:asms) | fits r               = mkIx (ix+1) asms
@@ -183,6 +191,7 @@ mkIx ix (Vmulsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
 mkIx ix (Vmaxsd _ _ _ r:asms) | fits r        = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
+mkIx ix (VmaxsdA{}:asms)                      = mkIx (ix+7) asms
 mkIx ix (Vcmppd _ _ _ r _ :asms) | fits r     = mkIx (ix+5) asms
                                  | otherwise  = mkIx (ix+6) asms
 mkIx ix (Vfmadd231sd{}:asms)                  = mkIx (ix+5) asms
@@ -538,6 +547,8 @@ asm ix st (Vmaxsd _ r0 r1 r2:asms) | fits r2 =
     mkVex 0x5f F2 r0 r1 r2:asm (ix+4) st asms
                                    | otherwise =
     mkVex3 0x5f F2 F r0 r1 r2:asm (ix+5) st asms
+asm ix st (VmaxsdA _ r0 r1 a:asms) =
+    mkVexA 0x5f F2 F r0 r1 a:asm (ix+7) st asms
 asm ix st (Vcmppd _ r0 r1 r2 p:asms) | fits r2 =
     (mkVex 0xc2 S6 r0 r1 r2 ++ le (imm8 p)):asm (ix+5) st asms
                                      | otherwise =

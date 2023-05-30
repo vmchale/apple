@@ -300,6 +300,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Sqrtsd { ann :: a, fDest :: freg, fSrc :: freg }
                     | Maxsd { ann :: a, fDest :: freg, fSrc :: freg }
                     | Vmaxsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
+                    | VmaxsdA { ann :: a, fDest :: freg, fSrc :: freg, aSrc :: Addr reg }
                     | Minsd { ann :: a, fDest :: freg, fSrc :: freg }
                     | Vminsd { ann :: a, fDest :: freg, rSrc1 :: freg, rSrc2 :: freg }
                     | Not { ann :: a, rSrc :: reg }
@@ -391,6 +392,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (Sqrtsd _ r0 r1)              = i4 ("sqrtsd" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Maxsd _ r0 r1)               = i4 ("maxsd" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Vmaxsd _ r0 r1 r2)           = i4 ("vmaxsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2)
+    pretty (VmaxsdA _ r0 r1 a)           = i4 ("vmaxsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
     pretty (Minsd _ r0 r1)               = i4 ("minsd" <+> pretty r0 <> "," <+> pretty r1)
     pretty (Vminsd _ r0 r1 r2)           = i4 ("vminsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2)
     pretty (Not _ r)                     = i4 ("not" <+> pretty r)
@@ -494,7 +496,7 @@ mapR _ (Vfmadd213sd l xr0 xr1 xr2)  = Vfmadd213sd l xr0 xr1 xr2
 mapR _ (Vfmsub213sd l xr0 xr1 xr2)  = Vfmsub213sd l xr0 xr1 xr2
 mapR _ (Vfmsub231sd l xr0 xr1 xr2)  = Vfmsub231sd l xr0 xr1 xr2
 mapR _ (Vfmsub132sd l xr0 xr1 xr2)  = Vfmsub132sd l xr0 xr1 xr2
-mapR f (Vfmadd231sdA l xr0 xr a)    = Vfmadd231sdA l xr0 xr (f<$> a)
+mapR f (Vfmadd231sdA l xr0 xr a)    = Vfmadd231sdA l xr0 xr (f<$>a)
 mapR f (Sal l r i)                  = Sal l (f r) i
 mapR f (Sar l r i)                  = Sar l (f r) i
 mapR _ (Sqrtsd l xr0 xr1)           = Sqrtsd l xr0 xr1
@@ -502,6 +504,7 @@ mapR _ (Maxsd l xr0 xr1)            = Maxsd l xr0 xr1
 mapR _ (Minsd l xr0 xr1)            = Minsd l xr0 xr1
 mapR _ (Vmaxsd l xr0 xr1 xr2)       = Vmaxsd l xr0 xr1 xr2
 mapR _ (Vminsd l xr0 xr1 xr2)       = Vminsd l xr0 xr1 xr2
+mapR f (VmaxsdA l xr0 xr1 a)        = VmaxsdA l xr0 xr1 (f<$>a)
 mapR f (Not l r)                    = Not l (f r)
 mapR f (And l r0 r1)                = And l (f r0) (f r1)
 mapR f (Rdrand l r)                 = Rdrand l (f r)
@@ -601,6 +604,7 @@ fR f (Sar _ r _)            = f r
 fR _ Sqrtsd{}               = mempty
 fR _ Maxsd{}                = mempty
 fR _ Vmaxsd{}               = mempty
+fR f (VmaxsdA _ _ _ a)      = f @<> a
 fR _ Minsd{}                = mempty
 fR _ Vminsd{}               = mempty
 fR f (Not _ r)              = f r
@@ -674,6 +678,7 @@ mapFR _ (Sal l r i)                  = Sal l r i
 mapFR _ (Sar l r i)                  = Sar l r i
 mapFR f (Maxsd l xr0 xr1)            = Maxsd l (f xr0) (f xr1)
 mapFR f (Vmaxsd l xr0 xr1 xr2)       = Vmaxsd l (f xr0) (f xr1) (f xr2)
+mapFR f (VmaxsdA l xr0 xr1 a)        = VmaxsdA l (f xr0) (f xr1) a
 mapFR f (Minsd l xr0 xr1)            = Minsd l (f xr0) (f xr1)
 mapFR f (Vminsd l xr0 xr1 xr2)       = Vminsd l (f xr0) (f xr1) (f xr2)
 mapFR _ (Not l r)                    = Not l r

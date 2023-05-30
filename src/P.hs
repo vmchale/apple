@@ -153,8 +153,8 @@ eDumpX86 i = fmap prettyAsm . ex86G i
 eDumpAarch64 :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 
-walloc f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . ir
-wallocE i f = fmap (optX86 . f . (\(x, st) -> irToX86 st x)) . eir i
+walloc f = fmap (optX86 . optX86 . f . (\(x, st) -> irToX86 st x)) . ir
+wallocE i f = fmap (optX86 . optX86 . f . (\(x, st) -> irToX86 st x)) . eir i
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
 ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t (optIR s),r)
