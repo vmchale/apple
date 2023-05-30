@@ -9,7 +9,6 @@ import qualified Data.IntSet      as IS
 import           Data.Semigroup   ((<>))
 import qualified Data.Set         as S
 import           Data.Tuple.Extra (fst3, snd3, thd3)
-import           Debug.Trace      (traceShow, traceShowId)
 
 -- move list: map from abstract registers (def ∪ used) to nodes
 type Movs = IM.IntMap MS
