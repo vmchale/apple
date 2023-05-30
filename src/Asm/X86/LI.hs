@@ -1,4 +1,4 @@
-module Asm.X86.LI ( mkIntervals ) where
+module Asm.X86.LI ( mkIntervals, mkLive ) where
 
 import           Asm.X86
 import qualified Asm.X86.CF as X86
@@ -8,4 +8,7 @@ import           LI
 import           LR
 
 mkIntervals :: (E reg, E freg) => [X86 reg freg ()] -> [X86 reg freg Interval]
-mkIntervals = intervals . reconstruct . X86.mkControlFlow
+mkIntervals = intervals . mkLive
+
+mkLive :: (E reg, E freg) => [X86 reg freg ()] -> [X86 reg freg NLiveness]
+mkLive = reconstruct . X86.mkControlFlow
