@@ -16,7 +16,7 @@ mkControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> [BB AArch64 r
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
 expand :: (E reg, E freg) => BB AArch64 reg freg () Liveness -> [AArch64 reg freg Liveness]
-expand (BB (asm:asms) li) = scanl' (\pAsm next -> lN (ann pAsm) next) lS asms
+expand (BB (asm:asms) li) = scanl' (\pAsm n -> lN (ann pAsm) n) lS asms
     where lN s a =
             let ai=out s
                 ao=uses a `IS.union` (ai `IS.difference` defs a)
@@ -65,12 +65,12 @@ addControlFlow (BB [Tbz _ r n l] _:asms) = do
     ; l_i <- lookupLabel l
     ; pure (BB [Tbz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : asms')
     }
-addControlFlow (BB [Ret l] _:asms) = do
+addControlFlow (BB [Ret _] _:asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
     ; pure (BB [Ret ()] (ControlAnn i [] (UD (singleton CArg0) (fromList [FArg0, FArg1]) IS.empty IS.empty)) : nextAsms)
     }
-addControlFlow (b@(BB asms _):bbs) = do
+addControlFlow (BB asms _:bbs) = do
     { i <- getFresh
     ; (f, bbs') <- next bbs
     ; pure (BB asms (ControlAnn i (f []) (udb asms)) : bbs')
