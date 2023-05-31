@@ -59,8 +59,8 @@ iterNodes is = thread (fmap stepNode is)
 
 stepNode :: Int -> LivenessMap -> LivenessMap
 stepNode n ns = {-# SCC "stepNode" #-} IM.insert n (c, Liveness ins' out' fins' fout') ns
-    where (c, l) = lookupNode n ns
-          ins' = usesNode c <> (out l IS.\\ defsNode c)
-          fins' = usesFNode c <> (fout l IS.\\ defsFNode c)
+    where (c, l) = lookupNode n ns; u = ud c
+          ins' = usesNode u <> (out l IS.\\ defsNode u)
+          fins' = usesFNode u <> (fout l IS.\\ defsFNode u)
           out' = IS.unions (fmap ins (succNode c ns))
           fout' = IS.unions (fmap fins (succNode c ns))

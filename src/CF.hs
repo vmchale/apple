@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module CF ( ControlAnn (..)
+          , UD (..)
           , Liveness (..)
           , NLiveness (..)
           , Interval (..)
@@ -31,10 +32,13 @@ instance Pretty Interval where
         where pp = mconcat . punctuate "," . fmap pretty . IS.toList
 
 -- | Control-flow annotations
-data ControlAnn = ControlAnn { node      :: !Int
-                             , conn      :: [Int]
-                             , usesNode  :: IS.IntSet
-                             , usesFNode :: IS.IntSet
-                             , defsNode  :: IS.IntSet
-                             , defsFNode :: IS.IntSet
+data ControlAnn = ControlAnn { node :: !Int
+                             , conn :: [Int]
+                             , ud   :: !UD
                              } deriving (Generic, NFData)
+
+data UD = UD { usesNode  :: IS.IntSet
+             , usesFNode :: IS.IntSet
+             , defsNode  :: IS.IntSet
+             , defsFNode :: IS.IntSet
+             } deriving (Generic, NFData)
