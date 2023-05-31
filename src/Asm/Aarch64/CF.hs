@@ -19,13 +19,13 @@ expand :: (E reg, E freg) => BB AArch64 reg freg () Liveness -> [AArch64 reg fre
 expand (BB (asm:asms) li) = scanl' (\pAsm n -> lN (ann pAsm) n) lS asms
     where lN s a =
             let ai=out s
-                ao=uses a `IS.union` (ai `IS.difference` defs a)
+                ao=defs a `IS.union` (ai `IS.difference` uses a)
                 aif=fout s
-                aof=usesF a `IS.union` (aif `IS.difference` defsF a)
+                aof=defsF a `IS.union` (aif `IS.difference` usesF a)
             in a $> Liveness ai ao aif aof
           lS = let ai=ins li
                    aif=fins li
-               in asm $> Liveness ai (uses asm `IS.union` (ai `IS.difference` defs asm)) aif (usesF asm `IS.union` (aif `IS.difference` defsF asm))
+               in asm $> Liveness ai (defs asm `IS.union` (ai `IS.difference` uses asm)) aif (defsF asm `IS.union` (aif `IS.difference` usesF asm))
 expand (BB [] _) = []
 
 addControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM [BB AArch64 reg freg () ControlAnn]
