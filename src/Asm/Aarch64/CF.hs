@@ -1,71 +1,93 @@
 module Asm.Aarch64.CF ( mkControlFlow
-                      , uses
-                      , defs
+                      , expand, udd
                       ) where
 
 import           Asm.Aarch64
+import           Asm.BB
 import           Asm.CF
 import           Asm.M
 import           CF
 import           Class.E      as E
 import           Data.Functor (($>))
 import qualified Data.IntSet  as IS
+import           Data.List    (foldl', scanl')
 
-mkControlFlow :: (E reg, E freg) => [AArch64 reg freg ()] -> [AArch64 reg freg ControlAnn]
+mkControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> [BB AArch64 reg freg () ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
-addControlFlow :: (E reg, E freg) => [AArch64 reg freg ()] -> FreshM [AArch64 reg freg ControlAnn]
+expand :: (E reg, E freg) => BB AArch64 reg freg () Liveness -> [AArch64 reg freg Liveness]
+expand (BB (asm:asms) li) = scanl' (\pAsm next -> lN (ann pAsm) next) (lN li asm) asms
+    where lN s asm =
+            let ai=ins li
+                ao=uses asm `IS.union` (ai `IS.difference` defs asm)
+                aif=fins li
+                aof=usesF asm `IS.union` (aif `IS.difference` defsF asm)
+            in asm $> Liveness ai ao aif aof
+expand (BB [] _) = []
+
+addControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM [BB AArch64 reg freg () ControlAnn]
 addControlFlow [] = pure []
-addControlFlow ((Label _ l):asms) = do
+addControlFlow (BB [Label _ l] _:asms) = do
     { i <- lookupLabel l
     ; (f, asms') <- next asms
-    ; pure (Label (ControlAnn i (f []) IS.empty IS.empty IS.empty IS.empty) l : asms')
+    ; pure (BB [Label () l] (ControlAnn i (f []) (UD IS.empty IS.empty IS.empty IS.empty)) : asms')
     }
-addControlFlow ((Bc _ c l):asms) = do
+addControlFlow (BB [Bc _ c l] _:asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Bc (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) c l : asms')
+    ; pure (BB [Bc () c l] (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) : asms')
     }
-addControlFlow ((B _ l):asms) = do
+addControlFlow (BB [B _ l] _:asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
     ; l_i <- lookupLabel l
-    ; pure (B (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
+    ; pure (BB [B () l] (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) : nextAsms)
     }
-addControlFlow ((Cbnz _ r l):asms) = do
+addControlFlow (BB [Cbnz _ r l] _:asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Cbnz (ControlAnn i (f [l_i]) (singleton r) IS.empty IS.empty IS.empty) r l: asms')
+    ; pure (BB [Cbnz () r l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : asms')
     }
-addControlFlow ((Tbnz _ r n l):asms) = do
+addControlFlow (BB [Tbnz _ r n l] _:asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Tbnz (ControlAnn i (f [l_i]) (singleton r) IS.empty IS.empty IS.empty) r n l: asms')
+    ; pure (BB [Tbnz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : asms')
     }
-addControlFlow ((Tbz _ r n l):asms) = do
+addControlFlow (BB [Tbz _ r n l] _:asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Tbz (ControlAnn i (f [l_i]) (singleton r) IS.empty IS.empty IS.empty) r n l: asms')
+    ; pure (BB [Tbz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : asms')
     }
-addControlFlow (Ret{}:asms) = do
+addControlFlow (BB [Ret l] _:asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
-    ; pure (Ret (ControlAnn i [] (singleton CArg0) (fromList [FArg0, FArg1]) IS.empty IS.empty) : nextAsms)
+    ; pure (BB [Ret ()] (ControlAnn i [] (UD (singleton CArg0) (fromList [FArg0, FArg1]) IS.empty IS.empty)) : nextAsms)
     }
-addControlFlow (asm:asms) = do
+addControlFlow (b@(BB asms _):bbs) = do
     { i <- getFresh
-    ; (f, asms') <- next asms
-    ; pure ((asm $> ControlAnn i (f []) (uses asm) (usesF asm) (defs asm) (defsF asm)) : asms')
+    ; (f, bbs') <- next bbs
+    ; pure (BB asms (ControlAnn i (f []) (udb asms)) : bbs')
     }
 
 uA :: E reg => Addr reg -> IS.IntSet
 uA (R r)      = singleton r
 uA (RP r _)   = singleton r
 uA (BI b i _) = fromList [b, i]
+
+udb asms = UD (uBB asms) (uBBF asms) (dBB asms) (dBBF asms)
+udd asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
+
+uBB, dBB :: E reg => [AArch64 reg freg a] -> IS.IntSet
+uBB = foldl' (\pU n -> uses n `IS.union` (pU `IS.difference` defs n)) IS.empty
+dBB = foldl' (\pD n -> pD `IS.union` defs n) IS.empty
+
+uBBF, dBBF :: E freg => [AArch64 reg freg a] -> IS.IntSet
+uBBF = foldl' (\pU n -> usesF n `IS.union` (pU `IS.difference` defsF n)) IS.empty
+dBBF = foldl' (\pD n -> pD `IS.union` defsF n) IS.empty
 
 defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
 uses (MovRR _ _ r)       = singleton r
@@ -112,6 +134,13 @@ uses Fabs{}              = IS.empty
 uses (Csel _ _ r1 r2 _)  = fromList [r1, r2]
 uses Fcsel{}             = IS.empty
 uses (TstI _ r _)        = singleton r
+uses Label{}             = IS.empty
+uses Bc{}                = IS.empty
+uses B{}                 = IS.empty
+uses (Cbnz _ r _)        = singleton r
+uses (Tbnz _ r _ _)      = singleton r
+uses (Tbz _ r _ _)       = singleton r
+uses Ret{}               = singleton CArg0
 
 defs FMovXX{}            = IS.empty
 defs FMovXC{}            = IS.empty
@@ -158,6 +187,13 @@ defs Fabs{}              = IS.empty
 defs (Csel _ r _ _ _)    = singleton r
 defs Fcsel{}             = IS.empty
 defs TstI{}              = IS.empty
+defs Label{}             = IS.empty
+defs Bc{}                = IS.empty
+defs B{}                 = IS.empty
+defs Cbnz{}              = IS.empty
+defs Tbnz{}              = IS.empty
+defs Tbz{}               = IS.empty
+defs Ret{}               = IS.empty
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
@@ -204,6 +240,13 @@ defsF (Fabs _ d _)       = singleton d
 defsF Csel{}             = IS.empty
 defsF TstI{}             = IS.empty
 defsF (Fcsel _ d0 _ _ _) = singleton d0
+defsF Label{}            = IS.empty
+defsF Bc{}               = IS.empty
+defsF B{}                = IS.empty
+defsF Cbnz{}             = IS.empty
+defsF Tbnz{}             = IS.empty
+defsF Tbz{}              = IS.empty
+defsF Ret{}              = fromList [FArg0, FArg1]
 
 usesF (FMovXX _ _ r)       = singleton r
 usesF FMovXC{}             = IS.empty
@@ -249,19 +292,26 @@ usesF (Fabs _ _ d)         = singleton d
 usesF Csel{}               = IS.empty
 usesF TstI{}               = IS.empty
 usesF (Fcsel _ _ d0 d1 _)  = fromList [d0, d1]
+usesF Label{}              = IS.empty
+usesF Bc{}                 = IS.empty
+usesF B{}                  = IS.empty
+usesF Cbnz{}               = IS.empty
+usesF Tbnz{}               = IS.empty
+usesF Tbz{}                = IS.empty
+usesF Ret{}                = IS.empty
 
-next :: (E reg, E freg) => [AArch64 reg freg ()] -> FreshM ([Int] -> [Int], [AArch64 reg freg ControlAnn])
-next asms = do
-    nextAsms <- addControlFlow asms
-    case nextAsms of
-        []      -> pure (id, [])
-        (asm:_) -> pure ((node (ann asm) :), nextAsms)
+next :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM ([Int] -> [Int], [BB AArch64 reg freg () ControlAnn])
+next bbs = do
+    nextBs <- addControlFlow bbs
+    case nextBs of
+        []    -> pure (id, [])
+        (b:_) -> pure ((node (caBB b) :), nextBs)
 
-broadcasts :: [AArch64 reg freg ()] -> FreshM [AArch64 reg freg ()]
+broadcasts :: [BB AArch64 reg freg a ()] -> FreshM [BB AArch64 reg freg a ()]
 broadcasts [] = pure []
-broadcasts (asm@(Label _ l):asms) = do
+broadcasts (b@(BB (Label _ l:_) _):asms) = do
     { i <- getFresh
     ; broadcast i l
-    ; (asm :) <$> broadcasts asms
+    ; (b :) <$> broadcasts asms
     }
 broadcasts (asm:asms) = (asm :) <$> broadcasts asms

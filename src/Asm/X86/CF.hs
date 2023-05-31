@@ -1,7 +1,8 @@
 -- | From the [Kempe compiler](http://vmchale.com/original/compiler.pdf) with
 -- improvements.
 module Asm.X86.CF ( mkControlFlow
-                  , defs, uses
+                  , uses, defs
+                  , udX86
                   ) where
 
 import           Asm.CF
@@ -23,72 +24,74 @@ addControlFlow [] = pure []
 addControlFlow ((Label _ l):asms) = do
     { i <- lookupLabel l
     ; (f, asms') <- next asms
-    ; pure (Label (ControlAnn i (f []) IS.empty IS.empty IS.empty IS.empty) l : asms')
+    ; pure (Label (ControlAnn i (f []) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
     }
 addControlFlow ((Je _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Je (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
+    ; pure (Je (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
     }
 addControlFlow ((Jl _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jl (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
+    ; pure (Jl (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
     }
 addControlFlow ((Jle _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jle (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
+    ; pure (Jle (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
     }
 addControlFlow ((Jne _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jne (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
+    ; pure (Jne (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
     }
 addControlFlow ((Jge _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jge (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
+    ; pure (Jge (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
     }
 addControlFlow ((Jg _ l):asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
     ; l_i <- lookupLabel l
-    ; pure (Jg (ControlAnn i (f [l_i]) IS.empty IS.empty IS.empty IS.empty) l : asms')
+    ; pure (Jg (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
     }
 addControlFlow ((J _ l):asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
     ; l_i <- lookupLabel l
-    ; pure (J (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
+    ; pure (J (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) l : nextAsms)
     }
 addControlFlow ((C _ l):asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
     ; l_i <- lookupLabel l
-    ; pure (C (ControlAnn i [l_i] IS.empty IS.empty IS.empty IS.empty) l : nextAsms)
+    ; pure (C (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) l : nextAsms)
     }
 addControlFlow (RetL _ l:asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
     ; l_is <- lC l
-    ; pure (RetL (ControlAnn i l_is IS.empty IS.empty IS.empty IS.empty) l:nextAsms)
+    ; pure (RetL (ControlAnn i l_is (UD IS.empty IS.empty IS.empty IS.empty)) l:nextAsms)
     }
 addControlFlow (Ret{}:asms) = do
     { i <- getFresh
     ; nextAsms <- addControlFlow asms
-    ; pure (Ret (ControlAnn i [] (singleton CRet) (fromList [FRet0, FRet1]) IS.empty IS.empty) : nextAsms) -- TODO: pass information down if redundant
+    ; pure (Ret (ControlAnn i [] (UD (singleton CRet) (fromList [FRet0, FRet1]) IS.empty IS.empty)) : nextAsms) -- TODO: pass information down if redundant
     }
 addControlFlow (asm:asms) = do
     { i <- getFresh
     ; (f, asms') <- next asms
-    ; pure ((asm $> ControlAnn i (f []) (uses asm) (usesF asm) (defs asm) (defsF asm)) : asms')
+    ; pure ((asm $> ControlAnn i (f []) (udX86 asm)) : asms')
     }
+
+udX86 asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
 
 uA :: E reg => Addr reg -> IS.IntSet
 uA (R r)         = singleton r

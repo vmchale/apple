@@ -2,6 +2,7 @@
 module Asm.G ( alloc, allocF ) where
 
 import           Asm.Ar
+import           Asm.BB
 import           CF
 import           Data.Copointed
 import qualified Data.IntMap      as IM
@@ -69,26 +70,26 @@ emptySt :: IS.IntSet -- ^ Precolored registers
         -> St
 emptySt preC rs = St IM.empty S.empty IM.empty (Mv S.empty S.empty S.empty S.empty S.empty) (Ns IS.empty IS.empty IS.empty) IM.empty rs (Wk preC IS.empty IS.empty IS.empty) [] IM.empty
 
-getIs :: Copointed p => [p NLiveness] -> IS.IntSet
-getIs = foldMap (g.liveness.copoint) where g (Liveness is os _ _) = is<>os
+getIs :: Copointed p => [p Liveness] -> IS.IntSet
+getIs = foldMap (g.copoint) where g (Liveness is os _ _) = is<>os
 
-getIFs :: Copointed p => [p NLiveness] -> IS.IntSet
-getIFs = foldMap (g.liveness.copoint) where g (Liveness _ _ fis fos) = fis<>fos
+getIFs :: Copointed p => [p Liveness] -> IS.IntSet
+getIFs = foldMap (g.copoint) where g (Liveness _ _ fis fos) = fis<>fos
 
-buildOver :: Copointed p => [[p (ControlAnn, NLiveness, Maybe M)]] -> St -> St
-buildOver blocks = thread [ \s -> snd $ build (out (liveness (snd3 (copoint (last isns))))) s (reverse isns) | isns <- blocks ]
+buildOver :: Copointed p => [[p (UD, Liveness, Maybe M)]] -> St -> St
+buildOver blocks = thread [ \s -> snd $ build (out (snd3 (copoint (last isns)))) s (reverse isns) | isns <- blocks ]
 
-buildOverF :: Copointed p => [[p (ControlAnn, NLiveness, Maybe M)]] -> St -> St
-buildOverF blocks = thread [ \s -> snd $ buildF (fout (liveness (snd3 (copoint (last isns))))) s (reverse isns) | isns <- blocks ]
+buildOverF :: Copointed p => [[p (UD, Liveness, Maybe M)]] -> St -> St
+buildOverF blocks = thread [ \s -> snd $ buildF (fout (snd3 (copoint (last isns)))) s (reverse isns) | isns <- blocks ]
 
 alloc :: (Ord reg, Arch arch areg afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
-      => [arch areg afreg (ControlAnn, NLiveness, Maybe (Int,Int))]
+      => [arch areg afreg (UD, Liveness, Maybe (Int,Int))]
       -> [reg] -- ^ available registers
       -> IS.IntSet -- ^ Precolored @areg@
       -> IM.IntMap reg -- ^ Precolored map
       -> Either IS.IntSet (IM.IntMap reg) -- ^ Map from abs reg. id (temp) to concrete reg.
 alloc aIsns regs preC preCM =
-    let st0 = buildOver (bb aIsns) (emptySt preC (IS.toList $ getIs nIsns IS.\\ preC))
+    let st0 = buildOver (unBB<$>bb aIsns) (emptySt preC (IS.toList $ getIs nIsns IS.\\ preC))
         st1 = mkWorklist st0
         st2 = emptyWkl st1
         (st3, rs) = assign preCM regs st2
@@ -97,13 +98,13 @@ alloc aIsns regs preC preCM =
     where nIsns = fmap snd3 <$> aIsns
 
 allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
-       => [arch areg afreg (ControlAnn, NLiveness, Maybe (Int,Int))]
+       => [arch areg afreg (UD, Liveness, Maybe (Int,Int))]
        -> [freg] -- ^ available registers
        -> IS.IntSet -- ^ Precolored @afreg@
        -> IM.IntMap freg -- ^ Precolored map
        -> Either IS.IntSet (IM.IntMap freg) -- ^ Map from abs freg. id (temp) to concrete reg.
 allocF aIsns regs preC preCM =
-    let st0 = buildOverF (bb aIsns) (emptySt preC (IS.toList $ getIFs nIsns IS.\\ preC))
+    let st0 = buildOverF (unBB<$>bb aIsns) (emptySt preC (IS.toList $ getIFs nIsns IS.\\ preC))
         st1 = mkWorklist st0
         st2 = emptyWkl st1
         (st3, rs) = assign preCM regs st2
@@ -119,7 +120,7 @@ emptyWkl s | not $ IS.null (simp (wkls s)) = emptyWkl (simplify s)
            | not $ IS.null (sp (wkls s)) = emptyWkl (sspill s)
            | otherwise = s
 
-buildF :: (Copointed p) => IS.IntSet -> St -> [p (ControlAnn, NLiveness, Maybe M)] -> (IS.IntSet, St)
+buildF :: (Copointed p) => IS.IntSet -> St -> [p (UD, Liveness, Maybe M)] -> (IS.IntSet, St)
 buildF l st [] = (l, st)
 buildF l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =
     let ca = fst3 (copoint isn)
@@ -143,7 +144,7 @@ buildF l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoi
 build :: (Copointed p)
       => IS.IntSet -- ^ Live-out for the block
       -> St
-      -> [p (ControlAnn, NLiveness, Maybe M)]
+      -> [p (UD, Liveness, Maybe M)]
       -> (IS.IntSet, St)
 build l st [] = (l, st)
 build l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =

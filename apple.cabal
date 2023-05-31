@@ -61,6 +61,8 @@ library
         Data.Copointed
         Asm.Ar
         Asm.Ar.P
+        Asm.L
+        Asm.BB
         Asm.X86
         Asm.X86.B
         Asm.X86.Alloc
