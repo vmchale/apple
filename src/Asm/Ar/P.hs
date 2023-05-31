@@ -1,13 +1,11 @@
 module Asm.Ar.P ( bundle ) where
 
-import           Asm.Aarch64.LI
 import           Asm.Ar
 import           Asm.L
 import           CF
 import           Class.E
 import           Data.Copointed
 import           Data.Tuple.Extra (both)
-import           LR
 
 bundle :: (E reg, E freg, Copointed (arch reg freg), Functor (arch reg freg), Arch arch reg freg)
        => [arch reg freg ()]
