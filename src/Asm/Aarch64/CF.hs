@@ -81,16 +81,16 @@ uA (R r)      = singleton r
 uA (RP r _)   = singleton r
 uA (BI b i _) = fromList [b, i]
 
-udb asms = UD (uBB asms) (uBBF asms) (dBB asms) (dBBF asms)
+udb asms = UD (gen asms) (genF asms) (kill asms) (killF asms)
 udd asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
 
-uBB, dBB :: E reg => [AArch64 reg freg a] -> IS.IntSet
-uBB = foldl' (\pU n -> uses n `IS.union` (pU `IS.difference` defs n)) IS.empty
-dBB = foldl' (\pD n -> pD `IS.union` defs n) IS.empty
+gen, kill :: E reg => [AArch64 reg freg a] -> IS.IntSet
+gen = foldl' (\pG n -> uses n `IS.union` (pG `IS.difference` defs n)) IS.empty
+kill = foldl' (\pK n -> pK `IS.union` defs n) IS.empty
 
-uBBF, dBBF :: E freg => [AArch64 reg freg a] -> IS.IntSet
-uBBF = foldl' (\pU n -> usesF n `IS.union` (pU `IS.difference` defsF n)) IS.empty
-dBBF = foldl' (\pD n -> pD `IS.union` defsF n) IS.empty
+genF, killF :: E freg => [AArch64 reg freg a] -> IS.IntSet
+genF = foldl' (\pG n -> usesF n `IS.union` (pG `IS.difference` defsF n)) IS.empty
+killF = foldl' (\pK n -> pK `IS.union` defsF n) IS.empty
 
 defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
 uses (MovRR _ _ r)       = singleton r
