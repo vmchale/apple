@@ -85,12 +85,12 @@ udb asms = UD (uBB asms) (uBBF asms) (dBB asms) (dBBF asms)
 udd asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
 
 uBB, dBB :: E reg => [AArch64 reg freg a] -> IS.IntSet
-uBB = foldl' (\pU n -> uses n `IS.union` (pU `IS.difference` defs n)) IS.empty
-dBB = foldl' (\pD n -> pD `IS.union` defs n) IS.empty
+uBB = fst . foldl' (\(pU, pD) n -> (pU `IS.union` (uses n `IS.difference` pD), defs n `IS.union` pU)) (IS.empty, IS.empty)
+dBB = foldMap defs
 
 uBBF, dBBF :: E freg => [AArch64 reg freg a] -> IS.IntSet
-uBBF = foldl' (\pU n -> usesF n `IS.union` (pU `IS.difference` defsF n)) IS.empty
-dBBF = foldl' (\pD n -> pD `IS.union` defsF n) IS.empty
+uBBF = fst . foldl' (\(pU, pD) n -> (pU `IS.union` (usesF n `IS.difference` pD), defsF n `IS.union` pD)) (IS.empty, IS.empty)
+dBBF = foldMap defsF
 
 defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
 uses (MovRR _ _ r)       = singleton r
