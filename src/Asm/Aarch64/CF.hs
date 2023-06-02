@@ -38,8 +38,8 @@ addControlFlow (BB asms _:bbs) = do
         _             -> getFresh
     ; (f, bbs') <- next bbs
     ; acc <- case last asms of
-            Bc _ _ lϵ     -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
             B _ lϵ        -> do {l_i <- lookupLabel lϵ; pure [l_i]}
+            Bc _ _ lϵ     -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
             Tbnz _ _ _ lϵ -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
             Tbz _ _ _ lϵ  -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
             Cbnz _ _ lϵ   -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
@@ -257,7 +257,7 @@ defsF B{}                = IS.empty
 defsF Cbnz{}             = IS.empty
 defsF Tbnz{}             = IS.empty
 defsF Tbz{}              = IS.empty
-defsF Ret{}              = fromList [FArg0, FArg1]
+defsF Ret{}              = IS.empty
 
 usesF (FMovXX _ _ r)       = singleton r
 usesF FMovXC{}             = IS.empty
@@ -309,7 +309,7 @@ usesF B{}                  = IS.empty
 usesF Cbnz{}               = IS.empty
 usesF Tbnz{}               = IS.empty
 usesF Tbz{}                = IS.empty
-usesF Ret{}                = IS.empty
+usesF Ret{}                = fromList [FArg0, FArg1]
 
 next :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM ([Int] -> [Int], [BB AArch64 reg freg () ControlAnn])
 next bbs = do
