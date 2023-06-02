@@ -10,23 +10,24 @@ import           CF
 import           Class.E      as E
 import           Data.Functor (($>))
 import qualified Data.IntSet  as IS
-import           Data.List    (foldl', scanl')
+import           Data.List    (foldl')
 
 mkControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> [BB AArch64 reg freg () ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
 expand :: (E reg, E freg) => BB AArch64 reg freg () Liveness -> [AArch64 reg freg Liveness]
-expand (BB (asm:asms) li) = scanl' (\pAsm n -> lN (ann pAsm) n) lS asms
-    where lN s a =
-            let ai=out s
-                ao=defs a `IS.union` (ai `IS.difference` uses a)
-                aif=fout s
-                aof=defsF a `IS.union` (aif `IS.difference` usesF a)
+expand (BB asms@(_:_) li) = scanr (\n p -> lN n (ann p)) lS iasms
+    where lN a s =
+            let ai=uses a <> (ao IS.\\ defs a)
+                ao=ins s
+                aif=usesF a <> (aof IS.\\ defsF a)
+                aof=fins s
             in a $> Liveness ai ao aif aof
-          lS = let ai=ins li
-                   aif=fins li
-               in asm $> Liveness ai (defs asm `IS.union` (ai `IS.difference` uses asm)) aif (defsF asm `IS.union` (aif `IS.difference` usesF asm))
-expand (BB [] _) = []
+          lS = let ao=out li
+                   aof=fout li
+               in asm $> Liveness (uses asm `IS.union` (ao `IS.difference` defs asm)) ao (usesF asm `IS.union` (aof `IS.difference` defsF asm)) aof
+          (iasms, asm) = (init asms, last asms)
+expand _ = []
 
 addControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM [BB AArch64 reg freg () ControlAnn]
 addControlFlow [] = pure []
