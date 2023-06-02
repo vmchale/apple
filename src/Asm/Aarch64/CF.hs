@@ -32,20 +32,10 @@ expand _ = []
 addControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM [BB AArch64 reg freg () ControlAnn]
 addControlFlow [] = pure []
 addControlFlow (BB [] _:bbs) = addControlFlow bbs
-addControlFlow (BB asms@(Label _ l:_) _:bbs) = do
-    { i <- lookupLabel l
-    ; (f, bbs') <- next bbs
-    ; acc <- case last asms of
-            Bc _ _ lϵ     -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
-            B _ lϵ        -> do {l_i <- lookupLabel lϵ; pure [l_i]}
-            Tbnz _ _ _ lϵ -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
-            Tbz _ _ _ lϵ  -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
-            Cbnz _ _ lϵ   -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
-            _             -> pure (f [])
-    ; pure (BB asms (ControlAnn i acc (udb asms)) : bbs')
-    }
 addControlFlow (BB asms _:bbs) = do
-    { i <- getFresh
+    { i <- case asms of
+        (Label _ l:_) -> lookupLabel l
+        _             -> getFresh
     ; (f, bbs') <- next bbs
     ; acc <- case last asms of
             Bc _ _ lϵ     -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
