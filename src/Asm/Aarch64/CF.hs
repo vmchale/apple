@@ -46,43 +46,6 @@ addControlFlow (BB asms _:bbs) = do
             _             -> pure (f [])
     ; pure (BB asms (ControlAnn i acc (udb asms)) : bbs')
     }
-{-
-addControlFlow (BB [Bc _ c l] _:bbs) = do
-    { i <- getFresh
-    ; (f, bbs') <- next bbs
-    ; l_i <- lookupLabel l
-    ; pure (BB [Bc () c l] (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) : bbs')
-    }
-addControlFlow (BB [B _ l] _:bbs) = do
-    { i <- getFresh
-    ; nextAsms <- addControlFlow bbs
-    ; l_i <- lookupLabel l
-    ; pure (BB [B () l] (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) : nextAsms)
-    }
-addControlFlow (BB [Cbnz _ r l] _:bbs) = do
-    { i <- getFresh
-    ; (f, bbs') <- next bbs
-    ; l_i <- lookupLabel l
-    ; pure (BB [Cbnz () r l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : bbs')
-    }
-addControlFlow (BB [Tbnz _ r n l] _:bbs) = do
-    { i <- getFresh
-    ; (f, bbs') <- next bbs
-    ; l_i <- lookupLabel l
-    ; pure (BB [Tbnz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : bbs')
-    }
-addControlFlow (BB [Tbz _ r n l] _:bbs) = do
-    { i <- getFresh
-    ; (f, bbs') <- next bbs
-    ; l_i <- lookupLabel l
-    ; pure (BB [Tbz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : bbs')
-    }
--}
--- addControlFlow (BB [Ret _] _:asms) = do
-    -- { i <- getFresh
-    -- ; nextAsms <- addControlFlow asms
-    -- ; pure (BB [Ret ()] (ControlAnn i [] (UD (singleton CArg0) (fromList [FArg0, FArg1]) IS.empty IS.empty)) : nextAsms)
-    -- }
 
 uA :: E reg => Addr reg -> IS.IntSet
 uA (R r)      = singleton r
@@ -93,11 +56,11 @@ udb asms = UD (uBB asms) (uBBF asms) (dBB asms) (dBBF asms)
 udd asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
 
 uBB, dBB :: E reg => [AArch64 reg freg a] -> IS.IntSet
-uBB = fst . foldl' (\(pU, pD) n -> (pU `IS.union` (uses n `IS.difference` pD), defs n `IS.union` pU)) (IS.empty, IS.empty)
+uBB = fst . foldl' (\(pU, pD) n -> (pU `IS.union` (uses n IS.\\ pD), defs n `IS.union` pU)) (IS.empty, IS.empty)
 dBB = foldMap defs
 
 uBBF, dBBF :: E freg => [AArch64 reg freg a] -> IS.IntSet
-uBBF = fst . foldl' (\(pU, pD) n -> (pU `IS.union` (usesF n `IS.difference` pD), defsF n `IS.union` pD)) (IS.empty, IS.empty)
+uBBF = fst . foldl' (\(pU, pD) n -> (pU `IS.union` (usesF n IS.\\ pD), defsF n `IS.union` pD)) (IS.empty, IS.empty)
 dBBF = foldMap defsF
 
 defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
