@@ -31,51 +31,68 @@ expand _ = []
 
 addControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM [BB AArch64 reg freg () ControlAnn]
 addControlFlow [] = pure []
-addControlFlow (BB [Label _ l] _:asms) = do
+addControlFlow (BB [] _:bbs) = addControlFlow bbs
+addControlFlow (BB asms@(Label _ l:_) _:bbs) = do
     { i <- lookupLabel l
-    ; (f, asms') <- next asms
-    ; pure (BB [Label () l] (ControlAnn i (f []) (UD IS.empty IS.empty IS.empty IS.empty)) : asms')
-    }
-addControlFlow (BB [Bc _ c l] _:asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (BB [Bc () c l] (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) : asms')
-    }
-addControlFlow (BB [B _ l] _:asms) = do
-    { i <- getFresh
-    ; nextAsms <- addControlFlow asms
-    ; l_i <- lookupLabel l
-    ; pure (BB [B () l] (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) : nextAsms)
-    }
-addControlFlow (BB [Cbnz _ r l] _:asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (BB [Cbnz () r l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : asms')
-    }
-addControlFlow (BB [Tbnz _ r n l] _:asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (BB [Tbnz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : asms')
-    }
-addControlFlow (BB [Tbz _ r n l] _:asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (BB [Tbz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : asms')
-    }
-addControlFlow (BB [Ret _] _:asms) = do
-    { i <- getFresh
-    ; nextAsms <- addControlFlow asms
-    ; pure (BB [Ret ()] (ControlAnn i [] (UD (singleton CArg0) (fromList [FArg0, FArg1]) IS.empty IS.empty)) : nextAsms)
+    ; (f, bbs') <- next bbs
+    ; acc <- case last asms of
+            Bc _ _ lϵ     -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            B _ lϵ        -> do {l_i <- lookupLabel lϵ; pure [l_i]}
+            Tbnz _ _ _ lϵ -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            Tbz _ _ _ lϵ  -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            Cbnz _ _ lϵ   -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            _             -> pure (f [])
+    ; pure (BB asms (ControlAnn i acc (udb asms)) : bbs')
     }
 addControlFlow (BB asms _:bbs) = do
     { i <- getFresh
     ; (f, bbs') <- next bbs
-    ; pure (BB asms (ControlAnn i (f []) (udb asms)) : bbs')
+    ; acc <- case last asms of
+            Bc _ _ lϵ     -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            B _ lϵ        -> do {l_i <- lookupLabel lϵ; pure [l_i]}
+            Tbnz _ _ _ lϵ -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            Tbz _ _ _ lϵ  -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            Cbnz _ _ lϵ   -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            _             -> pure (f [])
+    ; pure (BB asms (ControlAnn i acc (udb asms)) : bbs')
     }
+{-
+addControlFlow (BB [Bc _ c l] _:bbs) = do
+    { i <- getFresh
+    ; (f, bbs') <- next bbs
+    ; l_i <- lookupLabel l
+    ; pure (BB [Bc () c l] (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) : bbs')
+    }
+addControlFlow (BB [B _ l] _:bbs) = do
+    { i <- getFresh
+    ; nextAsms <- addControlFlow bbs
+    ; l_i <- lookupLabel l
+    ; pure (BB [B () l] (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) : nextAsms)
+    }
+addControlFlow (BB [Cbnz _ r l] _:bbs) = do
+    { i <- getFresh
+    ; (f, bbs') <- next bbs
+    ; l_i <- lookupLabel l
+    ; pure (BB [Cbnz () r l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : bbs')
+    }
+addControlFlow (BB [Tbnz _ r n l] _:bbs) = do
+    { i <- getFresh
+    ; (f, bbs') <- next bbs
+    ; l_i <- lookupLabel l
+    ; pure (BB [Tbnz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : bbs')
+    }
+addControlFlow (BB [Tbz _ r n l] _:bbs) = do
+    { i <- getFresh
+    ; (f, bbs') <- next bbs
+    ; l_i <- lookupLabel l
+    ; pure (BB [Tbz () r n l] (ControlAnn i (f [l_i]) (UD (singleton r) IS.empty IS.empty IS.empty)) : bbs')
+    }
+-}
+-- addControlFlow (BB [Ret _] _:asms) = do
+    -- { i <- getFresh
+    -- ; nextAsms <- addControlFlow asms
+    -- ; pure (BB [Ret ()] (ControlAnn i [] (UD (singleton CArg0) (fromList [FArg0, FArg1]) IS.empty IS.empty)) : nextAsms)
+    -- }
 
 uA :: E reg => Addr reg -> IS.IntSet
 uA (R r)      = singleton r

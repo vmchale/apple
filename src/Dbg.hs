@@ -10,6 +10,7 @@ module Dbg ( dumpAAbs
            , dumpIR
            , dumpIRI
            , dumpX86Intervals
+           , dumpABB
            , dumpALiveness
            , dumpAIntervals
            , dumpX86Ass
@@ -28,6 +29,7 @@ import qualified Asm.Aarch64.Byte     as Aarch64
 import qualified Asm.Aarch64.LI       as Aarch64
 import qualified Asm.Aarch64.P        as Aarch64
 import           Asm.Aarch64.T
+import           Asm.BB
 import           Asm.L
 import           Asm.M
 import qualified Asm.X86              as X86
@@ -138,6 +140,15 @@ dumpX86Liveness = fmap (X86.prettyDebugX86 . fmap (fmap liveness) . reconstruct 
 
 dumpALiveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpALiveness = fmap (Aarch64.prettyDebug . mkLive . (\(x, st) -> snd (irToAarch64 st x))) . ir
+
+dumpABB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpABB = fmap (prettyBBs . liveBB . (\(x, st) -> snd (irToAarch64 st x))) . ir
+
+prettyBBs :: Pretty (arch reg freg ()) => [BB arch reg freg () Liveness] -> Doc ann
+prettyBBs = prettyLines . fmap prettyBB
+
+prettyBB :: Pretty (arch reg freg ()) => BB arch reg freg () Liveness -> Doc ann
+prettyBB (BB asms l) = pretty l <#> prettyLines (fmap pretty asms)
 
 x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Interval]
 x86Iv = fmap (X86.mkIntervals . (\(x, st) -> snd (irToX86 st x))) . ir
