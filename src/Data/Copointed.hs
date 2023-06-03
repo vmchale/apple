@@ -1,7 +1,7 @@
 module Data.Copointed ( Copointed (..)
                       ) where
 
-class Copointed p where
+class Functor p => Copointed p where
     copoint :: p a -> a
 
 instance Copointed ((,) a) where

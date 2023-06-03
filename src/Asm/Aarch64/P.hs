@@ -2,9 +2,9 @@ module Asm.Aarch64.P ( gallocFrame, gallocOn ) where
 
 import           Asm.Aarch64
 import           Asm.Aarch64.Fr
-import           Asm.Aarch64.LI
 import           Asm.Ar.P
 import           Asm.G
+import           Asm.LI
 import qualified Data.IntMap    as IM
 import qualified Data.Set       as S
 

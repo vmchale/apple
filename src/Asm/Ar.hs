@@ -24,12 +24,14 @@ class Arch arch reg freg where
     expand :: BB arch reg freg () Liveness -> [arch reg freg Liveness]
     udd :: arch reg freg a -> UD
 
-instance Arch X86.X86 X86.AbsReg X86.FAbsReg where
+instance (E reg, E freg) => Arch X86.X86 reg freg where
     mI (X86.MovRR _ r0 r1) = Just (r1, r0)
     mI _                   = Nothing
 
     mf (X86.Movapd _ r0 r1) = Just (r1, r0)
     mf _                    = Nothing
+
+    bb = X86.bb
 
 instance (E reg, E freg) => Arch AArch64.AArch64 reg freg where
     cf = AArch64.mkControlFlow

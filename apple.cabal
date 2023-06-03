@@ -62,13 +62,13 @@ library
         Asm.Ar
         Asm.Ar.P
         Asm.L
+        Asm.LI
         Asm.BB
         Asm.X86
         Asm.X86.B
         Asm.X86.Alloc
         Asm.X86.CF
         Asm.X86.Opt
-        Asm.X86.LI
         Asm.X86.Frame
         Asm.X86.P
         Asm.X86.Sp
@@ -77,7 +77,6 @@ library
         Asm.Aarch64.B
         Asm.Aarch64.Byte
         Asm.Aarch64.CF
-        Asm.Aarch64.LI
         Asm.Aarch64.Fr
         Asm.Aarch64.P
         Asm.Aarch64.Opt

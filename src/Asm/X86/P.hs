@@ -2,9 +2,9 @@ module Asm.X86.P ( gallocFrame, gallocOn ) where
 
 import           Asm.Ar.P
 import           Asm.G
+import           Asm.LI
 import           Asm.X86
 import           Asm.X86.Frame
-import           Asm.X86.LI
 import           Asm.X86.Sp
 import           Data.Int       (Int64)
 import qualified Data.IntMap    as IM

@@ -2,9 +2,9 @@
 -- improvements.
 module Asm.X86.CF ( mkControlFlow
                   , uses, defs
-                  , udX86
                   ) where
 
+import           Asm.BB
 import           Asm.CF
 import           Asm.X86        as X86
 import           CF
@@ -14,13 +14,15 @@ import           Data.Functor   (($>))
 import qualified Data.IntSet    as IS
 import           Data.Semigroup ((<>))
 
-mkControlFlow :: (E reg, E freg) => [X86 reg freg ()] -> [X86 reg freg ControlAnn]
+mkControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> [BB X86 reg freg () ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
 -- | Annotate instructions with a unique node name and a list of all possible
 -- destinations.
-addControlFlow :: (E reg, E freg) => [X86 reg freg ()] -> FreshM [X86 reg freg ControlAnn]
-addControlFlow [] = pure []
+addControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> FreshM [BB X86 reg freg () ControlAnn]
+addControlFlow []            = pure []
+addControlFlow (BB [] _:bbs) = addControlFlow bbs
+{-
 addControlFlow ((Label _ l):asms) = do
     { i <- lookupLabel l
     ; (f, asms') <- next asms
@@ -90,6 +92,7 @@ addControlFlow (asm:asms) = do
     ; (f, asms') <- next asms
     ; pure ((asm $> ControlAnn i (f []) (udX86 asm)) : asms')
     }
+-}
 
 udX86 asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
 
@@ -398,24 +401,26 @@ defs Push{}            = IS.empty
 defs (Pop _ r)         = singleton r
 defs (Neg _ r)         = singleton r
 
-next :: (E reg, E freg) => [X86 reg freg ()] -> FreshM ([Int] -> [Int], [X86 reg freg ControlAnn])
+next :: (E reg, E freg) => [BB X86 reg freg () ()] -> FreshM ([Int] -> [Int], [BB X86 reg freg () ControlAnn])
 next asms = do
     nextAsms <- addControlFlow asms
     case nextAsms of
         []      -> pure (id, [])
-        (asm:_) -> pure ((node (ann asm) :), nextAsms)
+        (asm:_) -> pure ((node (caBB asm) :), nextAsms)
 
 -- | Construct map assigning labels to their node name.
-broadcasts :: [X86 reg freg ()] -> FreshM [X86 reg freg ()]
+broadcasts :: [BB X86 reg freg a ()] -> FreshM [BB X86 reg freg a ()]
 broadcasts [] = pure []
+{-
 broadcasts (asm@(C _ l):asm'@(Label _ retL):stmts) = do
     { i <- getFresh
     ; broadcast i retL; b3 i l
     ; (asm:).(asm':) <$> broadcasts stmts
     }
-broadcasts (asm@(Label _ l):asms) = do
+    -}
+broadcasts (b@(BB (Label _ l:_) _):bbs) = do
     { i <- getFresh
     ; broadcast i l
-    ; (asm :) <$> broadcasts asms
+    ; (b :) <$> broadcasts bbs
     }
-broadcasts (asm:asms) = (asm :) <$> broadcasts asms
+broadcasts (b:bbs) = (b :) <$> broadcasts bbs
