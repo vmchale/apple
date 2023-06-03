@@ -16,7 +16,10 @@ import qualified Data.IntSet    as IS
 import           Data.Semigroup ((<>))
 
 mkControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> [BB X86 reg freg () ControlAnn]
-mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
+mkControlFlow isns = runFreshM (broadcasts is *> addControlFlow is) where
+    is = filter (not.emptyBB) isns
+    emptyBB (BB [] _) = True
+    emptyBB _         = False
 
 expand :: (E reg, E freg) => BB X86 reg freg () Liveness -> [X86 reg freg Liveness]
 expand (BB asms@(_:_) li) = scanr (\n p -> lN n (ann p)) lS iasms
@@ -51,7 +54,7 @@ addControlFlow (BB asms _:bbs) = do
             Jge _ lϵ  -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
             Jne _ lϵ  -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
             C _ lϵ    -> do {l_i <- lookupLabel lϵ; pure [l_i]}
-            RetL _ lϵ -> do {l_is <- lC lϵ; pure l_is}
+            RetL _ lϵ -> lC lϵ
             _         -> pure (f [])
     ; pure (BB asms (ControlAnn i acc (ubb asms)) : bbs')
     }
