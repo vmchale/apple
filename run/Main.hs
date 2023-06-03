@@ -331,7 +331,9 @@ benchC s = case tyParse bs of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right _ -> do
         m <- lift $ gets mf
-        liftIO $ benchmark (nfIO (do{(sz,fp) <- ctxFunP m bs; freeFunPtr sz fp}))
+        a <- lift $ gets _arch
+        let cfp=case a of {X64 -> ctxFunP; AArch64 -> actxFunP}
+        liftIO $ benchmark (nfIO (do{(sz,fp) <- cfp m bs; freeFunPtr sz fp}))
     where bs = ubs s
 
 benchE :: String -> Repl AlexPosn ()
