@@ -423,8 +423,6 @@ next asms = do
         []      -> pure (id, [])
         (asm:_) -> pure ((node (caBB asm) :), nextAsms)
 
--- FIXME: filter empty block?
-
 -- | Construct map assigning labels to their node name.
 broadcasts :: [BB X86 reg freg a ()] -> FreshM [BB X86 reg freg a ()]
 broadcasts [] = pure []
