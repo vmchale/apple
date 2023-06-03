@@ -143,6 +143,9 @@ dumpALiveness = fmap (Aarch64.prettyDebug . mkLive . (\(x, st) -> snd (irToAarch
 dumpABB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpABB = fmap (prettyBBs . liveBB . (\(x, st) -> snd (irToAarch64 st x))) . ir
 
+dumpX86BB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86BB = fmap (prettyBBs . liveBB . (\(x, st) -> snd (irToX86 st x))) . ir
+
 prettyBBs :: Pretty (arch reg freg ()) => [BB arch reg freg () Liveness] -> Doc ann
 prettyBBs = prettyLines . fmap prettyBB
 
