@@ -56,11 +56,11 @@ udb asms = UD (uBB asms) (uBBF asms) (dBB asms) (dBBF asms)
 udd asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
 
 uBB, dBB :: E reg => [AArch64 reg freg a] -> IS.IntSet
-uBB = fst . foldr (\p (nU, nD) -> (uses p `IS.union` (nU IS.\\ nD), defs p `IS.union` nU)) (IS.empty, IS.empty)
+uBB = fst . foldr (\p (nU, nD) -> (uses p `IS.union` (nU IS.\\ defs p), defs p `IS.union` nU)) (IS.empty, IS.empty)
 dBB = foldMap defs
 
 uBBF, dBBF :: E freg => [AArch64 reg freg a] -> IS.IntSet
-uBBF = fst . foldr (\p (nU, nD) -> (usesF p `IS.union` (nU IS.\\ nD), defsF p `IS.union` nD)) (IS.empty, IS.empty)
+uBBF = fst . foldr (\p (nU, nD) -> (usesF p `IS.union` (nU IS.\\ defsF p), defsF p `IS.union` nD)) (IS.empty, IS.empty)
 dBBF = foldMap defsF
 
 defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
