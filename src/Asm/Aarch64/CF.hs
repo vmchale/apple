@@ -10,7 +10,6 @@ import           CF
 import           Class.E      as E
 import           Data.Functor (($>))
 import qualified Data.IntSet  as IS
-import           Data.List    (foldl')
 
 mkControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> [BB AArch64 reg freg () ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
@@ -56,11 +55,11 @@ udb asms = UD (uBB asms) (uBBF asms) (dBB asms) (dBBF asms)
 udd asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
 
 uBB, dBB :: E reg => [AArch64 reg freg a] -> IS.IntSet
-uBB = fst . foldr (\p (nU, nD) -> (uses p `IS.union` (nU IS.\\ defs p), defs p `IS.union` nU)) (IS.empty, IS.empty)
+uBB = foldr (\p n -> uses p `IS.union` (n IS.\\ defs p)) IS.empty
 dBB = foldMap defs
 
 uBBF, dBBF :: E freg => [AArch64 reg freg a] -> IS.IntSet
-uBBF = fst . foldr (\p (nU, nD) -> (usesF p `IS.union` (nU IS.\\ defsF p), defsF p `IS.union` nD)) (IS.empty, IS.empty)
+uBBF = foldr (\p n -> usesF p `IS.union` (n IS.\\ defsF p)) IS.empty
 dBBF = foldMap defsF
 
 defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
