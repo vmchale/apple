@@ -10,6 +10,8 @@ module Dbg ( dumpAAbs
            , dumpIR
            , dumpIRI
            , dumpX86Intervals
+           , dumpX86BB
+           , dumpX86BBL
            , dumpABB
            , dumpALiveness
            , dumpAIntervals
@@ -28,6 +30,7 @@ import qualified Asm.Aarch64          as Aarch64
 import qualified Asm.Aarch64.Byte     as Aarch64
 import qualified Asm.Aarch64.P        as Aarch64
 import           Asm.Aarch64.T
+import           Asm.Ar
 import           Asm.BB
 import           Asm.L
 import           Asm.LI
@@ -52,7 +55,7 @@ import           L
 import           LR
 import           Numeric              (showHex)
 import           P
-import           Prettyprinter        (Doc, Pretty (..))
+import           Prettyprinter        (Doc, Pretty (..), concatWith)
 import           Prettyprinter.Ext
 import           Ty
 
@@ -141,16 +144,21 @@ dumpALiveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpALiveness = fmap (Aarch64.prettyDebug . mkLive . (\(x, st) -> snd (irToAarch64 st x))) . ir
 
 dumpABB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpABB = fmap (prettyBBs . liveBB . (\(x, st) -> snd (irToAarch64 st x))) . ir
+dumpABB = fmap (prettyBBLs . liveBB . (\(x, st) -> snd (irToAarch64 st x))) . ir
+
+dumpX86BBL :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86BBL = fmap (prettyBBLs . liveBB . (\(x, st) -> snd (irToX86 st x))) . ir
 
 dumpX86BB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86BB = fmap (prettyBBs . liveBB . (\(x, st) -> snd (irToX86 st x))) . ir
+dumpX86BB = fmap (prettyBBs . bb . (\(x, st) -> snd (irToX86 st x))) . ir
 
-prettyBBs :: Pretty (arch reg freg ()) => [BB arch reg freg () Liveness] -> Doc ann
-prettyBBs = prettyLines . fmap prettyBB
+prettyBBs = concatWith (\x y -> x <#> "==BB==" <#> y) . fmap (\(BB asms _) -> prettyLines (pretty <$> asms))
 
-prettyBB :: Pretty (arch reg freg ()) => BB arch reg freg () Liveness -> Doc ann
-prettyBB (BB asms l) = pretty l <#> prettyLines (fmap pretty asms)
+prettyBBLs :: Pretty (arch reg freg ()) => [BB arch reg freg () Liveness] -> Doc ann
+prettyBBLs = prettyLines . fmap prettyBBL
+
+prettyBBL :: Pretty (arch reg freg ()) => BB arch reg freg () Liveness -> Doc ann
+prettyBBL (BB asms l) = pretty l <#> prettyLines (fmap pretty asms)
 
 x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Interval]
 x86Iv = fmap (mkIntervals . (\(x, st) -> snd (irToX86 st x))) . ir

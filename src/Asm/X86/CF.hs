@@ -16,10 +16,7 @@ import qualified Data.IntSet    as IS
 import           Data.Semigroup ((<>))
 
 mkControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> [BB X86 reg freg () ControlAnn]
-mkControlFlow isns = runFreshM (broadcasts is *> addControlFlow is) where
-    is = filter (not.emptyBB) isns
-    emptyBB (BB [] _) = True
-    emptyBB _         = False
+mkControlFlow isns = runFreshM (broadcasts isns *> addControlFlow isns)
 
 expand :: (E reg, E freg) => BB X86 reg freg () Liveness -> [X86 reg freg Liveness]
 expand (BB asms@(_:_) li) = scanr (\n p -> lN n (ann p)) lS iasms
@@ -35,11 +32,11 @@ expand (BB asms@(_:_) li) = scanr (\n p -> lN n (ann p)) lS iasms
           (iasms, asm) = (init asms, last asms)
 expand _ = []
 
+{-# SCC addControlFlow #-}
 -- | Annotate instructions with a unique node name and a list of all possible
 -- destinations.
 addControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> FreshM [BB X86 reg freg () ControlAnn]
 addControlFlow [] = pure []
-addControlFlow (BB [] _:bbs) = addControlFlow bbs
 addControlFlow (BB asms _:bbs) = do
     { i <- case asms of
         (Label _ l:_) -> lookupLabel l
@@ -431,14 +428,15 @@ next asms = do
 -- | Construct map assigning labels to their node name.
 broadcasts :: [BB X86 reg freg a ()] -> FreshM [BB X86 reg freg a ()]
 broadcasts [] = pure []
-broadcasts (b0@(BB asms@(_:_) _):b1@(BB (Label _ retL:_) _):bbs) | C _ l <- last asms = do
+broadcasts (b0@(BB asms@(asm:_) _):b1@(BB (Label _ retL:_) _):bbs) | C _ l <- last asms = do
     { i <- getFresh
     ; broadcast i retL; b3 i l
+    ; case asm of {Label _ lϵ -> do {j <- getFresh; broadcast j lϵ}; _ -> pure ()}
     ; (b0:).(b1:) <$> broadcasts bbs
     }
 broadcasts (b@(BB (Label _ l:_) _):bbs) = do
     { i <- getFresh
     ; broadcast i l
-    ; (b :) <$> broadcasts bbs
+    ; (b:) <$> broadcasts bbs
     }
-broadcasts (b:bbs) = (b :) <$> broadcasts bbs
+broadcasts (b:bbs) = (b:) <$> broadcasts bbs
