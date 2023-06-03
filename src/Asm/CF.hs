@@ -1,6 +1,7 @@
 module Asm.CF ( FreshM
               , runFreshM
               , getFresh
+              , fm
               , lookupLabel
               , lC
               , broadcast
@@ -12,6 +13,7 @@ module Asm.CF ( FreshM
 import           Asm.M
 import           Class.E                    as E
 import           Control.Monad.State.Strict (State, evalState, gets, modify)
+import           Data.Functor               (($>))
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
 import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
@@ -24,6 +26,9 @@ runFreshM = flip evalState (0, mempty, mempty)
 
 getFresh :: FreshM Int
 getFresh = gets fst3 <* modify (first3 (+1))
+
+fm :: Label -> FreshM Int
+fm l = do {st <- gets snd3; case M.lookup l st of {Just i -> pure i; Nothing -> do {i <- getFresh; broadcast i l $> i}}}
 
 lookupLabel :: Label -> FreshM Int
 lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)

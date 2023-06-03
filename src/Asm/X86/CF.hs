@@ -11,7 +11,7 @@ import           Asm.X86        as X86
 import           CF
 -- seems to pretty clearly be faster
 import           Class.E        as E
-import           Data.Functor   (($>))
+import           Data.Functor   (void, ($>))
 import qualified Data.IntSet    as IS
 import           Data.Semigroup ((<>))
 
@@ -426,15 +426,13 @@ next asms = do
 -- | Construct map assigning labels to their node name.
 broadcasts :: [BB X86 reg freg a ()] -> FreshM [BB X86 reg freg a ()]
 broadcasts [] = pure []
-broadcasts (b0@(BB asms@(asm:_) _):b1@(BB (Label _ retL:_) _):bbs) | C _ l <- last asms = do
-    { i <- getFresh
-    ; broadcast i retL; b3 i l
-    ; case asm of {Label _ lϵ -> do {j <- getFresh; broadcast j lϵ}; _ -> pure ()}
-    ; (b0:).(b1:) <$> broadcasts bbs
+broadcasts (b0@(BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | C _ l <- last asms = do
+    { i <- fm retL; b3 i l
+    ; case asm of {Label _ lϵ -> void $ fm lϵ; _ -> pure ()}
+    ; (b0:) <$> broadcasts bbs
     }
 broadcasts (b@(BB (Label _ l:_) _):bbs) = do
-    { i <- getFresh
-    ; broadcast i l
+    { void $ fm l
     ; (b:) <$> broadcasts bbs
     }
 broadcasts (b:bbs) = (b:) <$> broadcasts bbs
