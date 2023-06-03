@@ -1,5 +1,6 @@
 module Asm.Aarch64.CF ( mkControlFlow
-                      , expand, udd
+                      , expand
+                      , udd
                       ) where
 
 import           Asm.Aarch64

@@ -25,6 +25,8 @@ class Arch arch reg freg where
     udd :: arch reg freg a -> UD
 
 instance (E reg, E freg) => Arch X86.X86 reg freg where
+    cf = X86.mkControlFlow
+
     mI (X86.MovRR _ r0 r1) = Just (r1, r0)
     mI _                   = Nothing
 
@@ -32,6 +34,8 @@ instance (E reg, E freg) => Arch X86.X86 reg freg where
     mf _                    = Nothing
 
     bb = X86.bb
+    expand = X86.expand
+    udd = X86.udd
 
 instance (E reg, E freg) => Arch AArch64.AArch64 reg freg where
     cf = AArch64.mkControlFlow

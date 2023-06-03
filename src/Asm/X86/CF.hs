@@ -1,6 +1,7 @@
 -- | From the [Kempe compiler](http://vmchale.com/original/compiler.pdf) with
 -- improvements.
 module Asm.X86.CF ( mkControlFlow
+                  , expand, udd
                   , uses, defs
                   ) where
 
@@ -17,84 +18,54 @@ import           Data.Semigroup ((<>))
 mkControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> [BB X86 reg freg () ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
+expand :: (E reg, E freg) => BB X86 reg freg () Liveness -> [X86 reg freg Liveness]
+expand (BB asms@(_:_) li) = scanr (\n p -> lN n (ann p)) lS iasms
+    where lN a s =
+            let ai=uses a <> (ao IS.\\ defs a)
+                ao=ins s
+                aif=usesF a <> (aof IS.\\ defsF a)
+                aof=fins s
+            in a $> Liveness ai ao aif aof
+          lS = let ao=out li
+                   aof=fout li
+               in asm $> Liveness (uses asm `IS.union` (ao `IS.difference` defs asm)) ao (usesF asm `IS.union` (aof `IS.difference` defsF asm)) aof
+          (iasms, asm) = (init asms, last asms)
+expand _ = []
+
 -- | Annotate instructions with a unique node name and a list of all possible
 -- destinations.
 addControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> FreshM [BB X86 reg freg () ControlAnn]
-addControlFlow []            = pure []
+addControlFlow [] = pure []
 addControlFlow (BB [] _:bbs) = addControlFlow bbs
-{-
-addControlFlow ((Label _ l):asms) = do
-    { i <- lookupLabel l
-    ; (f, asms') <- next asms
-    ; pure (Label (ControlAnn i (f []) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
+addControlFlow (BB asms _:bbs) = do
+    { i <- case asms of
+        (Label _ l:_) -> lookupLabel l
+        _             -> getFresh
+    ; (f, bbs') <- next bbs
+    ; acc <- case last asms of
+            J _ lϵ    -> do {l_i <- lookupLabel lϵ; pure [l_i]}
+            Je _ lϵ   -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            Jle _ lϵ  -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            Jl _ lϵ   -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            Jg _ lϵ   -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            Jge _ lϵ  -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            Jne _ lϵ  -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            C _ lϵ    -> do {l_i <- lookupLabel lϵ; pure [l_i]}
+            RetL _ lϵ -> do {l_is <- lC lϵ; pure l_is}
+            _         -> pure (f [])
+    ; pure (BB asms (ControlAnn i acc (ubb asms)) : bbs')
     }
-addControlFlow ((Je _ l):asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (Je (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
-    }
-addControlFlow ((Jl _ l):asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (Jl (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
-    }
-addControlFlow ((Jle _ l):asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (Jle (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
-    }
-addControlFlow ((Jne _ l):asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (Jne (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
-    }
-addControlFlow ((Jge _ l):asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (Jge (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
-    }
-addControlFlow ((Jg _ l):asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; l_i <- lookupLabel l
-    ; pure (Jg (ControlAnn i (f [l_i]) (UD IS.empty IS.empty IS.empty IS.empty)) l : asms')
-    }
-addControlFlow ((J _ l):asms) = do
-    { i <- getFresh
-    ; nextAsms <- addControlFlow asms
-    ; l_i <- lookupLabel l
-    ; pure (J (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) l : nextAsms)
-    }
-addControlFlow ((C _ l):asms) = do
-    { i <- getFresh
-    ; nextAsms <- addControlFlow asms
-    ; l_i <- lookupLabel l
-    ; pure (C (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) l : nextAsms)
-    }
-addControlFlow (RetL _ l:asms) = do
-    { i <- getFresh
-    ; nextAsms <- addControlFlow asms
-    ; l_is <- lC l
-    ; pure (RetL (ControlAnn i l_is (UD IS.empty IS.empty IS.empty IS.empty)) l:nextAsms)
-    }
-addControlFlow (Ret{}:asms) = do
-    { i <- getFresh
-    ; nextAsms <- addControlFlow asms
-    ; pure (Ret (ControlAnn i [] (UD (singleton CRet) (fromList [FRet0, FRet1]) IS.empty IS.empty)) : nextAsms) -- TODO: pass information down if redundant
-    }
-addControlFlow (asm:asms) = do
-    { i <- getFresh
-    ; (f, asms') <- next asms
-    ; pure ((asm $> ControlAnn i (f []) (udX86 asm)) : asms')
-    }
--}
 
-udX86 asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
+ubb asm = UD (uBB asm) (uBBF asm) (dBB asm) (dBBF asm)
+udd asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
+
+uBB, dBB :: E reg => [X86 reg freg a] -> IS.IntSet
+uBB = foldr (\p n -> uses p `IS.union` (n IS.\\ defs p)) IS.empty
+dBB = foldMap defs
+
+uBBF, dBBF :: E freg => [X86 reg freg a] -> IS.IntSet
+uBBF = foldr (\p n -> usesF p `IS.union` (n IS.\\ defsF p)) IS.empty
+dBBF = foldMap defsF
 
 uA :: E reg => Addr reg -> IS.IntSet
 uA (R r)         = singleton r
@@ -176,6 +147,17 @@ usesF Push{}                    = IS.empty
 usesF Pop{}                     = IS.empty
 usesF Rdrand{}                  = IS.empty
 usesF Neg{}                     = IS.empty
+usesF J{}                       = IS.empty
+usesF Je{}                      = IS.empty
+usesF Label{}                   = IS.empty
+usesF Jne{}                     = IS.empty
+usesF Jge{}                     = IS.empty
+usesF Jg{}                      = IS.empty
+usesF Jl{}                      = IS.empty
+usesF Jle{}                     = IS.empty
+usesF C{}                       = IS.empty
+usesF RetL{}                    = IS.empty
+usesF Ret{}                     = fromList [FRet0, FRet1]
 
 uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)          = singleton r
@@ -251,6 +233,17 @@ uses (Test _ r0 r1)         = fromList [r0, r1]
 uses (Push _ r)             = singleton r
 uses Pop{}                  = IS.empty
 uses (Neg _ r)              = singleton r
+uses J{}                    = IS.empty
+uses Je{}                   = IS.empty
+uses Label{}                = IS.empty
+uses Jne{}                  = IS.empty
+uses Jge{}                  = IS.empty
+uses Jg{}                   = IS.empty
+uses Jl{}                   = IS.empty
+uses Jle{}                  = IS.empty
+uses C{}                    = IS.empty
+uses RetL{}                 = IS.empty
+uses Ret{}                  = singleton CRet
 
 defsF :: E freg => X86 reg freg ann -> IS.IntSet
 defsF (Movapd _ r _)         = singleton r
@@ -325,6 +318,17 @@ defsF Pop{}                  = IS.empty
 defsF Push{}                 = IS.empty
 defsF Rdrand{}               = IS.empty
 defsF Neg{}                  = IS.empty
+defsF J{}                    = IS.empty
+defsF Je{}                   = IS.empty
+defsF Label{}                = IS.empty
+defsF Jne{}                  = IS.empty
+defsF Jge{}                  = IS.empty
+defsF Jg{}                   = IS.empty
+defsF Jl{}                   = IS.empty
+defsF Jle{}                  = IS.empty
+defsF C{}                    = IS.empty
+defsF RetL{}                 = IS.empty
+defsF Ret{}                  = IS.empty
 
 defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r
@@ -400,6 +404,17 @@ defs Test{}            = IS.empty
 defs Push{}            = IS.empty
 defs (Pop _ r)         = singleton r
 defs (Neg _ r)         = singleton r
+defs J{}               = IS.empty
+defs Je{}              = IS.empty
+defs Label{}           = IS.empty
+defs Jne{}             = IS.empty
+defs Jge{}             = IS.empty
+defs Jg{}              = IS.empty
+defs Jl{}              = IS.empty
+defs Jle{}             = IS.empty
+defs C{}               = IS.empty
+defs RetL{}            = IS.empty
+defs Ret{}             = IS.empty
 
 next :: (E reg, E freg) => [BB X86 reg freg () ()] -> FreshM ([Int] -> [Int], [BB X86 reg freg () ControlAnn])
 next asms = do
@@ -408,16 +423,16 @@ next asms = do
         []      -> pure (id, [])
         (asm:_) -> pure ((node (caBB asm) :), nextAsms)
 
+-- FIXME: filter empty block?
+
 -- | Construct map assigning labels to their node name.
 broadcasts :: [BB X86 reg freg a ()] -> FreshM [BB X86 reg freg a ()]
 broadcasts [] = pure []
-{-
-broadcasts (asm@(C _ l):asm'@(Label _ retL):stmts) = do
+broadcasts (b0@(BB asms@(_:_) _):b1@(BB (Label _ retL:_) _):bbs) | C _ l <- last asms = do
     { i <- getFresh
     ; broadcast i retL; b3 i l
-    ; (asm:).(asm':) <$> broadcasts stmts
+    ; (b0:).(b1:) <$> broadcasts bbs
     }
-    -}
 broadcasts (b@(BB (Label _ l:_) _):bbs) = do
     { i <- getFresh
     ; broadcast i l
