@@ -30,6 +30,7 @@
 - [ ] clz? (count leading zeroes = floor(log) -> digits)
 - [ ] flatness check (arrays)
 - [ ] generalize "diagonal"?
+- [ ] fold-along-diagonal for poly mult. https://code.jsoftware.com/wiki/Vocabulary/slashdot
 ## Syntax
 - [ ] more laconic syntax for type signatures (no Arr... Cons)
 - [x] `zipWith` builtin (2-ary)
@@ -43,6 +44,7 @@
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
 # Performance
+- [ ] Use `Word64` for sets of registers
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
 - [ ] special lexemes
