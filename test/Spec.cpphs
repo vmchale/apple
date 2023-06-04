@@ -82,6 +82,7 @@ allT = testGroup "jit"
     , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
     , testCase "A (elliptic fourier)" $ do { res <- fpAaf "test/data/A.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= 2.5000000000000004 }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
+    , testCase "amgm" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
     ]
 
 x64T :: TestTree
@@ -100,7 +101,6 @@ x64T = testGroup "x64"
     , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res @?= tcdf 12 2 }
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hsTup <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
-    , testCase "amgm" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
     , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
     , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
     ]
