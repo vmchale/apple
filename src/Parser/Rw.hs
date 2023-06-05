@@ -34,6 +34,7 @@ isBinOp _      = True
 
 fi :: Builtin -> Int
 fi Succ   = 9
+fi Fold   = 9
 fi IntExp = 8
 fi Exp    = 8
 fi Times  = 7
