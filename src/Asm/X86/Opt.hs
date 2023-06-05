@@ -2,6 +2,7 @@ module Asm.X86.Opt ( optX86 ) where
 
 import           Asm.L
 import           Asm.X86      hiding (toInt)
+import           Asm.X86.CF
 import           CF
 import           Class.E
 import           Data.Functor (void)
@@ -27,6 +28,7 @@ opt (MovqXA _ xrϵ a:Vfmadd231sd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2
 opt (MovqXA _ xrϵ a:Vmaxsd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2 `IS.notMember` fout l) = VmaxsdA () xr0 xr1 (optAddr a):opt asms
 opt (MovqXA _ xrϵ a:Vaddsd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2 `IS.notMember` fout l) = VaddsdA () xr0 xr1 (optAddr a):opt asms
 opt (MovqXA _ xr0 a:Vaddsd _ xr1 xr2 xr3:asms) | xr0 == xr1 && xr0 == xr3 = VaddsdA () xr1 xr2 (optAddr a):opt asms
+opt (MovqXA _ xr0 a:asm:Vaddsd _ xr1 xr2 xr3:asms) | xr0 == xr2 && (toInt xr0 `IS.notMember` defsF asm) = void asm:VaddsdA () xr1 xr3 (optAddr a):opt asms
 opt ((MovqAX _ a r):asms) = MovqAX () (optAddr a) r:opt asms
 opt ((MovqXA _ r a):asms) = MovqXA () r (optAddr a):opt asms
 opt (isn@(MovRA _ r0 a0):MovAR _ a1 r1:asms) | r0 == r1 && not (occ r0 a0) && optAddr a0 == optAddr a1 = opt (isn:asms)
