@@ -15,7 +15,7 @@ import           Data.Semigroup  ((<>))
 import           GHC.Generics    (Generic)
 import           Prettyprinter   (Pretty (pretty), braces, punctuate, (<+>))
 
-data Liveness = Liveness { ins :: !IS.IntSet, out :: !IS.IntSet, fins :: !IS.IntSet, fout :: !IS.IntSet } -- strictness annotations make it perform better
+data Liveness = Liveness { ins :: !IS.IntSet, out :: !IS.IntSet, fins :: !IS.IntSet, fout :: !IS.IntSet }
     deriving (Eq, Generic, NFData)
 
 data NLiveness = NLiveness { nx :: Int, liveness :: !Liveness }
@@ -37,8 +37,8 @@ data ControlAnn = ControlAnn { node :: !Int
                              , ud   :: !UD
                              } deriving (Generic, NFData)
 
-data UD = UD { usesNode  :: IS.IntSet
-             , usesFNode :: IS.IntSet
-             , defsNode  :: IS.IntSet
-             , defsFNode :: IS.IntSet
+data UD = UD { usesNode  :: !IS.IntSet
+             , usesFNode :: !IS.IntSet
+             , defsNode  :: !IS.IntSet
+             , defsFNode :: !IS.IntSet
              } deriving (Generic, NFData)
