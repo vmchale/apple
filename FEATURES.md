@@ -11,10 +11,10 @@
 - [x] matmul
 ## Add Features
 - [x] outer product
-- [ ] reverse
+- [½] reverse
 - [ ] `reshape`
 - [◦] random
-- [ ] at/index of
+- [x] at/index of
 # Performance
 - [ ] lift constants out of loops
 - [ ] lift `fninit` out of loops

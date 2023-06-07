@@ -112,3 +112,12 @@ re:           repeat                   }.            typesafe last
 ⟨z,w⟩         array literal            ?p,.e1,.e2    conditional
 ...
 ```
+
+Enter `:help` in REPL:
+
+```
+ > :help
+:help, :h                    Show this help
+:ty            <expression>  Display the type of an expression
+...
+```
