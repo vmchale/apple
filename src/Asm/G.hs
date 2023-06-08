@@ -122,6 +122,7 @@ emptyWkl s | not $ IS.null (simp (wkls s)) = emptyWkl (simplify s)
            | not $ IS.null (sp (wkls s)) = emptyWkl (sspill s)
            | otherwise = s
 
+{-# SCC buildF #-}
 buildF :: (Copointed p) => IS.IntSet -> St -> [p (UD, Liveness, Maybe M)] -> (IS.IntSet, St)
 buildF l st [] = (l, st)
 buildF l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =
@@ -169,6 +170,7 @@ build l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoin
         l' = u `IS.union` (l IS.\\ d)
     in build l' st'' isns
 
+{-# SCC addEdge #-}
 addEdge :: Int -> Int -> St -> St
 addEdge u v st@(St ml as al mv ns ds i wk s a) =
     if (u, v) `S.notMember` as && u /= v
