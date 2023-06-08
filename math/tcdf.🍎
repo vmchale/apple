@@ -24,7 +24,7 @@
   };
   Γ ⟜ [ℯ(gammaln x)];
   f21 ← λa0.λa1.λb.λz. {
-    rf ← [(*)/ₒ 1 (frange x (x+y-1) (⌊y))]; fact ← rf 1;
+    rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
     Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N 1));
     term ← λn. {nn⟜ℝ n; rf a0 nn*(rf a1 nn%rf b nn)*(z^n%fact nn)};
     Σ 50 term

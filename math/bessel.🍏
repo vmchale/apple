@@ -1,7 +1,7 @@
 λ𝛼.λx.
   { fact ← [(*)/ₒ 1 (⍳ 1 x 1)]
   ; f10 ← λa.λx.
-    { rf ← [(*)/ₒ 1 (frange x (x+y-1) (⌊y))]; ffact ← rf 1
+    { rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; ffact ← rf 1
     ; mkIx ← λk. {kk⟜ℝ k; (x^k%(rf a kk))%ffact kk}
     ; (+)/(mkIx'(⍳ 0 30 1))
     }
