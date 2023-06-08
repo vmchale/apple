@@ -175,7 +175,7 @@ addEdge :: Int -> Int -> St -> St
 addEdge u v st@(St ml as al mv ns ds i wk s a) =
     if (u, v) `S.notMember` as && u /= v
         then
-            let as' = as `S.union` S.fromList [(u,v), (v, u)]
+            let as' = S.insert (u,v) $ S.insert (v,u) as
                 preC = pre wk
                 uC = u `IS.notMember` preC
                 vC = v `IS.notMember` preC
