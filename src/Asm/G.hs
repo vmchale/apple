@@ -41,7 +41,7 @@ mapCoalN f ns = ns { coalN = f (coalN ns) }
 mapColN f ns = ns { colN = f (colN ns) }
 mapSpN f ns = ns { spN = f (spN ns) }
 
-data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, ɴs :: Ns, degs :: IM.IntMap Int, initial :: [Int], wkls :: Wk, stack :: [Int], alias :: IM.IntMap Int }
+data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, ɴs :: Ns, degs :: !(IM.IntMap Int), initial :: [Int], wkls :: Wk, stack :: [Int], alias :: IM.IntMap Int }
 
 mapMv f st = st { mvS = f (mvS st) }; mapWk f st = st { wkls = f (wkls st) }; mapNs f st = st { ɴs = f (ɴs st) }
 
@@ -76,9 +76,11 @@ getIs = foldMap (g.copoint) where g (Liveness is os _ _) = is<>os
 getIFs :: Copointed p => [p Liveness] -> IS.IntSet
 getIFs = foldMap (g.copoint) where g (Liveness _ _ fis fos) = fis<>fos
 
+{-# SCC buildOver #-}
 buildOver :: Copointed p => [[p (UD, Liveness, Maybe M)]] -> St -> St
 buildOver blocks = thread [ \s -> snd $ build (out (snd3 (copoint (last isns)))) s (reverse isns) | isns <- blocks ]
 
+{-# SCC buildOverF #-}
 buildOverF :: Copointed p => [[p (UD, Liveness, Maybe M)]] -> St -> St
 buildOverF blocks = thread [ \s -> snd $ buildF (fout (snd3 (copoint (last isns)))) s (reverse isns) | isns <- blocks ]
 
@@ -140,6 +142,7 @@ buildF l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoi
         l' = u `IS.union` (l IS.\\ d)
     in buildF l' st'' isns
 
+{-# SCC build #-}
 -- | To be called in reverse order
 build :: (Copointed p)
       => IS.IntSet -- ^ Live-out for the block
