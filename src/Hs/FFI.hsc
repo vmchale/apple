@@ -10,7 +10,7 @@ import Data.Bits ((.|.))
 import Data.Functor (void)
 import Control.Monad (when)
 import Foreign.C.Types (CInt (..), CSize (..), CChar)
-import Foreign.Ptr (FunPtr, IntPtr (..), castFunPtrToPtr, castPtrToFunPtr, Ptr, intPtrToPtr, ptrToIntPtr, nullPtr)
+import Foreign.Ptr (FunPtr, IntPtr (..), castFunPtrToPtr, castPtrToFunPtr, Ptr, intPtrToPtr, nullPtr)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 import System.Posix.Types (COff (..))
