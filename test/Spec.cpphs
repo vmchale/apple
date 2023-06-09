@@ -83,6 +83,8 @@ allT = testGroup "jit"
     , testCase "A (elliptic fourier)" $ do { res <- fpAaf "test/data/A.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= 2.5000000000000004 }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "amgm" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
+    , testCase "vmul builtin" $ do { (AA 1 [2] res) <- fpAaa "test/data/vb.🍏" (AA 2 [2,2] [0,1,1,1::Double]) (AA 1 [2] [1,1::Double]); res @?= [1.0,2.0::Double] }
+    , testCase "matmul builtin" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     ]
 
 x64T :: TestTree
@@ -120,16 +122,14 @@ asI :: Ptr (Apple Int) -> IO [Int]
 asI = asN
 
 asN :: Storable a => Ptr (Apple a) -> IO [a]
-asN = fmap (\(AA _ _ xs) -> xs) . peek
+asN = fmap asV.peek
+asV (AA _ _ xs) = xs
 
-aaaFp fp xs ys =
-    let xA = AA 1 [fromIntegral (length xs)] xs
-        yA = AA 1 [fromIntegral (length ys)] ys
-    in
-    wA xA $ \pX ->
-        wA yA $ \pY -> do
+fpAaa fp x y =
+    wA x $ \pX ->
+        wA y $ \pY -> do
             f <- fmap aaa.fpn =<< BSL.readFile fp
-            asN (f pX pY)
+            peek (f pX pY)
 
 aaFp fp xs =
     let xA = AA 1 [fromIntegral(length xs)] xs in
