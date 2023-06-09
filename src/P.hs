@@ -16,7 +16,7 @@ module P ( Err (..)
          , ir
          , eDumpIR
          , aarch64
-         , as, x86G, x86L
+         , as, x86G
          , eDumpX86, eDumpAarch64
          , ex86G, eAarch64
          , bytes
@@ -33,10 +33,8 @@ import qualified Asm.Aarch64.Byte           as Aarch64
 import qualified Asm.Aarch64.Opt            as Aarch64
 import qualified Asm.Aarch64.P              as Aarch64
 import           Asm.Aarch64.T
-import           Asm.LI
 import           Asm.M
 import           Asm.X86
-import qualified Asm.X86.Alloc              as X86
 import           Asm.X86.Byte
 import           Asm.X86.Opt
 import qualified Asm.X86.P                  as X86
@@ -137,9 +135,8 @@ as f = (prolegomena <#>) . prettyAsm . either throw id . aarch64
 aarch64 :: BSL.ByteString -> Either (Err AlexPosn) [AArch64 AReg FAReg ()]
 aarch64 = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x, st) -> irToAarch64 st x)) . ir
 
-x86L, x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
+x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
 x86G = walloc (uncurry X86.gallocFrame)
-x86L = walloc (X86.allocFrame . mkIntervals . snd)
 
 eAarch64 :: Int -> E a -> Either (Err a) [AArch64 AReg FAReg ()]
 eAarch64 i = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x, st) -> irToAarch64 st x)) . eir i

@@ -37,7 +37,6 @@ import           Asm.LI
 import           Asm.M
 import qualified Asm.X86              as X86
 import           Asm.X86.Byte
-import qualified Asm.X86.CF           as X86
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           CF
@@ -52,7 +51,6 @@ import qualified Data.Text.IO         as TIO
 import           IR
 import           IR.Alloc
 import           L
-import           LR
 import           Numeric              (showHex)
 import           P
 import           Prettyprinter        (Doc, Pretty (..), concatWith)
@@ -112,9 +110,8 @@ dumpAAss :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAAss = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry Aarch64.gallocOn.(\(x, st) -> irToAarch64 st x)) . ir
     where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 19)
 
-dumpX86G, dumpX86L :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpX86G :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86G = fmap prettyAsm . x86G
-dumpX86L = fmap prettyAsm . x86L
 
 dumpAarch64 :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAarch64 = fmap prettyAsm . aarch64
