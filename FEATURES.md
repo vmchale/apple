@@ -3,12 +3,12 @@
 - [½] map
 - [½] fold
 - [½] rank
-- [ ] convolve
 - [x] transpose
 - [x] concat
 - [x] array literals
   - [ ] multidimensional arrays
 - [x] matmul
+- [ ] convolve
 ## Add Features
 - [x] outer product
 - [½] reverse
@@ -18,7 +18,7 @@
 # Performance
 - [ ] lift constants out of loops
 - [ ] lift `fninit` out of loops
-- [ ] liveness analysis on basic blocks
+- [x] liveness analysis on basic blocks
 # Allocations
 - [ ] consolidate allocations up-front when possible (dim from types)
 # ABI
