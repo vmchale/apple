@@ -3,8 +3,8 @@
 ## Compiler-As-a-Library
 
 Rather than an environment-based interpreter or a compiler invoked on the
-command line and generating object files, Apple generates machine code which can
-be used by a JIT compiler or in general.
+command line and generating object files, one calls a library function which
+returns assembly or machine code from a source string.
 
 Thus the same implementation can be used interpreted, compiled, or called from
 another language.
@@ -31,15 +31,6 @@ array([3., 4., 5., 6.])
 ## Dimension As a Functor
 
 This is based on J (and APL?). Looping is replaced by functoriality (rerank).
-
-## Moving Code vs. Moving Data
-
-> For a computation to take place the data and the program have to be at the
-> same point in space-time - this is just physics. You can move the data to the
-> program or the program to the data, or both somewhere else. ...
-> data movement predominates.
-
-- [Joe Armstrong](https://twitter.com/joeerl/status/1087678726911987712)
 
 ## Installation
 
