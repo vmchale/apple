@@ -262,6 +262,8 @@ eval (IR.IRFloor (IR.FReg r)) t = pure [Fcvtms () (absReg t) (fabsReg r)]
 eval (IR.EAt (IR.AP rB (Just (IR.IB IR.IAsl eI (IR.ConstI 3))) _)) t = do
     i <- nextI; plE <- eval eI (IR.ITemp i)
     pure $ plE ++ [Ldr () (absReg t) (BI (absReg rB) (IReg i) Three)]
+eval (IR.EAt (IR.AP rB Nothing _)) t = do
+    pure [Ldr () (absReg t) (R (absReg rB))]
 eval (IR.EAt (IR.AP rB (Just e) _)) t = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [Ldr () (absReg t) (BI (absReg rB) (IReg i) Zero)]
