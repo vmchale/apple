@@ -199,9 +199,9 @@ xp strides ixs (t,l) =
 
 stacopy sdims ddims x ls ad as = do
     t <- newITemp
-    let eachIx = crossN $ fmap (\l -> [0..(l-1)]) ls
-    pure $ concat [ [ MT t (EAt (xp sdims (at is) as)), Wr (xp ddims (at is) ad) (Reg t) ] | is <- eachIx ]
-    where at = zipWith (\x_a i -> x_a + ConstI i) x
+    bounds <- traverse (\_ -> newITemp) ls
+    threadM (zipWith doN bounds (ConstI<$>ls)) [ MT t (EAt (xp sdims (at bounds) as)), Wr (xp ddims (at bounds) ad) (Reg t) ]
+    where at = zipWith (\x_a i -> x_a + Reg i) x
 
 crossN :: [[a]] -> [[a]]
 crossN = foldr (\xs yss -> [ x:ys | x <- xs, ys <- yss ]) [[]]
