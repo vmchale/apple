@@ -495,7 +495,7 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     modify (addMT a t)
     -- FIXME: data not of size 8
     pure (Just a, plX ++ dss ++ sss ++ man (a,t) (1+rnk) (Reg nOut):Wr (AP t Nothing (Just a)) (ConstI rnk):zipWith (\tϵ o -> Wr (AP t (Just (ConstI$8*o)) (Just a)) (Reg tϵ)) (reverse dts) [1..] ++ ssd ++ MT xRd (Reg xR+dE):MT td (Reg t+dE):loop)
-aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | Just (iTy, tC) <- mAR (eAnn f) = do
+aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t | (Arrow _ tC) <- eAnn f, Just (iTy, xRnk) <- tRnk (eAnn x), isIF tC && isIF iTy && fromIntegral xRnk == length is = do
     a <- nextArr
     xR <- newITemp; xRd <- newITemp; slopP <- newITemp; ret <- tTemp tC; td <- newITemp
     (l, plX) <- aeval x xR
