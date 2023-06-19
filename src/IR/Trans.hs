@@ -1001,10 +1001,16 @@ eval (EApp _ (EApp _ (Builtin _ IOf) op) xs) t | (Arrow tD _) <- eAnn op, isIF t
     ss <- writeRF op [x] pR
     l <- newLabel; endL <- newLabel; fL <- newLabel
     pure $ plX ++ MT szR (gd1 lX xsR):MT t 0:L l:mt tD (AP xsR (Just$sib t) lX) x:ss ++ [MJ (Is pR) endL, MJ (IRel IGeq (Reg t) (Reg szR)) fL, tick t, J l, L fL, MT t (-1), L endL]
+eval (EApp _ (Builtin _ Even) e) t = do
+    eR <- newITemp; plE <- eval e eR
+    pure $ plE ++ [Cset t (IU IEven (Reg eR))]
+eval (EApp _ (Builtin _ Odd) e) t = do
+    eR <- newITemp; plE <- eval e eR
+    pure $ plE ++ [Cset t (IU IOdd (Reg eR))]
 eval (EApp _ (EApp _ (Builtin (Arrow F _) Gt) e0) e1) t = do
     e0R <- newFTemp; e1R <- newFTemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [MT t 0, Cmov (FRel FGt (FReg e0R) (FReg e1R)) t 1]
+    pure $ plE0 ++ plE1 ++ [Cset t (FRel FGt (FReg e0R) (FReg e1R))]
 eval (EApp _ (EApp _ (Builtin (Arrow F _) Gte) e0) e1) t = do
     e0R <- newFTemp; e1R <- newFTemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
