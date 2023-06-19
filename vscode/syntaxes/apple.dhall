@@ -5,7 +5,7 @@
 , patterns =
   [ { match = "(Arr|float|int)", name = "storage.type" }
   , { match =
-        "(frange|irange|itof|gen\\.|di\\.|sin\\.|rand\\.|cyc\\.|odd\\.|even\\.|abs\\.|re:)"
+        "(frange|irange|itof|gen\\.|di\\.|sin\\.|cos\\.|rand\\.|cyc\\.|odd\\.|even\\.|abs\\.|re:)"
     , name = "keyword.other"
     }
   , { match = "--.*\$", name = "comment.line.double-dash" }
