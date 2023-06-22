@@ -112,6 +112,10 @@ ir (IR.MJ (IR.FRel IR.FGeq e0 e1) l) = do
     pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () Geq l]
 ir (IR.Cmov (IR.IRel IR.IGt (IR.Reg r0) (IR.Reg r1)) t (IR.Reg r)) = do
     pure [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (absReg r) (absReg t) Gt]
+ir (IR.Cset t (IR.IU IR.IOdd (IR.Reg r))) = do
+    pure [TstI () (absReg r) 1, Cset () (absReg t) Eq]
+ir (IR.Cset t (IR.IU IR.IEven (IR.Reg r))) = do
+    pure [TstI () (absReg r) 1, Cset () (absReg t) Neq]
 ir (IR.Fcmov (IR.IU IR.IOdd (IR.Reg r0)) t e) = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [TstI () (absReg r0) 1, Fcsel () (fabsReg t) (FReg i) (fabsReg t) Neq]
@@ -190,10 +194,6 @@ feval (IR.FB IR.FPlus e0 e1) t = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
     pure $ plE0 ++ plE1 ++ [Fadd () (fabsReg t) (FReg i1) (FReg i2)]
--- feval (IR.FB IR.FTimes e (IR.FReg r)) t = do
-    -- i <- nextI
-    -- plE <- feval e (IR.FTemp i)
-    -- pure $ plE ++ [Fmul () (fabsReg t) (FReg i) (fabsReg r)]
 feval (IR.FB IR.FTimes e0 e1) t = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)

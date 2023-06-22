@@ -115,6 +115,7 @@ uses (Cbnz _ r _)        = singleton r
 uses (Tbnz _ r _ _)      = singleton r
 uses (Tbz _ r _ _)       = singleton r
 uses Ret{}               = singleton CArg0
+uses Cset{}              = IS.empty
 
 defs FMovXX{}            = IS.empty
 defs FMovXC{}            = IS.empty
@@ -168,6 +169,7 @@ defs Cbnz{}              = IS.empty
 defs Tbnz{}              = IS.empty
 defs Tbz{}               = IS.empty
 defs Ret{}               = IS.empty
+defs (Cset _ r _)        = singleton r
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
@@ -221,6 +223,7 @@ defsF Cbnz{}             = IS.empty
 defsF Tbnz{}             = IS.empty
 defsF Tbz{}              = IS.empty
 defsF Ret{}              = IS.empty
+defsF Cset{}             = IS.empty
 
 usesF (FMovXX _ _ r)       = singleton r
 usesF FMovXC{}             = IS.empty
@@ -273,6 +276,7 @@ usesF Cbnz{}               = IS.empty
 usesF Tbnz{}               = IS.empty
 usesF Tbz{}                = IS.empty
 usesF Ret{}                = fromList [FArg0, FArg1]
+usesF Cset{}               = IS.empty
 
 next :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM ([Int] -> [Int], [BB AArch64 reg freg () ControlAnn])
 next bbs = do
