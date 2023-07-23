@@ -11,8 +11,7 @@ doms _            = []
 
 -- count lambdas
 cLam :: E a -> Int
-cLam (Lam _ _ e) = 1 + cLam e
-cLam _           = 0
+cLam (Lam _ _ e) = 1 + cLam e; cLam _ = 0
 
 thread = foldr (.) id
 
