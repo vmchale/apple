@@ -1,9 +1,13 @@
 #include<stdint.h>
 typedef intptr_t P;
 
+// first argument: pointer to malloc
+// second argument: pointer to free
 void* apple_compile(P,P,const char*,size_t*);
 
 // NULL on error
+// first argument: source
+// second argument: error return
 char* apple_printty(const char*, char**);
 char* apple_dumpasm(const char*, char**);
 char* apple_x86(const char*, char**);
