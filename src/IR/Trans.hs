@@ -562,8 +562,8 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.notMember` ixsIs then Right ix else Left ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
-    (sts, sss) <- offByDim (Reg <$> dts)
-    let _:sstrides = sts
+    (sts, sssϵ) <- offByDim (Reg <$> dts)
+    let _:sstrides = sts; sss=init sssϵ
     allts <- traverse (\i -> case i of {Right{} -> Right <$> newITemp; Left{} -> Left <$> newITemp}) allIx
     let complts = lefts allts
         allDims = zipWith (\ix dt -> case ix of {Right{} -> Right dt; Left{} -> Left dt}) allIx dts
