@@ -1134,7 +1134,7 @@ eval (EApp F (Builtin _ (TAt n)) e@Var{}) t = do
     r <- newITemp; pl <- eval e r
     pure $ pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
 eval (EApp F (Builtin _ (TAt n)) e) t = do
-    let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
+    let (P tys)=eAnn e; szs=szT tys; sz=last szs
     r <- newITemp; pl <- eval e r
     pure $ Sa r (ConstI sz):pl ++ [MX t (FAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop (ConstI sz)]
 eval (EApp I (Builtin _ (TAt n)) e@Var{}) t = do
@@ -1142,7 +1142,7 @@ eval (EApp I (Builtin _ (TAt n)) e@Var{}) t = do
     r <- newITemp; pl <- eval e r
     pure $ pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing))]
 eval (EApp I (Builtin _ (TAt n)) e) t = do
-    let (P tys) = eAnn e; szs = szT tys; sz = fromIntegral (last szs)
+    let (P tys)=eAnn e; szs=szT tys; sz=last szs
     r <- newITemp; pl <- eval e r
     pure $ Sa r (ConstI sz):pl ++ [MT t (EAt (AP r (Just$ConstI (szs!!(n-1))) Nothing)), Pop (ConstI sz)]
 eval (EApp F (Var _ f) e) t | isF (eAnn e) = do
