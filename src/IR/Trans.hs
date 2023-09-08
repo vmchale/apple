@@ -134,6 +134,18 @@ gd1 l a = EAt (AP a (Just 8) l)
 
 stadim a t ns = Wr (AP t Nothing a) (ConstI (fromIntegral$length ns)):zipWith (\o n -> Wr (AP t (Just (ConstI$8*o)) a) n) [1..] ns
 
+data RI a b = Cell a | Index b deriving Show
+
+cells :: [RI a b] -> [a]
+cells []           = []
+cells (Cell a:as)  = a:cells as
+cells (Index{}:as) = cells as
+
+indices :: [RI a b] -> [b]
+indices []           = []
+indices (Index a:as) = a:indices as
+indices (Cell{}:as)  = indices as
+
 -- each (Right t) specifies a dimension; each (Left e) specifies a (currently)
 -- fixed index; looping variables for copying are generated in the function body
 extrCell :: [Either Exp Temp] -> [Temp] -> (Temp, Maybe Int) -> Temp -> IRM [Stmt]
@@ -559,20 +571,22 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
     (lX, plX) <- aeval xs xR
     modify (addMT a t)
     slopP <- newITemp; y <- tTemp tA
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.notMember` ixsIs then Right ix else Left ix | ix <- [1..fromIntegral rnk] ]
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.notMember` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (Reg <$> dts)
     let _:sstrides = sts; sss=init sssϵ
-    allts <- traverse (\i -> case i of {Right{} -> Right <$> newITemp; Left{} -> Left <$> newITemp}) allIx
-    let complts = lefts allts
-        allDims = zipWith (\ix dt -> case ix of {Right{} -> Right dt; Left{} -> Left dt}) allIx dts
-        complDims = lefts allDims; oDims = rights allDims
+    allts <- traverse (\i -> case i of {Cell{} -> Cell <$> newITemp; Index{} -> Index <$> newITemp}) allIx
+    let complts = cells allts
+        allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
+        complDims = cells allDims; oDims = indices allDims
         wrOSz = MT oSz 1:[MT oSz (Reg oSz * Reg dϵ) | dϵ <- oDims]
         wrSlopSz = MT slopSz 1:[MT slopSz (Reg slopSz * Reg dϵ) | dϵ <- complDims]
     (_, ss) <- writeF f [(Nothing, slopP)] y
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Right{}) -> Right dϵ; (_,Left tϵ) -> Left (Reg tϵ)) dts allts
+    -- Cell ... Right dt is meaningless?? Cell 1 -> Right 8 (say) if 1-dim is 8
+    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Cell{}) -> Right dϵ; (_,Index tϵ) -> Left (Reg tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
+    -- FIXME I think ecArg is wrong?
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
