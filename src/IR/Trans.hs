@@ -7,7 +7,7 @@ import           A
 import           Control.Monad              (zipWithM, (<=<))
 import           Control.Monad.State.Strict (State, gets, modify, runState)
 import           Data.Bifunctor             (second)
-import           Data.Either                (lefts, rights)
+import           Data.Either                (rights)
 import           Data.Foldable              (fold)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
@@ -117,7 +117,7 @@ writeCM e' = do
              | isB (eAnn e) = eval e CRet
              | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$case l of {Just m -> r++[MT CRet (Reg i), RA m]}}
              | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t 16:p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just 8) Nothing)), Pop 16]}
-             | ty@P{} <- eAnn e = let b64=fromIntegral$bT ty; b=ConstI b64 in do {t <- newITemp; a <- nextArr; (ls, pl) <- peval e t; pure (Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a] ++ (RA<$>ls))}
+             | ty@P{} <- eAnn e = let b64=bT ty; b=ConstI b64 in do {t <- newITemp; a <- nextArr; (ls, pl) <- peval e t; pure (Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a] ++ (RA<$>ls))}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
