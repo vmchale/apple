@@ -117,7 +117,7 @@ writeCM e' = do
              | isB (eAnn e) = eval e CRet
              | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$case l of {Just m -> r++[MT CRet (Reg i), RA m]}}
              | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t 16:p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just 8) Nothing)), Pop 16]}
-             | ty@P{} <- eAnn e = let b64=bT ty; b=ConstI b64 in do {t <- newITemp; a <- nextArr; (ls, pl) <- peval e t; pure (Sa t b:pl ++ [Ma a CRet (ConstI b64), Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI $ b64`div`8), Pop b, RA a] ++ (RA<$>ls))}
+             | ty@P{} <- eAnn e = let b64=bT ty; b=ConstI b64 in do {t <- newITemp; a <- nextArr; (ls, pl) <- peval e t; pure (Sa t b:pl ++ [Ma a CRet b, Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI$b64`div`8), Pop b, RA a] ++ (RA<$>ls))}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
 
 writeRF :: E (T ()) -> [Temp] -> Temp -> IRM [Stmt]
@@ -589,7 +589,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
-    loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [mt tA (AP t (Just$IB IAsl (Reg di) 3 + ConstI (8+8*oRnk)) (Just a)) y, tick di]
+    loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [wt tA (AP t (Just$IB IAsl (Reg di) 3 + ConstI (8+8*oRnk)) (Just a)) y, tick di]
     pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) oRnk (Reg oSz):Wr (AP t Nothing (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI i) (Just a)) (Reg d)) oDims [8,16..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):Wr (AP slopP Nothing Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (AP slopP (Just$ConstI i) Nothing) (Reg d)) complDims [8,16..] ++ sss ++ [MT xRd (Reg xR + ConstI (8+8*rnk)), MT slopPd (Reg slopP + ConstI (8+8*slopRnk))] ++ MT di 0:loop ++ [Pop (Reg slopSz)])
 aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in if1p ty = do
     a <- nextArr
