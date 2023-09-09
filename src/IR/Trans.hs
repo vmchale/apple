@@ -585,7 +585,6 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
     (_, ss) <- writeF f [(Nothing, slopP)] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Right dϵ; (_,Cell tϵ) -> Left (Reg tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
-    -- FIXME I think ecArg is wrong?
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
