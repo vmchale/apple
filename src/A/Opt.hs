@@ -15,12 +15,13 @@ mShLit (ALit _ es)           = Just ([length es], es)
 mShLit _                     = Nothing
 
 optA :: E (T ()) -> RM (E (T ()))
-optA (ILit F x)  = pure (FLit F (realToFrac x))
-optA e@ILit{}    = pure e
-optA e@FLit{}    = pure e
-optA e@BLit{}    = pure e
-optA e@Var{}     = pure e
-optA e@Builtin{} = pure e
+optA (ILit F x)            = pure (FLit F (realToFrac x))
+optA e@ILit{}              = pure e
+optA e@FLit{}              = pure e
+optA e@BLit{}              = pure e
+optA e@Var{}               = pure e
+optA (Builtin t (Rank rs)) = pure (Builtin t (Rank (g<$>rs))) where g r@(_,Just{})=r; g (cr,Nothing)=(cr, Just [1..cr])
+optA e@Builtin{}           = pure e
 optA (EApp l0 (EApp l1 op@(Builtin _ Exp) e0) e1) = do
     e0' <- optA e0
     e1' <- optA e1
