@@ -571,7 +571,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
     (lX, plX) <- aeval xs xR
     modify (addMT a t)
     slopP <- newITemp; y <- tTemp tA
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.notMember` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral rnk] ]
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (Reg <$> dts)
@@ -579,7 +579,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
     allts <- traverse (\i -> case i of {Cell{} -> Cell <$> newITemp; Index{} -> Index <$> newITemp}) allIx
     let complts = cells allts
         allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
-        complDims = cells allDims; oDims = indices allDims
+        complDims = indices allDims; oDims = cells allDims
         wrOSz = MT oSz 1:[MT oSz (Reg oSz * Reg dϵ) | dϵ <- oDims]
         wrSlopSz = MT slopSz 1:[MT slopSz (Reg slopSz * Reg dϵ) | dϵ <- complDims]
     (_, ss) <- writeF f [(Nothing, slopP)] y

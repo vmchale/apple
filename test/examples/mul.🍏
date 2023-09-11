@@ -3,7 +3,7 @@
   vec ← \A.\x.
   {
     dotprod ← [(+)/((*)`x y)];
-    (dotprod x)`{1∘[2]} A
+    (dotprod x)`{1∘[1]} A
   };
-  (vec x)`{1∘[2]} y
+  (vec x)`{1∘[1]} y
 }
