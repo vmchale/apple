@@ -590,6 +590,17 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
     loop <- threadM (zipWith (\d tϵ s -> doN tϵ (Reg d) s) complDims complts) $ place ++ ss ++ [wt tOR (AP t (Just$IB IAsl (Reg di) 3 + ConstI (8+8*oRnk)) (Just a)) y, tick di]
     pure (Just a, plX ++ dss ++ wrOSz ++ man (a,t) oRnk (Reg oSz):Wr (AP t Nothing (Just a)) (ConstI oRnk):zipWith (\d i -> Wr (AP t (Just$ConstI i) (Just a)) (Reg d)) oDims [8,16..] ++ wrSlopSz ++ Sa slopP (Reg slopSz):Wr (AP slopP Nothing Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (AP slopP (Just$ConstI i) Nothing) (Reg d)) complDims [8,16..] ++ sss ++ [MT xRd (Reg xR + ConstI (8+8*rnk)), MT slopPd (Reg slopP + ConstI (8+8*slopRnk))] ++ MT di 0:loop ++ [Pop (Reg slopSz)])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) f) xs) ys) t | Just (tA, xRnk) <- tRnk (eAnn xs), Just (tB, yRnk) <- tRnk (eAnn ys), (Arrow _ (Arrow _ Arr{})) <- eAnn f, isIF tA && isIF tB = do
+    a <- nextArr; modify (addMT a t)
+    xR <- newITemp; yR <- newITemp
+    (lX, plX) <- aeval xs xR; (lY, plY) <- aeval ys yR
+    slopIP <- newITemp; slopOP <- newITemp
+    let ixsIs=IS.fromList ixs; allIx=[ if ix `IS.member` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral yRnk] ]
+    oSz <- newITemp; slopISz <- newITemp; slopOSz <- newITemp
+    (dtsY, dssY) <- plDim yRnk (yR, lY)
+    (stsY, sssYϵ) <- offByDim (Reg <$> dtsY)
+    let _:sstridesY=stsY; sssY=init sssYϵ
+    pure (Just a, plX ++ plY ++ undefined)
 aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in if1p ty = do
     a <- nextArr
     xR <- newITemp; iR <- newITemp; szR <- newITemp; iC <- newITemp
