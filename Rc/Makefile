@@ -7,10 +7,10 @@ install: libappler.so
 	cp $^ /usr/local/lib
 
 %.o: %.c
-	gcc -fPIC -O2 -c $< -I $(HS_INCLUDE_DIR) -o $@
+	$(CC) -fPIC -O2 -c $< -I $(HS_INCLUDE_DIR) -o $@
 
 libappler.so: appler.o
-	gcc -shared $^ -o $@ -lapple -lffi
+	$(CC) -shared $^ -o $@ -lapple -lffi
 
 clean:
 	rm -rf *.o *.so
