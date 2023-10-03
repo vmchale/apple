@@ -1,6 +1,7 @@
 GHC_VER := $(shell ghc --numeric-version)
+PY_VER := 3.12
+HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | ja '{ix=1}{`2}')
 HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=2}{`1}')
-PY_VER := 3.11
 
 all: apple.so
 
