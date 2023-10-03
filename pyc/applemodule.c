@@ -120,6 +120,11 @@ typedef struct PyCacheObject {
     U code;S code_sz;FnTy* ty;
 } PyCacheObject;
 
+static void cache_dealloc(PyCacheObject* self) {
+    munmap(self->code,self->code_sz);
+    free(self->ty);
+}
+
 static PyTypeObject CacheType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "Cache",
@@ -128,7 +133,7 @@ static PyTypeObject CacheType = {
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyType_GenericNew,
-    // TODO: leaks memory lol
+    .tp_dealloc = &cache_dealloc,
 };
 
 static PyObject* apple_cache(PyObject *self, PyObject *args) {
