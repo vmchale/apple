@@ -1,6 +1,6 @@
 HC ?= ghc
-
 GHC_VER := $(shell ${HC} --numeric-version)
+HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | ja '{ix=1}{`2}')
 HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
 
 all: libappler.so
