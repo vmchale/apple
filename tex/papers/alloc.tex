@@ -12,21 +12,24 @@
 
 \section{Introduction}
 
-The language is expression-oriented (immutable); there are no references.
+Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accomodate Python's lack of static typing or C's lack of sophistication. Moreover, an embedded language can perform deforestation or fusion, which is not possible with NumPy's library approach.
 
-Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system.
+Since Apple is designed to be embedded in diverse host languages, we cannot commit to a particular garbage collector
+
+The language is expression-oriented (immutable); there are no references.
 
 \section{Method}
 
-Our work is based on classical liveness algorithms.
+Our work is based on classical liveness algorithms %; we annotate statements with {\tt use}
 % cite appel
 %, though we must tag additional information when generating the IR.
+
+% Let us reflect on this unexpected :
+% no case/sum types... etc.
 
 The IR used in the Apple compiler is sequences of statements and expressions.
 
 \begin{verbatim}
-newtype ArrayExp = ArrayPointer Temp (Maybe Exp) (Maybe Int) -- register, offset, label
-
 data Exp = Const Int
          | Reg Temp
          | At ArrayExp
@@ -48,30 +51,40 @@ Under the hood:
 
 \begin{verbatim}
  > :ir {. (irange 0 99 1)
-(movtemp r_2 (int 0))
-(movtemp r_3 (int 99))
-(movtemp r_1 (- (reg r_3) (reg r_2)))
-(malloc r_0 : (+ (asl (reg r_1) (int 3)) (int 24)))
-(write (ptr r_0) (int 1))
-(write (ptr r_0+(int 8)) (reg r_1))
-(movtemp r_4 (int 16))
+(movtemp r_14 (int 0))
+(movtemp r_15 (int 99))
+(movtemp r_13 (+ (- (reg r_15) (reg r_14)) (int 1)))
+(malloc r_12 : (+ (asl (reg r_13) (int 3)) (int 16)))
+(write (ptr r_12) (int 1))
+(write (ptr r_12+(int 8)) (reg r_13))
+(movtemp r_16 (int 0))
+(mjump (>= (reg r_16) (reg r_13)) apple_1)
 
 apple_0:
-(mjump (> (reg r_2) (reg r_3)) apple_1)
-(write (ptr r_0+(reg r_4)) (reg r_2))
-(movtemp r_2 (+ (reg r_2) (int 1)))
-(movtemp r_4 (+ (reg r_4) (int 8)))
-(j apple_0)
+(write (ptr r_12+(+ (asl (reg r_16) (int 3)) (int 16))) (reg r_14))
+(movtemp r_14 (+ (reg r_14) (int 1)))
+(movtemp r_16 (+ (reg r_16) (int 1)))
+(mjump (< (reg r_16) (reg r_13)) apple_0)
 
 apple_1:
-(movtemp r_ret @(ptr r_0+(int 16)))
-(free r_0)
+(movtemp r_ret @(ptr r_12+(int 16)))
+(free r_12)
 \end{verbatim}
 
 That is, the array that is allocated is freed precisely after all relevant operations have completed.
 
+We must be careful when arranging loops;
+
+% note that the way we exit loops matters
+
 \section{Coda}
 
-Apple has the potential to be far more efficient; type information could be used to consolidate allocations.
+Apple has the potential to be far more efficient; one could consolidate allocations, e.g.
+
+\begin{verbatim}
+ irange 0 10 1 ++ irange 0 10 1
+\end{verbatim}
+
+performs two allocations (one for each {\tt irange 0 10 1}) but
 
 \end{document}
