@@ -12,24 +12,28 @@
 
 \section{Introduction}
 
-Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accomodate Python's lack of static typing or C's lack of sophistication. Moreover, an embedded language can perform deforestation or fusion, which is not possible with NumPy's library approach.
+Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accomodate Python's lack of static typing or C's lack of sophistication. Static memory management is the same in all host languages.
 
-Since Apple is designed to be embedded in diverse host languages, we cannot commit to a particular garbage collector
+% Moreover, an embedded language can perform deforestation or fusion, which is not possible with NumPy's library approach.
 
 The language is expression-oriented (immutable); there are no references.
+% Let us reflect on this unexpected :
+% no case/sum types... etc.
 
 \section{Method}
 
-Our work is based on classical liveness algorithms %; we annotate statements with {\tt use}
+Our work is based on classical liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays. % the IR generation step only specifies allocations.
+
+When generating the IR, we track each mention of the array with a label and associate the label with the temporary that can be used to free it.
+
 % cite appel
 %, though we must tag additional information when generating the IR.
-
-% Let us reflect on this unexpected :
-% no case/sum types... etc.
 
 The IR used in the Apple compiler is sequences of statements and expressions.
 
 \begin{verbatim}
+data ArrayExp = ArrayPointer Temp (Maybe Exp) (Maybe Int) -- register, offset, label
+
 data Exp = Const Int
          | Reg Temp
          | At ArrayExp
@@ -85,6 +89,6 @@ Apple has the potential to be far more efficient; one could consolidate allocati
  irange 0 10 1 ++ irange 0 10 1
 \end{verbatim}
 
-performs two allocations (one for each {\tt irange 0 10 1}) but
+performs one allocation for each {\tt irange 0 10 1} but this could be
 
 \end{document}
