@@ -1,5 +1,9 @@
 \documentclass{article}
 
+\usepackage[margin=1.5in]{geometry}
+\usepackage{tikz}
+\usepackage{hyperref}
+
 \begin{document}
 
 \title{Apple Array Allocation}
@@ -12,7 +16,9 @@
 
 \section{Introduction}
 
-Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accomodate Python's lack of static typing or C's lack of sophistication. Static memory management is the same in all host languages.
+Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accomodate Python's lack of static typing or C's lack of sophistication.
+
+% Static memory management is likewise the same in all host languages.
 
 % Moreover, an embedded language can perform deforestation or fusion, which is not possible with NumPy's library approach.
 
@@ -25,6 +31,19 @@ The language is expression-oriented (immutable); there are no references.
 Our work is based on classical liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays. % the IR generation step only specifies allocations.
 
 When generating the IR, we track each mention of the array with a label and associate the label with the temporary that can be used to free it.
+
+% from stackexchange; don't know what it does
+\tikzset{
+block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.75cm}
+}
+
+\begin{tikzpicture}[auto]
+    \node [block] (plain) {\tt [Stmt]};
+    \node [block, below of=plain] (live) {\tt [(Stmt, Liveness)]};
+    \node [block, below of=live] (alloc) {\tt [Stmt]};
+    \draw [->] (plain) -- node {Liveness Analysis} (live);
+    \draw [->] (live) -- node {Insert Frees} (alloc);
+\end{tikzpicture}
 
 % cite appel
 %, though we must tag additional information when generating the IR.
@@ -41,8 +60,15 @@ data Exp = Const Int
 
 data Stmt = Malloc Int Temp Exp -- label, register, size
           | Write ArrayExp Exp
+          | MovTemp Temp Exp
           ...
 \end{verbatim}
+
+\subsection{Generation}
+
+We must be careful when arranging loops;
+
+\subsection{At Work}
 
 As an example, suppose we wish to generate an array and extract the first element:
 
@@ -76,8 +102,6 @@ apple_1:
 \end{verbatim}
 
 That is, the array that is allocated is freed precisely after all relevant operations have completed.
-
-We must be careful when arranging loops;
 
 % note that the way we exit loops matters
 
