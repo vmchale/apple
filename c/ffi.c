@@ -9,24 +9,15 @@
 
 #define DO(i,n,a) {int i;for(i=0;i<n;i++){a;}}
 
-ffi_type* ftype(enum apple_t t) {
-    ffi_type* r=malloc(sizeof(ffi_type));
-    Sw(t){
-        C I_t: *r=ffi_type_sint64;BR
-        C F_t: *r=ffi_type_double;BR
-        C IA: *r=ffi_type_pointer;BR
-        C FA: *r=ffi_type_pointer;BR
-    }
-    R r;
-}
+#define F(r,t) {Sw(t){C I_t: r=&ffi_type_sint64;BR;C F_t: r=&ffi_type_double;BR;C FA: r=&ffi_type_pointer;BR;C IA: r=&ffi_type_pointer;BR}}
 
 ffi_cif* apple_ffi(FnTy* ty) {
     ffi_cif* cif=malloc(sizeof(cif));
     int argc=ty->argc;
     ffi_type** args=malloc(sizeof(ffi_type*)*argc);
     enum apple_t* argv=ty->args;
-    DO(i,argc,args[i]=ftype(argv[i]));
-    ffi_type* ret=ftype(ty->res);
+    DO(i,argc,F(args[i],argv[i]))
+    ffi_type* ret;F(ret,ty->res);
     ffi_prep_cif(cif,FFI_DEFAULT_ABI,(unsigned int)argc,ret,args);
     R cif;
 }
