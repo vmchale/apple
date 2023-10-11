@@ -249,6 +249,7 @@ mkIx ix (MovqXA _ _ (RS R13 _ _):asms)        = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RSD{}:asms)               = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RS{}:asms)                = mkIx (ix+6) asms
 mkIx ix (MovqXA _ r0 (RC Rsp _):asms) | fits r0 = mkIx (ix+6) asms
+                                      | otherwise = mkIx (ix+7) asms
 mkIx ix (MovqXA _ xr (RC r _):asms) | fits xr && fits r = mkIx (ix+5) asms
 mkIx ix (MovqXA _ _ (RC R12 _):asms)          = mkIx (ix+7) asms
 mkIx ix (MovqXA _ _ RC{}:asms)                = mkIx (ix+6) asms
@@ -402,6 +403,14 @@ asm ix st (MovqXA _ r0 (RC r1 i8):asms) | (0, b0) <- modRM r0, (0, b1) <- modRM 
         instr = 0xf3:0x0f:0x7e:modB:le i8
     in instr:asm (ix+5) st asms
 asm ix st (MovqXA _ r (RC rb@R12 i8):asms) =
+    let (e, b) = modRM r
+        (eb, bb) = modRM rb
+        modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
+        sib = 0x4 `shiftL` 3 .|. bb
+        pre = 0x48 .|. e `shiftL` 2 .|. eb
+        isn = 0x66:pre:0xf:0x6e:modB:sib:le i8
+    in isn:asm (ix+7) st asms
+asm ix st (MovqXA _ r (RC rb@Rsp i8):asms) =
     let (e, b) = modRM r
         (eb, bb) = modRM rb
         modB = 0x1 `shiftL` 6 .|. b `shiftL` 3 .|. 0x4
