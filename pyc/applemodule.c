@@ -160,30 +160,28 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
     PO r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
-    U* vals=malloc(sizeof(U)*argc);
-    U ret=malloc(8);
+    U* vals=alloca(sizeof(U)*argc);
+    U ret=alloca(8);
     PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
     for(int k=0;k<argc;k++){
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             Sw(ty->args[k]){
-                C IA: {U* x=malloc(sizeof(U));x[0]=i_npy(pyarg);vals[k]=x;};BR
-                C FA: {U* x=malloc(sizeof(U));x[0]=f_npy(pyarg);vals[k]=x;};BR
-                C I_t: {I* xi=malloc(sizeof(I));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
-                C F_t: {F* xf=malloc(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
+                C IA: {U* x=alloca(sizeof(U));x[0]=i_npy(pyarg);vals[k]=x;};BR
+                C FA: {U* x=alloca(sizeof(U));x[0]=f_npy(pyarg);vals[k]=x;};BR
+                C I_t: {I* xi=alloca(sizeof(I));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
+                C F_t: {F* xf=alloca(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
             }
         }
     }
     ffi_call(cif,fp,ret,vals);
-    DO(k,argc,free(vals[k]));
-    free(vals);free(cif);
+    free(cif);
     Sw(ty->res){
         C IA: r=npy_i(*(U*)ret);BR
         C FA: r=npy_f(*(U*)ret);BR
         C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
         C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
     }
-    free(ret);
     R r;
 };
 
