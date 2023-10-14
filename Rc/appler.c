@@ -102,25 +102,23 @@ SEXP run_R(SEXP args){
     SEXP r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
-    U* vals=malloc(sizeof(U)*argc);
-    U ret=malloc(8);
+    U* vals=alloca(sizeof(U)*argc);
+    U ret=alloca(8);
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
-            C FA: {U* x=malloc(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
-            C F_t: {F* xf=malloc(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
-            C I_t: {I* xi=malloc(sizeof(I));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
+            C FA: {U* x=alloca(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
+            C F_t: {F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
+            C I_t: {I* xi=alloca(sizeof(I));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
         }
     }
     ffi_call(cif,fp,ret,vals);
-    DO(k,argc,free(vals[k]));
-    free(vals);free(cif);
+    free(cif);
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR
         C F_t: r=ScalarReal(*(F*)ret);BR
         C I_t: r=ScalarInteger((int)(*(I*)ret));BR
     }
-    free(ret);
     R r;
 }
 
