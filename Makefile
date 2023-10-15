@@ -1,7 +1,7 @@
 HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
 
 libapple.so: $(HS_SRC) include/apple.h
-	cabal build flib:apple -w ghc-9.6
+	cabal build flib:apple -w ghc-9.8
 	cp $$(cabal-plan list-bins apple:flib:apple | awk '{print $$2}') .
 	strip $@
 
