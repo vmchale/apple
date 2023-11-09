@@ -333,7 +333,7 @@ benchC s = case tyParse bs of
         m <- lift $ gets mf
         a <- lift $ gets _arch
         let cfp=case a of {X64 -> ctxFunP; AArch64 -> actxFunP}
-        liftIO $ benchmark (nfIO (do{(sz,fp) <- cfp m bs; freeFunPtr sz fp}))
+        liftIO $ benchmark (nfIO (do{asm <- cfp m bs; freeAsm asm}))
     where bs = ubs s
 
 benchE :: String -> Repl AlexPosn ()
@@ -352,24 +352,30 @@ benchE s = do
                     case eAnn e of
                         (Arr _ F) -> do
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
-                                freeFunPtr sz fp
+                                freeAsm asm
                         (Arr _ I) -> do
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
-                                freeFunPtr sz fp
+                                freeAsm asm
                         I -> do
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 benchmark (nfIO $ callFFI fp retInt64 [])
-                                freeFunPtr sz fp
+                                freeAsm asm
                         F -> do
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 benchmark (nfIO $ callFFI fp retCDouble [])
-                                freeFunPtr sz fp
+                                freeAsm asm
+                        P [F,F] -> error "Haskell support for float ABI is poor :("
+                        P{} ->
+                            liftIO $ do
+                                asm@(_, fp, _) <- eFunP i' m eC
+                                benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
+                                freeAsm asm
     where bs = ubs s
 
 printExpr :: String -> Repl AlexPosn ()
