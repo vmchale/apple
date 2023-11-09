@@ -433,4 +433,5 @@ evalE (IR.EAt (IR.AP m (Just e) _)) rD               = do
     eR <- nextI
     plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (absReg m), IAddRR () rD' (IReg eR)]
+evalE (IR.LA i) rD                                   = pure [MovRL () (absReg rD) i]
 evalE e _                                            = error (show e)
