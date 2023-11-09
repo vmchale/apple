@@ -185,7 +185,8 @@ fpAaft fp xs ys n = do
     wA a $ \p -> wA b $ \q -> do
         hs4 <$> peek (aaft f p q n)
 
-fpn = case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
+-- leaks memory
+fpn = fmap fst . case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
 
 fpAaf :: FilePath -> [Double] -> [Double] -> IO Double
 fpAaf fp xs ys = do

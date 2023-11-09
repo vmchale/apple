@@ -48,9 +48,10 @@ import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.IntMap                as IM
 import qualified Data.Text                  as T
+import           Data.Tuple.Extra           (first3)
 import           Data.Typeable              (Typeable)
 import           Data.Word                  (Word64)
-import           Foreign.Ptr                (FunPtr)
+import           Foreign.Ptr                (FunPtr, Ptr)
 import           GHC.Generics               (Generic)
 import           I
 import           IR
@@ -105,27 +106,30 @@ getTy = fmap (first eAnn) . eCheck <=< annTy
 annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
-eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b)
+eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, [Ptr Word64])
 eFunP = eFunPG assembleCtx ex86G
 
-eAFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b)
+eAFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, [Ptr Word64])
 eAFunP = eFunPG Aarch64.assembleCtx eAarch64
 
-eFunPG jit asm m ctx = fmap (first BS.length) . (jit ctx <=< either throwIO pure . asm m)
+eFunPG jit asm m ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm m)
 
-ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
+ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, [Ptr Word64])
 ctxFunP = ctxFunPG assembleCtx x86G
 
-actxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a)
+actxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, [Ptr Word64])
 actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
 
-ctxFunPG jit asm ctx = fmap (first BS.length) . (jit ctx <=< either throwIO pure . asm)
+ctxFunPG jit asm ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm)
 
-funP :: BSL.ByteString -> IO (FunPtr a)
-funP = fmap snd.allFp <=< either throwIO pure . x86G
+funP :: BSL.ByteString -> IO (FunPtr a, [Ptr Word64])
+funP = fmap π.allFp <=< either throwIO pure . x86G
 
-aFunP :: BSL.ByteString -> IO (FunPtr a)
-aFunP = fmap snd.Aarch64.allFp <=< either throwIO pure . aarch64
+π :: (a, b, c) -> (b, c)
+π (_,y,z) = (y,z)
+
+aFunP :: BSL.ByteString -> IO (FunPtr a, [Ptr Word64])
+aFunP = fmap π.Aarch64.allFp <=< either throwIO pure . aarch64
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86G

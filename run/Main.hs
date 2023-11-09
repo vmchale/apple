@@ -8,6 +8,7 @@ import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.State       (StateT, evalStateT, gets, modify)
 import           Control.Monad.Trans.Class (lift)
 import qualified Data.ByteString.Lazy      as BSL
+import           Data.Foldable             (traverse_)
 import           Data.Int                  (Int64)
 import           Data.List
 import           Data.Semigroup            ((<>))
@@ -252,6 +253,8 @@ annR s = do
                 Left err      -> putDoc (pretty err <> hardline)
                 Right (e,_,_) -> putDoc (prettyTyped e <> hardline)
 
+freeAsm (sz, fp, ps) = freeFunPtr sz fp -- *> traverse_ free ps
+
 inspect :: String -> Repl AlexPosn ()
 inspect s = do
     st <- lift $ gets _lex
@@ -271,10 +274,10 @@ inspect s = do
                                 (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
                     m <- lift $ gets mf
                     liftIO $ do
-                        (sz, fp) <- efp i' m eC
+                        asm@(_, fp, _) <- efp i' m eC
                         p <- callFFI fp (retPtr undefined) []
                         TIO.putStrLn =<< dbgPrint p
-                        free p *> freeFunPtr sz fp
+                        free p *> freeAsm asm
         where bs = ubs s
 
 iCtx :: String -> String -> Repl AlexPosn ()
@@ -305,69 +308,69 @@ printExpr s = do
                     case eAnn e of
                         I ->
                           liftIO $ do
-                              (sz, fp) <- efp i' m eC -- TODO: i after tyClosed gets discarded?
+                              asm@(_, fp, _) <- efp i' m eC -- TODO: i after tyClosed gets discarded?
                               print =<< callFFI fp retInt64 []
-                              freeFunPtr sz fp
+                              freeAsm asm
                         F ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 print =<< callFFI fp retCDouble []
-                                freeFunPtr sz fp
+                                freeAsm asm
                         (Arr _ F) ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr AF -> IO AF) p
-                                free p *> freeFunPtr sz fp
+                                free p *> freeAsm asm
                         (Arr _ I) ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
-                                free p *> freeFunPtr sz fp
+                                free p *> freeAsm asm
                         B ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 cb <- callFFI fp retWord8 []
                                 putStrLn (sB cb)
-                                freeFunPtr sz fp
+                                freeAsm asm
                             where sB 1 = "#t"; sB 0 = "#f"
                         (P [Arr _ F, Arr _ F]) ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 (Pp pa0 pa1) <- (peek :: Ptr (Pp (Ptr (Apple Double)) (Ptr (Apple Double))) -> IO (Pp (Ptr (Apple Double)) (Ptr (Apple Double)))) p
                                 a0 <- peek pa0; a1 <- peek pa1
                                 putDoc$(<>hardline)$pretty (a0, a1)
-                                free p *> free pa0 *> free pa1 *> freeFunPtr sz fp
+                                free p *> free pa0 *> free pa1 *> freeAsm asm
                         (P [Arr _ F, Arr _ F, Arr _ F, F]) ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 (P4 pa0 pa1 pa2 f) <- (peek :: Ptr (P4 (Ptr (Apple Double)) (Ptr (Apple Double)) (Ptr (Apple Double)) Double) -> IO (P4 (Ptr (Apple Double)) (Ptr (Apple Double)) (Ptr (Apple Double)) Double)) p
                                 a0 <- peek pa0; a1 <- peek pa1; a2 <- peek pa2
                                 putDoc$(<>hardline)$tupled [pretty a0, pretty a1, pretty a2, pretty f]
-                                free p *> free pa0 *> free pa1 *> free pa2 *> freeFunPtr sz fp
+                                free p *> free pa0 *> free pa1 *> free pa2 *> freeAsm asm
                         (P [Arr _ I, Arr _ I]) ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 (Pp pa0 pa1) <- (peek :: Ptr (Pp (Ptr (Apple Int64)) (Ptr (Apple Int64))) -> IO (Pp (Ptr (Apple Int64)) (Ptr (Apple Int64)))) p
                                 a0 <- peek pa0; a1 <- peek pa1
                                 putDoc$(<>hardline)$pretty (a0, a1)
-                                free p *> free pa0 *> free pa1 *> freeFunPtr sz fp
+                                free p *> free pa0 *> free pa1 *> freeAsm asm
                         (Arr _ (P [F,F])) ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Double Double)) -> IO (Apple (Pp Double Double))) p
-                                free p *> freeFunPtr sz fp
+                                free p *> freeAsm asm
                         (Arr _ (P [I,I])) ->
                             liftIO $ do
-                                (sz, fp) <- efp i' m eC
+                                asm@(_, fp, _) <- efp i' m eC
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Int64 Int64)) -> IO (Apple (Pp Int64 Int64))) p
-                                free p *> freeFunPtr sz fp
+                                free p *> freeAsm asm
                         t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
     where bs = ubs s
 

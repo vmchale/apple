@@ -11,10 +11,11 @@ import           Control.Monad   (when)
 import           Data.Bifunctor  (second)
 import           Data.Bits       (Bits (..))
 import qualified Data.ByteString as BS
+import           Data.Functor    (($>))
 import qualified Data.IntMap     as IM
 import qualified Data.Map        as M
 import           Data.Word       (Word64, Word8)
-import           Foreign.Ptr     (FunPtr, nullPtr)
+import           Foreign.Ptr     (FunPtr, Ptr, nullPtr)
 import           GHC.Base        (Int (I#), iShiftRL#)
 import           Hs.FFI
 import           Sys.DL
@@ -25,25 +26,29 @@ hasMa = any g where g MovRCf{}=True; g _=False
 prepAddrs :: [AArch64 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
-assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b)
-assembleCtx ctx (_, isns) = do
+assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, [Ptr Word64])
+assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
     when (p==nullPtr) $ error "failed to allocate memory for JIT"
+    ps <- aArr ds
     let b = BS.pack.concatMap reverse$asm 0 (Just ctx, lbls) isns
-    (b,)<$>finish b p
+    (b,,IM.elems ps)<$>finish b p
 
-dbgFp = fmap fst . allFp
-allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], FunPtr b)
-allFp (_, instrs) = do
+dbgFp asmϵ = do
+    (bss,_,ps) <- allFp asmϵ
+    freeze ps $> bss
+allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], FunPtr b, [Ptr Word64])
+allFp (ds, instrs) = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
         res <- prepAddrs instrs
         case res of
             Just (m, _) -> (res,) <$> allocNear m (fromIntegral sz)
             _           -> (res,) <$> allocExec (fromIntegral sz)
+    ps <- aArr ds
     let is = asm 0 (fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bs = BS.pack.reverse<$>is
-    (bs,)<$>finish b p
+    (bs,,IM.elems ps)<$>finish b p
 
 mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
 mkIx ix (Label _ l:asms) = second (M.insert l ix) $ mkIx ix asms
