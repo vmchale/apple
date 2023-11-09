@@ -46,8 +46,10 @@ import           Control.Monad.State.Strict (evalState, state)
 import           Data.Bifunctor             (first, second)
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
+import qualified Data.IntMap                as IM
 import qualified Data.Text                  as T
 import           Data.Typeable              (Typeable)
+import           Data.Word                  (Word64)
 import           Foreign.Ptr                (FunPtr)
 import           GHC.Generics               (Generic)
 import           I
@@ -133,13 +135,13 @@ as f = (prolegomena <#>) . prettyAsm . either throw id . aarch64
     where prolegomena = ".p2align 2\n\n.text\n\n.global _" <> pretty f <#> "_" <> pretty f <> ":"
 
 aarch64 :: BSL.ByteString -> Either (Err AlexPosn) [AArch64 AReg FAReg ()]
-aarch64 = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x, st) -> irToAarch64 st x)) . ir
+aarch64 = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x,_,st) -> irToAarch64 st x)) . ir
 
 x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
 x86G = walloc (uncurry X86.gallocFrame)
 
 eAarch64 :: Int -> E a -> Either (Err a) [AArch64 AReg FAReg ()]
-eAarch64 i = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x, st) -> irToAarch64 st x)) . eir i
+eAarch64 i = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x,_,st) -> irToAarch64 st x)) . eir i
 
 ex86G :: Int -> E a -> Either (Err a) [X86 X86Reg FX86Reg ()]
 ex86G i = wallocE i (uncurry X86.gallocFrame)
@@ -150,17 +152,17 @@ eDumpX86 i = fmap prettyAsm . ex86G i
 eDumpAarch64 :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 
-walloc f = fmap (optX86 . optX86 . f . (\(x, st) -> irToX86 st x)) . ir
-wallocE i f = fmap (optX86 . optX86 . f . (\(x, st) -> irToX86 st x)) . eir i
+walloc f = fmap (optX86 . optX86 . f . (\(x,_,st) -> irToX86 st x)) . ir
+wallocE i f = fmap (optX86 . optX86 . f . (\(x,_,st) -> irToX86 st x)) . eir i
 
-ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], WSt)
-ir = fmap (f.writeC) . opt where f (s,r,t) = (frees t (optIR s),r)
+ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IM.IntMap [Word64], WSt)
+ir = fmap (f.writeC) . opt where f (s,r,aa,t) = (frees t (optIR s),aa,r)
 
-eir :: Int -> E a -> Either (Err a) ([Stmt], WSt)
-eir i = fmap (f.writeC) . optE i where f (s,r,t) = (frees t (optIR s),r)
+eir :: Int -> E a -> Either (Err a) ([Stmt], IM.IntMap [Word64], WSt)
+eir i = fmap (f.writeC) . optE i where f (s,r,aa,t) = (frees t (optIR s),aa,r)
 
 eDumpIR :: Int -> E a -> Either (Err a) (Doc ann)
-eDumpIR i = fmap (prettyIR.fst) . eir i
+eDumpIR i = fmap (prettyIR.π) . eir i where π (a,b,_)=(b,a)
 
 optE :: Int -> E a -> Either (Err a) (E (T ()))
 optE i e =

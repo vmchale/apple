@@ -17,7 +17,10 @@ module IR ( Exp (..)
           ) where
 
 import           Data.Int          (Int64)
+import qualified Data.IntMap       as IM
 import           Data.Semigroup    ((<>))
+import           Data.Word         (Word64)
+import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), hardline, parens, (<+>))
 import           Prettyprinter.Ext
 
@@ -134,6 +137,7 @@ data Exp = ConstI Int64
          | IU IUn Exp
          | IRFloor FExp
          | EAt AE
+         | LA !Int -- assembler data
 
 instance Pretty FExp where
     pretty (ConstF x)   = parens ("double" <+> pretty x)
@@ -155,6 +159,7 @@ instance Pretty Exp where
     pretty (EAt p)        = "@" <> pretty p
     pretty (FRel op e e') = parens (pretty op <+> pretty e <+> pretty e')
     pretty (Is e)         = parens ("is?" <+> pretty e)
+    pretty (LA n)         = ".data_" <> pretty n
 
 instance Show Exp where show = show.pretty
 
@@ -213,5 +218,12 @@ instance Pretty FUn where
 instance Pretty IUn where
     pretty ISgn = "sgn"; pretty INot = "¬"; pretty IEven = "even"; pretty IOdd = "odd"
 
-prettyIR :: [Stmt] -> Doc ann
-prettyIR = prettyLines . fmap pretty
+
+ahex :: (Integral a, Show a) => a -> Doc ann
+ahex = pretty.($"").showHex
+
+prettyIR :: (IM.IntMap [Word64], [Stmt]) -> Doc ann
+prettyIR (ds,ss) = prettyLines ((\(n,dd) -> ".data_" <> pretty n <> ":" <+> mconcat (fmap pretty dd)) <$> IM.toList ds) <#> pIR ss
+
+pIR :: [Stmt] -> Doc ann
+pIR = prettyLines.fmap pretty

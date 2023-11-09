@@ -235,6 +235,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
                     | MovRA { ann :: a, rDest :: reg, aSrc :: Addr reg }
                     | MovAR { ann :: a, aDest :: Addr reg, rSrc :: reg }
+                    | MovRL { ann :: a, rDest :: reg, lSrc :: Int }
                     | MovAI32 { ann :: a, aDest :: Addr reg, i32Src :: Int32 }
                     | MovRI { ann :: a, rDest :: reg, iSrc :: Int64 }
                     | MovqXR { ann :: a, fDest :: freg, rSrc :: reg }
@@ -325,6 +326,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (Label _ l)                   = prettyLabel l <> colon
     pretty (CmpRR _ r0 r1)               = i4 ("cmp" <+> pretty r0 <> "," <+> pretty r1)
     pretty (MovRR _ r0 r1)               = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (MovRL _ r l)                 = i4 ("mov" <+> pretty r <> "," <+> "data_" <> pretty l)
     pretty (MovRI _ r i)                 = i4 ("mov" <+> pretty r <> "," <+> pretty i)
     pretty (XorRR _ r0 r1)               = i4 ("xor" <+> pretty r0 <> "," <+> pretty r1)
     pretty (MovqXR _ r0 r1)              = i4 ("movq" <+> pretty r0 <> "," <+> pretty r1)
@@ -436,6 +438,7 @@ prettyDebugX86 = prettyLines . fmap prettyLive
 
 mapR :: (areg -> reg) -> X86 areg afreg a -> X86 reg afreg a
 mapR f (MovRR l r0 r1)              = MovRR l (f r0) (f r1)
+mapR f (MovRL x r l)                = MovRL x (f r) l
 mapR _ (Jg x l)                     = Jg x l
 mapR _ (Je x l)                     = Je x l
 mapR _ (Jge x l)                    = Jge x l
@@ -455,6 +458,7 @@ mapR f (MovRI l r0 i)               = MovRI l (f r0) i
 mapR f (MovRA l r a)                = MovRA l (f r) (f<$>a)
 mapR f (MovAR l a r)                = MovAR l (f<$>a) (f r)
 mapR f (MovAI32 l a i)              = MovAI32 l (f<$>a) i
+
 mapR f (MovqXR l xr r)              = MovqXR l xr (f r)
 mapR f (MovqXA l xr a)              = MovqXA l xr (f<$>a)
 mapR f (MovqAX l a xr)              = MovqAX l (f<$>a) xr
@@ -532,6 +536,7 @@ fR _ J{}                    = mempty
 fR f (MovAR _ a r)          = f @<> a <> f r
 fR f (MovRA _ r a)          = f r <> f @<> a
 fR f (MovRR _ r0 r1)        = f r0 <> f r1
+fR f (MovRL _ r _)          = f r
 fR _ Label{}                = mempty
 fR f (IAddRR _ r0 r1)       = f r0 <> f r1
 fR f (IAddRI _ r _)         = f r
@@ -624,6 +629,7 @@ mapFR _ (J x l)                      = J x l
 mapFR _ (Label x l)                  = Label x l
 mapFR _ (MovRI l r i)                = MovRI l r i
 mapFR _ (MovRR l r0 r1)              = MovRR l r0 r1
+mapFR _ (MovRL x r l)                = MovRL x r l
 mapFR _ (IAddRI l r i)               = IAddRI l r i
 mapFR f (Movapd l r0 r1)             = Movapd l (f r0) (f r1)
 mapFR f (Mulsd l xr0 xr1)            = Mulsd l (f xr0) (f xr1)

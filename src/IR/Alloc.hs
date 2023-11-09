@@ -25,8 +25,7 @@ iF :: IM.IntMap Temp -> [(Stmt, Interval)] -> [Stmt]
 iF a = concatMap g where
     g (RA{}, _) = []
     g (s, i)    = s:[ Free t | t <- ts ] where ts = mapMaybe (`IM.lookup` a) (IS.toList (done i))
-    -- FIXME: this needs to actually push it out of the loop lol
-    -- it's definitely fucking up with closures or something
+    -- TODO "closures"?
     --
     -- TODO: examine this in light of post-loop conditionals... might be fine?
 

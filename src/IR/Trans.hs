@@ -15,6 +15,8 @@ import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
 import           Data.Maybe                 (catMaybes)
+import           Data.Word                  (Word64)
+import           GHC.Float                  (castDoubleToWord64)
 import           IR
 import           Nm
 import           U
@@ -22,9 +24,11 @@ import           U
 data IRSt = IRSt { labels :: [Label]
                  , temps  :: [Int]
                  , arrs   :: [Int]
+                 , aSt    :: !Int
                  , vars   :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                  , avars  :: IM.IntMap (Maybe Int, Temp)
                  , fvars  :: IM.IntMap (Label, [(Maybe Int, Temp)], (Maybe Int, Temp))
+                 , aa     :: IM.IntMap [Word64]
                  , mts    :: IM.IntMap Temp
                  }
 
@@ -34,12 +38,17 @@ getT st n@(Nm _ (U i) _) = IM.findWithDefault (error ("Internal error: variable 
 nextI :: IRM Int
 nextI = do
     i <- gets (head.temps)
-    modify (\(IRSt l (_:t) ar v a f ts) -> IRSt l t ar v a f ts) $> i
+    modify (\(IRSt l (_:t) ar as v a f aas ts) -> IRSt l t ar as v a f aas ts) $> i
 
 nextArr :: IRM Int
 nextArr = do
     a <- gets (head.arrs)
-    modify (\(IRSt l t (_:ar) v aϵ f ts) -> IRSt l t ar v aϵ f ts) $> a
+    modify (\(IRSt l t (_:ar) as v aϵ f aas ts) -> IRSt l t ar as v aϵ f aas ts) $> a
+
+nextAA :: IRM Int
+nextAA = do
+    n <- gets aSt
+    modify (\(IRSt l t ar as v a f aas ts) -> IRSt l t ar (as+1) v a f aas ts) $> n
 
 newITemp :: IRM Temp
 newITemp = ITemp <$> nextI
@@ -50,19 +59,22 @@ newFTemp = FTemp <$> nextI
 newLabel :: IRM Label
 newLabel = do
     i <- gets (head.labels)
-    modify (\(IRSt l t ar v a f ts) -> IRSt (tail l) t ar v a f ts) $> i
+    modify (\(IRSt l t ar as v a f aas ts) -> IRSt (tail l) t ar as v a f aas ts) $> i
 
 addMT :: Int -> Temp -> IRSt -> IRSt
-addMT i tϵ (IRSt l t ar v a f ts) = IRSt l t ar v a f (IM.insert i tϵ ts)
+addMT i tϵ (IRSt l t ar as v a f aas ts) = IRSt l t ar as v a f aas (IM.insert i tϵ ts)
+
+addAA :: Int -> [Word64] -> IRSt -> IRSt
+addAA i aa (IRSt l t ar as v a f aas ts) = IRSt l t ar as v a f (IM.insert i aa aas) ts
 
 addVar :: Nm a -> Temp -> IRSt -> IRSt
-addVar (Nm _ (U i) _) r (IRSt l t ar v a f ts) = IRSt l t ar (IM.insert i r v) a f ts
+addVar (Nm _ (U i) _) r (IRSt l t ar as v a f aas ts) = IRSt l t ar as (IM.insert i r v) a f aas ts
 
 addAVar :: Nm a -> (Maybe Int, Temp) -> IRSt -> IRSt
-addAVar (Nm _ (U i) _) r (IRSt l t ar v a f ts) = IRSt l t ar v (IM.insert i r a) f ts
+addAVar (Nm _ (U i) _) r (IRSt l t ar as v a f aas ts) = IRSt l t ar as v (IM.insert i r a) f aas ts
 
 addFVar :: Nm a -> (Label, [(Maybe Int, Temp)], (Maybe Int, Temp)) -> IRSt -> IRSt
-addFVar (Nm _ (U i) _) x (IRSt l t ar v a f ts) = IRSt l t ar v a (IM.insert i x f) ts
+addFVar (Nm _ (U i) _) x (IRSt l t ar as v a f aas ts) = IRSt l t ar as v a (IM.insert i x f) aas ts
 
 type IRM = State IRSt
 
@@ -82,6 +94,9 @@ isIF I = True; isIF F = True; isIF _ = False
 isF :: T a -> Bool
 isF F = True; isF _ = False
 
+mFs :: [E a] -> Maybe [Double]
+mFs = traverse mF where mF (FLit _ d)=Just d; mF _=Nothing
+
 isI :: T a -> Bool
 isI I = True; isI _ = False
 
@@ -90,8 +105,8 @@ isB :: T a -> Bool; isB B = True; isB _ = False
 isArr Arr{} = True
 isArr _     = False
 
-writeC :: E (T ()) -> ([Stmt], WSt, IM.IntMap Temp)
-writeC = π.flip runState (IRSt [0..] [0..] [0..] IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, IRSt l t _ _ _ _ a) = (s, WSt l t, a)
+writeC :: E (T ()) -> ([Stmt], WSt, IM.IntMap [Word64], IM.IntMap Temp)
+writeC = π.flip runState (IRSt [0..] [0..] [0..] 0 IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, IRSt l t _ _ _ _ _ aa a) = (s, WSt l t, aa, a)
 
 -- %xmm0 – %xmm7
 writeCM :: E (T ()) -> IRM [Stmt]
@@ -115,7 +130,7 @@ writeCM e' = do
     go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX FRet (FReg f)]) <$> eval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = eval e CRet
              | isB (eAnn e) = eval e CRet
-             | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$case l of {Just m -> r++[MT CRet (Reg i), RA m]}}
+             | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$r++[MT CRet (Reg i)]++case l of {Just m -> [RA m]; Nothing -> []}}
              | P [F,F] <- eAnn e = do {t<- newITemp; p <- eval e t; pure$Sa t 16:p++[MX FRet (FAt (AP t Nothing Nothing)), MX FRet1 (FAt (AP t (Just 8) Nothing)), Pop 16]}
              | ty@P{} <- eAnn e = let b64=bT ty; b=ConstI b64 in do {t <- newITemp; a <- nextArr; (ls, pl) <- peval e t; pure (Sa t b:pl ++ [Ma a CRet b, Cpy (AP CRet Nothing (Just a)) (AP t Nothing Nothing) (ConstI$b64`div`8), Pop b, RA a] ++ (RA<$>ls))}
              | otherwise = error ("Unsupported return type: " ++ show (eAnn e))
@@ -478,6 +493,10 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | (Arr (_ `Cons` 
     let loopBody = ss ++ [Cpy (AP t (Just ((Reg i * pt) + 16)) (Just a)) (AP arg Nothing Nothing) (ConstI$ptN`div`8)]
     loop <- doN i (Reg nR) loopBody
     pure (Just a, putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ Sa arg (ConstI ptN):putSeed ++ loop ++ [Pop (ConstI ptN)])
+aeval (Id _ (AShLit ns es)) t | Just fs <- mFs es = do
+    let rnk=length ns;ds = castDoubleToWord64 <$> fs
+    n <- nextAA
+    pure (Nothing, [MT t (LA n)])
 aeval (Id _ (AShLit ns es)) t | isF (eAnn$head es) = do
     a <- nextArr
     xR <- newFTemp
@@ -600,6 +619,10 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) f) xs)
     (dtsY, dssY) <- plDim yRnk (yR, lY)
     (stsY, sssYϵ) <- offByDim (Reg <$> dtsY)
     let _:sstridesY=stsY; sssY=init sssYϵ
+    -- need one "dummy" run to get out-dimensions
+    -- slopO not known until then
+    x0 <- newITemp; y0 <- newITemp
+    (lY0, ss0) <- writeF f [(Nothing, x0), (Nothing, slopIP)] y0
     pure (Just a, plX ++ plY ++ undefined)
 aeval (EApp _ (EApp _ (Builtin _ Rot) i) xs) t | let ty=eAnn xs in if1p ty = do
     a <- nextArr

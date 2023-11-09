@@ -86,6 +86,7 @@ uE (IB _ e0 e1)                   = uE e0<>uE e1
 uE (FRel _ e0 e1)                 = uF e0 <> uF e1
 uE (IRFloor e)                    = uF e
 uE (IU _ e)                       = uE e
+uE LA{}                           = IS.empty
 
 uF :: FExp -> IS.IntSet
 uF (FAt (AP _ Nothing (Just m)))  = IS.singleton m

@@ -48,6 +48,7 @@ import qualified Data.IntMap          as IM
 import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import qualified Data.Text.IO         as TIO
+import           Data.Tuple.Extra     (fst3)
 import           IR
 import           IR.Alloc
 import           L
@@ -103,11 +104,11 @@ nasm f = (prolegomena <#>) . prettyAsm . either throw id . x86G
     where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
 
 dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.(\(x, st) -> irToX86 st x)) . ir
+dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.(\(x,_,st) -> irToX86 st x)) . ir
     where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 16)
 
 dumpAAss :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpAAss = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry Aarch64.gallocOn.(\(x, st) -> irToAarch64 st x)) . ir
+dumpAAss = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry Aarch64.gallocOn.(\(x,_,st) -> irToAarch64 st x)) . ir
     where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 19)
 
 dumpX86G :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
@@ -117,16 +118,16 @@ dumpAarch64 :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAarch64 = fmap prettyAsm . aarch64
 
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Abs = fmap (prettyAsm . (\(x, st) -> snd (irToX86 st x))) . ir
+dumpX86Abs = fmap (prettyAsm . (\(x,_,st) -> snd (irToX86 st x))) . ir
 
 dumpAAbs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpAAbs = fmap (prettyAsm . (\(x, st) -> snd (irToAarch64 st x))) . ir
+dumpAAbs = fmap (prettyAsm . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpIR = fmap (prettyIR.fst) . ir
+dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
 
 dumpIRI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpIRI = fmap (prettyIRI.live.fst).ir
+dumpIRI = fmap (prettyIRI.live.fst3).ir
 
 dumpX86Intervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Intervals = fmap X86.prettyDebugX86 . x86Iv
@@ -135,19 +136,19 @@ dumpAIntervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAIntervals = fmap Aarch64.prettyDebug . aarch64Iv
 
 dumpX86Liveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Liveness = fmap (X86.prettyDebugX86 . mkLive . (\(x, st) -> snd (irToX86 st x))) . ir
+dumpX86Liveness = fmap (X86.prettyDebugX86 . mkLive . (\(x,_,st) -> snd (irToX86 st x))) . ir
 
 dumpALiveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpALiveness = fmap (Aarch64.prettyDebug . mkLive . (\(x, st) -> snd (irToAarch64 st x))) . ir
+dumpALiveness = fmap (Aarch64.prettyDebug . mkLive . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
 dumpABB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpABB = fmap (prettyBBLs . liveBB . (\(x, st) -> snd (irToAarch64 st x))) . ir
+dumpABB = fmap (prettyBBLs . liveBB . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
 dumpX86BBL :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86BBL = fmap (prettyBBLs . liveBB . (\(x, st) -> snd (irToX86 st x))) . ir
+dumpX86BBL = fmap (prettyBBLs . liveBB . (\(x,_,st) -> snd (irToX86 st x))) . ir
 
 dumpX86BB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86BB = fmap (prettyBBs . bb . (\(x, st) -> snd (irToX86 st x))) . ir
+dumpX86BB = fmap (prettyBBs . bb . (\(x,_,st) -> snd (irToX86 st x))) . ir
 
 prettyBBs = concatWith (\x y -> x <#> "==BB==" <#> y) . fmap (\(BB asms _) -> prettyLines (pretty <$> asms))
 
@@ -158,10 +159,10 @@ prettyBBL :: Pretty (arch reg freg ()) => BB arch reg freg () Liveness -> Doc an
 prettyBBL (BB asms l) = pretty l <#> prettyLines (fmap pretty asms)
 
 x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Interval]
-x86Iv = fmap (mkIntervals . (\(x, st) -> snd (irToX86 st x))) . ir
+x86Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToX86 st x))) . ir
 
 aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Interval]
-aarch64Iv = fmap (mkIntervals . (\(x, st) -> snd (irToAarch64 st x))) . ir
+aarch64Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
 printParsed :: BSL.ByteString -> Doc ann
 printParsed = pretty . fst . either throw id . parseRename
@@ -172,7 +173,6 @@ printTypes bsl =
     case parseRename bsl of
         Left err       -> throw err
         Right (ast, m) -> either throw (prettyTyped.fst3) $ tyClosed m ast
-    where fst3 ~(x, _, _) = x
 
 topt :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 topt = fmap prettyTyped . opt
