@@ -5,11 +5,10 @@ module IR.Trans ( writeC
 
 import           A
 import           Control.Monad              (zipWithM, (<=<))
-import           Control.Monad.State.Strict (State, gets, modify, runState)
+import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor             (second)
 import           Data.Either                (rights)
 import           Data.Foldable              (fold)
-import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
@@ -36,19 +35,13 @@ getT :: IM.IntMap b -> Nm a -> b
 getT st n@(Nm _ (U i) _) = IM.findWithDefault (error ("Internal error: variable " ++ show n ++ " not mapped to register.")) i st
 
 nextI :: IRM Int
-nextI = do
-    i <- gets (head.temps)
-    modify (\(IRSt l (_:t) ar as v a f aas ts) -> IRSt l t ar as v a f aas ts) $> i
+nextI = state (\(IRSt l (tϵ:t) ar as v a f aas ts) -> (tϵ, IRSt l t ar as v a f aas ts))
 
 nextArr :: IRM Int
-nextArr = do
-    a <- gets (head.arrs)
-    modify (\(IRSt l t (_:ar) as v aϵ f aas ts) -> IRSt l t ar as v aϵ f aas ts) $> a
+nextArr = state (\(IRSt l t (a:ar) as v aϵ f aas ts) -> (a, IRSt l t ar as v aϵ f aas ts))
 
 nextAA :: IRM Int
-nextAA = do
-    n <- gets aSt
-    modify (\(IRSt l t ar as v a f aas ts) -> IRSt l t ar (as+1) v a f aas ts) $> n
+nextAA = state (\(IRSt l t ar as v a f aas ts) -> (as, IRSt l t ar (as+1) v a f aas ts))
 
 newITemp :: IRM Temp
 newITemp = ITemp <$> nextI
@@ -57,9 +50,7 @@ newFTemp :: IRM Temp
 newFTemp = FTemp <$> nextI
 
 newLabel :: IRM Label
-newLabel = do
-    i <- gets (head.labels)
-    modify (\(IRSt l t ar as v a f aas ts) -> IRSt (tail l) t ar as v a f aas ts) $> i
+newLabel = state (\(IRSt (l:ls) t ar as v a f aas ts) -> (l, IRSt ls t ar as v a f aas ts))
 
 addMT :: Int -> Temp -> IRSt -> IRSt
 addMT i tϵ (IRSt l t ar as v a f aas ts) = IRSt l t ar as v a f aas (IM.insert i tϵ ts)
