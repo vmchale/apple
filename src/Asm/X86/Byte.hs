@@ -12,6 +12,7 @@ import           Data.Bifunctor   (second)
 import           Data.Bits        (Bits, rotateR, shiftL, (.&.), (.|.))
 import qualified Data.ByteString  as BS
 import           Data.Int         (Int32, Int64, Int8)
+import qualified Data.IntMap      as IM
 import qualified Data.Map.Strict  as M
 import           Data.Word
 import           Foreign.Ptr      (FunPtr, IntPtr (..), Ptr, ptrToIntPtr)
@@ -30,15 +31,15 @@ prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
 dbgFp = fmap fst . allFp
 
-assembleCtx :: (Int, Int) -> [X86 X86Reg FX86Reg a] -> IO (BS.ByteString, FunPtr b)
-assembleCtx ctx isns = do
+assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b)
+assembleCtx ctx (_, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
     let b = BS.pack.concat$asm 0 (pI p, Just ctx, lbls) isns
     (b,)<$>finish b p
 
-allFp :: [X86 X86Reg FX86Reg a] -> IO ([BS.ByteString], FunPtr b)
-allFp instrs = do
+allFp :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], FunPtr b)
+allFp (_, instrs) = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
         res <- prepAddrs instrs
@@ -48,8 +49,8 @@ allFp instrs = do
     let is = asm 0 (pI p, fn, lbls) instrs; b = BS.pack.concat$is; bs = BS.pack<$>is
     (bs,)<$>finish b p
 
-assemble :: [X86 X86Reg FX86Reg a] -> BS.ByteString
-assemble instrs =
+assemble :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> BS.ByteString
+assemble (_, instrs) =
     let (_, lbls) = mkIx 0 instrs in
     BS.pack.concat$asm 0 (error "Internal error: no self", Nothing, lbls) instrs
 

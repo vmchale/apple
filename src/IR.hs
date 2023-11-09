@@ -11,7 +11,7 @@ module IR ( Exp (..)
           , IUn (..)
           , IRel (..)
           , FRel (..)
-          , Label
+          , Label, AsmData
           , WSt (..)
           , prettyIR
           ) where
@@ -20,13 +20,12 @@ import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Semigroup    ((<>))
 import           Data.Word         (Word64)
-import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), hardline, parens, (<+>))
 import           Prettyprinter.Ext
 
 -- see https://my.eng.utah.edu/~cs4400/sse-fp.pdf
 
-type Label = Word
+type Label = Word; type AsmData = IM.IntMap [Word64]
 
 data WSt = WSt { wlabels :: [Label], wtemps :: [Int] }
 
@@ -159,7 +158,7 @@ instance Pretty Exp where
     pretty (EAt p)        = "@" <> pretty p
     pretty (FRel op e e') = parens (pretty op <+> pretty e <+> pretty e')
     pretty (Is e)         = parens ("is?" <+> pretty e)
-    pretty (LA n)         = ".data_" <> pretty n
+    pretty (LA n)         = "arr_" <> pretty n
 
 instance Show Exp where show = show.pretty
 
@@ -219,11 +218,8 @@ instance Pretty IUn where
     pretty ISgn = "sgn"; pretty INot = "¬"; pretty IEven = "even"; pretty IOdd = "odd"
 
 
-ahex :: (Integral a, Show a) => a -> Doc ann
-ahex = pretty.($"").showHex
-
-prettyIR :: (IM.IntMap [Word64], [Stmt]) -> Doc ann
-prettyIR (ds,ss) = prettyLines ((\(n,dd) -> ".data_" <> pretty n <> ":" <+> mconcat (fmap pretty dd)) <$> IM.toList ds) <#> pIR ss
+prettyIR :: (AsmData, [Stmt]) -> Doc ann
+prettyIR (ds,ss) = pAD ds <#> pIR ss
 
 pIR :: [Stmt] -> Doc ann
 pIR = prettyLines.fmap pretty

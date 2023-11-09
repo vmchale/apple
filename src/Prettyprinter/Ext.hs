@@ -6,11 +6,13 @@ module Prettyprinter.Ext ( (<#>)
                          , ptxt
                          , aText
                          , prettyDumpBinds
+                         , pAD
                          ) where
 
 import qualified Data.IntMap               as IM
 import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
+import           Numeric                   (showHex)
 import           Prettyprinter             (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
                                             layoutSmart, vsep, (<+>))
 import           Prettyprinter.Render.Text (renderStrict)
@@ -42,3 +44,8 @@ prettyBind (i, j) = pretty i <+> "→" <+> pretty j
 
 prettyDumpBinds :: Pretty b => IM.IntMap b -> Doc a
 prettyDumpBinds b = vsep (prettyBind <$> IM.toList b)
+
+ahex :: (Integral a, Show a) => a -> Doc ann
+ahex = pretty.($"").showHex
+
+pAD ds = prettyLines ((\(n,dd) -> "arr_" <> pretty n <> ":" <+> mconcat (fmap pretty dd)) <$> IM.toList ds)

@@ -134,16 +134,16 @@ as :: T.Text -> BSL.ByteString -> Doc ann
 as f = (prolegomena <#>) . prettyAsm . either throw id . aarch64
     where prolegomena = ".p2align 2\n\n.text\n\n.global _" <> pretty f <#> "_" <> pretty f <> ":"
 
-aarch64 :: BSL.ByteString -> Either (Err AlexPosn) [AArch64 AReg FAReg ()]
-aarch64 = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x,_,st) -> irToAarch64 st x)) . ir
+aarch64 :: BSL.ByteString -> Either (Err AlexPosn) (AsmData, [AArch64 AReg FAReg ()])
+aarch64 = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . ir
 
-x86G :: BSL.ByteString -> Either (Err AlexPosn) [X86 X86Reg FX86Reg ()]
+x86G :: BSL.ByteString -> Either (Err AlexPosn) (AsmData, [X86 X86Reg FX86Reg ()])
 x86G = walloc (uncurry X86.gallocFrame)
 
-eAarch64 :: Int -> E a -> Either (Err a) [AArch64 AReg FAReg ()]
-eAarch64 i = fmap (Aarch64.opt . uncurry Aarch64.gallocFrame . (\(x,_,st) -> irToAarch64 st x)) . eir i
+eAarch64 :: Int -> E a -> Either (Err a) (AsmData, [AArch64 AReg FAReg ()])
+eAarch64 i = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . eir i
 
-ex86G :: Int -> E a -> Either (Err a) [X86 X86Reg FX86Reg ()]
+ex86G :: Int -> E a -> Either (Err a) (AsmData, [X86 X86Reg FX86Reg ()])
 ex86G i = wallocE i (uncurry X86.gallocFrame)
 
 eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
@@ -152,13 +152,13 @@ eDumpX86 i = fmap prettyAsm . ex86G i
 eDumpAarch64 :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 
-walloc f = fmap (optX86 . optX86 . f . (\(x,_,st) -> irToX86 st x)) . ir
-wallocE i f = fmap (optX86 . optX86 . f . (\(x,_,st) -> irToX86 st x)) . eir i
+walloc f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . ir
+wallocE i f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . eir i
 
-ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IM.IntMap [Word64], WSt)
+ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], AsmData, WSt)
 ir = fmap (f.writeC) . opt where f (s,r,aa,t) = (frees t (optIR s),aa,r)
 
-eir :: Int -> E a -> Either (Err a) ([Stmt], IM.IntMap [Word64], WSt)
+eir :: Int -> E a -> Either (Err a) ([Stmt], AsmData, WSt)
 eir i = fmap (f.writeC) . optE i where f (s,r,aa,t) = (frees t (optIR s),aa,r)
 
 eDumpIR :: Int -> E a -> Either (Err a) (Doc ann)

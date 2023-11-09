@@ -11,8 +11,9 @@ import           Control.Monad   (when)
 import           Data.Bifunctor  (second)
 import           Data.Bits       (Bits (..))
 import qualified Data.ByteString as BS
+import qualified Data.IntMap     as IM
 import qualified Data.Map        as M
-import           Data.Word       (Word8)
+import           Data.Word       (Word64, Word8)
 import           Foreign.Ptr     (FunPtr, nullPtr)
 import           GHC.Base        (Int (I#), iShiftRL#)
 import           Hs.FFI
@@ -24,8 +25,8 @@ hasMa = any g where g MovRCf{}=True; g _=False
 prepAddrs :: [AArch64 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
-assembleCtx :: (Int, Int) -> [AArch64 AReg FAReg ()] -> IO (BS.ByteString, FunPtr b)
-assembleCtx ctx isns = do
+assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b)
+assembleCtx ctx (_, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
     when (p==nullPtr) $ error "failed to allocate memory for JIT"
@@ -33,8 +34,8 @@ assembleCtx ctx isns = do
     (b,)<$>finish b p
 
 dbgFp = fmap fst . allFp
-allFp :: [AArch64 AReg FAReg ()] -> IO ([BS.ByteString], FunPtr b)
-allFp instrs = do
+allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], FunPtr b)
+allFp (_, instrs) = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
         res <- prepAddrs instrs

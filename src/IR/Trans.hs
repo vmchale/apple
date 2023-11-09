@@ -28,7 +28,7 @@ data IRSt = IRSt { labels :: [Label]
                  , vars   :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                  , avars  :: IM.IntMap (Maybe Int, Temp)
                  , fvars  :: IM.IntMap (Label, [(Maybe Int, Temp)], (Maybe Int, Temp))
-                 , aa     :: IM.IntMap [Word64]
+                 , aa     :: AsmData
                  , mts    :: IM.IntMap Temp
                  }
 
@@ -494,8 +494,9 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | (Arr (_ `Cons` 
     loop <- doN i (Reg nR) loopBody
     pure (Just a, putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ Sa arg (ConstI ptN):putSeed ++ loop ++ [Pop (ConstI ptN)])
 aeval (Id _ (AShLit ns es)) t | Just fs <- mFs es = do
-    let rnk=length ns;ds = castDoubleToWord64 <$> fs
+    let rnk=fromIntegral$length ns;ds = castDoubleToWord64 <$> fs
     n <- nextAA
+    modify (addAA n (rnk:fmap fromIntegral ns++ds))
     pure (Nothing, [MT t (LA n)])
 aeval (Id _ (AShLit ns es)) t | isF (eAnn$head es) = do
     a <- nextArr

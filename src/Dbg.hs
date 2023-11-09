@@ -65,8 +65,8 @@ comm :: Either a (IO b) -> IO (Either a b)
 comm (Left err) = pure(Left err)
 comm (Right x)  = Right <$> x
 
-wIdM :: Functor m => (a -> m b) -> a -> m (a, b)
-wIdM f x = (x,)<$>f x
+wIdM :: Functor m => ((c, a) -> m b) -> (c, a) -> m (a, b)
+wIdM f (d, x) = (x,)<$>f (d, x)
 
 dtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
 dtxt = asmTxt x86G
@@ -118,10 +118,10 @@ dumpAarch64 :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAarch64 = fmap prettyAsm . aarch64
 
 dumpX86Abs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86Abs = fmap (prettyAsm . (\(x,_,st) -> snd (irToX86 st x))) . ir
+dumpX86Abs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToX86 st x)))) . ir
 
 dumpAAbs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpAAbs = fmap (prettyAsm . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
+dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
