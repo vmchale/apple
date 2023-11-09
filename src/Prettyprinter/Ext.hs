@@ -53,5 +53,5 @@ ahex = pretty.($"").showHex
 pAD ds = prettyLines ((\(n,dd) -> "arr_" <> pretty n <> ":" <+> mconcat (fmap p64 dd)) <$> IM.toList ds)
 
 p64 :: Word64 -> Doc ann
-p64 w = ahex w3<>ahex w2<>ahex w1<>ahex w0
+p64 w = ahex w0<>ahex w1<>ahex w2<>ahex w3
     where w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48

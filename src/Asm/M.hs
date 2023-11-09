@@ -13,9 +13,8 @@ module Asm.M ( CFunc (..)
              ) where
 
 import           Control.DeepSeq            (NFData)
-import           Control.Monad.State.Strict (State, gets, modify)
+import           Control.Monad.State.Strict (State, state)
 import           Data.Foldable              (fold)
-import           Data.Functor               (($>))
 import qualified Data.IntMap                as IM
 import           Data.Word                  (Word64)
 import           GHC.Generics               (Generic)
@@ -39,10 +38,10 @@ prettyAsm :: (Pretty isn) => (IM.IntMap [Word64], [isn]) -> Doc ann
 prettyAsm (ds,is) = pAD ds <#> prettyLines (fmap pretty is)
 
 nextI :: WM Int
-nextI = do { i <- gets (head.IR.wtemps); modify (\(IR.WSt l (_:t)) -> IR.WSt l t) $> i }
+nextI = state (\(IR.WSt l (i:t)) -> (i, IR.WSt l t))
 
 nextL :: WM Label
-nextL = do { i <- gets (head.IR.wlabels); modify (\(IR.WSt (_:l) t) -> IR.WSt l t) $> i }
+nextL = state (\(IR.WSt (i:l) t) -> (i, IR.WSt l t))
 
 data CFunc = Malloc | Free deriving (Generic)
 
