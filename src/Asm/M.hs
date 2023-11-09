@@ -9,7 +9,7 @@ module Asm.M ( CFunc (..)
              , foldMapA
              , prettyLabel
              , i4
-             , prettyAsm
+             , pAsm, prettyAsm
              , aArr, freeze
              ) where
 
@@ -39,8 +39,11 @@ prettyLabel l = "apple_" <> pretty l
 
 i4 = indent 4
 
-prettyAsm :: (Pretty isn) => (IM.IntMap [Word64], [isn]) -> Doc ann
-prettyAsm (ds,is) = pAD ds <#> prettyLines (fmap pretty is)
+prettyAsm :: (Pretty isn) => (IR.AsmData, [isn]) -> Doc ann
+prettyAsm (ds,is) = pAD ds <#> pAsm is
+
+pAsm :: Pretty isn => [isn] -> Doc ann
+pAsm = prettyLines.fmap pretty
 
 nextI :: WM Int
 nextI = state (\(IR.WSt l (i:t)) -> (i, IR.WSt l t))

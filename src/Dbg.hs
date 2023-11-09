@@ -42,6 +42,7 @@ import           Asm.X86.Trans
 import           CF
 import           Control.Exception    (throw, throwIO)
 import           Control.Monad        ((<=<))
+import           Data.Bifunctor       (second)
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
@@ -49,12 +50,13 @@ import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import qualified Data.Text.IO         as TIO
 import           Data.Tuple.Extra     (fst3)
+import           Data.Word            (Word64)
 import           IR
 import           IR.Alloc
 import           L
 import           Numeric              (showHex)
 import           P
-import           Prettyprinter        (Doc, Pretty (..), concatWith)
+import           Prettyprinter        (Doc, Pretty (..), comma, concatWith, punctuate, (<+>))
 import           Prettyprinter.Ext
 import           Ty
 
@@ -100,8 +102,13 @@ present (x, b) = rightPad 45 (ptxt x) <> he b
           pad s | T.length s == 1 = T.cons '0' s | otherwise = s
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
-nasm f = (prolegomena <#>) . prettyAsm . either throw id . x86G
+nasm f = (\(d,i) -> "section .data\n\n" <> nasmD (IM.toList d) <#> i) . second ((prolegomena <#>).pAsm) . either throw id . x86G
     where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
+
+nasmD :: [(Int, [Word64])] -> Doc ann
+nasmD = prettyLines . fmap nasmArr
+    where nasmArr (i, ds) = "arr_" <> pretty i <+> "dq" <+> concatWith (<>) (punctuate comma (fmap hexn ds))
+          hexn = pretty.($"").(("0x"++).).showHex
 
 dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.(\(x,_,st) -> irToX86 st x)) . ir
