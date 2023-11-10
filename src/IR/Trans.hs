@@ -85,8 +85,8 @@ isIF I = True; isIF F = True; isIF _ = False
 isF :: T a -> Bool
 isF F = True; isF _ = False
 
-mFs :: [E a] -> Maybe [Double]
-mFs = traverse mF where mF (FLit _ d)=Just d; mF _=Nothing
+mIFs :: [E a] -> Maybe [Word64]
+mIFs = traverse mIF where mIF (FLit _ d)=Just (castDoubleToWord64 d); mIF (ILit _ n)=Just (fromIntegral n); mIF _=Nothing
 
 isI :: T a -> Bool
 isI I = True; isI _ = False
@@ -484,10 +484,10 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | (Arr (_ `Cons` 
     let loopBody = ss ++ [Cpy (AP t (Just ((Reg i * pt) + 16)) (Just a)) (AP arg Nothing Nothing) (ConstI$ptN`div`8)]
     loop <- doN i (Reg nR) loopBody
     pure (Just a, putN ++ Ma a t sz:dim1 (Just a) t (Reg nR) ++ Sa arg (ConstI ptN):putSeed ++ loop ++ [Pop (ConstI ptN)])
-aeval (Id _ (AShLit ns es)) t | Just fs <- mFs es = do
-    let rnk=fromIntegral$length ns;ds = castDoubleToWord64 <$> fs
+aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
+    let rnk=fromIntegral$length ns
     n <- nextAA
-    modify (addAA n (rnk:fmap fromIntegral ns++ds))
+    modify (addAA n (rnk:fmap fromIntegral ns++ws))
     pure (Nothing, [MT t (LA n)])
 aeval (Id _ (AShLit ns es)) t | isF (eAnn$head es) = do
     a <- nextArr
