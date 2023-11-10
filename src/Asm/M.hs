@@ -15,13 +15,13 @@ module Asm.M ( CFunc (..)
 
 import           Control.DeepSeq            (NFData)
 import           Control.Monad.State.Strict (State, state)
-import           Data.Foldable              (fold, traverse_)
-import           Data.Functor               (($>))
+import           Data.Foldable              (fold)
 import qualified Data.IntMap                as IM
+import           Data.List                  (scanl')
 import           Data.Word                  (Word64)
 import           Foreign.Marshal.Alloc      (free)
 import           Foreign.Marshal.Array      (mallocArray, pokeArray)
-import           Foreign.Ptr                (Ptr)
+import           Foreign.Ptr                (Ptr, plusPtr)
 import           GHC.Generics               (Generic)
 import qualified IR
 import           Prettyprinter              (Doc, Pretty (pretty), indent)
@@ -58,12 +58,15 @@ instance NFData CFunc where
 instance Pretty CFunc where pretty Malloc = "malloc"; pretty Free = "free"
 
 freeze :: [Ptr Word64] -> IO ()
-freeze = traverse_ free
+freeze []    = pure ()
+freeze (p:_) = free p
 
 aArr :: IM.IntMap [Word64] -> IO (IM.IntMap (Ptr Word64))
-aArr = traverse pLeek
-
-pLeek :: [Word64] -> IO (Ptr Word64)
-pLeek xs = do
-    p <- mallocArray (length xs)
-    pokeArray p xs $> p
+aArr as = do
+    let bls = fmap length as; bl = sum bls
+    p <- mallocArray bl
+    let bs = concat (IM.elems as)
+    pokeArray p bs
+    pure $ case IM.toList bls of
+        []             -> IM.empty
+        ((k0,l0):bls') -> IM.fromList . fmap (\(x,_,z) -> (x,z)) $ scanl' (\(_, lϵ, pϵ) (k, l) -> (k, l, pϵ `plusPtr` (lϵ*8))) (k0, l0, p) bls'
