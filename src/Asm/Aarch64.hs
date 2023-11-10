@@ -137,6 +137,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
                         | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
                         | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
+                        | MovRL { ann :: a, rDest :: reg, lSrc :: Int }
                         | MovK { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                         | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
                         | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
@@ -225,6 +226,7 @@ mapR _ (Fmsub l d0 d1 d2 d3) = Fmsub l d0 d1 d2 d3
 mapR _ (Fsqrt l d0 d1)       = Fsqrt l d0 d1
 mapR f (MrsR l r)            = MrsR l (f r)
 mapR f (MovRCf l r cf)       = MovRCf l (f r) cf
+mapR f (MovRL x r l)         = MovRL x (f r) l
 mapR f (Blr l r)             = Blr l (f r)
 mapR _ (Fmax l d0 d1 d2)     = Fmax l d0 d1 d2
 mapR _ (Fabs l d0 d1)        = Fabs l d0 d1
@@ -280,6 +282,7 @@ mapFR f (Fsqrt l d0 d1)       = Fsqrt l (f d0) (f d1)
 mapFR _ (MrsR l r)            = MrsR l r
 mapFR _ (Blr l r)             = Blr l r
 mapFR _ (MovRCf l r cf)       = MovRCf l r cf
+mapFR _ (MovRL x r l)         = MovRL x r l
 mapFR f (Fmax l d0 d1 d2)     = Fmax l (f d0) (f d1) (f d2)
 mapFR f (Fabs l d0 d1)        = Fabs l (f d0) (f d1)
 mapFR _ (Csel l r0 r1 r2 p)   = Csel l r0 r1 r2 p
@@ -349,6 +352,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fsqrt _ d0 d1)       = i4 ("fsqrt" <+> pretty d0 <> "," <+> pretty d1)
     pretty (MrsR _ r)            = i4 ("mrs" <+> pretty r <> "," <+> "rndr")
     pretty (MovRCf _ r cf)       = i4 ("mov" <+> pretty r <> "," <+> pretty cf)
+    pretty (MovRL _ r l)         = i4 ("mov" <+> pretty r <> "," <+> pretty l)
     pretty (Fmax _ d0 d1 d2)     = i4 ("fmax" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2)
     pretty (Fabs _ d0 d1)        = i4 ("fabs" <+> pretty d0 <> "," <+> pretty d1)
     pretty (Csel _ r0 r1 r2 p)   = i4 ("csel" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty p)
