@@ -8,7 +8,7 @@ import Data.Coerce (coerce)
 import Data.Functor (($>))
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Word (Word8)
+import Data.Word (Word8, Word64)
 import Dbg
 import Foreign.C.String (CString)
 import Foreign.C.Types (CInt (..), CSize (..), CChar)
@@ -91,13 +91,14 @@ apple_ty src errPtr = do
 
 cfp = case arch of {"aarch64" -> actxFunP; "x86_64" -> ctxFunP}
 
-apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)
-apple_compile (IntPtr m) (IntPtr f) src szPtr = do
+apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> Ptr (Ptr Word64) -> IO (Ptr Word8)
+apple_compile (IntPtr m) (IntPtr f) src szPtr sPtr = do
     bSrc <- BS.unsafePackCString src
-    (sz, fp, _) <- cfp (m,f) (BSL.fromStrict bSrc)
+    (sz, fp, aa) <- cfp (m,f) (BSL.fromStrict bSrc)
+    case aa of {[] -> pure (); (p:_) -> poke sPtr p}
     poke szPtr (fromIntegral sz) $> castFunPtrToPtr fp
 
-foreign export ccall apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> IO (Ptr Word8)
+foreign export ccall apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> Ptr (Ptr Word64) -> IO (Ptr Word8)
 foreign export ccall apple_printty :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_dumpasm :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_dumpir :: CString -> Ptr CString -> IO CString

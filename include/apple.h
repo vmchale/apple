@@ -3,7 +3,7 @@ typedef intptr_t P;
 
 // first argument: pointer to malloc
 // second argument: pointer to free
-void* apple_compile(P,P,const char*,size_t*);
+void* apple_compile(P,P,const char*,size_t*,void**);
 
 // NULL on error
 // first argument: source

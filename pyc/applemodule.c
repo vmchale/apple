@@ -117,12 +117,12 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
 
 typedef struct PyCacheObject {
     PyObject_HEAD
-    U code;S code_sz;FnTy* ty;
+    U code;S code_sz;FnTy* ty; U sa;
 } PyCacheObject;
 
 static void cache_dealloc(PyCacheObject* self) {
     munmap(self->code,self->code_sz);
-    free(self->ty);
+    free(self->sa);free(self->ty);
 }
 
 static PyTypeObject CacheType = {
@@ -145,10 +145,10 @@ static PyObject* apple_cache(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, err);
         free(err);R NULL;
     };
-    U fp;S f_sz;
-    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
+    U fp;S f_sz;U s;
+    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
     PyCacheObject* cc=PyObject_New(PyCacheObject, &CacheType);
-    cc->code=fp;cc->code_sz=f_sz;cc->ty=ty;
+    cc->code=fp;cc->code_sz=f_sz;cc->ty=ty;cc->sa=s;
     Py_INCREF(cc);
     R (PyObject*)cc;
 }
@@ -196,8 +196,8 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, err);
         free(err);R NULL;
     };
-    U fp;S f_sz;
-    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz);
+    U fp;S f_sz;U s;
+    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
     PO r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
@@ -227,7 +227,7 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
     }
     // TODO: free other parts of cif (args)
-    free(ret);
+    free(ret);free(s);
     R r;
 }
 
