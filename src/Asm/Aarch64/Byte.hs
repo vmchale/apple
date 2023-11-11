@@ -54,6 +54,7 @@ allFp (ds, instrs) = do
 mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
 mkIx ix (Label _ l:asms) = second (M.insert l ix) $ mkIx ix asms
 mkIx ix (MovRCf{}:asms)  = mkIx (ix+16) asms
+mkIx ix (MovRL{}:asms)   = mkIx (ix+16) asms
 mkIx ix (_:asms)         = mkIx (ix+4) asms
 mkIx ix []               = (ix, M.empty)
 
