@@ -46,7 +46,6 @@ import           Control.Monad.State.Strict (evalState, state)
 import           Data.Bifunctor             (first, second)
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
-import qualified Data.IntMap                as IM
 import qualified Data.Text                  as T
 import           Data.Tuple.Extra           (first3)
 import           Data.Typeable              (Typeable)
@@ -166,7 +165,7 @@ eir :: Int -> E a -> Either (Err a) ([Stmt], AsmData, WSt)
 eir i = fmap (f.writeC) . optE i where f (s,r,aa,t) = (frees t (optIR s),aa,r)
 
 eDumpIR :: Int -> E a -> Either (Err a) (Doc ann)
-eDumpIR i = fmap (prettyIR.π) . eir i where π (a,b,_)=(b,a)
+eDumpIR i = fmap (prettyIR.𝜋) . eir i where 𝜋 (a,b,_)=(b,a)
 
 optE :: Int -> E a -> Either (Err a) (E (T ()))
 optE i e =

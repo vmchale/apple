@@ -27,7 +27,7 @@ data IRSt = IRSt { labels :: [Label]
                  , vars   :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                  , avars  :: IM.IntMap (Maybe Int, Temp)
                  , fvars  :: IM.IntMap (Label, [(Maybe Int, Temp)], (Maybe Int, Temp))
-                 , aa     :: AsmData
+                 , _aa    :: AsmData
                  , mts    :: IM.IntMap Temp
                  }
 
@@ -86,7 +86,7 @@ isF :: T a -> Bool
 isF F = True; isF _ = False
 
 mIFs :: [E a] -> Maybe [Word64]
-mIFs = traverse mIF where mIF (FLit _ d)=Just (castDoubleToWord64 d); mIF (ILit _ n)=Just (fromIntegral n); mIF _=Nothing
+mIFs = traverse mIFϵ where mIFϵ (FLit _ d)=Just (castDoubleToWord64 d); mIFϵ (ILit _ n)=Just (fromIntegral n); mIFϵ _=Nothing
 
 isI :: T a -> Bool
 isI I = True; isI _ = False
