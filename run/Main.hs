@@ -253,7 +253,7 @@ annR s = do
                 Left err      -> putDoc (pretty err <> hardline)
                 Right (e,_,_) -> putDoc (prettyTyped e <> hardline)
 
-freeAsm (sz, fp, ps) = freeFunPtr sz fp -- *> traverse_ free ps
+freeAsm (sz, fp, mp) = freeFunPtr sz fp -- *> traverse_ free mp
 
 inspect :: String -> Repl AlexPosn ()
 inspect s = do
