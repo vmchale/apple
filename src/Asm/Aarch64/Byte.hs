@@ -27,19 +27,19 @@ hasMa = any g where g MovRCf{}=True; g _=False
 prepAddrs :: [AArch64 reg freg a] -> IO (Maybe (Int, Int))
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
-assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, [Ptr Word64])
+assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
     when (p==nullPtr) $ error "failed to allocate memory for JIT"
     ps <- aArr ds
     let b = BS.pack.concatMap reverse$asm 0 (ps, Just ctx, lbls) isns
-    (b,,IM.elems ps)<$>finish b p
+    (b,,snd<$>IM.lookupMin ps)<$>finish b p
 
 dbgFp asmϵ = do
     (bss,_,ps) <- allFp asmϵ
-    freeze ps $> bss
-allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], FunPtr b, [Ptr Word64])
+    mFree ps $> bss
+allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], FunPtr b, Maybe (Ptr Word64))
 allFp (ds, instrs) = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
@@ -49,7 +49,7 @@ allFp (ds, instrs) = do
             _           -> (res,) <$> allocExec (fromIntegral sz)
     ps <- aArr ds
     let is = asm 0 (ps, fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bsϵ = BS.pack.reverse<$>is
-    (bsϵ,,IM.elems ps)<$>finish b p
+    (bsϵ,,snd<$>IM.lookupMin ps)<$>finish b p
 
 mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
 mkIx ix (Label _ l:asms) = second (M.insert l ix) $ mkIx ix asms

@@ -10,17 +10,17 @@ module Asm.M ( CFunc (..)
              , prettyLabel
              , i4
              , pAsm, prettyAsm
-             , aArr, freeze
+             , aArr, mFree
              ) where
 
 import           Control.DeepSeq            (NFData)
 import           Control.Monad.State.Strict (State, state)
-import           Data.Foldable              (fold)
+import           Data.Foldable              (fold, traverse_)
 import qualified Data.IntMap                as IM
 import           Data.List                  (scanl')
 import           Data.Word                  (Word64)
-import           Foreign.Marshal.Alloc      (free)
 import           Foreign.Marshal.Array      (mallocArray, pokeArray)
+import           Foreign.Marshal.Alloc (free)
 import           Foreign.Ptr                (Ptr, plusPtr)
 import           GHC.Generics               (Generic)
 import qualified IR
@@ -57,9 +57,8 @@ instance NFData CFunc where
 
 instance Pretty CFunc where pretty Malloc = "malloc"; pretty Free = "free"
 
-freeze :: [Ptr Word64] -> IO ()
-freeze []    = pure ()
-freeze (p:_) = free p
+mFree :: Maybe (Ptr a) -> IO ()
+mFree = traverse_ free
 
 aArr :: IM.IntMap [Word64] -> IO (IM.IntMap (Ptr Word64))
 aArr as = do

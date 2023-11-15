@@ -33,18 +33,18 @@ prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
 dbgFp asmϵ = do
     (bs, _, ps) <- allFp asmϵ
-    freeze ps $> bs
+    mFree ps $> bs
 
-assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, [Ptr Word64])
+assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
     arrs <- aArr ds
     let b = BS.pack.concat$asm 0 (pI p, arrs, Just ctx, lbls) isns
-        ps = IM.elems arrs
-    (b,,ps)<$>finish b p
+        mP = snd<$>IM.lookupMin arrs
+    (b,,mP)<$>finish b p
 
-allFp :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], FunPtr b, [Ptr Word64])
+allFp :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], FunPtr b, Maybe (Ptr Word64))
 allFp (ds, instrs) = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
@@ -54,8 +54,8 @@ allFp (ds, instrs) = do
             _           -> (res,) <$> allocExec (fromIntegral sz)
     arrs <- aArr ds
     let is = asm 0 (pI p, arrs, fn, lbls) instrs; b = BS.pack.concat$is; bs = BS.pack<$>is
-        ps = IM.elems arrs
-    (bs,,ps)<$>finish b p
+        mP = snd<$>IM.lookupMin arrs
+    (bs,,mP)<$>finish b p
 
 assemble :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> BS.ByteString
 assemble (_, instrs) =

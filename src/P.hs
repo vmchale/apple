@@ -105,29 +105,29 @@ getTy = fmap (first eAnn) . eCheck <=< annTy
 annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
-eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, [Ptr Word64])
+eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
 eFunP = eFunPG assembleCtx ex86G
 
-eAFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, [Ptr Word64])
+eAFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
 eAFunP = eFunPG Aarch64.assembleCtx eAarch64
 
 eFunPG jit asm m ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm m)
 
-ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, [Ptr Word64])
+ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
 ctxFunP = ctxFunPG assembleCtx x86G
 
-actxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, [Ptr Word64])
+actxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
 actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
 
 ctxFunPG jit asm ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm)
 
-funP :: BSL.ByteString -> IO (FunPtr a, [Ptr Word64])
+funP :: BSL.ByteString -> IO (FunPtr a, Maybe (Ptr Word64))
 funP = fmap π.allFp <=< either throwIO pure . x86G
 
 π :: (a, b, c) -> (b, c)
 π (_,y,z) = (y,z)
 
-aFunP :: BSL.ByteString -> IO (FunPtr a, [Ptr Word64])
+aFunP :: BSL.ByteString -> IO (FunPtr a, Maybe (Ptr Word64))
 aFunP = fmap π.Aarch64.allFp <=< either throwIO pure . aarch64
 
 bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString

@@ -90,12 +90,13 @@ apple_ty src errPtr = do
                     pure sp
 
 cfp = case arch of {"aarch64" -> actxFunP; "x86_64" -> ctxFunP}
+jNull x p = case x of {Nothing -> poke p nullPtr; Just xϵ -> poke p xϵ}
 
 apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> Ptr (Ptr Word64) -> IO (Ptr Word8)
 apple_compile (IntPtr m) (IntPtr f) src szPtr sPtr = do
     bSrc <- BS.unsafePackCString src
     (sz, fp, aa) <- cfp (m,f) (BSL.fromStrict bSrc)
-    case aa of {[] -> pure (); (p:_) -> poke sPtr p}
+    jNull aa sPtr
     poke szPtr (fromIntegral sz) $> castFunPtrToPtr fp
 
 foreign export ccall apple_compile :: IntPtr -> IntPtr -> CString -> Ptr CSize -> Ptr (Ptr Word64) -> IO (Ptr Word8)
