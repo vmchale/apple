@@ -41,7 +41,7 @@ pB, fpB :: Copointed p => [p NLiveness] -> IM.IntMap Int
 pB = pF.reverse
 fpB = fpF.reverse
 
-intervals :: (Copointed p, Functor p) => [p NLiveness] -> [p Interval]
+intervals :: (Copointed p) => [p NLiveness] -> [p Interval]
 intervals asms = fmap (fmap lookupL) asms
     where lookupL x = let n = nx x in Interval (lI n findFirst) (lI n findLast) (lI n findFirstF) (lI n findLastF)
           lI = IM.findWithDefault IS.empty
