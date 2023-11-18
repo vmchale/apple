@@ -19,8 +19,8 @@ import           Data.Foldable              (fold, traverse_)
 import qualified Data.IntMap                as IM
 import           Data.List                  (scanl')
 import           Data.Word                  (Word64)
+import           Foreign.Marshal.Alloc      (free)
 import           Foreign.Marshal.Array      (mallocArray, pokeArray)
-import           Foreign.Marshal.Alloc (free)
 import           Foreign.Ptr                (Ptr, plusPtr)
 import           GHC.Generics               (Generic)
 import qualified IR
