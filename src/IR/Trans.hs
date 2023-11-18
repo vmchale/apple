@@ -221,9 +221,6 @@ stacopy sdims ddims x ls ad as = do
     threadM (zipWith doN bounds (ConstI<$>ls)) [ MT t (EAt (xp sdims (at bounds) as)), Wr (xp ddims (at bounds) ad) (Reg t) ]
     where at = zipWith (\x_a i -> x_a + Reg i) x
 
-crossN :: [[a]] -> [[a]]
-crossN = foldr (\xs yss -> [ x:ys | x <- xs, ys <- yss ]) [[]]
-
 -- write loop body (updates global state, dependent on ast being globally renamed)
 writeF :: E (T ())
        -> [(Maybe Int, Temp)] -- ^ Registers for arguments
