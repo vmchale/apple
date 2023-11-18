@@ -3,7 +3,6 @@ module Asm.L ( mkLive, liveBB ) where
 import           Asm.Ar
 import           Asm.BB
 import           CF
-import           Class.E
 import           LR
 
 mkLive :: (Arch arch reg freg) => [arch reg freg ()] -> [arch reg freg Liveness]
