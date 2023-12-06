@@ -7,7 +7,7 @@ import           Class.E
 import           Data.Copointed
 import           Data.Tuple.Extra (both)
 
-bundle :: (E reg, E freg, Copointed (arch reg freg), Functor (arch reg freg), Arch arch reg freg)
+bundle :: (E reg, E freg, Copointed (arch reg freg), Arch arch reg freg)
        => [arch reg freg ()]
        -> ([arch reg freg (UD, Liveness, Maybe (Int,Int))], [arch reg freg (UD, Liveness, Maybe (Int,Int))])
 bundle isns =

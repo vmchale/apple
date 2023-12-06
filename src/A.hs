@@ -31,7 +31,7 @@ instance Pretty (I a) where
     pretty (Ix _ i)        = pretty i
     pretty (IVar _ n)      = pretty n -- FIXME: different lexemes for index vars?
     pretty (StaPlus _ i j) = parens (pretty i <+> "+" <+> pretty j)
-    pretty (StaPlus _ i j) = parens (pretty i <+> "*" <+> pretty j)
+    pretty (StaMul _ i j)  = parens (pretty i <+> "*" <+> pretty j)
     pretty (IEVar _ n)     = "#" <> pretty n
 
 data I a = Ix a !Int

@@ -84,7 +84,7 @@ buildOver blocks = thread [ \s -> snd $ build (out (snd3 (copoint (last isns))))
 buildOverF :: Copointed p => [[p (UD, Liveness, Maybe M)]] -> St -> St
 buildOverF blocks = thread [ \s -> snd $ buildF (fout (snd3 (copoint (last isns)))) s (reverse isns) | isns <- blocks ]
 
-alloc :: (Ord reg, Arch arch areg afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
+alloc :: (Ord reg, Arch arch areg afreg, Copointed (arch areg afreg))
       => [arch areg afreg (UD, Liveness, Maybe (Int,Int))]
       -> [reg] -- ^ available registers
       -> IS.IntSet -- ^ Precolored @areg@
@@ -99,7 +99,7 @@ alloc aIsns regs preC preCM =
     in if IS.null s then Right rs else Left s
     where nIsns = fmap snd3 <$> aIsns
 
-allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg), Functor (arch areg afreg))
+allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg))
        => [arch areg afreg (UD, Liveness, Maybe (Int,Int))]
        -> [freg] -- ^ available registers
        -> IS.IntSet -- ^ Precolored @afreg@
