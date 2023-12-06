@@ -806,12 +806,15 @@ tyE s (EApp l e@(EApp _ (EApp _ (Builtin _ Gen) x) f) n) = do
             s1 <- liftEither $ mguPrep (l,e) s0 (eAnn e'$>l) eT
             s2 <- liftEither $ mguPrep (l,n) s1 (eAnn nA$>l) a
             pure (EApp (void b) e' nA, s2)
-tyE s (EApp _ (EApp _ (Builtin _ Cyc) e) (ILit _ m)) = do
+tyE s eC@(EApp lC (EApp _ (Builtin _ Cyc) e) (ILit _ m)) = do
     (e0, s0) <- tyE s e
-    case aT (void s0) $ eAnn e0 of
-        t@(Arr (ix `Cons` Nil) a) ->
-            let arrTy = Arr ((StaMul () ix (Ix () (fromIntegral m))) `Cons` Nil) a in
-            pure (EApp arrTy (EApp (Arrow I arrTy) (Builtin (Arrow t (Arrow I arrTy)) Cyc) e0) (ILit I m), s0)
+    ix <- IVar () <$> freshN "ix" ()
+    a <- TVar <$> freshN "a" ()
+    let t=Arr (ix `Cons` Nil) a
+        arrTy = Arr (StaMul () ix (Ix () (fromIntegral m)) `Cons` Nil) a
+        lE=eAnn e
+    s1 <- liftEither $ mguPrep (lC,eC) s0 (eAnn e0$>lE) (t$>lE)
+    pure (EApp arrTy (EApp (Arrow I arrTy) (Builtin (Arrow t (Arrow I arrTy)) Cyc) e0) (ILit I m), s1)
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _ si)) = do
     let arrTy = Arr (vx (Ix () (fromInteger ((e-b+si) `div` si)))) I
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow I (Arrow I arrTy)) (Builtin (Arrow I (Arrow I (Arrow I arrTy))) IRange) (ILit I b)) (ILit I e)) (ILit I si), s)
