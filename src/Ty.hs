@@ -149,6 +149,7 @@ infixr 4 !>
         Just ix        -> ixes !>ix
         Nothing        -> ix'
 (!>) ixes (StaPlus l ix ix') = StaPlus l (ixes !> ix) (ixes !> ix')
+(!>) ixes (StaMul l ix ix') = StaMul l (ixes !> ix) (ixes !> ix')
 (!>) _ ix@Ix{} = ix
 (!>) _ ix@IEVar{} = ix
 
@@ -636,6 +637,7 @@ cloneWithConstraints t = do
 
 rwI :: I a -> I a
 rwI (StaPlus _ (Ix l i) (Ix _ j)) = Ix l (i+j)
+rwI (StaMul _ (Ix l i) (Ix _ j))  = Ix l (i*j)
 rwI i                             = i
 
 rwSh :: Sh a -> Sh a
@@ -663,6 +665,7 @@ rwArr (Ρ n fs)     = Ρ n (rwArr<$>fs)
 hasEI :: I a -> Bool
 hasEI IEVar{}            = True
 hasEI (StaPlus _ ix ix') = hasEI ix || hasEI ix'
+hasEI (StaMul _ ix ix')  = hasEI ix || hasEI ix'
 hasEI _                  = False
 
 hasESh :: Sh a -> Bool
@@ -803,11 +806,12 @@ tyE s (EApp l e@(EApp _ (EApp _ (Builtin _ Gen) x) f) n) = do
             s1 <- liftEither $ mguPrep (l,e) s0 (eAnn e'$>l) eT
             s2 <- liftEither $ mguPrep (l,n) s1 (eAnn nA$>l) a
             pure (EApp (void b) e' nA, s2)
-tyE s (EApp _ (EApp _ (Builtin _ Cyc) e@ALit{}) (ILit _ m)) = do
+tyE s (EApp _ (EApp _ (Builtin _ Cyc) e) (ILit _ m)) = do
     (e0, s0) <- tyE s e
-    let t@(Arr (Ix () n `Cons` Nil) a) = eAnn e0
-        arrTy = Arr (Ix () (fromIntegral m*n) `Cons` Nil) a
-    pure (EApp arrTy (EApp (Arrow I arrTy) (Builtin (Arrow t (Arrow I arrTy)) Cyc) e0) (ILit I m), s0)
+    case aT (void s0) $ eAnn e0 of
+        t@(Arr (ix `Cons` Nil) a) ->
+            let arrTy = Arr ((StaMul () ix (Ix () (fromIntegral m))) `Cons` Nil) a in
+            pure (EApp arrTy (EApp (Arrow I arrTy) (Builtin (Arrow t (Arrow I arrTy)) Cyc) e0) (ILit I m), s0)
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _ si)) = do
     let arrTy = Arr (vx (Ix () (fromInteger ((e-b+si) `div` si)))) I
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow I (Arrow I arrTy)) (Builtin (Arrow I (Arrow I (Arrow I arrTy))) IRange) (ILit I b)) (ILit I e)) (ILit I si), s)
