@@ -265,6 +265,7 @@ occI :: I a -> IS.IntSet
 occI Ix{}                    = IS.empty
 occI (IVar _ (Nm _ (U i) _)) = IS.singleton i
 occI (StaPlus _ i j)         = occI i <> occI j
+occI (StaMul _ i j)          = occI i <> occI j
 occI IEVar{}                 = IS.empty
 
 occ :: T a -> IS.IntSet
@@ -306,7 +307,7 @@ mgu l s F (Arr (SVar (Nm _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPr
 mgu l s I (Arr (SVar (Nm _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s I t
 mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 -- TODO: rho occurs check
-mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, t) -> mapTySubst (IM.insert (unU$unique n) t') <$> mguPrep l sϵ (ts!!(i-1)) t) s (IM.toList rs)
+mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, tϵ) -> mapTySubst (IM.insert (unU$unique n) t') <$> mguPrep l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
                                      | otherwise = Left$UF lϵ e t t'
 mgu l s t@P{} t'@Ρ{} = mgu l s t' t
 mgu l s (Ρ n rs) (Ρ n' rs') = do
