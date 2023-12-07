@@ -573,7 +573,8 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (0, _)])) op) xs) ys) t 
     mSz <- doN j (Reg rnkR) [MT szR (Reg szR * EAt (AP xR (Just (IB IAsl (Reg j) 3 + 8)) lX))]
     modify (addMT a t)
     pure (Just a, plX ++ plY ++ MT rnkR (EAt (AP xR Nothing lX)):MT szR 1:mSz++[Ma a t (IB IAsl (Reg rnkR+Reg szR) 3 + 8), Cpy (AP t Nothing (Just a)) (AP xR Nothing lX) (Reg rnkR+1), MT offsR (IB IAsl (Reg rnkR) 3 + 8), MT xRd (Reg xR+Reg offsR), MT yRd (Reg yR+Reg offsR), MT tD (Reg t+Reg offsR)] ++ loop)
-aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs), Just tOR <- mIF tO, isIF tA = do
+    -- TODO: case where tF is array
+aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs), Just tOR <- mIF tO, (Arrow _ tF) <- eAnn f, isIF tF && isIF tA = do
     a <- nextArr
     xR <- newITemp
     (lX, plX) <- aeval xs xR
@@ -590,7 +591,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
         complDims = indices allDims; oDims = cells allDims
         wrOSz = MT oSz 1:[MT oSz (Reg oSz * Reg dϵ) | dϵ <- oDims]
         wrSlopSz = MT slopSz 1:[MT slopSz (Reg slopSz * Reg dϵ) | dϵ <- complDims]
-    (_, ss) <- writeF f [(Nothing, slopP)] y -- FIXME: y may be an array
+    (_, ss) <- writeF f [(Nothing, slopP)] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Right dϵ; (_,Cell tϵ) -> Left (Reg tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
