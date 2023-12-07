@@ -590,7 +590,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
         complDims = indices allDims; oDims = cells allDims
         wrOSz = MT oSz 1:[MT oSz (Reg oSz * Reg dϵ) | dϵ <- oDims]
         wrSlopSz = MT slopSz 1:[MT slopSz (Reg slopSz * Reg dϵ) | dϵ <- complDims]
-    (_, ss) <- writeF f [(Nothing, slopP)] y
+    (_, ss) <- writeF f [(Nothing, slopP)] y -- FIXME: y may be an array
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Right dϵ; (_,Cell tϵ) -> Left (Reg tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
