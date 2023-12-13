@@ -91,7 +91,7 @@ library
         ScopedTypeVariables TupleSections BinaryLiterals MagicHash
         MultiParamTypeClasses DeriveTraversable GeneralizedNewtypeDeriving
 
-    ghc-options:        -Wall -fno-warn-missing-signatures
+    ghc-options:        -Wall -fno-warn-missing-signatures -Wno-x-partial
     build-depends:
         base >=4.11 && <5,
         prettyprinter >=1.7.0,
