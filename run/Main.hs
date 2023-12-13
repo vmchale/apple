@@ -328,7 +328,7 @@ printExpr s = do
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
                                 free p *> freeAsm asm
-                        B ->
+                        A.B ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp i' m eC
                                 cb <- callFFI fp retWord8 []

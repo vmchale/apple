@@ -34,11 +34,11 @@ instance Pretty (I a) where
     pretty (StaMul _ i j)  = parens (pretty i <+> "*" <+> pretty j)
     pretty (IEVar _ n)     = "#" <> pretty n
 
-data I a = Ix a !Int
-         | IVar a (Nm a)
-         | IEVar a (Nm a) -- existential
-         | StaPlus a (I a) (I a)
-         | StaMul a (I a) (I a)
+data I a = Ix { ia :: a, ii :: !Int }
+         | IVar { ia :: a, ixn :: Nm a }
+         | IEVar { ia :: a , ie :: Nm a } -- existential
+         | StaPlus { ia :: a, ix0 :: I a, ix1 :: I a }
+         | StaMul { ia :: a, ix0 :: I a, ix1 :: I a }
          deriving (Functor, Generic)
 
 instance Show (I a) where
@@ -66,6 +66,7 @@ data Sh a = Nil
           | Cons (I a) (Sh a)
           | Rev (Sh a)
           | Cat (Sh a) (Sh a)
+          | Π (Sh a)
           deriving (Functor, Generic)
 
 infixr 8 `Cons`
@@ -79,6 +80,7 @@ instance Pretty (Sh a) where
     pretty Nil         = "Nil"
     pretty (Cat s s')  = pretty s <+> "⧺" <+> pretty s'
     pretty (Rev s)     = "rev" <> parens (pretty s)
+    pretty (Π s)       = "Π" <+> parens (pretty s)
 
 data T a = Arr (Sh a) (T a)
          | F -- | double
@@ -187,10 +189,11 @@ instance Pretty Builtin where
     pretty Abs       = "abs."
     pretty Di        = "di."
     pretty RevE      = "~"
+    pretty Flat      = "♭"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
              | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
-             | Max | Min | Neg | Sqrt | T | Di
+             | Max | Min | Neg | Sqrt | T | Di | Flat
              | IRange | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]

@@ -135,6 +135,7 @@ shSubst _ Nil           = Nil
 shSubst s (Cons i sh)   = Cons (iSubst s !> i) (shSubst s sh)
 shSubst s (Cat sh0 sh1) = Cat (shSubst s sh0) (shSubst s sh1)
 shSubst s (Rev sh)      = Rev (shSubst s sh)
+shSubst s (Π sh)        = Π (shSubst s sh)
 shSubst s@(Subst ts is ss) sh'@(SVar (Nm _ (U u) _)) =
     case IM.lookup u ss of
         Just sh''@SVar{} -> shSubst (Subst ts is (IM.delete u ss)) sh''
@@ -216,8 +217,8 @@ mguIPrep is i0 i1 =
 mguI :: IM.IntMap (I a) -> I a -> I a -> Either (TyE a) (IM.IntMap (I a))
 mguI inp i0@(Ix l i) i1@(Ix _ j) | i == j = Right inp
                                  | otherwise = Left$ UI l i0 i1
-mguI inp ix0@(IEVar l i) ix1@(IEVar _ j) | i == j = Right inp
-                                         | otherwise = Left $ UI l ix0 ix1
+mguI inp i0@(IEVar l i) i1@(IEVar _ j) | i == j = Right inp
+                                       | otherwise = Left $ UI l i0 i1
 mguI inp (IVar _ i) (IVar _ j) | i == j = Right inp
 mguI inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = Left $ OI l iix ix
                                           | otherwise = Right $ IM.insert i ix inp
@@ -365,6 +366,10 @@ del axes sh = roll t (fmap snd (filter ((`notElem` axes) . fst) (zip [1..] unrol
 trim :: Sh a -> Sh a
 trim = roll Nil . fst . unroll
 
+iunroll (Cons i Nil) = Just i
+iunroll (Cons i shϵ) = StaMul (ia i) i <$> iunroll shϵ
+iunroll _            = Nothing
+
 unroll (Cons i shϵ) = first (i :) $ unroll shϵ
 unroll s            = ([], s)
 
@@ -488,6 +493,9 @@ tyB _ Outer = do
 tyB _ T = do
     sh <- SVar <$> freshN "sh" (); a <- TVar <$> freshN "a" ()
     pure (Arrow (Arr sh a) (Arr (Rev sh) a), mempty)
+tyB _ Flat = do
+    sh <- SVar <$> freshN "sh" (); a <- TVar <$> freshN "a" ()
+    pure (Arrow (Arr sh a) (Arr (Π sh) a), mempty)
 tyB _ CatE = do
     i <- freshN "i" (); j <- freshN "j" ()
     n <- freshN "a" ()
@@ -649,6 +657,8 @@ rwSh (Cat s0 s1) | (is, Nil) <- unroll (rwSh s0), (js, Nil) <- unroll (rwSh s1) 
                  | otherwise = Cat (rwSh s0) (rwSh s1)
 rwSh (Rev s) | (is, Nil) <- unroll (rwSh s) = roll Nil (reverse is)
              | otherwise = Rev (rwSh s)
+rwSh (Π s) | Just i <- iunroll (rwSh s) = rwI i `Cons` Nil
+           | otherwise = Π (rwSh s)
 
 rwArr :: T a -> T a
 rwArr (Arrow t t') = Arrow (rwArr t) (rwArr t')

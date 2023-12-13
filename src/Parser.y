@@ -102,6 +102,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     foldA { TokSym $$ L.FoldA }
     quot { TokSym $$ Quot }
     zip { TokSym $$ L.Zip }
+    flat { TokSym $$ L.B }
 
     lam { TokSym $$ L.Lam }
 
@@ -293,6 +294,7 @@ E :: { E AlexPosn }
   | odd { Builtin $1 Odd }
   | even { Builtin $1 Even }
   | abs { Builtin $1 Abs }
+  | flat { Builtin $1 Flat }
 
 {
 
