@@ -125,3 +125,4 @@ Arr (3) [1, 2, 4]
 - [ ] https://hackage.haskell.org/package/weierstrass-functions-0.1.0.0
 - [ ] n-body (benchmarks)
 - [ ] https://rhodesmill.org/skyfield/
+- [ ] https://aakinshin.net/posts/r-hodges-lehmann-problems/
