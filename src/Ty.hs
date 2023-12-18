@@ -884,7 +884,6 @@ tyE s (Var l n@(Nm _ (U u) _)) = do
     lSt<- gets staEnv
     case IM.lookup u lSt of
         Just t  -> pure (Var t (n $> t), s)
-        -- TODO: polymorphic let
         Nothing -> do
             vSt<- gets polyEnv
             case IM.lookup u vSt of

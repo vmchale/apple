@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
@@ -332,7 +331,7 @@ data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          | Ann { eAnn :: a, eEe :: E a, eTy :: T () }
          | Tup { eAnn :: a, eEs :: [E a] }
          | Id { eAnn :: a, eIdiom :: Idiom }
-         deriving (Functor, Foldable, Generic)
+         deriving (Functor, Generic)
 
 instance NFData Builtin where
 instance NFData ResVar where

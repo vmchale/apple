@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor  #-}
 
 module Nm ( Nm (..)
@@ -15,7 +14,7 @@ type TyNm a = Nm a
 data Nm a = Nm { name   :: T.Text
                , unique :: !U
                , loc    :: a
-               } deriving (Functor, Foldable)
+               } deriving (Functor)
 
 instance Eq (Nm a) where
     (==) (Nm _ u _) (Nm _ u' _) = u == u'
