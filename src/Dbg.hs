@@ -46,7 +46,6 @@ import           Data.Bifunctor       (second)
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
-import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import qualified Data.Text.IO         as TIO
 import           Data.Tuple.Extra     (fst3)

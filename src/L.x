@@ -27,7 +27,6 @@ import qualified Data.ByteString.Lazy.Char8 as ASCII
 import Data.Functor (($>))
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
-import Data.Semigroup ((<>))
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import GHC.Generics (Generic)

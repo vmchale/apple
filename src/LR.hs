@@ -9,7 +9,6 @@ import           Data.Copointed
 -- this seems to be faster
 import qualified Data.IntMap.Lazy as IM
 import qualified Data.IntSet      as IS
-import           Data.Semigroup   ((<>))
 
 emptyLiveness :: Liveness
 emptyLiveness = Liveness IS.empty IS.empty IS.empty IS.empty

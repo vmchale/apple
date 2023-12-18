@@ -23,7 +23,6 @@ import           Data.Functor               (void, ($>))
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.Maybe                 (catMaybes)
-import           Data.Semigroup             (Semigroup (..))
 import qualified Data.Text                  as T
 import           Data.Typeable              (Typeable)
 import           GHC.Generics               (Generic)

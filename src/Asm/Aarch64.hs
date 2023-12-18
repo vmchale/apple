@@ -22,7 +22,6 @@ module Asm.Aarch64 ( AArch64 (..)
 import           Asm.M
 import           Control.DeepSeq   (NFData (..))
 import           Data.Copointed
-import           Data.Semigroup    ((<>))
 import           Data.Word         (Word16, Word8)
 import           GHC.Generics      (Generic)
 import           Numeric           (showHex)

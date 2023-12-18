@@ -29,7 +29,6 @@ import           Asm.M
 import           Control.DeepSeq   (NFData (..))
 import           Data.Copointed
 import           Data.Int          (Int32, Int64, Int8)
-import           Data.Semigroup    (Semigroup (..))
 import           Data.Word         (Word8)
 import           GHC.Generics      (Generic)
 import           Prettyprinter     (Doc, Pretty (..), brackets, colon, (<+>))

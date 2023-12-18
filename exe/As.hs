@@ -2,7 +2,6 @@ module As ( writeO ) where
 
 import qualified Data.ByteString.Lazy      as BSL
 import           Data.Functor              (void)
-import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
 import qualified Data.Text.Lazy.IO         as TLIO
 import           P

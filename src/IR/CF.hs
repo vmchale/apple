@@ -6,7 +6,6 @@ import           CF
 import           Control.Monad.State.Strict (State, evalState, gets, modify)
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
-import           Data.Semigroup             ((<>))
 import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
 import           IR
 

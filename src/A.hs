@@ -19,7 +19,6 @@ module A ( T (..)
 
 import           Control.DeepSeq   (NFData)
 import qualified Data.IntMap       as IM
-import           Data.Semigroup    ((<>))
 import           GHC.Generics      (Generic)
 import           Nm
 import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket,

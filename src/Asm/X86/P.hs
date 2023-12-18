@@ -6,10 +6,9 @@ import           Asm.LI
 import           Asm.X86
 import           Asm.X86.Frame
 import           Asm.X86.Sp
-import           Data.Int       (Int64)
-import qualified Data.IntMap    as IM
-import           Data.Semigroup
-import qualified Data.Set       as S
+import           Data.Int      (Int64)
+import qualified Data.IntMap   as IM
+import qualified Data.Set      as S
 
 -- TODO: don't bother re-analyzing if no Calls
 gallocFrame :: Int -- ^ int supply for spilling

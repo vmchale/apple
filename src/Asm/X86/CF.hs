@@ -8,13 +8,12 @@ module Asm.X86.CF ( mkControlFlow
 
 import           Asm.BB
 import           Asm.CF
-import           Asm.X86        as X86
+import           Asm.X86      as X86
 import           CF
 -- seems to pretty clearly be faster
-import           Class.E        as E
-import           Data.Functor   (void, ($>))
-import qualified Data.IntSet    as IS
-import           Data.Semigroup ((<>))
+import           Class.E      as E
+import           Data.Functor (void, ($>))
+import qualified Data.IntSet  as IS
 
 mkControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> [BB X86 reg freg () ControlAnn]
 mkControlFlow isns = runFreshM (broadcasts isns *> addControlFlow isns)

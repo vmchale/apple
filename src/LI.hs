@@ -11,7 +11,6 @@ import           Data.Copointed
 import           Data.Foldable              (traverse_)
 import qualified Data.IntMap.Lazy           as IM
 import qualified Data.IntSet                as IS
-import           Data.Semigroup             ((<>))
 
 collate :: IM.IntMap Int -> IM.IntMap IS.IntSet
 collate = IM.unionsWith IS.union . fmap g . IM.toList where g (r, n) = IM.singleton n (IS.singleton r)

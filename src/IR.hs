@@ -18,7 +18,6 @@ module IR ( Exp (..)
 
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
-import           Data.Semigroup    ((<>))
 import           Data.Word         (Word64)
 import           Prettyprinter     (Doc, Pretty (..), hardline, parens, (<+>))
 import           Prettyprinter.Ext

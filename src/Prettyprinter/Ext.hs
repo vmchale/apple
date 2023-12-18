@@ -11,7 +11,6 @@ module Prettyprinter.Ext ( (<#>)
 
 import           Data.Bits                 (Bits (..))
 import qualified Data.IntMap               as IM
-import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
 import           Data.Word                 (Word64)
 import           Numeric                   (showHex)

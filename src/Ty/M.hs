@@ -7,7 +7,6 @@ import           A
 import           Control.Applicative (Alternative (..))
 import           Control.DeepSeq     (NFData)
 import           Data.Foldable       (asum)
-import           Data.Semigroup      ((<>))
 import           GHC.Generics        (Generic)
 import           Prettyprinter       (Pretty (..), squotes, (<+>))
 

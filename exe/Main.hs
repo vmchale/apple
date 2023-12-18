@@ -4,7 +4,6 @@ import qualified As
 import           CGen
 import           Control.Exception         (throwIO)
 import qualified Data.ByteString.Lazy      as BSL
-import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
 import qualified Data.Version              as V
 import qualified Nasm

@@ -11,7 +11,6 @@ import qualified Data.ByteString.Lazy      as BSL
 import           Data.Foldable             (traverse_)
 import           Data.Int                  (Int64)
 import           Data.List
-import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
