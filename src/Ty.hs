@@ -318,7 +318,6 @@ mgu (l, e) _ F t@Arr{} = Left $ UF l e F t
 mgu (l, e) _ t@Arr{} F = Left $ UF l e t F
 mgu (l, e) _ I t@Arr{} = Left $ UF l e I t
 mgu (l, e) _ t@Arr{} I = Left $ UF l e t I
--- mgu _ _ t0 t1 = error (show (t0,t1))
 
 zS _ s [] _           = pure s
 zS _ s _ []           = pure s
@@ -688,7 +687,6 @@ hasE (Arrow t t'@Arrow{}) = hasE t || hasE t'
 hasE (Arr sh t)           = hasESh sh || hasE t
 hasE _                    = False
 
--- {-# SCC chkE #-}
 chkE :: T () -> Either (TyE a) ()
 chkE t = if hasE t then Left (ExistentialArg t) else Right ()
 
