@@ -432,12 +432,11 @@ newIdentAlex pos t = do
     set_ust st' $> (n $> pos)
 
 newIdent :: AlexPosn -> T.Text -> AlexUserState -> (AlexUserState, Nm AlexPosn)
-newIdent pos t pre@(max', names, uniqs) =
-    case M.lookup t names of
-        Just i -> (pre, Nm t (U i) pos)
-        Nothing -> let i = max' + 1
-            in let newName = Nm t (U i) pos
-                in ((i, M.insert t i names, IM.insert i newName uniqs), newName)
+newIdent pos t pre@(max', ns, us) =
+    case M.lookup t ns of
+        Just i  -> (pre, Nm t (U i) pos)
+        Nothing -> let i = max'+1; nNm = Nm t (U i) pos
+                   in ((i, M.insert t i ns, IM.insert i nNm us), nNm)
 
 runAlexSt :: BSL.ByteString -> Alex a -> Either String (AlexUserState, a)
 runAlexSt inp = withAlexSt inp alexInitUserState
