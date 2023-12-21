@@ -1,9 +1,7 @@
 {
     {-# LANGUAGE DeriveGeneric #-}
     {-# LANGUAGE OverloadedStrings #-}
-    module Parser ( parseAll
-                  , parseWithMax
-                  , parseWithMaxCtx
+    module Parser ( parseWithMaxCtx
                   , ParseE (..)
                   ) where
 
@@ -325,9 +323,6 @@ instance (Pretty a, Typeable a) => Exception (ParseE a)
 instance NFData a => NFData (ParseE a) where
 
 type Parse = ExceptT (ParseE AlexPosn) Alex
-
-parseWithMax :: BSL.ByteString -> Either (ParseE AlexPosn) (Int, E AlexPosn)
-parseWithMax = parseWithMaxCtx alexInitUserState
 
 parseAll :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (AlexUserState, E AlexPosn)
 parseAll = runParseSt parseE
