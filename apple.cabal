@@ -6,6 +6,8 @@ license-file:    LICENSE
 copyright:       Copyright: (c) 2022 Vanessa McHale
 maintainer:      vamchale@gmail.com
 author:          Vanessa McHale
+synopsis:        Apple array language compiler
+description:     Compiler for a typed, APL-inspired array language.
 category:        Language, Array
 build-type:      Simple
 data-files:      ./c/apple.c
