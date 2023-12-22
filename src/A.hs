@@ -50,12 +50,9 @@ data C = IsNum | IsOrd -- implies eq
 
 instance NFData C where
 
-instance Pretty C where
-    pretty IsNum   = "IsNum"
-    pretty IsOrd   = "IsOrd"
-    pretty HasBits = "HasBits"
+instance Pretty C where pretty IsNum = "IsNum"; pretty IsOrd = "IsOrd"; pretty HasBits = "HasBits"
 
-instance Show C where show = show.pretty
+instance Show C where show=show.pretty
 
 tupledArr = group . encloseSep (flatAlt "⟨ " "⟨") (flatAlt " ⟩" "⟩") ", "
 
@@ -69,8 +66,7 @@ data Sh a = Nil
 
 infixr 8 `Cons`
 
-instance Show (Sh a) where
-    show = show . pretty
+instance Show (Sh a) where show=show.pretty
 
 instance Pretty (Sh a) where
     pretty (SVar n)    = pretty n
@@ -91,8 +87,7 @@ data T a = Arr (Sh a) (T a)
          | Ρ (TyNm a) (IM.IntMap (T a))
          deriving (Functor, Generic)
 
-instance Show (T a) where
-    show = show . pretty
+instance Show (T a) where show=show.pretty
 
 instance Pretty (T a) where
     pretty (Arr i t)     = "Arr" <+> parens (pretty i) <+> pretty t
@@ -292,14 +287,12 @@ instance Pretty (E a) where
     pretty (Ann _ e t)                                              = parens (pretty e <+> "::" <+> pretty t)
     pretty (Cond _ p e₀ e₁)                                         = "?" <> pretty p <> ",." <+> pretty e₀ <+> ",." <+> pretty e₁
 
-instance Show (E a) where
-    show = show . pretty
+instance Show (E a) where show=show.pretty
 
 data ResVar = X | Y deriving (Generic)
 
 instance Pretty ResVar where
-    pretty X = "x"
-    pretty Y = "y"
+    pretty X = "x"; pretty Y = "y"
 
 data Idiom = FoldSOfZip { seedI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
            | FoldOfZip { zopI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
