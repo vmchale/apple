@@ -173,20 +173,12 @@ data IRel = IEq | INeq | IGt | ILt | ILeq | IGeq
 data FRel = FEq | FNeq | FGt | FLt | FLeq | FGeq
 
 instance Pretty IRel where
-    pretty IEq  = "="
-    pretty INeq = "!="
-    pretty IGt  = ">"
-    pretty ILt  = "<"
-    pretty ILeq = "≤"
-    pretty IGeq = "≥"
+    pretty IEq  = "="; pretty INeq = "!="; pretty IGt  = ">"
+    pretty ILt  = "<"; pretty ILeq = "≤"; pretty IGeq = "≥"
 
 instance Pretty FRel where
-    pretty FEq  = "="
-    pretty FNeq = "!="
-    pretty FGt  = ">"
-    pretty FLt  = "<"
-    pretty FLeq = "≤"
-    pretty FGeq = "≥"
+    pretty FEq  = "="; pretty FNeq = "!="; pretty FGt  = ">"
+    pretty FLt  = "<"; pretty FLeq = "≤"; pretty FGeq = "≥"
 
 instance Pretty IBin where
     pretty IPlus  = "+"
@@ -199,7 +191,7 @@ instance Pretty IBin where
     pretty IRem   = "rem"
 
 instance Pretty FBin where
-    pretty FPlus  = "+"
+    pretty FPlus  = "+";
     pretty FMinus = "-"
     pretty FTimes = "*"
     pretty FDiv   = "%"

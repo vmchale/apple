@@ -250,7 +250,6 @@ deriving instance Generic AlexPosn
 
 deriving instance NFData AlexPosn
 
--- functional bimap?
 type AlexUserState = (Int, M.Map T.Text Int, IM.IntMap (Nm AlexPosn))
 
 alexInitUserState :: AlexUserState

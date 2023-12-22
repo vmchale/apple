@@ -34,7 +34,6 @@ import           GHC.Generics      (Generic)
 import           Prettyprinter     (Doc, Pretty (..), brackets, colon, (<+>))
 import           Prettyprinter.Ext
 
--- TODO: consider separate FX86Reg etc. type
 data X86Reg = Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15 | Rbx | Rax | Rbp | Rsp
             deriving (Eq, Ord, Enum, Generic)
 
