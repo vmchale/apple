@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 
-module R ( Renames (..)
-         , HasRenames (..)
+module R ( Rs (..)
+         , HasRs (..)
          , maxLens
          , rG
          , rE
@@ -18,41 +18,41 @@ import           Nm
 import           Ty.Clone
 import           U
 
-data Renames = Renames { max_ :: Int, bound :: IM.IntMap Int }
+data Rs = Rs { max_ :: Int, bound :: IM.IntMap Int }
 
-class HasRenames a where
-    rename :: Lens' a Renames
+class HasRs a where
+    rename :: Lens' a Rs
 
-instance HasRenames Renames where
+instance HasRs Rs where
     rename = id
 
-maxLens :: Lens' Renames Int
+maxLens :: Lens' Rs Int
 maxLens f s = fmap (\x -> s { max_ = x }) (f (max_ s))
 
-boundLens :: Lens' Renames (IM.IntMap Int)
+boundLens :: Lens' Rs (IM.IntMap Int)
 boundLens f s = fmap (\x -> s { bound = x }) (f (bound s))
 
-mapBound :: (IM.IntMap Int -> IM.IntMap Int) -> Renames -> Renames
-mapBound f (Renames m b) = Renames m (f b)
+mapBound :: (IM.IntMap Int -> IM.IntMap Int) -> Rs -> Rs
+mapBound f (Rs m b) = Rs m (f b)
 
-setMax :: Int -> Renames -> Renames
+setMax :: Int -> Rs -> Rs
 setMax i r = r { max_ = i }
 
 -- Make sure you don't have cycles in the renames map!
-replaceUnique :: (MonadState s m, HasRenames s) => U -> m U
+replaceUnique :: (MonadState s m, HasRs s) => U -> m U
 replaceUnique u@(U i) = do
     rSt <- use (rename.boundLens)
     case IM.lookup i rSt of
         Nothing -> pure u
         Just j  -> replaceUnique (U j)
 
-replaceVar :: (MonadState s m, HasRenames s) => Nm a -> m (Nm a)
+replaceVar :: (MonadState s m, HasRs s) => Nm a -> m (Nm a)
 replaceVar (Nm n u l) = do
     u' <- replaceUnique u
     pure $ Nm n u' l
 
-withRenames :: (HasRenames s, MonadState s m) => (Renames -> Renames) -> m a -> m a
-withRenames modSt act = do
+withRs :: (HasRs s, MonadState s m) => (Rs -> Rs) -> m a -> m a
+withRs modSt act = do
     preSt <- use rename
     rename %= modSt
     res <- act
@@ -60,10 +60,10 @@ withRenames modSt act = do
     rename .= setMax postMax preSt
     pure res
 
-withName :: (HasRenames s, MonadState s m)
-         => Nm a
-         -> m (Nm a, Renames -> Renames)
-withName (Nm t (U i) l) = do
+withNm :: (HasRs s, MonadState s m)
+       => Nm a
+       -> m (Nm a, Rs -> Rs)
+withNm (Nm t (U i) l) = do
     m <- use (rename.maxLens)
     let newUniq = m+1
     rename.maxLens .= newUniq
@@ -71,32 +71,32 @@ withName (Nm t (U i) l) = do
 
 -- globally unique
 rG :: Int -> E a -> (E a, Int)
-rG i = second max_ . flip runState (Renames i IM.empty) . rE
+rG i = second max_ . flip runState (Rs i IM.empty) . rE
 
 {-# INLINABLE liftR #-}
-liftR :: (HasRenames s, MonadState s m) => T a -> m (T a)
+liftR :: (HasRs s, MonadState s m) => T a -> m (T a)
 liftR t = do
     i <- use (rename.maxLens)
     let (u,t',_) = cloneT i t
     (rename.maxLens .= u) $> t'
 
 {-# INLINABLE rE #-}
-rE :: (HasRenames s, MonadState s m) => E a -> m (E a)
+rE :: (HasRs s, MonadState s m) => E a -> m (E a)
 rE (Lam l n e) = do
-    (n', modR) <- withName n
-    Lam l n' <$> withRenames modR (rE e)
+    (n', modR) <- withNm n
+    Lam l n' <$> withRs modR (rE e)
 rE (Let l (n, eϵ) e) = do
     eϵ' <- rE eϵ
-    (n', modR) <- withName n
-    Let l (n', eϵ') <$> withRenames modR (rE e)
+    (n', modR) <- withNm n
+    Let l (n', eϵ') <$> withRs modR (rE e)
 rE (Def l (n, eϵ) e) = do
     eϵ' <- rE eϵ
-    (n', modR) <- withName n
-    Def l (n', eϵ') <$> withRenames modR (rE e)
+    (n', modR) <- withNm n
+    Def l (n', eϵ') <$> withRs modR (rE e)
 rE (LLet l (n, eϵ) e) = do
     eϵ' <- rE eϵ
-    (n', modR) <- withName n
-    LLet l (n', eϵ') <$> withRenames modR (rE e)
+    (n', modR) <- withNm n
+    LLet l (n', eϵ') <$> withRs modR (rE e)
 rE e@Builtin{} = pure e
 rE e@FLit{} = pure e
 rE e@ILit{} = pure e

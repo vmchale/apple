@@ -11,11 +11,11 @@ import           R
 import           Ty
 import           U
 
-data ISt a = ISt { renames :: !Renames
+data ISt a = ISt { renames :: !Rs
                  , binds   :: IM.IntMap (E a)
                  }
 
-instance HasRenames (ISt a) where
+instance HasRs (ISt a) where
     rename f s = fmap (\x -> s { renames = x }) (f (renames s))
 
 type M a = State (ISt a)
@@ -23,7 +23,7 @@ type M a = State (ISt a)
 bind :: Nm a -> E a -> ISt a -> ISt a
 bind (Nm _ (U u) _) e (ISt r bs) = ISt r (IM.insert u e bs)
 
-runI i = second (max_.renames) . flip runState (ISt (Renames i mempty) mempty)
+runI i = second (max_.renames) . flip runState (ISt (Rs i mempty) mempty)
 
 inline :: Int -> E (T ()) -> (E (T ()), Int)
 inline i = runI i.iM

@@ -13,10 +13,10 @@ import           Nm
 import           R
 import           U
 
-type RM = State Renames
+type RM = State Rs
 
 nextU :: T.Text -> a -> RM (Nm a)
 nextU n l = do {i <- gets max_; modifying maxLens (+1) $> Nm n (U$i+1) l }
 
 runM :: Int -> RM a -> (a, Int)
-runM i = second max_ . flip runState (Renames i mempty)
+runM i = second max_ . flip runState (Rs i mempty)

@@ -11,28 +11,28 @@ import           Lens.Micro.Mtl             (modifying, use)
 import           Nm
 import           U
 
-data TRenames = TRenames { maxT    :: Int
-                         , boundTV :: IM.IntMap Int
-                         , boundSh :: IM.IntMap Int
-                         , boundIx :: IM.IntMap Int
-                         }
+data TR = TR { maxT    :: Int
+             , boundTV :: IM.IntMap Int
+             , boundSh :: IM.IntMap Int
+             , boundIx :: IM.IntMap Int
+             }
 
-type CM = State TRenames
+type CM = State TR
 
-maxTLens :: Lens' TRenames Int
+maxTLens :: Lens' TR Int
 maxTLens f s = fmap (\x -> s { maxT = x }) (f (maxT s))
 
-boundTVLens :: Lens' TRenames (IM.IntMap Int)
+boundTVLens :: Lens' TR (IM.IntMap Int)
 boundTVLens f s = fmap (\x -> s { boundTV = x }) (f (boundTV s))
 
-boundShLens :: Lens' TRenames (IM.IntMap Int)
+boundShLens :: Lens' TR (IM.IntMap Int)
 boundShLens f s = fmap (\x -> s { boundSh = x }) (f (boundSh s))
 
-boundIxLens :: Lens' TRenames (IM.IntMap Int)
+boundIxLens :: Lens' TR (IM.IntMap Int)
 boundIxLens f s = fmap (\x -> s { boundIx = x }) (f (boundIx s))
 
 -- for clone
-freshen :: Lens' TRenames (IM.IntMap Int) -- ^ TVars, shape var, etc.
+freshen :: Lens' TR (IM.IntMap Int) -- ^ TVars, shape var, etc.
         -> Nm a -> CM (Nm a)
 freshen lens (Nm n (U i) l) = do
     modifying maxTLens (+1)
@@ -40,7 +40,7 @@ freshen lens (Nm n (U i) l) = do
     modifying lens (IM.insert i j)
     pure $ Nm n (U j) l
 
-tryReplaceInT :: Lens' TRenames (IM.IntMap Int) -> Nm a -> CM (Nm a)
+tryReplaceInT :: Lens' TR (IM.IntMap Int) -> Nm a -> CM (Nm a)
 tryReplaceInT lens n@(Nm t (U i) l) = do
     st <- use lens
     case IM.lookup i st of
@@ -49,7 +49,7 @@ tryReplaceInT lens n@(Nm t (U i) l) = do
 
 cloneT :: Int -> T a
               -> (Int, T a, IM.IntMap Int) -- ^ Substition on type variables, returned so constraints can be propagated/copied
-cloneT u = (\(t, TRenames uϵ tvs _ _) -> (uϵ,t,tvs)).flip runState (TRenames u IM.empty IM.empty IM.empty).cT
+cloneT u = (\(t, TR uϵ tvs _ _) -> (uϵ,t,tvs)).flip runState (TR u IM.empty IM.empty IM.empty).cT
   where
     cloneIx :: I a -> CM (I a)
     cloneIx i@Ix{}           = pure i
