@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor  #-}
+{-# LANGUAGE DeriveFunctor #-}
 
 module Nm ( Nm (..)
           , TyNm
