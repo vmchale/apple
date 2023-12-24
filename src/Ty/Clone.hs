@@ -1,11 +1,10 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Ty.Clone ( cloneTClosed ) where
+module Ty.Clone ( cloneT ) where
 
 
 import           A
 import           Control.Monad.State.Strict (State, gets, runState)
-import           Data.Functor               (($>))
 import qualified Data.IntMap                as IM
 import           Lens.Micro                 (Lens')
 import           Lens.Micro.Mtl             (modifying, use)
@@ -36,9 +35,10 @@ boundIxLens f s = fmap (\x -> s { boundIx = x }) (f (boundIx s))
 freshen :: Lens' TRenames (IM.IntMap Int) -- ^ TVars, shape var, etc.
         -> Nm a -> CM (Nm a)
 freshen lens (Nm n (U i) l) = do
+    modifying maxTLens (+1)
     j <- gets maxT
-    modifying lens (IM.insert i (j+1))
-    modifying maxTLens (+1) $> Nm n (U$j+1) l
+    modifying lens (IM.insert i j)
+    pure $ Nm n (U j) l
 
 tryReplaceInT :: Lens' TRenames (IM.IntMap Int) -> Nm a -> CM (Nm a)
 tryReplaceInT lens n@(Nm t (U i) l) = do
@@ -47,9 +47,9 @@ tryReplaceInT lens n@(Nm t (U i) l) = do
         Just j  -> pure (Nm t (U j) l)
         Nothing -> freshen lens n
 
-cloneTClosed :: Int -> T a
-             -> (Int, T a, IM.IntMap Int) -- ^ Substition on type variables, returned so constraints can be propagated/copied
-cloneTClosed u = (\(t, TRenames uϵ tvs _ _) -> (uϵ,t,tvs)) . flip runState (TRenames u IM.empty IM.empty IM.empty) . cloneT
+cloneT :: Int -> T a
+              -> (Int, T a, IM.IntMap Int) -- ^ Substition on type variables, returned so constraints can be propagated/copied
+cloneT u = (\(t, TRenames uϵ tvs _ _) -> (uϵ,t,tvs)).flip runState (TRenames u IM.empty IM.empty IM.empty).cT
   where
     cloneIx :: I a -> CM (I a)
     cloneIx i@Ix{}           = pure i
@@ -65,11 +65,11 @@ cloneTClosed u = (\(t, TRenames uϵ tvs _ _) -> (uϵ,t,tvs)) . flip runState (TR
     cloneSh (Rev sh)      = Rev <$> cloneSh sh
     cloneSh (Cat sh0 sh1) = Cat <$> cloneSh sh0 <*> cloneSh sh1
 
-    cloneT :: T a -> CM (T a)
-    cloneT F            = pure F
-    cloneT I            = pure I
-    cloneT B            = pure B
-    cloneT (Arrow t t') = Arrow <$> cloneT t <*> cloneT t'
-    cloneT (Arr sh t)   = Arr <$> cloneSh sh <*> cloneT t
-    cloneT (TVar n)     = TVar <$> tryReplaceInT boundTVLens n
-    cloneT (P ts)       = P <$> traverse cloneT ts
+    cT :: T a -> CM (T a)
+    cT F            = pure F
+    cT I            = pure I
+    cT B            = pure B
+    cT (Arrow t t') = Arrow <$> cT t <*> cT t'
+    cT (Arr sh t)   = Arr <$> cloneSh sh <*> cT t
+    cT (TVar n)     = TVar <$> tryReplaceInT boundTVLens n
+    cT (P ts)       = P <$> traverse cT ts

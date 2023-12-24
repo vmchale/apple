@@ -628,7 +628,7 @@ tyB _ Tan = pure (Arrow F F, mempty)
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do
     i<- gets maxU
-    let (u,t',vs) = cloneTClosed i t
+    let (u,t',vs) = cloneT i t
     modify (setMaxU u) $> (t',vs)
 
 cloneWithConstraints :: T b -> TyM a (T b)
