@@ -26,17 +26,13 @@ library
         A
         Ty
         Nm
-        U
+        I
         L
         Parser
-        IR
-        I
-        A.Eta
         CGen
         Hs.A
         Hs.FFI
         Sys.DL
-        Asm.X86.Byte
         Prettyprinter.Ext
 
     build-tool-depends:
@@ -54,7 +50,10 @@ library
         Parser.Rw
         Ty.Clone
         Ty.M
+        A.Eta
         A.Opt
+        U
+        IR
         IR.Alloc
         IR.CF
         IR.Opt
@@ -68,6 +67,7 @@ library
         Asm.BB
         Asm.X86
         Asm.X86.B
+        Asm.X86.Byte
         Asm.X86.CF
         Asm.X86.Opt
         Asm.X86.Frame
