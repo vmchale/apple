@@ -13,7 +13,7 @@ import           Data.Bifunctor             (second)
 import           Data.Functor               (($>))
 import qualified Data.IntMap                as IM
 import           Lens.Micro                 (Lens')
-import           Lens.Micro.Mtl             (use, (%=), (.=))
+import           Lens.Micro.Mtl             (modifying, use, (.=))
 import           Nm
 import           Ty.Clone
 import           U
@@ -32,12 +32,6 @@ maxLens f s = fmap (\x -> s { max_ = x }) (f (max_ s))
 boundLens :: Lens' Rs (IM.IntMap Int)
 boundLens f s = fmap (\x -> s { bound = x }) (f (bound s))
 
-mapBound :: (IM.IntMap Int -> IM.IntMap Int) -> Rs -> Rs
-mapBound f (Rs m b) = Rs m (f b)
-
-setMax :: Int -> Rs -> Rs
-setMax i r = r { max_ = i }
-
 -- Make sure you don't have cycles in the renames map!
 replaceUnique :: (MonadState s m, HasRs s) => U -> m U
 replaceUnique u@(U i) = do
@@ -51,23 +45,17 @@ replaceVar (Nm n u l) = do
     u' <- replaceUnique u
     pure $ Nm n u' l
 
-withRs :: (HasRs s, MonadState s m) => (Rs -> Rs) -> m a -> m a
-withRs modSt act = do
-    preSt <- use rename
-    rename %= modSt
-    res <- act
-    postMax <- use (rename.maxLens)
-    rename .= setMax postMax preSt
-    pure res
+doLocal :: (HasRs s, MonadState s m) => m a -> m a
+doLocal act = do
+    preB <- use (rename.boundLens)
+    act <* ((rename.boundLens) .= preB)
 
-withNm :: (HasRs s, MonadState s m)
-       => Nm a
-       -> m (Nm a, Rs -> Rs)
-withNm (Nm t (U i) l) = do
+freshen :: (HasRs s, MonadState s m) => Nm a -> m (Nm a)
+freshen (Nm t (U i) l) = do
     m <- use (rename.maxLens)
-    let newUniq = m+1
-    rename.maxLens .= newUniq
-    pure (Nm t (U newUniq) l, mapBound (IM.insert i (m+1)))
+    let nU=m+1
+    rename.maxLens .= nU
+    modifying (rename.boundLens) (IM.insert i nU) $> Nm t (U nU) l
 
 -- globally unique
 rG :: Int -> E a -> (E a, Int)
@@ -82,21 +70,21 @@ liftR t = do
 
 {-# INLINABLE rE #-}
 rE :: (HasRs s, MonadState s m) => E a -> m (E a)
-rE (Lam l n e) = do
-    (n', modR) <- withNm n
-    Lam l n' <$> withRs modR (rE e)
+rE (Lam l n e) = doLocal $ do
+    n' <- freshen n
+    Lam l n' <$> rE e
 rE (Let l (n, eϵ) e) = do
     eϵ' <- rE eϵ
-    (n', modR) <- withNm n
-    Let l (n', eϵ') <$> withRs modR (rE e)
+    n' <- freshen n
+    Let l (n', eϵ') <$> rE e
 rE (Def l (n, eϵ) e) = do
     eϵ' <- rE eϵ
-    (n', modR) <- withNm n
-    Def l (n', eϵ') <$> withRs modR (rE e)
+    n' <- freshen n
+    Def l (n', eϵ') <$> rE e
 rE (LLet l (n, eϵ) e) = do
     eϵ' <- rE eϵ
-    (n', modR) <- withNm n
-    LLet l (n', eϵ') <$> withRs modR (rE e)
+    n' <- freshen n
+    LLet l (n', eϵ') <$> rE e
 rE e@Builtin{} = pure e
 rE e@FLit{} = pure e
 rE e@ILit{} = pure e
