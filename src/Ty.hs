@@ -199,9 +199,9 @@ pushVarConstraint tn l c = modify (addVarConstr tn l c)
 
 freshN :: T.Text -> b -> TyM a (Nm b)
 freshN n l = do
+    modify (mapMaxU (+1))
     st <- gets maxU
-    Nm n (U$st+1) l
-        <$ modify (mapMaxU (+1))
+    pure $ Nm n (U st) l
 
 mapTySubst f (Subst t i sh) = Subst (f t) i sh
 
