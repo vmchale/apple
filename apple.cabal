@@ -110,19 +110,10 @@ library
         split,
         extra >=1.7.4
 
-    if !impl(ghc >=8.0)
-        build-depends: semigroups
-
-    if impl(ghc >=8.0)
-        ghc-options:
-            -Wincomplete-uni-patterns -Wincomplete-record-updates
-            -Wredundant-constraints -Widentities
-
-    if impl(ghc >=8.4)
-        ghc-options: -Wmissing-export-lists
-
-    if impl(ghc >=8.2)
-        ghc-options: -Wcpp-undef
+    ghc-options:
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wmissing-export-lists
+        -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -151,13 +142,9 @@ foreign-library apple
     if os(windows)
         options: standalone
 
-    if impl(ghc >=8.0)
-        ghc-options:
-            -Wincomplete-uni-patterns -Wincomplete-record-updates
-            -Wredundant-constraints
-
-    if impl(ghc >=8.4)
-        ghc-options: -Wmissing-export-lists
+    ghc-options:
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Wmissing-export-lists
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -174,19 +161,10 @@ executable atc
         optparse-applicative >=0.13.0.0,
         bytestring
 
-    if !impl(ghc >=8.0)
-        build-depends: semigroups
-
-    if impl(ghc >=8.0)
-        ghc-options:
-            -Wincomplete-uni-patterns -Wincomplete-record-updates
-            -Wredundant-constraints -Widentities
-
-    if impl(ghc >=8.4)
-        ghc-options: -Wmissing-export-lists
-
-    if impl(ghc >=8.2)
-        ghc-options: -Wcpp-undef
+    ghc-options:
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wmissing-export-lists
+        -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -211,19 +189,10 @@ executable writeo
         process,
         text
 
-    if !impl(ghc >=8.0)
-        build-depends: semigroups
-
-    if impl(ghc >=8.0)
-        ghc-options:
-            -Wincomplete-uni-patterns -Wincomplete-record-updates
-            -Wredundant-constraints -Widentities
-
-    if impl(ghc >=8.4)
-        ghc-options: -Wmissing-export-lists
-
-    if impl(ghc >=8.2)
-        ghc-options: -Wcpp-undef
+    ghc-options:
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wcpp-undef
+        -Wmissing-export-lists
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -247,19 +216,10 @@ executable arepl
         filepath,
         extra
 
-    if !impl(ghc >=8.0)
-        build-depends: semigroups
-
-    if impl(ghc >=8.0)
-        ghc-options:
-            -Wincomplete-uni-patterns -Wincomplete-record-updates
-            -Wredundant-constraints -Widentities
-
-    if impl(ghc >=8.4)
-        ghc-options: -Wmissing-export-lists
-
-    if impl(ghc >=8.2)
-        ghc-options: -Wcpp-undef
+    ghc-options:
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wmissing-export-lists
+        -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -282,16 +242,10 @@ test-suite apple-test
         bytestring,
         hypergeometric >=0.1.4.0
 
-    if impl(ghc >=8.0)
-        ghc-options:
-            -Wincomplete-uni-patterns -Wincomplete-record-updates
-            -Wredundant-constraints -Widentities
-
-    if impl(ghc >=8.4)
-        ghc-options: -Wmissing-export-lists
-
-    if impl(ghc >=8.2)
-        ghc-options: -Wcpp-undef
+    ghc-options:
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wmissing-export-lists
+        -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -311,16 +265,10 @@ benchmark apple-bench
         erf,
         hypergeometric >=0.1.1.0
 
-    if impl(ghc >=8.0)
-        ghc-options:
-            -Wincomplete-uni-patterns -Wincomplete-record-updates
-            -Wredundant-constraints -Widentities
-
-    if impl(ghc >=8.4)
-        ghc-options: -Wmissing-export-lists
-
-    if impl(ghc >=8.2)
-        ghc-options: -Wcpp-undef
+    ghc-options:
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
