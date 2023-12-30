@@ -56,7 +56,7 @@ cloneT u = (\(t, TR uϵ tvs _ _) -> (uϵ,t,tvs)).flip runState (TR u IM.empty IM
     cloneIx (StaPlus l i i') = StaPlus l <$> cloneIx i <*> cloneIx i'
     cloneIx (StaMul l i i')  = StaMul l <$> cloneIx i <*> cloneIx i'
     cloneIx (IVar l n)       = IVar l <$> tryReplaceInT boundIxLens n
-    cloneIx e@IEVar{}        = pure e
+    cloneIx (IEVar l n)      = IEVar l <$> tryReplaceInT boundIxLens n
 
     cloneSh :: Sh a -> CM (Sh a)
     cloneSh Nil           = pure Nil
