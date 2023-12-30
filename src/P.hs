@@ -170,14 +170,14 @@ eDumpIR i = fmap (prettyIR.𝜋) . eir i where 𝜋 (a,b,_)=(b,a)
 optE :: Int -> E a -> Either (Err a) (E (T ()))
 optE i e =
   uncurry go <$> eInline i e where
-  go eϵ = evalState (β'=<<optA'=<<β'=<<eta=<<optA' eϵ)
+  go eϵ = evalState (β'=<<optA'=<<β'=<<η=<<optA' eϵ)
   β' eϵ = state (`β` eϵ)
   optA' eϵ = state (\k -> runM k (optA eϵ))
 
 opt :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()))
 opt bsl =
     uncurry go <$> parseInline bsl where
-    go e = evalState (β'=<<optA'=<<β'=<<eta=<<optA' e)
+    go e = evalState (β'=<<optA'=<<β'=<<η=<<optA' e)
     β' e = state (`β` e)
     optA' e = state (\k -> runM k (optA e))
 

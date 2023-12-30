@@ -1,4 +1,4 @@
-module A.Eta ( eta ) where
+module A.Eta ( η ) where
 
 import           A
 import           Control.Monad ((<=<))
@@ -26,57 +26,57 @@ mkLam ts e = do
     (lam, app) <- unseam ts
     pure $ lam (app e)
 
-eta :: E (T ()) -> RM (E (T ()))
-eta = etaM <=< etaAt
+η :: E (T ()) -> RM (E (T ()))
+η = ηM <=< ηAt
 
 tuck :: E a -> (E a -> E a, E a)
 tuck (Lam l n e) = let (f, e') = tuck e in (Lam l n.f, e')
 tuck e           = (id, e)
 
-etaAt :: E (T ()) -> RM (E (T ()))
-etaAt (EApp t ho@(Builtin _ Scan{}) op)  = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ ScanS{}) op) = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Zip{}) op)   = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Succ{}) op)  = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ FoldS) op)   = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Fold) op)    = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ FoldA) op)   = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Foldl) op)   = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Map{}) op)   = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Rank{}) op)  = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ DI{}) op)    = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Conv{}) op)  = EApp t ho <$> eta op
-etaAt (EApp t ho@(Builtin _ Outer) op)   = EApp t ho <$> eta op
-etaAt (EApp t e0 e1)                     = EApp t <$> etaAt e0 <*> etaAt e1
-etaAt (Lam l n e)                        = Lam l n <$> etaAt e
-etaAt (Cond l p e e')                    = Cond l <$> etaAt p <*> etaAt e <*> etaAt e'
-etaAt (LLet l (n, e') e)                 = do { e'𝜂 <- etaAt e'; e𝜂 <- etaAt e; pure $ LLet l (n, e'𝜂) e𝜂 }
-etaAt (Id l idm)                         = Id l <$> etaIdm idm
-etaAt (ALit l es)                        = ALit l <$> traverse etaAt es
-etaAt (Tup l es)                         = Tup l <$> traverse etaAt es
-etaAt e                                  = pure e
+ηAt :: E (T ()) -> RM (E (T ()))
+ηAt (EApp t ho@(Builtin _ Scan{}) op)  = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ ScanS{}) op) = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ Zip{}) op)   = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ Succ{}) op)  = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ FoldS) op)   = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ Fold) op)    = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ FoldA) op)   = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ Foldl) op)   = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ Map{}) op)   = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ Rank{}) op)  = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ DI{}) op)    = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ Conv{}) op)  = EApp t ho <$> η op
+ηAt (EApp t ho@(Builtin _ Outer) op)   = EApp t ho <$> η op
+ηAt (EApp t e0 e1)                     = EApp t <$> ηAt e0 <*> ηAt e1
+ηAt (Lam l n e)                        = Lam l n <$> ηAt e
+ηAt (Cond l p e e')                    = Cond l <$> ηAt p <*> ηAt e <*> ηAt e'
+ηAt (LLet l (n, e') e)                 = do { e'𝜂 <- ηAt e'; e𝜂 <- ηAt e; pure $ LLet l (n, e'𝜂) e𝜂 }
+ηAt (Id l idm)                         = Id l <$> ηIdm idm
+ηAt (ALit l es)                        = ALit l <$> traverse ηAt es
+ηAt (Tup l es)                         = Tup l <$> traverse ηAt es
+ηAt e                                  = pure e
 
-etaIdm (FoldSOfZip seed op es) = FoldSOfZip <$> etaAt seed <*> etaAt op <*> traverse etaAt es
-etaIdm (FoldOfZip zop op es)   = FoldOfZip <$> etaAt zop <*> etaAt op <*> traverse etaAt es
-etaIdm (AShLit ds es)          = AShLit ds <$> traverse etaAt es
+ηIdm (FoldSOfZip seed op es) = FoldSOfZip <$> ηAt seed <*> ηAt op <*> traverse ηAt es
+ηIdm (FoldOfZip zop op es)   = FoldOfZip <$> ηAt zop <*> ηAt op <*> traverse ηAt es
+ηIdm (AShLit ds es)          = AShLit ds <$> traverse ηAt es
 
 -- outermost only
-etaM :: E (T ()) -> RM (E (T ()))
-etaM e@FLit{}                = pure e
-etaM e@ILit{}                = pure e
-etaM e@ALit{}                = pure e
-etaM e@(Id _ AShLit{})       = pure e
-etaM e@Cond{}                = pure e
-etaM e@BLit{}                = pure e
-etaM e@Tup{}                 = pure e
-etaM e@(Var t@Arrow{} _)     = mkLam (doms t) e
-etaM e@Var{}                 = pure e
-etaM e@(Builtin t@Arrow{} _) = mkLam (doms t) e
-etaM e@Builtin{}             = pure e
-etaM e@(EApp t@Arrow{} _ _)  = mkLam (doms t) e
-etaM e@EApp{}                = pure e
-etaM e@LLet{}                = pure e
-etaM e@(Lam t@Arrow{} _ _)   = do
+ηM :: E (T ()) -> RM (E (T ()))
+ηM e@FLit{}                = pure e
+ηM e@ILit{}                = pure e
+ηM e@ALit{}                = pure e
+ηM e@(Id _ AShLit{})       = pure e
+ηM e@Cond{}                = pure e
+ηM e@BLit{}                = pure e
+ηM e@Tup{}                 = pure e
+ηM e@(Var t@Arrow{} _)     = mkLam (doms t) e
+ηM e@Var{}                 = pure e
+ηM e@(Builtin t@Arrow{} _) = mkLam (doms t) e
+ηM e@Builtin{}             = pure e
+ηM e@(EApp t@Arrow{} _ _)  = mkLam (doms t) e
+ηM e@EApp{}                = pure e
+ηM e@LLet{}                = pure e
+ηM e@(Lam t@Arrow{} _ _)   = do
     let l = length (doms t)
         (preL, e') = tuck e
     (lam, app) <- unseam (take (l-cLam e) $ doms t)
