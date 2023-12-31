@@ -1,10 +1,12 @@
-GHC_VER := 9.8.1
+GHC_VER := $(shell ghc --numeric-version)
 HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
 
 all: apple.so
 
 install: apple.so
 	cp $^ $$(python3 -m site --user-site)
+
+# cdeps applemodule.c | ja "[x+' '+y]|> \$0"
 
 apple.o: applemodule.c
 	$(CC) -fPIC -O2 -c $< -I /usr/local/include/python3.12 -I ../include -I $(HS_INCLUDE_DIR) -o $@
