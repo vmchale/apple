@@ -25,9 +25,11 @@ import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, e
                                     tupled, (<+>))
 import           Prettyprinter.Ext
 
+parensp True=parens; parensp False=id
+
 instance Pretty (I a) where
     pretty (Ix _ i)        = pretty i
-    pretty (IVar _ n)      = pretty n -- FIXME: different lexemes for index vars?
+    pretty (IVar _ n)      = pretty n
     pretty (StaPlus _ i j) = parens (pretty i <+> "+" <+> pretty j)
     pretty (StaMul _ i j)  = parens (pretty i <+> "*" <+> pretty j)
     pretty (IEVar _ n)     = "#" <> pretty n
@@ -90,15 +92,16 @@ data T a = Arr (Sh a) (T a)
 instance Show (T a) where show=show.pretty
 
 instance Pretty (T a) where
-    pretty (Arr i t)     = "Arr" <+> parens (pretty i) <+> pretty t
-    pretty F             = "float"
-    pretty I             = "int"
-    pretty (Li i)        = "int" <> parens (pretty i)
-    pretty B             = "bool"
-    pretty (TVar n)      = pretty n
-    pretty (Arrow t0 t1) = parens (pretty t0 <+> "→" <+> pretty t1)
-    pretty (P ts)        = tupledBy " * " (pretty <$> ts)
-    pretty (Ρ n fs)      = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
+    pretty=ps False where
+        ps _ (Arr i t)     = "Arr" <+> parens (pretty i) <+> pretty t
+        ps _ F             = "float"
+        ps _ I             = "int"
+        ps _ (Li i)        = "int" <> parens (pretty i)
+        ps _ B             = "bool"
+        ps _ (TVar n)      = pretty n
+        ps p (Arrow t0 t1) = parensp p (ps True t0 <+> "→" <+> ps p t1)
+        ps _ (P ts)        = tupledBy " * " (pretty <$> ts)
+        ps _ (Ρ n fs)      = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
 
 rLi :: T a -> T a
 rLi Li{}          = I
