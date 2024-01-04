@@ -28,3 +28,6 @@ clean:
 	make -C vscode clean
 	make -C Rc clean
 	rm -rf dist-newstyle tags moddeps.svg *.hp *.o *.prof *.tix *.svg *.so py/__pycache__
+
+fmt:
+	fd '\.hs$$' $$(ja "[x+' '+y]|>{%/hs-source-dirs/}{\`2}" -i apple.cabal) -x stylish-haskell -i
