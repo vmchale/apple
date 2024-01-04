@@ -235,6 +235,25 @@ prettyTyped (Def t (n, e) e')                                     = parens (brac
 prettyTyped (Tup _ es)                                            = tupled (prettyTyped <$> es)
 prettyTyped e@(ALit t _)                                          = parens (pretty e <+> ":" <+> pretty t)
 
+mPrec :: Builtin -> Maybe Int
+mPrec Plus   = Just 6
+mPrec Minus  = Just 6
+mPrec Times  = Just 7
+mPrec Div    = Just 7
+mPrec IDiv   = Just 7
+mPrec Exp    = Just 8
+mPrec IntExp = Just 8
+mPrec And    = Just 3
+mPrec Or     = Just 2
+mPrec Mod    = Just 7
+mPrec Succ   = Just 9
+mPrec Fold   = Just 9
+mPrec Map{}  = Just 5
+mPrec ConsE  = Just 4
+mPrec Snoc   = Just 4
+mPrec CatE   = Just 5
+mPrec _      = Nothing
+
 isBinOp :: Builtin -> Bool
 isBinOp Plus   = True
 isBinOp Minus  = True
@@ -261,41 +280,44 @@ isBinOp Mod    = True
 isBinOp IOf    = True
 isBinOp _      = False
 
-instance Pretty (E a) where
-    pretty (Lam _ n e)                                              = parens ("λ" <> pretty n <> "." <+> pretty e)
-    pretty (Var _ n)                                                = pretty n
-    pretty (Builtin _ op) | isBinOp op                              = parens (pretty op)
-    pretty (Builtin _ b)                                            = pretty b
-    pretty (EApp _ (Builtin _ (TAt i)) e)                           = pretty e <> "->" <> pretty i
-    pretty (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (pretty e0 <+> pretty op)
-    pretty (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (pretty e0 <+> pretty op <+> pretty e1)
-    pretty (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2) = parens (pretty e0 <> "/" <+> pretty e1 <+> pretty e2)
-    pretty (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
-    pretty (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
-    pretty (EApp _ (EApp _ (Builtin _ Map ) e0) e1)                 = parens (pretty e0 <> "'" <+> pretty e1)
-    pretty (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)    = parens (pretty e0 <+> "Λₒ" <+> pretty e1 <+> pretty e2)
-    pretty (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)
-    pretty (EApp _ (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (pretty e1 <+> pretty e0 <+> "⊗" <+> pretty e1 <+> pretty e2)
-    pretty (EApp _ (EApp _ (Builtin _ op@Rank{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
-    pretty (EApp _ (EApp _ (Builtin _ op@Conv{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
-    pretty (EApp _ (EApp _ (Builtin _ (DI i)) e0) e1)               = parens (pretty e0 <+> "\\`" <> pretty i <+> pretty e1)
-    pretty (EApp _ (EApp _ (Builtin _ Succ) e0) e1)                 = parens (pretty e0 <+> "\\~" <+> pretty e1)
-    pretty (EApp _ e0 e1)                                           = parens (pretty e0 <+> pretty e1)
-    pretty (FLit _ x)                                               = pretty x
-    pretty (ILit _ n)                                               = pretty n
-    pretty (BLit _ True)                                            = "#t"
-    pretty (BLit _ False)                                           = "#f"
-    pretty (Dfn _ e)                                                = brackets (pretty e)
-    pretty (ResVar _ x)                                             = pretty x
-    pretty (Parens _ e)                                             = parens (pretty e)
-    pretty (Let _ (n, e) e')                                        = braces (pretty n <+> "←" <+> pretty e <> ";" <+> pretty e')
-    pretty (Def _ (n, e) e')                                        = braces (pretty n <+> "⇐" <+> pretty e <> ";" <+> pretty e')
-    pretty (LLet _ (n, e) e')                                       = braces (pretty n <+> "⟜" <+> pretty e <> ";" <+> pretty e')
-    pretty (Id _ idm)                                               = pretty idm
-    pretty (Tup _ es)                                               = tupled (pretty <$> es)
-    pretty (ALit _ es)                                              = tupledArr (pretty <$> es)
-    pretty (Ann _ e t)                                              = parens (pretty e <+> "::" <+> pretty t)
-    pretty (Cond _ p e₀ e₁)                                         = "?" <> pretty p <> ",." <+> pretty e₀ <+> ",." <+> pretty e₁
+instance Pretty (E a) where pretty=ps 0
+
+instance PS (E a) where
+    ps d (Lam _ n e)                                              = parensp (d>1) ("λ" <> pretty n <> "." <+> ps (d+1) e)
+    ps _ (Var _ n)                                                = pretty n
+    ps _ (Builtin _ op) | isBinOp op                              = parens (pretty op)
+    ps _ (Builtin _ b)                                            = pretty b
+    ps _ (EApp _ (Builtin _ (TAt i)) e)                           = pretty e <> "->" <> pretty i
+    ps _ (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (pretty e0 <+> pretty op)
+    ps d (EApp _ (EApp _ (Builtin _ op) e0) e1) | Just d' <- mPrec op = parensp (d>d') (ps (d+1) e0 <+> pretty op <+> ps (d+1) e1)
+    ps _ (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (pretty e0 <+> pretty op <+> pretty e1)
+    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)    = parens (pretty e0 <> "/" <+> pretty e1 <+> pretty e2)
+    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
+    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
+    ps _ (EApp _ (EApp _ (Builtin _ Map ) e0) e1)                 = parens (pretty e0 <> "'" <+> pretty e1)
+    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)    = parens (pretty e0 <+> "Λₒ" <+> pretty e1 <+> pretty e2)
+    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)
+    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (pretty e1 <+> pretty e0 <+> "⊗" <+> pretty e1 <+> pretty e2)
+    ps _ (EApp _ (EApp _ (Builtin _ op@Rank{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
+    ps _ (EApp _ (EApp _ (Builtin _ op@Conv{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
+    ps _ (EApp _ (EApp _ (Builtin _ (DI i)) e0) e1)               = parens (pretty e0 <+> "\\`" <> pretty i <+> pretty e1)
+    ps _ (EApp _ (EApp _ (Builtin _ Succ) e0) e1)                 = parens (pretty e0 <+> "\\~" <+> pretty e1)
+    ps d (EApp _ e0 e1)                                           = parensp (d>10) (ps d e0 <+> ps (d+1) e1)
+    ps _ (FLit _ x)                                               = pretty x
+    ps _ (ILit _ n)                                               = pretty n
+    ps _ (BLit _ True)                                            = "#t"
+    ps _ (BLit _ False)                                           = "#f"
+    ps _ (Dfn _ e)                                                = brackets (pretty e)
+    ps _ (ResVar _ x)                                             = pretty x
+    ps _ (Parens _ e)                                             = parens (pretty e)
+    ps _ (Let _ (n, e) e')                                        = braces (pretty n <+> "←" <+> pretty e <> ";" <+> pretty e')
+    ps _ (Def _ (n, e) e')                                        = braces (pretty n <+> "⇐" <+> pretty e <> ";" <+> pretty e')
+    ps _ (LLet _ (n, e) e')                                       = braces (pretty n <+> "⟜" <+> pretty e <> ";" <+> pretty e')
+    ps _ (Id _ idm)                                               = pretty idm
+    ps _ (Tup _ es)                                               = tupled (pretty <$> es)
+    ps _ (ALit _ es)                                              = tupledArr (pretty <$> es)
+    ps d (Ann _ e t)                                              = parensp (d>1) (ps (d+1) e <+> "::" <+> ps d t)
+    ps d (Cond _ p e₀ e₁)                                         = "?" <> pretty p <> ",." <+> ps d e₀ <+> ",." <+> ps d e₁
 
 instance Show (E a) where show=show.pretty
 
