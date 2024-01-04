@@ -27,12 +27,17 @@ import           Prettyprinter.Ext
 
 parensp True=parens; parensp False=id
 
-instance Pretty (I a) where
-    pretty (Ix _ i)        = pretty i
-    pretty (IVar _ n)      = pretty n
-    pretty (StaPlus _ i j) = parens (pretty i <+> "+" <+> pretty j)
-    pretty (StaMul _ i j)  = parens (pretty i <+> "*" <+> pretty j)
-    pretty (IEVar _ n)     = "#" <> pretty n
+class PS a where
+    ps :: Int -> a -> Doc ann
+
+instance Pretty (I a) where pretty=ps 0
+
+instance PS (I a) where
+    ps _ (Ix _ i)        = pretty i
+    ps _ (IVar _ n)      = pretty n
+    ps d (StaPlus _ i j) = parensp (d>5) (ps (d+1) i <+> "+" <+> ps (d+1) j)
+    ps d (StaMul _ i j)  = parensp (d>7) (ps (d+1) i <+> "*" <+> ps (d+1) j)
+    ps _ (IEVar _ n)     = "#" <> pretty n
 
 data I a = Ix { ia :: a, ii :: !Int }
          | IVar { ia :: a, ixn :: Nm a }
@@ -43,9 +48,6 @@ data I a = Ix { ia :: a, ii :: !Int }
 
 instance Show (I a) where
     show = show . pretty
-
--- remora allows us to append shapes together with the ++ shape operator (at the
--- type level)
 
 data C = IsNum | IsOrd -- implies eq
        | HasBits deriving (Generic, Eq, Ord)
@@ -70,13 +72,17 @@ infixr 8 `Cons`
 
 instance Show (Sh a) where show=show.pretty
 
-instance Pretty (Sh a) where
-    pretty (SVar n)    = pretty n
-    pretty (Cons i sh) = pretty i <+> "`Cons`" <+> pretty sh
-    pretty Nil         = "Nil"
-    pretty (Cat s s')  = pretty s <+> "⧺" <+> pretty s'
-    pretty (Rev s)     = "rev" <> parens (pretty s)
-    pretty (Π s)       = "Π" <+> parens (pretty s)
+instance Pretty (Sh a) where pretty=ps 0
+
+instance PS (Sh a) where
+    ps _ (SVar n)    = pretty n
+    ps d (Cons i sh) = parensp (d>6) (pretty i <+> "`Cons`" <+> pretty sh)
+    ps _ Nil         = "Nil"
+    ps d (Cat s s')  = parensp (d>5) (ps (d+1) s <+> "⧺" <+> ps (d+1) s')
+    ps d (Rev s)     = parensp (d>appPrec) "rev" <> ps (d+1) s
+    ps d (Π s)       = parensp (d>appPrec) "Π" <+> ps (d+1) s
+
+appPrec=10
 
 data T a = Arr (Sh a) (T a)
          | F -- | double
@@ -91,17 +97,18 @@ data T a = Arr (Sh a) (T a)
 
 instance Show (T a) where show=show.pretty
 
-instance Pretty (T a) where
-    pretty=ps False where
-        ps _ (Arr i t)     = "Arr" <+> parens (pretty i) <+> pretty t
-        ps _ F             = "float"
-        ps _ I             = "int"
-        ps _ (Li i)        = "int" <> parens (pretty i)
-        ps _ B             = "bool"
-        ps _ (TVar n)      = pretty n
-        ps p (Arrow t0 t1) = parensp p (ps True t0 <+> "→" <+> ps p t1)
-        ps _ (P ts)        = tupledBy " * " (pretty <$> ts)
-        ps _ (Ρ n fs)      = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
+instance Pretty (T a) where pretty=ps 0
+
+instance PS (T a) where
+    ps d (Arr i t)     = "Arr" <+> parens (ps d i) <+> pretty t
+    ps _ F             = "float"
+    ps _ I             = "int"
+    ps _ (Li i)        = "int" <> parens (pretty i)
+    ps _ B             = "bool"
+    ps _ (TVar n)      = pretty n
+    ps d (Arrow t0 t1) = parensp (d>0) (ps (d+1) t0 <+> "→" <+> ps d t1)
+    ps _ (P ts)        = tupledBy " * " (pretty <$> ts)
+    ps _ (Ρ n fs)      = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
 
 rLi :: T a -> T a
 rLi Li{}          = I
