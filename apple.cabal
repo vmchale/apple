@@ -15,6 +15,15 @@ extra-doc-files:
     README.md
     CHANGELOG.md
 
+extra-source-files:
+    include/apple.h
+    test/examples/*.🍎
+    test/examples/*.🍏
+    test/data/*.🍎
+    test/data/*.🍏
+    math/*.🍎
+    math/*.🍏
+
 source-repository head
     type:     git
     location: https://github.com/vmchale/apple
