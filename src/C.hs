@@ -1,13 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- first IR with for loops and array accesses, inspired by C
-module C ( CS (..) ) where
+module C ( Temp (..)
+         , FTemp (..)
+         , CE (..)
+         , CFE (..)
+         , CS (..)
+         , FBin (..)
+         , IRel (..)
+         ) where
 
+import Data.Int (Int64)
 import Prettyprinter (Pretty (..))
 
-data Temp = ITemp !Int | ATemp !Int | FTemp !Int
+data Temp = ITemp !Int | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5 | CRet
-          | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1
+
+data FTemp = FTemp !Int
+           | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1
 
 instance Pretty Temp where
     pretty (ITemp i) = "T" <> pretty i
@@ -27,8 +37,11 @@ data IBin = IPlus | IAsl
 data FBin = FPlus | FTimes
 
 -- array access to be desugared (size, element...)
-data CE = EAt ArrAcc | Bin IBin CE CE
-data CFE = FAt ArrAcc | FBin FBin CFE CFE
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
+data CFE = FAt ArrAcc | FBin FBin CFE CFE | FTmp FTemp | ConstF Double
 
 data CS = For Temp IRel CE CS
         | MT Temp CE
+        | MX FTemp CFE
+        | Wr ArrAcc CE
+        | WrF ArrAcc CFE
