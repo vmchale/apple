@@ -224,6 +224,7 @@ mguI inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = Left $ OI l ii
 mguI inp ix iix@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = Left$ OI l ix iix
                                           | otherwise = Right $ IM.insert i ix inp
 mguI inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep inp i0 i1
+mguI inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep inp i0 i1
 mguI inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguIPrep inp i (Ix lk (j-k))
                                                 | otherwise = Left $ UI l i0 i1
 mguI inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguIPrep inp i1 i0
@@ -248,6 +249,7 @@ mgSh l inp sh s@(SVar (Nm _ (U i) _)) | i `IS.member` occSh sh = Left$ OSh l sh 
                                         | otherwise = Right$ mapShSubst (IM.insert i sh) inp
 mgSh l _ sh@Nil sh'@Cons{} = Left $ USh l sh sh'
 mgSh l _ sh@Cons{} sh'@Nil{} = Left $ USh l sh' sh
+mgSh l inp (Rev sh) (Rev sh') = mgShPrep l inp sh sh'
 
 mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mguPrep l s t0 t1 =
