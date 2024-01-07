@@ -106,6 +106,7 @@ data CS = For Temp CE IRel CE [CS]
         | Ma Int Temp CE CE -- label, temp, rank, #elements TODO: elementt size
         | Free Temp
         | RA !Int -- return array no-op (takes label)
+        | CpyE ArrAcc ArrAcc CE -- copy elements TODO: size
 
 instance Pretty CS where
     pretty (MT t e)             = pretty t <+> "=" <+> pretty e
@@ -116,6 +117,7 @@ instance Pretty CS where
     pretty (Free t)             = "free" <> parens (pretty t)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty RA{}                 = mempty
+    pretty (CpyE a a' e)        = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e)
 
 prettyCS :: (AsmData, [CS]) -> Doc ann
 prettyCS (ds,ss) = pCS ss

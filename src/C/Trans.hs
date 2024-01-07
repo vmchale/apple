@@ -5,6 +5,7 @@ module C.Trans ( writeC ) where
 import           A
 import           C
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
+import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import           Nm
 import           Nm.IntMap
@@ -33,6 +34,9 @@ newITemp = ITemp <$> nextI
 newFTemp :: CM FTemp
 newFTemp = FTemp <$> nextI
 
+addMT :: Int -> Temp -> CSt -> CSt
+addMT i tϵ (CSt l t ar as v d a f aas ts) = CSt l t ar as v d a f aas (IM.insert i tϵ ts)
+
 addVar :: Nm a -> Temp -> CSt -> CSt
 addVar n r (CSt l t ar as v d a f aas ts) = CSt l t ar as (insert n r v) d a f aas ts
 
@@ -52,6 +56,15 @@ isF F = True; isF _ = False
 isI I = True; isI _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
+
+staRnk :: Integral b => Sh a -> Maybe b
+staRnk Nil           = Just 0
+staRnk (_ `Cons` sh) = (1+) <$> staRnk sh
+staRnk _             = Nothing
+
+tRnk :: T a -> Maybe (T a, Int64)
+tRnk (Arr sh t) = (t,) <$> staRnk sh
+tRnk _          = Nothing
 
 writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (CSt [0..] [0..] [0..] 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt l t _ _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
@@ -127,6 +140,13 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     let loopBody=mt (AElem arrT (Tmp iR) l) rD:ss++[wt (AElem t (Tmp iR) (Just a)) rC]
         loop=For iR 0 C.Gte (Tmp szR) loopBody
     pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR):Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
+aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
+    a <- nextArr
+    xR <- newITemp; yR <- newITemp
+    xnR <- newITemp; ynR <- newITemp; tn <- newITemp
+    (lX, plX) <- aeval x xR; (lY, plY) <- aeval y yR
+    modify (addMT a t)
+    pure (Just a, plX ++ plY ++ MT xnR (EAt (ADim xR 0 lX)):MT ynR (EAt (ADim yR 0 lY)):MT tn (Tmp xnR+Tmp ynR):Ma a t 1 (Tmp tn):Wr (ADim t 0 (Just a)) (Tmp tn):CpyE (AElem t 0 (Just a)) (AElem xR 0 lX) (Tmp xnR):[CpyE (AElem t (Tmp xnR) (Just a)) (AElem yR 0 lY) (Tmp ynR)])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
