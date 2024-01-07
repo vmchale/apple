@@ -33,7 +33,7 @@ data IRSt = IRSt { labels :: [Label]
                  }
 
 getT :: IM.IntMap b -> Nm a -> b
-getT st n@(Nm _ (U i) _) = IM.findWithDefault (error ("Internal error: variable " ++ show n ++ " not mapped to register.")) i st
+getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " not mapped to register.")) n st
 
 nextI :: IRM Int
 nextI = state (\(IRSt l (tϵ:t) ar as v a f aas ts) -> (tϵ, IRSt l t ar as v a f aas ts))
