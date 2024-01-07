@@ -194,8 +194,8 @@ instance Pretty Builtin where
     pretty RevE      = "~"
     pretty Flat      = "♭"
 
-data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log | And | Or
-             | Xor | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
+data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
+             | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
              | Max | Min | Neg | Sqrt | T | Di | Flat
              | IRange | FRange
              | Map | FoldA | Zip
@@ -247,8 +247,6 @@ mPrec Div    = Just 7
 mPrec IDiv   = Just 7
 mPrec Exp    = Just 8
 mPrec IntExp = Just 8
-mPrec And    = Just 3
-mPrec Or     = Just 2
 mPrec Mod    = Just 7
 mPrec Succ   = Just 9
 mPrec Fold   = Just 9
@@ -266,9 +264,6 @@ isBinOp Div    = True
 isBinOp IDiv   = True
 isBinOp Exp    = True
 isBinOp IntExp = True
-isBinOp And    = True
-isBinOp Or     = True
-isBinOp Xor    = True
 isBinOp DI{}   = True
 isBinOp Conv{} = True
 isBinOp Mul    = True
