@@ -8,6 +8,7 @@ module C ( Temp (..)
          , CFE (..)
          , CS (..)
          , FBin (..)
+         , IBin (..)
          , IRel (..)
          , Label, AsmData
          , LSt (..)
@@ -17,7 +18,7 @@ module C ( Temp (..)
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
-import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, dot, hardline, indent, parens, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, indent, lbrace, parens, rbrace, (<+>))
 import           Prettyprinter.Ext
 
 type Label = Word; type AsmData = IM.IntMap [Word64]
@@ -75,7 +76,7 @@ instance Pretty FBin where
     pretty FPlus="+"; pretty FTimes="*"; pretty FMinus="-"
 
 -- array access to be desugared (size, element...)
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64 -- TODO: element size
 
 instance Pretty CE where
     pretty (Tmp t)        = pretty t
@@ -97,22 +98,24 @@ instance Pretty CFE where
     pretty (FTmp t)        = pretty t
     pretty (ConstF x)      = pretty x
 
-data CS = For Temp IRel CE [CS]
+data CS = For Temp CE IRel CE [CS]
         | MT Temp CE
         | MX FTemp CFE
         | Wr ArrAcc CE
         | WrF ArrAcc CFE
-        | Ma Int Temp CE -- label, temp, size
+        | Ma Int Temp CE CE -- label, temp, rank, #elements TODO: elementt size
         | Free Temp
         | RA !Int -- return array no-op (takes label)
 
 instance Pretty CS where
-    pretty (MT t e)         = pretty t <+> "=" <+> pretty e
-    pretty (MX t e)         = pretty t <+> "=" <+> pretty e
-    pretty (Wr a e)         = pretty a <+> "=" <+> pretty e
-    pretty (WrF a e)        = pretty a <+> "=" <+> pretty e
-    pretty (Ma _ t e)       = pretty t <+> "=" <+> "malloc" <> parens (pretty e)
-    pretty (For t rel e ss) = "for" <> parens (pretty t <> comma <+> pretty t <+> pretty rel <+> pretty e) <#> braces (indent 4 (pCS ss<>hardline))
+    pretty (MT t e)             = pretty t <+> "=" <+> pretty e
+    pretty (MX t e)             = pretty t <+> "=" <+> pretty e
+    pretty (Wr a e)             = pretty a <+> "=" <+> pretty e
+    pretty (WrF a e)            = pretty a <+> "=" <+> pretty e
+    pretty (Ma _ t rnk e)       = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e)
+    pretty (Free t)             = "free" <> parens (pretty t)
+    pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
+    pretty RA{}                 = mempty
 
 prettyCS :: (AsmData, [CS]) -> Doc ann
 prettyCS (ds,ss) = pCS ss
