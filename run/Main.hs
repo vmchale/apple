@@ -69,6 +69,9 @@ appleCompletions :: CompletionFunc (StateT Env IO)
 appleCompletions (":","")         = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann", "y", "yank"])
 appleCompletions ("i:", "")       = pure ("i:", cyclicSimple ["r", "nspect", ""])
 appleCompletions ("ri:", "")      = pure ("ri:", cyclicSimple [""])
+appleCompletions ("c:", "")       = pure ("c:", cyclicSimple ["mm"])
+appleCompletions ("mc:", "")      = pure ("mc:", cyclicSimple ["m"])
+appleCompletions ("mmc:", "")     = pure ("mmc:", cyclicSimple [""])
 appleCompletions ("ni:", "")      = pure ("ni:", [simpleCompletion "spect"])
 appleCompletions ("sni:", "")     = pure ("sni:", [simpleCompletion "pect"])
 appleCompletions ("psni:", "")    = pure ("psni:", [simpleCompletion "ect"])
@@ -123,6 +126,8 @@ loop = do
         Just (":asm":e)       -> dumpAsm (unwords e) *> loop
         Just (":ann":e)       -> annR (unwords e) *> loop
         Just (":ir":e)        -> irR (unwords e) *> loop
+        Just (":c":e)         -> cR (unwords e) *> loop
+        Just (":cmm":e)       -> cR (unwords e) *> loop
         Just (":disasm":e)    -> disasm (unwords e) *> loop
         Just (":inspect":e)   -> inspect (unwords e) *> loop
         Just (":yank":f:[fp]) -> iCtx f fp *> loop
@@ -206,6 +211,17 @@ disasm s = do
             liftIO $ case res of
                 Left err -> putDoc (pretty err <> hardline)
                 Right b  -> TIO.putStr b
+
+cR :: String -> Repl AlexPosn ()
+cR s = do
+    st <- lift $ gets _lex
+    case rwP st (ubs s) of
+        Left err -> liftIO $ putDoc (pretty err <> hardline)
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            liftIO $ case eDumpC i eC of
+                Left err -> putDoc (pretty err <> hardline)
+                Right d  -> putDoc (d <> hardline)
 
 irR :: String -> Repl AlexPosn ()
 irR s = do

@@ -207,9 +207,5 @@ instance Pretty FUn where
 instance Pretty IUn where
     pretty ISgn = "sgn"; pretty INot = "¬"; pretty IEven = "even"; pretty IOdd = "odd"
 
-
 prettyIR :: (AsmData, [Stmt]) -> Doc ann
-prettyIR (ds,ss) = pAD ds <#> pIR ss
-
-pIR :: [Stmt] -> Doc ann
-pIR = prettyLines.fmap pretty
+prettyIR (ds,ss) = pAD ds <#> prettyLines (pretty<$>ss)

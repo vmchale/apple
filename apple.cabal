@@ -63,6 +63,7 @@ library
         A.Opt
         U
         C
+        C.Trans
         IR
         IR.Alloc
         IR.CF
@@ -165,7 +166,7 @@ executable atc
     hs-source-dirs:   app
     other-modules:    Paths_apple
     default-language: Haskell2010
-    ghc-options:      -Wall
+    ghc-options:      -Wall -Wno-x-partial
     build-depends:
         base,
         apple,
@@ -189,7 +190,7 @@ executable writeo
         Paths_apple
 
     default-language: Haskell2010
-    ghc-options:      -Wall
+    ghc-options:      -Wall -Wno-x-partial
     build-depends:
         base,
         apple,
@@ -212,7 +213,7 @@ executable arepl
     main-is:          Main.hs
     hs-source-dirs:   run
     default-language: Haskell2010
-    ghc-options:      -Wall -Wno-missing-signatures
+    ghc-options:      -Wall -Wno-missing-signatures -Wno-x-partial
     build-depends:
         base,
         apple,

@@ -14,6 +14,7 @@ module P ( Err (..)
          , rwP
          , opt
          , ir
+         , eDumpC
          , eDumpIR
          , aarch64
          , as, x86G
@@ -39,6 +40,8 @@ import           Asm.X86.Byte
 import           Asm.X86.Opt
 import qualified Asm.X86.P                  as X86
 import           Asm.X86.Trans
+import           C
+import           C.Trans                    as C
 import           Control.DeepSeq            (NFData)
 import           Control.Exception          (Exception, throw, throwIO)
 import           Control.Monad              ((<=<))
@@ -56,7 +59,7 @@ import           I
 import           IR
 import           IR.Alloc
 import           IR.Opt
-import           IR.Trans
+import           IR.Trans                   as IR
 import           L
 import           Nm
 import           Parser
@@ -137,16 +140,16 @@ as :: T.Text -> BSL.ByteString -> Doc ann
 as f = (prolegomena <#>) . prettyAsm . either throw id . aarch64
     where prolegomena = ".p2align 2\n\n.text\n\n.global _" <> pretty f <#> "_" <> pretty f <> ":"
 
-aarch64 :: BSL.ByteString -> Either (Err AlexPosn) (AsmData, [AArch64 AReg FAReg ()])
+aarch64 :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [AArch64 AReg FAReg ()])
 aarch64 = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . ir
 
-x86G :: BSL.ByteString -> Either (Err AlexPosn) (AsmData, [X86 X86Reg FX86Reg ()])
+x86G :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [X86 X86Reg FX86Reg ()])
 x86G = walloc (uncurry X86.gallocFrame)
 
-eAarch64 :: Int -> E a -> Either (Err a) (AsmData, [AArch64 AReg FAReg ()])
+eAarch64 :: Int -> E a -> Either (Err a) (IR.AsmData, [AArch64 AReg FAReg ()])
 eAarch64 i = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . eir i
 
-ex86G :: Int -> E a -> Either (Err a) (AsmData, [X86 X86Reg FX86Reg ()])
+ex86G :: Int -> E a -> Either (Err a) (IR.AsmData, [X86 X86Reg FX86Reg ()])
 ex86G i = wallocE i (uncurry X86.gallocFrame)
 
 eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
@@ -158,11 +161,17 @@ eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 walloc f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . ir
 wallocE i f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . eir i
 
-ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], AsmData, WSt)
-ir = fmap (f.writeC) . opt where f (s,r,aa,t) = (frees t (optIR s),aa,r)
+ec :: Int -> E a -> Either (Err a) ([CS], C.AsmData, LSt)
+ec i = fmap (f.C.writeC).optE i where f (s,r,aa,_) = (s,aa,r)
 
-eir :: Int -> E a -> Either (Err a) ([Stmt], AsmData, WSt)
-eir i = fmap (f.writeC) . optE i where f (s,r,aa,t) = (frees t (optIR s),aa,r)
+ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IR.AsmData, WSt)
+ir = fmap (f.IR.writeC).opt where f (s,r,aa,t) = (frees t (optIR s),aa,r)
+
+eir :: Int -> E a -> Either (Err a) ([Stmt], IR.AsmData, WSt)
+eir i = fmap (f.IR.writeC).optE i where f (s,r,aa,t) = (frees t (optIR s),aa,r)
+
+eDumpC :: Int -> E a -> Either (Err a) (Doc ann)
+eDumpC i = fmap (prettyCS.𝜋).ec i where 𝜋 (a,b,_)=(b,a)
 
 eDumpIR :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpIR i = fmap (prettyIR.𝜋) . eir i where 𝜋 (a,b,_)=(b,a)
