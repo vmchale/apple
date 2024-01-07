@@ -27,6 +27,7 @@ import qualified Data.Text                  as T
 import           Data.Typeable              (Typeable)
 import           GHC.Generics               (Generic)
 import           Nm
+import           Nm.IntMap
 import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, (<+>))
 import           Prettyprinter.Ext
 import           Ty.Clone
@@ -125,7 +126,7 @@ maM (Arr sh t) (Arr sh' t')       = (<>) <$> mSh sh sh' <*> maM t t'
 maM (Arr sh t) t'                 = (<>) <$> mSh sh Nil <*> maM t t'
 maM (P ts) (P ts')                = mconcat <$> zipWithM maM ts ts'
 maM (Ρ n _) (Ρ n' _) | n == n'    = Right mempty
-maM (Ρ n rs) t@(Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = mapTySubst (IM.insert (unU$unique n) t) . mconcat <$> traverse (uncurry maM) (IM.elems (IM.intersectionWith (,) rs rs'))
+maM (Ρ n rs) t@(Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = mapTySubst (insert n t) . mconcat <$> traverse (uncurry maM) (IM.elems (IM.intersectionWith (,) rs rs'))
 maM (Ρ n rs) t@(P ts) | length ts >= fst (IM.findMax rs) = mapTySubst (IM.insert (unU$unique n) t) . mconcat <$> traverse (uncurry maM) [ (ts!!(i-1),tϵ) | (i,tϵ) <- IM.toList rs ]
 maM t t'                          = Left $ MatchFailed (void t) (void t')
 
@@ -183,10 +184,10 @@ setMaxU :: Int -> TySt a -> TySt a
 setMaxU i (TySt _ l v vcs) = TySt i l v vcs
 
 addStaEnv :: Nm a -> T () -> TySt a -> TySt a
-addStaEnv (Nm _ (U i) _) t (TySt u l v vcs) = TySt u (IM.insert i t l) v vcs
+addStaEnv n t (TySt u l v vcs) = TySt u (insert n t l) v vcs
 
 addPolyEnv :: Nm a -> T () -> TySt a -> TySt a
-addPolyEnv (Nm _ (U i) _) t (TySt u l v vcs) = TySt u l (IM.insert i t v) vcs
+addPolyEnv n t (TySt u l v vcs) = TySt u l (insert n t v) vcs
 
 addVarConstrI :: Int -> a -> C -> TySt a -> TySt a
 addVarConstrI i ann c (TySt u l v vcs) = TySt u l v (IM.insert i (c, ann) vcs)
@@ -303,18 +304,18 @@ mgu l s (Arr sh t) (Arr sh' t') = do
     mgShPrep (fst l) s0 sh sh'
 mgu (l, e) _ F I = Left$ UF l e F I
 mgu (l, e) _ I F = Left$ UF l e I F
-mgu l s (Arr (SVar (Nm _ (U i) _)) t) F = mapShSubst (IM.insert i Nil) <$> mguPrep l s t F
-mgu l s (Arr (SVar (Nm _ (U i) _)) t) I = mapShSubst (IM.insert i Nil) <$> mguPrep l s t I
-mgu l s F (Arr (SVar (Nm _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s F t
-mgu l s I (Arr (SVar (Nm _ (U i) _)) t) = mapShSubst (IM.insert i Nil) <$> mguPrep l s I t
+mgu l s (Arr (SVar n) t) F = mapShSubst (insert n Nil) <$> mguPrep l s t F
+mgu l s (Arr (SVar n) t) I = mapShSubst (insert n Nil) <$> mguPrep l s t I
+mgu l s F (Arr (SVar n) t) = mapShSubst (insert n Nil) <$> mguPrep l s F t
+mgu l s I (Arr (SVar n) t) = mapShSubst (insert n Nil) <$> mguPrep l s I t
 mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 -- TODO: rho occurs check
-mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, tϵ) -> mapTySubst (IM.insert (unU$unique n) t') <$> mguPrep l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
+mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) = tS (\sϵ (i, tϵ) -> mapTySubst (insert n t') <$> mguPrep l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
                                      | otherwise = Left$UF lϵ e t t'
 mgu l s t@P{} t'@Ρ{} = mgu l s t' t
 mgu l s (Ρ n rs) (Ρ n' rs') = do
     rss <- tS (\sϵ (t0,t1) -> mguPrep l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
-    pure $ mapTySubst (IM.insert (unU$unique n) (Ρ n' (rs<>rs'))) rss
+    pure $ mapTySubst (insert n (Ρ n' (rs<>rs'))) rss
 mgu (l, e) _ F t@Arr{} = Left $ UF l e F t
 mgu (l, e) _ t@Arr{} F = Left $ UF l e t F
 mgu (l, e) _ I t@Arr{} = Left $ UF l e I t
