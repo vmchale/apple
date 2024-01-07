@@ -95,6 +95,7 @@ library
         Asm.G
         Asm.M
         Asm.CF
+        Nm.IntMap
 
     default-language:   Haskell2010
     other-extensions:

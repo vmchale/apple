@@ -18,6 +18,7 @@ import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import           IR
 import           Nm
+import           Nm.IntMap
 import           U
 
 data IRSt = IRSt { labels :: [Label]
@@ -43,10 +44,8 @@ nextArr = state (\(IRSt l t (a:ar) as v aϵ f aas ts) -> (a, IRSt l t ar as v a�
 nextAA :: IRM Int
 nextAA = state (\(IRSt l t ar as v a f aas ts) -> (as, IRSt l t ar (as+1) v a f aas ts))
 
-newITemp :: IRM Temp
+newITemp, newFTemp :: IRM Temp
 newITemp = ITemp <$> nextI
-
-newFTemp :: IRM Temp
 newFTemp = FTemp <$> nextI
 
 newLabel :: IRM Label
@@ -59,13 +58,13 @@ addAA :: Int -> [Word64] -> IRSt -> IRSt
 addAA i aa (IRSt l t ar as v a f aas ts) = IRSt l t ar as v a f (IM.insert i aa aas) ts
 
 addVar :: Nm a -> Temp -> IRSt -> IRSt
-addVar (Nm _ (U i) _) r (IRSt l t ar as v a f aas ts) = IRSt l t ar as (IM.insert i r v) a f aas ts
+addVar n r (IRSt l t ar as v a f aas ts) = IRSt l t ar as (insert n r v) a f aas ts
 
 addAVar :: Nm a -> (Maybe Int, Temp) -> IRSt -> IRSt
-addAVar (Nm _ (U i) _) r (IRSt l t ar as v a f aas ts) = IRSt l t ar as v (IM.insert i r a) f aas ts
+addAVar n r (IRSt l t ar as v a f aas ts) = IRSt l t ar as v (insert n r a) f aas ts
 
 addFVar :: Nm a -> (Label, [(Maybe Int, Temp)], (Maybe Int, Temp)) -> IRSt -> IRSt
-addFVar (Nm _ (U i) _) x (IRSt l t ar as v a f aas ts) = IRSt l t ar as v a (IM.insert i x f) aas ts
+addFVar n x (IRSt l t ar as v a f aas ts) = IRSt l t ar as v a (insert n x f) aas ts
 
 type IRM = State IRSt
 
@@ -96,7 +95,7 @@ isB :: T a -> Bool; isB B = True; isB _ = False
 isArr Arr{} = True
 isArr _     = False
 
-writeC :: E (T ()) -> ([Stmt], WSt, IM.IntMap [Word64], IM.IntMap Temp)
+writeC :: E (T ()) -> ([Stmt], WSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (IRSt [0..] [0..] [0..] 0 IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, IRSt l t _ _ _ _ _ aa a) = (s, WSt l t, aa, a)
 
 -- %xmm0 – %xmm7
