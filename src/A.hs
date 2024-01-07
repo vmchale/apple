@@ -21,7 +21,7 @@ import           Control.DeepSeq   (NFData)
 import qualified Data.IntMap       as IM
 import           GHC.Generics      (Generic)
 import           Nm
-import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket,
+import           Prettyprinter     (Doc, Pretty (..), braces, brackets, colon, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket,
                                     tupled, (<+>))
 import           Prettyprinter.Ext
 
@@ -223,6 +223,9 @@ prettyTyped (Var t n)                                             = parens (pret
 prettyTyped (Builtin t b)                                         = parens (pretty b <+> ":" <+> pretty t)
 prettyTyped (ILit t n)                                            = parens (pretty n <+> ":" <+> pretty t)
 prettyTyped (FLit t x)                                            = parens (pretty x <+> ":" <+> pretty t)
+prettyTyped (BLit t True)                                         = parens ("#t" <+> colon <+> pretty t)
+prettyTyped (BLit t False)                                        = parens ("#f" <+> colon <+> pretty t)
+prettyTyped (Cond t p e0 e1)                                      = parens ("?" <+> prettyTyped p <+> ",." <+> prettyTyped e0 <+> prettyTyped e1) <+> colon <+> pretty t
 prettyTyped (Lam _ n@(Nm _ _ xt) e)                               = parens ("λ" <> parens (pretty n <+> ":" <+> pretty xt) <> "." <+> prettyTyped e)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2) = parens (prettyTyped e0 <> "/" <+> prettyTyped e1 <+> prettyTyped e2)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2) = parens (prettyTyped e0 <> "/*" <+> prettyTyped e1 <+> prettyTyped e2)
