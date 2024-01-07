@@ -17,7 +17,7 @@ module C ( Temp (..)
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
-import           Prettyprinter     (Doc, Pretty (..), brackets, dot, parens, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), braces, brackets, comma, dot, hardline, indent, parens, (<+>))
 import           Prettyprinter.Ext
 
 type Label = Word; type AsmData = IM.IntMap [Word64]
@@ -39,6 +39,17 @@ instance Pretty Temp where
     pretty C5        = "CArg5"
     pretty CRet      = "CRet"
 
+instance Pretty FTemp where
+    pretty (FTemp i) = "X" <> pretty i
+    pretty F0        = "FArg0"
+    pretty F1        = "FArg1"
+    pretty F2        = "FArg2"
+    pretty F3        = "FArg3"
+    pretty F4        = "FArg4"
+    pretty F5        = "FArg5"
+    pretty FRet0     = "FRet0"
+    pretty FRet1     = "FRet1"
+
 data ArrAcc = AElem Temp CE (Maybe Int) -- pointer, elem., label for tracking liveness
             | ARnk Temp (Maybe Int)
             | ADim Temp CE (Maybe Int)
@@ -50,12 +61,18 @@ instance Pretty ArrAcc where
 
 data IRel = Gt | Lt | Lte | Gte | Eq | Neq
 
-data IBin = IPlus | IAsl
+instance Pretty IRel where
+    pretty Gt=">"; pretty Lt="<"; pretty Lte="≤"; pretty Gte="≥"; pretty Eq="="; pretty Neq="≠"
+
+data IBin = IPlus | ITimes | IMinus | IAsl
 
 instance Pretty IBin where
-    pretty IPlus = "+"; pretty IAsl = "asl"
+    pretty IPlus="+"; pretty IAsl="asl"; pretty ITimes="*"; pretty IMinus="-"
 
-data FBin = FPlus | FTimes
+data FBin = FPlus | FTimes | FMinus
+
+instance Pretty FBin where
+    pretty FPlus="+"; pretty FTimes="*"; pretty FMinus="-"
 
 -- array access to be desugared (size, element...)
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
@@ -64,9 +81,21 @@ instance Pretty CE where
     pretty (Tmp t)        = pretty t
     pretty (ConstI i)     = pretty i
     pretty (Bin op e0 e1) = parens (pretty op <+> pretty e0 <+> pretty e1)
-    pretty (EAt arrAcc)   = pretty arrAcc
+    pretty (EAt a)        = pretty a
+
+instance Num CE where
+    (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
 data CFE = FAt ArrAcc | FBin FBin CFE CFE | FTmp FTemp | ConstF Double
+
+instance Num CFE where
+    (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
+
+instance Pretty CFE where
+    pretty (FAt a)         = pretty a
+    pretty (FBin op x0 x1) = parens (pretty op <+> pretty x0 <+> pretty x1)
+    pretty (FTmp t)        = pretty t
+    pretty (ConstF x)      = pretty x
 
 data CS = For Temp IRel CE [CS]
         | MT Temp CE
@@ -78,9 +107,16 @@ data CS = For Temp IRel CE [CS]
         | RA !Int -- return array no-op (takes label)
 
 instance Pretty CS where
-    pretty (MT t e) = pretty t <+> "=" <+> pretty e
+    pretty (MT t e)         = pretty t <+> "=" <+> pretty e
+    pretty (MX t e)         = pretty t <+> "=" <+> pretty e
+    pretty (Wr a e)         = pretty a <+> "=" <+> pretty e
+    pretty (WrF a e)        = pretty a <+> "=" <+> pretty e
+    pretty (Ma _ t e)       = pretty t <+> "=" <+> "malloc" <> parens (pretty e)
+    pretty (For t rel e ss) = "for" <> parens (pretty t <> comma <+> pretty t <+> pretty rel <+> pretty e) <#> braces (indent 4 (pCS ss<>hardline))
 
 prettyCS :: (AsmData, [CS]) -> Doc ann
-prettyCS (ds,ss) = prettyLines (pretty<$>ss)
+prettyCS (ds,ss) = pCS ss
+
+pCS=prettyLines.fmap pretty
 
 data LSt = LSt { clabels :: [Label], ctemps :: [Int] }
