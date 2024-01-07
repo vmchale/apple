@@ -62,6 +62,7 @@ library
         A.Eta
         A.Opt
         U
+        C
         IR
         IR.Alloc
         IR.CF
