@@ -51,14 +51,14 @@ instance Pretty FTemp where
     pretty FRet0     = "FRet0"
     pretty FRet1     = "FRet1"
 
-data ArrAcc = AElem Temp CE (Maybe Int) -- pointer, elem., label for tracking liveness
+data ArrAcc = AElem Temp CE (Maybe Int) Int64 -- pointer, elem., label for tracking liveness, elem. size (bytes)
             | ARnk Temp (Maybe Int)
             | ADim Temp CE (Maybe Int)
 
 instance Pretty ArrAcc where
-    pretty (AElem t e _) = pretty t <> brackets (pretty e)
-    pretty (ADim t e _)  = pretty t <> dot <> "dim" <> brackets (pretty e)
-    pretty (ARnk t _)    = "rnk" <> parens (pretty t)
+    pretty (AElem t e _ _) = pretty t <> brackets (pretty e)
+    pretty (ADim t e _)    = pretty t <> dot <> "dim" <> brackets (pretty e)
+    pretty (ARnk t _)      = "rnk" <> parens (pretty t)
 
 data IRel = Gt | Lt | Lte | Gte | Eq | Neq
 
@@ -75,8 +75,7 @@ data FBin = FPlus | FTimes | FMinus
 instance Pretty FBin where
     pretty FPlus="+"; pretty FTimes="*"; pretty FMinus="-"
 
--- array access to be desugared (size, element...)
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64 -- TODO: element size
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
 
 instance Pretty CE where
     pretty (Tmp t)        = pretty t
@@ -103,21 +102,21 @@ data CS = For Temp CE IRel CE [CS]
         | MX FTemp CFE
         | Wr ArrAcc CE
         | WrF ArrAcc CFE
-        | Ma Int Temp CE CE -- label, temp, rank, #elements TODO: elementt size
+        | Ma Int Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
         | Free Temp
         | RA !Int -- return array no-op (takes label)
-        | CpyE ArrAcc ArrAcc CE -- copy elements TODO: size
+        | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
 
 instance Pretty CS where
     pretty (MT t e)             = pretty t <+> "=" <+> pretty e
     pretty (MX t e)             = pretty t <+> "=" <+> pretty e
     pretty (Wr a e)             = pretty a <+> "=" <+> pretty e
     pretty (WrF a e)            = pretty a <+> "=" <+> pretty e
-    pretty (Ma _ t rnk e)       = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e)
+    pretty (Ma _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
     pretty (Free t)             = "free" <> parens (pretty t)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty RA{}                 = mempty
-    pretty (CpyE a a' e)        = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e)
+    pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
 
 prettyCS :: (AsmData, [CS]) -> Doc ann
 prettyCS (ds,ss) = pCS ss
