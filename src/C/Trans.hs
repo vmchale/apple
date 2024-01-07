@@ -2,7 +2,7 @@ module C.Trans ( writeC ) where
 
 import           A
 import           C
-import           Control.Monad.State.Strict (State, modify, runState, state)
+import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import qualified Data.IntMap                as IM
 import           Data.Word                  (Word64)
 import           Nm
@@ -23,6 +23,9 @@ data CSt = CSt { labels      :: [Label]
 nextI :: CM Int
 nextI = state (\(CSt l (tϵ:t) ar as v d a f aas ts) -> (tϵ, CSt l t ar as v d a f aas ts))
 
+nextArr :: CM Int
+nextArr = state (\(CSt l t (a:ar) as v d aϵ f aas ts) -> (a, CSt l t ar as v d aϵ f aas ts))
+
 newITemp :: CM Temp
 newITemp = ITemp <$> nextI
 
@@ -38,11 +41,16 @@ addD n r (CSt l t ar as v d a f aas ts) = CSt l t ar as v (insert n r d) a f aas
 addAVar :: Nm a -> (Maybe Int, Temp) -> CSt -> CSt
 addAVar n r (CSt l t ar as v d a f aas ts) = CSt l t ar as v d (insert n r a) f aas ts
 
+getT :: IM.IntMap b -> Nm a -> b
+getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " not assigned to a temp.")) n st
+
 type CM = State CSt
 
-isF, isI :: T a -> Bool
+isF, isI, isIF :: T a -> Bool
 isF F = True; isF _ = False
 isI I = True; isI _ = False
+isArr Arr{}=True; isArr _=False
+isIF I=True; isIF F=True; isIF _=False
 
 writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (CSt [0..] [0..] [0..] 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt l t _ _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
@@ -64,6 +72,21 @@ writeCM eϵ = do
     go Lam{} _ [] = error "Not enough registers!"
     go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX FRet0 (FTmp f)]) <$> feval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = eval e CRet
+             | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$r++[MT CRet (Tmp i)]++case l of {Just m -> [RA m]; Nothing -> []}}
+
+aeval :: E (T ()) -> Temp -> CM (Maybe Int, [CS])
+aeval (Var _ x) t = do
+    st <- gets avars
+    let (i, r) = getT st x
+    pure (i, [MT t (Tmp r)])
+aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF tD && isIF tC= do
+    a <- nextArr
+    arrT <- newITemp
+    (l, plE) <- aeval e arrT
+    -- rank 1
+    let sz=EAt (ADim t 0 l)
+    pure (Just a, plE ++ undefined)
+aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
 eval = undefined
