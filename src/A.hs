@@ -137,7 +137,7 @@ instance Pretty Builtin where
     pretty Minus     = "-"
     pretty Max       = "⋉"
     pretty Min       = "⋊"
-    pretty Map       = "\'"
+    pretty Map       = "'"
     pretty Zip       = "`"
     pretty Div       = "%"
     pretty IntExp    = "^"
@@ -299,7 +299,6 @@ instance PS (E a) where
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)    = parens (pretty e0 <> "/" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
-    ps _ (EApp _ (EApp _ (Builtin _ Map ) e0) e1)                 = parens (pretty e0 <> "'" <+> pretty e1)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)    = parens (pretty e0 <+> "Λₒ" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (pretty e1 <+> pretty e0 <+> "⊗" <+> pretty e1 <+> pretty e2)
