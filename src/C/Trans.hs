@@ -63,6 +63,9 @@ if1 (Arr (_ `Cons` Nil) I) = Just I; if1 (Arr (_ `Cons` Nil) F) = Just F; if1 _ 
 if1p :: T a -> Bool
 if1p t | Just{} <- if1 t = True | otherwise = False
 
+f1 :: T a -> Bool
+f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
+
 bT :: Integral b => T a -> b
 bT (P ts) = sum (bT<$>ts)
 bT F      = 8
@@ -180,6 +183,14 @@ aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
     let body=For i 0 C.Lt (Tmp nR) [CpyE (AElem t 1 (Tmp ix) (Just a) 8) (AElem xR 1 0 lX 8) (Tmp szR) 8, MT ix (Tmp ix+Tmp szR)]
     modify (addMT a t)
     pure (Just a, plX ++ plN ++ MT szR (EAt (ADim xR 0 lX)):MT nO (Tmp szR*Tmp nR):Ma a t 1 (Tmp nO) 8:Wr (ADim t 0 (Just a)) (Tmp nO):MT ix 0:[body])
+aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
+    aL <- nextArr
+    xR <- newITemp; aR <- newITemp; i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
+    (lA, plA) <- aeval a aR
+    (lX, plX) <- aeval x xR
+    modify (addMT aL t)
+    let loop = For i 0 C.Lt (Tmp m) [MX z 0, For j 0 C.Lt (Tmp n) [MX z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 2 (Tmp j) lX 8))], WrF (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)]
+    pure (Just aL, plA ++ plX ++ MT m (EAt (ADim aR 0 lA)):Ma aL t 1 (Tmp m) 8:Wr (ADim t 0 (Just aL)) (Tmp m):MT n (EAt (ADim xR 0 lX)):[loop])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]

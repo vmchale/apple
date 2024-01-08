@@ -25,11 +25,6 @@ import           Prettyprinter     (Doc, Pretty (..), braces, brackets, colon, c
                                     tupled, (<+>))
 import           Prettyprinter.Ext
 
-parensp True=parens; parensp False=id
-
-class PS a where
-    ps :: Int -> a -> Doc ann
-
 instance Pretty (I a) where pretty=ps 0
 
 instance PS (I a) where
