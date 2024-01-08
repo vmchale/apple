@@ -53,11 +53,11 @@ instance Pretty FTemp where
 
 data ArrAcc = AElem Temp CE (Maybe Int) Int64 -- pointer, elem., label for tracking liveness, elem. size (bytes)
             | ARnk Temp (Maybe Int)
-            | ADim Temp CE (Maybe Int)
+            | ADim Temp CE CE (Maybe Int) -- pointer, rank, #, label
 
 instance Pretty ArrAcc where
     pretty (AElem t e _ _) = pretty t <> brackets (pretty e)
-    pretty (ADim t e _)    = pretty t <> dot <> "dim" <> brackets (pretty e)
+    pretty (ADim t _ e _)  = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)      = "rnk" <> parens (pretty t)
 
 data IRel = Gt | Lt | Lte | Gte | Eq | Neq
