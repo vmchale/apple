@@ -58,7 +58,7 @@ instance Pretty ArrAcc where
     pretty (ADim t e _)      = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
 
-mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;opPrec IDiv=Nothing;opPrec IAsl=Nothing; opPrec IMax=Nothing; opPrec IMin=Nothing
+mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
@@ -81,6 +81,9 @@ data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF Do
 
 instance Num CFE where
     (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
+
+instance Fractional CFE where
+    (/) = FBin FDiv; fromRational=ConstF . fromRational
 
 instance Pretty CFE where pretty=ps 0
 

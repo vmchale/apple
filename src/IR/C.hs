@@ -45,6 +45,7 @@ nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (C.MT t e)          = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]
+cToIRM (C.Ma l t (C.ConstI rnkI) n 8) = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) 3+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just l)) (IR.ConstI rnkI)]
 cToIRM (C.Ma l t rnk n 8)  = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE rnk+irE n) 3+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
 cToIRM (C.Wr a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF a x)         = pure [IR.WrF (irAt a) (irX x)]
@@ -61,7 +62,7 @@ irAt :: ArrAcc -> AE
 irAt (ADim t (C.ConstI 0) l)                 = AP (ctemp t) (Just 8) l
 irAt (ADim t e l)                            = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+8) l
 irAt (AElem t (C.ConstI 1) (C.ConstI 0) l 8) = AP (ctemp t) (Just 16) l
-irAt (AElem t (C.ConstI rnkI) e l 8)         = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI(8+8*rnkI)) l
+irAt (AElem t (C.ConstI rnkI) e l 8)         = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8+8*rnkI)) l
 irAt (AElem t rnk e l 8)                     = AP (ctemp t) (Just$IR.IB IAsl (irE rnk+irE e) 3+8) l
 
 irE :: CE -> Exp
