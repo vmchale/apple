@@ -135,7 +135,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     arrT <- newITemp
     (l, plE) <- aeval e arrT
     -- rank 1
-    let sz=EAt (ADim t 0 l)
+    let sz=EAt (ADim t 1 0 l)
     rC <- rtemp tC; rD <- rtemp tD
     let (aD,dD) = case rD of
           Left rDϵ  -> (id,(rDϵ:))
@@ -144,7 +144,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     iR <- newITemp; szR <- newITemp
     let loopBody=mt (AElem arrT (Tmp iR) l 8) rD:ss++[wt (AElem t (Tmp iR) (Just a) 8) rC]
         loop=For iR 0 C.Gte (Tmp szR) loopBody
-    pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
+    pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 1 0 (Just a)) (Tmp szR):[loop])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr
     xR <- newITemp; yR <- newITemp
@@ -152,7 +152,7 @@ aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) =
     let tyN=bT ty
     (lX, plX) <- aeval x xR; (lY, plY) <- aeval y yR
     modify (addMT a t)
-    pure (Just a, plX ++ plY ++ MT xnR (EAt (ADim xR 0 lX)):MT ynR (EAt (ADim yR 0 lY)):MT tn (Tmp xnR+Tmp ynR):Ma a t 1 (Tmp tn) tyN:Wr (ADim t 0 (Just a)) (Tmp tn):CpyE (AElem t 0 (Just a) tyN) (AElem xR 0 lX tyN) (Tmp xnR) tyN:[CpyE (AElem t (Tmp xnR) (Just a) tyN) (AElem yR 0 lY tyN) (Tmp ynR) tyN])
+    pure (Just a, plX ++ plY ++ MT xnR (EAt (ADim xR 1 0 lX)):MT ynR (EAt (ADim yR 1 0 lY)):MT tn (Tmp xnR+Tmp ynR):Ma a t 1 (Tmp tn) tyN:Wr (ADim t 1 0 (Just a)) (Tmp tn):CpyE (AElem t 0 (Just a) tyN) (AElem xR 0 lX tyN) (Tmp xnR) tyN:[CpyE (AElem t (Tmp xnR) (Just a) tyN) (AElem yR 0 lY tyN) (Tmp ynR) tyN])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
