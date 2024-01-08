@@ -422,8 +422,6 @@ evalE (IR.IRFloor (IR.FReg r)) t                     = let r' = fabsReg r in pur
 evalE (IR.EAt (IR.AP m (Just (IR.ConstI i)) _)) rD | Just i8 <- mi8 i = pure [MovRA () (absReg rD) (RC (absReg m) i8)]
 evalE (IR.EAt (IR.AP m (Just (IR.Reg i)) _)) rD = pure [MovRA () (absReg rD) (RS (absReg m) One (absReg i))]
 evalE (IR.EAt (IR.AP m (Just (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3))) _)) rD = pure [MovRA () (absReg rD) (RS (absReg m) Eight (absReg i))]
-evalE (IR.IU Op.INot (IR.Reg r0)) rD | r0 == rD      = pure [Not () (absReg rD)]
-                                     | otherwise     = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), Not () rD']
 evalE (IR.IB Op.IAnd (IR.Reg r0) (IR.Reg r1)) rD     = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), And () rD' (absReg r1)]
 evalE (IR.EAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = pure [MovRA () (absReg rD) (RSD (absReg m) Eight (absReg i) i8)]
 evalE (IR.EAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl e (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = do
