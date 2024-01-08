@@ -60,6 +60,7 @@ irAt :: ArrAcc -> AE
 irAt (ADim t (C.ConstI 0) l)                 = AP (ctemp t) (Just 8) l
 irAt (ADim t e l)                            = AP (ctemp t) (Just$IR.IB IR.IAsl (irE e) 3+8) l
 irAt (AElem t (C.ConstI 1) (C.ConstI 0) l 8) = AP (ctemp t) (Just 16) l
+irAt (AElem t (C.ConstI rnkI) e l 8)         = AP (ctemp t) (Just$IR.IB IR.IAsl (irE e) 3+IR.ConstI(8+8*rnkI)) l
 irAt (AElem t rnk e l 8)                     = AP (ctemp t) (Just$IR.IB IR.IAsl (irE rnk+irE e) 3+8) l
 
 irE :: CE -> Exp
