@@ -6,6 +6,7 @@ module C ( Temp (..)
          , ArrAcc (..)
          , CE (..)
          , CFE (..)
+         , PE (..)
          , CS (..)
          , Label, AsmData
          , LSt (..)
@@ -87,6 +88,13 @@ instance Fractional CFE where
 
 instance Pretty CFE where pretty=ps 0
 
+data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE
+
+instance Pretty PE where
+    pretty (IRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
+    pretty (FRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
+    pretty (IUn p e)        = parens (pretty p <+> pretty e)
+
 instance PS CFE where
     ps _ (FAt a)         = pretty a
     ps _ (FUn f e)       = parens (pretty f <+> pretty e)
@@ -97,6 +105,7 @@ instance PS CFE where
 instance Show CFE where show=show.pretty
 
 data CS = For Temp CE IRel CE [CS]
+        | While Temp IRel CE [CS]
         | MT Temp CE
         | MX FTemp CFE
         | Wr ArrAcc CE
@@ -104,6 +113,7 @@ data CS = For Temp CE IRel CE [CS]
         | Ma Int Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
         | RA !Int -- return array no-op (takes label)
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
+        | If PE [CS] [CS]
 
 instance Pretty CS where
     pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
@@ -114,8 +124,10 @@ instance Pretty CS where
     pretty (WrF a e)            = pretty a <+> "=" <+> pretty e
     pretty (Ma _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
+    pretty (While t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
+    pretty (If p s s')          = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS s') <#> rbrace
     pretty RA{}                 = mempty
-    pretty (CpyE a a' e n)    = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
+    pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
 
 instance Show CS where show=show.pretty
 
