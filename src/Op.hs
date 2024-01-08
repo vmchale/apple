@@ -12,7 +12,7 @@ import           Prettyprinter (Pretty (..))
 
 data FUn = FSqrt | FLog | FSin | FCos | FAbs
 
-data IUn = INot | IEven | IOdd
+data IUn = IEven | IOdd
 
 data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp
 
@@ -55,4 +55,4 @@ instance Pretty FUn where
     pretty FAbs  = "abs"
 
 instance Pretty IUn where
-    pretty INot = "¬"; pretty IEven = "even"; pretty IOdd = "odd"
+    pretty IEven = "even"; pretty IOdd = "odd"
