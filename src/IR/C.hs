@@ -39,7 +39,7 @@ cToIR (LSt ls ts) cs = runState (foldMapM cToIRM cs) (WSt ls ts)
 
 tick reg = IR.MT reg (Reg reg+1)
 
-nr IGeq=ILt; nr IGt=ILeq; nr ILt=ILeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
+nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (C.MT t e)          = pure [IR.MT (ctemp t) (irE e)]
@@ -54,7 +54,7 @@ cToIRM (For t el rel eu s) = do
   where
     t'=ctemp t;rel'=irIRel rel
 cToIRM (C.RA i) = pure [IR.RA i]
-cToIRM (CpyE a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (IB IR.IAsl (irE e) 3)]
+cToIRM (CpyE a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
 
 irAt :: ArrAcc -> AE
 irAt (ADim t (C.ConstI 0) l)                 = AP (ctemp t) (Just 8) l
