@@ -76,7 +76,7 @@ data Stmt = L Label
           | Cset Temp Exp
           | Sa Temp Exp -- register, size
           | Pop Exp -- pop salloc
-          | Cpy AE AE Exp -- bytes
+          | Cpy AE AE Exp
           | C Label | R Label
           | IRnd Temp
           -- TODO: ccall?
