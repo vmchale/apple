@@ -24,10 +24,10 @@ import           Prettyprinter.Ext
 type Label = Word; type AsmData = IM.IntMap [Word64]
 
 data Temp = ITemp !Int | ATemp !Int
-          | C0 | C1 | C2 | C3 | C4 | C5 | CRet
+          | C0 | C1 | C2 | C3 | C4 | C5 | CRet deriving Eq
 
 data FTemp = FTemp !Int
-           | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1
+           | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
 
 instance Pretty Temp where
     pretty (ITemp i) = "T" <> pretty i
@@ -70,18 +70,25 @@ data IBin = IPlus | ITimes | IMinus | IAsl | IDiv
 instance Pretty IBin where
     pretty IPlus="+"; pretty IAsl="asl"; pretty ITimes="*"; pretty IMinus="-"; pretty IDiv="div"
 
+mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;opPrec IDiv=Nothing;opPrec IAsl=Nothing
+
 data FBin = FPlus | FTimes | FMinus
+
+fprec FPlus=6;fprec FMinus=6;fprec FTimes=7
 
 instance Pretty FBin where
     pretty FPlus="+"; pretty FTimes="*"; pretty FMinus="-"
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
 
-instance Pretty CE where
-    pretty (Tmp t)        = pretty t
-    pretty (ConstI i)     = pretty i
-    pretty (Bin op e0 e1) = parens (pretty op <+> pretty e0 <+> pretty e1)
-    pretty (EAt a)        = pretty a
+instance Pretty CE where pretty=ps 0
+
+instance PS CE where
+    ps _ (Tmp t)        = pretty t
+    ps _ (ConstI i)     = pretty i
+    ps d (Bin op e0 e1) | Just d' <- mPrec op = parensp (d>d') (ps (d+1) e0 <> pretty op <> ps (d+1) e1)
+                        | otherwise = parens (pretty op <+> pretty e0 <+> pretty e1)
+    ps _ (EAt a)        = pretty a
 
 instance Show CE where show=show.pretty
 
@@ -93,11 +100,13 @@ data CFE = FAt ArrAcc | FBin FBin CFE CFE | FTmp FTemp | ConstF Double
 instance Num CFE where
     (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
 
-instance Pretty CFE where
-    pretty (FAt a)         = pretty a
-    pretty (FBin op x0 x1) = parens (pretty op <+> pretty x0 <+> pretty x1)
-    pretty (FTmp t)        = pretty t
-    pretty (ConstF x)      = pretty x
+instance Pretty CFE where pretty=ps 0
+
+instance PS CFE where
+    ps _ (FAt a)         = pretty a
+    ps d (FBin op x0 x1) = parensp (d>fprec op) (ps (d+1) x0 <+> pretty op <+> ps (d+1) x1)
+    ps _ (FTmp t)        = pretty t
+    ps _ (ConstF x)      = pretty x
 
 instance Show CFE where show=show.pretty
 
@@ -111,7 +120,9 @@ data CS = For Temp CE IRel CE [CS]
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
 
 instance Pretty CS where
-    pretty (MT t e)             = pretty t <+> "=" <+> pretty e
+    pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
+    pretty (MT t e)             = pretty t <+> "=" <+> pretty e -- TODO: +=
+    pretty (MX t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
     pretty (MX t e)             = pretty t <+> "=" <+> pretty e
     pretty (Wr a e)             = pretty a <+> "=" <+> pretty e
     pretty (WrF a e)            = pretty a <+> "=" <+> pretty e
