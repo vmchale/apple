@@ -68,7 +68,7 @@ library
         IR.Alloc
         IR.CF
         IR.Opt
-        IR.Trans
+        IR.C
         Class.E
         Data.Copointed
         Asm.Ar

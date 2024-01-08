@@ -49,6 +49,7 @@ import           Control.Monad.State.Strict (evalState, state)
 import           Data.Bifunctor             (first, second)
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
+import qualified Data.IntMap                as IM
 import qualified Data.Text                  as T
 import           Data.Tuple.Extra           (first3)
 import           Data.Typeable              (Typeable)
@@ -58,8 +59,8 @@ import           GHC.Generics               (Generic)
 import           I
 import           IR
 import           IR.Alloc
+import           IR.C
 import           IR.Opt
-import           IR.Trans                   as IR
 import           L
 import           Nm
 import           Parser
@@ -161,17 +162,17 @@ eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 walloc f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . ir
 wallocE i f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . eir i
 
-ec :: Int -> E a -> Either (Err a) ([CS], C.AsmData, LSt)
-ec i = fmap (f.C.writeC).optE i where f (s,r,aa,_) = (s,aa,r)
+ec :: Int -> E a -> Either (Err a) ([CS], LSt, C.AsmData, IM.IntMap C.Temp)
+ec i = fmap C.writeC . optE i
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IR.AsmData, WSt)
-ir = fmap (f.IR.writeC).opt where f (s,r,aa,t) = (frees t (optIR s),aa,r)
+ir = fmap (f.C.writeC).opt where f (cs,u,aa,t) = let (s,u')=cToIR u cs in (frees (ctemp<$>t) (optIR s),aa,u')
 
 eir :: Int -> E a -> Either (Err a) ([Stmt], IR.AsmData, WSt)
-eir i = fmap (f.IR.writeC).optE i where f (s,r,aa,t) = (frees t (optIR s),aa,r)
+eir i = fmap (f.C.writeC).optE i where f (cs,u,aa,t) = let (s,u')=cToIR u cs in (frees (ctemp<$>t) (optIR s),aa,u')
 
 eDumpC :: Int -> E a -> Either (Err a) (Doc ann)
-eDumpC i = fmap (prettyCS.𝜋).ec i where 𝜋 (a,b,_)=(b,a)
+eDumpC i = fmap (prettyCS.𝜋).ec i where 𝜋 (a,_,c,_)=(c,a)
 
 eDumpIR :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpIR i = fmap (prettyIR.𝜋) . eir i where 𝜋 (a,b,_)=(b,a)
