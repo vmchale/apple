@@ -51,14 +51,14 @@ instance Pretty FTemp where
     pretty FRet0     = "FRet0"
     pretty FRet1     = "FRet1"
 
-data ArrAcc = AElem Temp CE (Maybe Int) Int64 -- pointer, elem., label for tracking liveness, elem. size (bytes)
+data ArrAcc = AElem Temp CE CE (Maybe Int) Int64 -- pointer, rank, elem., label for tracking liveness, elem. size (bytes)
             | ARnk Temp (Maybe Int)
             | ADim Temp CE CE (Maybe Int) -- pointer, rank, #, label
 
 instance Pretty ArrAcc where
-    pretty (AElem t e _ _) = pretty t <> brackets (pretty e)
-    pretty (ADim t _ e _)  = pretty t <> dot <> "dim" <> brackets (pretty e)
-    pretty (ARnk t _)      = "rnk" <> parens (pretty t)
+    pretty (AElem t e _ _ _) = pretty t <> brackets (pretty e)
+    pretty (ADim t _ e _)    = pretty t <> dot <> "dim" <> brackets (pretty e)
+    pretty (ARnk t _)        = "rnk" <> parens (pretty t)
 
 data IRel = Gt | Lt | Lte | Gte | Eq | Neq
 
@@ -107,7 +107,6 @@ data CS = For Temp CE IRel CE [CS]
         | Wr ArrAcc CE
         | WrF ArrAcc CFE
         | Ma Int Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
-        | Free Temp
         | RA !Int -- return array no-op (takes label)
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
 
@@ -117,10 +116,9 @@ instance Pretty CS where
     pretty (Wr a e)             = pretty a <+> "=" <+> pretty e
     pretty (WrF a e)            = pretty a <+> "=" <+> pretty e
     pretty (Ma _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
-    pretty (Free t)             = "free" <> parens (pretty t)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty RA{}                 = mempty
-    pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
+    pretty (CpyE a a' e n)    = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
 
 instance Show CS where show=show.pretty
 
