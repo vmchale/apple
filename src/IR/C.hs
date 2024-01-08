@@ -13,13 +13,6 @@ type IRM = State WSt
 nextL :: IRM IR.Label
 nextL = state (\(WSt (l:ls) ts) -> (l, WSt ls ts))
 
-nextI :: IRM Int
-nextI = state (\(WSt ls (t:ts)) -> (t, WSt ls ts))
-
-newITemp, newFTemp :: IRM IR.Temp
-newITemp = IR.ITemp<$>nextI
-newFTemp = IR.FTemp<$>nextI
-
 ctemp :: C.Temp -> IR.Temp
 ctemp (C.ATemp i) = IR.ATemp i
 ctemp (C.ITemp i) = IR.ITemp i
@@ -51,11 +44,11 @@ nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (C.MT t e)          = pure [IR.MT (ctemp t) (irE e)]
-cToIRM (C.MX t e)          = (:[]) . IR.MX (fx t) <$> irX e
+cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]
 cToIRM (C.Ma l t (C.ConstI rnkI) n 8) = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) 3+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just l)) (IR.ConstI rnkI)]
 cToIRM (C.Ma l t rnk n 8)  = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE rnk+irE n) 3+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
 cToIRM (C.Wr a e)          = pure [IR.Wr (irAt a) (irE e)]
-cToIRM (C.WrF a x)         = (:[]) . IR.WrF (irAt a) <$> irX x
+cToIRM (C.WrF a x)         = pure [IR.WrF (irAt a) (irX x)]
 cToIRM (For t el rel eu s) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
@@ -78,10 +71,10 @@ irE (C.EAt a)      = IR.EAt (irAt a)
 irE (C.ConstI i)   = IR.ConstI i
 irE (Bin op e0 e1) = IB op (irE e0) (irE e1)
 
-irX :: CFE -> IRM FExp
-irX (C.ConstF x)    = pure $ IR.ConstF x
-irX (FTmp t)        = pure $ FReg (fx t)
-irX (C.FAt a)       = pure $ IR.FAt (irAt a)
-irX (FBin op x0 x1) = FB op <$> irX x0 <*> irX x1
+irX :: CFE -> FExp
+irX (C.ConstF x)    = IR.ConstF x
+irX (FTmp t)        = FReg (fx t)
+irX (C.FAt a)       = IR.FAt (irAt a)
+irX (FBin op x0 x1) = FB op (irX x0) (irX x1)
 
 foldMapM f = foldM (\x y -> (x `mappend`) <$> f y) mempty
