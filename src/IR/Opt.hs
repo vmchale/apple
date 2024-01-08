@@ -1,6 +1,7 @@
 module IR.Opt ( optIR ) where
 
 import           IR
+import           Op
 
 optIR :: [Stmt] -> [Stmt]
 optIR = fmap opt
