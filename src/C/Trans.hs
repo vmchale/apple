@@ -57,6 +57,12 @@ isI I = True; isI _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
 
+if1 :: T a -> Maybe (T a)
+if1 (Arr (_ `Cons` Nil) I) = Just I; if1 (Arr (_ `Cons` Nil) F) = Just F; if1 _ = Nothing
+
+if1p :: T a -> Bool
+if1p t | Just{} <- if1 t = True | otherwise = False
+
 bT :: Integral b => T a -> b
 bT (P ts) = sum (bT<$>ts)
 bT F      = 8
@@ -144,6 +150,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     iR <- newITemp; szR <- newITemp
     let loopBody=mt (AElem arrT 1 (Tmp iR) l 8) rD:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
         loop=For iR 0 C.Lte (Tmp szR) loopBody
+    modify (addMT a t)
     pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr
@@ -161,7 +168,18 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     pStart <- eval start startR; pEnd <- eval end endR; pIncr <- eval incr incrR
     let pN=MT n (Bin C.IDiv (Tmp endR - Tmp startR) (Tmp incrR)+1)
         loop=For i 0 C.Lte (Tmp n) [Wr (AElem t 1 (Tmp i) (Just a) 8) (Tmp startR), MT startR (Tmp startR+Tmp incrR)]
+    modify (addMT a t)
     pure (Just a, pStart++pEnd++pIncr++pN:Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
+aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
+    a <- nextArr
+    xR <- newITemp; i <- newITemp; nR <- newITemp; nO <- newITemp
+    szR <- newITemp
+    (lX, plX) <- aeval xs xR
+    plN <- eval n nR
+    ix <- newITemp
+    let body=For i 0 C.Lte (Tmp nR) [CpyE (AElem t 1 (Tmp ix) (Just a) 8) (AElem xR 1 0 lX 8) (Tmp szR) 8, MT ix (Tmp ix+Tmp szR)]
+    modify (addMT a t)
+    pure (Just a, plX ++ plN ++ MT szR (EAt (ADim xR 0 lX)):MT nO (Tmp szR*Tmp nR):Ma a t 1 (Tmp nO) 8:Wr (ADim t 0 (Just a)) (Tmp nO):MT ix 0:[body])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
