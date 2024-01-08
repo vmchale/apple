@@ -52,11 +52,20 @@ cToIRM (C.WrF a x)         = pure [IR.WrF (irAt a) (irX x)]
 cToIRM (For t el rel eu s) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE el):MJ (IRel (nr rel) (Reg t') (irE eu)) eL:L l:irs++[tick t', MJ (IRel rel (Reg t') (irE eu)) l, L eL]
+    pure $ IR.MT t' (irE el):MJ (IR.IRel (nr rel) (Reg t') (irE eu)) eL:L l:irs++[tick t', MJ (IR.IRel rel (Reg t') (irE eu)) l, L eL]
   where
     t'=ctemp t
+cToIRM (While t rel eb s) = do
+    l <- nextL; eL <- nextL
+    s' <- foldMapM cToIRM s
+    pure $ MJ (IR.IRel (nr rel) (Reg t') (irE eb)) eL:L l:s'++[MJ (IR.IRel rel (Reg t') (irE eb)) l, L eL]
+  where t'=ctemp t
 cToIRM (C.RA i) = pure [IR.RA i]
 cToIRM (CpyE a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
+cToIRM (If p s0 s1) = do
+    l <- nextL; l' <- nextL
+    s0' <- foldMapM cToIRM s0; s1' <- foldMapM cToIRM s1
+    pure $ MJ (irp p) l:s0'++J l':L l:s1'++[L l']
 
 irAt :: ArrAcc -> AE
 irAt (ADim t (C.ConstI 0) l)                 = AP (ctemp t) (Just 8) l
@@ -70,6 +79,11 @@ irE (Tmp t)        = Reg (ctemp t)
 irE (C.EAt a)      = IR.EAt (irAt a)
 irE (C.ConstI i)   = IR.ConstI i
 irE (Bin op e0 e1) = IB op (irE e0) (irE e1)
+
+irp :: PE -> Exp
+irp (C.IRel rel e0 e1) = IR.IRel rel (irE e0) (irE e1)
+irp (C.FRel rel x0 x1) = IR.FRel rel (irX x0) (irX x1)
+irp (C.IUn p e)        = IR.IU p (irE e)
 
 irX :: CFE -> FExp
 irX (C.ConstF x)    = IR.ConstF x
