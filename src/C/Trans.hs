@@ -153,7 +153,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     ss <- writeRF op (aD []) (dD []) rC
     iR <- newITemp; szR <- newITemp
     let loopBody=mt (AElem arrT 1 (Tmp iR) l 8) rD:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
-        loop=For iR 0 ILeq (Tmp szR) loopBody
+        loop=For iR 0 ILt (Tmp szR) loopBody
     modify (addMT a t)
     pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
@@ -204,16 +204,43 @@ aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
 eval (ILit _ n) t = pure [MT t (fromInteger n)]
+eval (Var _ x) t = do
+    st <- gets vars
+    pure [MT t (Tmp $ getT st x)]
+eval (EApp _ (EApp _ (Builtin _ Times) e0) e1) t = do
+    t0 <- newITemp; t1 <- newITemp
+    pl0 <- eval e0 t0; pl1 <- eval e1 t1
+    pure $ pl0 ++ pl1 ++ [MT t (Tmp t0 * Tmp t1)]
 eval e _          = error (show e)
 
 feval :: E (T ()) -> FTemp -> CM [CS]
+feval (ILit _ x) t = pure [MX t (ConstF $ fromIntegral x)] -- if it overflows you deserve it
+feval (FLit _ x) t = pure [MX t (ConstF x)]
+feval (Var _ x) t = do
+    st <- gets dvars
+    pure [MX t (FTmp $ getT st x)]
 feval (EApp F (EApp _ (Builtin _ Times) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- feval e0 t0; pl1 <- feval e1 t1
     pure $ pl0 ++ pl1 ++ [MX t (FTmp t0 * FTmp t1)]
-feval (Var _ x) t = do
-    st <- gets dvars
-    pure [MX t (FTmp $ getT st x)]
-feval (ILit _ x) t = pure [MX t (ConstF $ fromIntegral x)] -- if it overflows you deserve it
-feval (FLit _ x) t = pure [MX t (ConstF x)]
+feval (EApp F (EApp _ (Builtin _ Plus) e0) e1) t = do
+    t0 <- newFTemp; t1 <- newFTemp
+    pl0 <- feval e0 t0; pl1 <- feval e1 t1
+    pure $ pl0 ++ pl1 ++ [MX t (FTmp t0 + FTmp t1)]
+feval (EApp F (EApp _ (Builtin _ Exp) e0) e1) t = do
+    f0 <- newFTemp; f1ϵ <- newFTemp
+    plE0 <- feval e0 f0; plE1 <- feval e1 f1ϵ
+    pure $ plE0 ++ plE1 ++ [MX t (FBin FExp (FTmp f0) (FTmp f1ϵ))]
+feval (EApp F (EApp _ (Builtin _ Div) e0) e1) t = do
+    t0 <- newFTemp; t1 <- newFTemp
+    pl0 <- feval e0 t0; pl1 <- feval e1 t1
+    pure $ pl0 ++ pl1 ++ [MX t (FTmp t0 / FTmp t1)]
+feval (EApp _ (Builtin _ Sqrt) e) t = do
+    eR <- newFTemp
+    plE <- feval e eR
+    pure $ plE ++ [MX t (FUn FSqrt (FTmp eR))]
+feval (EApp _ (Builtin (Arrow F _) Neg) x) t = do
+    fR <- newFTemp
+    plX <- feval x fR
+    pure $ plX ++ [MX t (negate (FTmp fR))]
 feval e _ = error (show e)
