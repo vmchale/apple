@@ -61,7 +61,7 @@ instance Pretty ArrAcc where
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7
 
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64 | IIntExp CE CE
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
 
 instance Pretty CE where pretty=ps 0
 
@@ -70,15 +70,14 @@ instance PS CE where
     ps _ (ConstI i)     = pretty i
     ps d (Bin op e0 e1) | Just d' <- mPrec op = parensp (d>d') (ps (d+1) e0 <> pretty op <> ps (d+1) e1)
                         | otherwise = parens (pretty op <+> pretty e0 <+> pretty e1)
-    ps _ (EAt a)         = pretty a
-    ps d (IIntExp e0 e1) = parensp (d>8) (ps (d+1) e0 <> "^" <> ps (d+1) e1)
+    ps _ (EAt a)        = pretty a
 
 instance Show CE where show=show.pretty
 
 instance Num CE where
     (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
-data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF Double | IntExpF CFE CE
+data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF Double
 
 instance Num CFE where
     (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
@@ -94,7 +93,6 @@ instance PS CFE where
     ps d (FBin op x0 x1) = parensp (d>fprec op) (ps (d+1) x0 <+> pretty op <+> ps (d+1) x1)
     ps _ (FTmp t)        = pretty t
     ps _ (ConstF x)      = pretty x
-    ps d (IntExpF x0 x1) = parensp (d>8) (ps (d+1) x0 <> "^" <> ps (d+1) x1)
 
 instance Show CFE where show=show.pretty
 
@@ -117,7 +115,7 @@ instance Pretty CS where
     pretty (Ma _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty RA{}                 = mempty
-    pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
+    pretty (CpyE a a' e n)    = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
 
 instance Show CS where show=show.pretty
 
