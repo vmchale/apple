@@ -145,7 +145,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     arrT <- newITemp
     (l, plE) <- aeval e arrT
     -- rank 1
-    let sz=EAt (ADim t 0 l)
+    let sz=EAt (ADim arrT 0 l)
     rC <- rtemp tC; rD <- rtemp tD
     let (aD,dD) = case rD of
           Left rDϵ  -> (id,(rDϵ:))
