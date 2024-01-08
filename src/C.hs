@@ -7,9 +7,6 @@ module C ( Temp (..)
          , CE (..)
          , CFE (..)
          , CS (..)
-         , FBin (..)
-         , IBin (..)
-         , IRel (..)
          , Label, AsmData
          , LSt (..)
          , prettyCS
@@ -18,6 +15,7 @@ module C ( Temp (..)
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
+import           Op
 import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, indent, lbrace, parens, rbrace, (<+>))
 import           Prettyprinter.Ext
 
@@ -60,24 +58,8 @@ instance Pretty ArrAcc where
     pretty (ADim t e _)      = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
 
-data IRel = Gt | Lt | Lte | Gte | Eq | Neq
-
-instance Pretty IRel where
-    pretty Gt=">"; pretty Lt="<"; pretty Lte="≤"; pretty Gte="≥"; pretty Eq="="; pretty Neq="≠"
-
-data IBin = IPlus | ITimes | IMinus | IAsl | IDiv
-
-instance Pretty IBin where
-    pretty IPlus="+"; pretty IAsl="asl"; pretty ITimes="*"; pretty IMinus="-"; pretty IDiv="div"
-
-mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;opPrec IDiv=Nothing;opPrec IAsl=Nothing
-
-data FBin = FPlus | FTimes | FMinus
-
+mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;opPrec IDiv=Nothing;opPrec IAsl=Nothing; opPrec IMax=Nothing; opPrec IMin=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7
-
-instance Pretty FBin where
-    pretty FPlus="+"; pretty FTimes="*"; pretty FMinus="-"
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
 
@@ -95,7 +77,7 @@ instance Show CE where show=show.pretty
 instance Num CE where
     (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
-data CFE = FAt ArrAcc | FBin FBin CFE CFE | FTmp FTemp | ConstF Double
+data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF Double
 
 instance Num CFE where
     (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
@@ -104,6 +86,7 @@ instance Pretty CFE where pretty=ps 0
 
 instance PS CFE where
     ps _ (FAt a)         = pretty a
+    ps _ (FUn f e)       = parens (pretty f <+> pretty e)
     ps d (FBin op x0 x1) = parensp (d>fprec op) (ps (d+1) x0 <+> pretty op <+> ps (d+1) x1)
     ps _ (FTmp t)        = pretty t
     ps _ (ConstF x)      = pretty x
