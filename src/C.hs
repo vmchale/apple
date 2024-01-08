@@ -83,6 +83,8 @@ instance Pretty CE where
     pretty (Bin op e0 e1) = parens (pretty op <+> pretty e0 <+> pretty e1)
     pretty (EAt a)        = pretty a
 
+instance Show CE where show=show.pretty
+
 instance Num CE where
     (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
@@ -96,6 +98,8 @@ instance Pretty CFE where
     pretty (FBin op x0 x1) = parens (pretty op <+> pretty x0 <+> pretty x1)
     pretty (FTmp t)        = pretty t
     pretty (ConstF x)      = pretty x
+
+instance Show CFE where show=show.pretty
 
 data CS = For Temp CE IRel CE [CS]
         | MT Temp CE
@@ -117,6 +121,8 @@ instance Pretty CS where
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty RA{}                 = mempty
     pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
+
+instance Show CS where show=show.pretty
 
 prettyCS :: (AsmData, [CS]) -> Doc ann
 prettyCS (ds,ss) = pCS ss
