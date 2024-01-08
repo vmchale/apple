@@ -7,6 +7,7 @@ module Dbg ( dumpAAbs
            , dumpX86G
            , dumpX86Abs
            , dumpX86Liveness
+           , dumpC
            , dumpIR
            , dumpIRI
            , dumpX86Intervals
@@ -39,6 +40,7 @@ import qualified Asm.X86              as X86
 import           Asm.X86.Byte
 import           Asm.X86.P
 import           Asm.X86.Trans
+import           C
 import           CF
 import           Control.Exception    (throw, throwIO)
 import           Control.Monad        ((<=<))
@@ -48,6 +50,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
 import qualified Data.Text            as T
 import qualified Data.Text.IO         as TIO
+import           Data.Tuple           (swap)
 import           Data.Tuple.Extra     (fst3)
 import           Data.Word            (Word64)
 import           IR
@@ -128,6 +131,9 @@ dumpX86Abs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToX86 st x)))) . ir
 
 dumpAAbs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
+
+dumpC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpC = fmap (prettyCS.swap).cmm
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)

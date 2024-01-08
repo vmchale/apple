@@ -14,6 +14,7 @@ module P ( Err (..)
          , rwP
          , opt
          , ir
+         , cmm
          , eDumpC
          , eDumpIR
          , aarch64
@@ -161,6 +162,9 @@ eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 
 walloc f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . ir
 wallocE i f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . eir i
+
+cmm :: BSL.ByteString -> Either (Err AlexPosn) ([CS], C.AsmData)
+cmm = fmap (f.C.writeC).opt where f (cs,_,aa,_)=(cs,aa)
 
 ec :: Int -> E a -> Either (Err a) ([CS], LSt, C.AsmData, IM.IntMap C.Temp)
 ec i = fmap C.writeC . optE i
