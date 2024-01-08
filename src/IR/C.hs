@@ -44,21 +44,21 @@ nr IGeq=ILt; nr IGt=ILeq; nr ILt=ILeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (C.MT t e)          = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]
-cToIRM (C.Ma l t rnk n 8)  = pure [IR.Ma l (ctemp t) (IR.IB IR.IAsl (irE rnk+irE n) 3)]
+cToIRM (C.Ma l t rnk n 8)  = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IR.IAsl (irE rnk+irE n) 3+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
 cToIRM (C.Wr a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF a x)         = pure [IR.WrF (irAt a) (irX x)]
 cToIRM (For t el rel eu s) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE el):MJ (IRel rel' (Reg t') (irE eu)) eL:L l:irs++[tick t', MJ (IRel (nr rel') (Reg t') (irE eu)) l, L eL]
+    pure $ IR.MT t' (irE el):MJ (IRel (nr rel') (Reg t') (irE eu)) eL:L l:irs++[tick t', MJ (IRel rel' (Reg t') (irE eu)) l, L eL]
   where
     t'=ctemp t;rel'=irIRel rel
 cToIRM (C.RA i) = pure [IR.RA i]
 cToIRM (CpyE a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (IB IR.IAsl (irE e) 3)]
 
 irAt :: ArrAcc -> AE
-irAt (ADim t rnk e l)    = AP (ctemp t) (Just$IR.IB IR.IAsl (irE rnk+irE e) 3) l
-irAt (AElem t rnk e l 8) = AP (ctemp t) (Just$IR.IB IR.IAsl (irE rnk+irE e) 3) l
+irAt (ADim t e l)        = AP (ctemp t) (Just$IR.IB IR.IAsl (irE e) 3+8) l
+irAt (AElem t rnk e l 8) = AP (ctemp t) (Just$IR.IB IR.IAsl (irE rnk+irE e) 3+8) l
 
 irE :: CE -> Exp
 irE (Tmp t)        = Reg (ctemp t)
@@ -73,7 +73,7 @@ irX (C.FAt a)       = IR.FAt (irAt a)
 irX (FBin op x0 x1) = FB (fop op) (irX x0) (irX x1)
 
 iop :: C.IBin -> IR.IBin
-iop C.ITimes=IR.ITimes; iop C.IPlus=IR.IPlus; iop C.IAsl=IR.IAsl; iop C.IMinus=IR.IMinus
+iop C.ITimes=IR.ITimes; iop C.IPlus=IR.IPlus; iop C.IAsl=IR.IAsl; iop C.IMinus=IR.IMinus; iop C.IDiv=IR.IDiv
 
 fop :: C.FBin -> IR.FBin
 fop C.FTimes=IR.FTimes; fop C.FPlus=IR.FPlus; fop C.FMinus=IR.FMinus

@@ -135,7 +135,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     arrT <- newITemp
     (l, plE) <- aeval e arrT
     -- rank 1
-    let sz=EAt (ADim t 1 0 l)
+    let sz=EAt (ADim t 0 l)
     rC <- rtemp tC; rD <- rtemp tD
     let (aD,dD) = case rD of
           Left rDϵ  -> (id,(rDϵ:))
@@ -143,8 +143,8 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     ss <- writeRF op (aD []) (dD []) rC
     iR <- newITemp; szR <- newITemp
     let loopBody=mt (AElem arrT 1 (Tmp iR) l 8) rD:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
-        loop=For iR 0 C.Gte (Tmp szR) loopBody
-    pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 1 0 (Just a)) (Tmp szR):[loop])
+        loop=For iR 0 C.Lte (Tmp szR) loopBody
+    pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr
     xR <- newITemp; yR <- newITemp
@@ -152,11 +152,21 @@ aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) =
     let tyN=bT ty
     (lX, plX) <- aeval x xR; (lY, plY) <- aeval y yR
     modify (addMT a t)
-    pure (Just a, plX ++ plY ++ MT xnR (EAt (ADim xR 1 0 lX)):MT ynR (EAt (ADim yR 1 0 lY)):MT tn (Tmp xnR+Tmp ynR):Ma a t 1 (Tmp tn) tyN:Wr (ADim t 1 0 (Just a)) (Tmp tn):CpyE (AElem t 1 0 (Just a) tyN) (AElem xR 1 0 lX tyN) (Tmp xnR) tyN:[CpyE (AElem t 1 (Tmp xnR) (Just a) tyN) (AElem yR 1 0 lY tyN) (Tmp ynR) tyN])
+    pure (Just a, plX ++ plY ++ MT xnR (EAt (ADim xR 0 lX)):MT ynR (EAt (ADim yR 0 lY)):MT tn (Tmp xnR+Tmp ynR):Ma a t 1 (Tmp tn) tyN:Wr (ADim t 0 (Just a)) (Tmp tn):CpyE (AElem t 1 0 (Just a) tyN) (AElem xR 1 0 lX tyN) (Tmp xnR) tyN:[CpyE (AElem t 1 (Tmp xnR) (Just a) tyN) (AElem yR 1 0 lY tyN) (Tmp ynR) tyN])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
+    a <- nextArr
+    n <- newITemp
+    startR <- newITemp; endR <- newITemp; incrR <- newITemp
+    i <- newITemp
+    pStart <- eval start startR; pEnd <- eval end endR; pIncr <- eval incr incrR
+    let pN=MT n (Bin C.IDiv (Tmp endR - Tmp startR) (Tmp incrR)+1)
+        loop=For i 0 C.Lte (Tmp n) [Wr (AElem t 1 (Tmp i) (Just a) 8) (Tmp startR), MT startR (Tmp startR+Tmp incrR)]
+    pure (Just a, pStart++pEnd++pIncr++pN:Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
-eval = undefined
+eval (ILit _ n) t = pure [MT t (fromInteger n)]
+eval e _          = error (show e)
 
 feval :: E (T ()) -> FTemp -> CM [CS]
 feval (EApp F (EApp _ (Builtin _ Times) e0) e1) t = do
