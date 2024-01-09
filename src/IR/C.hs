@@ -62,10 +62,10 @@ cToIRM (While t rel eb s) = do
   where t'=ctemp t
 cToIRM (C.RA i) = pure [IR.RA i]
 cToIRM (CpyE a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
-cToIRM (If p s0 s1) = do
-    l <- nextL; l' <- nextL
-    s0' <- foldMapM cToIRM s0; s1' <- foldMapM cToIRM s1
-    pure $ MJ (irp p) l:s0'++J l':L l:s1'++[L l']
+cToIRM (Ifn't p s) = do
+    l <- nextL
+    s' <- foldMapM cToIRM s
+    pure $ MJ (irp p) l:s'++[L l]
 
 irAt :: ArrAcc -> AE
 irAt (ADim t (C.ConstI 0) l)                 = AP (ctemp t) (Just 8) l
