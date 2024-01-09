@@ -59,7 +59,7 @@ instance Pretty ArrAcc where
     pretty (ADim t e _)      = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
 
-mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing
+mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
@@ -113,7 +113,7 @@ data CS = For Temp CE IRel CE [CS]
         | Ma Int Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
         | RA !Int -- return array no-op (takes label)
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
-        | If PE [CS] [CS]
+        | Ifn't PE [CS]
 
 instance Pretty CS where
     pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
@@ -125,7 +125,7 @@ instance Pretty CS where
     pretty (Ma _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty (While t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
-    pretty (If p s s')          = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS s') <#> rbrace
+    pretty (Ifn't p s)          = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s) <#> rbrace
     pretty RA{}                 = mempty
     pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
 
