@@ -78,7 +78,7 @@ instance Show CE where show=show.pretty
 instance Num CE where
     (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
-data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF Double
+data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF Double | IE CE
 
 instance Num CFE where
     (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
@@ -101,6 +101,7 @@ instance PS CFE where
     ps d (FBin op x0 x1) = parensp (d>fprec op) (ps (d+1) x0 <+> pretty op <+> ps (d+1) x1)
     ps _ (FTmp t)        = pretty t
     ps _ (ConstF x)      = pretty x
+    ps d (IE e)          = parensp (d>10) ("itof" <+> ps (d+1) e)
 
 instance Show CFE where show=show.pretty
 
