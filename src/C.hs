@@ -69,7 +69,7 @@ instance Pretty CE where pretty=ps 0
 instance PS CE where
     ps _ (Tmp t)        = pretty t
     ps _ (ConstI i)     = pretty i
-    ps d (Bin op e0 e1) | Just d' <- mPrec op = parensp (d>d') (ps (d+1) e0 <> pretty op <> ps (d+1) e1)
+    ps d (Bin op e0 e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <> pretty op <> ps (d'+1) e1)
                         | otherwise = parens (pretty op <+> pretty e0 <+> pretty e1)
     ps _ (EAt a)        = pretty a
 
@@ -98,10 +98,10 @@ instance Pretty PE where
 instance PS CFE where
     ps _ (FAt a)         = pretty a
     ps _ (FUn f e)       = parens (pretty f <+> pretty e)
-    ps d (FBin op x0 x1) = parensp (d>fprec op) (ps (d+1) x0 <+> pretty op <+> ps (d+1) x1)
+    ps d (FBin op x0 x1) = let d'=fprec op in parensp (d>d') (ps (d'+1) x0 <+> pretty op <+> ps (d'+1) x1)
     ps _ (FTmp t)        = pretty t
     ps _ (ConstF x)      = pretty x
-    ps d (IE e)          = parensp (d>10) ("itof" <+> ps (d+1) e)
+    ps d (IE e)          = parensp (d>10) ("itof" <+> ps 11 e)
 
 instance Show CFE where show=show.pretty
 

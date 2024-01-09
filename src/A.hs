@@ -30,8 +30,8 @@ instance Pretty (I a) where pretty=ps 0
 instance PS (I a) where
     ps _ (Ix _ i)        = pretty i
     ps _ (IVar _ n)      = pretty n
-    ps d (StaPlus _ i j) = parensp (d>5) (ps (d+1) i <+> "+" <+> ps (d+1) j)
-    ps d (StaMul _ i j)  = parensp (d>7) (ps (d+1) i <+> "*" <+> ps (d+1) j)
+    ps d (StaPlus _ i j) = parensp (d>5) (ps 6 i <+> "+" <+> ps 6 j)
+    ps d (StaMul _ i j)  = parensp (d>7) (ps 8 i <+> "*" <+> ps 8 j)
     ps _ (IEVar _ n)     = "#" <> pretty n
 
 data I a = Ix { ia :: a, ii :: !Int }
@@ -73,9 +73,9 @@ instance PS (Sh a) where
     ps _ (SVar n)    = pretty n
     ps d (Cons i sh) = parensp (d>6) (pretty i <+> "`Cons`" <+> pretty sh)
     ps _ Nil         = "Nil"
-    ps d (Cat s s')  = parensp (d>5) (ps (d+1) s <+> "⧺" <+> ps (d+1) s')
-    ps d (Rev s)     = parensp (d>appPrec) "rev" <> ps (d+1) s
-    ps d (Π s)       = parensp (d>appPrec) "Π" <+> ps (d+1) s
+    ps d (Cat s s')  = parensp (d>5) (ps 6 s <+> "⧺" <+> ps 6 s')
+    ps d (Rev s)     = parensp (d>appPrec) "rev" <> ps (appPrec+1) s
+    ps d (Π s)       = parensp (d>appPrec) "Π" <+> ps (appPrec+1) s
 
 appPrec=10
 
@@ -101,7 +101,7 @@ instance PS (T a) where
     ps _ (Li i)        = "int" <> parens (pretty i)
     ps _ B             = "bool"
     ps _ (TVar n)      = pretty n
-    ps d (Arrow t0 t1) = parensp (d>0) (ps (d+1) t0 <+> "→" <+> ps d t1)
+    ps d (Arrow t0 t1) = parensp (d>0) (ps 1 t0 <+> "→" <+> ps 0 t1)
     ps _ (P ts)        = tupledBy " * " (pretty <$> ts)
     ps _ (Ρ n fs)      = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
 
@@ -278,13 +278,13 @@ isBinOp _      = False
 instance Pretty (E a) where pretty=ps 0
 
 instance PS (E a) where
-    ps d (Lam _ n e)                                              = parensp (d>1) ("λ" <> pretty n <> "." <+> ps (d+1) e)
+    ps d (Lam _ n e)                                              = parensp (d>1) ("λ" <> pretty n <> "." <+> ps 2 e)
     ps _ (Var _ n)                                                = pretty n
     ps _ (Builtin _ op) | isBinOp op                              = parens (pretty op)
     ps _ (Builtin _ b)                                            = pretty b
     ps _ (EApp _ (Builtin _ (TAt i)) e)                           = pretty e <> "->" <> pretty i
     ps _ (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (pretty e0 <+> pretty op)
-    ps d (EApp _ (EApp _ (Builtin _ op) e0) e1) | Just d' <- mPrec op = parensp (d>d') (ps (d+1) e0 <+> pretty op <+> ps (d+1) e1)
+    ps d (EApp _ (EApp _ (Builtin _ op) e0) e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <+> pretty op <+> ps (d'+1) e1)
     ps _ (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (pretty e0 <+> pretty op <+> pretty e1)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)    = parens (pretty e0 <> "/" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
@@ -296,7 +296,7 @@ instance PS (E a) where
     ps _ (EApp _ (EApp _ (Builtin _ op@Conv{}) e0) e1)            = parens (pretty e0 <+> pretty op <+> pretty e1)
     ps _ (EApp _ (EApp _ (Builtin _ (DI i)) e0) e1)               = parens (pretty e0 <+> "\\`" <> pretty i <+> pretty e1)
     ps _ (EApp _ (EApp _ (Builtin _ Succ) e0) e1)                 = parens (pretty e0 <+> "\\~" <+> pretty e1)
-    ps d (EApp _ e0 e1)                                           = parensp (d>10) (ps d e0 <+> ps (d+1) e1)
+    ps d (EApp _ e0 e1)                                           = parensp (d>10) (ps 10 e0 <+> ps 11 e1)
     ps _ (FLit _ x)                                               = pretty x
     ps _ (ILit _ n)                                               = pretty n
     ps _ (BLit _ True)                                            = "#t"
@@ -310,7 +310,7 @@ instance PS (E a) where
     ps _ (Id _ idm)                                               = pretty idm
     ps _ (Tup _ es)                                               = tupled (pretty <$> es)
     ps _ (ALit _ es)                                              = tupledArr (pretty <$> es)
-    ps d (Ann _ e t)                                              = parensp (d>1) (ps (d+1) e <+> "::" <+> ps d t)
+    ps d (Ann _ e t)                                              = parensp (d>1) (ps 2 e <+> "::" <+> ps 1 t)
     ps d (Cond _ p e₀ e₁)                                         = "?" <> pretty p <> ",." <+> ps d e₀ <+> ",." <+> ps d e₁
 
 instance Show (E a) where show=show.pretty
