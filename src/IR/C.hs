@@ -68,11 +68,12 @@ cToIRM (Ifn't p s) = do
     pure $ MJ (irp p) l:s'++[L l]
 
 irAt :: ArrAcc -> AE
-irAt (ADim t (C.ConstI 0) l)                 = AP (ctemp t) (Just 8) l
-irAt (ADim t e l)                            = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+8) l
-irAt (AElem t (C.ConstI 1) (C.ConstI 0) l 8) = AP (ctemp t) (Just 16) l
-irAt (AElem t (C.ConstI rnkI) e l 8)         = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8+8*rnkI)) l
-irAt (AElem t rnk e l 8)                     = AP (ctemp t) (Just$IR.IB IAsl (irE rnk+irE e) 3+8) l
+irAt (ADim t (C.ConstI 0) l)                                   = AP (ctemp t) (Just 8) l
+irAt (ADim t e l)                                              = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+8) l
+irAt (AElem t (C.ConstI 1) (C.ConstI 0) l 8)                   = AP (ctemp t) (Just 16) l
+irAt (AElem t (C.ConstI rnkI) (Bin IMinus e (C.ConstI 1)) l 8) = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8*rnkI)) l
+irAt (AElem t (C.ConstI rnkI) e l 8)                           = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8+8*rnkI)) l
+irAt (AElem t rnk e l 8)                                       = AP (ctemp t) (Just$IR.IB IAsl (irE rnk+irE e) 3+8) l
 
 irE :: CE -> Exp
 irE (Tmp t)        = Reg (ctemp t)
@@ -90,5 +91,6 @@ irX (C.ConstF x)    = IR.ConstF x
 irX (FTmp t)        = FReg (fx t)
 irX (C.FAt a)       = IR.FAt (irAt a)
 irX (FBin op x0 x1) = FB op (irX x0) (irX x1)
+irX (IE e)          = FConv (irE e)
 
 foldMapM f = foldM (\x y -> (x `mappend`) <$> f y) mempty

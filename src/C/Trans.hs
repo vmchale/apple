@@ -52,6 +52,10 @@ getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " n
 
 type CM = State CSt
 
+fop op e0 = EApp F (EApp (Arrow F F) (Builtin (Arrow F (Arrow F F)) op) e0)
+eMinus = fop Minus
+eDiv = fop Div
+
 isF, isI, isIF :: T a -> Bool
 isF F = True; isF _ = False
 isI I = True; isI _ = False
@@ -174,6 +178,14 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
         loop=For i 0 ILt (Tmp n) [Wr (AElem t 1 (Tmp i) (Just a) 8) (Tmp startR), MT startR (Tmp startR+Tmp incrR)]
     modify (addMT a t)
     pure (Just a, pStart++pEnd++pIncr++pN:Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) steps) t = do
+    a <- nextArr
+    startR <- newFTemp; incrR <- newFTemp
+    n <- newITemp
+    putStart <- feval start startR; putN <- eval steps n
+    putIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
+    modify (addMT a t)
+    pure (Just a, putStart++putIncr++undefined)
 aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
     a <- nextArr
     xR <- newITemp; i <- newITemp; nR <- newITemp; nO <- newITemp
@@ -219,6 +231,14 @@ eval (EApp _ (EApp _ (Builtin _ Minus) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MT t (Tmp t0 - Tmp t1)]
+eval (EApp _ (Builtin _ Head) xs) t = do
+    a <- newITemp
+    (l, plX) <- aeval xs a
+    pure $ plX ++ [MT t (EAt (AElem a 1 0 l 8))]
+eval (EApp _ (Builtin _ Last) xs) t = do
+    a <- newITemp
+    (l, plX) <- aeval xs a
+    pure $ plX ++ [MT t (EAt (AElem a 1 (EAt (ADim a 0 l)-1) l 8))]
 eval e _          = error (show e)
 
 feval :: E (T ()) -> FTemp -> CM [CS]
@@ -259,4 +279,16 @@ feval (EApp _ (Builtin _ Neg) x) t = do
     fR <- newFTemp
     plX <- feval x fR
     pure $ plX ++ [MX t (negate (FTmp fR))]
+feval (EApp _ (Builtin _ ItoF) e) t = do
+    iR <- newITemp
+    pl<- eval e iR
+    pure $ pl ++ [MX t (IE $ Tmp iR)]
+feval (EApp _ (Builtin _ Head) xs) t = do
+    a <- newITemp
+    (l, plX)  <-  aeval xs a
+    pure $ plX ++ [MX t (FAt (AElem a 1 0 l 8))]
+feval (EApp _ (Builtin _ Last) xs) t = do
+    a <- newITemp
+    (l, plX) <- aeval xs a
+    pure $ plX ++ [MX t (FAt (AElem a 1 (EAt (ADim a 0 l)-1) l 8))]
 feval e _ = error (show e)
