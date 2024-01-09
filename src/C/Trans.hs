@@ -180,12 +180,13 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     pure (Just a, pStart++pEnd++pIncr++pN:Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) steps) t = do
     a <- nextArr
-    startR <- newFTemp; incrR <- newFTemp
-    n <- newITemp
+    i <- newITemp
+    startR <- newFTemp; incrR <- newFTemp; n <- newITemp
     putStart <- feval start startR; putN <- eval steps n
     putIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
+    let loop=For i 0 ILt (Tmp n) [WrF (AElem t 1 (Tmp i) (Just a) 8) (FTmp startR), MX startR (FTmp startR+FTmp incrR)]
     modify (addMT a t)
-    pure (Just a, putStart++putIncr++undefined)
+    pure (Just a, putStart++putIncr++putN++Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
 aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
     a <- nextArr
     xR <- newITemp; i <- newITemp; nR <- newITemp; nO <- newITemp
