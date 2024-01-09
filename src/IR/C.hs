@@ -62,6 +62,8 @@ cToIRM (While t rel eb s) = do
   where t'=ctemp t
 cToIRM (C.RA i) = pure [IR.RA i]
 cToIRM (CpyE a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
+cToIRM (C.Sa t e) = pure [IR.Sa (ctemp t) (irE e)]
+cToIRM (C.Pop e) = pure [IR.Pop (irE e)]
 cToIRM (Ifn't p s) = do
     l <- nextL
     s' <- foldMapM cToIRM s
