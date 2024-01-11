@@ -22,7 +22,6 @@ instance Eq (Nm a) where
 instance Ord (Nm a) where
     compare (Nm _ u _) (Nm _ u' _) = compare u u'
 
--- TODO: prettyprinter library?
 instance Pretty (Nm a) where
     pretty (Nm n _ _) = pretty n
     -- pretty (Nm n (U i) _) = pretty n <> pretty i
