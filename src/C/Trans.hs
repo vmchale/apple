@@ -265,6 +265,19 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX (Arrow t
         loop=For i 0 ILt (Tmp nR) loopBody
     modify (addMT a t)
     pure (Just a, plEX++plEY++MT nR (EAt (ADim aPX 0 lX)):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[loop])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arrow tY _)) <- eAnn op, isIF tX && isIF tY = do
+    a <- nextArr
+    aP <- newITemp
+    acc <- rtemp tX; n <- rtemp tY
+    plS <- eeval seed acc
+    (l, plE) <- aeval e aP
+    let (aAcc,dAcc)=ax acc; (aN,dN)=ax n
+    ss <- writeRF op (aAcc.aN$[]) (dAcc.dN$[]) acc
+    i <- newITemp; nR <- newITemp
+    let loopBody=wt (AElem t 1 (Tmp i) (Just a) 8) acc:mt (AElem aP 1 (Tmp i) l 8) n:ss
+        loop=For i 0 ILt (Tmp nR) loopBody
+    modify (addMT a t)
+    pure (Just a, plE++plS++MT nR (EAt (ADim aP 0 l)+1):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[loop])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
@@ -316,6 +329,14 @@ feval (EApp _ (EApp _ (Builtin _ Exp) e0) e1) t = do
     f0 <- newFTemp; f1ϵ <- newFTemp
     plE0 <- feval e0 f0; plE1 <- feval e1 f1ϵ
     pure $ plE0 ++ plE1 ++ [MX t (FBin FExp (FTmp f0) (FTmp f1ϵ))]
+feval (EApp _ (EApp _ (Builtin _ Max) e0) e1) t = do
+    f0 <- newFTemp; f1ϵ <- newFTemp
+    plE0 <- feval e0 f0; plE1 <- feval e1 f1ϵ
+    pure $ plE0 ++ plE1 ++ [MX t (FBin FMax (FTmp f0) (FTmp f1ϵ))]
+feval (EApp _ (EApp _ (Builtin _ Min) e0) e1) t = do
+    f0 <- newFTemp; f1ϵ <- newFTemp
+    plE0 <- feval e0 f0; plE1 <- feval e1 f1ϵ
+    pure $ plE0 ++ plE1 ++ [MX t (FBin FMin (FTmp f0) (FTmp f1ϵ))]
 feval (EApp _ (EApp _ (Builtin _ Div) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- feval e0 t0; pl1 <- feval e1 t1
