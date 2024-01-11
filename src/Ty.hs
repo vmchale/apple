@@ -707,7 +707,6 @@ substI s@(Subst ts is sh) i =
         Just ty        -> Just $ aT s ty
         Nothing        -> Nothing
 
-
 checkClass :: Subst a -> Int -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
 checkClass s i c =
     case substI s i of
