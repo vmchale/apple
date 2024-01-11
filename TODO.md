@@ -60,6 +60,10 @@ T16 = T13.dim[0]
 - [ ] Use `Word64` for sets of registers
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ] embarassing!
+```
+[|:(x::Arr(i`Cons`j`Cons`Nil)float)] ⟨⟨1::int,2⟩,⟨3,4⟩,⟨5,6⟩⟩
+```
 - [ ] segfault when `aso` is called pre-register allocation (arm)
 - [ ] Should display constraints
 ```
