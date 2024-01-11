@@ -139,6 +139,9 @@ mt p = either (`MX` FAt p) (`MT` EAt p)
 wt :: ArrAcc -> Either FTemp Temp -> CS
 wt p = either (WrF p.FTmp) (Wr p.Tmp)
 
+ax (Left x)  = (id,(x:))
+ax (Right x) = ((x:),id)
+
 eeval :: E (T ()) -> Either FTemp Temp -> CM [CS]
 eeval e = either (feval e) (eval e)
 
@@ -154,9 +157,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     -- rank 1
     let sz=EAt (ADim arrT 0 l)
     rC <- rtemp tC; rD <- rtemp tD
-    let (aD,dD) = case rD of
-          Left rDϵ  -> (id,(rDϵ:))
-          Right rDϵ -> ((rDϵ:),id)
+    let (aD,dD) = ax rD
     ss <- writeRF op (aD []) (dD []) rC
     iR <- newITemp; szR <- newITemp
     let loopBody=mt (AElem arrT 1 (Tmp iR) l 8) rD:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
@@ -252,6 +253,18 @@ aeval (EApp oTy (Builtin _ Tail) x) t | if1p oTy = do
     (lX, plX) <- aeval x xR
     modify (addMT a t)
     pure (Just a, plX++MT nR (EAt (ADim xR 0 lX)-1):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[CpyE (AElem t 1 0 (Just a) 8) (AElem xR 1 1 lX 8) (Tmp nR) 8])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, isIF tX && isIF tY && isIF tC = do
+    a <- nextArr
+    aPX <- newITemp; aPY <- newITemp
+    (lX, plEX) <- aeval xs aPX; (lY, plEY) <- aeval ys aPY
+    x <- rtemp tX; y <- rtemp tY; z <- rtemp tC
+    let (aX,dX) = ax x; (aY,dY) = ax y
+    ss <- writeRF op (aX.aY$[]) (dX.dY$[]) z
+    nR <- newITemp; i <- newITemp
+    let loopBody=mt (AElem aPX 1 (Tmp i) lX 8) x:mt (AElem aPY 1 (Tmp i) lY 8) y:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) z]
+        loop=For i 0 ILt (Tmp nR) loopBody
+    modify (addMT a t)
+    pure (Just a, plEX++plEY++MT nR (EAt (ADim aPX 0 lX)):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[loop])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
