@@ -94,5 +94,6 @@ irX (FTmp t)        = FReg (fx t)
 irX (C.FAt a)       = IR.FAt (irAt a)
 irX (FBin op x0 x1) = FB op (irX x0) (irX x1)
 irX (IE e)          = FConv (irE e)
+irX (FUn f e)       = FU f (irX e)
 
 foldMapM f = foldM (\x y -> (x `mappend`) <$> f y) mempty
