@@ -331,4 +331,14 @@ feval (EApp _ (Builtin _ Last) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
     pure $ plX ++ [MX t (FAt (AElem a 1 (EAt (ADim a 0 l)-1) l 8))]
+feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isF tX = do
+    x <- newFTemp
+    aP <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (l, plE) <- aeval e aP
+    ss <- writeRF op [] [acc, x] (Left acc)
+    let loopBody=MX x (FAt (AElem aP 1 (Tmp i) l 8)):ss
+        loop=For i 1 ILt (Tmp szR) loopBody
+    pure $ plE++MT szR (EAt (ADim aP 0 l)):MX acc (FAt (AElem aP 1 0 l 8)):[loop]
 feval e _ = error (show e)
