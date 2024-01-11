@@ -246,6 +246,12 @@ aeval (EApp oTy (Builtin _ Init) x) t | if1p oTy = do
     (lX, plX) <- aeval x xR
     modify (addMT a t)
     pure (Just a, plX++MT nR (EAt (ADim xR 0 lX)-1):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[CpyE (AElem t 1 0 (Just a) 8) (AElem xR 1 0 lX 8) (Tmp nR) 8])
+aeval (EApp oTy (Builtin _ Tail) x) t | if1p oTy = do
+    a <- nextArr
+    xR <- newITemp; nR <- newITemp
+    (lX, plX) <- aeval x xR
+    modify (addMT a t)
+    pure (Just a, plX++MT nR (EAt (ADim xR 0 lX)-1):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[CpyE (AElem t 1 0 (Just a) 8) (AElem xR 1 1 lX 8) (Tmp nR) 8])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
