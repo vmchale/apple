@@ -139,6 +139,9 @@ mt p = either (`MX` FAt p) (`MT` EAt p)
 wt :: ArrAcc -> Either FTemp Temp -> CS
 wt p = either (WrF p.FTmp) (Wr p.Tmp)
 
+eeval :: E (T ()) -> Either FTemp Temp -> CM [CS]
+eeval e = either (feval e) (eval e)
+
 aeval :: E (T ()) -> Temp -> CM (Maybe Int, [CS])
 aeval (Var _ x) t = do
     st <- gets avars
@@ -216,10 +219,17 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk (eAnn a) = d
 aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isIF tX = do
     a <- nextArr
     xR <- rtemp tX; xsR <- newITemp
-    plX <- either (feval x) (eval x) xR
+    plX <- eeval x xR
     (l, plXs) <- aeval xs xsR
     nR <- newITemp; nϵR <- newITemp
     pure (Just a, plXs++plX++MT nϵR (EAt (ADim xsR 0 l)):MT nR (Tmp nϵR+1):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):wt (AElem t 1 0 (Just a) 8) xR:[CpyE (AElem t 1 1 (Just a) 8) (AElem xsR 1 0 l 8) (Tmp nϵR) 8])
+aeval (EApp _ (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isIF tX = do
+    a <- nextArr
+    xR <- rtemp tX; xsR <- newITemp
+    plX <- eeval x xR
+    (l, plXs) <- aeval xs xsR
+    nR <- newITemp; nϵR <- newITemp
+    pure (Just a, plXs++plX++MT nϵR (EAt (ADim xsR 0 l)):MT nR (Tmp nϵR+1):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):wt (AElem t 1 (Tmp nR-1) (Just a) 8) xR:[CpyE (AElem t 1 0 (Just a) 8) (AElem xsR 1 0 l 8) (Tmp nϵR) 8])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
