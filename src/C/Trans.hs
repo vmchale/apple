@@ -134,10 +134,10 @@ writeRF :: E (T ()) -> [Temp] -> [FTemp] -> Either FTemp Temp -> CM [CS]
 writeRF e rs frs = fmap snd . writeF e ((Nothing,) <$> rs) frs
 
 mt :: ArrAcc -> Either FTemp Temp -> CS
-mt p (Right t) = MT t (EAt p); mt p (Left t) = MX t (FAt p)
+mt p = either (`MX` FAt p) (`MT` EAt p)
 
 wt :: ArrAcc -> Either FTemp Temp -> CS
-wt p (Right t) = Wr p (Tmp t); wt p (Left t) = WrF p (FTmp t)
+wt p = either (WrF p.FTmp) (Wr p.Tmp)
 
 aeval :: E (T ()) -> Temp -> CM (Maybe Int, [CS])
 aeval (Var _ x) t = do
@@ -213,6 +213,13 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk (eAnn a) = d
     modify (addMT aL t)
     let loop=For i 0 ILt (Tmp m) [For j 0 ILt (Tmp o) [MX z 0, For k 0 ILt (Tmp n) [MX z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)*FAt (AElem bR 2 (Tmp k*Tmp o+Tmp j) lB 8))], WrF (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]]
     pure (Just aL, plA++plB++MT m (EAt (ADim aR 0 lA)):MT n (EAt (ADim bR 0 lB)):MT o (EAt (ADim bR 1 lB)):Ma aL t 2 (Tmp m*Tmp o) 8:Wr (ADim t 0 (Just aL)) (Tmp m):Wr (ADim t 1 (Just aL)) (Tmp o):[loop])
+aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isIF tX = do
+    a <- nextArr
+    xR <- rtemp tX; xsR <- newITemp
+    plX <- either (feval x) (eval x) xR
+    (l, plXs) <- aeval xs xsR
+    nR <- newITemp; nϵR <- newITemp
+    pure (Just a, plXs++plX++MT nϵR (EAt (ADim xsR 0 l)):MT nR (Tmp nϵR+1):Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):wt (AElem t 1 0 (Just a) 8) xR:[CpyE (AElem t 1 1 (Just a) 8) (AElem xsR 1 0 l 8) (Tmp nϵR) 8])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
