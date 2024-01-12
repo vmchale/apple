@@ -330,6 +330,11 @@ eval (EApp _ (Builtin _ Last) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
     pure $ plX ++ [MT t (EAt (AElem a 1 (EAt (ADim a 0 l)-1) l 8))]
+eval (EApp _ (Builtin _ Size) xs) t = do
+    xsR <- newITemp
+    (l, plE) <- aeval xs xsR
+    rnkR <- newITemp; i <- newITemp
+    pure $ plE ++ [MT rnkR (EAt (ARnk xsR l)), MT t (EAt (ADim xsR 0 l)), For i 1 ILt (Tmp rnkR) [MT t (Tmp t*EAt (ADim xsR (Tmp i) l))]]
 eval e _          = error (show e)
 
 feval :: E (T ()) -> FTemp -> CM [CS]
