@@ -309,6 +309,14 @@ eval (EApp _ (EApp _ (Builtin _ Minus) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MT t (Tmp t0 - Tmp t1)]
+eval (EApp _ (EApp _ (Builtin _ Max) e0) e1) t = do
+    t0 <- newITemp; t1 <- newITemp
+    pl0 <- eval e0 t0; pl1 <- eval e1 t1
+    pure $ pl0 ++ pl1 ++ [MT t (Tmp t1), Cmov (IRel IGt (Tmp t0) (Tmp t1)) t (Tmp t0)]
+eval (EApp _ (EApp _ (Builtin _ Min) e0) e1) t = do
+    t0 <- newITemp; t1 <- newITemp
+    pl0 <- eval e0 t0; pl1 <- eval e1 t1
+    pure $ pl0 ++ pl1 ++ [MT t (Tmp t1), Cmov (IRel ILt (Tmp t0) (Tmp t1)) t (Tmp t0)]
 eval (EApp _ (Builtin _ Head) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
