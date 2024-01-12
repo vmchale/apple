@@ -290,6 +290,19 @@ aeval (EApp _ (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- 
         loop=For i 1 ILt (Tmp n) loopBody
     modify (addMT a t)
     pure (Just a, plE++MT n (EAt (ADim aP 0 l)+1):Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):mt (AElem aP 1 0 l 8) acc:[loop])
+aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just{} <- if1 (eAnn xs), Just ot <- if1 oTy = do
+    a <- nextArr
+    aP <- newITemp
+    slopP <- newITemp
+    szR <- newITemp; sz'R <- newITemp; i <- newITemp
+    fR <- rtemp ot
+    ss <- writeRF op [slopP] [] fR
+    let szSlop=fromIntegral$16+8*n
+    (lX, plX) <- aeval xs aP
+    let sz'=Tmp szR-fromIntegral (n-1)
+    let loopBody=CpyE (AElem slopP 1 0 Nothing 8) (AElem aP 1 (Tmp i) lX 8) (fromIntegral n) 8:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) fR]
+        loop=For i 0 ILt (Tmp sz'R) loopBody
+    pure (Just a, plX++MT szR (EAt (ADim aP 0 lX)):MT sz'R sz':Ma a t 1 (Tmp sz'R) 8:Wr (ADim t 0 (Just a)) (Tmp sz'R):Sa slopP szSlop:Wr (ARnk slopP Nothing) 1:Wr (ADim slopP 0 Nothing) (fromIntegral n):loop:[Pop szSlop])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
