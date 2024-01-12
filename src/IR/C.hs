@@ -68,6 +68,7 @@ cToIRM (Ifn't p s) = do
     l <- nextL
     s' <- foldMapM cToIRM s
     pure $ MJ (irp p) l:s'++[L l]
+cToIRM (C.Cmov p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
 
 irAt :: ArrAcc -> AE
 irAt (ADim t (C.ConstI 0) l)                                   = AP (ctemp t) (Just 8) l

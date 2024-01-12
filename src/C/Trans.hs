@@ -293,6 +293,11 @@ aeval (EApp _ (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- 
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
+eval (LLet _ (n,e') e) t = do
+    eR <- newITemp
+    plE <- eval e' eR
+    modify (addVar n eR)
+    (plE++) <$> eval e t
 eval (ILit _ n) t = pure [MT t (fromInteger n)]
 eval (Var _ x) t = do
     st <- gets vars
@@ -328,6 +333,11 @@ eval (EApp _ (Builtin _ Last) xs) t = do
 eval e _          = error (show e)
 
 feval :: E (T ()) -> FTemp -> CM [CS]
+feval (LLet _ (n,e') e) t = do
+    eR <- newFTemp
+    plE <- feval e' eR
+    modify (addD n eR)
+    (plE++) <$> feval e t
 feval (ILit _ x) t = pure [MX t (ConstF $ fromIntegral x)] -- if it overflows you deserve it
 feval (FLit _ x) t = pure [MX t (ConstF x)]
 feval (Var _ x) t = do
