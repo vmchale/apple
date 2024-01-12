@@ -299,7 +299,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just{} <- if1 (eAnn xs), 
     ss <- writeRF op [slopP] [] fR
     let szSlop=fromIntegral$16+8*n
     (lX, plX) <- aeval xs aP
-    let sz'=Tmp szR-fromIntegral (n-1)
+    let sz'=Tmp szR-fromIntegral(n-1)
     let loopBody=CpyE (AElem slopP 1 0 Nothing 8) (AElem aP 1 (Tmp i) lX 8) (fromIntegral n) 8:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) fR]
         loop=For i 0 ILt (Tmp sz'R) loopBody
     pure (Just a, plX++MT szR (EAt (ADim aP 0 lX)):MT sz'R sz':Ma a t 1 (Tmp sz'R) 8:Wr (ADim t 0 (Just a)) (Tmp sz'R):Sa slopP szSlop:Wr (ARnk slopP Nothing) 1:Wr (ADim slopP 0 Nothing) (fromIntegral n):loop:[Pop szSlop])
@@ -397,6 +397,13 @@ feval (EApp _ (Builtin _ Sqrt) e) t = do
     eR <- newFTemp
     plE <- feval e eR
     pure $ plE ++ [MX t (FUn FSqrt (FTmp eR))]
+feval (EApp _ (Builtin _ Log) e) t = do
+    t' <- newFTemp
+    plE <- feval e t'
+    pure $ plE ++ [MX t (FUn FLog (FTmp t'))]
+feval (EApp _ (Builtin _ Abs) e) t = do
+    plE <- feval e t
+    pure $ plE ++ [MX t (FUn FAbs (FTmp t))]
 feval (EApp _ (Builtin _ Neg) x) t = do
     fR <- newFTemp
     plX <- feval x fR
