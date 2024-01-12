@@ -116,6 +116,7 @@ data CS = For Temp CE IRel CE [CS]
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
         | Ifn't PE [CS]
         | Sa Temp CE | Pop CE
+        | Cmov PE Temp CE
 
 instance Pretty CS where
     pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
@@ -132,6 +133,7 @@ instance Pretty CS where
     pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
     pretty (Sa t e)             = pretty t <+> "=" <+> "salloc" <+> parens (pretty e)
     pretty (Pop e)              = "pop" <+> pretty e
+    pretty (Cmov p t e)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
 
 instance Show CS where show=show.pretty
 
