@@ -304,6 +304,13 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just{} <- if1 (eAnn xs), 
         loop=For i 0 ILt (Tmp sz'R) loopBody
     modify (addMT a t)
     pure (Just a, plX++MT szR (EAt (ADim aP 0 lX)):MT sz'R sz':Ma a t 1 (Tmp sz'R) 8:Wr (ADim t 0 (Just a)) (Tmp sz'R):Sa slopP szSlop:Wr (ARnk slopP Nothing) 1:Wr (ADim slopP 0 Nothing) (fromIntegral n):loop:[Pop szSlop])
+aeval (EApp _ (EApp _ (Builtin _ Rot) n) xs) t | if1p (eAnn xs) = do
+    a <- nextArr
+    xsR <- newITemp; nR <- newITemp; c <- newITemp; szR <- newITemp
+    plN <- eval n nR
+    (lX, plX) <- aeval xs xsR
+    modify (addMT a t)
+    pure (Just a, plX++plN++MT szR (EAt (ADim xsR 0 lX)):Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):Ifn't (IRel IGeq (Tmp nR) 0) [MT nR (Tmp szR+ Tmp nR)]:MT c (Tmp szR-Tmp nR):[CpyE (AElem t 1 0 (Just a) 8) (AElem xsR 1 (Tmp nR) lX 8) (Tmp c) 8, CpyE (AElem t 1 (Tmp c) (Just a) 8) (AElem xsR 1 0 lX 8) (Tmp nR) 8])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
