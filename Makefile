@@ -30,4 +30,4 @@ clean:
 	rm -rf dist-newstyle tags moddeps.svg *.hp *.o *.prof *.tix *.svg *.so py/__pycache__
 
 fmt:
-	fd '\.hs$$' $$(ja '{%/hs-source-dirs/}{`2}' -i apple.cabal) -x stylish-haskell -i
+	fd '\.(cpphs|hs)$$' $$(ja '{%/hs-source-dirs/}{`2}' -i apple.cabal) -x stylish-haskell -i
