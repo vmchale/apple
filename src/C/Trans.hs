@@ -4,6 +4,7 @@ module C.Trans ( writeC ) where
 
 import           A
 import           C
+import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
@@ -155,6 +156,17 @@ ax (Right x) = ((x:),id)
 
 eeval :: E (T ()) -> Either FTemp Temp -> CM [CS]
 eeval e = either (feval e) (eval e)
+
+plDim :: Int64 -> (Temp, Maybe Int) -> CM ([Temp], [CS])
+plDim rnk (a,l) =
+    unzip <$> traverse (\at -> do {dt <- newITemp; pure (dt, MT dt (EAt at))}) [ ADim a (ConstI$i-1) l | i <- [1..rnk] ]
+
+offByDim :: [Temp] -> CM ([Temp], [CS])
+offByDim dims = do
+    sts <- traverse (\_ -> newITemp) (undefined:dims)
+    let ss=zipWith3 (\s1 s0 d -> MT s1 (Tmp s0*Tmp d)) (tail sts) sts dims
+    pure (reverse sts, MT (head sts) 1:ss)
+    -- drop 1 for strides
 
 aeval :: E (T ()) -> Temp -> CM (Maybe Int, [CS])
 aeval (Var _ x) t = do
@@ -327,6 +339,19 @@ aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
     n <- nextAA
     modify (addAA n (rnk:fmap fromIntegral ns++ws))
     pure (Nothing, [MT t (LA n)])
+aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
+    a <- nextArr
+    let sze=bT ty; dO=ConstI$8+8*rnk
+    xR <- newITemp; xd <- newITemp; td <- newITemp
+    (l, plX) <- aeval x xR
+    (dts, plDs) <- plDim rnk (xR, l)
+    (sts, plSs) <- offByDim dts
+    (std, plSd) <- offByDim (reverse dts)
+    let n:sstrides = sts; (_:dstrides) = std
+    is <- traverse (\_ -> newITemp) [1..rnk]
+    let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>is) l sze) 1 sze]
+    modify (addMT a t)
+    pure (Just a, plX++plDs++plSs++Ma a t (ConstI rnk) (Tmp n) sze:zipWith (\tϵ o -> Wr (ADim t (ConstI o) (Just a)) (Tmp tϵ)) (reverse dts) [0..]++init plSd++MT xd (Tmp xR+dO):MT td (Tmp t+dO):loop)
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
