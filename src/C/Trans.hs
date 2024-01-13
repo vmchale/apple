@@ -349,7 +349,7 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     (std, plSd) <- offByDim (reverse dts)
     let n:sstrides = sts; (_:dstrides) = std
     is <- traverse (\_ -> newITemp) [1..rnk]
-    let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (Tmp<$>dstrides) (Tmp<$>is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>reverse is) l sze) 1 sze]
+    let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (Tmp<$>sstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>dstrides) (Tmp<$>is) l sze) 1 sze]
     modify (addMT a t)
     pure (Just a, plX++plDs++plSs++Ma a t (ConstI rnk) (Tmp n) sze:zipWith (\tϵ o -> Wr (ADim t (ConstI o) (Just a)) (Tmp tϵ)) (reverse dts) [0..]++init plSd++MT xd (Tmp xR+dO):MT td (Tmp t+dO):loop)
 aeval e _ = error (show e)
