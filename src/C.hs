@@ -63,6 +63,7 @@ mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mP
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7; fprec FDiv=7
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
+        | LA !Int -- assembler data
 
 instance Pretty CE where pretty=ps 0
 
@@ -72,6 +73,7 @@ instance PS CE where
     ps d (Bin op e0 e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <> pretty op <> ps (d'+1) e1)
                         | otherwise = parens (pretty op <+> pretty e0 <+> pretty e1)
     ps _ (EAt a)        = pretty a
+    ps _ (LA n)         = "A_" <> pretty n
 
 instance Show CE where show=show.pretty
 

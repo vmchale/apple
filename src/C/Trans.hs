@@ -7,6 +7,8 @@ import           C
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
+import           Data.Word                  (Word64)
+import           GHC.Float                  (castDoubleToWord64)
 import           Nm
 import           Nm.IntMap
 import           Op
@@ -29,6 +31,9 @@ nextI = state (\(CSt l (tϵ:t) ar as v d a f aas ts) -> (tϵ, CSt l t ar as v d 
 nextArr :: CM Int
 nextArr = state (\(CSt l t (a:ar) as v d aϵ f aas ts) -> (a, CSt l t ar as v d aϵ f aas ts))
 
+nextAA :: CM Int
+nextAA = state (\(CSt l t ar as v d a f aas ts) -> (as, CSt l t ar (as+1) v d a f aas ts))
+
 newITemp :: CM Temp
 newITemp = ITemp <$> nextI
 
@@ -37,6 +42,9 @@ newFTemp = FTemp <$> nextI
 
 addMT :: Int -> Temp -> CSt -> CSt
 addMT i tϵ (CSt l t ar as v d a f aas ts) = CSt l t ar as v d a f aas (IM.insert i tϵ ts)
+
+addAA :: Int -> [Word64] -> CSt -> CSt
+addAA i aa (CSt l t ar as v d a f aas ts) = CSt l t ar as v d a f (IM.insert i aa aas) ts
 
 addVar :: Nm a -> Temp -> CSt -> CSt
 addVar n r (CSt l t ar as v d a f aas ts) = CSt l t ar as (insert n r v) d a f aas ts
@@ -84,6 +92,9 @@ staRnk _             = Nothing
 tRnk :: T a -> Maybe (T a, Int64)
 tRnk (Arr sh t) = (t,) <$> staRnk sh
 tRnk _          = Nothing
+
+mIFs :: [E a] -> Maybe [Word64]
+mIFs = traverse mIFϵ where mIFϵ (FLit _ d)=Just (castDoubleToWord64 d); mIFϵ (ILit _ n)=Just (fromIntegral n); mIFϵ _=Nothing
 
 writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (CSt [0..] [0..] [0..] 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt l t _ _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
@@ -311,6 +322,11 @@ aeval (EApp _ (EApp _ (Builtin _ Rot) n) xs) t | if1p (eAnn xs) = do
     (lX, plX) <- aeval xs xsR
     modify (addMT a t)
     pure (Just a, plX++plN++MT szR (EAt (ADim xsR 0 lX)):Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):Ifn't (IRel IGeq (Tmp nR) 0) [MT nR (Tmp szR+ Tmp nR)]:MT c (Tmp szR-Tmp nR):[CpyE (AElem t 1 0 (Just a) 8) (AElem xsR 1 (Tmp nR) lX 8) (Tmp c) 8, CpyE (AElem t 1 (Tmp c) (Just a) 8) (AElem xsR 1 0 lX 8) (Tmp nR) 8])
+aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
+    let rnk=fromIntegral$length ns
+    n <- nextAA
+    modify (addAA n (rnk:fmap fromIntegral ns++ws))
+    pure (Nothing, [MT t (LA n)])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
