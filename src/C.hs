@@ -53,17 +53,20 @@ instance Pretty FTemp where
 data ArrAcc = AElem Temp CE CE (Maybe Int) Int64 -- pointer, rank, elem., label for tracking liveness, elem. size (bytes)
             | ARnk Temp (Maybe Int)
             | ADim Temp CE (Maybe Int) -- pointer, #, label
+            | At Temp [CE] [CE] (Maybe Int) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
 
 instance Pretty ArrAcc where
     pretty (AElem t _ e _ _) = pretty t <> brackets (pretty e)
     pretty (ADim t e _)      = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
+    pretty (At t _ ix _ _)   = pretty t <> foldMap (brackets.pretty) ix
 
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7; fprec FDiv=7
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64
         | LA !Int -- assembler data
+        | DP Temp Int64 -- pointer, rank
 
 instance Pretty CE where pretty=ps 0
 
@@ -74,6 +77,7 @@ instance PS CE where
                         | otherwise = parens (pretty op <+> pretty e0 <+> pretty e1)
     ps _ (EAt a)        = pretty a
     ps _ (LA n)         = "A_" <> pretty n
+    ps _ (DP t _)       = "DATA" <> parens (pretty t)
 
 instance Show CE where show=show.pretty
 
