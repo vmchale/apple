@@ -39,8 +39,13 @@
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
 - [ ] https://www.compart.com/en/unicode/U+1D66
 ## Optimization
+- [ ] arrays in assembler: register indirection?
+```
+T13 = A_0
+T16 = T13.dim[0]
+```
 - [ ] `neg` instruction, not `0-`...
-- [ ] Back/forward loops (compare to 0 or whatever)
+- [x] Back/forward loops (compare to 0 or whatever)
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
 # Performance
