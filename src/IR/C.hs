@@ -78,6 +78,9 @@ irAt (AElem t (C.ConstI 1) (C.ConstI 0) l 8)                   = AP (ctemp t) (J
 irAt (AElem t (C.ConstI rnkI) (Bin IMinus e (C.ConstI 1)) l 8) = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8*rnkI)) l
 irAt (AElem t (C.ConstI rnkI) e l 8)                           = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8+8*rnkI)) l
 irAt (AElem t rnk e l 8)                                       = AP (ctemp t) (Just$IR.IB IAsl (irE rnk+irE e) 3+8) l
+irAt (At dt s ix l 8) =
+    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> irE i*irE d) s ix
+    in AP (ctemp dt) (Just$IR.IB IAsl offs 3) l
 
 irE :: CE -> Exp
 irE (Tmp t)        = Reg (ctemp t)
@@ -85,6 +88,7 @@ irE (C.EAt a)      = IR.EAt (irAt a)
 irE (C.ConstI i)   = IR.ConstI i
 irE (Bin op e0 e1) = IB op (irE e0) (irE e1)
 irE (C.LA i)       = IR.LA i
+irE (DP t rnk)     = Reg (ctemp t)+IR.ConstI (8*rnk)
 
 irp :: PE -> Exp
 irp (C.IRel rel e0 e1) = IR.IRel rel (irE e0) (irE e1)
