@@ -376,6 +376,7 @@ aeval (EApp _ (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tD) <- eAnn
         loop=For i 0 ILt (Tmp sz'R) loopBody
     modify (addMT a t)
     pure (Just a, plX++MT szR (EAt (ADim xR 0 lX)):MT sz'R (Tmp szR-1):Ma a t 1 (Tmp sz'R) 8:Wr (ADim t 0 (Just a)) (Tmp sz'R):[loop])
+-- TODO: RevE
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
@@ -512,6 +513,17 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isF
     let loopBody=MX x (FAt (AElem aP 1 (Tmp i) l 8)):ss
         loop=For i 1 ILt (Tmp szR) loopBody
     pure $ plE++MT szR (EAt (ADim aP 0 l)):MX acc (FAt (AElem aP 1 0 l 8)):[loop]
+feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
+    x <- rtemp tX
+    eR <- newITemp
+    i <- newITemp
+    (l, plE) <- aeval e eR
+    plAcc <- feval seed acc
+    let (aX,dX)=ax x
+    ss <- writeRF op (aX []) (dX [acc]) (Left acc)
+    let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss++[MT i (Tmp i-1)]
+        loop=While i IGeq 0 loopBody
+    pure $ plE++plAcc++MT i (EAt (ADim eR 0 l)-1):[loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
     x <- rtemp tX
     eR <- newITemp
