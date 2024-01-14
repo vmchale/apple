@@ -309,10 +309,10 @@ aeval (EApp _ (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- 
     let (aAcc,dAcc)=ax acc; (aX,dX)=ax x
     ss <- writeRF op (aAcc.aX$[]) (dAcc.dX$[]) acc
     i <- newITemp; n <- newITemp
-    let loopBody=wt (AElem t 1 (Tmp i) (Just a) 8) acc:mt (AElem aP 1 (Tmp i) l 8) x:ss
-        loop=For i 1 ILt (Tmp n) loopBody
+    let loopBody=wt (AElem t 1 (Tmp i-1) (Just a) 8) acc:mt (AElem aP 1 (Tmp i) l 8) x:ss
+        loop=For i 1 ILeq (Tmp n) loopBody
     modify (addMT a t)
-    pure (Just a, plE++MT n (EAt (ADim aP 0 l)+1):Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):mt (AElem aP 1 0 l 8) acc:[loop])
+    pure (Just a, plE++MT n (EAt (ADim aP 0 l)):Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):mt (AElem aP 1 0 l 8) acc:[loop])
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just{} <- if1 (eAnn xs), Just ot <- if1 oTy = do
     a <- nextArr
     aP <- newITemp
