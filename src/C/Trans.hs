@@ -503,4 +503,16 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isF
     let loopBody=MX x (FAt (AElem aP 1 (Tmp i) l 8)):ss
         loop=For i 1 ILt (Tmp szR) loopBody
     pure $ plE++MT szR (EAt (ADim aP 0 l)):MX acc (FAt (AElem aP 1 0 l 8)):[loop]
+feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow tX _) <- eAnn op, isIF tX = do
+    x <- rtemp tX
+    eR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (l, plE) <- aeval e eR
+    plAcc <- feval seed acc
+    let (aX,dX)=ax x
+    ss <- writeRF op (aX []) (dX [acc]) (Left acc)
+    let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
+        loop=For i 0 ILt (Tmp szR) loopBody
+    pure $ plE++plAcc++MT szR (EAt (ADim eR 0 l)):[loop]
 feval e _ = error (show e)
