@@ -428,11 +428,16 @@ eval (EApp _ (Builtin _ Floor) x) t = do
 eval e _          = error (show e)
 
 feval :: E (T ()) -> FTemp -> CM [CS]
-feval (LLet _ (n,e') e) t = do
+feval (LLet _ (n,e') e) t | isF (eAnn e') = do
     eR <- newFTemp
     plE <- feval e' eR
     modify (addD n eR)
     (plE++) <$> feval e t
+feval (LLet _ (n,e') e) t | isArr (eAnn e') = do
+    t' <- newITemp
+    (l, ss) <- aeval e' t'
+    modify (addAVar n (l, t'))
+    (ss ++) <$> feval e t
 feval (ILit _ x) t = pure [MX t (ConstF $ fromIntegral x)] -- if it overflows you deserve it
 feval (FLit _ x) t = pure [MX t (ConstF x)]
 feval (Var _ x) t = do
