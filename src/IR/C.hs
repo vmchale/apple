@@ -69,6 +69,7 @@ cToIRM (Ifn't p s) = do
     s' <- foldMapM cToIRM s
     pure $ MJ (irp p) l:s'++[L l]
 cToIRM (C.Cmov p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
+cToIRM (C.Fcmov p t e) = pure [IR.Fcmov (irp p) (fx t) (irX e)]
 
 irAt :: ArrAcc -> AE
 irAt (ARnk t l)                                                = AP (ctemp t) Nothing l

@@ -472,6 +472,10 @@ feval (EApp _ (EApp _ (Builtin _ Div) e0) e1) t = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- feval e0 t0; pl1 <- feval e1 t1
     pure $ pl0 ++ pl1 ++ [MX t (FTmp t0 / FTmp t1)]
+feval (EApp _ (EApp _ (Builtin _ IntExp) (FLit _ (-1))) n) t = do
+    nR <- newITemp
+    plR <- eval n nR
+    pure $ plR ++ [MX t 1, Fcmov (IUn IOdd (Tmp nR)) t (ConstF (-1))]
 feval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
     xR <- newFTemp; nR <- newITemp
     plX <- feval x xR; plN <- eval n nR
