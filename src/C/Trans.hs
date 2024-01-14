@@ -421,6 +421,10 @@ eval (EApp _ (Builtin _ Size) xs) t = do
     (l, plE) <- aeval xs xsR
     rnkR <- newITemp; i <- newITemp
     pure $ plE ++ [MT rnkR (EAt (ARnk xsR l)), MT t (EAt (ADim xsR 0 l)), For i 1 ILt (Tmp rnkR) [MT t (Tmp t*EAt (ADim xsR (Tmp i) l))]]
+eval (EApp _ (Builtin _ Floor) x) t = do
+    xR <- newFTemp
+    plX <- feval x xR
+    pure $ plX ++ [MT t (CFloor (FTmp xR))]
 eval e _          = error (show e)
 
 feval :: E (T ()) -> FTemp -> CM [CS]
