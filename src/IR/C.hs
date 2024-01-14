@@ -72,7 +72,7 @@ cToIRM (C.Cmov p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
 
 irAt :: ArrAcc -> AE
 irAt (ARnk t l)                                                = AP (ctemp t) Nothing l
-irAt (ADim t (C.ConstI 0) l)                                   = AP (ctemp t) (Just 8) l
+irAt (ADim t (C.ConstI n) l)                                   = AP (ctemp t) (Just$IR.ConstI (8+8*n)) l
 irAt (ADim t e l)                                              = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+8) l
 irAt (AElem t (C.ConstI 1) (C.ConstI 0) l 8)                   = AP (ctemp t) (Just 16) l
 irAt (AElem t (C.ConstI rnkI) (Bin IMinus e (C.ConstI 1)) l 8) = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8*rnkI)) l
