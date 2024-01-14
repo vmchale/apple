@@ -25,9 +25,6 @@ iF :: IM.IntMap Temp -> [(Stmt, Interval)] -> [Stmt]
 iF a = concatMap g where
     g (RA{}, _) = []
     g (s, i)    = s:[ Free t | t <- ts ] where ts = mapMaybe (`IM.lookup` a) (IS.toList (done i))
-    -- TODO "closures"?
-    --
-    -- TODO: examine this in light of post-loop conditionals... might be fine?
 
 pf :: [Stmt] -> [Stmt]
 pf (s@J{}:ss) | Just (fs, l, ss') <- cfs ss = s:l:fs ++ pf ss'
