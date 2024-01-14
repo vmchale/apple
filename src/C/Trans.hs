@@ -372,7 +372,7 @@ aeval (EApp _ (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tD) <- eAnn
     let (aX,dX)=ax x; (aY,dY)=ax y
     i <- newITemp
     ss <- writeRF op (aX.aY$[]) (dX.dY$[]) z
-    let loopBody = mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem xR 1 (Tmp i+1) lX 8) y:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) z]
+    let loopBody = mt (AElem xR 1 (Tmp i+1) lX 8) x:mt (AElem xR 1 (Tmp i) lX 8) y:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) z]
         loop=For i 0 ILt (Tmp sz'R) loopBody
     modify (addMT a t)
     pure (Just a, plX++MT szR (EAt (ADim xR 0 lX)):MT sz'R (Tmp szR-1):Ma a t 1 (Tmp sz'R) 8:Wr (ADim t 0 (Just a)) (Tmp sz'R):[loop])
