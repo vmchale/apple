@@ -352,6 +352,17 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (Tmp<$>sstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>dstrides) (Tmp<$>is) l sze) 1 sze]
     modify (addMT a t)
     pure (Just a, plX++plDs++plSs++Ma a t (ConstI rnk) (Tmp n) sze:zipWith (\tϵ o -> Wr (ADim t (ConstI o) (Just a)) (Tmp tϵ)) (reverse dts) [0..]++init plSd++MT xd (Tmp xR+dO):MT td (Tmp t+dO):loop)
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, isIF tX && isIF tY && isIF tC = do
+    a <- nextArr
+    x <- rtemp tX; y <- rtemp tY; z <- rtemp tC
+    xR <- newITemp; yR <- newITemp; szX <- newITemp; szY <- newITemp; i <- newITemp; j <- newITemp; k <- newITemp
+    (lX, plX) <- aeval xs xR
+    (lY, plY) <- aeval ys yR
+    let (aX,dX)=ax x; (aY,dY)=ax y
+    ss <- writeRF op (aX.aY$[]) (dX.dY$[]) z
+    let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem yR 1 (Tmp j) lY 8) y:ss++[wt (AElem t 2 (Tmp k) (Just a) 8) z, MT k (Tmp k+1)])]
+    modify (addMT a t)
+    pure (Just a, plX++plY++MT szX (EAt (ADim xR 0 lX)):MT szY (EAt (ADim yR 0 lY)):Ma a t 2 (Tmp szX*Tmp szY) 8:Wr (ADim t 0 (Just a)) (Tmp szX):Wr (ADim t 1 (Just a)) (Tmp szY):MT k 0:[loop])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
