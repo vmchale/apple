@@ -363,6 +363,19 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow
     let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem yR 1 (Tmp j) lY 8) y:ss++[wt (AElem t 2 (Tmp k) (Just a) 8) z, MT k (Tmp k+1)])]
     modify (addMT a t)
     pure (Just a, plX++plY++MT szX (EAt (ADim xR 0 lX)):MT szY (EAt (ADim yR 0 lY)):Ma a t 2 (Tmp szX*Tmp szY) 8:Wr (ADim t 0 (Just a)) (Tmp szX):Wr (ADim t 1 (Just a)) (Tmp szY):MT k 0:[loop])
+aeval (EApp _ (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tD) <- eAnn op, isIF tX && isIF tD= do
+    a <- nextArr
+    xR <- newITemp
+    szR <- newITemp; sz'R <- newITemp
+    x <- rtemp tX; y <- rtemp tX; z <- rtemp tD
+    (lX, plX) <- aeval xs xR
+    let (aX,dX)=ax x; (aY,dY)=ax y
+    i <- newITemp
+    ss <- writeRF op (aX.aY$[]) (dX.dY$[]) z
+    let loopBody = mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem xR 1 (Tmp i+1) lX 8) y:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) z]
+        loop=For i 0 ILt (Tmp sz'R) loopBody
+    modify (addMT a t)
+    pure (Just a, plX++MT szR (EAt (ADim xR 0 lX)):MT sz'R (Tmp szR-1):Ma a t 1 (Tmp sz'R) 8:Wr (ADim t 0 (Just a)) (Tmp sz'R):[loop])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
