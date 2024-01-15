@@ -376,7 +376,13 @@ aeval (EApp _ (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tD) <- eAnn
         loop=For i 0 ILt (Tmp sz'R) loopBody
     modify (addMT a t)
     pure (Just a, plX++MT szR (EAt (ADim xR 0 lX)):MT sz'R (Tmp szR-1):Ma a t 1 (Tmp sz'R) 8:Wr (ADim t 0 (Just a)) (Tmp sz'R):[loop])
--- TODO: RevE
+aeval (EApp oTy (Builtin _ RevE) e) t | Just ty <- if1 oTy = do
+    a <- nextArr
+    eR <- newITemp; n <- newITemp; i <- newITemp; o <- rtemp ty
+    (lE, plE) <- aeval e eR
+    let loop=For i 0 ILt (Tmp n) [mt (AElem eR 1 (Tmp n-Tmp i-1) lE 8) o, wt (AElem t 1 (Tmp i) (Just a) 8) o]
+    modify (addMT a t)
+    pure (Just a, plE++MT n (EAt (ADim eR 0 lE)):Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
 aeval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS]
