@@ -100,7 +100,7 @@ data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE
 instance Pretty PE where
     pretty (IRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
     pretty (FRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
-    pretty (IUn p e)        = parens (pretty p <+> pretty e)
+    pretty (IUn p e)        = pretty p <+> pretty e
 
 instance PS CFE where
     ps _ (FAt a)         = pretty a
