@@ -74,7 +74,7 @@ instance PS CE where
     ps _ (Tmp t)        = pretty t
     ps _ (ConstI i)     = pretty i
     ps d (Bin op e0 e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <> pretty op <> ps (d'+1) e1)
-                        | otherwise = parens (pretty op <+> pretty e0 <+> pretty e1)
+                        | otherwise = parens (pretty op <+> ps d e0 <+> ps d e1)
     ps _ (EAt a)        = pretty a
     ps _ (LA n)         = "A_" <> pretty n
     ps _ (DP t _)       = "DATA" <> parens (pretty t)
