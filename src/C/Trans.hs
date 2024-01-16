@@ -405,6 +405,18 @@ eval (ILit _ n) t = pure [MT t (fromInteger n)]
 eval (Var _ x) t = do
     st <- gets vars
     pure [MT t (Tmp $ getT st x)]
+eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
+    x <- rtemp tX
+    eR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (l, plE) <- aeval e eR
+    plAcc <- eval seed acc
+    let (aX,dX)=ax x
+    ss <- writeRF op (aX [acc]) (dX []) (Right acc)
+    let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
+        loop=For i 0 ILt (Tmp szR) loopBody
+    pure $ plE++plAcc++MT szR (EAt (ADim eR 0 l)):[loop]
 eval (EApp _ (EApp _ (Builtin _ Times) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
