@@ -211,7 +211,7 @@ offByDim dims = do
     -- drop 1 for strides
 
 xp strides ixs (t,l) =
-    let offs=foldr1 (IB IPlus) $ zipWith (\d i -> i*d) strides ixs
+    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> i*d) strides ixs
     -- FIXME: data not of size 8
     in AP t (Just (IB IAsl offs 3)) l
 
