@@ -1,8 +1,8 @@
-module Asm.Aarch64.T ( irToAarch64 ) where
+module Asm.Aarch64.T ( irToAarch64, evalAarch64 ) where
 
 import           Asm.Aarch64
 import           Asm.M
-import           Control.Monad.State.Strict (runState)
+import           Control.Monad.State.Strict (evalState, runState)
 import           Data.Bifunctor             (second)
 import           Data.Bits                  (rotateR, (.&.))
 import           Data.Tuple                 (swap)
@@ -34,6 +34,9 @@ fabsReg IR.FRet1     = FArg1
 
 nextR :: WM AbsReg
 nextR = IReg <$> nextI
+
+evalAarch64 :: IR.Exp -> [AArch64 AbsReg FAbsReg ()]
+evalAarch64 e = evalState (eval e IR.CRet) (IR.WSt [0..] [1..])
 
 irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
 irToAarch64 st = swap . second (head.IR.wtemps) . flip runState st . foldMapA ir
