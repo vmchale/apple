@@ -437,6 +437,30 @@ eval (EApp _ (EApp _ (Builtin _ Min) e0) e1) t = do
     t0 <- newITemp; t1 <- newITemp
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MT t (Tmp t1), Cmov (IRel ILt (Tmp t0) (Tmp t1)) t (Tmp t0)]
+eval (EApp _ (EApp _ (Builtin (Arrow I _) Eq) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [Cset (IRel IEq (Tmp e0R) (Tmp e1R)) t]
+eval (EApp _ (EApp _ (Builtin (Arrow I _) Neq) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [Cset (IRel INeq (Tmp e0R) (Tmp e1R)) t]
+eval (EApp _ (EApp _ (Builtin (Arrow I _) Gt) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [Cset (IRel IGt (Tmp e0R) (Tmp e1R)) t]
+eval (EApp _ (EApp _ (Builtin (Arrow I _) Lt) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [Cset (IRel ILt (Tmp e0R) (Tmp e1R)) t]
+eval (EApp _ (EApp _ (Builtin (Arrow I _) Gte) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [Cset (IRel IGeq (Tmp e0R) (Tmp e1R)) t]
+eval (EApp _ (EApp _ (Builtin (Arrow I _) Lte) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [Cset (IRel ILeq (Tmp e0R) (Tmp e1R)) t]
 eval (EApp _ (EApp _ (Builtin (Arrow F _) Eq) e0) e1) t = do
     e0R <- newFTemp; e1R <- newFTemp
     plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
