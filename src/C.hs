@@ -95,12 +95,13 @@ instance Fractional CFE where
 
 instance Pretty CFE where pretty=ps 0
 
-data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE
+data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is Temp
 
 instance Pretty PE where
     pretty (IRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
     pretty (FRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
     pretty (IUn p e)        = pretty p <+> pretty e
+    pretty (Is t)           = "is?" <+> pretty t
 
 instance PS CFE where
     ps _ (FAt a)         = pretty a
@@ -122,8 +123,10 @@ data CS = For Temp CE IRel CE [CS]
         | RA !Int -- return array no-op (takes label)
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
         | Ifn't PE [CS]
+        | If PE [CS] [CS]
         | Sa Temp CE | Pop CE
         | Cmov PE Temp CE | Fcmov PE FTemp CFE
+        | Cset PE Temp
 
 instance Pretty CS where
     pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
@@ -136,12 +139,14 @@ instance Pretty CS where
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty (While t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty (Ifn't p s)          = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s) <#> rbrace
+    pretty (If p s0 s1)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS s1) <#> rbrace
     pretty RA{}                 = mempty
     pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
     pretty (Sa t e)             = pretty t <+> "=" <+> "salloc" <+> parens (pretty e)
     pretty (Pop e)              = "pop" <+> pretty e
     pretty (Cmov p t e)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
     pretty (Fcmov p t e)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
+    pretty (Cset p t)           = pretty t <+> "=" <+> pretty p
 
 instance Show CS where show=show.pretty
 
