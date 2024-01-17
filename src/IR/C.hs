@@ -68,8 +68,13 @@ cToIRM (Ifn't p s) = do
     l <- nextL
     s' <- foldMapM cToIRM s
     pure $ MJ (irp p) l:s'++[L l]
+cToIRM (If p s0 s1) = do
+    l <- nextL; l' <- nextL
+    s0' <- foldMapM cToIRM s0; s1' <- foldMapM cToIRM s1
+    pure $ MJ (irp p) l:s1'++J l':L l:s0'++[L l']
 cToIRM (C.Cmov p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
 cToIRM (C.Fcmov p t e) = pure [IR.Fcmov (irp p) (fx t) (irX e)]
+cToIRM (C.Cset p t) = pure [IR.Cset (ctemp t) (irp p)]
 
 irAt :: ArrAcc -> AE
 irAt (ARnk t l)                                                = AP (ctemp t) Nothing l
@@ -97,6 +102,7 @@ irp :: PE -> Exp
 irp (C.IRel rel e0 e1) = IR.IRel rel (irE e0) (irE e1)
 irp (C.FRel rel x0 x1) = IR.FRel rel (irX x0) (irX x1)
 irp (C.IUn p e)        = IR.IU p (irE e)
+irp (C.Is t)           = IR.Is (ctemp t)
 
 irX :: CFE -> FExp
 irX (C.ConstF x)    = IR.ConstF x
