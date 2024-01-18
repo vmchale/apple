@@ -6,9 +6,9 @@ import           A
 import           C
 import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
+import           Data.Either                (rights)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
-import Data.Either (rights)
 import qualified Data.IntSet                as IS
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
@@ -193,7 +193,7 @@ extrCell fixedIxesDims sstrides (srcP, srcL) dest = do
     t <- newITemp; i <- newITemp
     pure $ (MT i 0:) $ thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) dims ts) $
         let ixes = either id Tmp <$> replaceZs fixedIxesDims ts
-        in [MT t (EAt (At srcP (Tmp <$> sstrides) ixes srcL 8)), Wr (At dest [ConstI 1] [Tmp i] Nothing 8) (Tmp t), MT i (Tmp i+1)]
+        in [MT t (EAt (At srcP (Tmp <$> sstrides) ixes srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), MT i (Tmp i+1)]
     where dims = rights fixedIxesDims
           replaceZs (f@Left{}:ds) ts    = f:replaceZs ds ts
           replaceZs (Right{}:ds) (t:ts) = Right t:replaceZs ds ts

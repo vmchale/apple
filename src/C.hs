@@ -54,12 +54,14 @@ data ArrAcc = AElem Temp CE CE (Maybe Int) Int64 -- pointer, rank, elem., label 
             | ARnk Temp (Maybe Int)
             | ADim Temp CE (Maybe Int) -- pointer, #, label
             | At Temp [CE] [CE] (Maybe Int) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
+            | Raw Temp CE (Maybe Int) Int64 -- pointer to data, offset
 
 instance Pretty ArrAcc where
     pretty (AElem t _ e _ _) = pretty t <> brackets (pretty e)
     pretty (ADim t e _)      = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
     pretty (At t s ix _ _)   = pretty t <> foldMap (brackets.pretty) ix <+> foldMap (parens.pretty) s
+    pretty (Raw t o _ _)     = pretty t <> "~>" <> pretty o
 
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7; fprec FDiv=7; fprec FExp=8
@@ -142,7 +144,7 @@ instance Pretty CS where
     pretty (If p s0 s1)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS s1) <#> rbrace
     pretty RA{}                 = mempty
     pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
-    pretty (Sa t e)             = pretty t <+> "=" <+> "salloc" <+> parens (pretty e)
+    pretty (Sa t e)             = pretty t <+> "=" <+> "salloc" <> parens (pretty e)
     pretty (Pop e)              = "pop" <+> pretty e
     pretty (Cmov p t e)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
     pretty (Fcmov p t e)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
