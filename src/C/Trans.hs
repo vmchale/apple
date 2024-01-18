@@ -8,6 +8,7 @@ import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
+import Data.Either (rights)
 import qualified Data.IntSet                as IS
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
@@ -184,6 +185,20 @@ offByDim dims = do
     pure (reverse sts, MT (head sts) 1:ss)
     -- drop 1 for strides
 
+-- each (Right t) specifies a dimension (bounds); each (Left e) specifies a (currently)
+-- fixed index
+extrCell :: [Either CE Temp] -> [Temp] -> (Temp, Maybe Int) -> Temp -> CM [CS]
+extrCell fixedIxesDims sstrides (srcP, srcL) dest = do
+    ts <- traverse (\_ -> newITemp) dims
+    t <- newITemp; i <- newITemp
+    pure $ (MT i 0:) $ thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) dims ts) $
+        let ixes = either id Tmp <$> replaceZs fixedIxesDims ts
+        in [MT t (EAt (At srcP (Tmp <$>sstrides) ixes srcL 8)), Wr (At dest [ConstI 1] [Tmp i] Nothing 8) (Tmp t), MT i (Tmp i+1)]
+    where dims = rights fixedIxesDims
+          replaceZs (f@Left{}:ds) ts    = f:replaceZs ds ts
+          replaceZs (Right{}:ds) (t:ts) = Right t:replaceZs ds ts
+          replaceZs [] []               = []
+
 aeval :: E (T ()) -> Temp -> CM (Maybe Int, [CS])
 aeval (Var _ x) t = do
     st <- gets avars
@@ -220,11 +235,14 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
         wrOSz = MT oSz 1:[MT oSz (Tmp oSz*Tmp dϵ) | dϵ <- oDims]
         wrSlopSz = MT slopSz 1:[MT slopSz (Tmp slopSz*Tmp dϵ) | dϵ <- complDims]
     (_, ss) <- writeF f [(Nothing, slopP)] [] y
+    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Right dϵ; (_,Cell tϵ) -> Left (Tmp tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
+    place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
+    let loop=thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) complDims complts) $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, MT di (Tmp di+1)]
     modify (addMT a t)
-    pure (Just a, plX++dss++wrOSz++Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++wrSlopSz++Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR rnk):MT slopPd (DP slopP slopRnk):MT di 0:undefined++[Pop (Tmp slopSz)])
+    pure (Just a, plX++dss++wrOSz++Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++wrSlopSz++Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR rnk):MT slopPd (DP slopP slopRnk):MT di 0:loop++[Pop (Tmp slopSz)])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr
     xR <- newITemp; yR <- newITemp
