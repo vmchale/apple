@@ -96,7 +96,7 @@ irE (C.EAt a)      = IR.EAt (irAt a)
 irE (C.ConstI i)   = IR.ConstI i
 irE (Bin op e0 e1) = IB op (irE e0) (irE e1)
 irE (C.LA i)       = IR.LA i
-irE (DP t rnk)     = Reg (ctemp t)+IR.ConstI (8*rnk)
+irE (DP t rnk)     = Reg (ctemp t)+IR.ConstI (8*(1+rnk))
 irE (CFloor e)     = IRFloor (irX e)
 
 irp :: PE -> Exp
