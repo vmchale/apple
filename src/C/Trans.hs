@@ -8,6 +8,7 @@ import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
+import qualified Data.IntSet                as IS
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import           Nm
@@ -70,6 +71,9 @@ isF F = True; isF _ = False
 isI I = True; isI _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
+
+mIF :: T a -> Maybe (T a)
+mIF (Arr _ F)=Just F; mIF (Arr _ I)=Just I; mIF _=Nothing
 
 if1 :: T a -> Maybe (T a)
 if1 (Arr (_ `Cons` Nil) I) = Just I; if1 (Arr (_ `Cons` Nil) F) = Just F; if1 _ = Nothing
@@ -157,6 +161,18 @@ ax (Right x) = ((x:),id)
 eeval :: E (T ()) -> Either FTemp Temp -> CM [CS]
 eeval e = either (feval e) (eval e)
 
+data RI a b = Cell a | Index b deriving Show
+
+cells :: [RI a b] -> [a]
+cells []           = []
+cells (Cell a:as)  = a:cells as
+cells (Index{}:as) = cells as
+
+indices :: [RI a b] -> [b]
+indices []           = []
+indices (Index a:as) = a:indices as
+indices (Cell{}:as)  = indices as
+
 plDim :: Int64 -> (Temp, Maybe Int) -> CM ([Temp], [CS])
 plDim rnk (a,l) =
     unzip <$> traverse (\at -> do {dt <- newITemp; pure (dt, MT dt (EAt at))}) [ ADim a (ConstI$i-1) l | i <- [1..rnk] ]
@@ -187,6 +203,28 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
         loop=For iR 0 ILt (Tmp szR) loopBody
     modify (addMT a t)
     pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
+aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs), Just tOR <- mIF tO, (Arrow _ tF) <- eAnn f, isIF tF && isIF tA = do
+    a <- nextArr
+    xR <- newITemp
+    (lX, plX) <- aeval xs xR
+    slopP <- newITemp; y <- rtemp tOR
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral rnk] ]
+    oSz <- newITemp; slopSz <- newITemp
+    (dts, dss) <- plDim rnk (xR, lX)
+    (sts, sssϵ) <- offByDim dts
+    let _:sstrides = sts; sss=init sssϵ
+    allts <- traverse (\i -> case i of {Cell{} -> Cell <$> newITemp; Index{} -> Index <$> newITemp}) allIx
+    let complts = cells allts
+        allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
+        complDims = indices allDims; oDims = cells allDims
+        wrOSz = MT oSz 1:[MT oSz (Tmp oSz*Tmp dϵ) | dϵ <- oDims]
+        wrSlopSz = MT slopSz 1:[MT slopSz (Tmp slopSz*Tmp dϵ) | dϵ <- complDims]
+    (_, ss) <- writeF f [(Nothing, slopP)] [] y
+    xRd <- newITemp; slopPd <- newITemp
+    di <- newITemp
+    let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
+    modify (addMT a t)
+    pure (Just a, plX++dss++wrOSz++Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++wrSlopSz++Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR rnk):MT slopPd (DP slopP slopRnk):MT di 0:undefined++[Pop (Tmp slopSz)])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr
     xR <- newITemp; yR <- newITemp
