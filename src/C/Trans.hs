@@ -193,6 +193,7 @@ extrCell fixedIxesDims sstrides (srcP, srcL) dest = do
     t <- newITemp; i <- newITemp
     pure $ (MT i 0:) $ thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) dims ts) $
         let ixes = either id Tmp <$> replaceZs fixedIxesDims ts
+        -- FIXME: ixes... paired with wrong stride? (reverse one?)
         in [MT t (EAt (At srcP (Tmp <$> sstrides) ixes srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), MT i (Tmp i+1)]
     where dims = rights fixedIxesDims
           replaceZs (f@Left{}:ds) ts    = f:replaceZs ds ts
@@ -226,10 +227,10 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
-    (sts, sssϵ) <- offByDim dts -- FIXME: strides are off?
+    (sts, sssϵ) <- offByDim (reverse dts) -- FIXME: reverse...
     let _:sstrides = sts; sss=init sssϵ
     allts <- traverse (\i -> case i of {Cell{} -> Cell <$> newITemp; Index{} -> Index <$> newITemp}) allIx
-    let complts = cells allts
+    let complts = cells allts; its=indices allts
         allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         complDims = indices allDims; oDims = cells allDims
         oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
