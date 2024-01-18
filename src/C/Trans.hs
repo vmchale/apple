@@ -232,14 +232,14 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     let complts = cells allts
         allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         complDims = indices allDims; oDims = cells allDims
+        oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
         wrOSz = MT oSz 1:[MT oSz (Tmp oSz*Tmp dϵ) | dϵ <- oDims]
-        wrSlopSz = MT slopSz 1:[MT slopSz (Tmp slopSz*Tmp dϵ) | dϵ <- complDims]
+        wrSlopSz = MT slopSz 1:[MT slopSz (Tmp slopSz*Tmp dϵ) | dϵ <- complDims]++[MT slopSz (Tmp slopSz+ConstI (slopRnk+1))]
     (_, ss) <- writeF f [(Nothing, slopP)] [] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Right dϵ; (_,Cell tϵ) -> Left (Tmp tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
-    let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
     -- FIXME: oDims but complts?
     let loop=thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) oDims complts) $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, MT di (Tmp di+1)]
     modify (addMT a t)
