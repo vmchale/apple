@@ -193,7 +193,7 @@ extrCell fixedIxesDims sstrides (srcP, srcL) dest = do
     t <- newITemp; i <- newITemp
     pure $ (MT i 0:) $ thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) dims ts) $
         let ixes = either id Tmp <$> replaceZs fixedIxesDims ts
-        in [MT t (EAt (At srcP (Tmp <$>sstrides) ixes srcL 8)), Wr (At dest [ConstI 1] [Tmp i] Nothing 8) (Tmp t), MT i (Tmp i+1)]
+        in [MT t (EAt (At srcP (Tmp <$> sstrides) ixes srcL 8)), Wr (At dest [ConstI 1] [Tmp i] Nothing 8) (Tmp t), MT i (Tmp i+1)]
     where dims = rights fixedIxesDims
           replaceZs (f@Left{}:ds) ts    = f:replaceZs ds ts
           replaceZs (Right{}:ds) (t:ts) = Right t:replaceZs ds ts
@@ -226,7 +226,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
-    (sts, sssϵ) <- offByDim dts
+    (sts, sssϵ) <- offByDim dts -- FIXME: strides are off?
     let _:sstrides = sts; sss=init sssϵ
     allts <- traverse (\i -> case i of {Cell{} -> Cell <$> newITemp; Index{} -> Index <$> newITemp}) allIx
     let complts = cells allts
@@ -240,7 +240,8 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
-    let loop=thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) complDims complts) $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, MT di (Tmp di+1)]
+    -- FIXME: oDims but complts?
+    let loop=thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) oDims complts) $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, MT di (Tmp di+1)]
     modify (addMT a t)
     pure (Just a, plX++dss++wrOSz++Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++wrSlopSz++Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR rnk):MT slopPd (DP slopP slopRnk):MT di 0:loop++[Pop (Tmp slopSz)])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
@@ -596,6 +597,14 @@ feval (FLit _ x) t = pure [MX t (ConstF x)]
 feval (Var _ x) t = do
     st <- gets dvars
     pure [MX t (FTmp $ getT st x)]
+feval (EApp _ (EApp _ (Builtin _ op) (Var _ x0)) (Var _ x1)) t | Just fb <- mFop op = do
+    st <- gets dvars
+    pure [MX t (FBin fb (FTmp $ getT st x0) (FTmp $ getT st x1))]
+feval (EApp _ (EApp _ (Builtin _ op) e0) (Var _ x)) t | Just fb <- mFop op = do
+    st <- gets dvars
+    t0 <- newFTemp
+    pl0 <- feval e0 t0
+    pure $ pl0 ++ [MX t (FBin fb (FTmp t0) (FTmp (getT st x)))]
 feval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just fb <- mFop op = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- feval e0 t0; pl1 <- feval e1 t1
@@ -629,6 +638,30 @@ feval (EApp _ (Builtin _ Last) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
     pure $ plX ++ [MX t (FAt (AElem a 1 (EAt (ADim a 0 l)-1) l 8))]
+feval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
+    x <- rtemp tP
+    pR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (lP, plP) <- aeval p pR
+    let (aX,dX)=ax x;
+    ss <- writeRF op (aX []) ((acc:).dX$[]) (Left acc)
+    let step = mt (AElem  pR 1 (Tmp i) lP 8) x:ss
+        loop = For i 1 ILt (Tmp szR) step
+    sseed <- writeRF zop (aX []) (dX []) (Left acc)
+    pure $ plP++MT szR (EAt (ADim pR 0 lP)):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
+feval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <- if1 (eAnn q) = do
+    x <- rtemp tP; y <- rtemp tQ
+    pR <- newITemp; qR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (lP, plP) <- aeval p pR; (lQ, plQ) <- aeval q qR
+    let (aX,dX)=ax x; (aY,dY)=ax y
+    ss <- writeRF op (aX.aY$[]) ((acc:).dX.dY$[]) (Left acc)
+    let step = mt (AElem pR 1 (Tmp i) lP 8) x:mt (AElem qR 1 (Tmp i) lQ 8) y:ss
+        loop = For i 1 ILt (Tmp szR) step
+    seed <- writeRF zop (aX.aY$[]) (dX.dY$[]) (Left acc)
+    pure $ plP++plQ++MT szR (EAt (ADim pR 0 lP)):mt (AElem pR 1 0 lP 8) x:mt (AElem qR 1 0 lQ 8) y:seed++[loop]
 feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isF tX = do
     x <- newFTemp
     aP <- newITemp
