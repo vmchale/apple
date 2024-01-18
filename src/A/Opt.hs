@@ -63,7 +63,6 @@ optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (B
             op' = Lam opTy x0 (Lam (Arrow dom cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f vx1)))
             arrTy = eAnn x'
         optA (EApp l0 (EApp undefined (EApp (Arrow arrTy l0) (Builtin (Arrow opTy (Arrow arrTy l0)) ho0) op') seed) x')
-        {-
 optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ Map) f) x))
     | fTy@(Arrow dom fCod) <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
@@ -77,7 +76,7 @@ optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ Map) f) x)
             opT = Arrow cod (Arrow dom cod)
             op' = Lam opT x0 (Lam (Arrow dom cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f' vx1)))
             f''' = Lam fTy x0' (EApp fCod f'' vx0')
-        pure $ Id l0 $ FoldOfZip f''' op' [x'] -}
+        pure $ Id l0 $ FoldOfZip f''' op' [x']
 optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map) f) xs)) (EApp _ (EApp _ (Builtin _ Map) g) ys))
     | Arrow dom0 _ <- eAnn f
     , Arrow dom1 _ <- eAnn g
@@ -94,7 +93,6 @@ optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map)
             opTy = Arrow dom0 (Arrow dom1 cod)
             op' = Lam opTy x0 (Lam undefined x1 (EApp undefined (EApp undefined opA (EApp undefined f' vx0)) (EApp undefined g' vx1)))
         pure (EApp undefined (EApp undefined (EApp undefined (Builtin undefined Zip) op') xs') ys')
-        {-
 optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
     arr' <- optA arr
     seed' <- optA seed
@@ -130,7 +128,7 @@ optA (EApp t0 (EApp t1 (Builtin bt Fold) op) arr) = do
                     op' = Lam opT x0 (Lam undefined x1 (Lam (Arrow dom1 cod) x2 (EApp cod (EApp undefined opA vx0) (EApp dom2 (EApp undefined f' vx1) vx2))))
                     f''' = Lam fTy x0' (Lam undefined x1' (EApp dom2 (EApp undefined f'' vx0') vx1'))
                 pure $ Id t0 $ FoldOfZip f''' op' [xs',ys']
-        _ -> pure (EApp t0 (EApp t1 (Builtin bt Fold) opA) arr') -}
+        _ -> pure (EApp t0 (EApp t1 (Builtin bt Fold) opA) arr')
 optA (EApp l e0 e1) = EApp l <$> optA e0 <*> optA e1
 optA (ALit l es) = do
     es' <- traverse optA es
