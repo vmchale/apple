@@ -59,7 +59,7 @@ instance Pretty ArrAcc where
     pretty (AElem t _ e _ _) = pretty t <> brackets (pretty e)
     pretty (ADim t e _)      = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
-    pretty (At t _ ix _ _)   = pretty t <> foldMap (brackets.pretty) ix
+    pretty (At t s ix _ _)   = pretty t <> foldMap (brackets.pretty) ix <+> foldMap (parens.pretty) s
 
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7; fprec FDiv=7; fprec FExp=8
