@@ -453,6 +453,15 @@ aeval (EApp oTy (Builtin _ RevE) e) t | Just ty <- if1 oTy = do
     pure (Just a, plE++MT n (EAt (ADim eR 0 lE)):Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
 aeval e _ = error (show e)
 
+plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
+plEV (Var I x) = do
+    st <- gets vars
+    pure (id, getT st x)
+plEV e = do
+    t <- newITemp
+    pl <- eval e t
+    pure ((pl++), t)
+
 eval :: E (T ()) -> Temp -> CM [CS]
 eval (LLet _ (n,e') e) t = do
     eR <- newITemp
@@ -488,13 +497,17 @@ eval (EApp _ (EApp _ (Builtin _ Minus) e0) e1) t = do
     pl0 <- eval e0 t0; pl1 <- eval e1 t1
     pure $ pl0 ++ pl1 ++ [MT t (Tmp t0 - Tmp t1)]
 eval (EApp _ (EApp _ (Builtin _ Max) e0) e1) t = do
-    t0 <- newITemp; t1 <- newITemp
-    pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MT t (Tmp t1), Cmov (IRel IGt (Tmp t0) (Tmp t1)) t (Tmp t0)]
+    (pl0,t0) <- plEV e0
+    -- in case t==t1
+    t1 <- newITemp
+    pl1 <- eval e1 t1
+    pure $ pl0 $ pl1 ++ [MT t (Tmp t0), Cmov (IRel IGt (Tmp t1) (Tmp t0)) t (Tmp t1)]
 eval (EApp _ (EApp _ (Builtin _ Min) e0) e1) t = do
-    t0 <- newITemp; t1 <- newITemp
-    pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MT t (Tmp t1), Cmov (IRel ILt (Tmp t0) (Tmp t1)) t (Tmp t0)]
+    (pl0,t0) <- plEV e0
+    -- in case t==t1
+    t1 <- newITemp
+    pl1 <- eval e1 t1
+    pure $ pl0 $ pl1 ++ [MT t (Tmp t0), Cmov (IRel ILt (Tmp t1) (Tmp t0)) t (Tmp t1)]
 eval (EApp _ (EApp _ (Builtin (Arrow I _) Eq) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
