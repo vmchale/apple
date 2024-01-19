@@ -413,11 +413,11 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     xR <- newITemp; xd <- newITemp; td <- newITemp
     (l, plX) <- aeval x xR
     (dts, plDs) <- plDim rnk (xR, l)
-    (sts, plSs) <- offByDim dts
-    (std, plSd) <- offByDim (reverse dts)
+    (sts, plSs) <- offByDim (reverse dts)
+    (std, plSd) <- offByDim dts
     let n:sstrides = sts; (_:dstrides) = std
     is <- traverse (\_ -> newITemp) [1..rnk]
-    let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (Tmp<$>sstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>dstrides) (Tmp<$>is) l sze) 1 sze]
+    let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>is) l sze) 1 sze]
     modify (addMT a t)
     pure (Just a, plX++plDs++plSs++Ma a t (ConstI rnk) (Tmp n) sze:zipWith (\tϵ o -> Wr (ADim t (ConstI o) (Just a)) (Tmp tϵ)) (reverse dts) [0..]++init plSd++MT xd (Tmp xR+dO):MT td (Tmp t+dO):loop)
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, isIF tX && isIF tY && isIF tC = do
