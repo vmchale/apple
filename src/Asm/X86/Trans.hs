@@ -365,7 +365,8 @@ evalE (IR.ConstI 0) rD                               = pure [XorRR () (absReg rD
 evalE (IR.ConstI i) rD                               = pure [MovRI () (absReg rD) i]
 evalE (IR.IB Op.IPlus (IR.Reg r0) (IR.ConstI i)) rD  = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IAddRI () rD' i]
 evalE (IR.IB Op.IPlus (IR.IB Op.ITimes (IR.Reg r0) (IR.Reg r1)) (IR.Reg r2)) rD = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IMulRR () rD' (absReg r1), IAddRR () rD' (absReg r2)]
-evalE (IR.IB Op.ITimes (IR.Reg r0) (IR.Reg r1)) rD   = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IMulRR () rD' (absReg r1)]
+evalE (IR.IB Op.ITimes (IR.Reg r0) (IR.Reg r1)) rD | r1 /= rD = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), IMulRR () rD' (absReg r1)]
+                                                   | otherwise = pure [IMulRR () (absReg rD) (absReg r0)]
 evalE (IR.IB Op.IAsl e (IR.ConstI i)) rD | Just i8 <- mi8 i = do
     let rD' = absReg rD
     eR <- nextI; plE <- evalE e (IR.ITemp eR)
