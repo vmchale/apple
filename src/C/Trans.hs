@@ -227,10 +227,10 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
-    (sts, sssϵ) <- offByDim (reverse dts) -- FIXME: reverse...
+    (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
     allts <- traverse (\i -> case i of {Cell{} -> Cell <$> newITemp; Index{} -> Index <$> newITemp}) allIx
-    let complts = cells allts; its=indices allts
+    let complts = cells allts
         allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         complDims = indices allDims; oDims = cells allDims
         oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
@@ -241,7 +241,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     xRd <- newITemp; slopPd <- newITemp
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
-    -- FIXME: oDims but complts?
+    -- FIXME: oDims but complts? maybe I just named it wrong lol
     let loop=thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) oDims complts) $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, MT di (Tmp di+1)]
     modify (addMT a t)
     pure (Just a, plX++dss++wrOSz++Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++wrSlopSz++Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR rnk):MT slopPd (DP slopP slopRnk):MT di 0:loop++[Pop (Tmp slopSz)])
