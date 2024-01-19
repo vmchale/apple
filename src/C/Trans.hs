@@ -484,18 +484,9 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arro
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
         loop=For i 0 ILt (Tmp szR) loopBody
     pure $ plE++plAcc++MT szR (EAt (ADim eR 0 l)):[loop]
-eval (EApp _ (EApp _ (Builtin _ Times) e0) e1) t = do
-    t0 <- newITemp; t1 <- newITemp
-    pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MT t (Tmp t0 * Tmp t1)]
-eval (EApp _ (EApp _ (Builtin _ Plus) e0) e1) t = do
-    t0 <- newITemp; t1 <- newITemp
-    pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MT t (Tmp t0 + Tmp t1)]
-eval (EApp _ (EApp _ (Builtin _ Minus) e0) e1) t = do
-    t0 <- newITemp; t1 <- newITemp
-    pl0 <- eval e0 t0; pl1 <- eval e1 t1
-    pure $ pl0 ++ pl1 ++ [MT t (Tmp t0 - Tmp t1)]
+eval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
+    (pl0,t0) <- plEV e0; (pl1,t1) <- plEV e1
+    pure $ pl0 $ pl1 [MT t (Bin cop (Tmp t0) (Tmp t1))]
 eval (EApp _ (EApp _ (Builtin _ Max) e0) e1) t = do
     (pl0,t0) <- plEV e0
     -- in case t==t1
@@ -580,6 +571,9 @@ mFrel Gte=Just FGeq; mFrel Lte=Just FLeq; mFrel Eq=Just FEq; mFrel Neq=Just FNeq
 
 mFop :: Builtin -> Maybe FBin
 mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus= Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp; mFop Max=Just FMax; mFop Min=Just FMin; mFop _=Nothing
+
+mOp :: Builtin -> Maybe IBin
+mOp Plus=Just IPlus; mOp Times=Just ITimes; mOp Minus=Just IMinus; mOp _=Nothing
 
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
