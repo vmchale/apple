@@ -6,6 +6,7 @@ import           A
 import           C
 import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
+import           Data.Bifunctor             (second)
 import           Data.Either                (rights)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
@@ -201,6 +202,11 @@ extrCell fixedIxesDims sstrides (srcP, srcL) dest = do
           replaceZs [] []               = []
 
 aeval :: E (T ()) -> Temp -> CM (Maybe Int, [CS])
+aeval (LLet _ (n,e') e) t | isArr (eAnn e') = do
+    t' <- newITemp
+    (l, ss) <- aeval e' t'
+    modify (addAVar n (l, t'))
+    second (ss ++) <$> aeval e t
 aeval (Var _ x) t = do
     st <- gets avars
     let (i, r) = getT st x
