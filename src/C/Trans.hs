@@ -555,6 +555,10 @@ eval (EApp _ (Builtin _ Last) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
     pure $ plX ++ [MT t (EAt (AElem a 1 (EAt (ADim a 0 l)-1) l 8))]
+eval (EApp _ (Builtin _ Size) xs) t | Just (_, 1) <- tRnk (eAnn xs) = do
+    xsR <- newITemp
+    (l, plE) <- aeval xs xsR
+    pure $ plE ++ [MT t (EAt (ADim xsR 0 l))]
 eval (EApp _ (Builtin _ Size) xs) t = do
     xsR <- newITemp
     (l, plE) <- aeval xs xsR
