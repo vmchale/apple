@@ -68,7 +68,7 @@ fprec FPlus=6;fprec FMinus=6;fprec FTimes=7; fprec FDiv=7; fprec FExp=8
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64 | CFloor CFE
         | LA !Int -- assembler data
-        | DP Temp Int64 -- pointer, rank
+        | DP Temp CE -- pointer, rank
 
 instance Pretty CE where pretty=ps 0
 
@@ -129,6 +129,7 @@ data CS = For Temp CE IRel CE [CS]
         | Sa Temp CE | Pop CE
         | Cmov PE Temp CE | Fcmov PE FTemp CFE
         | Cset PE Temp
+        | SZ Temp Temp CE (Maybe Int)
 
 instance Pretty CS where
     pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
@@ -149,6 +150,7 @@ instance Pretty CS where
     pretty (Cmov p t e)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
     pretty (Fcmov p t e)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
     pretty (Cset p t)           = pretty t <+> "=" <+> pretty p
+    pretty (SZ td t _ _)        = pretty td <+> "=" <+> "SIZE" <> parens (pretty t)
 
 instance Show CS where show=show.pretty
 
