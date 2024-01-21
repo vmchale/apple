@@ -10,6 +10,9 @@ import           Op
 
 type IRM = State WSt
 
+nextI :: IRM C.Temp
+nextI = C.ITemp <$> state (\(WSt ls (t:ts)) -> (t, WSt ls ts))
+
 nextL :: IRM IR.Label
 nextL = state (\(WSt (l:ls) ts) -> (l, WSt ls ts))
 
@@ -75,6 +78,10 @@ cToIRM (If p s0 s1) = do
 cToIRM (C.Cmov p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
 cToIRM (C.Fcmov p t e) = pure [IR.Fcmov (irp p) (fx t) (irX e)]
 cToIRM (C.Cset p t) = pure [IR.Cset (ctemp t) (irp p)]
+cToIRM (SZ td t rnk l) = do
+    i <- nextI
+    foldMapM cToIRM
+        [C.MT td (C.EAt (ADim t 0 l)), For i 1 ILt rnk [C.MT td (Tmp td*C.EAt (ADim t (Tmp i) l))]]
 
 irAt :: ArrAcc -> AE
 irAt (ARnk t l)                                                = AP (ctemp t) Nothing l
@@ -97,6 +104,7 @@ irE (C.ConstI i)          = IR.ConstI i
 irE (Bin op e0 e1)        = IB op (irE e0) (irE e1)
 irE (C.LA i)              = IR.LA i
 irE (DP t (C.ConstI rnk)) = Reg (ctemp t)+IR.ConstI (8*(1+rnk))
+irE (DP t e)              = Reg (ctemp t)+irE e
 irE (CFloor e)            = IRFloor (irX e)
 
 irp :: PE -> Exp
