@@ -104,7 +104,7 @@ irE (C.ConstI i)          = IR.ConstI i
 irE (Bin op e0 e1)        = IB op (irE e0) (irE e1)
 irE (C.LA i)              = IR.LA i
 irE (DP t (C.ConstI rnk)) = Reg (ctemp t)+IR.ConstI (8*(1+rnk))
-irE (DP t e)              = Reg (ctemp t)+irE e
+irE (DP t e)              = Reg (ctemp t)+IB IAsl (irE e) 3+8
 irE (CFloor e)            = IRFloor (irX e)
 
 irp :: PE -> Exp

@@ -235,7 +235,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eA
     let step=mt (Raw xRd (Tmp i) lX 8) x:ss++[wt (Raw tD (Tmp i) (Just a) 8) y]
         loop=For i 0 ILt (Tmp szR) step
     modify (addMT a t)
-    pure (Just a, plX++MT rnkR (EAt (ARnk xR lX)):SZ szR t (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) 8:Wr (ARnk t (Just a)) (EAt (ARnk xR lX)):CpyE (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR) 8:MT xRd (DP xR (Tmp rnkR)):MT tD (DP t (Tmp rnkR)):[loop])
+    pure (Just a, plX++MT rnkR (EAt (ARnk xR lX)):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) 8:CpyE (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR) 8:MT xRd (DP xR (Tmp rnkR)):MT tD (DP t (Tmp rnkR)):[loop])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs), Just tOR <- mIF tO, (Arrow _ tF) <- eAnn f, isIF tF && isIF tA = do
     a <- nextArr
     xR <- newITemp
