@@ -91,13 +91,13 @@ irAt (At dt s ix l 8) =
     in AP (ctemp dt) (Just$IR.IB IAsl offs 3) l
 
 irE :: CE -> Exp
-irE (Tmp t)        = Reg (ctemp t)
-irE (C.EAt a)      = IR.EAt (irAt a)
-irE (C.ConstI i)   = IR.ConstI i
-irE (Bin op e0 e1) = IB op (irE e0) (irE e1)
-irE (C.LA i)       = IR.LA i
-irE (DP t rnk)     = Reg (ctemp t)+IR.ConstI (8*(1+rnk))
-irE (CFloor e)     = IRFloor (irX e)
+irE (Tmp t)               = Reg (ctemp t)
+irE (C.EAt a)             = IR.EAt (irAt a)
+irE (C.ConstI i)          = IR.ConstI i
+irE (Bin op e0 e1)        = IB op (irE e0) (irE e1)
+irE (C.LA i)              = IR.LA i
+irE (DP t (C.ConstI rnk)) = Reg (ctemp t)+IR.ConstI (8*(1+rnk))
+irE (CFloor e)            = IRFloor (irX e)
 
 irp :: PE -> Exp
 irp (C.IRel rel e0 e1) = IR.IRel rel (irE e0) (irE e1)
