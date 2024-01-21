@@ -236,6 +236,19 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eA
         loop=For i 0 ILt (Tmp szR) step
     modify (addMT a t)
     pure (Just a, plX++MT rnkR (EAt (ARnk xR lX)):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) 8:CpyE (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR) 8:MT xRd (DP xR (Tmp rnkR)):MT tD (DP t (Tmp rnkR)):[loop])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (0, _)])) op) xs) ys) t | Arrow tX (Arrow tY tC) <- eAnn op, isIF tX && isIF tY && isIF tC = do
+    a <- nextArr
+    xR <- newITemp; yR <- newITemp; rnkR <- newITemp; szR <- newITemp
+    x <- rtemp tX; y <- rtemp tY; z <- rtemp tC; xRd <- newITemp; yRd <- newITemp; tD <- newITemp
+    (lX, plX) <- aeval xs xR
+    (lY, plY) <- aeval ys yR
+    i <- newITemp
+    let (aX,dX)=ax x; (aY,dY)=ax y
+    ss <- writeRF op (aX.aY$[]) (dX.dY$[]) z
+    let step=mt (Raw xRd (Tmp i) lX 8) x:mt (Raw yRd (Tmp i) lY 8) y:ss++[wt (Raw tD (Tmp i) (Just a) 8) z]
+        loop=For i 0 ILt (Tmp szR) step
+    modify (addMT a t)
+    pure (Just a, plX ++ plY ++ MT rnkR (EAt (ARnk xR lX)):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) 8:CpyE (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR) 8:MT xRd (DP xR (Tmp rnkR)):MT yRd (DP yR (Tmp rnkR)):MT tD (DP t (Tmp rnkR)):[loop])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs), Just tOR <- mIF tO, (Arrow _ tF) <- eAnn f, isIF tF && isIF tA = do
     a <- nextArr
     xR <- newITemp
