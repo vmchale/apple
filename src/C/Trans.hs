@@ -82,9 +82,9 @@ if1 (Arr (_ `Cons` Nil) I) = Just I; if1 (Arr (_ `Cons` Nil) F) = Just F; if1 _ 
 if1p :: T a -> Bool
 if1p t | Just{} <- if1 t = True | otherwise = False
 
-mA1A1 :: T a -> Maybe (T a, T a)
-mA1A1 (Arrow (Arr (_ `Cons` Nil) t0) (Arr (_ `Cons` Nil) t1)) = Just (t0, t1)
-mA1A1 _                                                       = Nothing
+mAA :: T a -> Maybe ((T a, Int64), (T a, Int64))
+mAA (Arrow t0 t1) = (,) <$>tRnk t0 <*> tRnk t1
+mAA _             = Nothing
 
 f1 :: T a -> Bool
 f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
@@ -227,14 +227,13 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     let loopBody=mt (AElem arrT 1 (Tmp iR) l 8) rD:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
         loop=For iR 0 ILt (Tmp szR) loopBody
     pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
-aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (ta0, ta1) <- mA1A1 (eAnn f), isIF ta0 && isIF ta1 = do
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), isIF ta0 && isIF ta1 = do
     a <- nextArr t
     slopP <- newITemp; y <- newITemp; y0 <- newITemp
     xR <- newITemp; szR <- newITemp; szSlopR <- newITemp; szYR <- newITemp; i <- newITemp
     (lX, plX) <- aeval xs xR
-    (lY0, ss0) <- writeF f [(Nothing, slopP)] [] (Right y0)
-    (lY, ss) <- writeF f [(Nothing, slopP)] [] (Right y) -- writeF ... f/ss can only be placed once b/c assembler needs unique labels
-    pure (Just a, plX++MT szR (EAt (ADim t 0 (Just a))):undefined)
+    (lY, ss) <- writeF f [(Nothing, slopP)] [] (Right y)
+    pure (Just a, plX++MT szR (EAt (ADim xR 0 lX)):undefined)
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eAnn f, isIF tX && isIF tY = do
     a <- nextArr t
     xR <- newITemp; rnkR <- newITemp; szR <- newITemp
