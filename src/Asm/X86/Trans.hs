@@ -434,5 +434,9 @@ evalE (IR.EAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl e (IR.ConstI 3)) (IR
     pure $ plE ++ [MovRA () (absReg rD) (RSD (absReg m) Eight (IReg i) i8)]
 evalE (IR.EAt (IR.AP m Nothing _)) rD =
     let rD'=absReg rD in pure [MovRA () rD' (R$absReg m)]
+evalE (IR.EAt (IR.AP m (Just e) _)) rD = do
+    let rD'=absReg rD;m'=absReg m
+    r <- nextR; eR <- nextI; plE <- evalE e (IR.ITemp eR)
+    pure $ plE ++ [MovRR () r m', IAddRR () r (IReg eR), MovRA () rD' (R r)]
 evalE (IR.LA i) rD                                   = pure [MovRL () (absReg rD) i]
 evalE e _                                            = error (show e)
