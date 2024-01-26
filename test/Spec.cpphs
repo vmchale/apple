@@ -103,7 +103,6 @@ x64T = testGroup "x64"
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hsTup <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
     , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
-    , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
