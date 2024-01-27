@@ -826,7 +826,7 @@ tyE s eC@(EApp lC (EApp _ (Builtin _ Cyc) e) (ILit _ m)) = do
     s1 <- liftEither $ mguPrep (lC,eC) s0 (eAnn e0$>lE) (t$>lE)
     pure (EApp arrTy (EApp (Arrow I arrTy) (Builtin (Arrow t (Arrow I arrTy)) Cyc) e0) (ILit I m), s1)
 tyE s (EApp _ (EApp _ (EApp _ (Builtin _ IRange) (ILit _ b)) (ILit _ e)) (ILit _ si)) = do
-    let arrTy = Arr (vx (Ix () (fromInteger ((e-b+si) `div` si)))) I
+    let arrTy = Arr (vx (Ix () (fromInteger ((e-b+si) `quot` si)))) I
     pure (EApp arrTy (EApp (Arrow I arrTy) (EApp (Arrow I (Arrow I arrTy)) (Builtin (Arrow I (Arrow I (Arrow I arrTy))) IRange) (ILit I b)) (ILit I e)) (ILit I si), s)
 tyE s (FLit _ x) = pure (FLit F x, s)
 tyE s (BLit _ x) = pure (BLit B x, s)
