@@ -227,13 +227,15 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     let loopBody=mt (AElem arrT 1 (Tmp iR) l 8) rD:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
         loop=For iR 0 ILt (Tmp szR) loopBody
     pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
-aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), isIF ta0 && isIF ta1 = do
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs), Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), isIF ta0 && isIF ta1 = do
     a <- nextArr t
     slopP <- newITemp; y <- newITemp; y0 <- newITemp
-    xR <- newITemp; szR <- newITemp; szSlopR <- newITemp; szYR <- newITemp; i <- newITemp
+    xR <- newITemp; szR <- newITemp; slopSz <- newITemp; szY <- newITemp; i <- newITemp
     (lX, plX) <- aeval xs xR
     (lY, ss) <- writeF f [(Nothing, slopP)] [] (Right y)
-    pure (Just a, plX++MT szR (EAt (ADim xR 0 lX)):undefined)
+    let slopDims=[EAt (ADim xR (ConstI k) lX) | k <- [xRnk-1, xRnk-2 .. rnk0]]
+        slopE=Bin IAsl (Tmp slopSz) 3+fromIntegral (8+8*rnk0)
+    pure (Just a, plX++MT slopSz 1:[MT slopSz (Tmp slopSz*n) | n <- slopDims ] ++ Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]++ss++undefined)
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eAnn f, isIF tX && isIF tY = do
     a <- nextArr t
     xR <- newITemp; rnkR <- newITemp; szR <- newITemp
