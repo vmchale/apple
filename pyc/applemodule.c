@@ -117,12 +117,12 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
 
 typedef struct PyCacheObject {
     PyObject_HEAD
-    U code;S code_sz;FnTy* ty; U sa;
+    U code;S code_sz;FnTy* ty; U sa;ffi_cif* ffi;
 } PyCacheObject;
 
 static void cache_dealloc(PyCacheObject* self) {
     munmap(self->code,self->code_sz);
-    free(self->sa);free(self->ty);
+    free(self->sa);free(self->ty);free(self->ffi);
 }
 
 static PyTypeObject CacheType = {
@@ -148,7 +148,8 @@ static PyObject* apple_cache(PyObject *self, PyObject *args) {
     U fp;S f_sz;U s;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
     PyCacheObject* cc=PyObject_New(PyCacheObject, &CacheType);
-    cc->code=fp;cc->code_sz=f_sz;cc->ty=ty;cc->sa=s;
+    ffi_cif* ffi=apple_ffi(ty);
+    cc->code=fp;cc->code_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;
     Py_INCREF(cc);
     R (PyObject*)cc;
 }
@@ -158,7 +159,7 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
     PyArg_ParseTuple(args, "O|OOOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     FnTy* ty=c->ty;U fp=c->code;
     PO r;
-    ffi_cif* cif=apple_ffi(ty);
+    ffi_cif* cif=c->ffi;
     int argc=ty->argc;
     U* vals=alloca(sizeof(U)*argc);
     U ret=alloca(8);
@@ -175,7 +176,6 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
         }
     }
     ffi_call(cif,fp,ret,vals);
-    free(cif);
     Sw(ty->res){
         C IA: r=npy_i(*(U*)ret);BR
         C FA: r=npy_f(*(U*)ret);BR
