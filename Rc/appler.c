@@ -22,7 +22,7 @@ typedef size_t S;
 // http://adv-r.had.co.nz/C-interface.html
 
 typedef struct AppleCache {
-    U code;S code_sz;FnTy* ty;U sa;
+    U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;
 } AppleCache;
 
 SEXP rf(U x) {
@@ -76,7 +76,8 @@ SEXP cache_R(SEXP a){
     U fp;S f_sz;U s;
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
     AppleCache* rc=malloc(sizeof(AppleCache));
-    rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;rc->sa=s;
+    ffi_cif* ffi=apple_ffi(ty);
+    rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;rc->sa=s;rc->ffi=ffi;
     // http://homepage.divms.uiowa.edu/~luke/R/simpleref.html
     // https://github.com/hadley/r-internals/blob/master/external-pointers.md
     SEXP r=R_MakeExternalPtr((U)rc,R_NilValue,R_NilValue);
@@ -98,9 +99,8 @@ SEXP run_R(SEXP args){
     args=CDR(args);
     SEXP rc=CAR(args);
     AppleCache* c=(AppleCache*)(R_ExternalPtrAddr(rc));
-    FnTy* ty=c->ty;U fp=c->code;
+    FnTy* ty=c->ty;U fp=c->code;ffi_cif* cif=c->ffi;
     SEXP r;
-    ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
     U* vals=alloca(sizeof(U)*argc);
     U ret=alloca(8);
@@ -113,7 +113,6 @@ SEXP run_R(SEXP args){
         }
     }
     ffi_call(cif,fp,ret,vals);
-    free(cif);
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR
         C F_t: r=ScalarReal(*(F*)ret);BR
