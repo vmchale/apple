@@ -631,6 +631,10 @@ feval (EApp _ (EApp _ (Builtin _ op) e0) (Var _ x)) t | Just fb <- mFop op = do
     t0 <- newFTemp
     pl0 <- feval e0 t0
     pure $ pl0 ++ [MX t (FBin fb (FTmp t0) (FTmp (getT st x)))]
+feval (EApp _ (EApp _ (Builtin _ Plus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
+    t0 <- newFTemp; t1 <- newFTemp; t2 <- newFTemp
+    pl0 <- feval e0 t0; pl1 <- feval e1 t1; pl2 <- feval e2 t2
+    pure $ pl0 ++ pl1 ++ pl2 ++ [MX t (FTmp t0+FTmp t1*FTmp t2)]
 feval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just fb <- mFop op = do
     t0 <- newFTemp; t1 <- newFTemp
     pl0 <- feval e0 t0; pl1 <- feval e1 t1
