@@ -476,6 +476,12 @@ plEV e = do
     pl <- eval e t
     pure ((pl++), t)
 
+plV :: E (T ()) ->CM ([CS] -> [CS], FTemp)
+plV (Var F x) = do
+    st <- gets dvars
+    pure (id, getT st x)
+plV e = do {t <- newFTemp; pl <- feval e t; pure ((pl++), t)}
+
 eval :: E (T ()) -> Temp -> CM [CS]
 eval (LLet _ (n,e') e) t = do
     eR <- newITemp
@@ -623,22 +629,12 @@ feval (FLit _ x) t = pure [MX t (ConstF x)]
 feval (Var _ x) t = do
     st <- gets dvars
     pure [MX t (FTmp $ getT st x)]
-feval (EApp _ (EApp _ (Builtin _ op) (Var _ x0)) (Var _ x1)) t | Just fb <- mFop op = do
-    st <- gets dvars
-    pure [MX t (FBin fb (FTmp $ getT st x0) (FTmp $ getT st x1))]
-feval (EApp _ (EApp _ (Builtin _ op) e0) (Var _ x)) t | Just fb <- mFop op = do
-    st <- gets dvars
-    t0 <- newFTemp
-    pl0 <- feval e0 t0
-    pure $ pl0 ++ [MX t (FBin fb (FTmp t0) (FTmp (getT st x)))]
 feval (EApp _ (EApp _ (Builtin _ Plus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
-    t0 <- newFTemp; t1 <- newFTemp; t2 <- newFTemp
-    pl0 <- feval e0 t0; pl1 <- feval e1 t1; pl2 <- feval e2 t2
-    pure $ pl0 ++ pl1 ++ pl2 ++ [MX t (FTmp t0+FTmp t1*FTmp t2)]
+    (pl0,t0) <- plV e0; (pl1,t1) <- plV e1; (pl2,t2) <- plV e2
+    pure $ pl0 $ pl1 $pl2 [MX t (FTmp t0+FTmp t1*FTmp t2)]
 feval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just fb <- mFop op = do
-    t0 <- newFTemp; t1 <- newFTemp
-    pl0 <- feval e0 t0; pl1 <- feval e1 t1
-    pure $ pl0 ++ pl1 ++ [MX t (FBin fb (FTmp t0) (FTmp t1))]
+    (pl0,t0) <- plV e0; (pl1,t1) <- plV e1
+    pure $ pl0 $ pl1 [MX t (FBin fb (FTmp t0) (FTmp t1))]
 feval (EApp _ (EApp _ (Builtin _ IntExp) (FLit _ (-1))) n) t = do
     nR <- newITemp
     plR <- eval n nR
