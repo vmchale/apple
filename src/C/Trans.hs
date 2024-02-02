@@ -43,9 +43,6 @@ newITemp = ITemp <$> nextI
 newFTemp :: CM FTemp
 newFTemp = FTemp <$> nextI
 
--- addMT :: Int -> Temp -> CSt -> CSt
--- addMT i tϵ (CSt l t ar as v d a f aas ts) = CSt l t ar as v d a f aas (IM.insert i tϵ ts)
-
 addAA :: Int -> [Word64] -> CSt -> CSt
 addAA i aa (CSt t ar as v d a f aas ts) = CSt t ar as v d a f (IM.insert i aa aas) ts
 
