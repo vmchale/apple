@@ -228,7 +228,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
     a <- nextArr t
     slopP <- newITemp; y <- newITemp
     xR <- newITemp; szR <- newITemp; slopSz <- newITemp; szY <- newITemp
-    i <- newITemp; j <- newITemp; k <- newITemp; xd <- newITemp
+    i <- newITemp; j <- newITemp; k <- newITemp; kL <- newITemp; xd <- newITemp
     (lX, plX) <- aeval xs xR
     (lY, ss) <- writeF f [(Nothing, slopP)] [] (Right y)
     let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk0..(xRnk-1)]]
@@ -238,7 +238,8 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
         dimsFromIn=ConstI$xRnk-rnk0
         oRnk=xRnk-rnk0+rnk1
         step=CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[CpyE (Raw t (Tmp j) (Just a) 8) (Raw y 0 lY 8) (Tmp szY) 8, MT i (Tmp i+Tmp slopSz), MT j (Tmp j+Tmp szY)]
-    pure (Just a, plX++MT slopSz 1:[MT slopSz (Tmp slopSz*n) | n <- slopDims ] ++ Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]++ss++MT szR 1:[MT szR (Tmp szR*n) | n <- xDims++yDims]++Ma a t (ConstI oRnk) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn:CpyD (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1):MT xd (DP xR (ConstI oRnk)):MT szY 1:[MT szY (Tmp szY*n) | n <- yDims]++undefined)
+        loop=For k 0 ILt (Tmp kL) step
+    pure (Just a, plX++MT slopSz 1:[MT slopSz (Tmp slopSz*n) | n <- slopDims ] ++ Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]++ss++MT szR 1:[MT szR (Tmp szR*n) | n <- xDims++yDims]++Ma a t (ConstI oRnk) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn:CpyD (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1):MT xd (DP xR (ConstI oRnk)):MT szY 1:[MT szY (Tmp szY*n) | n <- yDims]++MT kL 1:[MT kL (Tmp kL*n) | n <- xDims ]++[loop])
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eAnn f, isIF tX && isIF tY = do
     a <- nextArr t
     xR <- newITemp; rnkR <- newITemp; szR <- newITemp
