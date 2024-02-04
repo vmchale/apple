@@ -274,6 +274,7 @@ isBinOp ConsE  = True
 isBinOp Snoc   = True
 isBinOp Scan   = True
 isBinOp Fold   = True
+isBinOp Map    = True
 isBinOp Cyc    = True
 isBinOp A1     = True
 isBinOp Mod    = True
