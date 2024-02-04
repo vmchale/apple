@@ -48,8 +48,14 @@ ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [Ad
 ir (IR.Free t) = do {r <- nextR; pure $ puL ++ [MovRR () CArg0 (absReg t), AddRC () FP ASP 16, MovRCf () r Free, Blr () r] ++ poL}
 ir (IR.Sa t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u, MovRR () (absReg t) ASP]
 ir (IR.Sa t (IR.Reg r)) = pure [SubRR () ASP ASP (absReg r), MovRR () (absReg t) ASP]
+ir (IR.Sa t e) = do
+    r <- nextI; plE <- eval e (IR.ITemp r)
+    pure $ plE ++ [SubRR () ASP ASP (IReg r), MovRR () (absReg t) ASP]
 ir (IR.Pop (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [AddRC () ASP ASP u]
 ir (IR.Pop (IR.Reg r)) = pure [AddRR () ASP ASP (absReg r)]
+ir (IR.Pop e) = do
+    r <- nextI; plE <- eval e (IR.ITemp r)
+    pure $ plE ++ [AddRR () ASP ASP (IReg r)]
 ir (IR.Wr (IR.AP t Nothing _) e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Str () (IReg r) (R $ absReg t)]
