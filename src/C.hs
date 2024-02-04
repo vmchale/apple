@@ -124,6 +124,7 @@ data CS = For Temp CE IRel CE [CS]
         | Ma Int Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
         | RA !Int -- return array no-op (takes label)
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
+        | CpyD ArrAcc ArrAcc CE -- copy dims
         | Ifn't PE [CS]
         | If PE [CS] [CS]
         | Sa Temp CE | Pop CE
@@ -145,6 +146,7 @@ instance Pretty CS where
     pretty (If p s0 s1)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS s1) <#> rbrace
     pretty RA{}                 = mempty
     pretty (CpyE a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n)
+    pretty (CpyD a a' e)        = "cpydims" <+> pretty a <+> pretty a' <+> pretty e
     pretty (Sa t e)             = pretty t <+> "=" <+> "salloc" <> parens (pretty e)
     pretty (Pop e)              = "pop" <+> pretty e
     pretty (Cmov p t e)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
