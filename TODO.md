@@ -52,6 +52,14 @@ T16 = T13.dim[0]
 - [ ] Use `Word64` for sets of registers
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ]
+```
+(λx. 1 ⊲ x ') : Arr (i `Cons` i `Cons` Nil) a → Arr (i `Cons` i + 1 `Cons` Nil) a
+ > ([1.0<|x]')
+(λx. 1.0 ⊲ x ') : Arr (i `Cons` i `Cons` Nil) float → Arr (i `Cons` i + 1 `Cons` Nil) float
+ > ((1.0<|)')
+1:1: could not unify 'float' with 'Arr (i `Cons` Nil) a' in expression '1.0'
+```
 - [ ] embarassing!
 ```
 [|:(x::Arr(i`Cons`j`Cons`Nil)float)] ⟨⟨1::int,2⟩,⟨3,4⟩,⟨5,6⟩⟩
