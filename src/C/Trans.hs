@@ -230,9 +230,13 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
     xR <- newITemp; szR <- newITemp; slopSz <- newITemp; szY <- newITemp; i <- newITemp
     (lX, plX) <- aeval xs xR
     (lY, ss) <- writeF f [(Nothing, slopP)] [] (Right y)
-    let slopDims=[EAt (ADim xR (ConstI k) lX) | k <- [xRnk-1, xRnk-2 .. rnk0]]
+    let slopDims=[EAt (ADim xR (ConstI k) lX) | k <- [rnk0..(xRnk-1)]]
+        xDims=[EAt (ADim xR (ConstI k) lX) | k <- [0..(rnk0-1)]]
+        yDims=[EAt (ADim y (ConstI k) lY) | k <- [0..(rnk1-1)]]
         slopE=Bin IAsl (Tmp slopSz) 3+fromIntegral (8+8*rnk0)
-    pure (Just a, plX++MT slopSz 1:[MT slopSz (Tmp slopSz*n) | n <- slopDims ] ++ Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]++ss++undefined)
+        dimsFromIn=ConstI$xRnk-rnk0
+        -- pre-slop: extract slop of size slopSz
+    pure (Just a, plX++MT slopSz 1:[MT slopSz (Tmp slopSz*n) | n <- slopDims ] ++ Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]++ss++MT szR 1:[MT szR (Tmp szY*n) | n <- xDims++yDims]++CpyE (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn 8:CpyE (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1) 8:undefined)
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eAnn f, isIF tX && isIF tY = do
     a <- nextArr t
     xR <- newITemp; rnkR <- newITemp; szR <- newITemp
