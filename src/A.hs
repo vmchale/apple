@@ -5,6 +5,7 @@
 
 -- | AST
 module A ( T (..)
+         , (~>)
          , I (..)
          , Sh (..)
          , C (..)
@@ -78,6 +79,9 @@ instance PS (Sh a) where
     ps d (Π s)       = parensp (d>appPrec) "Π" <+> ps (appPrec+1) s
 
 appPrec=10
+
+infixr 0 ~>
+(~>) = Arrow
 
 data T a = Arr (Sh a) (T a)
          | F -- | double
