@@ -60,7 +60,7 @@ getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " n
 
 type CM = State CSt
 
-fop op e0 = EApp F (EApp (Arrow F F) (Builtin (Arrow F (Arrow F F)) op) e0)
+fop op e0 = EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) op) e0)
 eMinus = fop Minus
 eDiv = fop Div
 
