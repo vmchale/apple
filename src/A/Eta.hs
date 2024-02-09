@@ -17,7 +17,7 @@ thread = foldr (.) id
 
 unseam :: [T ()] -> RM (E (T ()) -> E (T ()), E (T ()) -> E (T ()))
 unseam ts = do
-    lApps <- traverse (\t -> do { n <- nextN t ; pure (\e' -> let t' = eAnn e' in Lam (Arrow t t') n e', \e' -> let Arrow _ cod = eAnn e' in EApp cod e' (Var t n)) }) ts
+    lApps <- traverse (\t -> do { n <- nextN t ; pure (\e' -> let t' = eAnn e' in Lam (t ~> t') n e', \e' -> let Arrow _ cod = eAnn e' in EApp cod e' (Var t n)) }) ts
     let (ls, eApps) = unzip lApps
     pure (thread ls, thread (reverse eApps))
 
