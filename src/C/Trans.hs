@@ -222,10 +222,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
     let loopBody=mt (AElem arrT 1 (Tmp iR) l 8) rD:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
         loop=For iR 0 ILt (Tmp szR) loopBody
     pure (Just a, plE ++ MT szR sz:Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR):[loop])
-aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t
-    | Just (_, xRnk) <- tRnk (eAnn xs)
-    , Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f)
-    , isIF ta0 && isIF ta1 = do
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs), Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), isIF ta0 && isIF ta1 = do
     a <- nextArr t
     slopP <- newITemp; y <- newITemp
     xR <- newITemp; szR <- newITemp; slopSz <- newITemp; szY <- newITemp
