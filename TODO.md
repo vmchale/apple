@@ -145,6 +145,9 @@ o → o → o
 - [ ] https://stat.ethz.ch/R-manual/R-devel/library/stats/html/00Index.html
   - [ ] https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Tukey.html
 - [ ] https://github.com/profConradi/Python_Simulations/blob/599e7c66903166c1e5997318878a6db6f1aaa3d8/Nice_orbits.ipynb
+<<<<<<< HEAD
 - [ ] numpy meshgrid
 - [ ] http://falstad.com/mathphysics.html
 - [ ] https://mathstodon.xyz/@bitartbot@botsin.space/111992137516554370
+=======
+>>>>>>> 2a6dd05 (good example)
