@@ -205,6 +205,7 @@ tokens :-
         "%."                     { mkBuiltin BuiltinMMul }
         "%:"                     { mkBuiltin BuiltinVMul }
         Arr                      { mkBuiltin BuiltinArr }
+        Vec                      { mkBuiltin BuiltinVec }
         float                    { mkBuiltin BuiltinFloat }
         int                      { mkBuiltin BuiltinInt }
         𝔯                        { mkBuiltin BuiltinR }
@@ -358,7 +359,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
-             | BuiltinD
+             | BuiltinD | BuiltinVec
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -381,6 +382,7 @@ instance Pretty Builtin where
     pretty BuiltinMMul   = "%."
     pretty BuiltinVMul   = "%:"
     pretty BuiltinArr    = "Arr"
+    pretty BuiltinVec    = "Vec"
     pretty BuiltinInt    = "int"
     pretty BuiltinFloat  = "float"
     pretty BuiltinT      = "𝓉"
