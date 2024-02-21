@@ -130,6 +130,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     nil { TokB $$ BuiltinNil }
     cons { TokB $$ BuiltinCons }
     arr { TokB $$ BuiltinArr }
+    vec { TokB $$ BuiltinVec }
     int { TokB $$ BuiltinInt }
     float { TokB $$ BuiltinFloat }
     scanS { TokB $$ BuiltinScanS }
@@ -187,6 +188,7 @@ Sh :: { Sh AlexPosn }
 
 T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }
+  | vec I T { Arr ($2 `A.Cons` Nil) $3 }
   | int { I }
   | float { F }
   | parens(T) { $1 }
