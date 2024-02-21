@@ -32,6 +32,7 @@
 - [ ] generalize "diagonal"?
 - [ ] fold-along-diagonal for poly mult. https://code.jsoftware.com/wiki/Vocabulary/slashdot
 ## Syntax
+- [ ] https://en.wiktionary.org/wiki/Appendix:APL
 - [ ] more laconic syntax for type signatures (no Arr... Cons)
 - [x] `zipWith` builtin (2-ary)
   - [x] rename ` because it's only used as `2 1 anyway
