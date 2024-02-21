@@ -1,0 +1,7 @@
+-- https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
+\x.\y.
+  { xn ← :x; yn ← :y
+  ; xx ← re: yn (x :: Vec i float)
+  ; yy ← re: xn (y :: Vec i float)
+  ; (xx,yy)
+  }
