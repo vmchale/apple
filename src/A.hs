@@ -99,15 +99,16 @@ instance Show (T a) where show=show.pretty
 instance Pretty (T a) where pretty=ps 0
 
 instance PS (T a) where
-    ps d (Arr i t)     = "Arr" <+> parens (ps d i) <+> pretty t
-    ps _ F             = "float"
-    ps _ I             = "int"
-    ps _ (Li i)        = "int" <> parens (pretty i)
-    ps _ B             = "bool"
-    ps _ (TVar n)      = pretty n
-    ps d (Arrow t0 t1) = parensp (d>0) (ps 1 t0 <+> "→" <+> ps 0 t1)
-    ps _ (P ts)        = tupledBy " * " (pretty <$> ts)
-    ps _ (Ρ n fs)      = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
+    ps d (Arr (i `Cons` Nil) t) = "Vec" <+> parens (ps d i) <+> pretty t
+    ps d (Arr i t)              = "Arr" <+> parens (ps d i) <+> pretty t
+    ps _ F                      = "float"
+    ps _ I                      = "int"
+    ps _ (Li i)                 = "int" <> parens (pretty i)
+    ps _ B                      = "bool"
+    ps _ (TVar n)               = pretty n
+    ps d (Arrow t0 t1)          = parensp (d>0) (ps 1 t0 <+> "→" <+> ps 0 t1)
+    ps _ (P ts)                 = tupledBy " * " (pretty <$> ts)
+    ps _ (Ρ n fs)               = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
 
 rLi :: T a -> T a
 rLi Li{}          = I
