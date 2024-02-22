@@ -131,6 +131,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     cons { TokB $$ BuiltinCons }
     arr { TokB $$ BuiltinArr }
     vec { TokB $$ BuiltinVec }
+    matrix { TokB $$ BuiltinM }
     int { TokB $$ BuiltinInt }
     float { TokB $$ BuiltinFloat }
     scanS { TokB $$ BuiltinScanS }
@@ -189,6 +190,7 @@ Sh :: { Sh AlexPosn }
 T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }
   | vec I T { Arr ($2 `A.Cons` Nil) $3 }
+  | matrix T {% do {i <- lift $ freshName "i"; j <- lift $ freshName "j"; pure $ Arr (IVar $1 i `A.Cons` IVar $1 j `A.Cons` Nil) $2 } }
   | int { I }
   | float { F }
   | parens(T) { $1 }
