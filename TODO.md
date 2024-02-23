@@ -33,7 +33,9 @@
 - [ ] fold-along-diagonal for poly mult. https://code.jsoftware.com/wiki/Vocabulary/slashdot
 ## Syntax
 - [ ] https://en.wiktionary.org/wiki/Appendix:APL
-- [ ] more laconic syntax for type signatures (no Arr... Cons)
+- [ ] `Mᵢⱼ` should parse as `Arr (i `Cons` j `Cons` Nil)` maybe? (subscript
+  unicode block)
+- [ ] more laconic syntax for type signatures (no Arr... Cons) (`Vec`) (`M` for matrix)
 - [x] `zipWith` builtin (2-ary)
   - [x] rename ` because it's only used as `2 1 anyway
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
