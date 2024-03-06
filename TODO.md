@@ -89,7 +89,6 @@ o → o → o
 - [ ] Pass over to ensure everything is monomorphized
 - [ ] `itof (:xs)` - would prefer w/o parens?
 - [ ] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
-- [ ] `((2 ^ (3 * 1)) + 2` (parses `2^3*1+2` wrong)
 - [ ] `(+)/1 0 ((_.'1) frange 2 6 5)`
 - [ ] match doesn't check constraints on annotations
 - [ ] check in assembler phase for labels not being duplicate
