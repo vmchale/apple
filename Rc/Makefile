@@ -1,5 +1,6 @@
 HC ?= ghc
 GHC_VER := $(shell ${HC} --numeric-version)
+R_VER := $(shell R --version | ja '.?{ix=1}{`0 ~* 1 /(\d+\.\d+)/}')
 HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | ja '{ix=1}{`2}')
 HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
 
