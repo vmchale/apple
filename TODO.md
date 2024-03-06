@@ -59,18 +59,6 @@ a → a → a
  > :ty (⋉)
 o → o → o
 ```
-- [ ] straight-up wrong (special x, works with \z.(+z)):
-```
-ghci> tyExpr "\\x.(+x)"
-Right (IsNum b) :=> a → b → b
-```
-- [ ] special lexemes
-```
- > (\x. gen. 1 (*x) 3) (2::int)
-((λx. (((gen. 1) (λx. (x * x))) 3)) 2) : Arr (3 `Cons` Nil) b
- > (\s. gen. 1 (*s) 3) (2::int)
-Arr (3) [1, 2, 4]
-```
 - [ ]  `> (𝔯 _10 10) :: int 26`
 - [ ] `> ⟨⟨2,1,1⟩,⟨5,4,1⟩⟩%.⟨⟨2,0⟩,⟨2,0⟩,⟨7,3::float⟩⟩ -> Arr (2×2) [6.0, 10.0, 12.0, 31.0]`
 - [ ] `:asm [x(%.)(y::Arr(i`Cons`j`Cons`Nil)float)]` type inference??
