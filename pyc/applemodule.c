@@ -134,7 +134,7 @@ static PyTypeObject CacheType = {
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyType_GenericNew,
-    .tp_dealloc = &cache_dealloc,
+    .tp_dealloc = (destructor)cache_dealloc,
 };
 
 static PyObject* apple_cache(PyObject *self, PyObject *args) {
