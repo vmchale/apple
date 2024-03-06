@@ -10,7 +10,7 @@
   - [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
   - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
   - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
-  - [ ] dfns like k, APL (J)
+  - [x] dfns like k, APL (J)
 - [ ] mapMaybe hm
 - [ ] numpy einstein summation
   - [ ] https://ajcr.net/Basic-guide-to-einsum/
@@ -47,11 +47,24 @@
 - [ ] Use `Word64` for sets of registers
 - [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+```
+- [ ] embarassing!
+```
+[|:(x::Arr(i`Cons`j`Cons`Nil)float)] ⟨⟨1::int,2⟩,⟨3,4⟩,⟨5,6⟩⟩
+```
+- [ ] Should display constraints
+```
+ > :ty (+)
+a → a → a
+ > :ty (⋉)
+o → o → o
+```
+- [ ] straight-up wrong (special x, works with \z.(+z)):
+```
+ghci> tyExpr "\\x.(+x)"
+Right (IsNum b) :=> a → b → b
+```
 - [ ] special lexemes
-```
- > gen. 1 (2*)
-1:10: occurs check failed when unifying 'a' and '(a → a)'
-```
 ```
  > (\x. gen. 1 (*x) 3) (2::int)
 ((λx. (((gen. 1) (λx. (x * x))) 3)) 2) : Arr (3 `Cons` Nil) b
@@ -128,3 +141,9 @@ Arr (3) [1, 2, 4]
 - [ ] https://aakinshin.net/posts/r-hodges-lehmann-problems/
 - [ ] orbital densities!
 - [ ] http://psa.es/sdg/sunpos.htm
+- [ ] https://stat.ethz.ch/R-manual/R-devel/library/stats/html/00Index.html
+  - [ ] https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Tukey.html
+- [ ] https://github.com/profConradi/Python_Simulations/blob/599e7c66903166c1e5997318878a6db6f1aaa3d8/Nice_orbits.ipynb
+- [ ] numpy meshgrid
+- [ ] http://falstad.com/mathphysics.html
+- [ ] https://mathstodon.xyz/@bitartbot@botsin.space/111992137516554370

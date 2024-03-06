@@ -245,7 +245,7 @@ E :: { E AlexPosn }
   | tt { BLit $1 True }
   | ff { BLit $1 False }
   | parens(BBin) { $1 }
-  | lparen E BBin rparen { EApp $1 $3 $2 }
+  | lparen E BBin rparen { Parens $1 (EApp $1 $3 $2) }
   | lparen BBin E rparen {% do { n <- lift $ freshName "x" ; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Nm.loc n) n)) $3)) } }
   | E BBin E { EApp (eAnn $1) (EApp (eAnn $3) $2 $1) $3 }
   | parens(E) { Parens (eAnn $1) $1 }
