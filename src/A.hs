@@ -75,8 +75,8 @@ instance PS (Sh a) where
     ps d (Cons i sh) = parensp (d>6) (pretty i <+> "`Cons`" <+> pretty sh)
     ps _ Nil         = "Nil"
     ps d (Cat s s')  = parensp (d>5) (ps 6 s <+> "⧺" <+> ps 6 s')
-    ps d (Rev s)     = parensp (d>appPrec) "rev" <> ps (appPrec+1) s
-    ps d (Π s)       = parensp (d>appPrec) "Π" <+> ps (appPrec+1) s
+    ps d (Rev s)     = parensp (d>appPrec) ("rev" <+> ps (appPrec+1) s)
+    ps d (Π s)       = parensp (d>appPrec) ("Π" <+> ps (appPrec+1) s)
 
 appPrec=10
 
@@ -99,8 +99,8 @@ instance Show (T a) where show=show.pretty
 instance Pretty (T a) where pretty=ps 0
 
 instance PS (T a) where
-    ps d (Arr (i `Cons` Nil) t) = "Vec" <+> parens (ps d i) <+> pretty t
-    ps d (Arr i t)              = "Arr" <+> parens (ps d i) <+> pretty t
+    ps d (Arr (i `Cons` Nil) t) = parensp (d>appPrec) ("Vec" <+> ps (appPrec+1) i <+> pretty t)
+    ps d (Arr i t)              = parensp (d>appPrec) ("Arr" <+> ps (appPrec+1) i <+> pretty t)
     ps _ F                      = "float"
     ps _ I                      = "int"
     ps _ (Li i)                 = "int" <> parens (pretty i)
