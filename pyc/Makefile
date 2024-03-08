@@ -11,6 +11,8 @@ install: apple.so
 apple.o: applemodule.c
 	$(CC) -fPIC -O2 -c $< -I /usr/local/include/python3.12 -I ../include -I $(HS_INCLUDE_DIR) -o $@
 
+# needs to pull in/bundle all those GHC shared libraries...
+
 apple.so: apple.o
 	$(CC) -shared $^ -o $@ -lapple -lffi
 

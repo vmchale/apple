@@ -11,6 +11,7 @@ typedef void* U;typedef PyObject* PO;typedef size_t S;
 #define Sw switch
 #define C case
 #define BR break;
+#define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!d->type==c){PyErr_SetString(PyExc_RuntimeError, s);}}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
 U f_npy(PyObject* o) {
@@ -18,8 +19,7 @@ U f_npy(PyObject* o) {
     npy_intp* dims=PyArray_DIMS(o);
     I n=PyArray_SIZE(o);
     I sz_i=1+rnk+n;
-    // FIXME: error when np.dtype /= float
-    /* PyErr_SetString(PyExc_RuntimeError, "Expected array of floats"); */
+    CT(o,'d',"Error: expected an array of floats")
     S sz=sz_i*8;
     U x=malloc(sz);I* x_i=x; F* x_f=x;
     x_i[0]=rnk;
@@ -35,6 +35,7 @@ U i_npy(PyObject* o) {
     I n=PyArray_SIZE(o);
     I sz_i=1+rnk+n;
     S sz=sz_i*8;
+    CT(o,'l',"Error: expected an array of 64-bit integers")
     U x=malloc(sz);I* x_i=x;
     x_i[0]=rnk;
     DO(i,rnk,x_i[i+1]=(I)dims[i]);
