@@ -11,24 +11,24 @@
 \maketitle
 
 \begin{abstract}
-    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors. Here I present statically determined memory allocation used in the Apple array system. Ownership is simple and Apple code does not constrain memory management in the host language.
+    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors and runtime linking is simpler. Here I present statically determined memory allocation used in the Apple array system, a JIT compiler. Ownership is simple and Apple code does not constrain memory management in the host language.
+    % mention that it is actually used in Python and R and REPL
 \end{abstract}
 
 \section{Introduction}
 
-Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accommodate Python's lack of static typing or C's lack of sophistication.
+Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accommodate Python's lack of static typing or C's lack of sophistication. Moreover, an embedded compiler can perform deforestation and fusion, offering something over a shared library.
 
 % Static memory management is likewise the same in all host languages.
 
-% Moreover, an embedded language can perform deforestation or fusion, which is not possible with NumPy's library approach.
+% Explain tuples are flat.
 
-The language is expression-oriented (immutable); there are no references.
+The language is expression-oriented (immutable); there are no references. This constraint
 % Let us reflect on this unexpected :
-% no case/sum types... etc.
 
 \section{Method}
 
-Our work is based on classical liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays. % the IR generation step only specifies allocations.
+Our work is based on classical liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays. % frees are calculated and thence less fickle
 
 When generating the IR, we track each mention of the array with a label and associate the label with the temporary that can be used to free it.
 
@@ -105,6 +105,10 @@ That is, the array that is allocated is freed precisely after all relevant opera
 
 % note that the way we exit loops matters
 
+\section{Embeddings}
+
+Apple has been embedded in Python and R.
+
 \section{Coda}
 
 Apple has the potential to be far more efficient; one could consolidate allocations, e.g.
@@ -113,6 +117,6 @@ Apple has the potential to be far more efficient; one could consolidate allocati
  irange 0 10 1 ++ irange 0 10 1
 \end{verbatim}
 
-performs one allocation for each {\tt irange 0 10 1} but this could be
+performs one allocation for each {\tt irange 0 10 1} but this could be consolidated into one using static type information---{\tt irange 0 10 1} has type {\tt Vec 10 int} and
 
 \end{document}
