@@ -19,28 +19,35 @@
 
 Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accommodate Python's lack of static typing or C's lack of sophistication. Moreover, an embedded compiler can perform deforestation and fusion, offering something over a shared library.
 
-% Static memory management is likewise the same in all host languages.
-
 % Explain tuples are flat.
 
-The language is expression-oriented (immutable); there are no references. This constraint
-% Let us reflect on this unexpected :
+The language is expression-oriented (immutable); there are no references. This constraint, with extra bookkeeping information added during IR generation, is responsible for the surprising fact that memory allocation can be completely determined at compile time.
 
 \section{Method}
 
-Our work is based on classical liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays. % frees are calculated and thence less fickle
+Our work is based on classical liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays.
+
+% We insert {\tt free}s mechanically, % frees are calculated and thence less fickle (double free/leftover)
+% allocations are specified but not frees...
 
 When generating the IR, we track each mention of the array with a label and associate the label with the temporary that can be used to free it.
 
-% from stackexchange; don't know what it does
+\begin{verbatim}
+data ArrayExp = ArrayPointer Temp (Maybe Exp) (Maybe Int) -- register, offset, label
+\end{verbatim}
+% show discipline of keeping label across two temps
+
+% from stackexchange
 \tikzset{
 block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.75cm}
 }
 
 \begin{tikzpicture}[auto]
-    \node [block] (plain) {\tt [Stmt]};
+    \node [] (expr) {\ldots};
+    \node [block, below of=expr] (plain) {\tt [Stmt]};
     \node [block, below of=plain] (live) {\tt [(Stmt, Liveness)]};
     \node [block, below of=live] (alloc) {\tt [Stmt]};
+    \draw [->] (expr) -- node {IR Generation} (plain);
     \draw [->] (plain) -- node {Liveness Analysis} (live);
     \draw [->] (live) -- node {Insert Frees} (alloc);
 \end{tikzpicture}
@@ -51,8 +58,6 @@ block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.7
 The IR used in the Apple compiler is sequences of statements and expressions.
 
 \begin{verbatim}
-data ArrayExp = ArrayPointer Temp (Maybe Exp) (Maybe Int) -- register, offset, label
-
 data Exp = Const Int
          | Reg Temp
          | At ArrayExp
