@@ -2,8 +2,7 @@
 {-# LANGUAGE TupleSections    #-}
 
 -- live intervals
-module LI ( intervals
-          ) where
+module LI ( intervals ) where
 
 import           CF
 import           Control.Monad.State.Strict (execState, get, put)
