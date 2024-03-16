@@ -13,12 +13,12 @@ install: apple.so
 # cdeps applemodule.c | ja "[x+' '+y]|> \$0"
 
 apple.o: applemodule.c
-	gcc -fPIC -O2 -c $< -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/include/python$(PY_VER) -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/lib/python$(PY_VER)/site-packages/numpy/core/include -I ../include -I $(HS_INCLUDE_DIR) -o $@
+	$(CC) -fPIC -O2 -c $< -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/include/python$(PY_VER) -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/lib/python$(PY_VER)/site-packages/numpy/core/include -I ../include -I $(HS_INCLUDE_DIR) -o $@
 
 # needs to pull in/bundle all those GHC shared libraries...
 
 apple.so: apple.o
-	gcc -shared $^ -o $@ -lapple -lffi -L /usr/local/lib -rpath /usr/local/lib -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR) -rpath $(HS_LIBDIR) /Library/Frameworks/Python.framework/Versions/$(PY_VER)/Python
+	$(CC) -shared $^ -o $@ -lapple -lffi -L /usr/local/lib -rpath /usr/local/lib -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR) -rpath $(HS_LIBDIR) /Library/Frameworks/Python.framework/Versions/$(PY_VER)/Python
 
 clean:
 	rm -rf *.o *.so
