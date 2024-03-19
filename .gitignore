@@ -10,3 +10,5 @@ dist-newstyle
 *.out
 *.synctex.gz
 *.toc
+.RData
+.Rhistory
