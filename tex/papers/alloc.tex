@@ -70,10 +70,14 @@ data Stmt = Malloc Int Temp Exp -- label, register, size
           ...
 \end{verbatim}
 
-We generate a unique label when for each {\tt Malloc}
+Expressions can read from memory via {\tt At} and {\tt Stmt}s make use of memory access for writes, allocations etc.
 
-Expressions can read from memory via {\tt At} and {\tt Stmt}s make use of memory access for writes, allocations etc. {\tt defs, uses :: Stmt -> IntSet}
 % def/use functions defined
+We generate a label when translating an array expression, viz. % (allocated with {\tt Malloc}) and use this for all subsequent accesses.
+
+\begin{verbatim}
+    aeval :: E (T ()) -> Temp -> IRM (Maybe Int, [Stmt])
+\end{verbatim}
 
 \subsection{Generation}
 
