@@ -150,3 +150,4 @@ o → o → o
 - [ ] http://falstad.com/mathphysics.html
 - [ ] https://mathstodon.xyz/@bitartbot@botsin.space/111992137516554370
 - [ ] https://math.ucr.edu/home/baez/roots/
+- [ ] http://xahlee.info/math/algorithmic_math_art.html
