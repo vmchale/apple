@@ -1,12 +1,16 @@
+%! TeX program = lualatex
+
 \documentclass[sigplan,screen]{acmart}
 \usepackage{tikz}
 \usepackage{hyperref}
 
 \begin{document}
 
+% https://mirror.math.princeton.edu/pub/CTAN/macros/unicodetex/latex/fontspec/fontspec.pdf
+\setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
+
 \begin{abstract}
     Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors and runtime linking is simpler. Here I present statically determined memory allocation used in the Apple array system, a JIT compiler. Ownership is simple and Apple code does not constrain memory management in the host language.
-    % mention that it is actually used in Python and R and REPL
 \end{abstract}
 
 \title{Apple Array Allocation}
@@ -25,18 +29,6 @@ The language is expression-oriented (immutable); there are no references. This c
 
 Our work is based on classical liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays.
 
-% We insert {\tt free}s mechanically, % frees are calculated and thence less fickle (double free/leftover)
-% allocations are specified but not frees...
-
-When generating the IR, we track each mention of the array with a label and associate the label with the temporary that can be used to free it.
-
-\begin{verbatim}
-data ArrayExp = ArrayPointer Temp (Maybe Exp) (Maybe Int) -- register, offset, label
-\end{verbatim}
-
-We can access the array from different {\tt Temp}s as the label (internal to the compiler) is associated with the array rather than a pointer.
-% high-level language
-
 % from stackexchange
 \tikzset{
 block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.75cm}
@@ -52,62 +44,78 @@ block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.7
     \draw [->] (live) -- node {Insert Frees} (alloc);
 \end{tikzpicture}
 
-% cite appel
-%, though we must tag additional information when generating the IR.
+% We insert {\tt free}s mechanically, % frees are calculated and thence less fickle (double free/leftover)
+% allocations are specified but not frees...
 
 The IR used in the Apple compiler is sequences of statements and expressions, viz.
 
 \begin{verbatim}
 data Exp = Const Int
          | Reg Temp
-         | At ArrayExp
+         | At ArrayPtr
          ...
 
-data Stmt = Malloc Int Temp Exp -- label, register, size
-          | Write ArrayExp Exp
-          | MovTemp Temp Exp
+data Stmt = MovTemp Temp Exp
+          | Write ArrayPtr Exp
+          | Malloc Lbl Temp Exp -- label, register, size
           | CondJump Exp Loc
-          | Jump Loc
+          | Jump Loc | Label Loc
           ...
 \end{verbatim}
 
-Expressions can read from memory via {\tt At} and {\tt Stmt}s make use of memory access for writes, allocations etc. The label is assigned when translating an array expression, viz.
+Expressions can read from memory via {\tt At} and {\tt Stmt}s make use of memory access for writes, allocations etc. A function
+
+\begin{verbatim}
+aeval :: E (T ()) -> IRM (Temp, Lbl, [Stmt])
+\end{verbatim}
+translates an array expression, assigning a {\tt Lbl} for subsequent access and associating the labeled array with a {\tt Temp} to be used to free it.
+
+% When generating the IR, we track each mention of the array with a label and associate the label with the temporary that can be used to free it.
+All accesses to an array use the {\tt ArrayPtr} type, which specifies the {\tt Lbl} for tracking within the compiler.
+
+\begin{verbatim}
+-- register, offset, label
+data ArrayPtr = ArrayPtr Temp (Maybe Exp) Lbl
+\end{verbatim}
+
+Then one has
+
+\begin{verbatim}
+defs :: Stmt -> IntSet
+defs (Malloc l _ e) = singleton l
+defs _              = empty
+
+uses :: Stmt -> IntSet
+uses (Write (ArrayPtr _ _ l) e) = insert l (defsE e)
+uses ...
+\end{verbatim}
+
+% https://www.cs.rice.edu/~kvp1/spring2008/lecture7.pdf
+
+Thus one can access the array from different {\tt Temp}s---this is necessary for generating efficient code in the compiler.
+% this is useful for generating efficient code.
+
+% We can access the array from different {\tt Temp}s as the label (internal to the compiler) is associated with the array rather than a pointer.
+% high-level language
+
+% cite appel
+%, though we must tag additional information when generating the IR.
+% Explain the liveness interval criterion (simply new/done)
 
 % def/use functions defined
 % (allocated with {\tt Malloc}) and use this for all subsequent accesses.
 
-\begin{verbatim}
-    aeval :: E (T ()) -> Temp -> IRM (Maybe Int, [Stmt])
-    aeval (...) t = do
-        a <- nextArr t
-        ...
-        pure (Just a, Malloc a t sz:...)
-\end{verbatim}
-
-{\tt nextArr :: Temp -> IRM Int} generates a label and associates it with a {\tt Temp} {\tt t}.
-
-\begin{verbatim}
-nextArr :: Temp -> IRM Int
-nextArr t = do
-    u <- next
-    modify (\st -> st { temps = insert u t (temps st) }) $> u
-
-data IRSt = IRSt { temps :: IntMap Temp
-                 ...
-                 }
-
-type IRM = State IRSt
-\end{verbatim}
-
 \subsection{Generation}
 
-We must be careful when arranging loops; the loop should exit by continuing rather than jumping to an exit location. Then we can insert {\tt free}s precisely at the end of the liveness interval without worrying whether the {\tt free} statement is reachable.
+We must take care when arranging loops; the loop should exit by continuing rather than jumping to an exit location. Then we can insert {\tt free}s precisely at the end of the liveness interval without worrying whether the {\tt free} statement is reachable.
 
 In particular, we do not write:
 
 \begin{verbatim}
 apple_0:
-(condjump p apple_1)
+(condjump (< (reg r_2) (int 2)) apple_1)
+(movtemp r_0
+    @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
 ...
 (jump apple_0)
 
@@ -116,6 +124,17 @@ apple_1:
 \end{verbatim}
 
 But rather:
+
+\begin{verbatim}
+(condjump (>= (reg r_2) (int 2)) apple_1)
+
+apple_0:
+...
+(condjump (< (reg r_2) (int 2) apple_0)
+
+apple_1:
+...
+\end{verbatim}
 
 \subsection{At Work}
 
@@ -137,20 +156,22 @@ Under the hood:
 (write (ptr r_12) (int 1))
 (write (ptr r_12+(int 8)) (reg r_13))
 (movtemp r_16 (int 0))
-(mjump (>= (reg r_16) (reg r_13)) apple_1)
+(condjump (>= (reg r_16) (reg r_13)) apple_1)
 
 apple_0:
-(write (ptr r_12+(+ (asl (reg r_16) (int 3)) (int 16))) (reg r_14))
+(write
+    (ptr r_12+(+ (asl (reg r_16) (int 3)) (int 16)))
+    (reg r_14))
 (movtemp r_14 (+ (reg r_14) (int 1)))
 (movtemp r_16 (+ (reg r_16) (int 1)))
-(mjump (< (reg r_16) (reg r_13)) apple_0)
+(condjump (< (reg r_16) (reg r_13)) apple_0)
 
 apple_1:
 (movtemp r_ret @(ptr r_12+(int 16)))
 (free r_12)
 \end{verbatim}
 
-That is, the array that is allocated for {\tt irange 0 99 1} is freed precisely when it is no longer in use.
+That is, the array allocated for {\tt irange 0 99 1} is freed precisely when it is no longer in use.
 
 % note that the way we exit loops matters
 
@@ -158,7 +179,42 @@ That is, the array that is allocated for {\tt irange 0 99 1} is freed precisely 
 
 \section{Embeddings}
 
-Apple has been embedded in Python and R.
+Apple has been embedded in Python and R. See the following interactions:
+
+\begin{verbatim}
+>>> import apple
+>>> area=apple.cache('''
+λas.λbs.
+    { Σ ⇐ [(+)/x]
+    ; 0.5*abs.(Σ ((*)`as (1⊖bs)) - Σ ((*)`(1⊖as) bs))
+    }
+''')
+>>> import numpy as np
+>>> apple.f(area,np.array([0,0,3.]),np.array([0,4,4.]))
+6.0
+\end{verbatim}
+
+This performs several allocations under the hood; for instance {\tt ⊖} (rotate)
+
+\begin{verbatim}
+> source("./apple.R")
+> shoelace<-cache("
+λas.λbs.
+    { Σ ⇐ [(+)/x]
+    ; 0.5*abs.(Σ ((*)`as (1⊖bs)) - Σ ((*)`(1⊖as) bs))
+    }
+")
+> run(shoelace,c(0,0,3),c(0,4,4))
+[1] 6
+\end{verbatim}
+
+One sees that we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Crucially, we do not use the host language's garbage collector to manage Apple arrays.
+% crucial for efficient embedding that it not require hooking into each GC
+
+\begin{verbatim}
+ > {shoelace ← λas.λbs. {Σ ⇐ [(+)/x]; 0.5*abs.(Σ ((*)`as (1⊖bs)) - Σ ((*)`(1⊖as) bs))}; shoelace ⟨0,0,3⟩ ⟨0,4,4⟩}
+6.0
+\end{verbatim}
 
 \section{Coda}
 
@@ -168,6 +224,6 @@ Apple has the potential to be far more efficient; one could consolidate allocati
  irange 0 20 1 ++ irange 0 10 1
 \end{verbatim}
 
-performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation where arrays were initialized in
+performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation where arrays were initialized in memory allotted to
 
 \end{document}
