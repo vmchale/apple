@@ -1,6 +1,8 @@
 %! TeX program = lualatex
 
 \documentclass[sigplan,screen]{acmart}
+
+\usepackage{bytefield}
 \usepackage{tikz}
 \usepackage{hyperref}
 
@@ -9,27 +11,47 @@
 % https://mirror.math.princeton.edu/pub/CTAN/macros/unicodetex/latex/fontspec/fontspec.pdf
 \setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
 
+% emphasize embedability as motivation (lack of popularity of APL, shocking popularity of Python... futhark/accelerate)
+% Then show that the method allows our own constructs hm
+
 \begin{abstract}
     Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors and runtime linking is simpler. Here I present statically determined memory allocation used in the Apple array system, a JIT compiler. Ownership is simple and Apple code does not constrain memory management in the host language.
 \end{abstract}
 
 \title{Apple Array Allocation}
+\orcid{0000-0001-6093-2967}
 \author{V. E. McHale}
+\affiliation{%
+\institution{Northern Trust}
+  \streetaddress{50 South LaSalle Street}
+  \city{Chicago}
+  \state{IL}
+  \postcode{IL}
+  \country{USA}
+}
+\email{vamchale@gmail.com}
 \maketitle
 
 \section{Introduction}
 
+% Kell paper
+% Intro should point out lack of success in array languages...
+
+% full language incl.
+% array languages fail to export their constructs (trains)
 Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accommodate Python's lack of static typing or C's lack of sophistication. Moreover, an embedded compiler can perform deforestation and fusion, offering something over a shared library.
 
-% Explain tuples are flat.
+% cite Hui on reference counting
 
 The language is expression-oriented (immutable); there are no references. This constraint, with extra bookkeeping information added during IR generation, is responsible for the surprising fact that memory allocation can be completely determined at compile time.
 
+% Also show off embedding results
+
 \section{Method}
 
-Our work is based on classical liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays.
+Our work is based on established liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays.
+% control flow
 
-% from stackexchange
 \tikzset{
 block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.75cm}
 }
@@ -66,7 +88,7 @@ data Stmt = MovTemp Temp Exp
 Expressions can read from memory via {\tt At} and {\tt Stmt}s make use of memory access for writes, allocations etc. A function
 
 \begin{verbatim}
-aeval :: E (T ()) -> IRM (Temp, Lbl, [Stmt])
+aeval :: Expr -> IRM (Temp, Lbl, [Stmt])
 \end{verbatim}
 translates an array expression, assigning a {\tt Lbl} for subsequent access and associating the labeled array with a {\tt Temp} to be used to free it.
 
@@ -92,35 +114,31 @@ uses ...
 
 % https://www.cs.rice.edu/~kvp1/spring2008/lecture7.pdf
 
-Thus one can access the array from different {\tt Temp}s---this is necessary for generating efficient code in the compiler.
-% this is useful for generating efficient code.
-
-% We can access the array from different {\tt Temp}s as the label (internal to the compiler) is associated with the array rather than a pointer.
-% high-level language
+Note that with such labels one can access the array from different {\tt Temp}s; this turns out to be necessary for generating efficient code in the compiler.
 
 % cite appel
-%, though we must tag additional information when generating the IR.
+% though we must tag additional information when generating the IR.
 % Explain the liveness interval criterion (simply new/done)
 
-% def/use functions defined
-% (allocated with {\tt Malloc}) and use this for all subsequent accesses.
+% explicitly point out that we look up the Temp argument to free based on label (which is from live intervals)
 
 \subsection{Generation}
 
+% detail: live intervals, specify that
+% This turns out to be okay
+
 We must take care when arranging loops; the loop should exit by continuing rather than jumping to an exit location. Then we can insert {\tt free}s precisely at the end of the liveness interval without worrying whether the {\tt free} statement is reachable.
 
-In particular, we do not write:
+For instance, we do not write:
 
 \begin{verbatim}
 apple_0:
 (condjump (< (reg r_2) (int 2)) apple_1)
 (movtemp r_0
     @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
-...
 (jump apple_0)
 
 apple_1:
-...
 \end{verbatim}
 
 But rather:
@@ -129,23 +147,45 @@ But rather:
 (condjump (>= (reg r_2) (int 2)) apple_1)
 
 apple_0:
-...
+(movtemp r_0
+    @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
 (condjump (< (reg r_2) (int 2) apple_0)
 
 apple_1:
-...
 \end{verbatim}
+
+One might ask why freeing at the end of a live interval guarantees that the {\tt free} statement is reachable.
+% since our
+
+\subsection{Flat Array Types}
+
+Apple arrays are completely flat in memory, consisting of rank, dimensions, and data laid out contiguously.
+
+A {\tt 2x4} array:
+
+\begin{bytefield}[bitwidth=0.075\linewidth]{11}
+    \\
+    \bitheader{0-10} \\
+    \bitbox{1}{2} & \bitbox{1}{2} & \bitbox{1}{4} & \bitbox{1}{$a_{00}$} & \bitbox{1}{$a_{01}$} & \bitbox{1}{$a_{02}$} & \bitbox{1}{$a_{03}$} & \bitbox{1}{$a_{10}$} & \bitbox{1}{$a_{11}$} & \bitbox{1}{$a_{12}$} & \bitbox{1}{$a_{13}$}
+\end{bytefield}
+
+This is not strictly necessary but it simplifies things for us; it means we only need one call to the system's {\tt free}.
+
+All data are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types.
+
+This turns out to be enough % NumPy
+% hope is bidirectional/fluent embeddings = it doesn't matter.
 
 \subsection{At Work}
 
-As an example, suppose we wish to generate an array and extract the first element:
+We can inspect the generated code in the REPL. The following generates an array and extracts the first element:
 
 \begin{verbatim}
  > {. (irange 0 99 1)
 0
 \end{verbatim}
 
-Under the hood:
+We can
 
 \begin{verbatim}
  > :ir {. (irange 0 99 1)
@@ -173,10 +213,6 @@ apple_1:
 
 That is, the array allocated for {\tt irange 0 99 1} is freed precisely when it is no longer in use.
 
-% note that the way we exit loops matters
-
-% point out REPL is fun.
-
 \section{Embeddings}
 
 Apple has been embedded in Python and R. See the following interactions:
@@ -194,8 +230,6 @@ Apple has been embedded in Python and R. See the following interactions:
 6.0
 \end{verbatim}
 
-This performs several allocations under the hood; for instance {\tt ⊖} (rotate)
-
 \begin{verbatim}
 > source("./apple.R")
 > shoelace<-cache("
@@ -208,7 +242,7 @@ This performs several allocations under the hood; for instance {\tt ⊖} (rotate
 [1] 6
 \end{verbatim}
 
-One sees that we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Crucially, we do not use the host language's garbage collector to manage Apple arrays.
+One sees that we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Crucially, we do not depend on the host language's garbage collector to manage Apple arrays---this means that there is less code to be written for each language embedding.
 % crucial for efficient embedding that it not require hooking into each GC
 
 \begin{verbatim}
@@ -223,7 +257,10 @@ Apple has the potential to be far more efficient; one could consolidate allocati
 \begin{verbatim}
  irange 0 20 1 ++ irange 0 10 1
 \end{verbatim}
+performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory
 
-performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation where arrays were initialized in memory allotted to
+This is a further advantage of completely flat arrays
+
+% slot diagrams?
 
 \end{document}
