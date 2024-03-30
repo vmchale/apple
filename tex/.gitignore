@@ -7,3 +7,5 @@
 *.toc
 *.xcp
 *.xdv
+*.bbl
+*.blg
