@@ -5,6 +5,7 @@
 \usepackage{bytefield}
 \usepackage{tikz}
 \usepackage{hyperref}
+\usepackage{url}
 
 \begin{document}
 
@@ -14,8 +15,10 @@
 % emphasize embedability as motivation (lack of popularity of APL, shocking popularity of Python... futhark/accelerate)
 % Then show that the method allows our own constructs hm
 
+% export functions, not "calls into an array system"
+
 \begin{abstract}
-    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors and runtime linking is simpler. Here I present statically determined memory allocation used in the Apple array system, a JIT compiler. Ownership is simple and Apple code does not constrain memory management in the host language.
+    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors and runtime linking is simpler. Here I present statically determined memory allocation used in the Apple array system, a JIT compiler. Ownership is simple and Apple code does not constrain memory management in the host language. This is followed by exhibition of two embeddings, one in Python and one in R.
 \end{abstract}
 
 \title{Apple Array Allocation}
@@ -40,6 +43,8 @@
 % full language incl.
 % array languages fail to export their constructs (trains)
 Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accommodate Python's lack of static typing or C's lack of sophistication. Moreover, an embedded compiler can perform deforestation and fusion, offering something over a shared library.
+
+\cite{hui2020}
 
 % cite Hui on reference counting
 
@@ -242,8 +247,11 @@ Apple has been embedded in Python and R. See the following interactions:
 [1] 6
 \end{verbatim}
 
-One sees that we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Crucially, we do not depend on the host language's garbage collector to manage Apple arrays---this means that there is less code to be written for each language embedding.
+One sees that we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Typical APL implementations 
+
+Crucially, we do not depend on the host language's garbage collector to manage Apple arrays---this means that there is less code to be written for each language embedding.
 % crucial for efficient embedding that it not require hooking into each GC
+% also offers something more than NumPy
 
 \begin{verbatim}
  > {shoelace ← λas.λbs. {Σ ⇐ [(+)/x]; 0.5*abs.(Σ ((*)`as (1⊖bs)) - Σ ((*)`(1⊖as) bs))}; shoelace ⟨0,0,3⟩ ⟨0,4,4⟩}
@@ -262,5 +270,8 @@ performs one allocation for each {\tt irange} but this could be consolidated int
 This is a further advantage of completely flat arrays
 
 % slot diagrams?
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{alloc.bib}
 
 \end{document}
