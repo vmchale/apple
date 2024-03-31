@@ -19,7 +19,7 @@
 
 \begin{abstract}
     Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors.
-    Here we present statically determined memory allocation used in the Apple array system, a JIT compiler. Arrays are usable as pointers, without depending on a garbage collector. % procedures too...
+    Here we present statically determined memory allocation used in the Apple array system, a JIT compiler. Arrays are usable as pointers, with no dependence on a garbage collector.
     Ownership is simple and Apple code does not constrain memory management in the host language.
     Two embeddings---one in Python and one in R---attest to the feasibility of this method.
 \end{abstract}
@@ -40,7 +40,8 @@
 
 \section{Introduction}
 
-Array languages such as APL and J suffer from a lack of popularity, baffling their proponents \cite{hsu2023}. % look at C instead!
+Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make wider use of array languages, one might hope to embded them into existing systems and facilitate communication; this is \cite{kell2017}
+% look at C instead!
 
 C seems vulgar in offering pointers as arrays; APL dialects
 
@@ -75,7 +76,7 @@ A {\tt 2x4} array:
 
 All data are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types.
 
-This may look spartan to functional programmers, but it is enough to
+This may look spartan to functional programmers, but it is enough to stand toe-to-toe with NumPy.
 % hope is bidirectional/fluent embeddings = it doesn't matter.
 
 \subsection{Compiler Pipeline}
@@ -113,6 +114,7 @@ data Stmt = MovTemp Temp Exp
           | Malloc Lbl Temp Exp -- label, register, size
           | CondJump Exp Loc
           | Jump Loc | Label Loc
+          | Free Temp
           ...
 \end{verbatim}
 
@@ -154,6 +156,8 @@ data Liveness =
   Liveness { done :: IntSet, new :: IntSet }
 \end{verbatim}
 
+Then at each {\tt (Stmt, Liveness)}, when we encounter a label in the {\tt done} set, we look up the {\tt Temp} to free it and insert a {\tt free} statement
+
 % cite appel
 % though we must tag additional information when generating the IR.
 % Explain the liveness interval criterion (simply new/done)
@@ -162,10 +166,7 @@ data Liveness =
 
 \subsection{Generation}
 
-% detail: live intervals, specify that
-% This turns out to be okay
-
-We must take care when arranging loops; the loop should exit by continuing rather than jumping to an exit location. Then we can insert {\tt free}s precisely at the end of the liveness interval without worrying whether the {\tt free} statement is reachable.
+We must take care when arranging loops; the loop should exit by continuing rather than jumping to an exit location. This ensures that the {\tt free}s inserted at the end of live intervals are always reachable.
 
 For instance, we do not write:
 
@@ -192,44 +193,32 @@ apple_0:
 apple_1:
 \end{verbatim}
 
-There is no guarantee that freeing at the end of a live interval guarantees that all {\tt free} statements are reachable, but since we control IR generation, we can check that this is indeed the cases in loops and conditionals.
-
-\subsection{At Work}
-
-We can inspect the generated code in the REPL. The following generates an array and extracts the first element:
+Had we written the former, the {\tt free} would be unreachable, viz.
 
 \begin{verbatim}
- > {. (irange 0 99 1)
-0
-\end{verbatim}
-
-We can
-
-\begin{verbatim}
- > :ir {. (irange 0 99 1)
-(movtemp r_14 (int 0))
-(movtemp r_15 (int 99))
-(movtemp r_13 (+ (- (reg r_15) (reg r_14)) (int 1)))
-(malloc r_12 : (+ (asl (reg r_13) (int 3)) (int 16)))
-(write (ptr r_12) (int 1))
-(write (ptr r_12+(int 8)) (reg r_13))
-(movtemp r_16 (int 0))
-(condjump (>= (reg r_16) (reg r_13)) apple_1)
-
 apple_0:
-(write
-    (ptr r_12+(+ (asl (reg r_16) (int 3)) (int 16)))
-    (reg r_14))
-(movtemp r_14 (+ (reg r_14) (int 1)))
-(movtemp r_16 (+ (reg r_16) (int 1)))
-(condjump (< (reg r_16) (reg r_13)) apple_0)
+(condjump (< (reg r_2) (int 2)) apple_1)
+(movtemp r_0
+    @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
+(jump apple_0)
+(free r_2)
 
 apple_1:
-(movtemp r_ret @(ptr r_12+(int 16)))
-(free r_12)
 \end{verbatim}
 
-That is, the array allocated for {\tt irange 0 99 1} is freed precisely when it is no longer in use.
+This is not the case with the latter:
+
+\begin{verbatim}
+(condjump (>= (reg r_2) (int 2)) apple_1)
+
+apple_0:
+(movtemp r_0
+    @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
+(condjump (< (reg r_2) (int 2) apple_0)
+(free r_2)
+
+apple_1:
+\end{verbatim}
 
 \section{Embeddings}
 
@@ -260,7 +249,7 @@ Apple has been embedded in Python and R. See the following interactions:
 [1] 6
 \end{verbatim}
 
-One sees that we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Typical APL implementations
+Thus we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Typical APL implementations
 
 Crucially, we do not depend on the host language's garbage collector to manage Apple arrays---this means that there is less code to be written for each language embedding.
 % crucial for efficient embedding that it not require hooking into each GC
@@ -280,7 +269,7 @@ Apple has the potential to be far more efficient; one could consolidate allocati
 \end{verbatim}
 performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory slots
 
-This is a further advantage of completely flat arrays. That one can get such performance without reference counting
+This is an advantage of completely flat arrays. That one can get such performance without reference counting
 % worthwhile to carve out this limited arrays
 
 % slot diagrams?
