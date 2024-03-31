@@ -65,7 +65,7 @@ SEXP ty_R(SEXP a) {
     R mkString(ret);
 }
 
-SEXP cache_R(SEXP a){
+SEXP jit_R(SEXP a){
     char* err; char** err_p=&err;
     const char* inp=CHAR(asChar(a));
     FnTy* ty=apple_ty(inp,err_p);

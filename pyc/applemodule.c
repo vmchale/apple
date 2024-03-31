@@ -137,7 +137,7 @@ static PyTypeObject CacheType = {
     .tp_dealloc = (destructor)cache_dealloc,
 };
 
-static PyObject* apple_cache(PyObject *self, PyObject *args) {
+static PyObject* apple_jit(PyObject *self, PyObject *args) {
     const char* inp;
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p=&err;
@@ -233,8 +233,8 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
 }
 
 static PyMethodDef AppleMethods[] = {
-    {"f", apple_f, METH_VARARGS, "Run a cached function"},
-    {"cache", apple_cache, METH_VARARGS, "JIT a function"},
+    {"f", apple_f, METH_VARARGS, "Run a JIT-compiled function"},
+    {"jit", apple_jit, METH_VARARGS, "JIT a function"},
     {"apple", apple_apple, METH_VARARGS, "JITed array"},
     {"typeof", apple_typeof, METH_VARARGS, "Display type of expression"},
     {"asm", apple_asm, METH_VARARGS, "Dump x86 assembly"},
