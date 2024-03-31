@@ -18,7 +18,10 @@
 % export functions, not "calls into an array system"
 
 \begin{abstract}
-    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors and runtime linking is simpler. Here I present statically determined memory allocation used in the Apple array system, a JIT compiler. Ownership is simple and Apple code does not constrain memory management in the host language. This is followed by exhibition of two embeddings, one in Python and one in R.
+    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors.
+    Here we present statically determined memory allocation used in the Apple array system, a JIT compiler. Arrays are usable as pointers, without depending on a garbage collector. % procedures too...
+    Ownership is simple and Apple code does not constrain memory management in the host language.
+    Two embeddings---one in Python and one in R---attest to the feasibility of this method.
 \end{abstract}
 
 \title{Apple Array Allocation}
@@ -29,7 +32,7 @@
   \streetaddress{50 South LaSalle Street}
   \city{Chicago}
   \state{IL}
-  \postcode{IL}
+  \postcode{60603}
   \country{USA}
 }
 \email{vamchale@gmail.com}
@@ -37,22 +40,45 @@
 
 \section{Introduction}
 
-% Kell paper
-% Intro should point out lack of success in array languages...
+Array languages such as APL and J suffer from a lack of popularity, baffling their proponents \cite{hsu2023}. % look at C instead!
+
+C seems vulgar in offering pointers as arrays; APL dialects
+
+% cite Hui: 12 (.net fail)
+
+% \cite{chakravarty2011}
+% cite NumPy paper "API for scientific computing"
+
+% Kell paper (low-level, equate pointers with arrays \cite{munksgaard2022} (rather than environmental constraints such as relation/dependence on garbage collector))
 
 % full language incl.
 % array languages fail to export their constructs (trains)
-Array libraries like NumPy take inspiration from J, but our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accommodate Python's lack of static typing or C's lack of sophistication. Moreover, an embedded compiler can perform deforestation and fusion, offering something over a shared library.
 
-\cite{hui2020}
-
-% cite Hui on reference counting
+% Array libraries like NumPy take inspiration from J, but cannot offer the
+% Our approach embeds a full language. Procedures can be called from a variety of languages (C, Python, Haskell) with the same type system---specialized for arrays---without compromising in order to accommodate Python's lack of static typing or C's lack of sophistication.
 
 The language is expression-oriented (immutable); there are no references. This constraint, with extra bookkeeping information added during IR generation, is responsible for the surprising fact that memory allocation can be completely determined at compile time.
 
-% Also show off embedding results
-
 \section{Method}
+
+\subsection{Flat Array Types}
+
+Apple arrays are completely flat in memory, consisting of rank, dimensions, and data laid out contiguously.
+
+A {\tt 2x4} array:
+
+\begin{bytefield}[bitwidth=0.075\linewidth]{11}
+    \\
+    \bitheader{0-10} \\
+    \bitbox{1}{2} & \bitbox{1}{2} & \bitbox{1}{4} & \bitbox{1}{$a_{00}$} & \bitbox{1}{$a_{01}$} & \bitbox{1}{$a_{02}$} & \bitbox{1}{$a_{03}$} & \bitbox{1}{$a_{10}$} & \bitbox{1}{$a_{11}$} & \bitbox{1}{$a_{12}$} & \bitbox{1}{$a_{13}$}
+\end{bytefield}
+
+All data are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types.
+
+This may look spartan to functional programmers, but it is enough to
+% hope is bidirectional/fluent embeddings = it doesn't matter.
+
+\subsection{Compiler Pipeline}
 
 Our work is based on established liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays.
 % control flow
@@ -119,7 +145,14 @@ uses ...
 
 % https://www.cs.rice.edu/~kvp1/spring2008/lecture7.pdf
 
-Note that with such labels one can access the array from different {\tt Temp}s; this turns out to be necessary for generating efficient code in the compiler.
+Note that with such labels one can access the array from different {\tt Temp}s; this is necessary for generating efficient code in the compiler.
+
+With {\tt defs} and {\tt uses} thus defined, we compute liveness intervals for {\tt Stmt}s \cite{poletto1999}.
+
+\begin{verbatim}
+data Liveness =
+  Liveness { done :: IntSet, new :: IntSet }
+\end{verbatim}
 
 % cite appel
 % though we must tag additional information when generating the IR.
@@ -159,27 +192,7 @@ apple_0:
 apple_1:
 \end{verbatim}
 
-One might ask why freeing at the end of a live interval guarantees that the {\tt free} statement is reachable.
-% since our
-
-\subsection{Flat Array Types}
-
-Apple arrays are completely flat in memory, consisting of rank, dimensions, and data laid out contiguously.
-
-A {\tt 2x4} array:
-
-\begin{bytefield}[bitwidth=0.075\linewidth]{11}
-    \\
-    \bitheader{0-10} \\
-    \bitbox{1}{2} & \bitbox{1}{2} & \bitbox{1}{4} & \bitbox{1}{$a_{00}$} & \bitbox{1}{$a_{01}$} & \bitbox{1}{$a_{02}$} & \bitbox{1}{$a_{03}$} & \bitbox{1}{$a_{10}$} & \bitbox{1}{$a_{11}$} & \bitbox{1}{$a_{12}$} & \bitbox{1}{$a_{13}$}
-\end{bytefield}
-
-This is not strictly necessary but it simplifies things for us; it means we only need one call to the system's {\tt free}.
-
-All data are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types.
-
-This turns out to be enough % NumPy
-% hope is bidirectional/fluent embeddings = it doesn't matter.
+There is no guarantee that freeing at the end of a live interval guarantees that all {\tt free} statements are reachable, but since we control IR generation, we can check that this is indeed the cases in loops and conditionals.
 
 \subsection{At Work}
 
@@ -247,7 +260,7 @@ Apple has been embedded in Python and R. See the following interactions:
 [1] 6
 \end{verbatim}
 
-One sees that we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Typical APL implementations 
+One sees that we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector. Typical APL implementations
 
 Crucially, we do not depend on the host language's garbage collector to manage Apple arrays---this means that there is less code to be written for each language embedding.
 % crucial for efficient embedding that it not require hooking into each GC
@@ -265,9 +278,10 @@ Apple has the potential to be far more efficient; one could consolidate allocati
 \begin{verbatim}
  irange 0 20 1 ++ irange 0 10 1
 \end{verbatim}
-performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory
+performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory slots
 
-This is a further advantage of completely flat arrays
+This is a further advantage of completely flat arrays. That one can get such performance without reference counting
+% worthwhile to carve out this limited arrays
 
 % slot diagrams?
 
