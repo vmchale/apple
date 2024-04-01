@@ -42,7 +42,7 @@
 \section{Introduction}
 
 Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make wider use of array languages, one might hope to embded them. So we look to C---we would like an array language that does not impose on its host language \cite{kell2017}.
-C is almost vulgar in offering pointers as arrays; the typical APL implementation uses reference-counting \cite[p.~47]{hui2020} for performance reasons. But this means that arrays depend on a garbage collector running alongside to behave sensibly. By compiling high-level array expressions to a C procedure, without any expectation of a garbage collector being set up or tied in, we reduce the demands of calling Apple code in other environments.
+C is almost vulgar in offering pointers as arrays; the typical APL implementation uses reference-counting \cite[p.~47]{hui2020} for performance reasons. But this means that arrays depend on a garbage collector running alongside to behave sensibly. By compiling high-level array expressions to a C procedure with all allocations and frees predetermined, we reduce the demands of calling Apple code in other environments.
 
 \section{Method}
 
@@ -274,7 +274,7 @@ Apple has the potential to be far more efficient; one could consolidate allocati
 \end{verbatim}
 performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory slots.
 
-This vindicates flat arrays; while banning arrays of functions \&c. may not be obvious to a functional programmer, studying this particular set of constraints has the potential to give high-level languages that compile to performant and portable code.
+This vindicates flat arrays; while banning arrays of functions \&c. may not be obvious to a functional programmer, studying this particular set of constraints has potential; one could use it to implement a compiler for a high-level language that produces performant and portable code.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{alloc.bib}
