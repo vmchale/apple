@@ -42,7 +42,7 @@
 \section{Introduction}
 
 Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make wider use of array languages, one might hope to embded them. So we look to C---we would like an array language that does not impose on its host language \cite{kell2017}.
-C is almost vulgar in offering pointers as arrays; the typical APL implementation uses reference-counting \cite[p.~47]{hui2020} for performance reasons. But this means that arrays depend on a garbage collector running alongside to behave sensibly. By compiling high-level array expressions to a C procedure, without any expectation of a garbage collector being set up or tied in, we reduce the burden to calling Apple code in other environments.
+C is almost vulgar in offering pointers as arrays; the typical APL implementation uses reference-counting \cite[p.~47]{hui2020} for performance reasons. But this means that arrays depend on a garbage collector running alongside to behave sensibly. By compiling high-level array expressions to a C procedure, without any expectation of a garbage collector being set up or tied in, we reduce the demands of calling Apple code in other environments.
 
 \section{Method}
 
@@ -81,9 +81,6 @@ block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.7
     \draw [->] (live) -- node {Insert Frees} (alloc);
 \end{tikzpicture}
 
-% We insert {\tt free}s mechanically, % frees are calculated and thence less fickle (double free/leftover)
-% allocations are specified but not frees...
-
 The IR used in the Apple compiler is sequences of statements and expressions, viz.
 
 \begin{verbatim}
@@ -108,7 +105,6 @@ aeval :: Expr -> IRM (Temp, Lbl, [Stmt])
 \end{verbatim}
 translates an array expression, assigning a {\tt Lbl} for subsequent access and associating the labeled array with a {\tt Temp} to be used to free it.
 
-% When generating the IR, we track each mention of the array with a label and associate the label with the temporary that can be used to free it.
 All accesses to an array use the {\tt ArrayPtr} type, which specifies the {\tt Lbl} for tracking within the compiler.
 
 \begin{verbatim}
@@ -230,6 +226,45 @@ Apple has been embedded in Python and R. Observe the following interactions:
 
 Thus we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector.
 
+Apple code can be called from C on its own terms, unlike NumPy or J, viz.
+
+\begin{verbatim}
+#include <stdio.h>
+#include <stdlib.h>
+
+#define R return
+#define DO(i,n,a) {I i;for(i=0;i<n;i++){a;}}
+
+typedef double F;typedef int64_t I; typedef void* U;
+
+typedef struct Af {I rnk; I* dim; F* xs;} Af;
+
+U poke_af (Af x) {
+    I rnk = x.rnk;
+    I t = 1;
+    DO(i,rnk,t*=x.dim[i]);
+    U p = malloc(8+8*x.rnk+8*t);
+    I* i_p = p;F* f_p = p;
+    *i_p = rnk;
+    DO(i,rnk,i_p[i+1]=x.dim[i]);
+    DO(i,t,f_p[i+1+rnk]=x.xs[i]);
+    R p;
+}
+
+extern F shoelace(U, U);
+
+int main(int argc, char *argv[]) {
+    F xs[] = {0,4,4};
+    F ys[] = {0,0,3};
+    I d[] = {3};
+    Af a = {1,d,xs};
+    Af b = {1,d,ys};
+    U x = poke_af(a);U y = poke_af(b);
+    printf("%f\n", shoelace(x,y));
+    free(x);free(y);
+}
+\end{verbatim}
+
 \section{Coda}
 
 Apple has the potential to be far more efficient; one could consolidate allocations, e.g.
@@ -239,9 +274,7 @@ Apple has the potential to be far more efficient; one could consolidate allocati
 \end{verbatim}
 performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory slots.
 
-This is an advantage of completely flat arrays. This style of constraints on
-% That one can get such performance without reference counting
-% worthwhile to carve out this limited arrays
+This vindicates flat arrays; while banning arrays of functions \&c. may not be obvious to a functional programmer, studying this particular set of constraints has the potential to give high-level languages that compile to performant and portable code.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{alloc.bib}
