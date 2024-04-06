@@ -12,10 +12,7 @@ import           Prettyprinter.Ext
 data CType = CR | CI | Af | Ai
 
 instance Pretty CType where
-    pretty CR = "F"
-    pretty CI = "I"
-    pretty Af = "Af"
-    pretty Ai = "Ai"
+    pretty CR = "F"; pretty CI = "I"; pretty Af = "Af"; pretty Ai = "Ai"
 
 data CF = CF !T.Text [CType] CType
 
