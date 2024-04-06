@@ -1,6 +1,5 @@
 #include <stdlib.h>
 
-#include"./include/apple.h"
 #include"./include/apple_abi.h"
 
 U poke_af (Af x) {
