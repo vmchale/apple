@@ -67,6 +67,7 @@ T16 = T13.dim[0]
 ```
 [|:(x::Arr(i`Cons`j`Cons`Nil)float)] ⟨⟨1::int,2⟩,⟨3,4⟩,⟨5,6⟩⟩
 ```
+- [ ] segfault when `aso` is called pre-register allocation (arm)
 - [ ] Should display constraints
 ```
  > :ty (+)
@@ -151,3 +152,4 @@ o → o → o
 - [ ] https://mathstodon.xyz/@bitartbot@botsin.space/111992137516554370
 - [ ] https://math.ucr.edu/home/baez/roots/
 - [ ] http://xahlee.info/math/algorithmic_math_art.html
+- [ ] https://rosalind.info/problems/locations/
