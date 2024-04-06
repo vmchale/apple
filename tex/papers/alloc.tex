@@ -12,17 +12,14 @@
 % https://mirror.math.princeton.edu/pub/CTAN/macros/unicodetex/latex/fontspec/fontspec.pdf
 \setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
 
-% emphasize embedability as motivation (lack of popularity of APL, shocking popularity of Python... futhark/accelerate)
-% Then show that the method allows our own constructs hm
-
 % export functions, not "calls into an array system"
 
 \begin{abstract}
     Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors.
-    Here we present statically determined memory allocation used in the Apple array system, a compiler for a high-level, expression-oriented functional language.
+    Here we present statically determined memory allocation for flat, immutable arrays used in the Apple array system, a compiler for an expression-oriented functional language.
     Arrays are usable as pointers, with no dependence on a garbage collector.
     Ownership is simple and Apple code does not constrain memory management in the host language.
-    Two embeddings---one in Python and one in R---attest to the feasibility of this method.
+    Two embeddings---one in Python and one in R---are exhibited.
 \end{abstract}
 
 \title{Apple Array Allocation}
@@ -41,8 +38,30 @@
 
 \section{Introduction}
 
-Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make wider use of array languages, one might hope to embded them. So we look to C---we would like an array language that does not impose on its host language \cite{kell2017}.
+Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make wider use of array languages, one might hope to embed them. % , providing users with the facilities of libraries such as matplotlib.
+
+\subsection{Background}
+
+Rather than comparing to competitors such as NumPy \cite{harris2020}, we look to C---we would like an array language that does not impose on its host language \cite{kell2017}.
 C is almost vulgar in offering pointers as arrays; the typical APL implementation uses reference-counting \cite[p.~47]{hui2020} for performance reasons. But this means that arrays depend on a garbage collector running alongside to behave sensibly. By compiling high-level array expressions to a C procedure with all allocations and frees predetermined, we reduce the demands of calling Apple code in other environments.
+
+\begin{tabular}{r|c|c|c}
+  \hline
+  & Input & Array & Exposed Function \\ \hline
+  C & Sequence of steps & Pointer & ELF binary \\
+  J & Expression & Reference-counted & Action in environment \\
+\end{tabular}
+
+% background: sad case of .NET/APL,
+% J: "server" API depends on global state
+
+% also show off matplotlib
+
+\subsection{Apple Array System}
+
+The Apple compiler
+
+% simplifies runtime linking
 
 \section{Method}
 
@@ -60,12 +79,16 @@ A {\tt 2x4} array:
 
 All data are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types.
 
-Such constraints, with extra bookkeeping information added during IR generation, are responsible for the surprising fact that memory allocation can be completely determined at compile time. Though they may seem spartan to a functional programmer, this is enough to stand toe-to-toe with NumPy.
+% no recursion...
+
+Such constraints, with extra bookkeeping information added during IR generation, are responsible for the surprising fact that memory allocation can be completely determined at compile time. Though sucgh limited types may seem spartan to a functional programmer, this is enough to stand toe-to-toe with NumPy. % and enough for machine learning
+
+% cases
 
 \subsection{Compiler Pipeline}
 
-Our work is based on established liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals for arrays.
-% control flow
+Our work is based on established liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals \cite{poletto1999} for arrays.
+% cite appel
 
 \tikzset{
 block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.75cm}
