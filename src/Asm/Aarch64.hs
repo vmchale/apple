@@ -128,6 +128,7 @@ instance Pretty Cond where
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | B { ann :: a, label :: Label }
                         | Blr { ann :: a, rSrc :: reg }
+                        | Bl { ann :: a, cfunc :: CFunc }
                         | Bc { ann :: a, cond :: Cond, label :: Label }
                         | Ret { ann :: a }
                         | FMovXX { ann :: a, dDest :: freg, dSrc :: freg }
@@ -186,6 +187,7 @@ mapR :: (areg -> reg) -> AArch64 areg afreg a -> AArch64 reg afreg a
 mapR _ (Label x l)           = Label x l
 mapR _ (B x l)               = B x l
 mapR _ (Bc x c l)            = Bc x c l
+mapR _ (Bl x f)              = Bl x f
 mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
 mapR _ (FMovXC l r0 c)       = FMovXC l r0 c
 mapR f (MovRR l r0 r1)       = MovRR l (f r0) (f r1)
@@ -241,6 +243,7 @@ mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
 mapFR _ (B x l)               = B x l
 mapFR _ (Bc x c l)            = Bc x c l
+mapFR _ (Bl x f)              = Bl x f
 mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
 mapFR f (FMovXC l xr c)       = FMovXC l (f xr) c
 mapFR _ (MovRR l r0 r1)       = MovRR l r0 r1
@@ -312,6 +315,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Label _ l)           = prettyLabel l <> ":"
     pretty (B _ l)               = i4 ("b" <+> prettyLabel l)
     pretty (Blr _ r)             = i4 ("blr" <+> pretty r)
+    pretty (Bl _ l)              = i4 ("bl" <+> "_" <> pretty l)
     pretty (Bc _ c l)            = i4 ("b." <> pretty c <+> prettyLabel l)
     pretty (FMovXX _ xr0 xr1)    = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
     pretty (FMovDR _ d r)        = i4 ("fmov" <+> pretty d <> "," <+> pretty r)
