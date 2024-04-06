@@ -6,11 +6,25 @@
 \usepackage{tikz}
 \usepackage{hyperref}
 \usepackage{url}
+\usepackage{mdframed}
 
 \begin{document}
 
 % https://mirror.math.princeton.edu/pub/CTAN/macros/unicodetex/latex/fontspec/fontspec.pdf
 \setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
+
+\newmdenv[
+  linecolor=blue,
+  linewidth=2pt,
+  topline=false,
+  bottomline=false,
+  rightline=false,
+  leftline=true,
+  skipabove=\topskip,
+  skipbelow=\topskip,
+  innertopmargin=0,
+  innerbottommargin=0,
+]{live}
 
 % export functions, not "calls into an array system"
 
@@ -84,11 +98,10 @@ A {\tt 2x4} array:
 
 All elements are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types. Arrays of arrays are treated as higher-dimensional arrays.
 
-% no recursion...
+% no recursion
 
-Such constraints, with extra bookkeeping information added during IR generation, are responsible for the surprising fact that memory allocation can be completely determined at compile time. Though sucgh limited types may seem spartan to a functional programmer, this is enough to stand toe-to-toe with NumPy. % and enough for machine learning
-
-% cases
+Such constraints, with extra bookkeeping information added during IR generation, are responsible for the surprising fact that memory allocation can be completely determined at compile time.
+Though such limited types may seem spartan to a functional programmer, this is enough to stand toe-to-toe with NumPy. % and enough for machine learning
 
 \subsection{Compiler Pipeline}
 
@@ -142,11 +155,11 @@ data ArrayPtr = ArrayPtr Temp (Maybe Exp) Lbl
 Then we have:
 
 \begin{verbatim}
-defs :: Stmt -> IntSet
+defs :: Stmt -> Set Lbl
 defs (Malloc l _ e) = singleton l
 defs _              = empty
 
-uses :: Stmt -> IntSet
+uses :: Stmt -> Set Lbl
 uses (Write (ArrayPtr _ _ l) e) = insert l (defsE e)
 uses ...
 \end{verbatim}
