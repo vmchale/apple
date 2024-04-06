@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CGen ( CType(..), TTE(..), tCTy, pCty ) where
+module CGen (CType(..), TTE(..), tCTy, pCty) where
 
 import           A
 import           Control.Exception (Exception)
 import           Data.Bifunctor    (first)
 import qualified Data.Text         as T
-import           Prettyprinter     (Doc, Pretty (..), tupled, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), braces, parens, tupled, (<+>))
 import           Prettyprinter.Ext
 
 data CType = CR | CI | Af | Ai
@@ -17,7 +17,15 @@ instance Pretty CType where
 data CF = CF !T.Text [CType] CType
 
 instance Pretty CF where
-    pretty (CF n ins out) = pretty out <+> pretty n <+> tupled (pretty<$>ins)
+    pretty (CF n ins out) =
+        let args = zip ins ['a'..] in
+        "extern" <+> pretty out <+> pretty n <+> tupled (px<$>ins) <> ";"
+            <#> px out <+> pretty n <> "_wrapper" <+> tupled (fmap (\(t,var) -> pretty t <+> pretty var) args)
+            <> braces
+                (pretty out <+> "res" <> "=" <> ax out (pretty n<>tupled ((\(t,var) -> ax t (pretty var))<$>args))<>";"
+                <> "R res;")
+        where px CR="F"; px CI="I"; px _="U"
+              ax Af=("poke_af"<>).parens;ax Ai=("poke_ai"<>).parens;ax _=id
 
 -- type translation error
 data TTE = HO | Poly | FArg | ArrFn deriving Show
@@ -26,7 +34,7 @@ instance Pretty TTE where
     pretty HO = "Higher order"; pretty Poly = "Too polymorphic"; pretty FArg = "Function as argument"; pretty ArrFn = "Arrays of functions are not supported."
 
 pCty :: T.Text -> T a -> Either TTE (Doc ann)
-pCty nm t = ("#include<apple_abi.h>" <#>) . pretty <$> nmtCTy nm t
+pCty nm t = ("#include<apple.c>" <#>) . pretty <$> nmtCTy nm t
 
 nmtCTy :: T.Text -> T a -> Either TTE CF
 nmtCTy nm t = do{(ins,out) <- irTy (rLi t); CF nm<$>traverse cTy ins<*>cTy out}
