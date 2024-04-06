@@ -1,19 +1,18 @@
-cabal-version:   1.18
-name:            apple
-version:         0.1.0.0
-license:         AGPL-3
-license-file:    LICENSE
-copyright:       Copyright: (c) 2022 Vanessa McHale
-maintainer:      vamchale@gmail.com
-author:          Vanessa McHale
-synopsis:        Apple array language compiler
-description:     Compiler for a typed, APL-inspired array language.
-category:        Language, Array
-build-type:      Simple
-data-files:      ./c/apple.c
-extra-doc-files:
-    README.md
-    CHANGELOG.md
+cabal-version:      1.18
+name:               apple
+version:            0.1.0.0
+license:            AGPL-3
+license-file:       LICENSE
+copyright:          Copyright: (c) 2022 Vanessa McHale
+maintainer:         vamchale@gmail.com
+author:             Vanessa McHale
+synopsis:           Apple array language compiler
+description:        Compiler for a typed, APL-inspired array language.
+category:           Language, Array
+build-type:         Simple
+data-files:
+    ./c/apple.c
+    ./include/apple_abi.h
 
 extra-source-files:
     include/apple.h
@@ -23,6 +22,10 @@ extra-source-files:
     test/data/*.🍏
     math/*.🍎
     math/*.🍏
+
+extra-doc-files:
+    README.md
+    CHANGELOG.md
 
 source-repository head
     type:     git
@@ -106,7 +109,12 @@ library
         ScopedTypeVariables TupleSections BinaryLiterals MagicHash
         MultiParamTypeClasses DeriveTraversable GeneralizedNewtypeDeriving
 
-    ghc-options:        -Wall -fno-warn-missing-signatures -Wno-x-partial
+    ghc-options:
+        -Wall -fno-warn-missing-signatures -Wno-x-partial
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wmissing-export-lists
+        -Wcpp-undef
+
     build-depends:
         base >=4.11 && <5,
         prettyprinter >=1.7.0,
@@ -124,11 +132,6 @@ library
         extra >=1.7.4,
         composition-prelude >=1.1.0.1
 
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
-
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
 
@@ -143,7 +146,10 @@ foreign-library apple
     default-language:   Haskell2010
     include-dirs:       include
     install-includes:   apple.h
-    ghc-options:        -Wall
+    ghc-options:
+        -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Wmissing-export-lists
+
     build-depends:
         base,
         apple,
@@ -156,10 +162,6 @@ foreign-library apple
     if os(windows)
         options: standalone
 
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Wmissing-export-lists
-
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
 
@@ -168,17 +170,16 @@ executable atc
     hs-source-dirs:   app
     other-modules:    Paths_apple
     default-language: Haskell2010
-    ghc-options:      -Wall -Wno-x-partial
+    ghc-options:
+        -Wall -Wno-x-partial -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
+
     build-depends:
         base,
         apple,
         optparse-applicative >=0.13.0.0,
         bytestring
-
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -192,7 +193,11 @@ executable writeo
         Paths_apple
 
     default-language: Haskell2010
-    ghc-options:      -Wall -Wno-x-partial
+    ghc-options:
+        -Wall -Wno-x-partial -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wcpp-undef -Wmissing-export-lists
+
     build-depends:
         base,
         apple,
@@ -203,11 +208,6 @@ executable writeo
         process,
         text
 
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wcpp-undef
-        -Wmissing-export-lists
-
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
 
@@ -215,7 +215,12 @@ executable arepl
     main-is:          Main.hs
     hs-source-dirs:   run
     default-language: Haskell2010
-    ghc-options:      -Wall -Wno-missing-signatures -Wno-x-partial
+    ghc-options:
+        -Wall -Wno-missing-signatures -Wno-x-partial
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wmissing-export-lists
+        -Wcpp-undef
+
     build-depends:
         base,
         apple,
@@ -230,11 +235,6 @@ executable arepl
         filepath,
         extra
 
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
-
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
 
@@ -246,7 +246,9 @@ test-suite apple-test
     default-language:   Haskell2010
     ghc-options:
         -threaded -rtsopts -with-rtsopts=-N -Wall
-        -fno-warn-missing-signatures
+        -fno-warn-missing-signatures -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
 
     build-depends:
         base,
@@ -255,11 +257,6 @@ test-suite apple-test
         tasty-hunit,
         bytestring,
         hypergeometric >=0.1.4.0
-
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -270,7 +267,11 @@ benchmark apple-bench
     build-tool-depends: cpphs:cpphs
     hs-source-dirs:     bench
     default-language:   Haskell2010
-    ghc-options:        -rtsopts -Wall
+    ghc-options:
+        -rtsopts -Wall -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
+
     build-depends:
         base,
         apple,
@@ -278,11 +279,6 @@ benchmark apple-bench
         bytestring,
         erf,
         hypergeometric >=0.1.1.0
-
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities
-        -Wmissing-export-lists -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
