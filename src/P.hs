@@ -139,8 +139,11 @@ bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86G
 
 as :: T.Text -> BSL.ByteString -> Doc ann
-as f = (prolegomena <#>) . prettyAsm . either throw id . aarch64
+as f = (prolegomena <#>).prettyAsm.either throw (second aso).aarch64
     where prolegomena = ".p2align 2\n\n.text\n\n.global _" <> pretty f <#> "_" <> pretty f <> ":"
+
+aso (MovRCf () r0 f:Blr () r1:asms) | r0 == r1 = Bl () f:aso asms
+aso (asm:asms) = asm:aso asms; aso [] = []
 
 aarch64 :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [AArch64 AReg FAReg ()])
 aarch64 = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . ir
