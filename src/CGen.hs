@@ -22,10 +22,17 @@ instance Pretty CF where
         "extern" <+> pretty out <+> pretty n <+> tupled (px<$>ins) <> ";"
             <#> px out <+> pretty n <> "_wrapper" <+> tupled (fmap (\(t,var) -> pretty t <+> pretty var) args)
             <> braces
-                (pretty out <+> "res" <> "=" <> ax out (pretty n<>tupled ((\(t,var) -> ax t (pretty var))<$>args))<>";"
+                (foldMap d args
+                <> pretty out <+> "res" <> "=" <> ax out (pretty n<>tupled (l.snd<$>args))<>";"
+                <> foldMap f args
                 <> "R res;")
         where px CR="F"; px CI="I"; px _="U"
               ax Af=("poke_af"<>).parens;ax Ai=("poke_ai"<>).parens;ax _=id
+              d (t,var) = px t <+> l var <> "=" <> ax t (pretty var) <> ";"
+              f (Af,var) = "free" <> parens (l var) <> ";"
+              f (Ai,var) = "free" <> parens (l var) <> ";"
+              f _        = mempty
+              l var = "_" <> pretty var
 
 -- type translation error
 data TTE = HO | Poly | FArg | ArrFn deriving Show
