@@ -6,7 +6,7 @@ module CF ( ControlAnn (..)
           , UD (..)
           , Liveness (..)
           , NLiveness (..)
-          , Interval (..)
+          , Live (..)
           ) where
 
 import           Control.DeepSeq (NFData)
@@ -20,14 +20,14 @@ data Liveness = Liveness { ins :: !IS.IntSet, out :: !IS.IntSet, fins :: !IS.Int
 data NLiveness = NLiveness { nx :: Int, liveness :: !Liveness }
     deriving (Generic, NFData)
 
-data Interval = Interval { new :: !IS.IntSet, done :: !IS.IntSet, fnew :: !IS.IntSet, fdone :: !IS.IntSet }
+data Live = Live { new :: !IS.IntSet, done :: !IS.IntSet, fnew :: !IS.IntSet, fdone :: !IS.IntSet }
     deriving (Generic, NFData)
 
 instance Pretty Liveness where
-    pretty (Liveness is os fis fos) = pretty (Interval is os fis fos)
+    pretty (Liveness is os fis fos) = pretty (Live is os fis fos)
 
-instance Pretty Interval where
-    pretty (Interval is os fis fos) = braces (pp (is<>fis) <+> ";" <+> pp (os<>fos))
+instance Pretty Live where
+    pretty (Live is os fis fos) = braces (pp (is<>fis) <+> ";" <+> pp (os<>fos))
         where pp = mconcat . punctuate "," . fmap pretty . IS.toList
 
 -- | Control-flow annotations

@@ -8,7 +8,7 @@ import           Data.Functor   (void)
 import qualified Data.IntSet    as IS
 import           Data.Maybe     (mapMaybe)
 
-frameC :: [AArch64 AReg FAReg Interval] -> [AArch64 AReg FAReg ()]
+frameC :: [AArch64 AReg FAReg Live] -> [AArch64 AReg FAReg ()]
 frameC = concat.go IS.empty IS.empty
     where go _ _ [] = []
           go _ _ [isn] = [[void isn]]

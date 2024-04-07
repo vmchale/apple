@@ -170,10 +170,10 @@ prettyBBLs = prettyLines . fmap prettyBBL
 prettyBBL :: Pretty (arch reg freg ()) => BB arch reg freg () Liveness -> Doc ann
 prettyBBL (BB asms l) = pretty l <#> prettyLines (fmap pretty asms)
 
-x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Interval]
+x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Live]
 x86Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToX86 st x))) . ir
 
-aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Interval]
+aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Live]
 aarch64Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
 printParsed :: BSL.ByteString -> Doc ann

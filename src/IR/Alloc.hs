@@ -15,13 +15,13 @@ import           Prettyprinter.Ext
 frees :: IM.IntMap Temp -> [Stmt] -> [Stmt]
 frees a = pf.iF a.live
 
-live :: [Stmt] -> [(Stmt, Interval)]
+live :: [Stmt] -> [(Stmt, Live)]
 live = intervals . reconstruct . IR.mkControlFlow
 
-prettyIRI :: [(Stmt, Interval)] -> Doc ann
+prettyIRI :: [(Stmt, Live)] -> Doc ann
 prettyIRI = prettyLines . fmap (\(s,i) -> pretty s <+> pretty i)
 
-iF :: IM.IntMap Temp -> [(Stmt, Interval)] -> [Stmt]
+iF :: IM.IntMap Temp -> [(Stmt, Live)] -> [Stmt]
 iF a = concatMap g where
     g (RA{}, _) = []
     g (s, i)    = s:[ Free t | t <- ts ] where ts = mapMaybe (`IM.lookup` a) (IS.toList (done i))
