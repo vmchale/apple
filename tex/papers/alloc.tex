@@ -87,7 +87,7 @@ Such constraints, with extra bookkeeping information added during IR generation,
 
 \subsection{Compiler Pipeline}
 
-Our work is based on established liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute liveness intervals \cite{poletto1999} for arrays.
+Our work is based on established liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute live intervals \cite{poletto1999} for arrays.
 % cite appel
 
 \tikzset{
@@ -97,7 +97,7 @@ block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.7
 \begin{tikzpicture}[auto]
     \node [] (expr) {\ldots};
     \node [block, below of=expr] (plain) {\tt [Stmt]};
-    \node [block, below of=plain] (live) {\tt [(Stmt, Liveness)]};
+    \node [block, below of=plain] (live) {\tt [(Stmt, Live)]};
     \node [block, below of=live] (alloc) {\tt [Stmt]};
     \draw [->] (expr) -- node {IR Generation} (plain);
     \draw [->] (plain) -- node {Liveness Analysis} (live);
@@ -151,14 +151,13 @@ uses ...
 
 Note that with such labels one can access the array from different {\tt Temp}s; this is necessary for generating efficient code in the compiler.
 
-With {\tt defs} and {\tt uses} thus defined, we compute liveness intervals for {\tt Stmt}s \cite{poletto1999}.
+With {\tt defs} and {\tt uses} thus defined, we compute live intervals for {\tt Stmt}s \cite{poletto1999}.
 
 \begin{verbatim}
-data Liveness =
-  Liveness { done :: IntSet, new :: IntSet }
+data Live = Live { done :: Set Lbl, new :: Set Lbl }
 \end{verbatim}
 
-For each {\tt (Stmt, Liveness)}, when we encounter a label in the {\tt done} set, we look up the {\tt Temp} to free it and insert a {\tt free} statement.
+For each {\tt (Stmt, Live)}, when we encounter a label in the {\tt done} set, we look up the {\tt Temp} to free it and insert a {\tt free} statement.
 
 \subsection{Generation}
 
