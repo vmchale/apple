@@ -1,4 +1,4 @@
-cabal-version:      1.18
+cabal-version:      2.0
 name:               apple
 version:            0.1.0.0
 license:            AGPL-3
@@ -10,9 +10,7 @@ synopsis:           Apple array language compiler
 description:        Compiler for a typed, APL-inspired array language.
 category:           Language, Array
 build-type:         Simple
-data-files:
-    ./include/apple_abi.h
-
+data-files:         ./include/apple_abi.h
 extra-source-files:
     include/apple.h
     test/examples/*.🍎
@@ -137,6 +135,30 @@ library
     if impl(ghc >=9.2)
         ghc-options: -Wno-operator-whitespace-ext-conflict
 
+library as
+    exposed-modules:
+        As
+        Nasm
+
+    hs-source-dirs:   as
+    default-language: Haskell2010
+    ghc-options:
+        -Wall -Wno-x-partial -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
+
+    build-depends:
+        base,
+        apple,
+        process,
+        temporary,
+        prettyprinter,
+        text,
+        bytestring
+
+    if impl(ghc >=8.10)
+        ghc-options: -Wunused-packages
+
 foreign-library apple
     type:               native-shared
     build-tool-depends: c2hs:c2hs >=0.19.1
@@ -168,6 +190,7 @@ executable atc
     main-is:          Main.hs
     hs-source-dirs:   app
     other-modules:    Paths_apple
+    autogen-modules:  Paths_apple
     default-language: Haskell2010
     ghc-options:
         -Wall -Wno-x-partial -Wincomplete-uni-patterns
@@ -186,11 +209,8 @@ executable atc
 executable writeo
     main-is:          Main.hs
     hs-source-dirs:   exe
-    other-modules:
-        As
-        Nasm
-        Paths_apple
-
+    other-modules:    Paths_apple
+    autogen-modules:  Paths_apple
     default-language: Haskell2010
     ghc-options:
         -Wall -Wno-x-partial -Wincomplete-uni-patterns
@@ -199,12 +219,11 @@ executable writeo
 
     build-depends:
         base,
+        as,
         apple,
         optparse-applicative >=0.14.0.0,
         bytestring,
         prettyprinter,
-        temporary,
-        process,
         text
 
     if impl(ghc >=8.10)
