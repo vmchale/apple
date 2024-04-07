@@ -17,6 +17,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , fToInt
                    , pus, pos
                    , puds, pods
+                   , pSym
                    ) where
 
 import           Asm.M
@@ -27,6 +28,7 @@ import           GHC.Generics      (Generic)
 import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
 import           Prettyprinter.Ext
+import           System.Info       (os)
 
 -- https://developer.arm.com/documentation/102374/0101/Registers-in-AArch64---other-registers
 data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
@@ -123,6 +125,9 @@ data Cond = Eq | Neq | Geq | Lt | Gt | Leq
 instance Pretty Cond where
     pretty Eq = "EQ"; pretty Neq = "NE"; pretty Geq = "GE"
     pretty Lt = "LT"; pretty Gt = "GT"; pretty Leq = "LE"
+
+pSym :: Pretty a => a -> Doc ann
+pSym = case os of {"linux" -> id; "darwin" -> ("_"<>)}.pretty
 
 -- https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
@@ -315,7 +320,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Label _ l)           = prettyLabel l <> ":"
     pretty (B _ l)               = i4 ("b" <+> prettyLabel l)
     pretty (Blr _ r)             = i4 ("blr" <+> pretty r)
-    pretty (Bl _ l)              = i4 ("bl" <+> "_" <> pretty l)
+    pretty (Bl _ l)              = i4 ("bl" <+> pSym l)
     pretty (Bc _ c l)            = i4 ("b." <> pretty c <+> prettyLabel l)
     pretty (FMovXX _ xr0 xr1)    = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
     pretty (FMovDR _ d r)        = i4 ("fmov" <+> pretty d <> "," <+> pretty r)

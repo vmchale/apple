@@ -140,7 +140,7 @@ bytes = fmap assemble . x86G
 
 as :: T.Text -> BSL.ByteString -> Doc ann
 as f = (prolegomena <#>).prettyAsm.either throw (second aso).aarch64
-    where prolegomena = ".p2align 2\n\n.text\n\n.global _" <> pretty f <#> "_" <> pretty f <> ":"
+    where prolegomena = ".p2align 2\n\n.text\n\n.global " <> pSym f <#> pSym f <> ":"
 
 aso (MovRCf () r0 f:Blr () r1:asms) | r0 == r1 = Bl () f:aso asms
 aso (asm:asms) = asm:aso asms; aso [] = []
