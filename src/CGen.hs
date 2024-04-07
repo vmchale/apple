@@ -41,7 +41,7 @@ instance Pretty TTE where
     pretty HO = "Higher order"; pretty Poly = "Too polymorphic"; pretty FArg = "Function as argument"; pretty ArrFn = "Arrays of functions are not supported."
 
 pCty :: T.Text -> T a -> Either TTE (Doc ann)
-pCty nm t = ("#include<apple.c>" <#>) . pretty <$> nmtCTy nm t
+pCty nm t = ("#include<apple_abi.h>" <#>) . pretty <$> nmtCTy nm t
 
 nmtCTy :: T.Text -> T a -> Either TTE CF
 nmtCTy nm t = do{(ins,out) <- irTy (rLi t); CF nm<$>traverse cTy ins<*>cTy out}
