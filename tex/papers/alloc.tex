@@ -92,10 +92,7 @@ Such constraints, with extra bookkeeping information added during IR generation,
 
 \subsection{Compiler Pipeline}
 
-Our work is based on established liveness algorithms; we define {\tt uses} and {\tt defs} on statements and thence compute liveness information \cite[pp.~213-216]{appel1998}
-
-live intervals \cite{poletto1999} for arrays.
-% cite appel
+Our work is based on established liveness algorithms; we define {\tt uses} and {\tt defs} on statements (in terms of arrays), compute liveness \cite[pp.~213-216]{appel1998}, and then construct live intervals \cite{poletto1999}.
 
 \tikzset{
 block/.style = {draw, minimum height=2.5em, minimum width=4em, node distance=1.75cm}
@@ -135,7 +132,7 @@ aeval :: Expr -> IRM (Temp, Lbl, [Stmt])
 \end{verbatim}
 translates an array expression, assigning a {\tt Lbl} for subsequent access and associating the labeled array with a {\tt Temp} to be used to free it.
 
-All accesses to an array use the {\tt ArrayPtr} type, which specifies the {\tt Lbl} for tracking within the compiler.
+All accesses to an array use an {\tt ArrayPtr}, which specifies the {\tt Lbl} for tracking within the compiler.
 
 \begin{verbatim}
 -- register, offset, label
@@ -156,7 +153,7 @@ uses ...
 
 % https://www.cs.rice.edu/~kvp1/spring2008/lecture7.pdf
 
-Note that with such labels one can access the array from different {\tt Temp}s; this is necessary for generating efficient code in the compiler.
+Note that with such labels one can access the array from different {\tt Temp}s; this is necessary for generating efficient code.
 
 With {\tt defs} and {\tt uses} thus defined, we compute live intervals for {\tt Stmt}s \cite{poletto1999}.
 
