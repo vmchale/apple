@@ -38,17 +38,15 @@
 
 \section{Introduction}
 
-Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make wider use of array languages, one might hope to embed them. % , providing users with the facilities of libraries such as matplotlib.
+Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make them more useful to enthusiasts, one might hope to embed them. % , providing users with the facilities of libraries such as matplotlib.
 
 \subsection{Background}
 % introduce APL/J first then C?
 
 Rather than comparing to competitors such as NumPy \cite{harris2020}, we take inspiration from C---we would like an array language that does not impose on its host language \cite{kell2017}.
 C is almost vulgar in offering pointers as arrays; the typical APL implementation uses reference-counting \cite[p.~47]{hui2020} for performance reasons.
-But this imposes on the calling code, requiring care to increment the reference count % also delete a GC?
+But this imposes on the calling code, requiring care to increment the reference count and % also delete a GC?
 % But this means that arrays depend on a garbage collector running alongside to behave sensibly.
-
-By compiling high-level array expressions to a C procedure with all allocations and frees predetermined, we reduce the demands of calling Apple code in other environments.
 
 \begin{tabular}{c|c|c|c}
   \hline
@@ -57,6 +55,8 @@ By compiling high-level array expressions to a C procedure with all allocations 
   J & Expression & Reference-counted & Action in environment \\
 \end{tabular}
 
+By compiling high-level array expressions to a C procedure with all allocations and frees predetermined, we reduce the demands of calling Apple code in other environments.
+
 % background: sad case of .NET/APL,
 % J: "server" API depends on global state
 
@@ -64,7 +64,7 @@ By compiling high-level array expressions to a C procedure with all allocations 
 
 \subsection{Apple Array System}
 
-The Apple compiler
+The Apple compiler targets a language which does not support recursion
 
 % simplifies runtime linking
 
@@ -82,8 +82,7 @@ A {\tt 2x4} array:
     \bitbox{1}{2} & \bitbox{1}{2} & \bitbox{1}{4} & \bitbox{1}{$a_{00}$} & \bitbox{1}{$a_{01}$} & \bitbox{1}{$a_{02}$} & \bitbox{1}{$a_{03}$} & \bitbox{1}{$a_{10}$} & \bitbox{1}{$a_{11}$} & \bitbox{1}{$a_{12}$} & \bitbox{1}{$a_{13}$}
 \end{bytefield}
 
-All elements are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types.
-% allow: arrays of arrays
+All elements are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types. Arrays of arrays are treated as higher-dimensional arrays.
 
 % no recursion...
 
@@ -93,7 +92,9 @@ Such constraints, with extra bookkeeping information added during IR generation,
 
 \subsection{Compiler Pipeline}
 
-Our work is based on established liveness algorithms; we annotate statements with {\tt uses} and {\tt defs} and thence compute live intervals \cite{poletto1999} for arrays.
+Our work is based on established liveness algorithms; we define {\tt uses} and {\tt defs} on statements and thence compute liveness information \cite[pp.~213-216]{appel1998}
+
+live intervals \cite{poletto1999} for arrays.
 % cite appel
 
 \tikzset{
@@ -141,7 +142,7 @@ All accesses to an array use the {\tt ArrayPtr} type, which specifies the {\tt L
 data ArrayPtr = ArrayPtr Temp (Maybe Exp) Lbl
 \end{verbatim}
 
-Then one has
+Then we have:
 
 \begin{verbatim}
 defs :: Stmt -> IntSet
