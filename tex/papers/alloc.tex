@@ -58,7 +58,7 @@
 
 Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make them more useful to enthusiasts, one might hope to embed them, thus providing access to libraries. % , providing users with the facilities of libraries such as matplotlib.
 
-% conversely, array languages are good candidates for a new style of compiler because 
+% conversely, array languages are good candidates for a new style of compiler because
 
 APL implementations typically use reference-counting \cite[p.~47]{hui2020} for performance reasons, but this imposes on the calling code---one must increment the reference count and delegate each array to a garbage collector.
 
@@ -84,12 +84,12 @@ The Apple JIT compiler is a function
 \begin{verbatim}
 apple_compile :: ( FunPtr (CSize -> Ptr a)
                  , FunPtr (Ptr a -> ())
-                 ) 
+                 )
               -> String -> Bytes
 \end{verbatim}
 taking a pointer to {\tt malloc}, a pointer to {\tt free}, and source code as input and returning machine code; the compiler only generates these two foreign function calls and there is no runtime system.
 
-This simplifies linking in the JIT % only makes two ffi calls.
+This simplifies linking in the JIT. % only makes two ffi calls.
 
 % Converse: array languages are a good place to try out new compiler architectures!
 
@@ -114,7 +114,7 @@ Though such limited types may seem spartan to a functional programmer, this is e
 
 \subsubsection{Language}
 
-The language does not support recursion; all looping is implicit via maps, folds, etc.
+The language does not support recursion; all looping is implicit via maps, folds, etc. This is hardly
 
 \section{Method}
 
@@ -191,13 +191,13 @@ After liveness analysis, we have liveness information for each {\tt Stmt}, viz.
 % maybe introduce per-array tracking/temps before?
 
 \begin{verbatim}
-data Liveness = 
+data Liveness =
   Liveness { ins :: Set Lbl, outs :: Set Lbl }
 \end{verbatim}
 
-Then we can define {\tt done :: Stmt -> Set Lbl} for each array as the last {\tt Stmt}
+Then we can define {\tt done :: Stmt -> Set Lbl} for each array as the last {\tt Stmt} for which
 
-We simply insert a {\tt free} when the live interval for an array ends. Since liveness is tracked per-array, we look up the {\tt Temp}
+We then insert a {\tt free} when the live interval for an array ends. Since liveness is tracked per-array, we look up the {\tt Temp}
 
 \subsection{Generation}
 
@@ -208,7 +208,7 @@ For instance, we do not write:
 \begin{verbatim}
 apple_0:
 (condjump (< (reg r_2) (int 2)) apple_1)
-(movtemp r_0 
+(movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
 (jump apple_0)
 
@@ -221,7 +221,7 @@ But rather:
 (condjump (>= (reg r_2) (int 2)) apple_1)
 
 apple_0:
-(movtemp r_0 
+(movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
 (condjump (< (reg r_2) (int 2) apple_0)
 
@@ -233,7 +233,7 @@ Had we written the former, the {\tt free} would be unreachable, viz.
 \begin{verbatim}
 apple_0:
 (condjump (< (reg r_2) (int 2)) apple_1)
-(movtemp r_0 
+(movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
 (jump apple_0)
 (free r_2)
@@ -247,7 +247,7 @@ This is not the case with the latter:
 (condjump (>= (reg r_2) (int 2)) apple_1)
 
 apple_0:
-(movtemp r_0 
+(movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
 (condjump (< (reg r_2) (int 2) apple_0)
 (free r_2)
@@ -275,7 +275,6 @@ Apple has been embedded in Python and R. Observe the following interactions:
 \end{verbatim}
 
 \begin{verbatim}
-> source("./apple.R")
 > shoelace<-jit("
 λas.λbs.
     { Σ ⇐ [(+)/x]
@@ -288,12 +287,7 @@ Apple has been embedded in Python and R. Observe the following interactions:
 
 Thus we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector.
 
-\begin{verbatim}
- > {shoelace ← λas.λbs. {Σ ⇐ [(+)/x]; 0.5*abs.(Σ ((*)`as (1⊖bs)) - Σ ((*)`(1⊖as) bs))}; shoelace ⟨0,0,3⟩ ⟨0,4,4⟩}
-6.0
-\end{verbatim}
-
-Apple code can be called from C on its own terms, unlike NumPy or J, viz.
+Apple code can be called from C, viz.
 
 \begin{verbatim}
 #include <stdio.h>
@@ -331,6 +325,8 @@ int main(int argc, char *argv[]) {
     free(x);free(y);
 }
 \end{verbatim}
+
+Thus Apple code works with garbage collected languages and languages such as C with more primitive provisions.
 
 \section{Coda}
 
