@@ -198,7 +198,6 @@ Had we written the former, the {\tt free} would be unreachable, viz.
 \begin{verbatim}
 apple_0:
 (condjump (< (reg r_2) (int 2)) apple_1)
-(movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
 (jump apple_0)
 (free r_2)
@@ -296,7 +295,7 @@ Apple has the potential to be far more efficient; one could consolidate allocati
 \begin{verbatim}
  irange 0 20 1 ++ irange 0 10 1
 \end{verbatim}
-performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could allot arrays whose live intervals do not overlap to the same location in memory.
+performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory slots.
 
 This constrained high-level language occupies a sweet spot in compilers: because we control IR generation, we can do analyses that would be thwarted by pointer aliasing in C, and because we do not support references we simplify tracking.
 
