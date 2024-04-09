@@ -89,7 +89,7 @@ apple_compile :: ( FunPtr (CSize -> Ptr a)
 \end{verbatim}
 taking a pointer to {\tt malloc}, a pointer to {\tt free}, and source code as input and returning machine code; the compiler only generates these two foreign function calls and there is no runtime system.
 
-This simplifies linking in the JIT. % only makes two ffi calls.
+This simplifies linking in the JIT.
 
 % Converse: array languages are a good place to try out new compiler architectures!
 
@@ -146,7 +146,8 @@ data Exp = Const Int
 
 data Stmt = MovTemp Temp Exp
           | Write ArrayPtr Exp
-          | Malloc Lbl Temp Exp -- label, register, size
+          -- label, register, size
+          | Malloc Lbl Temp Exp
           | CondJump Exp Loc
           | Jump Loc | Label Loc
           | Free Temp
@@ -175,13 +176,14 @@ defs (Malloc l _ e) = singleton l
 defs _              = empty
 
 uses :: Stmt -> Set Lbl
-uses (Write (ArrayPtr _ _ l) e) = insert l (defsE e)
+uses (Write (ArrayPtr _ _ l) e) =
+  insert l (defsE e)
 uses ...
 \end{verbatim}
 
 % https://www.cs.rice.edu/~kvp1/spring2008/lecture7.pdf
 
-Note that with such labels one can access the array from different {\tt Temp}s; this is necessary for generating efficient code.
+By tracking arrays via these labels, one can access the array from different {\tt Temp}s; this is necessary for generating efficient code.
 
 % With {\tt defs} and {\tt uses} thus defined, we compute live intervals for {\tt Stmt}s \cite{poletto1999}.
 
@@ -337,6 +339,7 @@ Apple has the potential to be far more efficient; one could consolidate allocati
 \end{verbatim}
 performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory slots. % Possible because we are in a high-level language
 
+% rewrite: thrust is "thus constrained arrays are an interesting topic of study"
 This vindicates flat arrays; while banning arrays of functions \&c. may not be obvious to a functional programmer, studying this particular set of constraints has potential; one could use it to implement a compiler for a high-level language that produces performant and portable code.
 
 \bibliographystyle{ACM-Reference-Format}
