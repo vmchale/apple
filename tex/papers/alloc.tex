@@ -195,7 +195,7 @@ data Liveness =
   Liveness { ins :: Set Lbl, outs :: Set Lbl }
 \end{verbatim}
 
-Then we can define {\tt done :: Stmt -> Set Lbl} for each array as the last {\tt Stmt} for which
+Then we can define {\tt done :: Stmt -> Set Lbl}
 
 We then insert a {\tt free} when the live interval for an array ends. Since liveness is tracked per-array, we look up the {\tt Temp}
 
