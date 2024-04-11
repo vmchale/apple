@@ -32,12 +32,11 @@
 % export functions, not "calls into an array system"
 
 \begin{abstract}
-    Here we present statically determined memory allocation for flat, immutable arrays used in the Apple array system, a compiler for an expression-oriented functional language.
-    % TODO: basically put results first
-    Array languages like J and APL suffer from a lack of embedability in implementations. Adroit memory management can make embedding easier; one would like to avoid thinking about ownership across two garbage collectors.
-    Arrays are usable as pointers, with no dependence on a garbage collector.
-    Ownership is simple and Apple code does not constrain memory management in the host language.
-    Two embeddings---one in Python and one in R---are exhibited.
+    Array languages like J and APL suffer from a lack of embedability in implementations.
+    Here we present statically determined memory allocation for flat, immutable arrays used in the Apple array system, a JIT compiler for an expression-oriented functional language.
+    The method is a straightforward extension of liveness analysis familiar to compiler writers.
+    Ownership is simple and Apple does not constrain memory management in the host language, lowering requirements to
+    % simpler all-around and
 \end{abstract}
 
 \title{Apple Array Allocation}
@@ -56,27 +55,22 @@
 
 \section{Introduction}
 
-Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make them more useful to enthusiasts, one might hope to embed them, thus providing access to libraries. % , providing users with the facilities of libraries such as matplotlib.
+\subsection{Background}
+
+Array languages such as APL and J suffer from undeserved obscurity \cite{hsu2023}. In order to make them more useful to enthusiasts, one might hope to embed them, thus providing access to developed libraries, e.g. matplotlib \cite{hunter2007}.
 
 % conversely, array languages are good candidates for a new style of compiler because
 
-APL implementations typically use reference-counting \cite[p.~47]{hui2020} for performance reasons, but this imposes on the calling code---one must increment the reference count and delegate each array to a garbage collector.
-
-\subsection{Background}
-% introduce APL/J first then C?
-
-Rather than comparing to competitors such as NumPy \cite{harris2020}, we take inspiration from C---we would like an array language that does not impose on its host language \cite{kell2017}.
-C is almost vulgar in offering pointers as arrays; the typical APL implementation uses reference-counting \cite[p.~47]{hui2020} for performance reasons.
+APL implementations typically use reference-counting \cite[p.~47]{hui2020} for performance reasons, but this imposes on the calling code---one must increment the reference count and delegate each array to a garbage collector. Our arrays are pointers managed by the system's {\tt malloc} and {\tt free};
+% make it more equal in embedding (like C)
 
 By compiling high-level array expressions to a C procedure with all allocations and frees predetermined, we reduce the demands of calling Apple code in other environments.
 
 % background: sad case of .NET/APL,
+
 % J: "server" API depends on global state
 
-% also show off matplotlib
-% actually fairly burdensome to have each be a reference counter, also not all languages have an RC garbage collector!
-%
-% insight: it is precisely because it is high-level that this works...
+% show off matplotlib?
 
 \subsection{Apple Array System}
 
@@ -89,9 +83,17 @@ apple_compile :: ( FunPtr (CSize -> Ptr a)
 \end{verbatim}
 taking a pointer to {\tt malloc}, a pointer to {\tt free}, and source code as input and returning machine code; the compiler only generates these two foreign function calls and there is no runtime system.
 
-This simplifies linking in the JIT.
+This simplifies linking in the JIT; the lack of a garbage collector makes for a good example exploring compiler architectures---one could imagine compiling on one computer and then sending machine code elsewhere for execution.
 
-% Converse: array languages are a good place to try out new compiler architectures!
+\subsubsection{Language}
+
+The language is expression-oriented and all data are immutable. Recursion is not supported; all looping is implicit. This is hardly burdensome for array programmers, who favor vector solutions already \cite[Chapter.~31]{stokes2015}.
+
+The below computes the Kullback-Liebler divergence using a fold and a zip:
+
+\begin{verbatim}
+λp.λq. (+)/([x*_.(x%y)]`p q)
+\end{verbatim}
 
 \subsubsection{Flat Array Types}
 
@@ -105,16 +107,9 @@ A {\tt 2x4} array:
     \bitbox{1}{2} & \bitbox{1}{2} & \bitbox{1}{4} & \bitbox{1}{$a_{00}$} & \bitbox{1}{$a_{01}$} & \bitbox{1}{$a_{02}$} & \bitbox{1}{$a_{03}$} & \bitbox{1}{$a_{10}$} & \bitbox{1}{$a_{11}$} & \bitbox{1}{$a_{12}$} & \bitbox{1}{$a_{13}$}
 \end{bytefield}
 
-All elements are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types. Arrays of arrays are treated as higher-dimensional arrays.
-
-% no recursion
+All elements are flat; there are only two primitive types: 64-bit integers and 64-bit floats. Arrays of tuples are supported but not arrays of tuples of arrays; there are no user-defined types. Arrays of arrays are treated as higher-dimensional arrays. These limitations are typical of array languages and are enough for nontrivial computation, for instance neural networks.
 
 Such constraints, with extra bookkeeping information added during IR generation, are responsible for the surprising fact that memory allocation can be completely determined at compile time.
-Though such limited types may seem spartan to a functional programmer, this is enough to stand toe-to-toe with NumPy. % and enough for machine learning
-
-\subsubsection{Language}
-
-The language does not support recursion; all looping is implicit via maps, folds, etc. This is hardly
 
 \section{Method}
 
@@ -176,8 +171,7 @@ defs (Malloc l _ e) = singleton l
 defs _              = empty
 
 uses :: Stmt -> Set Lbl
-uses (Write (ArrayPtr _ _ l) e) =
-  insert l (defsE e)
+uses (Write (ArrayPtr _ _ l) e) = insert l (defsE e)
 uses ...
 \end{verbatim}
 
@@ -261,7 +255,8 @@ Since jumps are only generated by the compiler in a few cases, we can guarantee 
 
 \section{Embeddings}
 
-Apple has been embedded in Python and R. Observe the following interactions:
+% https://numpy.org/doc/stable/reference/c-api/array.html#
+The Apple JIT has been embedded in Python as an extension module \cite{pythonext}. Observe the following interaction:
 
 \begin{verbatim}
 >>> import apple
@@ -276,6 +271,8 @@ Apple has been embedded in Python and R. Observe the following interactions:
 6.0
 \end{verbatim}
 
+There are wrappers for calling the JIT from R as well \cite{wickham}:
+
 \begin{verbatim}
 > shoelace<-jit("
 λas.λbs.
@@ -289,7 +286,7 @@ Apple has been embedded in Python and R. Observe the following interactions:
 
 Thus we can run Apple code on NumPy arrays and R vectors without frustrating the garbage collector.
 
-Apple code can be called from C, viz.
+We can also compile to an object file and then call from C, viz.
 
 \begin{verbatim}
 #include <stdio.h>
@@ -328,7 +325,7 @@ int main(int argc, char *argv[]) {
 }
 \end{verbatim}
 
-Thus Apple code works with garbage collected languages and languages such as C with more primitive provisions.
+Thus Apple code works with languages such as C with more primitive provisions.
 
 \section{Coda}
 
@@ -337,10 +334,11 @@ Apple has the potential to be far more efficient; one could consolidate allocati
 \begin{verbatim}
  irange 0 20 1 ++ irange 0 10 1
 \end{verbatim}
-performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could do something like linear register allocation in which arrays are assigned to memory slots. % Possible because we are in a high-level language
+performs one allocation for each {\tt irange} but this could be consolidated into one---{\tt irange 0 20 1} is inferred to have type {\tt Vec 20 int} in the existing compiler; with liveness and size information one could allot arrays which are not live at the same time to % do something like linear register allocation in which arrays are assigned to memory slots.
 
+% Possible because we are in a high-level language
 % rewrite: thrust is "thus constrained arrays are an interesting topic of study"
-This vindicates flat arrays; while banning arrays of functions \&c. may not be obvious to a functional programmer, studying this particular set of constraints has potential; one could use it to implement a compiler for a high-level language that produces performant and portable code.
+% This vindicates flat arrays; while banning arrays of functions \&c. may not be obvious to a functional programmer, studying this particular set of constraints has potential; one could use it to implement a compiler for a high-level language that produces performant and portable code.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{alloc.bib}
