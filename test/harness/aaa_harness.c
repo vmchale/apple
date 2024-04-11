@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../c/apple.c"
+#include"../../include/apple_abi.h"
 
 extern U aaa(U, U);
 
