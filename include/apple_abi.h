@@ -7,6 +7,7 @@
 typedef double F;typedef int64_t I; typedef void* U; typedef bool B;
 
 #define DO(i,n,a) {I i;for(i=0;i<n;i++){a;}}
+#define V(n,xs,p) {p=malloc(16+8*n);I* i_p=p;*i_p=1;i_p[1]=n;memcpy(p+16,xs,8*n);}
 
 typedef struct Af { I rnk; I* dim; F* xs; } Af;
 typedef struct Ai { I rnk; I* dim; I* xs; } Ai;
