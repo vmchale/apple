@@ -4,17 +4,15 @@
 
 typedef double F;typedef int64_t I; typedef void* U;
 
+#define V(n,xs,p) {p=malloc(16+8*n);I* i_p=p;*i_p=1;i_p[1]=n;memcpy(p+16,xs,8*n);}
+
 extern F shoelace(U, U);
 
 int main(int argc, char *argv[]) {
     F xs[] = {0,4,4};
     F ys[] = {0,0,3};
-    U x=malloc(40);U y=malloc(40);
-    I* i_x=x;I* i_y=y;
-    *i_x=1;*i_y=1;
-    i_x[1]=3;i_y[1]=3;
-    memcpy(x+16,xs,24);
-    memcpy(y+16,ys,24);
+    U x; V(3,xs,x);
+    U y; V(3,ys,y);
     printf("%f\n", shoelace(x,y));
     free(x);free(y);
 }
