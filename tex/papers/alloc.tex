@@ -145,8 +145,7 @@ aeval :: Expr -> IRM (Temp, Lbl, [Stmt])
 \end{verbatim}
 translates an array expression, assigning a {\tt Lbl} for subsequent access and associating the labeled array with a {\tt Temp} to be used to free it.
 
-All accesses to an array use an {\tt ArrayPtr}, which specifies the {\tt Lbl} for tracking within the compiler. In this way we avoid being confounded by pointer aliasing.
-% pointer aliasing vs. abstract arrays.
+All accesses to an array use an {\tt ArrayPtr}, which specifies the {\tt Lbl} for tracking within the compiler. In this way we avoid being confounded by multiple pointers to the same array. 
 
 \begin{verbatim}
 -- register, offset, label
@@ -169,7 +168,6 @@ uses ...
 \end{verbatim}
 
 By tracking arrays via these labels, one can access the array from different {\tt Temp}s; this is necessary for generating efficient code.
-% pointer aliasing
 
 After liveness analysis, we have liveness information for each {\tt Stmt}, viz.
 
