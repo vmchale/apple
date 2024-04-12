@@ -11,13 +11,14 @@ module Hs.A ( Apple (..)
 
 import           Control.Monad         (forM, zipWithM_)
 import           Data.Int              (Int64)
+import           Data.List.Split       (chunksOf)
 import qualified Data.Text             as T
 import           Data.Word             (Word8)
 import           Foreign.Marshal.Array (peekArray)
 import           Foreign.Ptr           (Ptr, castPtr, plusPtr)
 import           Foreign.Storable      (Storable (..))
 import           Numeric               (showHex)
-import           Prettyprinter         (Pretty (..), (<+>))
+import           Prettyprinter         (Doc, Pretty (..), align, brackets, concatWith, hardline, indent, space, (<+>))
 import           Prettyprinter.Ext
 
 type AI = Apple Int64
@@ -38,8 +39,12 @@ instance (Storable a, Storable b, Storable c, Storable d) => Storable (P4 a b c 
     sizeOf _ = sizeOf(undefined::a)+sizeOf(undefined::b)+sizeOf(undefined::c)+sizeOf(undefined::d)
     peek p = P4 <$> peek (castPtr p) <*> peek (p `plusPtr` sizeOf(undefined::a)) <*> peek (p `plusPtr` (sizeOf(undefined::a)+sizeOf(undefined::b))) <*> peek (p `plusPtr` (sizeOf(undefined::a)+sizeOf(undefined::b)+sizeOf(undefined::c)))
 
+pE :: Pretty a => [Int64] -> [a] -> Doc ann
+pE [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ", " <> y) (pretty<$>chunksOf (fromIntegral n) xs) <> space))
+pE _ xs      = pretty xs
+
 instance Pretty a => Pretty (Apple a) where
-    pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pretty xs
+    pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pE dims xs
 
 instance (Pretty a, Pretty b) => Pretty (Pp a b) where
     pretty (Pp x y) = tupledBy "*" [pretty x, pretty y]
