@@ -7,27 +7,11 @@
 \usepackage{tikz}
 \usepackage{hyperref}
 \usepackage{url}
-\usepackage{mdframed}
 
 \begin{document}
 
 % https://mirror.math.princeton.edu/pub/CTAN/macros/unicodetex/latex/fontspec/fontspec.pdf
 \setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
-
-% https://mirrors.mit.edu/CTAN/macros/latex/contrib/mdframed/mdframed.pdf
-\newmdenv[
-  linecolor=blue,
-  linewidth=2pt,
-  topline=false,
-  bottomline=false,
-  rightline=false,
-  leftline=true,
-  skipabove=0,
-  skipbelow=0,
-  innertopmargin=0,
-  innerbottommargin=0,
-  innerleftmargin=0,
-]{live}
 
 \begin{abstract}
     Array languages like J and APL suffer from a lack of embedability in implementations.
