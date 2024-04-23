@@ -41,6 +41,7 @@
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
 - [ ] https://www.compart.com/en/unicode/U+1D66
+- [ ] § is fun I love typographers
 ## Optimization
 - [ ] arrays in assembler: register indirection?
 ```
