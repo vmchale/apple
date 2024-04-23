@@ -137,8 +137,8 @@ library
 
 library as
     exposed-modules:
-        As
-        Nasm
+        H
+    other-modules: Nasm, As
 
     hs-source-dirs:   as
     default-language: Haskell2010
@@ -220,10 +220,7 @@ executable writeo
     build-depends:
         base,
         as,
-        apple,
         optparse-applicative >=0.14.0.0,
-        bytestring,
-        prettyprinter,
         text
 
     if impl(ghc >=8.10)
@@ -297,12 +294,9 @@ test-suite apple-o
         tasty-hunit,
         temporary,
         process,
-        bytestring,
         text,
         filepath,
-        directory,
-        apple,
-        prettyprinter
+        directory
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages

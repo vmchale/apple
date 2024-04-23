@@ -1,19 +1,11 @@
 module Main (main) where
 
-import qualified As
-import           CGen
-import           Control.Exception         (throwIO)
-import qualified Data.ByteString.Lazy      as BSL
-import qualified Data.Text                 as T
-import qualified Data.Version              as V
-import qualified Nasm
+import qualified Data.Text           as T
+import qualified Data.Version        as V
+import           H
 import           Options.Applicative
-import           P
-import qualified Paths_apple               as P
-import           Prettyprinter.Render.Text (hPutDoc)
-import           System.Info               (arch)
-import           System.IO                 (IOMode (WriteMode), withFile)
-
+import qualified Paths_apple         as P
+import           System.Info         (arch)
 
 fp :: Parser FilePath
 fp = argument str
@@ -25,8 +17,6 @@ fun = strOption
     (short 'f'
     <> metavar "FUNCTION"
     <> help "Function name in generated .o")
-
-data Arch = Aarch64 | X64
 
 farch :: Parser Arch
 farch = fmap parseArch $ optional $ strOption
@@ -58,12 +48,3 @@ versionMod = infoOption (V.showVersion P.version) (short 'V' <> long "version" <
 
 main :: IO ()
 main = run =<< execParser wrapper
-
-run :: (FilePath, Arch, T.Text) -> IO ()
-run (fpϵ, a, n) = do
-    contents <- BSL.readFile fpϵ
-    t <- either throwIO (pure.fst) (getTy contents)
-    ct <- either throwIO pure $ pCty n t
-    let asm=case a of {X64 -> Nasm.writeO; Aarch64 -> As.writeO}
-    asm n contents True
-    withFile (T.unpack n <> ".h") WriteMode $ \h -> hPutDoc h ct
