@@ -118,7 +118,6 @@ library
         deepseq,
         text,
         mtl >=2.2.2,
-        tardis,
         containers >=0.6.0.1,
         microlens,
         microlens-mtl >=0.1.8.0,
