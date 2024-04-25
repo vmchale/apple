@@ -8,7 +8,7 @@ module Asm.Aarch64.Byte ( allFp, assembleCtx, dbgFp ) where
 import           Asm.Aarch64
 import           Asm.M
 import           Control.Monad              (when)
-import           Control.Monad.Tardis       (Tardis, evalTardis, getFuture, getPast)
+import           Control.Monad.Tardis       (Tardis, getFuture, getPast, evalTardis)
 import           Control.Monad.Tardis.Class (modifyBackwards, modifyForwards)
 import           Data.Bifunctor             (second)
 import           Data.Bits                  (Bits (..))
@@ -55,6 +55,7 @@ allFp (ds, instrs) = do
 type A = Tardis (M.Map Label Int) (M.Map Label Int)
 
 asm c is=evalTardis (asmA 0 c is) (M.empty, M.empty)
+-- runA = evalTardis
 
 get :: Label -> A Int
 get l = do
@@ -63,11 +64,11 @@ get l = do
     pure $ M.findWithDefault (error "Internal error: label not found") l (s0<>s1)
 
 iSz :: [AArch64 AReg FAReg a] -> Int
-iSz (Label{}:asms)  = iSz asms
-iSz (MovRCf{}:asms) = 16+iSz asms
-iSz (MovRL{}:asms)  = 16+iSz asms
-iSz (_:asms)        = 4+iSz asms
-iSz []              = 0
+iSz (Label _ l:asms) = iSz asms
+iSz (MovRCf{}:asms)  = 16+iSz asms
+iSz (MovRL{}:asms)   = 16+iSz asms
+iSz (_:asms)         = 4+iSz asms
+iSz []               = 0
 
 be :: Enum a => a -> Word8
 be = fromIntegral.fromEnum
