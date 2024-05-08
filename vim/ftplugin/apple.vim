@@ -28,6 +28,7 @@ setlocal errorformat=%Eatc:\ %l:%c:%m
 
 function! ATCheck()
     exec 'silent make'
+    exec 'redraw!'
     exec 'cw'
 endfunction
 
