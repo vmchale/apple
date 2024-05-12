@@ -70,6 +70,9 @@ isI I = True; isI _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
 
+rel :: Builtin -> Maybe IRel
+rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Just ILeq; rel Gte=Just IGeq; rel _=Nothing
+
 mIF :: T a -> Maybe (T a)
 mIF (Arr _ F)=Just F; mIF (Arr _ I)=Just I; mIF _=Nothing
 
@@ -518,54 +521,14 @@ eval (EApp _ (EApp _ (Builtin _ Min) e0) e1) t = do
     t1 <- newITemp
     pl1 <- eval e1 t1
     pure $ pl0 $ pl1 ++ [MT t (Tmp t0), Cmov (IRel ILt (Tmp t1) (Tmp t0)) t (Tmp t1)]
-eval (EApp _ (EApp _ (Builtin (Arrow I _) Eq) e0) e1) t = do
+eval (EApp _ (EApp _ (Builtin (Arrow I _) op) e0) e1) t | Just iop <- rel op = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (IRel IEq (Tmp e0R) (Tmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow I _) Neq) e0) e1) t = do
-    e0R <- newITemp; e1R <- newITemp
-    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (IRel INeq (Tmp e0R) (Tmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow I _) Gt) e0) e1) t = do
-    e0R <- newITemp; e1R <- newITemp
-    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (IRel IGt (Tmp e0R) (Tmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow I _) Lt) e0) e1) t = do
-    e0R <- newITemp; e1R <- newITemp
-    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (IRel ILt (Tmp e0R) (Tmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow I _) Gte) e0) e1) t = do
-    e0R <- newITemp; e1R <- newITemp
-    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (IRel IGeq (Tmp e0R) (Tmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow I _) Lte) e0) e1) t = do
-    e0R <- newITemp; e1R <- newITemp
-    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (IRel ILeq (Tmp e0R) (Tmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow F _) Eq) e0) e1) t = do
+    pure $ plE0 ++ plE1 ++ [Cset (IRel iop (Tmp e0R) (Tmp e1R)) t]
+eval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op = do
     e0R <- newFTemp; e1R <- newFTemp
     plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (FRel FEq (FTmp e0R) (FTmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow F _) Neq) e0) e1) t = do
-    e0R <- newFTemp; e1R <- newFTemp
-    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (FRel FNeq (FTmp e0R) (FTmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow F _) Gt) e0) e1) t = do
-    e0R <- newFTemp; e1R <- newFTemp
-    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (FRel FGt (FTmp e0R) (FTmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow F _) Lt) e0) e1) t = do
-    e0R <- newFTemp; e1R <- newFTemp
-    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (FRel FLt (FTmp e0R) (FTmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow F _) Gte) e0) e1) t = do
-    e0R <- newFTemp; e1R <- newFTemp
-    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (FRel FGeq (FTmp e0R) (FTmp e1R)) t]
-eval (EApp _ (EApp _ (Builtin (Arrow F _) Lte) e0) e1) t = do
-    e0R <- newFTemp; e1R <- newFTemp
-    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (FRel FLeq (FTmp e0R) (FTmp e1R)) t]
+    pure $ plE0 ++ plE1 ++ [Cset (FRel fop' (FTmp e0R) (FTmp e1R)) t]
 eval (EApp _ (Builtin _ Head) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
@@ -589,8 +552,8 @@ eval (EApp _ (Builtin _ Floor) x) t = do
     pure $ plX ++ [MT t (CFloor (FTmp xR))]
 eval e _          = error (show e)
 
-mFrel :: Builtin -> Maybe FRel
-mFrel Gte=Just FGeq; mFrel Lte=Just FLeq; mFrel Eq=Just FEq; mFrel Neq=Just FNeq; mFrel Lt=Just FLt; mFrel Gt=Just FGt; mFrel _=Nothing
+frel :: Builtin -> Maybe FRel
+frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; frel Lt=Just FLt; frel Gt=Just FGt; frel _=Nothing
 
 mFop :: Builtin -> Maybe FBin
 mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus= Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp; mFop Max=Just FMax; mFop Min=Just FMin; mFop _=Nothing
@@ -602,11 +565,11 @@ mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
 
 cond :: E (T ()) -> E (T ()) -> E (T ()) -> Either FTemp Temp -> CM (Maybe Int, [CS])
-cond (EApp _ (EApp _ (Builtin (Arrow F _) rel) c0) c1) e0 e1 t | Just frel <- mFrel rel, isIF (eAnn e0) = do
+cond (EApp _ (EApp _ (Builtin (Arrow F _) o) c0) c1) e0 e1 t | Just f <- frel o, isIF (eAnn e0) = do
     c0R <- newFTemp; c1R <- newFTemp
     plC0 <- feval c0 c0R; plC1 <- feval c1 c1R
     plE0 <- eeval e0 t; plE1 <- eeval e1 t
-    pure (Nothing, plC0 ++ plC1 ++ [If (FRel frel (FTmp c0R) (FTmp c1R)) plE0 plE1])
+    pure (Nothing, plC0 ++ plC1 ++ [If (FRel f (FTmp c0R) (FTmp c1R)) plE0 plE1])
 cond p e0 e1 t | isIF (eAnn e0) = do
     pR <- newITemp
     plP <- eval p pR; plE0 <- eeval e0 t; plE1 <- eeval e1 t
