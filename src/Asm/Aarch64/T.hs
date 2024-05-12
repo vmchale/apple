@@ -86,6 +86,9 @@ ir (IR.WrF (IR.AP t (Just eI) _) e) = do
     i <- nextI; iI <- nextI
     plE <- feval e (IR.FTemp i); plEI <- eval eI (IR.ITemp iI)
     pure $ plE ++ plEI ++ [StrD () (FReg i) (BI (absReg t) (IReg iI) Zero)]
+ir (IR.WrF (IR.AP t Nothing _) e) = do
+    i <- nextI; plE <- feval e (IR.FTemp i)
+    pure $ plE ++ [StrD () (FReg i) (R (absReg t))]
 ir (IR.MJ (IR.IRel Op.INeq (IR.Reg r) (IR.ConstI 0)) l) =
     pure [Cbnz () (absReg r) l]
 ir (IR.MJ (IR.IU Op.IEven (IR.Reg r)) l) =
