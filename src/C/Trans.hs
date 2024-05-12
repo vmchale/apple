@@ -5,12 +5,14 @@ module C.Trans ( writeC ) where
 import           A
 import           C
 import           Control.Composition        (thread)
+import           Control.Monad              (zipWithM)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor             (second)
 import           Data.Either                (rights)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
+import           Data.List                  (scanl')
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import           Nm
@@ -91,6 +93,8 @@ f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
 bT :: Integral b => T a -> b
 bT (P ts) = sum (bT<$>ts); bT F = 8; bT I = 8
+
+szT = scanl' (\off ty -> off+bT ty::Int64) 0
 
 staRnk :: Integral b => Sh a -> Maybe b
 staRnk Nil           = Just 0
@@ -715,4 +719,20 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
         loop=For i 0 ILt (Tmp szR) loopBody
     pure $ plE++plAcc++MT szR (EAt (ADim eR 0 l)):[loop]
+feval (EApp _ (Builtin _ (TAt i)) e) t = do
+    k <- newITemp
+    (offs, a, plT) <- πe e k
+    pure $ plT ++ MX t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
 feval e _ = error (show e)
+
+m'pop :: Maybe CE -> [CS]
+m'pop = maybe [] ((:[]).Pop)
+
+πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [CS])
+πe (EApp (P tys) (Builtin _ Last) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
+    xR <- newITemp
+    (lX, plX) <- aeval xs xR
+    pure (offs, Just szE, plX++[Sa t szE, CpyE (Raw t 0 Nothing 8) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
+πe (Tup (P tys) es) t | offs <- szT tys, sz <- ConstI$last offs = do
+    ss <- concat <$> zipWithM (\e off -> case eAnn e of {F -> do {f <- newFTemp; plX <- feval e f; pure $ plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)]}}) es offs
+    pure (offs, Just sz, Sa t sz:ss)
