@@ -13,6 +13,7 @@ import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
+import           Data.Tuple.Extra           (third3)
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import           Nm
@@ -149,7 +150,8 @@ writeF (Lam _ x e) (FA fr:rs) ret = do
     modify (addD x fr)
     writeF e rs ret
 writeF e [] (Right r) | isArr (eAnn e) = aeval e r
-writeF e [] (Right r) | ty <- eAnn e, isI ty || isΠ ty = (Nothing,)<$>eval e r
+writeF e [] (Right r) | isI (eAnn e) = (Nothing,)<$>eval e r
+writeF e [] (Right r) | isΠ (eAnn e) = (\ ~(_,_,ss) -> (Nothing, ss))<$>πe e r
 writeF e [] (Left r) = (Nothing,)<$>feval e r
 
 writeRF :: E (T ()) -> [Either FTemp Temp] -> Either FTemp Temp -> CM [CS]
@@ -486,7 +488,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠ (eAnn seed) 
     a <- nextArr t
     (_, ss) <- writeF op [IPA acc] (Right acc)
     let loop=For i 0 ILt (Tmp nR) (CpyE (AElem t 1 (Tmp i) (Just a) πsz) (Raw acc 0 Nothing undefined) 1 πsz:ss)
-    pure (Just a, plS++plN++Ma a t 1 (Tmp nR) πsz:Wr (ADim t 0 (Just a)) (Tmp nR):loop:m'pop mP)
+    pure (Just a, Sa acc (ConstI πsz):plS++plN++Ma a t 1 (Tmp nR) πsz:Wr (ADim t 0 (Just a)) (Tmp nR):loop:m'pop mP)
 aeval e _ = error (show e)
 
 plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
@@ -563,6 +565,10 @@ eval (EApp _ (Builtin _ Floor) x) t = do
     xR <- newFTemp
     plX <- feval x xR
     pure $ plX ++ [MT t (CFloor (FTmp xR))]
+eval (EApp _ (Builtin _ (TAt i)) e) t = do
+    k <- newITemp
+    (offs, a, plT) <- πe e k
+    pure $ plT ++ MT t (EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
 eval e _          = error (show e)
 
 frel :: Builtin -> Maybe FRel
@@ -739,5 +745,13 @@ m'pop = maybe [] ((:[]).Pop)
     pure (offs, Just szE, plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- ConstI$last offs = do
     ss <- concat <$> zipWithM (\e off -> case eAnn e of {F -> do {f <- newFTemp; plX <- feval e f; pure $ plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)]}}) es offs
-    pure (offs, Just sz, Sa t sz:ss)
+    pure (offs, Just sz, ss)
+πe (Var (P tys) x) t = do
+    st <- gets vars
+    pure (szT tys, Nothing, [MT t (Tmp$getT st x)])
+πe (LLet _ (n,e') e) t | isF (eAnn e') = do
+    eR <- newFTemp
+    plE <- feval e' eR
+    modify (addD n eR)
+    third3 (plE++) <$> πe e t
 πe e _ = error (show e)
