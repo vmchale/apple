@@ -475,7 +475,10 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | Just ty <- if1 
     acc <- rtemp ty
     plS <- eeval seed acc
     a <- nextArr t
-    pure (Just a, plS++plN++undefined)
+    i <- newITemp
+    ss <- writeRF op [acc] acc
+    let loop=For i 0 ILt (Tmp nR) (wt (AElem t 1 (Tmp i) (Just a) 8) acc:ss)
+    pure (Just a, plS++plN++Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[loop])
 aeval e _ = error (show e)
 
 plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
