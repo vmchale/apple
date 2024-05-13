@@ -7,6 +7,7 @@ optIR :: [Stmt] -> [Stmt]
 optIR = fmap opt
 
 optE :: Exp -> Exp
+optE (IB ITimes (ConstI 1) e) = optE e
 optE (IB ITimes e (ConstI 1)) = optE e
 optE (IB IPlus e (ConstI 0))  = optE e
 optE (IB op e e')             = IB op (optE e) (optE e')
