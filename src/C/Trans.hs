@@ -72,7 +72,7 @@ isF F = True; isF _ = False
 isI I = True; isI _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
-isΠ P{}=True; isΠ _=False
+isΠIF (P ts)=all isIF ts; isΠIF _=False
 
 
 rel :: Builtin -> Maybe IRel
@@ -132,6 +132,8 @@ writeCM eϵ = do
     go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX FRet0 (FTmp f)]) <$> feval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = eval e CRet
              | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$r++[MT CRet (Tmp i)]++case l of {Just m -> [RA m]; Nothing -> []}}
+             | P [F,F] <- eAnn e = do {t <- newITemp; (_,_,_,p) <- πe e t; pure$Sa t 16:p++[MX FRet0 (FAt (Raw t 0 Nothing 8)), MX FRet1 (FAt (Raw t 1 Nothing 8)), Pop 16]}
+             | ty@P{} <- eAnn e, b64 <- bT ty, (b,0) <- b64 `quotRem` 8 = let b=ConstI 64 in do {t <- newITemp; (_,_,ls,pl) <- πe e t; pure (Sa t b:pl++undefined)}
 
 rtemp :: T a -> CM (Either FTemp Temp)
 rtemp F=Left<$>newFTemp; rtemp I=Right<$>newITemp
@@ -151,7 +153,7 @@ writeF (Lam _ x e) (FA fr:rs) ret = do
     writeF e rs ret
 writeF e [] (Right r) | isArr (eAnn e) = aeval e r
 writeF e [] (Right r) | isI (eAnn e) = (Nothing,)<$>eval e r
-writeF e [] (Right r) | isΠ (eAnn e) = (\ ~(_,_,ss) -> (Nothing, ss))<$>πe e r
+writeF e [] (Right r) | isΠIF (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
 writeF e [] (Left r) = (Nothing,)<$>feval e r
 
 writeRF :: E (T ()) -> [Either FTemp Temp] -> Either FTemp Temp -> CM [CS]
@@ -480,10 +482,10 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | Just ty <- if1 
     ss <- writeRF op [acc] acc
     let loop=For i 0 ILt (Tmp nR) (wt (AElem t 1 (Tmp i) (Just a) 8) acc:ss)
     pure (Just a, plS++plN++Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[loop])
-aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠ (eAnn seed) = do
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠIF (eAnn seed) = do
     nR <- newITemp; plN <- eval n nR; i <- newITemp
     acc <- newITemp
-    (szs, mP, plS) <- πe seed acc
+    (szs,mP,_,plS) <- πe seed acc
     let πsz=last szs
     a <- nextArr t
     (_, ss) <- writeF op [IPA acc] (Right acc)
@@ -567,7 +569,7 @@ eval (EApp _ (Builtin _ Floor) x) t = do
     pure $ plX ++ [MT t (CFloor (FTmp xR))]
 eval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
-    (offs, a, plT) <- πe e k
+    (offs, a, _, plT) <- πe e k
     pure $ plT ++ MT t (EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
 eval e _          = error (show e)
 
@@ -731,27 +733,27 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     pure $ plE++plAcc++MT szR (EAt (ADim eR 0 l)):[loop]
 feval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
-    (offs, a, plT) <- πe e k
+    (offs, a, _, plT) <- πe e k
     pure $ plT ++ MX t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
 feval e _ = error (show e)
 
 m'pop :: Maybe CE -> [CS]
 m'pop = maybe [] ((:[]).Pop)
 
-πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [CS])
+πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [Int], [CS])
 πe (EApp (P tys) (Builtin _ Last) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR
-    pure (offs, Just szE, plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
+    pure (offs, Just szE, [], plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- ConstI$last offs = do
     ss <- concat <$> zipWithM (\e off -> case eAnn e of {F -> do {f <- newFTemp; plX <- feval e f; pure $ plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)]}}) es offs
-    pure (offs, Just sz, ss)
+    pure (offs, Just sz, undefined, ss)
 πe (Var (P tys) x) t = do
     st <- gets vars
-    pure (szT tys, Nothing, [MT t (Tmp$getT st x)])
+    pure (szT tys, Nothing, undefined, [MT t (Tmp$getT st x)])
 πe (LLet _ (n,e') e) t | isF (eAnn e') = do
     eR <- newFTemp
     plE <- feval e' eR
     modify (addD n eR)
-    third3 (plE++) <$> πe e t
+    (\ ~(x,y,z,w) -> (x,y,z,plE++w)) <$> πe e t
 πe e _ = error (show e)
