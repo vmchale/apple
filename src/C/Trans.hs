@@ -700,7 +700,7 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arr
     i <- newITemp
     (l, plE) <- aeval e eR
     plAcc <- feval seed acc
-    ss <- writeRF op [Left acc, x] (Left acc)
+    ss <- writeRF op [x, Left acc] (Left acc)
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss++[MT i (Tmp i-1)]
         loop=While i IGeq 0 loopBody
     pure $ plE++plAcc++MT i (EAt (ADim eR 0 l)-1):[loop]
