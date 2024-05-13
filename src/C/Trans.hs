@@ -7,7 +7,7 @@ import           C
 import           Control.Composition        (thread)
 import           Control.Monad              (zipWithM)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
-import           Data.Bifunctor             (first, second)
+import           Data.Bifunctor             (second)
 import           Data.Either                (rights)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
