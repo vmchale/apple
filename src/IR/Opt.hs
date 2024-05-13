@@ -19,7 +19,8 @@ optE (EAt p)                  = EAt (optP p)
 optE e                        = e
 
 optF :: FExp -> FExp
-optF fe = fe
+optF (FAt p) = FAt (optP p)
+optF fe      = fe
 
 optP :: AE -> AE
 optP (AP t me l) = AP t (fmap optE me) l
