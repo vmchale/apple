@@ -71,6 +71,8 @@ isF F = True; isF _ = False
 isI I = True; isI _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
+isΠ P{}=True; isΠ _=False
+
 
 rel :: Builtin -> Maybe IRel
 rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Just ILeq; rel Gte=Just IGeq; rel _=Nothing
@@ -140,20 +142,21 @@ writeF :: E (T ())
 writeF (Lam _ x e) (AA r l:rs) ret = do
     modify (addAVar x (l,r))
     writeF e rs ret
-writeF (Lam _ x e) (IA r:rs) ret = do
+writeF (Lam _ x e) (IPA r:rs) ret = do
     modify (addVar x r)
     writeF e rs ret
 writeF (Lam _ x e) (FA fr:rs) ret = do
     modify (addD x fr)
     writeF e rs ret
 writeF e [] (Right r) | isArr (eAnn e) = aeval e r
-writeF e [] (Right r) | isI (eAnn e) = (Nothing,)<$>eval e r
+writeF e [] (Right r) | ty <- eAnn e, isI ty || isΠ ty = (Nothing,)<$>eval e r
 writeF e [] (Left r) = (Nothing,)<$>feval e r
 
 writeRF :: E (T ()) -> [Either FTemp Temp] -> Either FTemp Temp -> CM [CS]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
-data Arg = IA !Temp | FA !FTemp | AA !Temp (Maybe Int) | PA !Temp [Int64] (Maybe CE)
+data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe Int)
+data R = N | Maybe Int
 
 mt :: ArrAcc -> Either FTemp Temp -> CS
 mt p = either (`MX` FAt p) (`MT` EAt p)
@@ -161,10 +164,7 @@ mt p = either (`MX` FAt p) (`MT` EAt p)
 wt :: ArrAcc -> Either FTemp Temp -> CS
 wt p = either (WrF p.FTmp) (Wr p.Tmp)
 
-ra (Left f)=FA f; ra (Right r)=IA r
-
-ax (Left x)  = (id,(x:))
-ax (Right x) = ((x:),id)
+ra (Left f)=FA f; ra (Right r)=IPA r
 
 eeval :: E (T ()) -> Either FTemp Temp -> CM [CS]
 eeval e = either (feval e) (eval e)
@@ -470,15 +470,23 @@ aeval (EApp oTy (Builtin _ RevE) e) t | Just ty <- if1 oTy = do
     (lE, plE) <- aeval e eR
     let loop=For i 0 ILt (Tmp n) [mt (AElem eR 1 (Tmp n-Tmp i-1) lE 8) o, wt (AElem t 1 (Tmp i) (Just a) 8) o]
     pure (Just a, plE++MT n (EAt (ADim eR 0 lE)):Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
-aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | Just ty <- if1 oTy, isIF (eAnn seed) = do
-    nR <- newITemp; plN <- eval n nR
+aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | Just ty <- if1 oTy = do
+    nR <- newITemp; plN <- eval n nR; i <- newITemp
     acc <- rtemp ty
     plS <- eeval seed acc
     a <- nextArr t
-    i <- newITemp
     ss <- writeRF op [acc] acc
     let loop=For i 0 ILt (Tmp nR) (wt (AElem t 1 (Tmp i) (Just a) 8) acc:ss)
     pure (Just a, plS++plN++Ma a t 1 (Tmp nR) 8:Wr (ADim t 0 (Just a)) (Tmp nR):[loop])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠ (eAnn seed) = do
+    nR <- newITemp; plN <- eval n nR; i <- newITemp
+    acc <- newITemp
+    (szs, mP, plS) <- πe seed acc
+    let πsz=last szs
+    a <- nextArr t
+    (_, ss) <- writeF op [IPA acc] (Right acc)
+    let loop=For i 0 ILt (Tmp nR) (CpyE (AElem t 1 (Tmp i) (Just a) πsz) (Raw acc 0 Nothing undefined) 1 πsz:ss)
+    pure (Just a, plS++plN++Ma a t 1 (Tmp nR) πsz:Wr (ADim t 0 (Just a)) (Tmp nR):loop:m'pop mP)
 aeval e _ = error (show e)
 
 plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
@@ -728,7 +736,8 @@ m'pop = maybe [] ((:[]).Pop)
 πe (EApp (P tys) (Builtin _ Last) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR
-    pure (offs, Just szE, plX++[Sa t szE, CpyE (Raw t 0 Nothing 8) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
+    pure (offs, Just szE, plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- ConstI$last offs = do
     ss <- concat <$> zipWithM (\e off -> case eAnn e of {F -> do {f <- newFTemp; plX <- feval e f; pure $ plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)]}}) es offs
     pure (offs, Just sz, Sa t sz:ss)
+πe e _ = error (show e)
