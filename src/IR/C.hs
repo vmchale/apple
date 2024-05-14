@@ -5,6 +5,8 @@ module IR.C ( ctemp
 import           C
 import           Control.Monad              (foldM)
 import           Control.Monad.State.Strict (State, runState, state)
+import           Data.Bits                  (FiniteBits, countTrailingZeros, popCount)
+import           Data.Int                   (Int64)
 import           IR
 import           Op
 
@@ -45,10 +47,8 @@ tick reg = IR.MT reg (Reg reg+1)
 
 nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 
-cLog :: Integral a => a -> Maybe a
-cLog 1=Just 0;cLog 2=Just 1; cLog 4=Just 2; cLog 8=Just 3
-cLog n | (n',0) <- n `quotRem` 2 = (1+)<$>cLog n'
-cLog _ = Nothing
+cLog :: FiniteBits a => a -> Maybe Int64
+cLog n | popCount n == 1 = Just (fromIntegral$countTrailingZeros n) | otherwise = Nothing
 
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (C.MT t e)          = pure [IR.MT (ctemp t) (irE e)]
