@@ -3,7 +3,7 @@
 -- first IR with for loops and array accesses, inspired by C
 module C ( Temp (..)
          , FTemp (..)
-         , ArrAcc (..)
+         , AL, ArrAcc (..)
          , CE (..)
          , CFE (..)
          , PE (..)
@@ -20,7 +20,7 @@ import           Op
 import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, indent, lbrace, parens, rbrace, (<+>))
 import           Prettyprinter.Ext
 
-type Label = Word; type AsmData = IM.IntMap [Word64]
+type AL=Int; type Label=Word; type AsmData = IM.IntMap [Word64]
 
 data Temp = ITemp !Int | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5 | CRet deriving Eq
@@ -50,11 +50,11 @@ instance Pretty FTemp where
     pretty FRet0     = "FRet0"
     pretty FRet1     = "FRet1"
 
-data ArrAcc = AElem Temp CE CE (Maybe Int) Int64 -- pointer, rank, elem., label for tracking liveness, elem. size (bytes)
-            | ARnk Temp (Maybe Int)
-            | ADim Temp CE (Maybe Int) -- pointer, #, label
-            | At Temp [CE] [CE] (Maybe Int) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
-            | Raw Temp CE (Maybe Int) Int64 -- pointer to data, offset
+data ArrAcc = AElem Temp CE CE (Maybe AL) Int64 -- pointer, rank, elem., label for tracking liveness, elem. size (bytes)
+            | ARnk Temp (Maybe AL)
+            | ADim Temp CE (Maybe AL) -- pointer, #, label
+            | At Temp [CE] [CE] (Maybe AL) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
+            | Raw Temp CE (Maybe AL) Int64 -- pointer to data, offset
 
 instance Pretty ArrAcc where
     pretty (AElem t _ e _ _) = pretty t <> brackets (pretty e)
@@ -123,8 +123,8 @@ data CS = For Temp CE IRel CE [CS]
         | MX FTemp CFE
         | Wr ArrAcc CE
         | WrF ArrAcc CFE
-        | Ma Int Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
-        | RA !Int -- return array no-op (takes label)
+        | Ma AL Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
+        | RA !AL -- return array no-op (takes label)
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
         | CpyD ArrAcc ArrAcc CE -- copy dims
         | Ifn't PE [CS]

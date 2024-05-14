@@ -25,7 +25,7 @@ data CSt = CSt { temps       :: [Int]
                , assemblerSt :: !Int
                , vars        :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                , dvars       :: IM.IntMap FTemp
-               , avars       :: IM.IntMap (Maybe Int, Temp)
+               , avars       :: IM.IntMap (Maybe AL, Temp)
                , fvars       :: IM.IntMap (Label, [(Maybe Int, Temp)], (Maybe Int, Temp))
                , _aa         :: AsmData
                , mts         :: IM.IntMap Temp
@@ -34,7 +34,7 @@ data CSt = CSt { temps       :: [Int]
 nextI :: CM Int
 nextI = state (\(CSt (tϵ:t) ar as v d a f aas ts) -> (tϵ, CSt t ar as v d a f aas ts))
 
-nextArr :: Temp -> CM Int
+nextArr :: Temp -> CM AL
 nextArr r = state (\(CSt t (a:ar) as v d aϵ f aas ts) -> (a, CSt t ar as v d aϵ f aas (IM.insert a r ts)))
 
 nextAA :: CM Int
@@ -55,7 +55,7 @@ addVar n r (CSt t ar as v d a f aas ts) = CSt t ar as (insert n r v) d a f aas t
 addD :: Nm a -> FTemp -> CSt -> CSt
 addD n r (CSt t ar as v d a f aas ts) = CSt t ar as v (insert n r d) a f aas ts
 
-addAVar :: Nm a -> (Maybe Int, Temp) -> CSt -> CSt
+addAVar :: Nm a -> (Maybe AL, Temp) -> CSt -> CSt
 addAVar n r (CSt t ar as v d a f aas ts) = CSt t ar as v d (insert n r a) f aas ts
 
 getT :: IM.IntMap b -> Nm a -> b
@@ -141,7 +141,7 @@ rtemp F=Left<$>newFTemp; rtemp I=Right<$>newITemp
 writeF :: E (T ())
        -> [Arg]
        -> Either FTemp Temp
-       -> CM (Maybe Int, [CS])
+       -> CM (Maybe AL, [CS])
 writeF (Lam _ x e) (AA r l:rs) ret = do
     modify (addAVar x (l,r))
     writeF e rs ret
@@ -159,8 +159,7 @@ writeF e [] (Left r) = (Nothing,)<$>feval e r
 writeRF :: E (T ()) -> [Either FTemp Temp] -> Either FTemp Temp -> CM [CS]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
-data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe Int)
-data R = N | Maybe Int
+data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe AL)
 
 mt :: ArrAcc -> Either FTemp Temp -> CS
 mt p = either (`MX` FAt p) (`MT` EAt p)
@@ -185,7 +184,7 @@ indices []           = []
 indices (Index a:as) = a:indices as
 indices (Cell{}:as)  = indices as
 
-plDim :: Int64 -> (Temp, Maybe Int) -> CM ([Temp], [CS])
+plDim :: Int64 -> (Temp, Maybe AL) -> CM ([Temp], [CS])
 plDim rnk (a,l) =
     unzip <$> traverse (\at -> do {dt <- newITemp; pure (dt, MT dt (EAt at))}) [ ADim a (ConstI$i-1) l | i <- [1..rnk] ]
 
@@ -198,7 +197,7 @@ offByDim dims = do
 
 -- each (Right t) specifies a dimension (bounds); each (Left e) specifies a (currently)
 -- fixed index
-extrCell :: [Either CE Temp] -> [Temp] -> (Temp, Maybe Int) -> Temp -> CM [CS]
+extrCell :: [Either CE Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM [CS]
 extrCell fixedIxesDims sstrides (srcP, srcL) dest = do
     ts <- traverse (\_ -> newITemp) dims
     t <- newITemp; i <- newITemp
@@ -211,7 +210,7 @@ extrCell fixedIxesDims sstrides (srcP, srcL) dest = do
           replaceZs (Right{}:ds) (t:ts) = Right t:replaceZs ds ts
           replaceZs [] []               = []
 
-aeval :: E (T ()) -> Temp -> CM (Maybe Int, [CS])
+aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS])
 aeval (LLet _ (n,e') e) t | isArr (eAnn e') = do
     t' <- newITemp
     (l, ss) <- aeval e' t'
@@ -585,7 +584,7 @@ mOp Plus=Just IPlus; mOp Times=Just ITimes; mOp Minus=Just IMinus; mOp _=Nothing
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
 
-cond :: E (T ()) -> E (T ()) -> E (T ()) -> Either FTemp Temp -> CM (Maybe Int, [CS])
+cond :: E (T ()) -> E (T ()) -> E (T ()) -> Either FTemp Temp -> CM (Maybe AL, [CS])
 cond (EApp _ (EApp _ (Builtin (Arrow F _) o) c0) c1) e0 e1 t | Just f <- frel o, isIF (eAnn e0) = do
     c0R <- newFTemp; c1R <- newFTemp
     plC0 <- feval c0 c0R; plC1 <- feval c1 c1R
@@ -740,7 +739,7 @@ feval e _ = error (show e)
 m'pop :: Maybe CE -> [CS]
 m'pop = maybe [] ((:[]).Pop)
 
-πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [Int], [CS])
+πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [AL], [CS])
 πe (EApp (P tys) (Builtin _ Last) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR
