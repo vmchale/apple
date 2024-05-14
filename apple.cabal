@@ -178,7 +178,8 @@ foreign-library apple
         prettyprinter >=1.7.0,
         text
 
-    lib-version-info:   1:0:0
+    if os(linux)
+        lib-version-info:   1:0:0
 
     if os(windows)
         options: standalone
