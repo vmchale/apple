@@ -751,9 +751,16 @@ m'pop = maybe [] ((:[]).Pop)
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [MT t (Tmp$getT st x)])
+πe (LLet _ (n,e') e) t | isArr (eAnn e') = do
+    t' <- newITemp
+    (l, ss) <- aeval e' t'
+    modify (addAVar n (l, t'))
+    fourth (ss++) <$> πe e t
 πe (LLet _ (n,e') e) t | isF (eAnn e') = do
     eR <- newFTemp
     plE <- feval e' eR
     modify (addD n eR)
-    (\ ~(x,y,z,w) -> (x,y,z,plE++w)) <$> πe e t
+    fourth (plE++) <$> πe e t
 πe e _ = error (show e)
+
+fourth f ~(x,y,z,w) = (x,y,z,f w)
