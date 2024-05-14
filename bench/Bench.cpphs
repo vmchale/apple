@@ -57,8 +57,10 @@ main = do
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
                       , bench "tyParse (xor)" $ nf tyParse x
+#ifdef x86_64_HOST_ARCH
                       , bench "bytes (gamma)" $ nf bytes 𝛾
                       , bench "bytes (fcdf)" $ nf bytes ꜰ
+#endif
                       , bench "asm (A)" $ nf x86G ᴀ
                       ]
                       -- TODO: thunks after type checking?
