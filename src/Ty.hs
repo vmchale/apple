@@ -487,6 +487,7 @@ tyB _ Sqrt = pure (F ~> F, mempty)
 tyB _ Log = pure (F ~> F, mempty)
 tyB _ Div = pure (F ~> F ~> F, mempty)
 tyB _ Mod = pure (I ~> I ~> I, mempty)
+tyB _ IDiv = pure (I ~> I ~> I, mempty)
 tyB _ Outer = do
     sh0 <- SVar <$> freshN "sh0" (); sh1 <- SVar <$> freshN "sh1" ()
     a <- TVar <$> freshN "a" (); b <- TVar <$> freshN "b" (); c <- TVar <$> freshN "c" ()
