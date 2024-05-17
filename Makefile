@@ -1,3 +1,5 @@
+HC ?= ghc
+
 HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
 LD_VER := $(shell ja '{%/^\s*lib-version-info:/}{`2}' -i apple.cabal | sed 's/:/./g')
 
@@ -19,7 +21,7 @@ install-r:
 	make -C Rc install
 
 install:
-	cabal install
+	cabal install -w $(HC)
 	strip $$(readlink -f $$(which atc))
 	strip $$(readlink -f $$(which writeo))
 	strip $$(readlink -f $$(which arepl))
