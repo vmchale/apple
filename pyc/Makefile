@@ -1,4 +1,6 @@
-GHC_VER := $(shell ghc --numeric-version)
+HC ?= ghc
+
+GHC_VER := $(shell ${HC} --numeric-version)
 HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
 PY_VER := $(shell python3 --version | ja '.?{|`2 ~* 1 /(\d+\.\d+)\.\d+/}')
 
