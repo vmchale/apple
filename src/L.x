@@ -125,6 +125,7 @@ tokens :-
         _                        { mkSym Underscore }
         "?"                      { mkSym QuestionMark }
         ",."                     { mkSym CondSplit }
+        ⸎                        { mkSym Cor }
         ⟨                        { mkSym ArrL }
         ⟩                        { mkSym ArrR }
         "_."                     { mkSym SymLog }
@@ -268,7 +269,7 @@ alexEOF = EOF <$> get_pos
 data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Pow
          | LSqBracket | RSqBracket | LBrace | RBrace | LParen | RParen | Lam
          | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
-         | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
+         | CondSplit | Cor | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | Init
@@ -304,6 +305,7 @@ instance Pretty Sym where
     pretty Underscore   = "_"
     pretty QuestionMark = "?"
     pretty CondSplit    = ",."
+    pretty Cor          = "⸎"
     pretty ArrL         = "⟨"
     pretty ArrR         = "⟩"
     pretty SymLog       = "_."

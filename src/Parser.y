@@ -48,6 +48,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     underscore { TokSym $$ Underscore }
     question { TokSym $$ QuestionMark }
     condSplit { TokSym $$ CondSplit }
+    coronis { TokSym $$ Cor }
     larr { TokSym $$ ArrL }
     rarr { TokSym $$ ArrR }
     colon { TokSym $$ Colon }
@@ -257,6 +258,7 @@ E :: { E AlexPosn }
   | lparen tupled(E,comma) rparen { Tup $1 (reverse $2) }
   | lam name dot E { A.Lam $1 $2 $4 }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
+  | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
   | lsqbracket E rsqbracket { Dfn $1 $2 }
   | frange { Builtin $1 FRange } | iota { Builtin $1 IRange }
   | floor { Builtin $1 Floor } | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
