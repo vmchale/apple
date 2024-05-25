@@ -6,6 +6,8 @@
   - [ ] ⍳ (apl iota)
   - [ ] ⩪ for filter
   - [ ] ℘ ⊲ ⊳ ⪫ ⪪
+  - [ ] ⸎
+  - [ ] ‰
   - [ ] https://en.wikipedia.org/wiki/Guillemet#Encoding
   - [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
   - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
@@ -41,6 +43,7 @@
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
 - [ ] https://www.compart.com/en/unicode/U+1D66
+  - [ ] Ϟ (koppa), Ϡ (sampi)
 - [ ] § is fun I love typographers
 ## Optimization
 - [ ] arrays in assembler: register indirection?
