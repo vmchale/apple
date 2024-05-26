@@ -6,3 +6,5 @@ a.out
 dist-newstyle
 .RData
 .Rhistory
+tags
+tags.mtime
