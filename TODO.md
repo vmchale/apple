@@ -157,3 +157,4 @@ o → o → o
 - [ ] https://math.ucr.edu/home/baez/roots/
 - [ ] http://xahlee.info/math/algorithmic_math_art.html
 - [ ] https://rosalind.info/problems/locations/
+- [ ] https://en.wikipedia.org/wiki/Newton_fractal
