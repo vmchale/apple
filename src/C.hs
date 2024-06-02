@@ -124,6 +124,7 @@ data CS = For Temp CE IRel CE [CS]
         | Wr ArrAcc CE
         | WrF ArrAcc CFE
         | Ma AL Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
+        | MaΠ AL Temp CE
         | RA !AL -- return array no-op (takes label)
         | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
         | CpyD ArrAcc ArrAcc CE -- copy dims
@@ -142,6 +143,7 @@ instance Pretty CS where
     pretty (Wr a e)             = pretty a <+> "=" <+> pretty e
     pretty (WrF a e)            = pretty a <+> "=" <+> pretty e
     pretty (Ma _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
+    pretty (MaΠ _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty (While t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty (Ifn't p s)          = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s) <#> rbrace
