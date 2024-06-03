@@ -13,6 +13,7 @@ import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
+import           Data.Maybe                 (catMaybes)
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import           Nm
@@ -744,8 +745,8 @@ m'pop = maybe [] ((:[]).Pop)
     (lX, plX) <- aeval xs xR
     pure (offs, Just szE, [], plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- ConstI$last offs = do
-    ss <- concat <$> zipWithM (\e off -> case eAnn e of {F -> do {f <- newFTemp; plX <- feval e f; pure $ plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)]}}) es offs
-    pure (offs, Just sz, undefined, ss)
+    (ls, ss) <- unzip <$> zipWithM (\e off -> case eAnn e of {F -> do {f <- newFTemp; plX <- feval e f; pure (Nothing, plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)])}; Arr{} -> do {r <- newITemp ; (l,pl) <- aeval e r; pure (l, pl++[Wr (Raw t (ConstI off) Nothing 1) (Tmp r)])}}) es offs
+    pure (offs, Just sz, catMaybes ls, concat ss)
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [MT t (Tmp$getT st x)])
