@@ -740,6 +740,10 @@ m'pop :: Maybe CE -> [CS]
 m'pop = maybe [] ((:[]).Pop)
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [AL], [CS])
+πe (EApp (P tys) (Builtin _ Head) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
+    xR <- newITemp
+    (lX, plX) <- aeval xs xR
+    pure (offs, Just szE, [], plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 0 lX sz) 1 sz])
 πe (EApp (P tys) (Builtin _ Last) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR
