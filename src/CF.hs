@@ -14,13 +14,13 @@ import qualified Data.IntSet     as IS
 import           GHC.Generics    (Generic)
 import           Prettyprinter   (Pretty (pretty), braces, punctuate, (<+>))
 
-data Liveness = Liveness { ins :: !IS.IntSet, out :: !IS.IntSet, fins :: !IS.IntSet, fout :: !IS.IntSet }
+data Liveness = Liveness { ins, out, fins, fout :: !IS.IntSet }
     deriving (Eq, Generic, NFData)
 
 data NLiveness = NLiveness { nx :: Int, liveness :: !Liveness }
     deriving (Generic, NFData)
 
-data Live = Live { new :: !IS.IntSet, done :: !IS.IntSet, fnew :: !IS.IntSet, fdone :: !IS.IntSet }
+data Live = Live { new, done, fnew, fdone :: !IS.IntSet }
     deriving (Generic, NFData)
 
 instance Pretty Liveness where
@@ -36,8 +36,4 @@ data ControlAnn = ControlAnn { node :: !Int
                              , ud   :: !UD
                              } deriving (Generic, NFData)
 
-data UD = UD { usesNode  :: !IS.IntSet
-             , usesFNode :: !IS.IntSet
-             , defsNode  :: !IS.IntSet
-             , defsFNode :: !IS.IntSet
-             } deriving (Generic, NFData)
+data UD = UD { usesNode, usesFNode, defsNode, defsFNode  :: !IS.IntSet } deriving (Generic, NFData)
