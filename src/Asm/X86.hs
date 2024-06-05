@@ -221,14 +221,14 @@ instance Pretty reg => Pretty (Addr reg) where
     pretty (RSD b s i d)   = brackets (pretty b <> "+" <> pretty s <> "*" <> pretty i <> pix d)
 
 data X86 reg freg a = Label { ann :: a, label :: Label }
-                    | IAddRR { ann :: a, rAdd1 :: reg, rAdd2 :: reg }
+                    | IAddRR { ann :: a, rAdd1, rAdd2 :: reg }
                     | IAddRI { ann :: a, rAdd1 :: reg, rAddI :: Int64 }
-                    | ISubRR { ann :: a, rSub1 :: reg, rSub2 :: reg }
+                    | ISubRR { ann :: a, rSub1, rSub2 :: reg }
                     | ISubRI { ann :: a, rSub :: reg, rSubI :: Int64 }
-                    | IMulRR { ann :: a, rMul1 :: reg, rMul2 :: reg }
+                    | IMulRR { ann :: a, rMul1, rMul2 :: reg }
                     | IMulRA { ann :: a, rMul :: reg, aSrc :: Addr reg }
-                    | XorRR { ann :: a, rXor1 :: reg, rXor2 :: reg }
-                    | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
+                    | XorRR { ann :: a, rXor1, rXor2 :: reg }
+                    | MovRR { ann :: a, rDest, rSrc :: reg }
                     | MovRA { ann :: a, rDest :: reg, aSrc :: Addr reg }
                     | MovAR { ann :: a, aDest :: Addr reg, rSrc :: reg }
                     | MovRL { ann :: a, rDest :: reg, lSrc :: Int }
@@ -262,52 +262,52 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Jl { ann :: a, jLabel :: Label }
                     | Jle { ann :: a, jLabel :: Label }
                     | C { ann :: a, label :: Label }
-                    | CmpRR { ann :: a, rCmp :: reg, rCmp' :: reg }
+                    | CmpRR { ann :: a, rCmp, rCmp' :: reg }
                     | CmpRI { ann :: a, rCmp :: reg, cmpI32 :: Int32 }
-                    | Vcmppd { ann :: a, fDest :: freg, fCmp :: freg, fCmp' :: freg, cpred :: Pred }
-                    | Test { ann :: a, rCmp :: reg, rCmp' :: reg }
+                    | Vcmppd { ann :: a, fDest, fCmp, fCmp' :: freg, cpred :: Pred }
+                    | Test { ann :: a, rCmp, rCmp' :: reg }
                     | TestI { ann :: a, rCmp :: reg, cmpI32 :: Int32 }
                     | Ret { ann :: a } | RetL { ann :: a, label :: Label }
-                    | Vdivsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Movapd { ann :: a, fDest :: freg, fSrc :: freg }
-                    | Roundsd { ann :: a, fDest :: freg, fSrc :: freg, mode :: RoundMode }
+                    | Vdivsd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Movapd { ann :: a, fDest, fSrc :: freg }
+                    | Roundsd { ann :: a, fDest, fSrc :: freg, mode :: RoundMode }
                     | Cvttsd2si { ann :: a, rDest :: reg, fSrc :: freg }
-                    | Mulsd { ann :: a, fDest :: freg, fSrc :: freg }
-                    | Addsd { ann :: a, fDest :: freg, fSrc :: freg }
-                    | Subsd { ann :: a, fDest :: freg, fSrc :: freg }
-                    | Divsd { ann :: a, fDest :: freg, fSrc :: freg }
-                    | Vmulsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Vaddsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Vsubsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | VaddsdA { ann :: a, fDest :: freg, fSrc :: freg, aSrc :: Addr reg }
+                    | Mulsd { ann :: a, fDest, fSrc :: freg }
+                    | Addsd { ann :: a, fDest, fSrc :: freg }
+                    | Subsd { ann :: a, fDest, fSrc :: freg }
+                    | Divsd { ann :: a, fDest, fSrc :: freg }
+                    | Vmulsd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Vaddsd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Vsubsd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | VaddsdA { ann :: a, fDest, fSrc :: freg, aSrc :: Addr reg }
                     | Cvtsi2sd { ann :: a, fDest :: freg, rSrc :: reg }
-                    | Vfmadd231sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Vfmadd213sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Vfmsub231sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Vfmsub213sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Vfmsub132sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Vfmnadd231sd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | Vfmadd231sdA { ann :: a, fDest :: freg, fSrc :: freg, aSrc :: Addr reg }
+                    | Vfmadd231sd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Vfmadd213sd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Vfmsub231sd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Vfmsub213sd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Vfmsub132sd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Vfmnadd231sd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | Vfmadd231sdA { ann :: a, fDest, fSrc :: freg, aSrc :: Addr reg }
                     | Push { ann :: a, rSrc :: reg }
                     | Pop { ann :: a, rDest :: reg }
                     | Call { ann :: a, cfunc :: CFunc }
                     | IDiv { ann :: a, rSrc :: reg }
                     | Sal { ann :: a, rSrc :: reg, iExp :: Int8 }
                     | Sar { ann :: a, rSrc :: reg, iExp :: Int8 }
-                    | Sqrtsd { ann :: a, fDest :: freg, fSrc :: freg }
-                    | Maxsd { ann :: a, fDest :: freg, fSrc :: freg }
-                    | Vmaxsd { ann :: a, fDest :: freg, fSrc1 :: freg, fSrc2 :: freg }
-                    | VmaxsdA { ann :: a, fDest :: freg, fSrc :: freg, aSrc :: Addr reg }
-                    | Minsd { ann :: a, fDest :: freg, fSrc :: freg }
-                    | Vminsd { ann :: a, fDest :: freg, rSrc1 :: freg, rSrc2 :: freg }
+                    | Sqrtsd { ann :: a, fDest, fSrc :: freg }
+                    | Maxsd { ann :: a, fDest, fSrc :: freg }
+                    | Vmaxsd { ann :: a, fDest, fSrc1, fSrc2 :: freg }
+                    | VmaxsdA { ann :: a, fDest, fSrc :: freg, aSrc :: Addr reg }
+                    | Minsd { ann :: a, fDest, fSrc :: freg }
+                    | Vminsd { ann :: a, fDest, rSrc1, rSrc2 :: freg }
                     | Not { ann :: a, rSrc :: reg }
-                    | And { ann :: a, rDest :: reg, rSrc :: reg }
-                    | Cmovnle { ann :: a, rDest :: reg, rSrc :: reg }
-                    | Cmovnl { ann :: a, rDest :: reg, rSrc :: reg }
-                    | Cmovne { ann :: a, rDest  :: reg, rSrc :: reg }
-                    | Cmove { ann :: a, rDest :: reg, rSrc :: reg }
-                    | Cmovl { ann :: a, rDest :: reg, rSrc :: reg }
-                    | Cmovle { ann :: a, rDest :: reg, rSrc :: reg }
+                    | And { ann :: a, rDest, rSrc :: reg }
+                    | Cmovnle { ann :: a, rDest, rSrc :: reg }
+                    | Cmovnl { ann :: a, rDest, rSrc :: reg }
+                    | Cmovne { ann :: a, rDest , rSrc :: reg }
+                    | Cmove { ann :: a, rDest, rSrc :: reg }
+                    | Cmovl { ann :: a, rDest, rSrc :: reg }
+                    | Cmovle { ann :: a, rDest, rSrc :: reg }
                     | Rdrand { ann :: a, rDest :: reg }
                     | Neg { ann :: a, rDest :: reg }
                     deriving (Functor, Generic)

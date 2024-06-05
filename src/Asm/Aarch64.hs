@@ -136,10 +136,10 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Bl { ann :: a, cfunc :: CFunc }
                         | Bc { ann :: a, cond :: Cond, label :: Label }
                         | Ret { ann :: a }
-                        | FMovXX { ann :: a, dDest :: freg, dSrc :: freg }
+                        | FMovXX { ann :: a, dDest, dSrc :: freg }
                         | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                         | FMovXC { ann :: a, dDest :: freg, dC :: Double }
-                        | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
+                        | MovRR { ann :: a, rDest, rSrc :: reg }
                         | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
                         | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
                         | MovRL { ann :: a, rDest :: reg, lSrc :: Int }
@@ -148,40 +148,40 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
                         | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
                         | StrD { ann :: a, dSrc :: freg, aDest :: Addr reg }
-                        | SubRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
-                        | AddRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
-                        | MulRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
-                        | Madd { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg, rSrc3 :: reg }
-                        | AddRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
-                        | SubRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
-                        | Lsl { ann :: a, rDest :: reg, rSrc :: reg, sC :: Word8 }
-                        | Asr { ann :: a, rDest :: reg, rSrc :: reg, sC :: Word8 }
+                        | SubRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                        | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                        | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                        | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
+                        | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
+                        | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
+                        | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
+                        | Asr { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
                         | CmpRC { ann :: a, rSrc :: reg, cSrc :: Word16 }
-                        | CmpRR { ann :: a, rSrc1 :: reg, rSrc2 :: reg }
-                        | Neg { ann :: a, rDest :: reg, rSrc :: reg }
-                        | Fmul { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
-                        | Fadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
-                        | Fsub { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
-                        | Fdiv { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
+                        | CmpRR { ann :: a, rSrc1, rSrc2 :: reg }
+                        | Neg { ann :: a, rDest, rSrc :: reg }
+                        | Fmul { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fadd { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fsub { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                         | FcmpZ { ann :: a, dSrc :: freg }
-                        | Fcmp { ann :: a, dSrc1 :: freg, dSrc2 :: freg }
+                        | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                         | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
                         | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
-                        | Stp { ann :: a, rSrc1 :: reg, rSrc2 :: reg, aDest :: Addr reg }
-                        | Ldp { ann :: a, rDest1 :: reg, rDest2 :: reg, aSrc :: Addr reg }
-                        | StpD { ann :: a, dSrc1 :: freg, dSrc2 :: freg, aDest :: Addr reg }
-                        | LdpD { ann :: a, dDest1 :: freg, dDest2 :: freg, aSrc :: Addr reg }
-                        | Fmadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, dSrc3 :: freg }
-                        | Fmsub { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, dSrc3 :: freg }
-                        | Fsqrt { ann :: a, dDest :: freg, dSrc :: freg }
+                        | Stp { ann :: a, rSrc1, rSrc2 :: reg, aDest :: Addr reg }
+                        | Ldp { ann :: a, rDest1, rDest2 :: reg, aSrc :: Addr reg }
+                        | StpD { ann :: a, dSrc1, dSrc2 :: freg, aDest :: Addr reg }
+                        | LdpD { ann :: a, dDest1, dDest2 :: freg, aSrc :: Addr reg }
+                        | Fmadd { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
+                        | Fmsub { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
+                        | Fsqrt { ann :: a, dDest, dSrc :: freg }
                         | MrsR { ann :: a, rDest :: reg }
-                        | Fmax { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
-                        | Fabs { ann :: a, dDest :: freg, dSrc :: freg }
-                        | Csel { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg, cond :: Cond }
+                        | Fmax { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fabs { ann :: a, dDest, dSrc :: freg }
+                        | Csel { ann :: a, rDest, rSrc1, rSrc2 :: reg, cond :: Cond }
                         | Tbnz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                         | Tbz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                         | Cbnz { ann :: a, rSrc :: reg, label :: Label }
-                        | Fcsel { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, cond :: Cond }
+                        | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
                         | Cset { ann :: a, rDest :: reg, cond :: Cond }
                         | TstI { ann :: a, rSrc1 :: reg, cSrc :: Word16 }
                         deriving (Functor)
