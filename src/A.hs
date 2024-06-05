@@ -325,8 +325,8 @@ data ResVar = X | Y deriving (Generic)
 instance Pretty ResVar where
     pretty X = "x"; pretty Y = "y"
 
-data Idiom = FoldSOfZip { seedI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
-           | FoldOfZip { zopI :: E (T ()), opI :: E (T ()), esI :: [E (T ())] }
+data Idiom = FoldSOfZip { seedI, opI :: E (T ()), esI :: [E (T ())] }
+           | FoldOfZip { zopI, opI :: E (T ()), esI :: [E (T ())] }
            | AShLit { litSh :: [Int], esLit :: [E (T ())] }
            deriving (Generic)
 
@@ -339,12 +339,12 @@ data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          -- TODO: bool array
          | Var { eAnn :: a, eVar :: Nm a }
          | Builtin { eAnn :: a, eBuiltin :: !Builtin }
-         | EApp { eAnn :: a, eF :: E a, eArg :: E a }
+         | EApp { eAnn :: a, eF, eArg :: E a }
          | Lam { eAnn :: a, eVar :: Nm a, eIn :: E a }
          | ILit { eAnn :: a, eILit :: !Integer }
          | FLit { eAnn :: a, eFLit :: !Double }
          | BLit { eAnn :: a, eBLit :: !Bool }
-         | Cond { eAnn :: a, prop :: E a, ifBranch :: E a, elseBranch :: E a }
+         | Cond { eAnn :: a, prop, ifBranch, elseBranch :: E a }
          | Let { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
          | Def { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
          | LLet { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
