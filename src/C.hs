@@ -166,4 +166,4 @@ prettyCS (ds,ss) = pCS ss
 
 pCS=prettyLines.fmap pretty
 
-data LSt = LSt { clabels :: [Label], ctemps :: !Int }
+data LSt = LSt { clabel :: !Label, ctemps :: !Int }

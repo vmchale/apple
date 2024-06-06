@@ -16,7 +16,7 @@ nextI :: IRM C.Temp
 nextI = C.ITemp <$> state (\(WSt ls t) -> (t, WSt ls (t+1)))
 
 nextL :: IRM IR.Label
-nextL = state (\(WSt (l:ls) ts) -> (l, WSt ls ts))
+nextL = state (\(WSt l ts) -> (l, WSt (l+1) ts))
 
 ctemp :: C.Temp -> IR.Temp
 ctemp (C.ATemp i) = IR.ATemp i

@@ -21,7 +21,7 @@ import           Prettyprinter.Ext
 -- see https://my.eng.utah.edu/~cs4400/sse-fp.pdf
 type Label = Word; type AsmData = IM.IntMap [Word64]
 
-data WSt = WSt { wlabels :: [Label], wtemps :: !Int }
+data WSt = WSt { wlabel :: !Label, wtemps :: !Int }
 
 prettyLabel :: Label -> Doc ann
 prettyLabel l = "apple_" <> pretty l
