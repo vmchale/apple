@@ -118,11 +118,11 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
 
 typedef struct PyCacheObject {
     PyObject_HEAD
-    U code;S code_sz;FnTy* ty; U sa;ffi_cif* ffi;
+    U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;
 } PyCacheObject;
 
 static void cache_dealloc(PyCacheObject* self) {
-    munmap(self->code,self->code_sz);
+    munmap(self->bc,self->c_sz);
     free(self->sa);free(self->ty);free(self->ffi);
 }
 
@@ -150,7 +150,7 @@ static PyObject* apple_jit(PyObject *self, PyObject *args) {
     fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
     PyCacheObject* cc=PyObject_New(PyCacheObject, &CacheType);
     ffi_cif* ffi=apple_ffi(ty);
-    cc->code=fp;cc->code_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;
+    cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;
     Py_INCREF(cc);
     R (PyObject*)cc;
 }
@@ -158,7 +158,7 @@ static PyObject* apple_jit(PyObject *self, PyObject *args) {
 static PyObject* apple_f(PyObject* self, PyObject* args) {
     PyCacheObject* c;PO arg0=NULL;PO arg1=NULL;PO arg2=NULL;PO arg3=NULL;PO arg4=NULL;PO arg5=NULL;
     PyArg_ParseTuple(args, "O|OOOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
-    FnTy* ty=c->ty;U fp=c->code;
+    FnTy* ty=c->ty;U fp=c->bc;
     PO r;
     ffi_cif* cif=c->ffi;
     int argc=ty->argc;
