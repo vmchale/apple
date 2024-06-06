@@ -101,6 +101,7 @@ irAt (AElem t (C.ConstI rnkI) (Bin IMinus e (C.ConstI n)) l 8) = AP (ctemp t) (J
 irAt (AElem t (C.ConstI rnkI) e l sz) | Just s <- cLog sz      = AP (ctemp t) (Just$IR.IB IAsl (irE e) (IR.ConstI s)+IR.ConstI (8+8*rnkI)) l
 irAt (AElem t rnk e l 8)                                       = AP (ctemp t) (Just$IR.IB IAsl (irE rnk+irE e) 3+8) l
 irAt (Raw t (C.ConstI 0) l _)                                  = AP (ctemp t) Nothing l
+irAt (Raw t (C.ConstI i) l sz)                                 = AP (ctemp t) (Just (IR.ConstI$i*sz)) l
 irAt (Raw t o l 8)                                             = AP (ctemp t) (Just$IR.IB IAsl (irE o) 3) l
 irAt (Raw t o l 1)                                             = AP (ctemp t) (Just$irE o) l
 irAt (At dt s ix l sz) | Just sϵ <- cLog sz =
