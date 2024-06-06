@@ -35,7 +35,7 @@ nextI :: CM Int
 nextI = state (\(CSt (tϵ:t) ar as v d a f aas ts) -> (tϵ, CSt t ar as v d a f aas ts))
 
 nextArr :: Temp -> CM AL
-nextArr r = state (\(CSt t (a:ar) as v d aϵ f aas ts) -> (a, CSt t ar as v d aϵ f aas (IM.insert a r ts)))
+nextArr r = state (\(CSt t (a:ar) as v d aϵ f aas ts) -> (a, CSt t ar as v d aϵ f aas (IM.insert (al a) r ts)))
 
 nextAA :: CM Int
 nextAA = state (\(CSt t ar as v d a f aas ts) -> (as, CSt t ar (as+1) v d a f aas ts))
@@ -112,7 +112,7 @@ mIFs :: [E a] -> Maybe [Word64]
 mIFs = traverse mIFϵ where mIFϵ (FLit _ d)=Just (castDoubleToWord64 d); mIFϵ (ILit _ n)=Just (fromIntegral n); mIFϵ _=Nothing
 
 writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
-writeC = π.flip runState (CSt [0..] [0..] 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ _ _ _ _ aa a) = (s, LSt [0..] t, aa, a)
+writeC = π.flip runState (CSt [0..] (AL<$>[0..]) 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ _ _ _ _ aa a) = (s, LSt [0..] t, aa, a)
 
 writeCM :: E (T ()) -> CM [CS]
 writeCM eϵ = do
