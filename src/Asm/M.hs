@@ -46,7 +46,7 @@ pAsm :: Pretty isn => [isn] -> Doc ann
 pAsm = prettyLines.fmap pretty
 
 nextI :: WM Int
-nextI = state (\(IR.WSt l (i:t)) -> (i, IR.WSt l t))
+nextI = state (\(IR.WSt l i) -> (i, IR.WSt l (i+1)))
 
 nextL :: WM Label
 nextL = state (\(IR.WSt (i:l) t) -> (i, IR.WSt l t))

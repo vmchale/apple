@@ -36,7 +36,7 @@ fabsReg IR.FRet      = FRet0
 fabsReg IR.FRet1     = FRet1
 
 irToX86 :: IR.WSt -> [IR.Stmt] -> (Int, [X86 AbsReg FAbsReg ()])
-irToX86 st = swap . second (head.IR.wtemps) . flip runState st . foldMapA ir
+irToX86 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
 nextR :: WM AbsReg
 nextR = IReg <$> nextI; nextF = FReg <$> nextI

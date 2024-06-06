@@ -13,7 +13,7 @@ import           Op
 type IRM = State WSt
 
 nextI :: IRM C.Temp
-nextI = C.ITemp <$> state (\(WSt ls (t:ts)) -> (t, WSt ls ts))
+nextI = C.ITemp <$> state (\(WSt ls t) -> (t, WSt ls (t+1)))
 
 nextL :: IRM IR.Label
 nextL = state (\(WSt (l:ls) ts) -> (l, WSt ls ts))

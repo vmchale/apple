@@ -37,7 +37,7 @@ nextR :: WM AbsReg
 nextR = IReg <$> nextI
 
 irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
-irToAarch64 st = swap . second (head.IR.wtemps) . flip runState st . foldMapA ir
+irToAarch64 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
 ir :: IR.Stmt -> WM [AArch64 AbsReg FAbsReg ()]
 ir (IR.L l)      = pure [Label () l]

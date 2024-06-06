@@ -22,7 +22,7 @@ import           Nm
 import           Nm.IntMap
 import           Op
 
-data CSt = CSt { temps       :: [Int]
+data CSt = CSt { temps       :: !Int
                , arrs        :: [AL]
                , assemblerSt :: !Int
                , vars        :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
@@ -34,7 +34,7 @@ data CSt = CSt { temps       :: [Int]
                }
 
 nextI :: CM Int
-nextI = state (\(CSt (tϵ:t) ar as v d a f aas ts) -> (tϵ, CSt t ar as v d a f aas ts))
+nextI = state (\(CSt tϵ ar as v d a f aas ts) -> (tϵ, CSt (tϵ+1) ar as v d a f aas ts))
 
 nextArr :: Temp -> CM AL
 nextArr r = state (\(CSt t (a:ar) as v d aϵ f aas ts) -> (a, CSt t ar as v d aϵ f aas (AL.insert a r ts)))
@@ -114,7 +114,7 @@ mIFs :: [E a] -> Maybe [Word64]
 mIFs = traverse mIFϵ where mIFϵ (FLit _ d)=Just (castDoubleToWord64 d); mIFϵ (ILit _ n)=Just (fromIntegral n); mIFϵ _=Nothing
 
 writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
-writeC = π.flip runState (CSt [0..] (AL<$>[0..]) 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ _ _ _ _ aa a) = (s, LSt [0..] t, aa, a)
+writeC = π.flip runState (CSt 0 (AL<$>[0..]) 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ _ _ _ _ aa a) = (s, LSt [0..] t, aa, a)
 
 writeCM :: E (T ()) -> CM [CS]
 writeCM eϵ = do
