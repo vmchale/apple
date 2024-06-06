@@ -4,6 +4,8 @@ module C.Trans ( writeC ) where
 
 import           A
 import           C
+import           CF.AL                      (AL (..))
+import qualified CF.AL                      as AL
 import           Control.Composition        (thread)
 import           Control.Monad              (zipWithM)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
@@ -35,7 +37,7 @@ nextI :: CM Int
 nextI = state (\(CSt (tϵ:t) ar as v d a f aas ts) -> (tϵ, CSt t ar as v d a f aas ts))
 
 nextArr :: Temp -> CM AL
-nextArr r = state (\(CSt t (a:ar) as v d aϵ f aas ts) -> (a, CSt t ar as v d aϵ f aas (IM.insert (al a) r ts)))
+nextArr r = state (\(CSt t (a:ar) as v d aϵ f aas ts) -> (a, CSt t ar as v d aϵ f aas (AL.insert a r ts)))
 
 nextAA :: CM Int
 nextAA = state (\(CSt t ar as v d a f aas ts) -> (as, CSt t ar (as+1) v d a f aas ts))

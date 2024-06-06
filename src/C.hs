@@ -3,7 +3,7 @@
 -- first IR with for loops and array accesses, inspired by C
 module C ( Temp (..)
          , FTemp (..)
-         , AL (..), ArrAcc (..)
+         , ArrAcc (..)
          , CE (..)
          , CFE (..)
          , PE (..)
@@ -13,6 +13,7 @@ module C ( Temp (..)
          , prettyCS
          ) where
 
+import           CF.AL
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
@@ -20,7 +21,7 @@ import           Op
 import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, indent, lbrace, parens, rbrace, (<+>))
 import           Prettyprinter.Ext
 
-newtype AL=AL {al::Int}; type Label=Word; type AsmData = IM.IntMap [Word64]
+type Label=Word; type AsmData = IM.IntMap [Word64]
 
 data Temp = ITemp !Int | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5 | CRet deriving Eq

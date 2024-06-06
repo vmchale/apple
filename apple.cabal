@@ -50,6 +50,7 @@ library
     hs-source-dirs:     src
     other-modules:
         CF
+        CF.AL
         LI
         R
         LR

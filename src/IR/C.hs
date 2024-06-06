@@ -6,7 +6,6 @@ import           C
 import           Control.Monad              (foldM)
 import           Control.Monad.State.Strict (State, runState, state)
 import           Data.Bits                  (FiniteBits, countTrailingZeros, popCount)
-import           Data.Coerce                (coerce)
 import           Data.Int                   (Int64)
 import           IR
 import           Op
@@ -54,9 +53,9 @@ cLog n | popCount n == 1 = Just (fromIntegral$countTrailingZeros n) | otherwise 
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (C.MT t e)          = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]
-cToIRM (C.Ma l t (C.ConstI rnkI) n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma (al l) t' (IR.IB IAsl (irE n) (IR.ConstI s)+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just$al l)) (IR.ConstI rnkI)]
-cToIRM (C.Ma l t rnk n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma (al l) t' (IR.IB IAsl (irE rnk+irE n) (IR.ConstI s)+8), IR.Wr (AP t' Nothing (Just$al l)) (irE rnk)]
-cToIRM (C.MaΠ l t sz)      = pure [IR.Ma (al l) (ctemp t) (irE sz)]
+cToIRM (C.Ma l t (C.ConstI rnkI) n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) (IR.ConstI s)+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just l)) (IR.ConstI rnkI)]
+cToIRM (C.Ma l t rnk n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE rnk+irE n) (IR.ConstI s)+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
+cToIRM (C.MaΠ l t sz)      = pure [IR.Ma l (ctemp t) (irE sz)]
 cToIRM (C.Wr a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF a x)         = pure [IR.WrF (irAt a) (irX x)]
 cToIRM (For t el rel eu s) = do
@@ -70,7 +69,7 @@ cToIRM (While t rel eb s) = do
     s' <- foldMapM cToIRM s
     pure $ MJ (IR.IRel (nr rel) (Reg t') (irE eb)) eL:L l:s'++[MJ (IR.IRel rel (Reg t') (irE eb)) l, L eL]
   where t'=ctemp t
-cToIRM (C.RA i) = pure [IR.RA (al i)]
+cToIRM (C.RA i) = pure [IR.RA i]
 cToIRM (CpyD a0 a1 e) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
 cToIRM (CpyE a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
 cToIRM (CpyE a0 a1 e sz) | (s,0) <- sz `quotRem` 8 = pure [Cpy (irAt a0) (irAt a1) (IB ITimes (irE e) (IR.ConstI s))]
@@ -93,21 +92,21 @@ cToIRM (SZ td t rnk l) = do
         [C.MT td (C.EAt (ADim t 0 l)), For i 1 ILt rnk [C.MT td (Tmp td*C.EAt (ADim t (Tmp i) l))]]
 
 irAt :: ArrAcc -> AE
-irAt (ARnk t l)                                                = AP (ctemp t) Nothing (coerce l)
-irAt (ADim t (C.ConstI n) l)                                   = AP (ctemp t) (Just$IR.ConstI (8+8*n)) (coerce l)
-irAt (ADim t e l)                                              = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+8) (coerce l)
-irAt (AElem t (C.ConstI 1) (C.ConstI 0) l 8)                   = AP (ctemp t) (Just 16) (coerce l)
-irAt (AElem t (C.ConstI rnkI) (Bin IPlus e (C.ConstI n)) l 8)  = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8+8*(rnkI+n))) (coerce l)
-irAt (AElem t (C.ConstI rnkI) (Bin IMinus e (C.ConstI n)) l 8) = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8+8*(rnkI-n))) (coerce l)
-irAt (AElem t (C.ConstI rnkI) e l sz) | Just s <- cLog sz      = AP (ctemp t) (Just$IR.IB IAsl (irE e) (IR.ConstI s)+IR.ConstI (8+8*rnkI)) (coerce l)
-irAt (AElem t rnk e l 8)                                       = AP (ctemp t) (Just$IR.IB IAsl (irE rnk+irE e) 3+8) (coerce l)
-irAt (Raw t (C.ConstI 0) l _)                                  = AP (ctemp t) Nothing (coerce l)
-irAt (Raw t (C.ConstI i) l sz)                                 = AP (ctemp t) (Just (IR.ConstI$i*sz)) (coerce l)
-irAt (Raw t o l 8)                                             = AP (ctemp t) (Just$IR.IB IAsl (irE o) 3) (coerce l)
-irAt (Raw t o l 1)                                             = AP (ctemp t) (Just$irE o) (coerce l)
+irAt (ARnk t l)                                                = AP (ctemp t) Nothing l
+irAt (ADim t (C.ConstI n) l)                                   = AP (ctemp t) (Just$IR.ConstI (8+8*n)) l
+irAt (ADim t e l)                                              = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+8) l
+irAt (AElem t (C.ConstI 1) (C.ConstI 0) l 8)                   = AP (ctemp t) (Just 16) l
+irAt (AElem t (C.ConstI rnkI) (Bin IPlus e (C.ConstI n)) l 8)  = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8+8*(rnkI+n))) l
+irAt (AElem t (C.ConstI rnkI) (Bin IMinus e (C.ConstI n)) l 8) = AP (ctemp t) (Just$IR.IB IAsl (irE e) 3+IR.ConstI (8+8*(rnkI-n))) l
+irAt (AElem t (C.ConstI rnkI) e l sz) | Just s <- cLog sz      = AP (ctemp t) (Just$IR.IB IAsl (irE e) (IR.ConstI s)+IR.ConstI (8+8*rnkI)) l
+irAt (AElem t rnk e l 8)                                       = AP (ctemp t) (Just$IR.IB IAsl (irE rnk+irE e) 3+8) l
+irAt (Raw t (C.ConstI 0) l _)                                  = AP (ctemp t) Nothing l
+irAt (Raw t (C.ConstI i) l sz)                                 = AP (ctemp t) (Just (IR.ConstI$i*sz)) l
+irAt (Raw t o l 8)                                             = AP (ctemp t) (Just$IR.IB IAsl (irE o) 3) l
+irAt (Raw t o l 1)                                             = AP (ctemp t) (Just$irE o) l
 irAt (At dt s ix l sz) | Just sϵ <- cLog sz =
     let offs=foldl1 (IB IPlus) $ zipWith (\d i -> irE i*irE d) s ix
-    in AP (ctemp dt) (Just$IR.IB IAsl offs (IR.ConstI sϵ)) (coerce l)
+    in AP (ctemp dt) (Just$IR.IB IAsl offs (IR.ConstI sϵ)) l
 
 irE :: CE -> Exp
 irE (Tmp t)               = Reg (ctemp t)

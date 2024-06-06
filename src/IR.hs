@@ -10,6 +10,7 @@ module IR ( Exp (..)
           , prettyIR
           ) where
 
+import           CF.AL
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
@@ -63,8 +64,8 @@ data Stmt = L Label
           | J Label
           | MT Temp Exp
           | MX Temp FExp -- move targeting xmm0, etc.
-          | Ma Int Temp Exp -- label, register, size
-          | Free Temp | RA !Int -- "return array" no-op (takes label)
+          | Ma AL Temp Exp -- label, register, size
+          | Free Temp | RA !AL -- "return array" no-op
           | Wr AE Exp
           | WrF AE FExp
           | Cmov Exp Temp Exp | Fcmov Exp Temp FExp
@@ -99,7 +100,7 @@ instance Pretty Stmt where
 
 instance Show Stmt where show = show . pretty
 
-data AE = AP Temp (Maybe Exp) (Maybe Int) -- offset, label for tracking liveness
+data AE = AP Temp (Maybe Exp) (Maybe AL) -- offset, label for tracking liveness
 
 instance Pretty AE where
     pretty (AP t Nothing _)  = parens ("ptr" <+> pretty t)
