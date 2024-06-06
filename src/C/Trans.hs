@@ -21,7 +21,7 @@ import           Nm.IntMap
 import           Op
 
 data CSt = CSt { temps       :: [Int]
-               , arrs        :: [Int]
+               , arrs        :: [AL]
                , assemblerSt :: !Int
                , vars        :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                , dvars       :: IM.IntMap FTemp
