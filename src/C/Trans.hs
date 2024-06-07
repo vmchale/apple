@@ -10,12 +10,12 @@ import           Control.Composition        (thread)
 import           Control.Monad              (zipWithM)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor             (second)
-import           Data.Either                (rights)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
 import           Data.Maybe                 (catMaybes)
+import           Data.Tuple.Extra           (third3)
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import           Nm
@@ -64,6 +64,8 @@ getT :: IM.IntMap b -> Nm a -> b
 getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " not assigned to a temp.")) n st
 
 type CM = State CSt
+
+tick t = MT t (Tmp t+1)
 
 fop op e0 = EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) op) e0)
 eMinus = fop Minus
@@ -196,20 +198,20 @@ offByDim dims = do
     pure (reverse sts, MT (head sts) 1:ss)
     -- drop 1 for strides
 
--- each (Right t) specifies a dimension (bounds); each (Left e) specifies a (currently)
--- fixed index
-extrCell :: [Either CE Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM [CS]
-extrCell fixedIxesDims sstrides (srcP, srcL) dest = do
-    ts <- traverse (\_ -> newITemp) dims
+data Cell a b = Fixed a -- fixed in the larger procedure
+              | Bound b -- to be iterated over
+
+forAll bs is = thread (zipWith (\b t -> (:[]) . For t 0 ILt (Tmp b)) bs is)
+
+extrCell :: [Cell CE Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM [CS]
+extrCell fixBounds sstrides (srcP, srcL) dest = do
+    (dims, ts, ixes) <- switch fixBounds
     t <- newITemp; i <- newITemp
-    pure $ (MT i 0:) $ thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) dims ts) $
-        let ixes = either id Tmp <$> replaceZs fixedIxesDims ts
-        -- FIXME: ixes... paired with wrong stride? (reverse one?)
-        in [MT t (EAt (At srcP (Tmp <$> sstrides) ixes srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), MT i (Tmp i+1)]
-    where dims = rights fixedIxesDims
-          replaceZs (f@Left{}:ds) ts    = f:replaceZs ds ts
-          replaceZs (Right{}:ds) (t:ts) = Right t:replaceZs ds ts
-          replaceZs [] []               = []
+    pure $ (MT i 0:) $ forAll dims ts
+        [MT t (EAt (At srcP (Tmp <$> sstrides) ixes srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), tick i]
+    where switch (Bound d:ds) = do {t <- newITemp; trimap (d:) (t:) (Tmp t:) <$> switch ds}
+          switch (Fixed f:ds) = third3 (f:) <$> switch ds
+          switch []           = pure ([], [], [])
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS])
 aeval (LLet _ (n,e') e) t | isArr (eAnn e') = do
@@ -284,16 +286,16 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
         allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         complDims = indices allDims; oDims = cells allDims
         oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
-        wrOSz = MT oSz 1:[MT oSz (Tmp oSz*Tmp dϵ) | dϵ <- oDims]
-        wrSlopSz = MT slopSz 1:[MT slopSz (Tmp slopSz*Tmp dϵ) | dϵ <- complDims]++[MT slopSz (Tmp slopSz+ConstI (slopRnk+1))]
+        wrOSz = PlProd oSz oDims
+        wrSlopSz = PlProd slopSz complDims:[MT slopSz (Tmp slopSz+ConstI (slopRnk+1))]
     (_, ss) <- writeF f [AA slopP Nothing] y
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Right dϵ; (_,Cell tϵ) -> Left (Tmp tϵ)) dts allts
+    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell tϵ) -> Fixed (Tmp tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
+    -- (introduces free variables that will be plugged in in loop)
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
-    -- FIXME: oDims but complts? maybe I just named it wrong lol
-    let loop=thread (zipWith (\d tϵ -> (:[]) . For tϵ 0 ILt (Tmp d)) oDims complts) $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, MT di (Tmp di+1)]
-    pure (Just a, plX++dss++wrOSz++Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++wrSlopSz++Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop++[Pop (Tmp slopSz)])
+    let loop=forAll oDims complts $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]
+    pure (Just a, plX++dss++wrOSz:Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++wrSlopSz++Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop++[Pop (Tmp slopSz)])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr t
     xR <- newITemp; yR <- newITemp
@@ -308,7 +310,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t = do
     i <- newITemp
     pStart <- eval start startR; pEnd <- eval end endR
     let pN=MT n ((Tmp endR - Tmp startR)+1)
-        loop=For i 0 ILt (Tmp n) [Wr (AElem t 1 (Tmp i) (Just a) 8) (Tmp startR), MT startR (Tmp startR+1)]
+        loop=For i 0 ILt (Tmp n) [Wr (AElem t 1 (Tmp i) (Just a) 8) (Tmp startR), tick startR]
     pure (Just a, pStart++pEnd++pN:Ma a t 1 (Tmp n) 8:Wr (ADim t 0 (Just a)) (Tmp n):[loop])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     a <- nextArr t
@@ -455,7 +457,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow
     (lX, plX) <- aeval xs xR
     (lY, plY) <- aeval ys yR
     ss <- writeRF op [x,y] z
-    let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem yR 1 (Tmp j) lY 8) y:ss++[wt (AElem t 2 (Tmp k) (Just a) 8) z, MT k (Tmp k+1)])]
+    let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem yR 1 (Tmp j) lY 8) y:ss++[wt (AElem t 2 (Tmp k) (Just a) 8) z, tick k])]
     pure (Just a, plX++plY++MT szX (EAt (ADim xR 0 lX)):MT szY (EAt (ADim yR 0 lY)):Ma a t 2 (Tmp szX*Tmp szY) 8:Wr (ADim t 0 (Just a)) (Tmp szX):Wr (ADim t 1 (Just a)) (Tmp szY):MT k 0:[loop])
 aeval (EApp _ (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tD) <- eAnn op, isIF tX && isIF tD= do
     a <- nextArr t
@@ -768,3 +770,5 @@ m'pop = maybe [] ((:[]).Pop)
 πe e _ = error (show e)
 
 fourth f ~(x,y,z,w) = (x,y,z,f w)
+
+trimap f g h ~(x,y,z) = (f x, g y, h z)

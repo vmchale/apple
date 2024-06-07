@@ -18,7 +18,7 @@ import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
 import           Op
-import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, indent, lbrace, parens, rbrace, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, indent, lbrace, parens, rbrace, tupled, (<+>))
 import           Prettyprinter.Ext
 
 type Label=Word; type AsmData = IM.IntMap [Word64]
@@ -120,10 +120,8 @@ instance Show CFE where show=show.pretty
 
 data CS = For Temp CE IRel CE [CS]
         | While Temp IRel CE [CS]
-        | MT Temp CE
-        | MX FTemp CFE
-        | Wr ArrAcc CE
-        | WrF ArrAcc CFE
+        | MT Temp CE | MX FTemp CFE
+        | Wr ArrAcc CE | WrF ArrAcc CFE
         | Ma AL Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
         | MaΠ AL Temp CE
         | RA !AL -- return array no-op (takes label)
@@ -135,6 +133,7 @@ data CS = For Temp CE IRel CE [CS]
         | Cmov PE Temp CE | Fcmov PE FTemp CFE
         | Cset PE Temp
         | SZ Temp Temp CE (Maybe AL)
+        | PlProd Temp [Temp]
 
 instance Pretty CS where
     pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
@@ -158,6 +157,7 @@ instance Pretty CS where
     pretty (Fcmov p t e)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace
     pretty (Cset p t)           = pretty t <+> "=" <+> pretty p
     pretty (SZ td t _ _)        = pretty td <+> "=" <+> "SIZE" <> parens (pretty t)
+    pretty (PlProd t ts)        = pretty t <+> "=" <+> "PRODUCT" <> tupled (pretty<$>ts)
 
 instance Show CS where show=show.pretty
 
