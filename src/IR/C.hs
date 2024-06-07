@@ -31,14 +31,9 @@ ctemp C.CRet      = IR.CRet
 
 fx :: FTemp -> IR.Temp
 fx (C.FTemp i) = IR.FTemp i
-fx FRet0       = FRet
-fx C.FRet1     = IR.FRet1
-fx C.F0        = IR.F0
-fx C.F1        = IR.F1
-fx C.F2        = IR.F2
-fx C.F3        = IR.F3
-fx C.F4        = IR.F4
-fx C.F5        = IR.F5
+fx FRet0 = FRet; fx C.FRet1 = IR.FRet1
+fx C.F0 = IR.F0; fx C.F1 = IR.F1; fx C.F2 = IR.F2
+fx C.F3 = IR.F3; fx C.F4 = IR.F4; fx C.F5 = IR.F5
 
 cToIR :: LSt -> [CS] -> ([Stmt], WSt)
 cToIR (LSt ls ts) cs = runState (foldMapM cToIRM cs) (WSt ls ts)
