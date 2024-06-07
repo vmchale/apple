@@ -187,7 +187,7 @@ indices (Cell{}:as)  = indices as
 
 plDim :: Int64 -> (Temp, Maybe AL) -> CM ([Temp], [CS])
 plDim rnk (a,l) =
-    unzip <$> traverse (\at -> do {dt <- newITemp; pure (dt, MT dt (EAt at))}) [ ADim a (ConstI$i-1) l | i <- [1..rnk] ]
+    unzip <$> traverse (\at -> do {dt <- newITemp; pure (dt, MT dt (EAt at))}) [ ADim a (ConstI i) l | i <- [0..rnk-1] ]
 
 offByDim :: [Temp] -> CM ([Temp], [CS])
 offByDim dims = do
