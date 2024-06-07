@@ -76,7 +76,6 @@ isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
 isΠIF (P ts)=all isIF ts; isΠIF _=False
 
-
 rel :: Builtin -> Maybe IRel
 rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Just ILeq; rel Gte=Just IGeq; rel _=Nothing
 
