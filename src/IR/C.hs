@@ -19,15 +19,10 @@ nextL :: IRM IR.Label
 nextL = state (\(WSt l ts) -> (l, WSt (l+1) ts))
 
 ctemp :: C.Temp -> IR.Temp
-ctemp (C.ATemp i) = IR.ATemp i
-ctemp (C.ITemp i) = IR.ITemp i
-ctemp C.C0        = IR.C0
-ctemp C.C1        = IR.C1
-ctemp C.C2        = IR.C2
-ctemp C.C3        = IR.C3
-ctemp C.C4        = IR.C4
-ctemp C.C5        = IR.C5
-ctemp C.CRet      = IR.CRet
+ctemp (C.ATemp i) = IR.ATemp i; ctemp (C.ITemp i) = IR.ITemp i
+ctemp C.C0 = IR.C0; ctemp C.C1 = IR.C1; ctemp C.C2 = IR.C2
+ctemp C.C3 = IR.C3; ctemp C.C4 = IR.C4; ctemp C.C5 = IR.C5
+ctemp C.CRet = IR.CRet
 
 fx :: FTemp -> IR.Temp
 fx (C.FTemp i) = IR.FTemp i
