@@ -6,8 +6,7 @@
 -- | AST
 module A ( T (..)
          , (~>)
-         , I (..)
-         , Sh (..)
+         , I (..), Sh (..)
          , C (..)
          , E (..)
          , Idiom (..)
@@ -38,8 +37,8 @@ instance PS (I a) where
 data I a = Ix { ia :: a, ii :: !Int }
          | IVar { ia :: a, ixn :: Nm a }
          | IEVar { ia :: a , ie :: Nm a } -- existential
-         | StaPlus { ia :: a, ix0 :: I a, ix1 :: I a }
-         | StaMul { ia :: a, ix0 :: I a, ix1 :: I a }
+         | StaPlus { ia :: a, ix0, ix1 :: I a }
+         | StaMul { ia :: a, ix0, ix1 :: I a }
          deriving (Functor, Generic)
 
 instance Show (I a) where
