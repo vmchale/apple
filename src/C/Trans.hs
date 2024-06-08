@@ -195,14 +195,14 @@ offByDim dims = do
 data Cell a b = Fixed -- set by the larger procedure
               | Bound b -- to be iterated over
 
-forAll bs is = thread (zipWith (\b t -> (:[]) . For t 0 ILt (Tmp b)) bs is)
+forAll is bs = thread (zipWith (\t b -> (:[]) . For t 0 ILt (Tmp b)) is bs)
 
 -- the resulting expressions/statement contain free variables that will be iterated over in the main rank-ification loop, these free variables are returned alongside
 extrCell :: [Cell () Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM ([Temp], [CS])
 extrCell fixBounds sstrides (srcP, srcL) dest = do
     (dims, ts, arrIxes, complts) <- switch fixBounds
     t <- newITemp; i <- newITemp
-    pure (complts, (MT i 0:) $ forAll dims ts
+    pure (complts, (MT i 0:) $ forAll ts dims
         [MT t (EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), tick i])
     where switch (Bound d:ds) = do {t <- newITemp; qmap (d:) (t:) (t:) id <$> switch ds}
           switch (Fixed:ds) = do {f <- newITemp; qmap id id (f:) (f:) <$> switch ds}
@@ -285,7 +285,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     xRd <- newITemp; slopPd <- newITemp
     (complts, place) <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
-    let loop=forAll oDims complts $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]
+    let loop=forAll complts oDims $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]
     pure (Just a, plX++dss++PlProd oSz oDims:Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++PlProd slopSz complDims:MT slopSz (Tmp slopSz+ConstI (slopRnk+1)):Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop++[Pop (Tmp slopSz)])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr t
