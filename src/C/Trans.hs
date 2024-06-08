@@ -205,7 +205,7 @@ extrCell fixBounds sstrides (srcP, srcL) dest = do
     pure (complts, (MT i 0:) $ forAll ts dims
         [MT t (EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), tick i])
     where switch (Bound d:ds) = do {t <- newITemp; qmap (d:) (t:) (t:) id <$> switch ds}
-          switch (Fixed:ds) = do {f <- newITemp; qmap id id (f:) (f:) <$> switch ds}
+          switch (Fixed:ds)   = do {f <- newITemp; qmap id id (f:) (f:) <$> switch ds}
           switch []           = pure ([], [], [], [])
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS])
