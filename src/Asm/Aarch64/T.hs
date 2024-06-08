@@ -12,26 +12,16 @@ import qualified IR
 import qualified Op
 
 absReg :: IR.Temp -> AbsReg
-absReg (IR.ITemp i) = IReg i
-absReg (IR.ATemp i) = IReg i
-absReg IR.C0        = CArg0
-absReg IR.C1        = CArg1
-absReg IR.C2        = CArg2
-absReg IR.C3        = CArg3
-absReg IR.C4        = CArg4
-absReg IR.C5        = CArg5
-absReg IR.CRet      = CArg0
+absReg (IR.ITemp i) = IReg i; absReg (IR.ATemp i) = IReg i
+absReg IR.C0 = CArg0; absReg IR.C1 = CArg1; absReg IR.C2 = CArg2
+absReg IR.C3 = CArg3; absReg IR.C4 = CArg4; absReg IR.C5 = CArg5
+absReg IR.CRet = CArg0
 
 fabsReg :: IR.Temp -> FAbsReg
 fabsReg (IR.FTemp i) = FReg i
-fabsReg IR.F0        = FArg0
-fabsReg IR.F1        = FArg1
-fabsReg IR.F2        = FArg2
-fabsReg IR.F3        = FArg3
-fabsReg IR.F4        = FArg4
-fabsReg IR.F5        = FArg5
-fabsReg IR.FRet      = FArg0
-fabsReg IR.FRet1     = FArg1
+fabsReg IR.F0 = FArg0; fabsReg IR.F1 = FArg1; fabsReg IR.F2 = FArg2
+fabsReg IR.F3 = FArg3; fabsReg IR.F4 = FArg4; fabsReg IR.F5 = FArg5
+fabsReg IR.FRet = FArg0; fabsReg IR.FRet1 = FArg1
 
 nextR :: WM AbsReg
 nextR = IReg <$> nextI
