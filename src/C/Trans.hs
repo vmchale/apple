@@ -276,7 +276,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
-    allts <- traverse (\i -> case i of {Cell{} -> pure (Cell ()); Index{} -> Index <$> newITemp}) allIx
+    let allts = fmap (\i -> case i of {Cell{} -> Cell (); Index{} -> Index ()}) allIx
     let allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         ~(oDims, complDims) = part allDims
         oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
