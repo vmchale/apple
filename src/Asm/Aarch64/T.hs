@@ -180,6 +180,15 @@ feval (IR.ConstF d) t = do
         w=castDoubleToWord64 d
     pure $ mw64 w r ++ [FMovDR () (fabsReg t) r]
 feval (IR.FAt (IR.AP tS (Just (IR.ConstI i)) _)) tD | Just i8 <- mp i = pure [LdrD () (fabsReg tD) (RP (absReg tS) i8)]
+-- https://litchie.com/2020/04/sine
+feval (IR.FU Op.FSin e0) t = do
+    plE <- feval e0 t
+    let d0=fabsReg t
+    d1 <- FReg<$>nextI; d2 <- FReg<$>nextI; d3 <- FReg<$>nextI
+    tsI <- nextI
+    let tsIR=IR.FTemp tsI; tsC=FReg tsI
+    pl3 <- feval (1/6) tsIR; pl5 <- feval (1/120) tsIR; pl7 <- feval (1/5040) tsIR
+    pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d0, Fmul () d3 d2 d1, Fmul () d1 d1 d3] ++ pl3 ++ [Fmsub () d0 d2 tsC d0] ++ pl5 ++ [Fmadd () d0 d3 tsC d0] ++ pl7 ++ [Fmadd () d0 d1 tsC d0]
 feval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
     i0 <- nextI; i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1); plE2 <- feval e2 (IR.FTemp i2)

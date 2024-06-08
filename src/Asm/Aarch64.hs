@@ -138,7 +138,6 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Ret { ann :: a }
                         | FMovXX { ann :: a, dDest, dSrc :: freg }
                         | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
-                        | FMovXC { ann :: a, dDest :: freg, dC :: Double }
                         | MovRR { ann :: a, rDest, rSrc :: reg }
                         | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
                         | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
@@ -194,7 +193,6 @@ mapR _ (B x l)               = B x l
 mapR _ (Bc x c l)            = Bc x c l
 mapR _ (Bl x f)              = Bl x f
 mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
-mapR _ (FMovXC l r0 c)       = FMovXC l r0 c
 mapR f (MovRR l r0 r1)       = MovRR l (f r0) (f r1)
 mapR f (MovRC l r c)         = MovRC l (f r) c
 mapR f (Ldr l r a)           = Ldr l (f r) (f <$> a)
@@ -250,7 +248,6 @@ mapFR _ (B x l)               = B x l
 mapFR _ (Bc x c l)            = Bc x c l
 mapFR _ (Bl x f)              = Bl x f
 mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
-mapFR f (FMovXC l xr c)       = FMovXC l (f xr) c
 mapFR _ (MovRR l r0 r1)       = MovRR l r0 r1
 mapFR _ (MovRC l r0 c)        = MovRC l r0 c
 mapFR _ (Ldr l r a)           = Ldr l r a

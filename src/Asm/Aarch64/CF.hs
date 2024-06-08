@@ -67,7 +67,6 @@ defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
 uses (MovRR _ _ r)       = singleton r
 uses MovRC{}             = IS.empty
 uses FMovXX{}            = IS.empty
-uses FMovXC{}            = IS.empty
 uses (Ldr _ _ a)         = uA a
 uses (Str _ r a)         = IS.insert (E.toInt r) $ uA a
 uses (Ldp _ _ _ a)       = uA a
@@ -120,7 +119,6 @@ uses Cset{}              = IS.empty
 uses Bl{}                = IS.empty
 
 defs FMovXX{}            = IS.empty
-defs FMovXC{}            = IS.empty
 defs (MovRC _ r _)       = singleton r
 defs (MovRR _ r _)       = singleton r
 defs (Ldr _ r _)         = singleton r
@@ -177,7 +175,6 @@ defs Bl{}                = IS.empty
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
-defsF (FMovXC _ r _)     = singleton r
 defsF MovRR{}            = IS.empty
 defsF MovRC{}            = IS.empty
 defsF Ldr{}              = IS.empty
@@ -232,7 +229,6 @@ defsF Cset{}             = IS.empty
 defsF Bl{}               = IS.empty
 
 usesF (FMovXX _ _ r)       = singleton r
-usesF FMovXC{}             = IS.empty
 usesF MovRR{}              = IS.empty
 usesF MovRC{}              = IS.empty
 usesF Ldr{}                = IS.empty
