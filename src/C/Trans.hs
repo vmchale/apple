@@ -204,13 +204,13 @@ data Cell a b = Fixed a -- fixed in the larger procedure
 forAll bs is = thread (zipWith (\b t -> (:[]) . For t 0 ILt (Tmp b)) bs is)
 
 -- the resulting expressions/statement contain free variables that will be iterated over in the main rank-ification loop
-extrCell :: [Cell CE Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM [CS]
+extrCell :: [Cell Temp Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM [CS]
 extrCell fixBounds sstrides (srcP, srcL) dest = do
-    (dims, ts, ixes) <- switch fixBounds
+    (dims, ts, arrIxes) <- switch fixBounds
     t <- newITemp; i <- newITemp
     pure $ (MT i 0:) $ forAll dims ts
-        [MT t (EAt (At srcP (Tmp <$> sstrides) ixes srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), tick i]
-    where switch (Bound d:ds) = do {t <- newITemp; trimap (d:) (t:) (Tmp t:) <$> switch ds}
+        [MT t (EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), tick i]
+    where switch (Bound d:ds) = do {t <- newITemp; trimap (d:) (t:) (t:) <$> switch ds}
           switch (Fixed f:ds) = third3 (f:) <$> switch ds
           switch []           = pure ([], [], [])
 
@@ -277,7 +277,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     slopP <- newITemp; y <- rtemp tOR
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell ix else Index ix | ix <- [1..fromIntegral rnk] ]
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell () else Index () | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
@@ -288,9 +288,10 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
         ~(oDims, complDims) = part allDims
         oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
     (_, ss) <- writeF f [AA slopP Nothing] y
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell tϵ) -> Fixed (Tmp tϵ)) dts allts
+    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell tϵ) -> Fixed tϵ) dts allts
     xRd <- newITemp; slopPd <- newITemp
-    -- (introduces free variables that will be plugged in/captured by loop)
+    -- (uses free variables that will be plugged in/captured by loop)
+    -- would be more clear if it returned them alongside imo
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let loop=forAll oDims complts $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]
