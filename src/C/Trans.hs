@@ -9,7 +9,7 @@ import qualified CF.AL                      as AL
 import           Control.Composition        (thread)
 import           Control.Monad              (zipWithM)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
-import           Data.Bifunctor             (second)
+import           Data.Bifunctor             (first, second)
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
@@ -177,15 +177,16 @@ eeval e = either (feval e) (eval e)
 
 data RI a b = Cell a | Index b deriving Show
 
+ri f _ (Cell x) = f x; ri _ g (Index y) = g y
+
+part :: [RI a b] -> ([a], [b])
+part []     = ([], [])
+part (b:bs) = ri (first.(:)) (second.(:)) b (part bs)
+
 cells :: [RI a b] -> [a]
 cells []           = []
 cells (Cell a:as)  = a:cells as
 cells (Index{}:as) = cells as
-
-indices :: [RI a b] -> [b]
-indices []           = []
-indices (Index a:as) = a:indices as
-indices (Cell{}:as)  = indices as
 
 plDim :: Int64 -> (Temp, Maybe AL) -> CM ([Temp], [CS])
 plDim rnk (a,l) =
@@ -203,6 +204,7 @@ data Cell a b = Fixed a -- fixed in the larger procedure
 
 forAll bs is = thread (zipWith (\b t -> (:[]) . For t 0 ILt (Tmp b)) bs is)
 
+-- the resulting expressions/statement contain free variables that will be iterated over in the main rank-ification loop
 extrCell :: [Cell CE Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM [CS]
 extrCell fixBounds sstrides (srcP, srcL) dest = do
     (dims, ts, ixes) <- switch fixBounds
@@ -284,10 +286,8 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     allts <- traverse (\i -> case i of {Cell{} -> Cell <$> newITemp; Index{} -> Index <$> newITemp}) allIx
     let complts = cells allts
         allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
-        complDims = indices allDims; oDims = cells allDims
+        ~(oDims, complDims) = part allDims
         oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
-        wrOSz = PlProd oSz oDims
-        wrSlopSz = PlProd slopSz complDims:[MT slopSz (Tmp slopSz+ConstI (slopRnk+1))]
     (_, ss) <- writeF f [AA slopP Nothing] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell tϵ) -> Fixed (Tmp tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
@@ -295,7 +295,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let loop=forAll oDims complts $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]
-    pure (Just a, plX++dss++wrOSz:Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++wrSlopSz++Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop++[Pop (Tmp slopSz)])
+    pure (Just a, plX++dss++PlProd oSz oDims:Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++PlProd slopSz complDims:MT slopSz (Tmp slopSz+ConstI (slopRnk+1)):Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop++[Pop (Tmp slopSz)])
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr t
     xR <- newITemp; yR <- newITemp
