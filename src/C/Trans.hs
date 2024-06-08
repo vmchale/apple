@@ -177,11 +177,10 @@ eeval e = either (feval e) (eval e)
 
 data RI a b = Cell a | Index b deriving Show
 
-ri f _ (Cell x) = f x; ri _ g (Index y) = g y
-
 part :: [RI a b] -> ([a], [b])
-part []     = ([], [])
-part (b:bs) = ri (first.(:)) (second.(:)) b (part bs)
+part []           = ([], [])
+part (Cell i:is)  = first (i:) $ part is
+part (Index i:is) = second (i:) $ part is
 
 cells :: [RI a b] -> [a]
 cells []           = []
