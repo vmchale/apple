@@ -85,6 +85,9 @@ allT = testGroup "jit"
     , testCase "vmul" $ do { (AA 1 [2] res) <- fpAaa "test/data/vmul.🍏" (AA 2 [2,3] [1,2,3,4,5,6::Double]) (AA 1 [3] [1,1,1::Double]); res @?= [6,15::Double] }
     , testCase "matmul builtin" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
+    , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hsTup <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
+    , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
+    , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
     ]
 
 x64T :: TestTree
@@ -100,9 +103,6 @@ x64T = testGroup "x64"
     , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res @?= 0.6339381452606089 }
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
     , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res @?= tcdf 12 2 }
-    , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hsTup <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
-    , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
-    , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
