@@ -15,7 +15,6 @@ import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
 import           Data.Maybe                 (catMaybes)
-import           Data.Tuple.Extra           (third3)
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import           Nm
@@ -182,11 +181,6 @@ part []           = ([], [])
 part (Cell i:is)  = first (i:) $ part is
 part (Index i:is) = second (i:) $ part is
 
-cells :: [RI a b] -> [a]
-cells []           = []
-cells (Cell a:as)  = a:cells as
-cells (Index{}:as) = cells as
-
 plDim :: Int64 -> (Temp, Maybe AL) -> CM ([Temp], [CS])
 plDim rnk (a,l) =
     unzip <$> traverse (\at -> do {dt <- newITemp; pure (dt, MT dt (EAt at))}) [ ADim a (ConstI i) l | i <- [0..rnk-1] ]
@@ -198,21 +192,21 @@ offByDim dims = do
     pure (reverse sts, MT (head sts) 1:ss)
     -- drop 1 for strides
 
-data Cell a b = Fixed a -- fixed in the larger procedure
+data Cell a b = Fixed -- set by the larger procedure
               | Bound b -- to be iterated over
 
 forAll bs is = thread (zipWith (\b t -> (:[]) . For t 0 ILt (Tmp b)) bs is)
 
--- the resulting expressions/statement contain free variables that will be iterated over in the main rank-ification loop
-extrCell :: [Cell Temp Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM [CS]
+-- the resulting expressions/statement contain free variables that will be iterated over in the main rank-ification loop, these free variables are returned alongside
+extrCell :: [Cell () Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM ([Temp], [CS])
 extrCell fixBounds sstrides (srcP, srcL) dest = do
-    (dims, ts, arrIxes) <- switch fixBounds
+    (dims, ts, arrIxes, complts) <- switch fixBounds
     t <- newITemp; i <- newITemp
-    pure $ (MT i 0:) $ forAll dims ts
-        [MT t (EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), tick i]
-    where switch (Bound d:ds) = do {t <- newITemp; trimap (d:) (t:) (t:) <$> switch ds}
-          switch (Fixed f:ds) = third3 (f:) <$> switch ds
-          switch []           = pure ([], [], [])
+    pure (complts, (MT i 0:) $ forAll dims ts
+        [MT t (EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL 8)), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), tick i])
+    where switch (Bound d:ds) = do {t <- newITemp; qmap (d:) (t:) (t:) id <$> switch ds}
+          switch (Fixed:ds) = do {f <- newITemp; qmap id id (f:) (f:) <$> switch ds}
+          switch []           = pure ([], [], [], [])
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS])
 aeval (LLet _ (n,e') e) t | isArr (eAnn e') = do
@@ -282,17 +276,14 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
-    allts <- traverse (\i -> case i of {Cell{} -> Cell <$> newITemp; Index{} -> Index <$> newITemp}) allIx
-    let complts = cells allts
-        allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
+    allts <- traverse (\i -> case i of {Cell{} -> pure (Cell ()); Index{} -> Index <$> newITemp}) allIx
+    let allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         ~(oDims, complDims) = part allDims
         oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
     (_, ss) <- writeF f [AA slopP Nothing] y
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell tϵ) -> Fixed tϵ) dts allts
+    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allts
     xRd <- newITemp; slopPd <- newITemp
-    -- (uses free variables that will be plugged in/captured by loop)
-    -- would be more clear if it returned them alongside imo
-    place <- extrCell ecArg sstrides (xRd, lX) slopPd
+    (complts, place) <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let loop=forAll oDims complts $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]
     pure (Just a, plX++dss++PlProd oSz oDims:Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++PlProd slopSz complDims:MT slopSz (Tmp slopSz+ConstI (slopRnk+1)):Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop++[Pop (Tmp slopSz)])
@@ -771,4 +762,4 @@ m'pop = maybe [] ((:[]).Pop)
 
 fourth f ~(x,y,z,w) = (x,y,z,f w)
 
-trimap f g h ~(x,y,z) = (f x, g y, h z)
+qmap f g h k ~(x,y,z,w) = (f x, g y, h z, k w)
