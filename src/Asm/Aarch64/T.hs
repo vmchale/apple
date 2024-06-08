@@ -181,22 +181,35 @@ feval (IR.ConstF d) t = do
     pure $ mw64 w r ++ [FMovDR () (fabsReg t) r]
 feval (IR.FAt (IR.AP tS (Just (IR.ConstI i)) _)) tD | Just i8 <- mp i = pure [LdrD () (fabsReg tD) (RP (absReg tS) i8)]
 -- https://litchie.com/2020/04/sine
-feval (IR.FU Op.FSin e0) t = do
-    plE <- feval e0 t
+feval (IR.FU Op.FSin e) t = do
+    plE <- feval e t
     let d0=fabsReg t
     d1 <- FReg<$>nextI; d2 <- FReg<$>nextI; d3 <- FReg<$>nextI
     tsI <- nextI
     let tsIR=IR.FTemp tsI; tsC=FReg tsI
-    pl3 <- feval (IR.ConstF$1/6) tsIR; pl5 <- feval (IR.ConstF$1/120) tsIR; pl7 <- feval (IR.ConstF$1/5040) tsIR
-    pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d0, Fmul () d3 d2 d1, Fmul () d1 d1 d3] ++ pl3 ++ Fmsub () d0 d2 tsC d0 : pl5 ++ Fmadd () d0 d3 tsC d0 : pl7 ++ [Fmadd () d0 d1 tsC d0]
-feval (IR.FU Op.FCos e0) t = do
-    plE <- feval e0 t
+    pl3 <- feval (IR.ConstF$ -(1/6)) tsIR; pl5 <- feval (IR.ConstF$1/120) tsIR; pl7 <- feval (IR.ConstF$ -(1/5040)) tsIR
+    pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d0, Fmul () d3 d2 d1, Fmul () d1 d1 d3] ++ pl3 ++ Fmadd () d0 d2 tsC d0 : pl5 ++ Fmadd () d0 d3 tsC d0 : pl7 ++ [Fmadd () d0 d1 tsC d0]
+feval (IR.FU Op.FCos e) t = do
+    plE <- feval e t
     let d0=fabsReg t
     d1 <- FReg<$>nextI; d2 <- FReg<$>nextI; d3 <- FReg<$>nextI
     tsI <- nextI
     let tsIR=IR.FTemp tsI; tsC=FReg tsI
-    pl0 <- feval 1 tsIR; pl2 <- feval (IR.ConstF$1/2) tsIR; pl4 <- feval (IR.ConstF$1/24) tsIR; pl6 <- feval (IR.ConstF$1/720) tsIR
-    pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d1, Fmul () d3 d2 d1] ++ pl0 ++ FMovXX () d0 tsC : pl2 ++ Fmsub () d0 d1 tsC d0 : pl4 ++ Fmadd () d0 d2 tsC d0 : pl6 ++ [Fmsub () d0 d3 tsC d0]
+    pl0 <- feval 1 tsIR; pl2 <- feval (IR.ConstF$ -(1/2)) tsIR; pl4 <- feval (IR.ConstF$1/24) tsIR; pl6 <- feval (IR.ConstF$ -(1/720)) tsIR
+    pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d1, Fmul () d3 d2 d1] ++ pl0 ++ FMovXX () d0 tsC : pl2 ++ Fmadd () d0 d1 tsC d0 : pl4 ++ Fmadd () d0 d2 tsC d0 : pl6 ++ [Fmadd () d0 d3 tsC d0]
+-- 0 < z ≤ 2
+feval (IR.FU Op.FLog e) t = do
+    i <- nextI
+    plE <- feval e (IR.FTemp i)
+    iC <- nextI
+    let dC=FReg iC; irC=IR.FTemp iC
+    let plN n = feval (IR.ConstF ((-1)^(n+1)/fromIntegral (n::Int))) irC
+    z1 <- FReg<$>nextI; zp <- FReg<$>nextI
+    let zRet=fabsReg t
+    let s=[Fmadd () zRet zp dC zRet, Fmul () zp zp z1] in do
+            ss <- traverse (\n -> do {plC <- plN n; pure $ plC ++ s}) [2..9]
+            pl1 <- feval 1 irC; pl10 <- plN 10
+            pure $ plE ++ FMovXX () z1 (FReg i) : pl1 ++ [Fsub () z1 z1 dC, FMovXX () zRet z1, Fmul () zp z1 z1] ++ concat ss ++ pl10 ++ [Fmadd () zRet zp dC zRet]
 feval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
     i0 <- nextI; i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1); plE2 <- feval e2 (IR.FTemp i2)
