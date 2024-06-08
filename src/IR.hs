@@ -57,17 +57,15 @@ instance Pretty Temp where
     pretty FRet      = "f_ret"
     pretty FRet1     = "f_ret1"
 
-instance Show Temp where show = show . pretty
+instance Show Temp where show=show.pretty
 
 data Stmt = L Label
           | MJ Exp Label
           | J Label
-          | MT Temp Exp
-          | MX Temp FExp -- move targeting xmm0, etc.
+          | MT Temp Exp | MX Temp FExp -- move targeting xmm0 &c.
           | Ma AL Temp Exp -- label, register, size
           | Free Temp | RA !AL -- "return array" no-op
-          | Wr AE Exp
-          | WrF AE FExp
+          | Wr AE Exp | WrF AE FExp
           | Cmov Exp Temp Exp | Fcmov Exp Temp FExp
           | Cset Temp Exp
           | Sa Temp Exp -- register, size
