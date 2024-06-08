@@ -291,7 +291,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     (_, ss) <- writeF f [AA slopP Nothing] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell tϵ) -> Fixed (Tmp tϵ)) dts allts
     xRd <- newITemp; slopPd <- newITemp
-    -- (introduces free variables that will be plugged in in loop)
+    -- (introduces free variables that will be plugged in/captured by loop)
     place <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let loop=forAll oDims complts $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]

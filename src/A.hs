@@ -130,7 +130,7 @@ instance Pretty Builtin where
     pretty FoldS     = "/ₒ"
     pretty FoldA     = "/*"
     pretty Times     = "*"
-    pretty FRange    = "frange"
+    pretty FRange    = "𝒻"
     pretty IRange    = "⍳"
     pretty Floor     = "⌊"
     pretty Minus     = "-"
