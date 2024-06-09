@@ -329,17 +329,16 @@ benchC :: String -> Repl AlexPosn ()
 benchC s = case tyParse bs of
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right _ -> do
-        m <- lift $ gets mf
+        c <- lift $ gets mf
         a <- lift $ gets _arch
-        let cfp=case a of {X64 -> ctxFunP; AArch64 -> actxFunP}
-        liftIO $ benchmark (nfIO (do{asm <- cfp m bs; freeAsm asm}))
+        let cfp=case a of {X64 -> ctxFunP c; AArch64 m -> actxFunP (c,m)}
+        liftIO $ benchmark (nfIO (do{asm <- cfp bs; freeAsm asm}))
     where bs = ubs s
 
 benchE :: String -> Repl AlexPosn ()
 benchE s = do
     st <- lift $ gets _lex
     a <- lift $ gets _arch
-    let efp=case a of {X64 -> eFunP; AArch64 -> eAFunP}
     case rwP st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
@@ -347,32 +346,33 @@ benchE s = do
             case tyClosed i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
-                    m <- lift $ gets mf
+                    c <- lift $ gets mf
+                    let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     case eAnn e of
                         (Arr _ F) -> do
                             liftIO $ do
-                                asm@(_, fp, _) <- efp i' m eC
+                                asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                                 freeAsm asm
                         (Arr _ I) -> do
                             liftIO $ do
-                                asm@(_, fp, _) <- efp i' m eC
+                                asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                                 freeAsm asm
                         I -> do
                             liftIO $ do
-                                asm@(_, fp, _) <- efp i' m eC
+                                asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO $ callFFI fp retInt64 [])
                                 freeAsm asm
                         F -> do
                             liftIO $ do
-                                asm@(_, fp, _) <- efp i' m eC
+                                asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO $ callFFI fp retCDouble [])
                                 freeAsm asm
                         P [F,F] -> error "Haskell support for float ABI is poor :("
                         P{} ->
                             liftIO $ do
-                                asm@(_, fp, _) <- eFunP i' m eC
+                                asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                                 freeAsm asm
     where bs = ubs s
