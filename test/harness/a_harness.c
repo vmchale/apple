@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern void* a(void);
+#include"../../include/apple_abi.h"
+
+extern U a();
 
 int main(int argc, char *argv[]) {
     printf("%p\n", a());
