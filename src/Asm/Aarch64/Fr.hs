@@ -33,23 +33,26 @@ frameC = concat.go IS.empty IS.empty
 
 -- https://developer.arm.com/documentation/102374/0101/Procedure-Call-Standard
 fromInt :: Int -> Maybe AReg
-fromInt 0    = Just X0
-fromInt 1    = Just X1
-fromInt 2    = Just X2
-fromInt 3    = Just X3
-fromInt 4    = Just X4
-fromInt 5    = Just X5
-fromInt 6    = Just X6
-fromInt 7    = Just X7
-fromInt (-1) = Just X8
-fromInt (-2) = Just X9
-fromInt (-3) = Just X10
-fromInt (-4) = Just X11
-fromInt (-5) = Just X12
-fromInt (-6) = Just X13
-fromInt (-7) = Just X14
-fromInt (-8) = Just X15
-fromInt _    = Nothing
+fromInt 0     = Just X0
+fromInt 1     = Just X1
+fromInt 2     = Just X2
+fromInt 3     = Just X3
+fromInt 4     = Just X4
+fromInt 5     = Just X5
+fromInt 6     = Just X6
+fromInt 7     = Just X7
+fromInt (-1)  = Just X8
+fromInt (-2)  = Just X9
+fromInt (-3)  = Just X10
+fromInt (-4)  = Just X11
+fromInt (-5)  = Just X12
+fromInt (-6)  = Just X13
+fromInt (-7)  = Just X14
+fromInt (-8)  = Just X15
+fromInt (-9)  = Just X16
+fromInt (-10) = Just X17
+fromInt (-11) = Just X18
+fromInt _     = Nothing
 
 fInt :: Int -> Maybe FAReg
 fInt 10 = Just D0
