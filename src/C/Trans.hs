@@ -132,7 +132,7 @@ writeCM eϵ = do
         go e frs rs
     go Lam{} _ [] = error "Not enough registers!"
     go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX FRet0 (FTmp f)]) <$> feval e f} -- avoid clash with xmm0 (arg + ret)
-             | isI (eAnn e) = eval e CRet
+             | isI (eAnn e) = do {t <- newITemp; (++[MT CRet (Tmp t)]) <$> eval e t} -- avoid clash when calling functions
              | isArr (eAnn e) = do {i <- newITemp; (l,r) <- aeval e i; pure$r++[MT CRet (Tmp i)]++case l of {Just m -> [RA m]; Nothing -> []}}
              | P [F,F] <- eAnn e = do {t <- newITemp; (_,_,_,p) <- πe e t; pure$Sa t 16:p++[MX FRet0 (FAt (Raw t 0 Nothing 8)), MX FRet1 (FAt (Raw t 1 Nothing 8)), Pop 16]}
              | ty@P{} <- eAnn e, b64 <- bT ty, (n,0) <- b64 `quotRem` 8 = let b=ConstI b64 in do {t <- newITemp; a <- nextArr CRet; (_,_,ls,pl) <- πe e t; pure (Sa t b:pl++MaΠ a CRet b:CpyE (Raw CRet 0 (Just a) 8) (Raw t 0 Nothing 8) (ConstI n) 8:Pop b:RA a:(RA<$>ls))}
@@ -553,6 +553,10 @@ eval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op =
     e0R <- newFTemp; e1R <- newFTemp
     plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
     pure $ plE0 ++ plE1 ++ [Cset (FRel fop' (FTmp e0R) (FTmp e1R)) t]
+eval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
+    eR <- newITemp; iR <- newITemp
+    (lE, plE) <- aeval e eR; plI <- eval i iR
+    pure $ plE ++ plI ++ [MT t (EAt (AElem eR 1 (Tmp iR) lE 8))]
 eval (EApp _ (Builtin _ Head) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
