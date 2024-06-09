@@ -147,7 +147,7 @@ static PyObject* apple_jit(PyObject *self, PyObject *args) {
         free(err);R NULL;
     };
     U fp;S f_sz;U s;
-    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
+    fp=apple_compile((P)&malloc,(P)&free,(P)&exp,(P)&log,inp,&f_sz,&s);
     PyCacheObject* cc=PyObject_New(PyCacheObject, &CacheType);
     ffi_cif* ffi=apple_ffi(ty);
     cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;
@@ -198,7 +198,7 @@ static PyObject* apple_apple(PyObject *self, PyObject *args) {
         free(err);R NULL;
     };
     U fp;S f_sz;U s;
-    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
+    fp=apple_compile((P)&malloc,(P)&free,(P)&exp,(P)&log,inp,&f_sz,&s);
     PO r;
     ffi_cif* cif=apple_ffi(ty);
     int argc=ty->argc;
