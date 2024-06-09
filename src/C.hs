@@ -69,7 +69,7 @@ instance Show ArrAcc where show=show.pretty
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7; fprec FDiv=7; fprec FExp=8
 
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI Int64 | CFloor CFE
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor CFE
         | LA !Int -- assembler data
         | DP Temp CE -- pointer, rank
 
@@ -90,7 +90,7 @@ instance Show CE where show=show.pretty
 instance Num CE where
     (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
-data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF Double | IE CE
+data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF !Double | IE CE
 
 instance Num CFE where
     (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
