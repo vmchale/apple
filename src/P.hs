@@ -141,8 +141,8 @@ bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86G
 
 as :: T.Text -> BSL.ByteString -> Doc ann
-as f s = (\(d,i) -> ".p2align 2\n\n.data\n\n" <> pAD d <#> ".text\n\n.global " <> pSym f <#> pSym f <> ":" <#> pAsm i) (either throw (second aso) (aarch64 s))
-    -- where prolegomena = ".p2align 2\n\n.text\n\n.global " <> pSym f <#> pSym f <> ":"
+as f = prolegomena.either throw (second aso).aarch64
+    where prolegomena (d,i) = ".p2align 2\n\n.data\n\n" <> pAD d <#> ".text\n\n.global " <> pSym f <#> pSym f <> ":" <#> pAsm i
 
 aso (MovRCf () r0 f:Blr () r1:asms) | r0 == r1 = Bl () f:aso asms
 aso (asm:asms) = asm:aso asms; aso [] = []
