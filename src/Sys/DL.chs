@@ -27,8 +27,6 @@ math = do {m <- libm; e <- dlsym m "exp"; l <- dlsym m "log"; dlclose m$>(e,l)}
 
 ll p = dlopen p [RTLD_LAZY]
 
-libc :: IO DL
+libc, libm :: IO DL
 libc = ll {# const LIBC_SO #}
-
-libm :: IO DL
 libm = ll {# const LIBM_SO #}
