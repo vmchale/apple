@@ -668,6 +668,10 @@ feval (EApp _ (Builtin _ Head) xs) t = do
     a <- newITemp
     (l, plX)  <-  aeval xs a
     pure $ plX ++ [MX t (FAt (AElem a 1 0 l 8))]
+feval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
+    eR <- newITemp; iR <- newITemp
+    (lE, plE) <- aeval e eR; plI <- eval i iR
+    pure $ plE ++ plI ++ [MX t (FAt (AElem eR 1 (Tmp iR) lE 8))]
 feval (EApp _ (Builtin _ Last) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
