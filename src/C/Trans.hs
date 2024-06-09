@@ -771,6 +771,10 @@ m'pop = maybe [] ((:[]).Pop)
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- ConstI$last offs = do
     (ls, ss) <- unzip <$> zipWithM (\e off -> case eAnn e of {F -> do {f <- newFTemp; plX <- feval e f; pure (Nothing, plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)])}; Arr{} -> do {r <- newITemp ; (l,pl) <- aeval e r; pure (l, pl++[Wr (Raw t (ConstI off) Nothing 1) (Tmp r)])}}) es offs
     pure (offs, Just sz, catMaybes ls, concat ss)
+πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
+    xR <- newITemp; iR <- newITemp
+    (lX, plX) <- aeval e xR; plI <- eval i iR
+    pure (offs, Just szE, mempty, plX ++ plI ++ [Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (Tmp iR) lX sz) 1 sz])
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [MT t (Tmp$getT st x)])
