@@ -133,7 +133,7 @@ data CS = For Temp CE IRel CE [CS]
         | Cmov PE Temp CE | Fcmov PE FTemp CFE
         | Cset PE Temp
         | SZ Temp Temp CE (Maybe AL)
-        | PlProd Temp [Temp]
+        | PlProd Temp [CE]
 
 instance Pretty CS where
     pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
