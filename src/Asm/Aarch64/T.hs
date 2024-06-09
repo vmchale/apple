@@ -197,19 +197,10 @@ feval (IR.FU Op.FCos e) t = do
     let tsIR=IR.FTemp tsI; tsC=FReg tsI
     pl0 <- feval 1 tsIR; pl2 <- feval (IR.ConstF$ -(1/2)) tsIR; pl4 <- feval (IR.ConstF$1/24) tsIR; pl6 <- feval (IR.ConstF$ -(1/720)) tsIR
     pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d1, Fmul () d3 d2 d1] ++ pl0 ++ FMovXX () d0 tsC : pl2 ++ Fmadd () d0 d1 tsC d0 : pl4 ++ Fmadd () d0 d2 tsC d0 : pl6 ++ [Fmadd () d0 d3 tsC d0]
--- 0 < z ≤ 2
 feval (IR.FU Op.FLog e) t = do
-    i <- nextI
-    plE <- feval e (IR.FTemp i)
-    iC <- nextI
-    let dC=FReg iC; irC=IR.FTemp iC
-    let plN n = feval (IR.ConstF ((-1)^(n+1)/fromIntegral (n::Int))) irC
-    z1 <- FReg<$>nextI; zp <- FReg<$>nextI
-    let zRet=fabsReg t
-    let s=[Fmadd () zRet zp dC zRet, Fmul () zp zp z1] in do
-            ss <- traverse (\n -> do {plC <- plN n; pure $ plC ++ s}) [2..9]
-            pl1 <- feval 1 irC; pl10 <- plN 10
-            pure $ plE ++ FMovXX () z1 (FReg i) : pl1 ++ [Fsub () z1 z1 dC, FMovXX () zRet z1, Fmul () zp z1 z1] ++ concat ss ++ pl10 ++ [Fmadd () zRet zp dC zRet]
+    r <- nextR
+    plE <- feval e IR.F0
+    pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Log, Blr () r, FMovXX () (fabsReg t) FArg0] ++ poL
 feval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
     i0 <- nextI; i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1); plE2 <- feval e2 (IR.FTemp i2)

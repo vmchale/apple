@@ -266,17 +266,20 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (0, _)])) op) xs) ys) t 
     let step=mt (Raw xRd (Tmp i) lX 8) x:mt (Raw yRd (Tmp i) lY 8) y:ss++[wt (Raw tD (Tmp i) (Just a) 8) z]
         loop=For i 0 ILt (Tmp szR) step
     pure (Just a, plX ++ plY ++ MT rnkR (EAt (ARnk xR lX)):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):MT xRd (DP xR (Tmp rnkR)):MT yRd (DP yR (Tmp rnkR)):MT tD (DP t (Tmp rnkR)):[loop])
-aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs), Just tOR <- mIF tO, (Arrow _ tF) <- eAnn f, isIF tF && isIF tA = do
+aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
+                                                                    , Just tOR <- mIF tO
+                                                                    , (Arrow _ tF) <- eAnn f
+                                                                    , isIF tF && isIF tA = do
     a <- nextArr t
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     slopP <- newITemp; y <- rtemp tOR
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell () else Index () | ix <- [1..fromIntegral rnk] ]
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell() else Index() | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
-    let allts = fmap (\i -> case i of {Cell{} -> Cell (); Index{} -> Index ()}) allIx
+    let allts = fmap (\i -> case i of {Cell{} -> Cell(); Index{} -> Index()}) allIx
     let allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         ~(oDims, complDims) = part allDims
         oRnk=rnk-fromIntegral cr; slopRnk=rnk-oRnk
@@ -287,6 +290,17 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     di <- newITemp
     let loop=forAll complts oDims $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]
     pure (Just a, plX++dss++PlProd oSz oDims:Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++PlProd slopSz complDims:MT slopSz (Tmp slopSz+ConstI (slopRnk+1)):Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop++[Pop (Tmp slopSz)])
+aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
+                                                                    , Just tOR <- mIF tO
+                                                                    , (Arrow _ Arr{}) <- eAnn f
+                                                                    , isIF tA = do
+    a <- nextArr t
+    xR <- newITemp
+    (lX, plX) <- aeval xs xR
+    slopIP <- newITemp; slopOP <- newITemp
+    let ixIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixIs then Cell() else Index() | ix <- [1..fromIntegral rnk] ]
+    (dts,dss) <- plDim rnk (xR,lX)
+    pure (Just a, plX++dss++undefined)
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     a <- nextArr t
     xR <- newITemp; yR <- newITemp

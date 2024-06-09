@@ -4,6 +4,7 @@
 
 -- pipeline
 module P ( Err (..)
+         , CCtx
          , tyParse
          , tyParseCtx
          , tyExpr
@@ -70,6 +71,7 @@ import           Prettyprinter              (Doc, Pretty (..))
 import           Prettyprinter.Ext
 import           R.Dfn
 import           R.R
+import           Sys.DL
 import           Ty
 import           Ty.M
 
@@ -110,18 +112,18 @@ getTy = fmap (first eAnn) . eCheck <=< annTy
 annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
-eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
+eFunP :: (Pretty a, Typeable a) => Int -> CCtx -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
 eFunP = eFunPG assembleCtx ex86G
 
-eAFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
+eAFunP :: (Pretty a, Typeable a) => Int -> (CCtx, MCtx) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
 eAFunP = eFunPG Aarch64.assembleCtx eAarch64
 
 eFunPG jit asm m ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm m)
 
-ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
+ctxFunP :: CCtx -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
 ctxFunP = ctxFunPG assembleCtx x86G
 
-actxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
+actxFunP :: (CCtx, MCtx) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
 actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
 
 ctxFunPG jit asm ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm)

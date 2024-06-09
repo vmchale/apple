@@ -18,8 +18,8 @@ frameC = concat.go IS.empty IS.empty
                 s'' = s' `IS.union` new i1 `IS.difference` done i1
                 fs' = fs `IS.union` fnew i0 `IS.difference` fdone i0
                 fs'' = fs' `IS.union` fnew i1 `IS.difference` fdone i1
-                cs = handleX0 cf $ mapMaybe fromInt $ IS.toList s
-                ds = mapMaybe fInt $ IS.toList fs
+                cs = handleX0 cf $ mapMaybe fromInt (IS.toList s)
+                ds = handleD0 cf $ mapMaybe fInt (IS.toList fs)
                 save = pus cs; restore = pos cs
                 saved = puds ds; restored = pods ds
             in (save ++ saved ++ void isn0:void isn1:restored ++ restore) : go s'' fs'' isns
@@ -28,8 +28,8 @@ frameC = concat.go IS.empty IS.empty
                 s' = s `IS.union` new i `IS.difference` done i
                 fs' = fs `IS.union` fnew i `IS.difference` fdone i
             in [void isn] : go s' fs' isns
-          handleX0 Malloc = filter (/=X0)
-          handleX0 Free   = id
+          handleX0 Malloc=filter (/=X0); handleX0 Free=id; handleX0 Exp=id; handleX0 Log=id
+          handleD0 Exp=filter (/=D0); handleD0 Log=filter (/=D0);handleD0 Malloc=id;handleD0 Free=id
 
 -- https://developer.arm.com/documentation/102374/0101/Procedure-Call-Standard
 fromInt :: Int -> Maybe AReg

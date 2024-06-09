@@ -30,8 +30,8 @@ frameC = concat . go IS.empty IS.empty
           handleRax Free   = id
           puxmm xr = [ISubRI () Rsp 8, MovqAX () (R Rsp) xr]
           poxmm xr = [MovqXA () xr (R Rsp), IAddRI () Rsp 8]
-          mx Free = const []
-          mx _    = id
+          mx Free   = const []
+          mx Malloc = id
 
 fromInt :: Int -> Maybe X86Reg
 fromInt 1    = Just Rsi

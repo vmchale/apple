@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Sys.DL ( libc, mem', math' ) where
+module Sys.DL ( CCtx, MCtx, libc, mem', math' ) where
 
 import           Data.Functor                          (($>))
 import           Foreign.C.Types                       (CSize)
@@ -9,10 +9,12 @@ import           System.Posix.DynamicLinker.ByteString (DL, RTLDFlags (RTLD_LAZY
 
 #include <gnu/lib-names.h>
 
-math' :: IO (Int, Int)
+type CCtx = (Int, Int); type MCtx = (Int, Int)
+
+math' :: IO MCtx
 math' = do {(e,l) <- math; pure (ip e, ip l)}
 
-mem' :: IO (Int, Int)
+mem' :: IO CCtx
 mem' = do {(m,f) <- mem; pure (ip m, ip f)}
 
 ip = (\(IntPtr i) -> i) . ptrToIntPtr . castFunPtrToPtr

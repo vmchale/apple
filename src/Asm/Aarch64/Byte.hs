@@ -8,7 +8,7 @@ module Asm.Aarch64.Byte ( allFp, assembleCtx, dbgFp ) where
 import           Asm.Aarch64
 import           Asm.M
 import           Control.Monad    (when)
-import           Data.Bifunctor   (second)
+import           Data.Bifunctor   (bimap, second)
 import           Data.Bits        (Bits (..))
 import qualified Data.ByteString  as BS
 import           Data.Functor     (($>))
@@ -22,18 +22,24 @@ import           Hs.FFI
 import           Sys.DL
 
 hasMa :: [AArch64 reg freg a] -> Bool
-hasMa = any g where g MovRCf{}=True; g _=False
+hasMa = any g where g (MovRCf _ _ Malloc)=True; g (MovRCf _ _ Free)=True; g _=False
 
-prepAddrs :: [AArch64 reg freg a] -> IO (Maybe (Int, Int))
-prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
+hasMath :: [AArch64 reg freg a] -> Bool
+hasMath = any g where g (MovRCf _ _ Exp)=True; g (MovRCf _ _ Log)=True; g _=False
 
-assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
+prepAddrs :: [AArch64 reg freg a] -> IO (Maybe CCtx, Maybe MCtx)
+prepAddrs ss = case (hasMa ss, hasMath ss) of
+    (True, False)  -> do {m <- mem'; pure (Just m, Nothing)}
+    (False, False) -> pure (Nothing, Nothing)
+    (False, True)  -> do {m <- math'; pure (Nothing, Just m)}
+
+assembleCtx :: (CCtx, MCtx) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
-    p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
+    p <- if hasMa isns then allocNear (fst (fst ctx)) (fromIntegral sz) else allocExec (fromIntegral sz)
     when (p==nullPtr) $ error "failed to allocate memory for JIT"
     ps <- aArr ds
-    let b = BS.pack.concatMap reverse$asm 0 (ps, Just ctx, lbls) isns
+    let b = BS.pack.concatMap reverse$asm 0 (ps, bimap Just Just ctx, lbls) isns
     (b,,snd<$>IM.lookupMin ps)<$>finish b p
 
 dbgFp asmϵ = do
@@ -45,8 +51,8 @@ allFp (ds, instrs) = do
     (fn, p) <- do
         res <- prepAddrs instrs
         case res of
-            Just (m, _) -> (res,) <$> allocNear m (fromIntegral sz)
-            _           -> (res,) <$> allocExec (fromIntegral sz)
+            (Just (m, _),_) -> (res,) <$> allocNear m (fromIntegral sz)
+            _               -> (res,) <$> allocExec (fromIntegral sz)
     ps <- aArr ds
     let is = asm 0 (ps, fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bsϵ = BS.pack.reverse<$>is
     (bsϵ,,snd<$>IM.lookupMin ps)<$>finish b p
@@ -73,7 +79,7 @@ lsr (I# n) (I# k) = I# (iShiftRL# n k)
 
 lb r rD = (0x7 .&. be r) `shiftL` 5 .|. be rD
 
-asm :: Int -> (IM.IntMap (Ptr Word64), Maybe (Int, Int), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
+asm :: Int -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (MovRC _ r i:asms) = [0b11010010, 0b100 `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral (0xff .&. (i `shiftR` 3)), fromIntegral (0x7 .&. i) `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (MovK _ r i s:asms) = [0b11110010, 0b1 `shiftL` 7 .|. fromIntegral (s `quot` 16) `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral (i `shiftR` 3), (fromIntegral (0x7 .&. i) `shiftL` 5) .|. be r]:asm (ix+4) st asms
@@ -157,23 +163,29 @@ asm ix st (B _ l:asms) =
         isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
     in isn:asm (ix+4) st asms
 asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
-asm ix st@(_, Just (m, _), _) (MovRCf _ r Malloc:asms) =
-    let w0=m .&. 0xffff; w1=(m .&. 0xffff0000) `lsr` 16; w2=(m .&. 0xFFFF00000000) `lsr` 32; w3=(m .&. 0xFFFF000000000000) `lsr` 48
-    in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
-asm ix st@(_, Just (_, f), _) (MovRCf _ r Free:asms) =
-    let w0=f .&. 0xffff; w1=(f .&. 0xffff0000) `lsr` 16; w2=(f .&. 0xFFFF00000000) `lsr` 32; w3=(f .&. 0xFFFF000000000000) `lsr` 48
-    in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
+asm ix st@(_, (Just (m, _), _), _) (MovRCf _ r Malloc:asms) =
+    asm ix st (m4 r m++asms)
+asm ix st@(_, (Just (_, f), _), _) (MovRCf _ r Free:asms) =
+    asm ix st (m4 r f++asms)
+asm ix st@(_, (_, Just (_, l)),_) (MovRCf _ r Log:asms) =
+    asm ix st (m4 r l++asms)
+asm ix st@(_, (_, Just (e, _)),_) (MovRCf _ r Exp:asms) =
+    asm ix st (m4 r e++asms)
 asm ix st (MovRL _ r l:asms) =
     let p = pI$arr l st
         w0=p .&. 0xffff; w1=(p .&. 0xffff0000) `lsr` 16; w2=(p .&. 0xFFFF00000000) `lsr` 32; w3=(p .&. 0xFFFF000000000000) `lsr` 48
     in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
 asm _ _ (isn:_) = error (show isn)
 
-get :: Label -> (IM.IntMap (Ptr Word64), Maybe (Int, Int), M.Map Label Int) -> Int
+m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
+m4 r a = let w0=a .&. 0xffff; w1=(a .&. 0xffff0000) `lsr` 16; w2=(a .&. 0xFFFF00000000) `lsr` 32; w3=(a .&. 0xFFFF000000000000) `lsr` 48
+         in [MovRC () r (fromIntegral w0), MovK () r (fromIntegral w1) 16, MovK () r (fromIntegral w2) 32, MovK () r (fromIntegral w3) 48]
+
+get :: Label -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Int
 get l =
     M.findWithDefault (error "Internal error: label not found") l . thd3
 
-arr :: Int -> (IM.IntMap (Ptr Word64), Maybe (Int, Int), M.Map Label Int) -> Ptr Word64
+arr :: Int -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Ptr Word64
 arr n = IM.findWithDefault (error "Internal error: array not found during assembler stage") n . fst3
 
 pI :: Ptr a -> Int
