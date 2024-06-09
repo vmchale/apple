@@ -27,4 +27,4 @@ ll p = dlopen p [RTLD_LAZY]
 
 libc, libm :: IO DL
 libc = ll "libc.dylib"
-libm = ll "libm.dylid"
+libm = ll "libm.dylib"
