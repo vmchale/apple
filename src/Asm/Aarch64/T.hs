@@ -197,6 +197,10 @@ feval (IR.FU Op.FCos e) t = do
     let tsIR=IR.FTemp tsI; tsC=FReg tsI
     pl0 <- feval 1 tsIR; pl2 <- feval (IR.ConstF$ -(1/2)) tsIR; pl4 <- feval (IR.ConstF$1/24) tsIR; pl6 <- feval (IR.ConstF$ -(1/720)) tsIR
     pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d1, Fmul () d3 d2 d1] ++ pl0 ++ FMovXX () d0 tsC : pl2 ++ Fmadd () d0 d1 tsC d0 : pl4 ++ Fmadd () d0 d2 tsC d0 : pl6 ++ [Fmadd () d0 d3 tsC d0]
+feval (IR.FB Op.FExp (IR.ConstF 2.718281828459045) e) t = do
+    r <- nextR
+    plE <- feval e IR.F0
+    pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Exp, Blr () r, FMovXX () (fabsReg t) FArg0] ++ poL
 feval (IR.FU Op.FLog e) t = do
     r <- nextR
     plE <- feval e IR.F0
