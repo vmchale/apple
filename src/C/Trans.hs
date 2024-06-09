@@ -90,14 +90,14 @@ if1p :: T a -> Bool
 if1p t | Just{} <- if1 t = True | otherwise = False
 
 mAA :: T a -> Maybe ((T a, Int64), (T a, Int64))
-mAA (Arrow t0 t1) = (,) <$>tRnk t0 <*> tRnk t1
+mAA (Arrow t0 t1) = (,) <$> tRnk t0 <*> tRnk t1
 mAA _             = Nothing
 
 f1 :: T a -> Bool
 f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
 bT :: Integral b => T a -> b
-bT (P ts) = sum (bT<$>ts); bT F = 8; bT I = 8
+bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8
 
 szT = scanl' (\off ty -> off+bT ty::Int64) 0
 
@@ -234,7 +234,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
     a <- nextArr t
     slopP <- newITemp; y <- newITemp
     xR <- newITemp; szR <- newITemp; slopSz <- newITemp; szY <- newITemp
-    i <- newITemp; j <- newITemp; k <- newITemp; kL <- newITemp; xd <- newITemp
+    i <- newITemp; j <- newITemp; k <- newITemp; kL <- newITemp; xd <- newITemp; td <- newITemp
     (lX, plX) <- aeval xs xR
     (lY, ss) <- writeF f [AA slopP Nothing] (Right y)
     let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk0..(xRnk-1)]]
@@ -243,9 +243,20 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
         slopE=Bin IAsl (Tmp slopSz) 3+fromIntegral (8+8*rnk0)
         dimsFromIn=ConstI$xRnk-rnk0
         oRnk=xRnk-rnk0+rnk1
-        step=CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[CpyE (Raw t (Tmp j) (Just a) 8) (Raw y 0 lY 8) (Tmp szY) 8, MT i (Tmp i+Tmp slopSz), MT j (Tmp j+Tmp szY)]
+        -- step=[MT i (Tmp i+Tmp slopSz), MT j (Tmp j+Tmp szY)]
+        step=CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[CpyE (Raw td (Tmp j) (Just a) 8) (Raw y 0 lY 8) (Tmp szY) 8, MT i (Tmp i+Tmp slopSz), MT j (Tmp j+Tmp szY)]
         loop=For k 0 ILt (Tmp kL) step
-    pure (Just a, plX++MT slopSz 1:[MT slopSz (Tmp slopSz*n) | n <- slopDims]++Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]++ss++MT szR 1:[MT szR (Tmp szR*n) | n <- xDims++yDims]++Ma a t (ConstI oRnk) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn:CpyD (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1):MT xd (DP xR (ConstI oRnk)):MT szY 1:[MT szY (Tmp szY*n) | n <- yDims]++MT kL 1:[MT kL (Tmp kL*n) | n <- xDims ]++[loop])
+    pure (Just a,
+        plX++PlProd slopSz slopDims:Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]
+        ++MT xd (DP xR (ConstI xRnk))
+        :CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd 0 lX 8) (Tmp slopSz) 8
+        :ss
+        ++PlProd szR (xDims++yDims)
+        :Ma a t (ConstI oRnk) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn:CpyD (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1)
+        :MT td (DP t (ConstI oRnk))
+        :PlProd szY yDims:PlProd kL xDims
+        :MT i 0:MT j 0:loop
+        :[Pop slopE])
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eAnn f, isIF tX && isIF tY = do
     a <- nextArr t
     xR <- newITemp; rnkR <- newITemp; szR <- newITemp
