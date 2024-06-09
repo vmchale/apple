@@ -295,7 +295,7 @@ eval (IR.EAt (IR.AP rB (Just e) _)) t = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [Ldr () (absReg t) (BI (absReg rB) (IReg i) Zero)]
 eval (IR.IB Op.IAsr (IR.Reg r) (IR.ConstI i)) t | Just s <- ms i = pure [Asr () (absReg t) (absReg r) s]
-eval (IR.LA n) t    = pure [MovRL () (absReg t) n]
+eval (IR.LA n) t    = pure [LdrRL () (absReg t) n]
 eval e _            = error (show e)
 
 puL, poL :: [AArch64 AbsReg freg ()]

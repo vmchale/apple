@@ -60,7 +60,7 @@ allFp (ds, instrs) = do
 mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
 mkIx ix (Label _ l:asms) = second (M.insert l ix) $ mkIx ix asms
 mkIx ix (MovRCf{}:asms)  = mkIx (ix+16) asms
-mkIx ix (MovRL{}:asms)   = mkIx (ix+16) asms
+mkIx ix (LdrRL{}:asms)   = mkIx (ix+16) asms
 mkIx ix (_:asms)         = mkIx (ix+4) asms
 mkIx ix []               = (ix, M.empty)
 
@@ -171,7 +171,7 @@ asm ix st@(_, (_, Just (_, l)),_) (MovRCf _ r Log:asms) =
     asm ix st (m4 r l++asms)
 asm ix st@(_, (_, Just (e, _)),_) (MovRCf _ r Exp:asms) =
     asm ix st (m4 r e++asms)
-asm ix st (MovRL _ r l:asms) =
+asm ix st (LdrRL _ r l:asms) =
     let p = pI$arr l st
         w0=p .&. 0xffff; w1=(p .&. 0xffff0000) `lsr` 16; w2=(p .&. 0xFFFF00000000) `lsr` 32; w3=(p .&. 0xFFFF000000000000) `lsr` 48
     in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
