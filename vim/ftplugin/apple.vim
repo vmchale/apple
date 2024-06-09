@@ -25,6 +25,7 @@ digraphs <- 8592
 
 setlocal makeprg=atc\ %
 setlocal errorformat=%Eatc:\ %l:%c:%m
+setlocal errorformat+=atc:\ %l:%c\ %m
 setlocal errorformat+=%Eatc:\ %m\ %trror\ at\ line\ %l\\,\ column\ %c
 
 function! ATCheck()
