@@ -3,25 +3,25 @@
 
 #include"../../include/apple_abi.h"
 
+#define pf printf
+#define nl pf("\n")
+#define pj(x) pf("%lld",x)
+#define PA(s,n,x) DO(i,t,{pf(s,x[i]);if (i!=n-1){pf(",");}});nl
+
 extern U aa(U);
 
 void paf(U xs) {
     I* dims=xs;
-    I rnk=dims[0];
-    printf("%lld;",rnk);
-    I t=1;
-    I d;
-    for(I i=1;i<=rnk;i++) {
+    I rnk=dims[0];dims+=1;
+    pj(rnk);pf(" ");
+    I t=1;I d;
+    for(I i=0;i<rnk;i++) {
         d=dims[i];
         t*=d;
-        printf("%lld",d); if (i!=rnk) {printf(",");}
-    }
-    printf("\n");
+        pj(d); if (i!=rnk-1) {pf(",");}
+    } nl;
     F* e=xs+d+1;
-    DO(i,t,{
-        printf("%f",e[i]); if (i!=t-1) {printf(", ");}
-    })
-    printf("\n");
+    PA("%f",t,e);
 }
 
 int main(int argc, char *argv[]) {
