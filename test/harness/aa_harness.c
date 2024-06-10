@@ -15,11 +15,7 @@ void paf(U xs) {
     I rnk=dims[0];dims+=1;
     pj(rnk);pf(" ");
     I t=1;I d;
-    for(I i=0;i<rnk;i++) {
-        d=dims[i];
-        t*=d;
-        pj(d); if (i!=rnk-1) {pf(",");}
-    } nl;
+    DO(i,rnk,{d=dims[i];t*=d;pj(d);if (i!=rnk-1) {pf(",");}}) nl;
     F* e=xs+d+1;
     PA("%f",t,e);
 }
