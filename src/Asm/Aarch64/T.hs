@@ -23,13 +23,26 @@ fabsReg IR.F0 = FArg0; fabsReg IR.F1 = FArg1; fabsReg IR.F2 = FArg2
 fabsReg IR.F3 = FArg3; fabsReg IR.F4 = FArg4; fabsReg IR.F5 = FArg5
 fabsReg IR.FRet = FArg0; fabsReg IR.FRet1 = FArg1
 
-fop :: Op.FRel -> Cond
-fop Op.FGeq = Geq
-fop Op.FLeq = Leq
-fop Op.FGt  = Gt
-fop Op.FLt  = Lt
-fop Op.FEq  = Eq
-fop Op.FNeq = Neq
+mIop Op.IPlus  = Just AddRR
+mIop Op.IMinus = Just SubRR
+mIop Op.ITimes = Just MulRR
+mIop _         = Nothing
+
+mFop Op.FPlus  = Just Fadd
+mFop Op.FMinus = Just Fsub
+mFop Op.FTimes = Just Fmul
+mFop Op.FDiv   = Just Fdiv
+mFop Op.FMax   = Just Fmax
+mFop Op.FMin   = Just Fmin
+mFop _         = Nothing
+
+frel :: Op.FRel -> Cond
+frel Op.FGeq = Geq
+frel Op.FLeq = Leq
+frel Op.FGt  = Gt
+frel Op.FLt  = Lt
+frel Op.FEq  = Eq
+frel Op.FNeq = Neq
 
 iop :: Op.IRel -> Cond
 iop Op.IEq  = Eq
@@ -106,10 +119,10 @@ ir (IR.MJ (IR.IRel op e0 e1) l) | c <- iop op = do
     r0 <- nextI; r1 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
     pure $ plE0 ++ plE1 ++ [CmpRR () (IReg r0) (IReg r1), Bc () c l]
-ir (IR.MJ (IR.FRel op e (IR.ConstF 0)) l) | c <- fop op = do
+ir (IR.MJ (IR.FRel op e (IR.ConstF 0)) l) | c <- frel op = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [FcmpZ () (FReg i), Bc () c l]
-ir (IR.MJ (IR.FRel op e0 e1) l) | c <- fop op = do
+ir (IR.MJ (IR.FRel op e0 e1) l) | c <- frel op = do
     r0 <- nextI; r1 <- nextI
     plE0 <- feval e0 (IR.FTemp r0); plE1 <- feval e1 (IR.FTemp r1)
     pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () c l]
@@ -218,26 +231,10 @@ feval (IR.FB Op.FMinus e0 (IR.FB Op.FTimes e1 e2)) t = do
     i0 <- nextI; i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1); plE2 <- feval e2 (IR.FTemp i2)
     pure $ plE0 ++ plE1 ++ plE2 ++ [Fmsub () (fabsReg t) (FReg i1) (FReg i2) (FReg i0)]
-feval (IR.FB Op.FPlus e0 e1) t = do
+feval (IR.FB fop e0 e1) t | Just isn <- mFop fop = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
-    pure $ plE0 ++ plE1 ++ [Fadd () (fabsReg t) (FReg i1) (FReg i2)]
-feval (IR.FB Op.FTimes e0 e1) t = do
-    i1 <- nextI; i2 <- nextI
-    plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
-    pure $ plE0 ++ plE1 ++ [Fmul () (fabsReg t) (FReg i1) (FReg i2)]
-feval (IR.FB Op.FMinus e0 e1) t = do
-    i1 <- nextI; i2 <- nextI
-    plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
-    pure $ plE0 ++ plE1 ++ [Fsub () (fabsReg t) (FReg i1) (FReg i2)]
-feval (IR.FB Op.FDiv e0 e1) t = do
-    i1 <- nextI; i2 <- nextI
-    plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
-    pure $ plE0 ++ plE1 ++ [Fdiv () (fabsReg t) (FReg i1) (FReg i2)]
-feval (IR.FB Op.FMax e0 e1) t = do
-    i1 <- nextI; i2 <- nextI
-    plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
-    pure $ plE0 ++ plE1 ++ [Fmax () (fabsReg t) (FReg i1) (FReg i2)]
+    pure $ plE0 ++ plE1 ++ [isn () (fabsReg t) (FReg i1) (FReg i2)]
 feval (IR.FU Op.FAbs e) t = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [Fabs () (fabsReg t) (FReg i)]
@@ -270,22 +267,18 @@ eval (IR.IB Op.IAsl e (IR.ConstI i)) t = do
 eval (IR.IB Op.IMinus (IR.ConstI 0) e) t = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Neg () (absReg t) (IReg r)]
-eval (IR.IB Op.IMinus e0 e1) t = do
-    r0 <- nextI; r1 <- nextI
+eval (IR.IB Op.IRem e0 e1) t = do
+    r0 <- nextI; r1 <- nextI; r2 <- nextR
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
-    pure $ plE0 ++ plE1 ++ [SubRR () (absReg t) (IReg r0) (IReg r1)]
+    pure $ plE0 ++ plE1 ++ [Sdiv () r2 (IReg r0) (IReg r1), Msub () (absReg t) r2 (IReg r1) (IReg r0)]
 eval (IR.IB Op.IPlus (IR.IB Op.ITimes e0 e1) e2) t = do
     r0 <- nextI; r1 <- nextI; r2 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1); plE2 <- eval e2 (IR.ITemp r2)
     pure $ plE0 ++ plE1 ++ plE2 ++ [Madd () (absReg t) (IReg r0) (IReg r1) (IReg r2)]
-eval (IR.IB Op.IPlus e0 e1) t = do
+eval (IR.IB op e0 e1) t | Just isn <- mIop op = do
     r0 <- nextI; r1 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
-    pure $ plE0 ++ plE1 ++ [AddRR () (absReg t) (IReg r0) (IReg r1)]
-eval (IR.IB Op.ITimes e0 e1) t = do
-    r0 <- nextI; r1 <- nextI
-    plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
-    pure $ plE0 ++ plE1 ++ [MulRR () (absReg t) (IReg r0) (IReg r1)]
+    pure $ plE0 ++ plE1 ++ [isn () (absReg t) (IReg r0) (IReg r1)]
 eval (IR.IRFloor (IR.FReg r)) t = pure [Fcvtms () (absReg t) (fabsReg r)]
 eval (IR.EAt (IR.AP rB (Just (IR.IB Op.IAsl eI (IR.ConstI 3))) _)) t = do
     i <- nextI; plE <- eval eI (IR.ITemp i)

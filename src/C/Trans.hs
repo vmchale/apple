@@ -599,10 +599,10 @@ frel :: Builtin -> Maybe FRel
 frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; frel Lt=Just FLt; frel Gt=Just FGt; frel _=Nothing
 
 mFop :: Builtin -> Maybe FBin
-mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus= Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp; mFop Max=Just FMax; mFop Min=Just FMin; mFop _=Nothing
+mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp; mFop Max=Just FMax; mFop Min=Just FMin; mFop _=Nothing
 
 mOp :: Builtin -> Maybe IBin
-mOp Plus=Just IPlus; mOp Times=Just ITimes; mOp Minus=Just IMinus; mOp _=Nothing
+mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem;mOp _=Nothing
 
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
