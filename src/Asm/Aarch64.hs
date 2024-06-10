@@ -151,6 +151,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                         | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                         | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
+                        | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
+                        | Sdiv { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                         | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
                         | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
                         | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
@@ -215,6 +217,8 @@ mapR _ (FcmpZ l xr)          = FcmpZ l xr
 mapR _ (Ret l)               = Ret l
 mapR f (MulRR l r0 r1 r2)    = MulRR l (f r0) (f r1) (f r2)
 mapR f (Madd l r0 r1 r2 r3)  = Madd l (f r0) (f r1) (f r2) (f r3)
+mapR f (Msub l r0 r1 r2 r3)  = Msub l (f r0) (f r1) (f r2) (f r3)
+mapR f (Sdiv l r0 r1 r2)     = Sdiv l (f r0) (f r1) (f r2)
 mapR f (StrD l d a)          = StrD l d (f <$> a)
 mapR _ (Fdiv l d0 d1 d2)     = Fdiv l d0 d1 d2
 mapR f (Scvtf l d r)         = Scvtf l d (f r)
@@ -272,6 +276,8 @@ mapFR _ (Ret l)               = Ret l
 mapFR f (Fdiv l d0 d1 d2)     = Fdiv l (f d0) (f d1) (f d2)
 mapFR _ (MulRR l r0 r1 r2)    = MulRR l r0 r1 r2
 mapFR _ (Madd l r0 r1 r2 r3)  = Madd l r0 r1 r2 r3
+mapFR _ (Msub l r0 r1 r2 r3)  = Msub l r0 r1 r2 r3
+mapFR _ (Sdiv l r0 r1 r2)     = Sdiv l r0 r1 r2
 mapFR f (StrD l d a)          = StrD l (f d) a
 mapFR f (Scvtf l d r)         = Scvtf l (f d) r
 mapFR f (Fcvtms l r d)        = Fcvtms l r (f d)
@@ -357,6 +363,8 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fmadd _ d0 d1 d2 d3) = i4 ("fmadd" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
     pretty (Fmsub _ d0 d1 d2 d3) = i4 ("fmsub" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
     pretty (Madd _ r0 r1 r2 r3)  = i4 ("madd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3)
+    pretty (Msub _ r0 r1 r2 r3)  = i4 ("msub" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3)
+    pretty (Sdiv _ rD rS rS')    = i4 ("sdiv" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (Fsqrt _ d0 d1)       = i4 ("fsqrt" <+> pretty d0 <> "," <+> pretty d1)
     pretty (MrsR _ r)            = i4 ("mrs" <+> pretty r <> "," <+> "rndr")
     pretty (MovRCf _ r cf)       = i4 ("mov" <+> pretty r <> "," <+> pretty cf)
