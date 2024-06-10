@@ -14,14 +14,12 @@ void paf(U xs) {
     for(I i=1;i<=rnk;i++) {
         d=dims[i];
         t*=d;
-        printf("%lld",d);
-        if (i!=rnk) {printf(",");}
+        printf("%lld",d); if (i!=rnk) {printf(",");}
     }
     printf("\n");
     F* e=xs+d+1;
     DO(i,t,{
-        printf("%f",e[i]);
-        if (i!=t-1) {printf(", ");}
+        printf("%f",e[i]); if (i!=t-1) {printf(", ");}
     })
     printf("\n");
 }
