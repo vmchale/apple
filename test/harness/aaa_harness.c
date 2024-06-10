@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include"../../include/apple_abi.h"
+#include"../../include/apple_p.h"
 
 extern U aaa(U, U);
 
@@ -14,6 +15,6 @@ int main(int argc, char *argv[]) {
     Af b = {1,dy,ys};
     U x = poke_af(a);
     U y = poke_af(b);
-    printf("%p\n", aaa(x, y));
+    paf(aaa(x,y));
     free(x);free(y);
 }
