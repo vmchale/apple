@@ -175,6 +175,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Fsqrt { ann :: a, dDest, dSrc :: freg }
                         | MrsR { ann :: a, rDest :: reg }
                         | Fmax { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fmin { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                         | Fabs { ann :: a, dDest, dSrc :: freg }
                         | Csel { ann :: a, rDest, rSrc1, rSrc2 :: reg, cond :: Cond }
                         | Tbnz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
@@ -233,6 +234,7 @@ mapR f (MovRCf l r cf)       = MovRCf l (f r) cf
 mapR f (LdrRL x r l)         = LdrRL x (f r) l
 mapR f (Blr l r)             = Blr l (f r)
 mapR _ (Fmax l d0 d1 d2)     = Fmax l d0 d1 d2
+mapR _ (Fmin l d0 d1 d2)     = Fmin l d0 d1 d2
 mapR _ (Fabs l d0 d1)        = Fabs l d0 d1
 mapR f (Csel l r0 r1 r2 p)   = Csel l (f r0) (f r1) (f r2) p
 mapR f (Tbnz l r n p)        = Tbnz l (f r) n p
@@ -288,6 +290,7 @@ mapFR _ (Blr l r)             = Blr l r
 mapFR _ (MovRCf l r cf)       = MovRCf l r cf
 mapFR _ (LdrRL x r l)         = LdrRL x r l
 mapFR f (Fmax l d0 d1 d2)     = Fmax l (f d0) (f d1) (f d2)
+mapFR f (Fmin l d0 d1 d2)     = Fmin l (f d0) (f d1) (f d2)
 mapFR f (Fabs l d0 d1)        = Fabs l (f d0) (f d1)
 mapFR _ (Csel l r0 r1 r2 p)   = Csel l r0 r1 r2 p
 mapFR _ (Tbnz l r n p)        = Tbnz l r n p
@@ -359,6 +362,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (MovRCf _ r cf)       = i4 ("mov" <+> pretty r <> "," <+> pretty cf)
     pretty (LdrRL _ r l)         = i4 ("ldr" <+> pretty r <> "," <+> "=arr_" <> pretty l)
     pretty (Fmax _ d0 d1 d2)     = i4 ("fmax" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2)
+    pretty (Fmin _ d0 d1 d2)     = i4 ("fmin" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2)
     pretty (Fabs _ d0 d1)        = i4 ("fabs" <+> pretty d0 <> "," <+> pretty d1)
     pretty (Csel _ r0 r1 r2 p)   = i4 ("csel" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty p)
     pretty (Tbnz _ r n l)        = i4 ("tbnz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l)
