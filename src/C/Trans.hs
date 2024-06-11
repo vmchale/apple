@@ -613,6 +613,11 @@ cond (EApp _ (EApp _ (Builtin (Arrow F _) o) c0) c1) e0 e1 t | Just f <- frel o,
     plC0 <- feval c0 c0R; plC1 <- feval c1 c1R
     plE0 <- eeval e0 t; plE1 <- eeval e1 t
     pure (Nothing, plC0 ++ plC1 ++ [If (FRel f (FTmp c0R) (FTmp c1R)) plE0 plE1])
+cond (EApp _ (EApp _ (Builtin (Arrow I _) o) c0) c1) e0 e1 t | Just cmp <- rel o, isIF (eAnn e0) = do
+    c0R <- newITemp; c1R <- newITemp
+    plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
+    plE0 <- eeval e0 t; plE1 <- eeval e1 t
+    pure (Nothing, plC0 ++ plC1 ++ [If (IRel cmp (Tmp c0R) (Tmp c1R)) plE0 plE1])
 cond p e0 e1 t | isIF (eAnn e0) = do
     pR <- newITemp
     plP <- eval p pR; plE0 <- eeval e0 t; plE1 <- eeval e1 t
