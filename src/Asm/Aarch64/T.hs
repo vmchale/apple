@@ -128,8 +128,8 @@ ir (IR.MJ (IR.FRel op e0 e1) l) | c <- frel op = do
     r0 <- nextI; r1 <- nextI
     plE0 <- feval e0 (IR.FTemp r0); plE1 <- feval e1 (IR.FTemp r1)
     pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () c l]
-ir (IR.Cmov (IR.IRel Op.IGt (IR.Reg r0) (IR.Reg r1)) t (IR.Reg r)) = do
-    pure [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (absReg r) (absReg t) Gt]
+ir (IR.Cmov (IR.IRel op (IR.Reg r0) (IR.Reg r1)) t (IR.Reg r)) | c <- iop op = do
+    pure [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (absReg r) (absReg t) c]
 ir (IR.Cset t (IR.IU Op.IOdd (IR.Reg r))) = do
     pure [TstI () (absReg r) 1, Cset () (absReg t) Eq]
 ir (IR.Cset t (IR.IU Op.IEven (IR.Reg r))) = do
