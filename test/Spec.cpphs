@@ -92,6 +92,7 @@ allT = testGroup "jit"
     , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
     , testCase "fizzbuzz" $ do { (AA 1 [10] res) <- fpAa "test/examples/fizzbuzz.🍎" (AA 1 [10] [0..9::Double]); res @?= [15.0,3.0,0.0,3.0,5.0,3.0,0.0,0.0,3.0,0.0::Double] }
+    , testCase "filt" $ do { (AA 1 [10] res) <- fpAa "test/examples/partition.🍏" (AA 1 [10] [0..9::Double]); res @?= [0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0::Double] }
     ]
 
 x64T :: TestTree
