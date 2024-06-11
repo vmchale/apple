@@ -615,6 +615,12 @@ mFEval (Var _ x) = Just $ do
 mFEval _ = Nothing
 
 cond :: E (T ()) -> E (T ()) -> E (T ()) -> Either FTemp Temp -> CM (Maybe AL, [CS])
+cond (EApp _ (EApp _ (Builtin (Arrow F _) op) c0) c1) e e1 (Left t) | Just cmp <- frel op, Just cfe <- mFEval e1 = do
+    c0R <- newFTemp; c1R <- newFTemp
+    plC0 <- feval c0 c0R; plC1 <- feval c1 c1R
+    eR <- newFTemp; f1 <- cfe
+    plE <- feval e eR
+    pure (Nothing, plC0 ++ plC1 ++ [MX t f1] ++ plE ++ [Fcmov (FRel cmp (FTmp c0R) (FTmp c1R)) t (FTmp eR)])
 cond (EApp _ (EApp _ (Builtin (Arrow F _) o) c0) c1) e0 e1 t | Just f <- frel o, isIF (eAnn e0) = do
     c0R <- newFTemp; c1R <- newFTemp
     plC0 <- feval c0 c0R; plC1 <- feval c1 c1R

@@ -139,6 +139,9 @@ ir (IR.Cset t (IR.IRel op (IR.Reg r0) (IR.Reg r1))) | c <- iop op = do
 ir (IR.Fcmov (IR.IRel op (IR.Reg r0) (IR.Reg r1)) t e) | c <- iop op = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [CmpRR () (absReg r0) (absReg r1), Fcsel () (fabsReg t) (FReg i) (fabsReg t) c]
+ir (IR.Fcmov (IR.FRel op (IR.FReg r0) (IR.FReg r1)) t e) | c <- frel op = do
+    i <- nextI; plE <- feval e (IR.FTemp i)
+    pure $ plE ++ [Fcmp () (fabsReg r0) (fabsReg r1), Fcsel () (fabsReg t) (FReg i) (fabsReg t) c]
 ir (IR.Fcmov (IR.IRel op (IR.Reg r0) (IR.ConstI i64)) t e) | c <- iop op, Just u <- m12 i64 = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [CmpRC () (absReg r0) u, Fcsel () (fabsReg t) (FReg i) (fabsReg t) c]
