@@ -66,7 +66,7 @@ instance Pretty ArrAcc where
 
 instance Show ArrAcc where show=show.pretty
 
-mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing
+mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing
 fprec FPlus=6;fprec FMinus=6;fprec FTimes=7; fprec FDiv=7; fprec FExp=8
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor CFE
