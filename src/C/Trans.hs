@@ -607,18 +607,31 @@ mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IR
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
 
+mFEval :: E (T ()) -> Maybe (CM CFE)
+mFEval (FLit _ d) = Just (pure $ ConstF d)
+mFEval (Var _ x) = Just $ do
+    st <- gets dvars
+    pure (FTmp (getT st x))
+mFEval _ = Nothing
+
 cond :: E (T ()) -> E (T ()) -> E (T ()) -> Either FTemp Temp -> CM (Maybe AL, [CS])
 cond (EApp _ (EApp _ (Builtin (Arrow F _) o) c0) c1) e0 e1 t | Just f <- frel o, isIF (eAnn e0) = do
     c0R <- newFTemp; c1R <- newFTemp
     plC0 <- feval c0 c0R; plC1 <- feval c1 c1R
     plE0 <- eeval e0 t; plE1 <- eeval e1 t
     pure (Nothing, plC0 ++ plC1 ++ [If (FRel f (FTmp c0R) (FTmp c1R)) plE0 plE1])
-cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e (FLit _ d) (Left t) | Just cmp <- rel op = do
+cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c) (ILit _ i)) e e1 (Left t) | Just cmp <- rel op, Just cfe <- mFEval e1 = do
+    cR <- newITemp
+    plC <- eval c cR
+    eR <- newFTemp; f1 <- cfe
+    plE <- feval e eR
+    pure (Nothing, plC ++ [MX t f1] ++ plE ++ [Fcmov (IRel cmp (Tmp cR) (ConstI$fromIntegral i)) t (FTmp eR)])
+cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e e1 (Left t) | Just cmp <- rel op, Just cfe <- mFEval e1 = do
     c0R <- newITemp; c1R <- newITemp
     plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
-    eR <- newFTemp
+    eR <- newFTemp; f1 <- cfe
     plE <- feval e eR
-    pure (Nothing, plC0 ++ plC1 ++ [MX t (ConstF d)] ++ plE ++ [Fcmov (IRel cmp (Tmp c0R) (Tmp c1R)) t (FTmp eR)])
+    pure (Nothing, plC0 ++ plC1 ++ [MX t f1] ++ plE ++ [Fcmov (IRel cmp (Tmp c0R) (Tmp c1R)) t (FTmp eR)])
 cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e0 e1 t | Just cmp <- rel op, isIF (eAnn e0) = do
     c0R <- newITemp; c1R <- newITemp
     plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
