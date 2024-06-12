@@ -155,6 +155,7 @@ static PyObject* apple_jit(PyObject *self, PyObject *args) {
     R (PyObject*)cc;
 }
 
+// file:///usr/share/doc/libffi8/html/The-Basics.html
 static PyObject* apple_f(PyObject* self, PyObject* args) {
     PyCacheObject* c;PO arg0=NULL;PO arg1=NULL;PO arg2=NULL;PO arg3=NULL;PO arg4=NULL;PO arg5=NULL;
     PyArg_ParseTuple(args, "O|OOOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
@@ -187,55 +188,9 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
 };
 
 
-// file:///usr/share/doc/libffi8/html/The-Basics.html
-static PyObject* apple_apple(PyObject *self, PyObject *args) {
-    const char* inp;PO arg0=NULL;PO arg1=NULL;PO arg2=NULL;PO arg3=NULL;PO arg4=NULL;PO arg5=NULL;
-    PyArg_ParseTuple(args, "s|OOOOOO", &inp, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
-    char* err;char** err_p = &err;
-    FnTy* ty=apple_ty(inp,err_p);
-    if (ty == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, err);
-        free(err);R NULL;
-    };
-    U fp;S f_sz;U s;
-    fp=apple_compile((P)&malloc,(P)&free,(P)&exp,(P)&log,inp,&f_sz,&s);
-    PO r;
-    ffi_cif* cif=apple_ffi(ty);
-    int argc=ty->argc;
-    U* vals=malloc(sizeof(U)*argc);
-    U ret=malloc(8);
-    PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
-    // FIXME: fails for 2 float args
-    for(int k=0;k<argc;k++){
-        pyarg=pyargs[k];
-        if(pyarg!=NULL){
-            Sw(ty->args[k]){
-                C IA: {U* x=malloc(sizeof(U));x[0]=i_npy(pyarg);vals[k]=x;};BR
-                C FA: {U* x=malloc(sizeof(U));x[0]=f_npy(pyarg);vals[k]=x;};BR
-                C I_t: {I* xi=malloc(sizeof(I));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
-                C F_t: {F* xf=malloc(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
-            }
-        }
-    }
-    ffi_call(cif,fp,ret,vals);
-    DO(k,argc,free(vals[k]));
-    free(vals);free(cif);freety(ty);
-    munmap(fp,f_sz);
-    Sw(ty->res){
-        C IA: r=npy_i(*(U*)ret);BR
-        C FA: r=npy_f(*(U*)ret);BR
-        C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
-        C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
-    }
-    // TODO: free other parts of cif (args)
-    free(ret);free(s);
-    R r;
-}
-
 static PyMethodDef AppleMethods[] = {
     {"f", apple_f, METH_VARARGS, "Run a JIT-compiled function"},
     {"jit", apple_jit, METH_VARARGS, "JIT a function"},
-    {"apple", apple_apple, METH_VARARGS, "JITed array"},
     {"typeof", apple_typeof, METH_VARARGS, "Display type of expression"},
     {"asm", apple_asm, METH_VARARGS, "Dump x86 assembly"},
     {"ir", apple_ir, METH_VARARGS, "Dump IR (debug)"},
