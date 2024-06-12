@@ -244,17 +244,20 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
         dimsFromIn=ConstI$xRnk-rnk0
         oRnk=xRnk-rnk0+rnk1
         step=CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[CpyE (Raw td (Tmp j) (Just a) 8) (Raw y 0 lY 8) (Tmp szY) 8, MT i (Tmp i+Tmp slopSz), MT j (Tmp j+Tmp szY)]
-        loop=For k 0 ILt (Tmp kL) step
     pure (Just a,
-        plX++PlProd slopSz slopDims:Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]
+        plX
+        ++PlProd slopSz slopDims:Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]
         ++MT xd (DP xR (ConstI xRnk))
         :CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd 0 lX 8) (Tmp slopSz) 8
         :ss
         ++PlProd szR (xDims++yDims)
-        :Ma a t (ConstI oRnk) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn:CpyD (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1)
+        :Ma a t (ConstI oRnk) (Tmp szR) 8
+            :CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn
+            :CpyD (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1)
         :MT td (DP t (ConstI oRnk))
-        :PlProd szY yDims:PlProd kL xDims
-        :MT i 0:MT j 0:loop
+        :PlProd szY yDims
+        :PlProd kL xDims:MT i 0:MT j 0
+            :For k 0 ILt (Tmp kL) step
         :[Pop slopE])
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eAnn f, isIF tX && isIF tY = do
     a <- nextArr t
