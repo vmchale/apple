@@ -6,3 +6,5 @@
 
 - fixity: infixr 0 ~>
 - fixity: infixl 4 $>
+- fixity: infix 9 +=
+- fixity: infix 9 :=

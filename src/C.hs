@@ -118,9 +118,11 @@ instance PS CFE where
 
 instance Show CFE where show=show.pretty
 
+infix 9 :=
+
 data CS = For Temp CE IRel CE [CS]
         | While Temp IRel CE [CS]
-        | MT Temp CE | MX FTemp CFE
+        | Temp := CE | MX FTemp CFE
         | Wr ArrAcc CE | WrF ArrAcc CFE
         | Ma AL Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
         | MaΠ AL Temp CE
@@ -136,8 +138,8 @@ data CS = For Temp CE IRel CE [CS]
         | PlProd Temp [CE]
 
 instance Pretty CS where
-    pretty (MT t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
-    pretty (MT t e)             = pretty t <+> "=" <+> pretty e -- TODO: +=
+    pretty (t := (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
+    pretty (t := e)             = pretty t <+> "=" <+> pretty e -- TODO: +=
     pretty (MX t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
     pretty (MX t e)             = pretty t <+> "=" <+> pretty e
     pretty (Wr a e)             = pretty a <+> "=" <+> pretty e

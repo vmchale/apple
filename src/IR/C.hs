@@ -1,6 +1,4 @@
-module IR.C ( ctemp
-            , cToIR
-            ) where
+module IR.C ( ctemp, cToIR ) where
 
 import           C
 import           Control.Monad              (foldM)
@@ -42,7 +40,7 @@ cLog n | popCount n == 1 = Just (fromIntegral$countTrailingZeros n) | otherwise 
 
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (C.PlProd t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT t' (IR.Reg t'*irE eϵ) | eϵ <- es])
-cToIRM (C.MT t e)          = pure [IR.MT (ctemp t) (irE e)]
+cToIRM (t := e)            = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]
 cToIRM (C.Ma l t (C.ConstI rnkI) n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) (IR.ConstI s)+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just l)) (IR.ConstI rnkI)]
 cToIRM (C.Ma l t rnk n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE rnk+irE n) (IR.ConstI s)+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
@@ -80,7 +78,7 @@ cToIRM (C.Cset p t) = pure [IR.Cset (ctemp t) (irp p)]
 cToIRM (SZ td t rnk l) = do
     i <- nextI
     foldMapM cToIRM
-        [C.MT td (C.EAt (ADim t 0 l)), For i 1 ILt rnk [C.MT td (Tmp td*C.EAt (ADim t (Tmp i) l))]]
+        [td := C.EAt (ADim t 0 l), For i 1 ILt rnk [td := (Tmp td*C.EAt (ADim t (Tmp i) l))]]
 
 irAt :: ArrAcc -> AE
 irAt (ARnk t l)                                                = AP (ctemp t) Nothing l
