@@ -30,7 +30,7 @@ gallocOn u = go u 0 pres
               where rmaps = case (regsM, fregsM) of
                         (Right regs, Right fregs) -> (regs, fregs, init isns)
                     -- https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms#Respect-the-purpose-of-specific-CPU-registers
-                    regsM = alloc aIsns (filter (\x -> x /= X18) [X0 .. X28]) (IM.keysSet pres') pres'
+                    regsM = alloc aIsns (filter (/= X18) [X0 .. X28]) (IM.keysSet pres') pres'
                     fregsM = allocF aFIsns [D0 .. D30] (IM.keysSet preFs) preFs
                     (aIsns, aFIsns) = bundle isns
 
