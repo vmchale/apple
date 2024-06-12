@@ -32,6 +32,7 @@ prepAddrs ss = case (hasMa ss, hasMath ss) of
     (True, False)  -> do {m <- mem'; pure (Just m, Nothing)}
     (False, False) -> pure (Nothing, Nothing)
     (False, True)  -> do {m <- math'; pure (Nothing, Just m)}
+    (True, True) -> do {c <- mem'; m <- math'; pure (Just c, Just m)}
 
 assembleCtx :: (CCtx, MCtx) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
