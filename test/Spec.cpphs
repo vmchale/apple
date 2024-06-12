@@ -86,8 +86,8 @@ allT = testGroup "jit"
     , testCase "matmul builtin" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,6,8,9::Double] }
-    , testCase "hidden output" $
-        do { (AA 2 [4, 2] res) <- fpAaa "test/data/hiddenOutput.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double]) (AA 1 [2] [0.79726405,0.67601843::Double]); res @?= [0.6893889309126965,0.6628494736903241,0.7832177770180533,0.6956002548313678,0.7877692314617017,0.7764117301359174,0.8580009025724982,0.8014356749983665::Double] }
+    , testCase "hidden output" $ do { (AA 2 [4, 2] res) <- fpAaa "test/data/hiddenOutput.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double]) (AA 1 [2] [0.79726405,0.67601843::Double]); res @?= [0.6893889309126965,0.6628494736903241,0.7832177770180533,0.6956002548313678,0.7877692314617017,0.7764117301359174,0.8580009025724982,0.8014356749983665::Double] }
+    , testCase "prediction" $ do { (AA 1 [4] res) <- fpAaaaf "test/data/prediction.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double]) (AA 1 [2] [0.14801747,0.37182892::Double]) (AA 1 [2] [0.79726405,0.67601843::Double]) 0.57823076; res @?= [0.7164132249879268,0.721678929187539,0.7278074306816863,0.7316925415075616::Double] }
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hsTup <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
     , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
@@ -137,6 +137,13 @@ fpAaa fp x y =
         wA y $ \pY -> do
             f <- fmap aaa.fpn =<< BSL.readFile fp
             peek (f pX pY)
+
+fpAaaaf fp x y z a =
+    wA x $ \pX ->
+        wA y $ \pY -> do
+            wA z $ \pZ -> do
+                f <- fmap aaafa.fpn =<< BSL.readFile fp
+                peek (f pX pY pZ a)
 
 aaFp fp xs =
     let xA = AA 1 [fromIntegral(length xs)] xs in
@@ -276,4 +283,5 @@ foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> In
 foreign import ccall "dynamic" ia :: FunPtr (Int -> Ptr (Apple a)) -> Int -> Ptr (Apple a)
 foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b)) -> Ptr (Apple a) -> Ptr (Apple b)
 foreign import ccall "dynamic" aaa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c)) -> Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c)
+foreign import ccall "dynamic" aaafa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c) -> Double -> Ptr (Apple d)) -> Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c) -> Double -> Ptr (Apple d)
 foreign import ccall "dynamic" aait :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Int -> Ptr (P4 a b c d)) -> Ptr (Apple a) -> Ptr (Apple a) -> Int -> Ptr (P4 a b c d)
