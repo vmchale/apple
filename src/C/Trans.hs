@@ -288,7 +288,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     (lX, plX) <- aeval xs xR
     slopP <- newITemp; y <- rtemp tOR
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell() else Index() | ix <- [1..fromIntegral rnk] ]
-    oSz <- newITemp; slopSz <- newITemp
+    oSz <- newITemp; slopSz <- newITemp; slopE <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
@@ -302,7 +302,18 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     (complts, place) <- extrCell ecArg sstrides (xRd, lX) slopPd
     di <- newITemp
     let loop=forAll complts oDims $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, tick di]
-    pure (Just a, plX++dss++PlProd oSz (Tmp<$>oDims):Ma a t (ConstI oRnk) (Tmp oSz) 8:zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]++PlProd slopSz (Tmp<$>complDims):MT slopSz (Tmp slopSz+ConstI (slopRnk+1)):Sa slopP (Tmp slopSz):Wr (ARnk slopP Nothing) (ConstI slopRnk):zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]++sss++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop++[Pop (Tmp slopSz)])
+    pure (Just a,
+        plX++dss
+        ++PlProd oSz (Tmp<$>oDims)
+            :Ma a t (ConstI oRnk) (Tmp oSz) 8
+            :zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]
+        ++PlProd slopSz (Tmp<$>complDims)
+            :MT slopE (Bin IAsl (Tmp slopSz+ConstI (slopRnk+1)) 3)
+            :Sa slopP (Tmp slopE):Wr (ARnk slopP Nothing) (ConstI slopRnk)
+            :zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]
+        ++sss
+        ++MT xRd (DP xR (ConstI rnk)):MT slopPd (DP slopP (ConstI slopRnk)):MT di 0:loop
+        ++[Pop (Tmp slopE)])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
                                                                     , Just tOR <- mIF tO
                                                                     , (Arrow _ Arr{}) <- eAnn f
