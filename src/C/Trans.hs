@@ -243,7 +243,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
         slopE=Bin IAsl (Tmp slopSz) 3+fromIntegral (8+8*rnk0)
         dimsFromIn=ConstI$xRnk-rnk0
         oRnk=xRnk-rnk0+rnk1
-        step=CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[CpyE (Raw td (Tmp j) (Just a) 8) (Raw y 0 lY 8) (Tmp szY) 8, MT i (Tmp i+Tmp slopSz), MT j (Tmp j+Tmp szY)]
+        step=CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[CpyE (Raw td (Tmp j) (Just a) 8) (AElem y (ConstI rnk1) 0 lY 8) (Tmp szY) 8, MT i (Tmp i+Tmp slopSz), MT j (Tmp j+Tmp szY)]
     pure (Just a,
         plX
         ++PlProd slopSz slopDims:Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]
