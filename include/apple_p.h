@@ -9,6 +9,6 @@ void paf(U xs) {
     pj(rnk);pf(" ");
     I t=1;I d;
     DO(i,rnk,{d=dims[i];t*=d;pj(d);if (i!=rnk-1) {pf(",");}}) nl;
-    F* e=xs+d+1;
+    F* e=xs+rnk+1;
     PA("%f",t,e);
 }
