@@ -262,7 +262,7 @@ test-suite apple-test
     hs-source-dirs:     test
     default-language:   Haskell2010
     ghc-options:
-        -threaded -rtsopts -with-rtsopts=-N -Wall
+        -threaded -rtsopts "-with-rtsopts=-N -k1k" -Wall
         -fno-warn-missing-signatures -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints -Widentities
         -Wmissing-export-lists -Wcpp-undef
@@ -284,7 +284,7 @@ test-suite apple-o
     hs-source-dirs:   of
     default-language: Haskell2010
     ghc-options:
-        -Wall
+        -rtsopts -with-rtsopts=-k1k -Wall
         -fno-warn-missing-signatures -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints -Widentities
         -Wmissing-export-lists -Wcpp-undef
