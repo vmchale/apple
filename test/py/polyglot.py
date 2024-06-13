@@ -17,14 +17,7 @@ code=apple.jit("λX.λwh.λbh. [1%(1+ℯ(_x))]`{0} ([(+)`bh x]'(X%.wh))")
 hidden_layer_output=apple.f(code,inputs,hidden_weights,hidden_bias)
 print(hidden_layer_output)
 
-src=apple.jit('''
--- ho: 4x2 wo: 2 bh: 2 bo: (scalar)
-λho.λwo.λbo.
-  { sigmoid ← [1%(1+ℯ(_x))]
-  -- prediction: 4x2
-  ; sigmoid'((+bo)'(ho%:wo))
-  }
-''')
+src=apple.jit("λho.λwo.λbo. [1%(1+ℯ(_x))]'((+bo)'(ho%:wo))")
 output_weights = output_weights.reshape([2])
 predicted_output=apple.f(src,hidden_layer_output,output_weights,output_bias)
 print(predicted_output)
