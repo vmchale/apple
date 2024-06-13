@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include"../../include/apple_abi.h"
 #include"../../include/apple_p.h"
 
 extern U aa(U);
