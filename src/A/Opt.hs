@@ -63,6 +63,15 @@ optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (B
             op' = Lam opTy x0 (Lam (dom ~> cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f vx1)))
             arrTy = eAnn x'
         optA (EApp l0 (EApp undefined (EApp (arrTy ~> l0) (Builtin (opTy ~> arrTy ~> l0) ho0) op') seed) x')
+optA (EApp l0 (EApp _ (Builtin _ Map) f) (EApp _ (EApp _ (Builtin _ Map) g) xs))
+    | (Arrow _ fCod) <- eAnn f
+    , (Arrow gDom _) <- eAnn g = do
+        f' <- optA f; g' <- optA g
+        xs' <- optA xs
+        x <- nextU "x" gDom
+        let vx=Var gDom x
+            fog=Lam (gDom ~> fCod) x (EApp undefined f' (EApp undefined g' vx))
+        pure $ (EApp l0 (EApp undefined (Builtin undefined Map) fog) xs')
 optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ Map) f) x))
     | fTy@(Arrow dom fCod) <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
