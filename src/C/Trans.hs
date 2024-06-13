@@ -98,7 +98,7 @@ f1 :: T a -> Bool
 f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
 bT :: Integral b => T a -> b
-bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8
+bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT Arr{}=8
 
 szT = scanl' (\off ty -> off+bT ty::Int64) 0
 
