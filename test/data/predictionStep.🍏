@@ -1,0 +1,6 @@
+-- ho: 4x2 wo: 2 bo: (scalar)
+λho.λwo.λbo.
+  { sigmoid ← [1%(1+ℯ(_x))]
+  -- prediction: 4
+  ; sigmoid'((+bo)'(ho%:wo))
+  }
