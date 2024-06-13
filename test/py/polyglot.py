@@ -11,28 +11,20 @@ hidden_bias=np.array([0.79726405,0.67601843])
 output_weights=np.array([[0.14801747],[0.37182892]])
 output_bias=0.57823076
 
-def fs(fp):
-    with open(fp) as f:
-        bs = f.read()
-    return bs
-
 import apple
 
-code=apple.jit('''
-    λX.λwh.λbh.
-      { sigmoid ← [1%(1+ℯ(_x))]
-      ; sigmoid`{0} ([(+)`bh x]'(X%.wh))
-      }
-''')
+code=apple.jit("λX.λwh.λbh. [1%(1+ℯ(_x))]`{0} ([(+)`bh x]'(X%.wh))")
 hidden_layer_output=apple.f(code,inputs,hidden_weights,hidden_bias)
 print(hidden_layer_output)
 
-output_layer_activation = np.dot(hidden_layer_output,output_weights)
-output_layer_activation += output_bias
-predicted_output = sigmoid(output_layer_activation)
+src=apple.jit('''
+-- ho: 4x2 wo: 2 bh: 2 bo: (scalar)
+λho.λwo.λbo.
+  { sigmoid ← [1%(1+ℯ(_x))]
+  -- prediction: 4x2
+  ; sigmoid'((+bo)'(ho%:wo))
+  }
+''')
+output_weights = output_weights.reshape([2])
+predicted_output=apple.f(src,hidden_layer_output,output_weights,output_bias)
 print(predicted_output)
-
-#  src=fs('test/data/prediction.🍎')
-#  p=apple.jit(src)
-#  predicted_output=apple.f(p,hidden_weights,output_weights.reshape([2]),hidden_bias,output_bias)
-#  print(predicted_output)
