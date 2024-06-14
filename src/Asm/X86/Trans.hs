@@ -248,6 +248,12 @@ ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS (Just e) _) ne) = do
     i <- nextR; t <- nextR
     l <- nextL; eL <- nextL
     pure $ plE ++ plN ++ [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, CmpRR () i (IReg nR), Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tD) Eight i) t, IAddRI () i 1, CmpRR () i (IReg nR), Jl () l, Label () eL]
+ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) ne) = do
+    iR <- nextI; plE <- evalE e (IR.ITemp iR)
+    nR <- nextI; plN <- evalE ne (IR.ITemp nR)
+    i <- nextR; t <- nextR
+    l <- nextL; eL <- nextL
+    pure $ plE ++ plN ++ [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, CmpRR () i (IReg nR), Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tS) Eight i) t, IAddRI () i 1, CmpRR () i (IReg nR), Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) ne) = do
     nR <- nextI; plN <- evalE ne (IR.ITemp nR)
     i <- nextR; t <- nextR
