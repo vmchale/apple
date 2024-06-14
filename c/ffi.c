@@ -14,7 +14,8 @@
 ffi_cif* apple_ffi(FnTy* ty) {
     ffi_cif* cif=malloc(sizeof(cif));
     int argc=ty->argc;
-    ffi_type** args=malloc(sizeof(ffi_type*)*argc);
+    // two arrays of floats segfaults when ffi_prep_cif is called
+    ffi_type** args=malloc(sizeof(ffi_type*)*(argc+1));
     enum apple_t* argv=ty->args;
     DO(i,argc,F(args[i],argv[i]))
     ffi_type* ret;F(ret,ty->res);
