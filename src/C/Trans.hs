@@ -232,6 +232,28 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
         plE
         ++szR:=EAt (ADim arrT 0 l):Ma a t 1 (Tmp szR) 8:Wr (ADim t 0 (Just a)) (Tmp szR)
         :[loop])
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, isIF tC && isIF ta = do
+    a <- nextArr t
+    y <- rtemp tC
+    xR <- newITemp; slopP <- newITemp; szR <- newITemp; slopSz <- newITemp
+    xd <- newITemp; i <- newITemp; k <- newITemp
+    (lX, plX) <- aeval xs xR
+    (_, ss) <- writeF f [AA slopP Nothing] y
+    let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk..(xRnk-1)]]
+        xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk-1)]]
+        slopE=Bin IAsl (Tmp slopSz) 3+fromIntegral (8+8*rnk)
+        dimsFromIn=ConstI$xRnk-rnk
+        oRnk=xRnk-rnk
+        step=CpyE (AElem slopP (ConstI rnk) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[wt (AElem t (ConstI oRnk) (Tmp k) (Just a) 8) y, i+=Tmp slopSz]
+    pure (Just a,
+        plX
+        ++PlProd slopSz slopDims:Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]
+        ++PlProd szR xDims
+        :Ma a t (ConstI oRnk) (Tmp szR) 8
+            :CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn
+        :xd:=DP xR (ConstI xRnk):i:=0
+        :For k 0 ILt (Tmp szR) step
+        :[Pop slopE])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs), Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), isIF ta0 && isIF ta1 = do
     a <- nextArr t
     slopP <- newITemp; y <- newITemp
@@ -249,14 +271,14 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
     pure (Just a,
         plX
         ++PlProd slopSz slopDims:Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]
-        ++xd := DP xR (ConstI xRnk)
+        ++xd:=DP xR (ConstI xRnk)
         :CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd 0 lX 8) (Tmp slopSz) 8
         :ss
         ++PlProd szR (xDims++yDims)
         :Ma a t (ConstI oRnk) (Tmp szR) 8
             :CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn
             :CpyD (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1)
-        :td := DP t (ConstI oRnk)
+        :td:=DP t (ConstI oRnk)
         :PlProd szY yDims
         :PlProd kL xDims:i := 0:j := 0
             :For k 0 ILt (Tmp kL) step
