@@ -38,4 +38,6 @@ main = do
             [ ccOut pwd "test/examples/shoelace.🍎" "aaf" Aarch64 "6.000000"
             , ccOut pwd "test/data/predictionStep.🍏" "aafa" Aarch64 "1 4\n0.716413,0.721679,0.727807,0.731693\n"
             , ccOut pwd "test/data/map.🍏" "aaa" Aarch64 "2 2,2\n1.000000,2.000000,2.000000,2.000000\n"
+            , ccOut pwd "test/data/maa.🍎" "aa" Aarch64 "1 2\n1.000000,3.000000\n"
+            , ccOut pwd "test/data/mfa.🍎" "a" Aarch64 "2 4,2\n1.000000,1.000000,3.000000,3.000000,2.000000,2.000000,5.000000,5.000000\n"
             ]
