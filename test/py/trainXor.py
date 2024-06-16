@@ -30,10 +30,13 @@ d_predicted_output = error * sigmoid_derivative(predicted_output)
 
 error_hidden_layer = d_predicted_output.dot(output_weights.T)
 d_hidden_layer = error_hidden_layer * sigmoid_derivative(hidden_layer_output)
-print(d_hidden_layer)
 
 #Updating Weights and Biases
 output_weights += hidden_layer_output.T.dot(d_predicted_output)
+print('output_weights\n',output_weights)
 output_bias += np.sum(d_predicted_output,axis=0,keepdims=True)
+print('output_bias\n',output_bias)
 hidden_weights += inputs.T.dot(d_hidden_layer)
+print('hidden_weights\n',hidden_weights)
 hidden_bias += np.sum(d_hidden_layer,axis=0,keepdims=True)
+print('hidden_bias\n',hidden_bias)
