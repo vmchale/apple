@@ -13,11 +13,9 @@ import apple
 
 h=apple.jit("λX.λwh.λbh. [1%(1+ℯ(_x))]`{0} ([(+)`bh x]'(X%.wh))")
 hidden_layer_output=apple.f(h,inputs,hidden_weights,hidden_bias)
-print(hidden_layer_output)
 
 o=apple.jit("λho.λwo.λbo. [1%(1+ℯ(_x))]'((+bo)'(ho%:wo))")
 predicted_output=apple.f(o,hidden_layer_output,output_weights,output_bias)
-print(predicted_output)
 
 dpo=apple.jit('''
 λprediction.
@@ -27,8 +25,12 @@ dpo=apple.jit('''
   (*)`([x*(1-x)]'prediction) l1E
 }
 ''')
-d_hidden_layer = apple.f(dpo,predicted_output)
+d_predicted_output = apple.f(dpo,predicted_output)
 
 ehe=apple.jit("λl1Δ.λwo. l1Δ (*)⊗ (wo::Vec n float)")
-d_hidden_layer=apple.f(ehe,d_hidden_layer,predicted_output)
-print('error_hidden_layer\n', d_hidden_layer)
+error_hidden_layer=apple.f(ehe,d_predicted_output,output_weights)
+print('error_hidden_layer\n', error_hidden_layer)
+
+#  dhe=apple.jit("λprediction.λhe. (*)`{0,0} ([x*(1-x)]`{0} (prediction::Vec n float)) he")
+#  d_hidden_layer=apple.f(dhe,predicted_output,error_hidden_layer)
+#  print('d_hidden_layer\n', d_hidden_layer)
