@@ -13,7 +13,7 @@ install: apple.so
 # cdeps applemodule.c | ja "[x+' '+y]|> \$0"
 
 apple.o: applemodule.c
-	$(CC) -fPIC -O2 -c $< -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/include/python$(PY_VER) -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/lib/python$(PY_VER)/site-packages/numpy/core/include -I ../include -I $(HS_INCLUDE_DIR) -o $@
+	$(CC) -fPIC -O2 -c $< -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/include/python$(PY_VER) -I /Library/Frameworks/Python.framework/Versions/$(PY_VER)/lib/python$(PY_VER)/site-packages/numpy/_core/include -I ../include -I $(HS_INCLUDE_DIR) -o $@
 
 # needs to pull in/bundle all those GHC shared libraries...
 
