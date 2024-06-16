@@ -14,8 +14,8 @@ import apple
 h=apple.jit('''
 λX.λwh.λbh.
 {
-    sigmoid ← [1%(1+ℯ(_x))];
-    sigmoid`{0} ([(+)`bh x]'(X%.wh))
+  sigmoid ← [1%(1+ℯ(_x))];
+  sigmoid`{0} ([(+)`bh x]'(X%.wh))
 }
 ''')
 hidden_layer_output=apple.f(h,inputs,hidden_weights,hidden_bias)
@@ -27,23 +27,28 @@ dpo=apple.jit('''
 λprediction.
 {
   Y ⟜ ⟨0.0,1,1,0⟩;
+  sDdx ← [x*(1-x)];
   l1E ← (-)`Y prediction;
-  (*)`([x*(1-x)]'prediction) l1E
+  (*)`(sDdx'prediction) l1E
 }
 ''')
 d_predicted_output = apple.f(dpo,predicted_output)
 
-ehe=apple.jit("λl1Δ.λwo. l1Δ (*)⊗ (wo::Vec n float)")
-error_hidden_layer=apple.f(ehe,d_predicted_output,output_weights)
-
-dhe=apple.jit("λho.λhe. (*)`{0,0} ([x*(1-x)]`{0} (ho::M float)) he")
-d_hidden_layer=apple.f(dhe,hidden_layer_output,error_hidden_layer)
+dhe=apple.jit('''
+λl1Δ.λwo.λho.
+{
+  sDdx ← [x*(1-x)];
+  he ← l1Δ (*)⊗ (wo::Vec 4 float);
+  (*)`{0,0} (sDdx`{0} ho) he
+}
+''')
+d_hidden_layer=apple.f(dhe,d_predicted_output,output_weights,hidden_layer_output)
 
 hw=apple.jit('''
 λwh.λhΔ.
 {
-    X ⟜ ⟨⟨0.0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
-    (+)`{0,0} wh ((|:X)%.hΔ)
+  X ⟜ ⟨⟨0.0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
+  (+)`{0,0} wh ((|:X)%.hΔ)
 }
 ''')
 hidden_weights=apple.f(hw,hidden_weights,d_hidden_layer)
