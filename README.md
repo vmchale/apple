@@ -17,14 +17,16 @@ Arr (4) [4.0, 5.0, 6.0, 7.0]
 ```python
 >>> import apple
 >>> import numpy as np
->>> apple.apple('([((+)/x)%(ℝ(:x))]\`7)',np.arange(0,10,dtype=np.float64))
+>>> sliding_mean=apple.jit('([((+)/x)%(ℝ(:x))]\`7)')
+>>> apple.f(sliding_mean,np.arange(0,10,dtype=np.float64))
 array([3., 4., 5., 6.])
 >>>
 ```
 
 ```R
 > source("R/apple.R")
-> apple("([((+)/x)%ℝ(:x)]\\`7)",seq(0,10,1.0))
+> sliding_mean<-jit("([((+)/x)%ℝ(:x)]\\`7)")
+> run(sliding_mean,seq(0,10,1.0))
 [1] 3 4 5 6 7
 ```
 
