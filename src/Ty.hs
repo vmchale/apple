@@ -107,10 +107,12 @@ mI (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI i (Ix l (j-iϵ))
 mI (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI i (Ix l (iϵ-j))
 
 mSh :: Sh a -> Sh a -> Either (TyE b) (Subst a)
-mSh (SVar (Nm _ (U i) _)) sh  = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
-mSh Nil Nil                   = Right mempty
-mSh (Cons i sh) (Cons i' sh') = (<>) <$> mI i i' <*> mSh sh sh'
-mSh sh sh'                    = Left $ MatchShFailed (void sh) (void sh')
+mSh (SVar (Nm _ (U i) _)) sh      = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
+mSh Nil Nil                       = Right mempty
+mSh (Cons i sh) (Cons i' sh')     = (<>) <$> mI i i' <*> mSh sh sh'
+mSh (Cat sh0 sh1) (Cat sh0' sh1') = (<>) <$> mSh sh0 sh0' <*> mSh sh1 sh1'
+mSh (Rev sh) (Rev sh')            = mSh sh sh'
+mSh sh sh'                        = Left $ MatchShFailed (void sh) (void sh')
 
 match :: T a -> T a -> Subst a
 match t t' = either (throw :: TyE () -> Subst a) id (maM t t')
@@ -251,6 +253,9 @@ mgSh l inp sh s@(SVar (Nm _ (U i) _)) | i `IS.member` occSh sh = Left$ OSh l sh 
 mgSh l _ sh@Nil sh'@Cons{} = Left $ USh l sh sh'
 mgSh l _ sh@Cons{} sh'@Nil{} = Left $ USh l sh' sh
 mgSh l inp (Rev sh) (Rev sh') = mgShPrep l inp sh sh'
+mgSh l inp (Cat sh0 sh0') (Cat sh1 sh1') = do
+    s <- mgShPrep l inp sh0 sh1
+    mgShPrep l s sh0' sh1'
 
 mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mguPrep l s t0 t1 =
