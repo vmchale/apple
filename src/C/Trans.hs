@@ -263,7 +263,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(xRnk-1)]]
         yDims=[EAt (ADim y (ConstI l) lY) | l <- [0..(rnk-1)]]
         oRnk=xRnk+rnk
-        step=mt (AElem xR (ConstI xRnk) (Tmp k) (Just a) 8) x:ss++[CpyE (Raw td (Tmp j) (Just a) 8) (Raw yd 0 lY undefined) (Tmp szY) 8, j+=Tmp szY]
+        step=mt (AElem xR (ConstI xRnk) (Tmp k) (Just a) 8) x:ss++[yd:=DP y (ConstI$rnk), CpyE (Raw td (Tmp j) (Just a) 8) (Raw yd 0 lY undefined) (Tmp szY) 8, j+=Tmp szY]
     pure (Just a,
         plX
         ++mt (AElem xR (ConstI xRnk) 0 (Just a) 8) x
@@ -274,7 +274,6 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
             :CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) (ConstI xRnk)
             :CpyD (ADim t (ConstI xRnk) (Just a)) (ADim y 0 lY) (ConstI rnk)
         :td:=DP t (ConstI$xRnk+rnk)
-        :yd:=DP y (ConstI$rnk)
         :j:=0
           :[For k 0 ILt (Tmp szX) step])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs), Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), isIF ta0 && isIF ta1 = do
