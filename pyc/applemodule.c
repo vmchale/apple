@@ -5,7 +5,7 @@
 #include"../include/apple_abi.h"
 #include"../c/ffi.c"
 
-typedef void* U;typedef PyObject* PO;typedef size_t S;
+typedef void* U;typedef PyObject* PO;typedef PyArrayObject* NPA;typedef size_t S;
 
 #define R return
 #define Sw switch
@@ -14,40 +14,40 @@ typedef void* U;typedef PyObject* PO;typedef size_t S;
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError, s);}}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
-U f_npy(PyObject* o) {
-    I rnk=PyArray_NDIM(o);
+U f_npy(const NPA o) {
+    J rnk=PyArray_NDIM(o);
     npy_intp* dims=PyArray_DIMS(o);
-    I n=PyArray_SIZE(o);
-    I sz_i=1+rnk+n;
+    J n=PyArray_SIZE(o);
+    J sz_i=1+rnk+n;
     CT(o,'d',"Error: expected an array of floats")
     S sz=sz_i*8;
-    U x=malloc(sz);I* x_i=x; F* x_f=x;
+    U x=malloc(sz);J* x_i=x; F* x_f=x;
     x_i[0]=rnk;
-    DO(i,rnk,x_i[i+1]=(I)dims[i]);
+    DO(i,rnk,x_i[i+1]=(J)dims[i]);
     U data=PyArray_DATA(o);
     memcpy(x_f+rnk+1,data,n*8);
     R x;
 }
 
-U i_npy(PyObject* o) {
-    I rnk=PyArray_NDIM(o);
+U i_npy(NPA o) {
+    J rnk=PyArray_NDIM(o);
     npy_intp* dims=PyArray_DIMS(o);
-    I n=PyArray_SIZE(o);
-    I sz_i=1+rnk+n;
+    J n=PyArray_SIZE(o);
+    J sz_i=1+rnk+n;
     S sz=sz_i*8;
     CT(o,'l',"Error: expected an array of 64-bit integers")
-    U x=malloc(sz);I* x_i=x;
+    U x=malloc(sz);J* x_i=x;
     x_i[0]=rnk;
-    DO(i,rnk,x_i[i+1]=(I)dims[i]);
+    DO(i,rnk,x_i[i+1]=(J)dims[i]);
     U data=PyArray_DATA(o);
     memcpy(x_i+rnk+1,data,n*8);
     R x;
 }
 
 PyObject* npy_i(U x) {
-    I* i_p=x;
-    I t=1;
-    I rnk=i_p[0];
+    J* i_p=x;
+    J t=1;
+    J rnk=i_p[0];
     long* dims=malloc(sizeof(long)*rnk);
     DO(i,rnk,t*=i_p[i+1];dims[i]=(long)i_p[i+1]);
     S sz=8*t;
@@ -59,9 +59,9 @@ PyObject* npy_i(U x) {
 }
 
 PyObject* npy_f(U x) {
-    I* i_p=x;
-    I t=1;
-    I rnk=i_p[0];
+    J* i_p=x;
+    J t=1;
+    J rnk=i_p[0];
     long* dims=malloc(sizeof(long)*rnk);
     DO(i,rnk,t*=i_p[i+1];dims[i]=(long)i_p[i+1]);
     S sz=8*t;
@@ -170,9 +170,9 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             Sw(ty->args[k]){
-                C IA: {U* x=alloca(sizeof(U));x[0]=i_npy(pyarg);vals[k]=x;};BR
-                C FA: {U* x=alloca(sizeof(U));x[0]=f_npy(pyarg);vals[k]=x;};BR
-                C I_t: {I* xi=alloca(sizeof(I));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
+                C IA: {U* x=alloca(sizeof(U));x[0]=i_npy((NPA)pyarg);vals[k]=x;};BR
+                C FA: {U* x=alloca(sizeof(U));x[0]=f_npy((NPA)pyarg);vals[k]=x;};BR
+                C I_t: {J* xi=alloca(sizeof(J));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
                 C F_t: {F* xf=alloca(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
             }
         }
@@ -182,7 +182,7 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
         C IA: r=npy_i(*(U*)ret);BR
         C FA: r=npy_f(*(U*)ret);BR
         C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
-        C I_t: r=PyLong_FromLongLong(*(I*)ret);BR
+        C I_t: r=PyLong_FromLongLong(*(J*)ret);BR
     }
     R r;
 };

@@ -26,9 +26,9 @@ typedef struct AppleCache {
 } AppleCache;
 
 SEXP rf(U x) {
-    I* i_p=x;
-    I t=1;
-    I rnk=i_p[0];
+    J* i_p=x;
+    J t=1;
+    J rnk=i_p[0];
     SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
     DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
     SEXP ret=PROTECT(allocArray(REALSXP,dims));
@@ -40,8 +40,8 @@ SEXP rf(U x) {
 
 // vector only
 U fr(SEXP x) {
-    I rnk=1;I dim=length(x);
-    I* ret=malloc(8*(2+dim));
+    J rnk=1;J dim=length(x);
+    J* ret=malloc(8*(2+dim));
     ret[0]=rnk;ret[1]=dim;
     memcpy(ret+2,REAL(x),dim*8);
     R ret;
@@ -109,14 +109,14 @@ SEXP run_R(SEXP args){
         Sw(ty->args[k]){
             C FA: {U* x=alloca(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
             C F_t: {F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
-            C I_t: {I* xi=alloca(sizeof(I));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
+            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
         }
     }
     ffi_call(cif,fp,ret,vals);
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR
         C F_t: r=ScalarReal(*(F*)ret);BR
-        C I_t: r=ScalarInteger((int)(*(I*)ret));BR
+        C I_t: r=ScalarInteger((int)(*(J*)ret));BR
     }
     R r;
 }
