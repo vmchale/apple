@@ -12,10 +12,9 @@
 #define F(r,t) {Sw(t){C I_t: r=&ffi_type_sint64;BR;C F_t: r=&ffi_type_double;BR;C FA: r=&ffi_type_pointer;BR;C IA: r=&ffi_type_pointer;BR}}
 
 ffi_cif* apple_ffi(FnTy* ty) {
-    ffi_cif* cif=malloc(sizeof(cif));
+    ffi_cif* cif=malloc(sizeof(*cif));
     int argc=ty->argc;
-    // two arrays of floats segfaults when ffi_prep_cif is called
-    ffi_type** args=malloc(sizeof(ffi_type*)*(argc+1));
+    ffi_type** args=malloc(sizeof(ffi_type*)*argc);
     enum apple_t* argv=ty->args;
     DO(i,argc,F(args[i],argv[i]))
     ffi_type* ret;F(ret,ty->res);
