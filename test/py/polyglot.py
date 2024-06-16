@@ -28,8 +28,7 @@ dpo=apple.jit('''
 }
 ''')
 d_hidden_layer = apple.f(dpo,predicted_output)
-print(d_hidden_layer)
 
 ehe=apple.jit("λl1Δ.λwo. l1Δ (*)⊗ (wo::Vec n float)")
-error_hidden_layer=apple.f(ehe,d_hidden_layer,predicted_output)
-print(error_hidden_layer)
+d_hidden_layer=apple.f(ehe,d_hidden_layer,predicted_output)
+print('error_hidden_layer\n', d_hidden_layer)
