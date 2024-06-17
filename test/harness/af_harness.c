@@ -7,9 +7,7 @@ extern F af(U);
 
 int main(int argc, char *argv[]) {
     F xs[] = {1,2,3};
-    I d[] = {3};
-    Af a = {1, d, xs};
-    U x = poke_af(a);
+    U x; V(3,xs,x);
     printf("%f\n", af(x));
     free(x);
 }
