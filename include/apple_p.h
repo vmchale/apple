@@ -6,10 +6,10 @@
 #define PA(s,n,x) DO(i,t,{pf(s,x[i]);if (i!=n-1){pf(",");}});nl
 
 void paf(U xs) {
-    I* dims=xs;
-    I rnk=dims[0];dims+=1;
+    J* dims=xs;
+    J rnk=dims[0];dims+=1;
     pj(rnk);pf(" ");
-    I t=1;I d;
+    J t=1;J d;
     DO(i,rnk,{d=dims[i];t*=d;pj(d);if (i!=rnk-1) {pf(",");}}) nl;
     F* e=xs+(rnk+1)*sizeof(F);
     PA("%f",t,e);
