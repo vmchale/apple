@@ -20,7 +20,13 @@ h=apple.jit('''
 ''')
 hidden_layer_output=apple.f(h,inputs,hidden_weights,hidden_bias)
 
-o=apple.jit("λho.λwo.λbo. [1%(1+ℯ(_x))]'((+bo)'(ho%:wo))")
+o=apple.jit('''
+λho.λwo.λbo.
+{
+  sigmoid ← [1%(1+ℯ(_x))];
+  sigmoid'((+bo)'(ho%:wo))
+}
+''')
 predicted_output=apple.f(o,hidden_layer_output,output_weights,output_bias)
 
 dpo=apple.jit('''
