@@ -711,6 +711,7 @@ eval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
     pure $ plT ++ t := EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1):m'pop a
+eval (Cond _ p e0 e1) t = snd <$> cond p e0 e1 (Right t)
 eval e _          = error (show e)
 
 frel :: Builtin -> Maybe FRel
