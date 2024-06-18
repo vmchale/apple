@@ -712,6 +712,17 @@ eval (EApp _ (Builtin _ (TAt i)) e) t = do
     (offs, a, _, plT) <- πe e k
     pure $ plT ++ t := EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1):m'pop a
 eval (Cond _ p e0 e1) t = snd <$> cond p e0 e1 (Right t)
+eval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
+    x <- rtemp tP
+    pR <- newITemp
+    szR <- newITemp
+    i <- newITemp
+    (lP, plP) <- aeval p pR
+    ss <- writeRF op [Right acc, x] (Right acc)
+    let step = mt (AElem  pR 1 (Tmp i) lP 8) x:ss
+        loop = For i 1 ILt (Tmp szR) step
+    sseed <- writeRF zop [x] (Right acc)
+    pure $ plP++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
 eval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <- if1 (eAnn q) = do
     x <- rtemp tP; y <- rtemp tQ
     pR <- newITemp; qR <- newITemp
