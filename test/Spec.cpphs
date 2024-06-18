@@ -86,6 +86,7 @@ allT = testGroup "jit"
     , testCase "matmul builtin" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,7,6,9::Double] }
+    , testCase "luhn check" $ do { res <- fpAi "test/examples/luhn.🍎" [4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]; res @?= 1 }
     , testCase "mapAa" $ do { (AA 1 [2] res) <- fpAa "test/data/maa.🍎" (AA 2 [2,2] [1,2,3,4::Double]); res @?= [3,7::Double] }
     , testCase "mapAa" $ do { (AA 2 [3,2] res) <- fpAa "test/data/mfa.🍎" (AA 1 [3] [1,2,3::Double]); res @?= [1,1,2,2,3,3::Double] }
     , testCase "prediction" $ do { (AA 1 [4] res) <- fpAaaaf "test/data/prediction.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double]) (AA 1 [2] [0.14801747,0.37182892::Double]) (AA 1 [2] [0.79726405,0.67601843::Double]) 0.57823076; res @?= [0.7164132249879268,0.721678929187539,0.7278074306816863,0.7316925415075616::Double] }
@@ -177,6 +178,12 @@ fpAf fp xs = do
 
 jitKl = fpAaf "test/examples/kl.🍎"
 jitB = fpAaf "test/examples/b.🍎"
+
+fpAi :: FilePath -> [Int64] -> IO Int64
+fpAi fp as = do
+    f <- fpn =<< BSL.readFile fp
+    let a=AA 1 [fromIntegral(length as)] as
+    wA a $ \p -> pure $ ai f p
 
 fpAait :: FilePath -> [Double] -> [Double] -> Int -> IO (Double, Double, Double, Double)
 fpAait fp xs ys n = do
@@ -272,6 +279,7 @@ wA x act =
 
 bytesE = either throw id . bytes
 
+foreign import ccall "dynamic" ai :: FunPtr (Ptr (Apple a) -> Int64) -> Ptr (Apple a) -> Int64
 foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
 foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
 foreign import ccall "dynamic" aaff :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double

@@ -1,5 +1,4 @@
 -- 16-digit for credit card
--- 4012 8888 8888 1881
 λxs.
   { digitSum ← [?x>10,.1+(x-10),.x]
   ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
