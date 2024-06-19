@@ -1,11 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- first IR with for loops and array accesses, inspired by C
-module C ( Temp (..)
-         , FTemp (..)
+module C ( Temp (..), FTemp (..)
          , ArrAcc (..)
-         , CE (..)
-         , CFE (..)
+         , CE (..), CFE (..)
          , PE (..)
          , CS (..)
          , Label, AsmData
