@@ -67,9 +67,9 @@ rw (EApp l0 (EApp l1 e0@(Builtin _ op0) e1) e2) | isBinOp op0 =
 rw (EApp l e0 e') =
     case rw e' of
         (EApp lϵ (EApp lϵϵ e3@(Builtin _ op) e4) e2) | isBinOp op -> EApp l (EApp lϵϵ e3 (rw $ EApp lϵ e0 e4)) e2
-        (EApp lϵ e1@EApp{} e2) -> EApp l (rw $ EApp lϵ e0 e1) e2
-        (EApp lϵ e1 e2)        -> EApp l (EApp lϵ (rw e0) e1) e2
-        eRw                    -> EApp l (rw e0) eRw
+        (EApp lϵ e1@EApp{} e2)                                    -> EApp l (rw $ EApp lϵ e0 e1) e2
+        (EApp lϵ e1 e2)                                           -> EApp l (EApp lϵ (rw e0) e1) e2
+        eRw                                                       -> EApp l (rw e0) eRw
 rw (Let l (n, e') e) = Let l (n, rw e') (rw e)
 rw (Def l (n, e') e) = Def l (n, rw e') (rw e)
 rw (LLet l (n, e') e) = LLet l (n, rw e') (rw e)

@@ -87,7 +87,7 @@ data T a = Arr (Sh a) (T a)
          | I -- | int
          | B -- | bool
          | Li (I a)
-         | TVar (Nm a) -- | Kind \(*\), 'F' or 'I'
+         | TVar (Nm a) -- | Kind \(*\)
          | Arrow (T a) (T a)
          | P [T a]
          | Ρ (TyNm a) (IM.IntMap (T a))
