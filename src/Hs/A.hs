@@ -18,7 +18,7 @@ import           Foreign.Marshal.Array (peekArray)
 import           Foreign.Ptr           (Ptr, castPtr, plusPtr)
 import           Foreign.Storable      (Storable (..))
 import           Numeric               (showHex)
-import           Prettyprinter         (Doc, Pretty (..), align, brackets, concatWith, hardline, indent, space, (<+>))
+import           Prettyprinter         (Doc, Pretty (..), align, brackets, concatWith, hardline, space, (<+>))
 import           Prettyprinter.Ext
 
 type AI = Apple Int64
