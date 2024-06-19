@@ -18,7 +18,6 @@ initLiveness = IM.fromList . fmap (\asm -> let x = copoint asm in (node x, (x, e
 
 type LivenessMap = IM.IntMap (ControlAnn, Liveness)
 
--- | All program points accessible from some node.
 succNode :: ControlAnn -- ^ 'ControlAnn' associated w/ node @n@
          -> LivenessMap
          -> [Liveness] -- ^ 'Liveness' associated with 'succNode' @n@
@@ -30,7 +29,7 @@ lookupNode :: Int -> LivenessMap -> (ControlAnn, Liveness)
 lookupNode = IM.findWithDefault (error "Internal error: failed to look up instruction")
 
 done :: LivenessMap -> LivenessMap -> Bool
-done n0 n1 = {-# SCC "done" #-} and $ zipWith (\(_, l) (_, l') -> l == l') (IM.elems n0) (IM.elems n1) -- should be safe b/c n0, n1 must have same length
+done n0 n1 = {-# SCC "done" #-} and $ zipWith (\(_, l) (_, l') -> l == l') (IM.elems n0) (IM.elems n1) -- n0, n1 have same length
 
 -- order in which to inspect nodes during liveness analysis
 inspectOrder :: Copointed p => [p ControlAnn] -> [Int]
