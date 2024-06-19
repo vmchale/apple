@@ -73,7 +73,6 @@ data Stmt = L Label
           | Cpy AE AE Exp
           | C Label | R Label
           | IRnd Temp
-          -- TODO: ccall?
 
 instance Pretty Stmt where
     pretty (L l)         = hardline <> prettyLabel l <> ":"
