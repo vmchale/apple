@@ -40,4 +40,5 @@ main = do
             , ccOut pwd "test/data/map.🍏" "aaa" Aarch64 "2 2,2\n1.000000,2.000000,2.000000,2.000000\n"
             , ccOut pwd "test/data/maa.🍎" "aa" Aarch64 "1 2\n1.000000,3.000000\n"
             , ccOut pwd "test/data/mfa.🍎" "a" Aarch64 "2 4,2\n1.000000,1.000000,3.000000,3.000000,2.000000,2.000000,5.000000,5.000000\n"
+            , ccOut pwd "test/data/cfLeft.🍏" "af" Aarch64 "4.123106\n"
             ]
