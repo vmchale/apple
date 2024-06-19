@@ -1,10 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 
-module R ( Rs (..)
-         , HasRs (..)
+module R ( Rs (..), HasRs (..)
          , maxLens
-         , rG
-         , rE
+         , rG, rE
          ) where
 
 import           A
@@ -23,8 +21,7 @@ data Rs = Rs { max_ :: Int, bound :: IM.IntMap Int }
 class HasRs a where
     rename :: Lens' a Rs
 
-instance HasRs Rs where
-    rename = id
+instance HasRs Rs where rename = id
 
 maxLens :: Lens' Rs Int
 maxLens f s = fmap (\x -> s { max_ = x }) (f (max_ s))
