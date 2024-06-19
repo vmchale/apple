@@ -147,7 +147,7 @@ defs _              = empty
 
 uses :: Stmt -> Set Lbl
 uses (Write (ArrayPtr _ _ l) e) =
-    insert l (defsE e)
+    insert l (usesE e)
 uses ...
 \end{verbatim}
 
