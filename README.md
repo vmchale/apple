@@ -1,5 +1,8 @@
 # Apple Array System
 
+Many cases (folds of tuples, folds of arrays) are not implemented. This is
+provided as an artefact.
+
 ## Compiler-As-a-Library
 
 Rather than an environment-based interpreter or a compiler invoked on the
