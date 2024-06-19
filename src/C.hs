@@ -65,7 +65,7 @@ instance Pretty ArrAcc where
 instance Show ArrAcc where show=show.pretty
 
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing
-fprec FPlus=6;fprec FMinus=6;fprec FTimes=7; fprec FDiv=7; fprec FExp=8
+fprec FPlus=Just 6;fprec FMinus=Just 6;fprec FTimes=Just 7; fprec FDiv=Just 7; fprec FExp=Just 8; fprec FMax=Nothing; fprec FMin=Nothing
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor CFE
         | LA !Int -- assembler data
@@ -109,7 +109,8 @@ instance Pretty PE where
 instance PS CFE where
     ps _ (FAt a)         = pretty a
     ps _ (FUn f e)       = parens (pretty f <+> pretty e)
-    ps d (FBin op x0 x1) = let d'=fprec op in parensp (d>d') (ps (d'+1) x0 <+> pretty op <+> ps (d'+1) x1)
+    ps d (FBin op x0 x1) | Just d' <- fprec op = parensp (d>d') (ps (d'+1) x0 <+> pretty op <+> ps (d'+1) x1)
+                         | otherwise = parens (pretty op <+> ps 11 x0 <+> ps 11 x1)
     ps _ (FTmp t)        = pretty t
     ps _ (ConstF x)      = pretty x
     ps d (IE e)          = parensp (d>10) ("itof" <+> ps 11 e)
