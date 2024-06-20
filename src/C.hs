@@ -161,7 +161,7 @@ instance Pretty CS where
     pretty (Cset p t)           = pretty t <+> "=" <+> pretty p
     pretty (SZ td t _ _)        = pretty td <+> "=" <+> "SIZE" <> parens (pretty t)
     pretty (PlProd t ts)        = pretty t <+> "=" <+> "PRODUCT" <> tupled (pretty<$>ts)
-    pretty (Rnd t) = pretty t <+> "=" <+> "(rnd)"
+    pretty (Rnd t)              = pretty t <+> "=" <+> "(rnd)"
 
 instance Show CS where show=show.pretty
 
