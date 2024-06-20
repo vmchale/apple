@@ -17,18 +17,18 @@ readCc :: FilePath
        -> T.Text
        -> Arch
        -> IO String
-readCc pwd aSrc tyt arch =
+readCc pwd aSrc tyt a =
     withSystemTempDirectory "apple" $ \dir -> do
         setCurrentDirectory dir
         let n=T.unpack tyt
-        run (pwd </> aSrc, arch, tyt)
+        run (pwd </> aSrc, a, tyt)
         let c = pwd </> "test/harness" </> n <> "_harness.c"
         {-# SCC "cc" #-} void $ readCreateProcess ((proc "cc" [n <> ".o", c, "-I", dir, "-I", pwd </> "include"])) ""
         {-# SCC "a.out" #-} readCreateProcess (proc (dir </> "a.out") []) ""
 
 ccOut :: FilePath -> FilePath -> T.Text -> Arch -> String -> TestTree
-ccOut pwd fp tyt arch expected = testCase (T.unpack tyt) $ do
-    actual <- readCc pwd fp tyt arch
+ccOut pwd fp tyt a expected = testCase (T.unpack tyt) $ do
+    actual <- readCc pwd fp tyt a
     actual @?= expected
 
 main :: IO ()
