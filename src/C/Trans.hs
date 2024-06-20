@@ -112,6 +112,12 @@ tRnk :: T a -> Maybe (T a, Int64)
 tRnk (Arr sh t) = (t,) <$> staRnk sh
 tRnk _          = Nothing
 
+staR :: Sh a -> [Int64]
+staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s
+
+tRnd :: T a -> (T a, [Int64])
+tRnd (Arr sh t) = (t, staR sh)
+
 mIFs :: [E a] -> Maybe [Word64]
 mIFs = traverse mIFϵ where mIFϵ (FLit _ d)=Just (castDoubleToWord64 d); mIFϵ (ILit _ n)=Just (fromIntegral n); mIFϵ _=Nothing
 
@@ -221,6 +227,14 @@ aeval (Var _ x) t = do
     st <- gets avars
     let (i, r) = getT st x
     pure (i, [t := Tmp r])
+aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
+    a <- nextArr t
+    e0R <- newFTemp; e1R <- newFTemp; iR <- newITemp; xR <- newFTemp; k <- newITemp
+    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
+    let rnk=fromIntegral(length ixs); n=product ixs
+        plRnd = [Rnd iR, MX xR (IE (Tmp iR)), MX xR ((FTmp e1R - FTmp e0R) * (FTmp xR / (2*9223372036854775807) + 0.5) + FTmp e0R), WrF (AElem t rnk (Tmp k) (Just a) 8) (FTmp xR)]
+        loop=For k 0 ILt (ConstI n) plRnd
+    pure (Just a, plE0++plE1++Ma a t rnk (ConstI n) 8:zipWith (\ix i -> Wr (ADim t (ConstI i) (Just a)) (ConstI ix)) ixs [(0::Int64)..]++[loop])
 aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF tD && isIF tC= do
     a <- nextArr t
     arrT <- newITemp
