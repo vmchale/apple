@@ -653,7 +653,7 @@ eval (Var _ x) t = do
 eval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Rnd t, t := (Bin IRem (Tmp t) (Tmp e1R - Tmp e0R) - Tmp e0R)]
+    pure $ plE0 ++ plE1 ++ [Rnd t, t := (Bin IRem (Tmp t) (Tmp e1R - Tmp e0R + 1) + Tmp e0R)]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
     x <- rtemp tX
     eR <- newITemp
