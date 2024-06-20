@@ -931,6 +931,15 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arr
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss++[i := (Tmp i-1)]
         loop=While i IGeq 0 loopBody
     pure $ plE++plAcc++i := (EAt (ADim eR 0 l)-1):[loop]
+feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
+    x <- rtemp tX
+    xsR <- newITemp; rnkR <- newITemp; szR <- newITemp; i <- newITemp; k <- newITemp
+    (lX, plE) <- aeval xs xsR
+    plAcc <- feval seed acc
+    ss <- writeRF op [x, Left acc] (Left acc)
+    let step=mt (AElem xsR (Tmp rnkR) (Tmp k) lX 8) x:ss
+        loop=For k 0 ILt (Tmp szR) step
+    pure $ plE ++ plAcc ++ [rnkR := EAt (ARnk xsR lX), szR := 1, For i 0 ILt (Tmp rnkR) [szR := (Tmp szR*EAt (ADim xsR (Tmp i) lX))], loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr)) acc = do
     i <- newITemp
     endR <- newITemp; incrR <- newITemp
