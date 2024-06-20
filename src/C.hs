@@ -135,6 +135,7 @@ data CS = For Temp CE IRel CE [CS]
         | Cset PE Temp
         | SZ Temp Temp CE (Maybe AL)
         | PlProd Temp [CE]
+        | Rnd Temp
 
 instance Pretty CS where
     pretty (t := (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
@@ -159,6 +160,7 @@ instance Pretty CS where
     pretty (Cset p t)           = pretty t <+> "=" <+> pretty p
     pretty (SZ td t _ _)        = pretty td <+> "=" <+> "SIZE" <> parens (pretty t)
     pretty (PlProd t ts)        = pretty t <+> "=" <+> "PRODUCT" <> tupled (pretty<$>ts)
+    pretty (Rnd t) = pretty t <+> "=" <+> "(rnd)"
 
 instance Show CS where show=show.pretty
 

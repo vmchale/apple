@@ -650,6 +650,10 @@ eval (ILit _ n) t = pure [t := fromInteger n]
 eval (Var _ x) t = do
     st <- gets vars
     pure [t := Tmp (getT st x)]
+eval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
+    e0R <- newITemp; e1R <- newITemp
+    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    pure $ plE0 ++ plE1 ++ [Rnd t, t := (Bin IRem (Tmp t) (Tmp e1R - Tmp e0R) - Tmp e0R)]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
     x <- rtemp tX
     eR <- newITemp
@@ -807,6 +811,10 @@ feval (FLit _ x) t = pure [MX t (ConstF x)]
 feval (Var _ x) t = do
     st <- gets dvars
     pure [MX t (FTmp $ getT st x)]
+feval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
+    e0R <- newFTemp; e1R <- newFTemp; iR <- newITemp
+    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
+    pure $ plE0 ++ plE1 ++ [Rnd iR, MX t (IE (Tmp iR)), MX t ((FTmp e1R - FTmp e0R) * (FTmp t / (2*9223372036854775807) + 0.5) + FTmp e0R)]
 feval (EApp _ (EApp _ (Builtin _ op) (Var _ x0)) (Var _ x1)) t | Just fb <- mFop op = do
     st <- gets dvars
     pure [MX t (FBin fb (FTmp $ getT st x0) (FTmp $ getT st x1))]
