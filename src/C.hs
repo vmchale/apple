@@ -53,7 +53,7 @@ data ArrAcc = AElem Temp CE CE (Maybe AL) Int64 -- pointer, rank, elem., label f
             | ARnk Temp (Maybe AL)
             | ADim Temp CE (Maybe AL) -- pointer, #, label
             | At Temp [CE] [CE] (Maybe AL) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
-            | Raw Temp CE (Maybe AL) Int64 -- pointer to data, offset
+            | Raw Temp CE (Maybe AL) Int64 -- pointer to data, offset, label, element size
 
 instance Pretty ArrAcc where
     pretty (AElem t _ e _ _) = pretty t <> brackets (pretty e)
@@ -136,6 +136,7 @@ data CS = For Temp CE IRel CE [CS]
         | SZ Temp Temp CE (Maybe AL)
         | PlProd Temp [CE]
         | Rnd Temp
+        -- TODO: PlDims cause we have diml
 
 instance Pretty CS where
     pretty (t := (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
