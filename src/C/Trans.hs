@@ -472,13 +472,14 @@ aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
     pure (Just a, plX ++ plN ++ szR := EAt (ADim xR 0 lX):nO := (Tmp szR*Tmp nR):aV++ix := 0:[body])
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
     xR <- newITemp; aR <- newITemp; i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
+    ad <- newITemp; xd <- newITemp; td <- newITemp
     (aL,aV) <- v8 t (Tmp m)
     (lA, plA) <- aeval a aR; (lX, plX) <- aeval x xR
     let loop = For i 0 ILt (Tmp m)
                   [ MX z 0,
                     For j 0 ILt (Tmp n)
-                        [ MX z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
-                  , WrF (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
+                        [ MX z (FTmp z+FAt (Raw ad (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xd (Tmp j) lX 8)) ]
+                  , WrF (Raw td (Tmp i) (Just aL) 8) (FTmp z)
                   ]
     pure (Just aL,
         plA
@@ -486,17 +487,19 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
         ++m:=EAt (ADim aR 0 lA)
         :aV
         ++n:=EAt (ADim xR 0 lX)
+        :ad := DP aR 2:xd := DP xR 1:td := DP t 1
         :[loop])
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk (eAnn a) = do
     aL <- nextArr t
     aR <- newITemp; bR <- newITemp; i <- newITemp; j <- newITemp; k <- newITemp; m <- newITemp; n <- newITemp; o <- newITemp; z <- newFTemp
+    ad <- newITemp; bd <- newITemp; td <- newITemp
     (lA, plA) <- aeval a aR
     (lB, plB) <- aeval b bR
     let loop=For i 0 ILt (Tmp m)
                 [For j 0 ILt (Tmp o)
                     [ MX z 0, For k 0 ILt (Tmp n)
-                              [MX z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)*FAt (AElem bR 2 (Tmp k*Tmp o+Tmp j) lB 8))]
-                    , WrF (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
+                              [MX z (FTmp z+FAt (Raw ad (Tmp n*Tmp i+Tmp k) lA 8)*FAt (Raw bd (Tmp k*Tmp o+Tmp j) lB 8))]
+                    , WrF (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
                     ]
     pure (Just aL,
         plA
@@ -504,6 +507,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk (eAnn a) = d
         ++m:=EAt (ADim aR 0 lA):o:=EAt (ADim bR 1 lB)
         :Ma aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
         ++n:=EAt (ADim bR 0 lB)
+        :ad := DP aR 2:bd := DP bR 2:td := DP t 2
         :[loop])
 aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isIF tX = do
     xR <- rtemp tX; xsR <- newITemp
