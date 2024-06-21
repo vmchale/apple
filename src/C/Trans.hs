@@ -651,11 +651,19 @@ aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t
     , Just (tX, xRnk) <- tRnk (eAnn x)
     , isIF tC && isIF tX = do
     a <- nextArr t
-    xR <- newITemp; szR <- newITemp
+    xR <- newITemp; szR <- newITemp; slopP <- newITemp
     (lX, plX) <- aeval x xR
     (dts, plDs) <- plDim xRnk (xR, lX)
-    (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- newITemp; pure (odim, odim := (Tmp dt-ConstI (fromIntegral i)))}) dts is
-    pure (Just a, plX++plDs++dims++PlProd szR (Tmp<$>tdims):Ma a t 1 (Tmp szR) 8:diml (t, Just a) (Tmp<$>tdims)++undefined)
+    (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- newITemp; pure (odim, odim := (Tmp dt-fromIntegral i))}) dts is
+    let slopSz=product is; slopE=fromIntegral ((slopSz+length is+1)*8); slopDims=fromIntegral<$>is
+    pure (Just a,
+        plX
+        ++plDs
+        ++dims
+        ++PlProd szR (Tmp<$>tdims):Ma a t 1 (Tmp szR) 8:diml (t, Just a) (Tmp<$>tdims)
+        ++Sa slopP slopE:diml (slopP, Nothing) slopDims
+        ++undefined
+        ++[Pop slopE])
 aeval e _ = error (show e)
 
 plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
@@ -805,7 +813,7 @@ cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c) (ILit _ i)) e e1 (Left t) | Jus
     plC <- eval c cR
     eR <- newFTemp; fe <- cfe
     plE <- feval e eR
-    pure (Nothing, plC ++ [MX t fe] ++ plE ++ [Fcmov (IRel cmp (Tmp cR) (ConstI$fromIntegral i)) t (FTmp eR)])
+    pure (Nothing, plC ++ [MX t fe] ++ plE ++ [Fcmov (IRel cmp (Tmp cR) (fromIntegral i)) t (FTmp eR)])
 cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e e1 (Left t) | Just cmp <- rel op, Just cfe <- mFEval e1 = do
     c0R <- newITemp; c1R <- newITemp
     plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
