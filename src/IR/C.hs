@@ -92,8 +92,8 @@ irAt (AElem t (C.ConstI rnkI) e l sz) | Just s <- cLog sz      = AP (ctemp t) (J
 irAt (AElem t rnk e l 8)                                       = AP (ctemp t) (Just$IR.IB IAsl (irE rnk+irE e) 3+8) l
 irAt (Raw t (C.ConstI 0) l _)                                  = AP (ctemp t) Nothing l
 irAt (Raw t (C.ConstI i) l sz)                                 = AP (ctemp t) (Just (IR.ConstI$i*sz)) l
-irAt (Raw t o l 8)                                             = AP (ctemp t) (Just$IR.IB IAsl (irE o) 3) l
 irAt (Raw t o l 1)                                             = AP (ctemp t) (Just$irE o) l
+irAt (Raw t o l sz) | Just n <- cLog sz                        = AP (ctemp t) (Just$IR.IB IAsl (irE o) (IR.ConstI n)) l
 irAt (At dt s ix l sz) | Just sϵ <- cLog sz =
     let offs=foldl1 (IB IPlus) $ zipWith (\d i -> irE i*irE d) s ix
     in AP (ctemp dt) (Just$IR.IB IAsl offs (IR.ConstI sϵ)) l
