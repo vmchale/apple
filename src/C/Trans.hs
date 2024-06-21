@@ -190,6 +190,9 @@ part []           = ([], [])
 part (Cell i:is)  = first (i:) $ part is
 part (Index i:is) = second (i:) $ part is
 
+diml :: (Temp, Maybe AL) -> [CE] -> [CS]
+diml (t,l) ds = zipWith (\d i -> Wr (ADim t (ConstI i) l) d) ds [0..]
+
 plDim :: Int64 -> (Temp, Maybe AL) -> CM ([Temp], [CS])
 plDim rnk (a,l) =
     unzip <$> traverse (\at -> do {dt <- newITemp; pure (dt, dt := EAt at)}) [ ADim a (ConstI i) l | i <- [0..rnk-1] ]
@@ -234,7 +237,7 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
     let rnk=fromIntegral(length ixs); n=product ixs
         plRnd = [Rnd iR, MX xR (IE (Tmp iR)), MX xR ((FTmp e1R - FTmp e0R) * (FTmp xR / (2*9223372036854775807) + 0.5) + FTmp e0R), WrF (AElem t rnk (Tmp k) (Just a) 8) (FTmp xR)]
         loop=For k 0 ILt (ConstI n) plRnd
-    pure (Just a, plE0++plE1++Ma a t rnk (ConstI n) 8:zipWith (\ix i -> Wr (ADim t (ConstI i) (Just a)) (ConstI ix)) ixs [(0::Int64)..]++[loop])
+    pure (Just a, plE0++plE1++Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[loop])
 aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF tD && isIF tC= do
     a <- nextArr t
     arrT <- newITemp
@@ -263,7 +266,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
         step=CpyE (AElem slopP (ConstI rnk) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[wt (AElem t (ConstI oRnk) (Tmp k) (Just a) 8) y, i+=Tmp slopSz]
     pure (Just a,
         plX
-        ++PlProd slopSz slopDims:Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]
+        ++PlProd slopSz slopDims:Sa slopP slopE:diml (slopP, Nothing) slopDims
         ++PlProd szR xDims
         :Ma a t (ConstI oRnk) (Tmp szR) 8
             :CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn
@@ -308,7 +311,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
         step=CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd (Tmp i) lX 8) (Tmp slopSz) 8:ss++[CpyE (Raw td (Tmp j) (Just a) 8) (AElem y (ConstI rnk1) 0 lY 8) (Tmp szY) 8, i+=Tmp slopSz, j+=Tmp szY]
     pure (Just a,
         plX
-        ++PlProd slopSz slopDims:Sa slopP slopE:zipWith (\d n -> Wr (ADim slopP (ConstI n) Nothing) d) slopDims [0..]
+        ++PlProd slopSz slopDims:Sa slopP slopE:diml (slopP, Nothing) slopDims
         ++xd:=DP xR (ConstI xRnk)
         :CpyE (AElem slopP (ConstI rnk0) 0 Nothing 8) (Raw xd 0 lX 8) (Tmp slopSz) 8
         :ss
@@ -372,7 +375,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
         ++PlProd slopSz (Tmp<$>complDims)
             :slopE := Bin IAsl (Tmp slopSz+ConstI (slopRnk+1)) 3
             :Sa slopP (Tmp slopE):Wr (ARnk slopP Nothing) (ConstI slopRnk)
-            :zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]
+            :diml (slopP, Nothing) (Tmp<$>complDims)
         ++[tϵ:=0 | tϵ <- complts]
         ++mt (AElem xR (ConstI xRnk) 0 lX 8) x
         :sss
@@ -406,11 +409,11 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
         plX++dss
         ++PlProd oSz (Tmp<$>oDims)
             :Ma a t (ConstI oRnk) (Tmp oSz) 8
-            :zipWith (\d i -> Wr (ADim t (ConstI i) (Just a)) (Tmp d)) oDims [0..]
+            :diml (t, Just a) (Tmp<$>oDims)
         ++PlProd slopSz (Tmp<$>complDims)
             :slopE := Bin IAsl (Tmp slopSz+ConstI (slopRnk+1)) 3
             :Sa slopP (Tmp slopE):Wr (ARnk slopP Nothing) (ConstI slopRnk)
-            :zipWith (\d i -> Wr (ADim slopP (ConstI i) Nothing) (Tmp d)) complDims [0..]
+            :diml (slopP, Nothing) (Tmp<$>complDims)
         ++sss
         ++xRd := DP xR (ConstI rnk):slopPd := DP slopP (ConstI slopRnk):di := 0:loop
         ++[Pop (Tmp slopE)])
@@ -599,7 +602,7 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     let n:sstrides = sts; (_:dstrides) = std
     is <- traverse (\_ -> newITemp) [1..rnk]
     let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>is) l sze) 1 sze]
-    pure (Just a, plX++plDs++plSs++Ma a t (ConstI rnk) (Tmp n) sze:zipWith (\tϵ o -> Wr (ADim t (ConstI o) (Just a)) (Tmp tϵ)) (reverse dts) [0..]++init plSd++xd := (Tmp xR+dO):td := (Tmp t+dO):loop)
+    pure (Just a, plX++plDs++plSs++Ma a t (ConstI rnk) (Tmp n) sze:diml (t, Just a) (Tmp<$>reverse dts)++init plSd++xd := (Tmp xR+dO):td := (Tmp t+dO):loop)
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, isIF tX && isIF tY && isIF tC = do
     a <- nextArr t
     x <- rtemp tX; y <- rtemp tY; z <- rtemp tC
@@ -643,6 +646,16 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠIF (eAnn seed
     (_, ss) <- writeF op [IPA acc] (Right acc)
     let loop=For i 0 ILt (Tmp nR) (CpyE (AElem t 1 (Tmp i) (Just a) πsz) (Raw acc 0 Nothing undefined) 1 πsz:ss)
     pure (Just a, Sa acc (ConstI πsz):plS++plN++Ma a t 1 (Tmp nR) πsz:Wr (ADim t 0 (Just a)) (Tmp nR):loop:m'pop mP)
+aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t
+    | (Arrow _ tC) <- eAnn f
+    , Just (tX, xRnk) <- tRnk (eAnn x)
+    , isIF tC && isIF tX = do
+    a <- nextArr t
+    xR <- newITemp; szR <- newITemp
+    (lX, plX) <- aeval x xR
+    (dts, plDs) <- plDim xRnk (xR, lX)
+    (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- newITemp; pure (odim, odim := (Tmp dt-ConstI (fromIntegral i)))}) dts is
+    pure (Just a, plX++plDs++dims++PlProd szR (Tmp<$>tdims):Ma a t 1 (Tmp szR) 8:diml (t, Just a) (Tmp<$>tdims)++undefined)
 aeval e _ = error (show e)
 
 plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
