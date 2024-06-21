@@ -268,6 +268,7 @@ feval e _             = error (show e)
 
 eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
 eval (IR.Reg tS) tD = pure [MovRR () (absReg tD) (absReg tS)]
+eval (IR.ConstI 0) tD = pure [ZeroR () (absReg tD)]
 eval (IR.ConstI i) tD | Just u <- mu16 i = pure [MovRC () (absReg tD) u]
 eval (IR.ConstI i) tD = pure $ mw64 (fromIntegral i) (absReg tD)
 eval (IR.EAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [Ldr () (absReg tD) (RP (absReg tB) p)]
