@@ -646,21 +646,27 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠIF (eAnn seed
     (_, ss) <- writeF op [IPA acc] (Right acc)
     let loop=For i 0 ILt (Tmp nR) (CpyE (AElem t 1 (Tmp i) (Just a) πsz) (Raw acc 0 Nothing undefined) 1 πsz:ss)
     pure (Just a, Sa acc (ConstI πsz):plS++plN++Ma a t 1 (Tmp nR) πsz:Wr (ADim t 0 (Just a)) (Tmp nR):loop:m'pop mP)
-aeval (EApp _ (EApp _ (Builtin _ (Conv is)) f) x) t
+aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     | (Arrow _ tC) <- eAnn f
     , Just (tX, xRnk) <- tRnk (eAnn x)
-    , isIF tC && isIF tX = do
+    , Just (_, oRnk) <- tRnk oTy
+    , isIF tC && isIF tX && oRnk==xRnk = do
     a <- nextArr t
     xR <- newITemp; szR <- newITemp; slopP <- newITemp
     (lX, plX) <- aeval x xR
     (dts, plDs) <- plDim xRnk (xR, lX)
     (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- newITemp; pure (odim, odim := (Tmp dt-fromIntegral i))}) dts is
     let slopSz=product is; slopE=fromIntegral ((slopSz+length is+1)*8); slopDims=fromIntegral<$>is
+        rnk=ConstI oRnk
+    z <- rtemp tC; k <- newITemp
+    (_, ss) <- writeF f [IPA slopP] z
+    let extrWindow = undefined
+        step = extrWindow++ss++[wt (AElem t rnk (Tmp k) (Just a) 8) z]
     pure (Just a,
         plX
         ++plDs
         ++dims
-        ++PlProd szR (Tmp<$>tdims):Ma a t 1 (Tmp szR) 8:diml (t, Just a) (Tmp<$>tdims)
+        ++PlProd szR (Tmp<$>tdims):Ma a t rnk (Tmp szR) 8:diml (t, Just a) (Tmp<$>tdims)
         ++Sa slopP slopE:diml (slopP, Nothing) slopDims
         ++undefined
         ++[Pop slopE])
