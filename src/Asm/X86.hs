@@ -23,6 +23,7 @@ module Asm.X86 ( X86 (..)
                , mapR
                , mapFR
                , fR
+               , hasMa
                ) where
 
 import           Asm.M
@@ -190,6 +191,9 @@ instance Pretty Pred where
     pretty Nleus  = "NLE_US"
     pretty Ordq   = "ORD_Q"
 
+hasMa :: [X86 reg freg a] -> Bool
+hasMa = any g where g Call{} = True; g _ = False
+
 -- https://www.felixcloutier.com/x86/cmppd
 imm8 :: Pred -> Int8
 imm8 Eqoq   = 0
@@ -314,8 +318,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
 
 instance (NFData a, NFData reg, NFData freg) => NFData (X86 reg freg a) where
 
-instance Copointed (X86 reg freg) where
-    copoint = ann
+instance Copointed (X86 reg freg) where copoint = ann
 
 instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (J _ l)                       = i4 ("jmp" <+> prettyLabel l)
