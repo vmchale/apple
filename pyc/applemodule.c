@@ -123,7 +123,7 @@ typedef struct PyCacheObject {
 
 static void cache_dealloc(PyCacheObject* self) {
     munmap(self->bc,self->c_sz);
-    free(self->sa);free(self->ty);free(self->ffi);
+    free(self->sa);freety(self->ty);free(self->ffi);
 }
 
 static PyTypeObject CacheType = {
