@@ -84,8 +84,7 @@ static PyObject* apple_typeof(PyObject* self, PyObject *args) {
         free(err);R NULL;
     }
     PyObject* pyres = PyUnicode_FromString(res);
-    free(res);
-    R pyres;
+    free(res); R pyres;
 }
 
 static PyObject* apple_asm(PyObject* self, PyObject *args) {
@@ -98,8 +97,7 @@ static PyObject* apple_asm(PyObject* self, PyObject *args) {
         free(err);R NULL;
     }
     PyObject* pyres = PyUnicode_FromString(res);
-    free(res);
-    R pyres;
+    free(res); R pyres;
 }
 
 static PyObject* apple_ir(PyObject* self, PyObject *args) {
@@ -112,8 +110,7 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
         free(err);R NULL;
     }
     PyObject* pyres = PyUnicode_FromString(res);
-    free(res);
-    R pyres;
+    free(res); R pyres;
 }
 
 typedef struct PyCacheObject {
@@ -186,7 +183,6 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
     }
     R r;
 };
-
 
 static PyMethodDef AppleMethods[] = {
     {"f", apple_f, METH_VARARGS, "Run a JIT-compiled function"},
