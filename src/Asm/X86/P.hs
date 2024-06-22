@@ -27,7 +27,7 @@ frame clob asms = pre++asms++post++[Ret()] where
     pre = save$Push () <$> clobs
     post = restore$Pop () <$> reverse clobs
     clobs = S.toList (clob `S.intersection` S.fromList (Rbp:[R12 .. Rbx]))
-    scratch=even(length clobs); save=if scratch then (++[ISubRI () Rsp 8]) else id; restore=if scratch then (IAddRI () Rsp 8:) else id
+    scratch=even(length clobs) && hasMa asms; save=if scratch then (++[ISubRI () Rsp 8]) else id; restore=if scratch then (IAddRI () Rsp 8:) else id
     -- TODO: https://eli.thegreenplace.net/2011/09/06/stack-frame-layout-on-x86-64/
     -- https://stackoverflow.com/questions/51523127/why-does-the-compiler-reserve-a-little-stack-space-but-not-the-whole-array-size
 

@@ -8,7 +8,7 @@ import qualified Data.IntSet    as IS
 import           Data.Maybe     (mapMaybe)
 
 frameC :: [X86 X86Reg FX86Reg Live] -> [X86 X86Reg FX86Reg ()]
-frameC as = concat (go IS.empty IS.empty as)
+frameC = concat . go IS.empty IS.empty
     where go _ _ [] = []
           go s fs (isn:isns) =
             let i = copoint isn
@@ -19,8 +19,7 @@ frameC as = concat (go IS.empty IS.empty as)
                     let
                         cs = handleRax cf $ mapMaybe fromInt $ IS.toList s
                         xms = mx cf $ mapMaybe fInt $ IS.toList fs
-                        scratch = odd(length cs+length xms) && p
-                        -- TODO: don't bother if there are no function calls
+                        scratch = odd(length cs+length xms)
                         save = (if scratch then (++[ISubRI () Rsp 8]) else id)$fmap (Push ()) cs
                         restore = (if scratch then (IAddRI () Rsp 8:) else id)$fmap (Pop ()) (reverse cs)
                         savex = concatMap puxmm xms
@@ -33,7 +32,6 @@ frameC as = concat (go IS.empty IS.empty as)
           poxmm xr = [MovqXA () xr (R Rsp), IAddRI () Rsp 8]
           mx Free   = const []
           mx Malloc = id
-          p = hasMa as
 
 fromInt :: Int -> Maybe X86Reg
 fromInt 1    = Just Rsi
