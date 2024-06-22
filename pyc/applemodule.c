@@ -11,7 +11,7 @@ typedef void* U;typedef PyObject* PO;typedef PyArrayObject* NPA;typedef size_t S
 #define Sw switch
 #define C case
 #define BR break;
-#define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError, s);}}
+#define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
 U f_npy(const NPA o) {
