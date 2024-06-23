@@ -92,7 +92,7 @@ allT = testGroup "jit"
     , testCase "prediction" $ do { (AA 1 [4] res) <- fpAaaaf "test/data/prediction.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double]) (AA 1 [2] [0.14801747,0.37182892::Double]) (AA 1 [2] [0.79726405,0.67601843::Double]) 0.57823076; res @?= [0.7164132249879268,0.721678929187539,0.7278074306816863,0.7316925415075616::Double] }
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hs2 <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
-    , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
+    , testCase "coeffs (elliptic fourier)" $ do { res <- fpAaiπ "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
     , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
@@ -148,7 +148,7 @@ fpAaaaf fp x y z a =
                 peek (f pX pY pZ a)
 
 aaFp fp xs =
-    let xA = AA 1 [fromIntegral(length xs)] xs in
+    let xA = v1 xs in
     wA xA $ \p -> do
         f <- fmap aa.fpn =<< BSL.readFile fp
         asN (f p)
@@ -182,15 +182,26 @@ jitB = fpAaf "test/examples/b.🍎"
 fpAi :: FilePath -> [Int64] -> IO Int64
 fpAi fp as = do
     f <- fpn =<< BSL.readFile fp
-    let a=AA 1 [fromIntegral(length as)] as
+    let a=v1 as
     wA a $ \p -> pure $ ai f p
 
-fpAait :: FilePath -> [Double] -> [Double] -> Int -> IO (Double, Double, Double, Double)
-fpAait fp xs ys n = do
+v1 :: [a] -> Apple a
+v1 xs = AA 1 [fromIntegral (length xs)] xs
+
+fpAaip3 :: FilePath -> [Double] -> [Double] -> Int -> IO (U (P4 Double Double Double Double), Double, Double)
+fpAaip3 fp xs ys n = do
     f <- fpn =<< BSL.readFile fp
-    let a=AA 1 [fromIntegral(length xs)] xs; b=AA 1 [fromIntegral(length ys)] ys
+    let a=v1 xs; b=v1 ys
+    wA a $ \p ->
+        wA b $ \q ->
+            hs3<$>peek (aaip3 f p q n)
+
+fpAaiπ :: FilePath -> [Double] -> [Double] -> Int -> IO (Double, Double, Double, Double)
+fpAaiπ fp xs ys n = do
+    f <- fpn =<< BSL.readFile fp
+    let a=v1 xs; b=v1 ys
     wA a $ \p -> wA b $ \q -> do
-        hs4 <$> peek (aait f p q n)
+        hs4 <$> peek (aaiπ f p q n)
 
 -- leaks memory
 fpn = fmap fst . case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
@@ -205,22 +216,20 @@ fpAaff fp xs ys z = do {f <- bytesE <$> BSL.readFile fp; jitAaff f xs ys z}
 
 jitAaff :: BS.ByteString -> [Double] -> [Double] -> Double -> IO Double
 jitAaff code xs ys z =
-    let a = AA 1 [fromIntegral(length xs)] xs
-        b = AA 1 [fromIntegral(length ys)] ys in
+    let a=v1 xs; b=v1 ys in
     wA a $ \p -> wA b $ \q -> do
         (fp,_) <- bsFp code
         pure $ aaff fp p q z
 
 jitAaf :: FunPtr (U Double-> U Double -> Double) -> [Double] -> [Double] -> IO Double
 jitAaf fp xs ys =
-    let a = AA 1 [fromIntegral(length xs)] xs
-        b = AA 1 [fromIntegral(length ys)] ys in
+    let a=v1 xs; b=v1 ys in
     wA a $ \p -> wA b $ \q -> do
         pure $ aaf fp p q
 
 jitAf :: BS.ByteString -> [Double] -> IO Double
 jitAf code xs =
-    let a = AA 1 [fromIntegral(length xs)] xs in
+    let a = v1 xs in
     wA a $ \p -> do
         (fp,_) <- bsFp code
         pure $ af fp p
@@ -293,4 +302,5 @@ foreign import ccall "dynamic" ia :: FunPtr (Int -> U a) -> Int -> U a
 foreign import ccall "dynamic" aa :: FunPtr (U a -> U b) -> U a -> U b
 foreign import ccall "dynamic" aaa :: FunPtr (U a -> U b -> U c) -> U a -> U b -> U c
 foreign import ccall "dynamic" aaafa :: FunPtr (U a -> U b -> U c -> Double -> U d) -> U a -> U b -> U c -> Double -> U d
-foreign import ccall "dynamic" aait :: FunPtr (U a -> U a -> Int -> Ptr (P4 a b c d)) -> U a -> U a -> Int -> Ptr (P4 a b c d)
+foreign import ccall "dynamic" aaip3 :: FunPtr (U a -> U b -> Int -> Ptr (P3 c d e)) -> U a -> U b -> Int -> Ptr (P3 c d e)
+foreign import ccall "dynamic" aaiπ :: FunPtr (U a -> U b -> Int -> Ptr (P4 c d e f)) -> U a -> U b -> Int -> Ptr (P4 c d e f)
