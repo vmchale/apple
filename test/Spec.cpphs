@@ -123,10 +123,10 @@ sSq i = do
     f <- ia <$> fpn "[(^2)'(irange 0 x 1)]"
     asI (f i)
 
-asI :: Ptr (Apple Int) -> IO [Int]
+asI :: U Int -> IO [Int]
 asI = asN
 
-asN :: Storable a => Ptr (Apple a) -> IO [a]
+asN :: Storable a => U a -> IO [a]
 asN = fmap asV.peek
 asV (AA _ _ xs) = xs
 
@@ -211,7 +211,7 @@ jitAaff code xs ys z =
         (fp,_) <- bsFp code
         pure $ aaff fp p q z
 
-jitAaf :: FunPtr (Ptr (Apple Double) -> Ptr (Apple Double) -> Double) -> [Double] -> [Double] -> IO Double
+jitAaf :: FunPtr (U Double-> U Double -> Double) -> [Double] -> [Double] -> IO Double
 jitAaf fp xs ys =
     let a = AA 1 [fromIntegral(length xs)] xs
         b = AA 1 [fromIntegral(length ys)] ys in
@@ -272,25 +272,25 @@ jitRF m n = do
     fp <- fpn =<< BSL.readFile "test/examples/risingFactorial.🍎"
     pure $ runRF fp m n
 
-wA :: Storable a => Apple a -> (Ptr (Apple a) -> IO b) -> IO b
+wA :: Storable a => Apple a -> (U a -> IO b) -> IO b
 wA x act =
     allocaBytes (sizeOf x) $ \p ->
         poke p x *> act p
 
 bytesE = either throw id . bytes
 
-foreign import ccall "dynamic" ai :: FunPtr (Ptr (Apple a) -> Int64) -> Ptr (Apple a) -> Int64
-foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" aaff :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double
+foreign import ccall "dynamic" ai :: FunPtr (U a -> Int64) -> U a -> Int64
+foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
+foreign import ccall "dynamic" aaf :: FunPtr (U a -> U a -> Double) -> U a -> U a -> Double
+foreign import ccall "dynamic" aaff :: FunPtr (U a -> U a -> Double -> Double) -> U a -> U a -> Double -> Double
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
 foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
 foreign import ccall "dynamic" ffff :: FunPtr (Double -> Double -> Double -> Double) -> Double -> Double -> Double -> Double
-foreign import ccall "dynamic" ffa :: FunPtr (Double -> Double -> Ptr (Apple a)) -> Double -> Double -> Ptr (Apple a)
+foreign import ccall "dynamic" ffa :: FunPtr (Double -> Double -> U a) -> Double -> Double -> U a
 foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double
 foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> Int -> Int)
-foreign import ccall "dynamic" ia :: FunPtr (Int -> Ptr (Apple a)) -> Int -> Ptr (Apple a)
-foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b)) -> Ptr (Apple a) -> Ptr (Apple b)
-foreign import ccall "dynamic" aaa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c)) -> Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c)
-foreign import ccall "dynamic" aaafa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c) -> Double -> Ptr (Apple d)) -> Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c) -> Double -> Ptr (Apple d)
-foreign import ccall "dynamic" aait :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Int -> Ptr (P4 a b c d)) -> Ptr (Apple a) -> Ptr (Apple a) -> Int -> Ptr (P4 a b c d)
+foreign import ccall "dynamic" ia :: FunPtr (Int -> U a) -> Int -> U a
+foreign import ccall "dynamic" aa :: FunPtr (U a -> U b) -> U a -> U b
+foreign import ccall "dynamic" aaa :: FunPtr (U a -> U b -> U c) -> U a -> U b -> U c
+foreign import ccall "dynamic" aaafa :: FunPtr (U a -> U b -> U c -> Double -> U d) -> U a -> U b -> U c -> Double -> U d
+foreign import ccall "dynamic" aait :: FunPtr (U a -> U a -> Int -> Ptr (P4 a b c d)) -> U a -> U a -> Int -> Ptr (P4 a b c d)

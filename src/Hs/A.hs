@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Hs.A ( Apple (..)
+module Hs.A ( Apple (..), U
             , AI
             , AF
             , Pp (..), P4 (..)
@@ -21,8 +21,8 @@ import           Numeric               (showHex)
 import           Prettyprinter         (Doc, Pretty (..), align, brackets, concatWith, hardline, space, (<+>))
 import           Prettyprinter.Ext
 
-type AI = Apple Int64
-type AF = Apple Double
+type AI = Apple Int64; type AF = Apple Double
+type U a = Ptr (Apple a)
 
 -- TODO: Int8, Int32?
 data Apple a = AA !Int64 [Int64] [a]
@@ -49,7 +49,7 @@ instance Pretty a => Pretty (Apple a) where
 instance (Pretty a, Pretty b) => Pretty (Pp a b) where
     pretty (Pp x y) = tupledBy "*" [pretty x, pretty y]
 
-dbgAB :: forall a. Storable a => Ptr (Apple a) -> IO T.Text
+dbgAB :: forall a. Storable a => U a -> IO T.Text
 dbgAB p = do
     rnk <- peek (castPtr p :: Ptr Int64)
     dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)

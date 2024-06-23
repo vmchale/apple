@@ -26,7 +26,7 @@ hsEntropy xs = sum [ x * log x | x <- xs ]
 kl :: Floating a => [a] -> [a] -> a
 kl xs ys = sum [ x * log (x/y) | x <- xs, y <- ys ]
 
-aA :: Storable a => Apple a -> IO (Ptr (Apple a))
+aA :: Storable a => Apple a -> IO (U a)
 aA x = do
     p <- mallocBytes (sizeOf x)
     poke p x $> p
@@ -126,6 +126,6 @@ main = do
 
 foreign import ccall "dynamic" iii :: FunPtr (Int -> Int -> Int) -> Int -> Int -> Int
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
-foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> IO (Ptr (Apple a))) -> Ptr (Apple a) -> IO (Ptr (Apple a))
+foreign import ccall "dynamic" aaf :: FunPtr (U a -> U a -> Double) -> U a -> U a -> Double
+foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
+foreign import ccall "dynamic" aa :: FunPtr (U a -> IO (U a)) -> U a -> IO (U a)
