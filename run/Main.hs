@@ -389,6 +389,18 @@ printExpr s = do
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: U (P2 Double Double) -> IO (Apple (P2 Double Double))) p
                                 free p *> freeAsm asm
+                        (Arr _ (P [F,F,F])) ->
+                            liftIO $ do
+                                asm@(_, fp, _) <- efp eC
+                                p <- callFFI fp (retPtr undefined) []
+                                putDoc.(<>hardline).pretty =<< (peek :: U (P3 Double Double Double) -> IO (Apple (P3 Double Double Double))) p
+                                free p *> freeAsm asm
+                        (Arr _ (P [F,F,F,F])) ->
+                            liftIO $ do
+                                asm@(_, fp, _) <- efp eC
+                                p <- callFFI fp (retPtr undefined) []
+                                putDoc.(<>hardline).pretty =<< (peek :: U (P4 Double Double Double Double) -> IO (Apple (P4 Double Double Double Double))) p
+                                free p *> freeAsm asm
                         (Arr _ (P [I,I])) ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
