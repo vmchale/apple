@@ -693,6 +693,7 @@ hasESh _           = False
 hasE :: T a -> Bool
 hasE (Arrow t t'@Arrow{}) = hasE t || hasE t'
 hasE (Arr sh t)           = hasESh sh || hasE t
+hasE (P ts)               = any hasE ts
 hasE _                    = False
 
 chkE :: T () -> Either (TyE a) ()
