@@ -23,5 +23,5 @@
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
   ; A ← ((sum ((*)`((%)`dxs dts) dtss))%2 + (sum ((*)`𝜉 dts)))%T
   ; C ← ((sum ((*)`((%)`dys dts) dtss))%2 + (sum ((*)`𝛿 dts)))%T
-  ; (coeffs'(irange 0 N 1),A,C)
+  ; (coeffs'(irange 1 N 1),A,C)
   }

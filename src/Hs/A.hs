@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -25,7 +26,7 @@ type AI = Apple Int64; type AF = Apple Double
 type U a = Ptr (Apple a)
 
 -- TODO: Int8, Int32?
-data Apple a = AA !Int64 [Int64] [a]
+data Apple a = AA !Int64 [Int64] [a] deriving (Functor)
 
 data P2 a b = P2 a b; hs2 (P2 a b) = (a,b)
 data P3 a b c = P3 a b c; hs3 (P3 a b c) = (a,b,c)

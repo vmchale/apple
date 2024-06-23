@@ -92,6 +92,7 @@ allT = testGroup "jit"
     , testCase "prediction" $ do { (AA 1 [4] res) <- fpAaaaf "test/data/prediction.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double]) (AA 1 [2] [0.14801747,0.37182892::Double]) (AA 1 [2] [0.79726405,0.67601843::Double]) 0.57823076; res @?= [0.7164132249879268,0.721678929187539,0.7278074306816863,0.7316925415075616::Double] }
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hs2 <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
+    , testCase "elliptic fourier" $ do { (AA 1 [2] coeffs, a, c) <- fpAaip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] 2; a @?= 2.5000000000000004; c @?= 0.9999999999999999; last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)}
     , testCase "coeffs (elliptic fourier)" $ do { res <- fpAaiπ "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
     , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
@@ -188,13 +189,15 @@ fpAi fp as = do
 v1 :: [a] -> Apple a
 v1 xs = AA 1 [fromIntegral (length xs)] xs
 
-fpAaip3 :: FilePath -> [Double] -> [Double] -> Int -> IO (U (P4 Double Double Double Double), Double, Double)
+fpAaip3 :: FilePath -> [Double] -> [Double] -> Int -> IO (Apple (Double, Double, Double, Double), Double, Double)
 fpAaip3 fp xs ys n = do
     f <- fpn =<< BSL.readFile fp
     let a=v1 xs; b=v1 ys
     wA a $ \p ->
-        wA b $ \q ->
-            hs3<$>peek (aaip3 f p q n)
+        wA b $ \q -> do
+            (P3 pa x0 x1) <- peek (aaip3 f p q n)
+            a <- peek pa
+            pure (hs4<$>a, x0, x1)
 
 fpAaiπ :: FilePath -> [Double] -> [Double] -> Int -> IO (Double, Double, Double, Double)
 fpAaiπ fp xs ys n = do
