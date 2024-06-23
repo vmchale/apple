@@ -18,7 +18,7 @@
     ; (aₙ,bₙ,cₙ,dₙ)
     }
   ; dtss ⟜ (-)\~((^2)'pts)
-  ; ppts ⟜ }: pts
+  ; ppts ⟜ {: pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
   ; A ← ((sum ((*)`((%)`dxs dts) dtss))%2 + (sum ((*)`𝜉 dts)))%T
