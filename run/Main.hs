@@ -284,7 +284,7 @@ inspect s = do
                 Right (e, _, i') -> do
                     let dbgPrint =
                             case eAnn e of
-                                (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (Pp Double Double)) -> IO T.Text) (castPtr p)
+                                (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (P2 Double Double)) -> IO T.Text) (castPtr p)
                                 (Arr _ F)         -> \p -> (dbgAB :: Ptr (Apple Double) -> IO T.Text) (castPtr p)
                                 (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
                     c <- lift $ gets mf
@@ -355,7 +355,7 @@ printExpr s = do
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 p <- callFFI fp (retPtr undefined) []
-                                (Pp pa0 pa1) <- (peek :: Ptr (Pp (Ptr (Apple Double)) (Ptr (Apple Double))) -> IO (Pp (Ptr (Apple Double)) (Ptr (Apple Double)))) p
+                                (P2 pa0 pa1) <- (peek :: Ptr (P2 (U Double) (U Double)) -> IO (P2 (U Double) (U Double))) p
                                 a0 <- peek pa0; a1 <- peek pa1
                                 putDoc$(<>hardline)$pretty (a0, a1)
                                 free p *> free pa0 *> free pa1 *> freeAsm asm
@@ -367,11 +367,19 @@ printExpr s = do
                                 a0 <- peek pa0; a1 <- peek pa1; a2 <- peek pa2
                                 putDoc$(<>hardline)$tupled [pretty a0, pretty a1, pretty a2, pretty f]
                                 free p *> free pa0 *> free pa1 *> free pa2 *> freeAsm asm
+                        (P [Arr _ (P [F,F,F,F]), F, F]) ->
+                            liftIO $ do
+                                asm@(_, fp, _) <- efp eC
+                                p <- callFFI fp (retPtr undefined) []
+                                (P3 pa x0 x1) <- (peek :: Ptr (P3 (U (P4 Double Double Double Double)) Double Double) -> IO (P3 (U (P4 Double Double Double Double)) Double Double)) p
+                                aϵ <- peek pa
+                                putDoc$(<>hardline)$tupled [pretty aϵ, pretty x0, pretty x1]
+                                free p *> free pa *> freeAsm asm
                         (P [Arr _ I, Arr _ I]) ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 p <- callFFI fp (retPtr undefined) []
-                                (Pp pa0 pa1) <- (peek :: Ptr (Pp (Ptr (Apple Int64)) (Ptr (Apple Int64))) -> IO (Pp (Ptr (Apple Int64)) (Ptr (Apple Int64)))) p
+                                (P2 pa0 pa1) <- (peek :: Ptr (P2 (U Int64) (U Int64)) -> IO (P2 (U Int64) (U Int64))) p
                                 a0 <- peek pa0; a1 <- peek pa1
                                 putDoc$(<>hardline)$pretty (a0, a1)
                                 free p *> free pa0 *> free pa1 *> freeAsm asm
@@ -379,13 +387,13 @@ printExpr s = do
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 p <- callFFI fp (retPtr undefined) []
-                                putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Double Double)) -> IO (Apple (Pp Double Double))) p
+                                putDoc.(<>hardline).pretty =<< (peek :: U (P2 Double Double) -> IO (Apple (P2 Double Double))) p
                                 free p *> freeAsm asm
                         (Arr _ (P [I,I])) ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 p <- callFFI fp (retPtr undefined) []
-                                putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple (Pp Int64 Int64)) -> IO (Apple (Pp Int64 Int64))) p
+                                putDoc.(<>hardline).pretty =<< (peek :: U (P2 Int64 Int64) -> IO (Apple (P2 Int64 Int64))) p
                                 free p *> freeAsm asm
                         t -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
     where bs = ubs s
