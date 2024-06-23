@@ -1030,14 +1030,14 @@ m'pop = maybe [] ((:[]).Pop)
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     pure (offs, Just szE, [], plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
-πe (Tup (P tys) es) t | offs <- szT tys = do
+πe (Tup (P tys) es) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     (ls, ss) <- unzip <$>
         zipWithM (\e off ->
             case eAnn e of
                 F     -> do {f <- newFTemp; plX <- feval e f; pure (Nothing, plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)])}
                 I     -> do {i <- newITemp; plX <- eval e i; pure (Nothing, plX++[Wr (Raw t (ConstI off) Nothing 1) (Tmp i)])}
                 Arr{} -> do {r <- newITemp ; (l,pl) <- aeval e r; pure (l, pl++[Wr (Raw t (ConstI off) Nothing 1) (Tmp r)])}) es offs
-    pure (offs, Nothing, catMaybes ls, concat ss)
+    pure (offs, Just szE, catMaybes ls, concat ss)
 πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp; iR <- newITemp
     (lX, plX) <- aeval e xR; plI <- eval i iR
