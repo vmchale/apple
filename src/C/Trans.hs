@@ -1009,7 +1009,7 @@ feval e _ = error (show e)
 m'pop :: Maybe CE -> [CS]
 m'pop = maybe [] ((:[]).Pop)
 
-πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [AL], [CS])
+πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [AL], [CS]) -- element offsets, size to be popped off the stack, array labels kept live
 πe (EApp (P tys) (Builtin _ Head) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR
@@ -1020,7 +1020,7 @@ m'pop = maybe [] ((:[]).Pop)
     pure (offs, Just szE, [], plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- ConstI$last offs = do
     (ls, ss) <- unzip <$> zipWithM (\e off -> case eAnn e of {F -> do {f <- newFTemp; plX <- feval e f; pure (Nothing, plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)])}; Arr{} -> do {r <- newITemp ; (l,pl) <- aeval e r; pure (l, pl++[Wr (Raw t (ConstI off) Nothing 1) (Tmp r)])}}) es offs
-    pure (offs, Just sz, catMaybes ls, concat ss)
+    pure (offs, Nothing, catMaybes ls, concat ss)
 πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp; iR <- newITemp
     (lX, plX) <- aeval e xR; plI <- eval i iR
@@ -1037,6 +1037,11 @@ m'pop = maybe [] ((:[]).Pop)
     eR <- newFTemp
     plE <- feval e' eR
     modify (addD n eR)
+    fourth (plE++) <$> πe e t
+πe (LLet _ (n,e') e) t | isI (eAnn e') = do
+    eR <- newITemp
+    plE <- eval e' eR
+    modify (addVar n eR)
     fourth (plE++) <$> πe e t
 πe e _ = error (show e)
 
