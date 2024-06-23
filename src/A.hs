@@ -69,8 +69,13 @@ instance Show (Sh a) where show=show.pretty
 
 instance Pretty (Sh a) where pretty=ps 0
 
+unroll Nil         = Just []
+unroll (Cons i sh) = (i:)<$>unroll sh
+unroll _           = Nothing
+
 instance PS (Sh a) where
     ps _ (SVar n)    = pretty n
+    ps d sh@Cons{}   | Just is <- unroll sh = tupledBy " × " (pretty <$> is)
     ps d (Cons i sh) = parensp (d>6) (pretty i <+> "`Cons`" <+> pretty sh)
     ps _ Nil         = "Nil"
     ps d (Cat s s')  = parensp (d>5) (ps 6 s <+> "⧺" <+> ps 6 s')
