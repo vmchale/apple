@@ -99,7 +99,7 @@ mAA _             = Nothing
 f1 :: T a -> Bool
 f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
-bT :: Num b => T a -> b
+bT :: Integral b => T a -> b
 bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT Arr{}=8
 
 szT = scanl' (\off ty -> off+bT ty::Int64) 0
@@ -266,11 +266,14 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, isIF tD, isΠ tC = do
     a <- nextArr t
     x <- rtemp tD; slopO <- newITemp
-    xR <- newITemp
+    xR <- newITemp; szR <- newITemp
+    k <- newITemp
     (lX, plX) <- aeval xs xR
-    let slopSz=bT tC
+    let slopSz=bT tC; slopE=ConstI slopSz
     (_, ss) <- writeF f [ra x] (Right slopO)
-    pure (Just a, plX++Sa slopO slopSz:undefined++[Pop slopSz])
+    let loop=For k 0 ILt (Tmp szR)
+                $ mt (AElem xR 1 (Tmp k) lX 8) x:ss++[CpyE (AElem t 1 (Tmp k) (Just a) slopSz) (Raw slopO 0 Nothing slopSz) 1 slopSz]
+    pure (Just a, plX++Sa slopO slopE:szR:=EAt (ADim xR 0 lX):Ma a t 1 (Tmp szR) slopSz:Wr (ADim t 0 (Just a)) (Tmp szR):loop:[Pop slopE])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, isIF tC && isIF ta = do
     a <- nextArr t
     y <- rtemp tC
@@ -1027,7 +1030,7 @@ m'pop = maybe [] ((:[]).Pop)
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     pure (offs, Just szE, [], plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
-πe (Tup (P tys) es) t | offs <- szT tys, sz <- ConstI$last offs = do
+πe (Tup (P tys) es) t | offs <- szT tys = do
     (ls, ss) <- unzip <$>
         zipWithM (\e off ->
             case eAnn e of
