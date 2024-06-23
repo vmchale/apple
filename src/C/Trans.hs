@@ -78,6 +78,7 @@ isB B = True; isB _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
 isΠIF (P ts)=all isIF ts; isΠIF _=False
+isΠ (P ts)=True; isΠ _=False
 
 rel :: Builtin -> Maybe IRel
 rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Just ILeq; rel Gte=Just IGeq; rel _=Nothing
@@ -98,7 +99,7 @@ mAA _             = Nothing
 f1 :: T a -> Bool
 f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
-bT :: Integral b => T a -> b
+bT :: Num b => T a -> b
 bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT Arr{}=8
 
 szT = scanl' (\off ty -> off+bT ty::Int64) 0
@@ -262,6 +263,14 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF 
         plE
         ++szR:=EAt (ADim arrT 0 l):aV
         ++[loop])
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, isIF tD, isΠ tC = do
+    a <- nextArr t
+    x <- rtemp tD; slopO <- newITemp
+    xR <- newITemp
+    (lX, plX) <- aeval xs xR
+    let slopSz=bT tC
+    (_, ss) <- writeF f [ra x] (Right slopO)
+    pure (Just a, plX++Sa slopO slopSz:undefined++[Pop slopSz])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, isIF tC && isIF ta = do
     a <- nextArr t
     y <- rtemp tC
