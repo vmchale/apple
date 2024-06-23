@@ -120,7 +120,7 @@ tRnd :: T a -> (T a, [Int64])
 tRnd (Arr sh t) = (t, staR sh)
 
 mIFs :: [E a] -> Maybe [Word64]
-mIFs = traverse mIFϵ where mIFϵ (FLit _ d)=Just (castDoubleToWord64 d); mIFϵ (ILit _ n)=Just (fromIntegral n); mIFϵ _=Nothing
+mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
 
 writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (CSt 0 (AL 0) 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ _ _ _ _ aa a) = (s, LSt 0 t, aa, a)
