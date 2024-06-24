@@ -169,6 +169,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                         | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
                         | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
+                        | Fcvtas { ann :: a, rDest :: reg, dSrc :: freg }
                         | Stp { ann :: a, rSrc1, rSrc2 :: reg, aDest :: Addr reg }
                         | Ldp { ann :: a, rDest1, rDest2 :: reg, aSrc :: Addr reg }
                         | StpD { ann :: a, dSrc1, dSrc2 :: freg, aDest :: Addr reg }
@@ -226,6 +227,7 @@ mapR f (StrD l d a)          = StrD l d (f <$> a)
 mapR _ (Fdiv l d0 d1 d2)     = Fdiv l d0 d1 d2
 mapR f (Scvtf l d r)         = Scvtf l d (f r)
 mapR f (Fcvtms l r d)        = Fcvtms l (f r) d
+mapR f (Fcvtas l r d)        = Fcvtas l (f r) d
 mapR f (MovK l r u s)        = MovK l (f r) u s
 mapR f (FMovDR l d r)        = FMovDR l d (f r)
 mapR _ (Fcmp l d0 d1)        = Fcmp l d0 d1
@@ -286,6 +288,7 @@ mapFR _ (Sdiv l r0 r1 r2)     = Sdiv l r0 r1 r2
 mapFR f (StrD l d a)          = StrD l (f d) a
 mapFR f (Scvtf l d r)         = Scvtf l (f d) r
 mapFR f (Fcvtms l r d)        = Fcvtms l r (f d)
+mapFR f (Fcvtas l r d)        = Fcvtas l r (f d)
 mapFR _ (MovK l r u s)        = MovK l r u s
 mapFR f (FMovDR l d r)        = FMovDR l (f d) r
 mapFR f (Fcmp l d0 d1)        = Fcmp l (f d0) (f d1)
@@ -361,6 +364,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty Ret{}                 = i4 "ret"
     pretty (Scvtf _ d r)         = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
     pretty (Fcvtms _ r d)        = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
+    pretty (Fcvtas _ r d)        = i4 ("fcvtas" <+> pretty r <> "," <+> pretty d)
     pretty (MovK _ r i s)        = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s )
     pretty (Fcmp _ d0 d1)        = i4 ("fcmp" <+> pretty d0 <> "," <+> pretty d1)
     pretty (Stp _ r0 r1 a)       = i4 ("stp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
