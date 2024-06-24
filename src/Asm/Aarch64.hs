@@ -167,6 +167,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                         | FcmpZ { ann :: a, dSrc :: freg }
                         | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
+                        | Fneg { ann :: a, dDest, dSrc :: freg }
                         | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
                         | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
                         | Fcvtas { ann :: a, rDest :: reg, dSrc :: freg }
@@ -217,6 +218,7 @@ mapR f (Neg l r0 r1)         = Neg l (f r0) (f r1)
 mapR _ (Fadd l xr0 xr1 xr2)  = Fadd l xr0 xr1 xr2
 mapR _ (Fsub l xr0 xr1 xr2)  = Fsub l xr0 xr1 xr2
 mapR _ (Fmul l xr0 xr1 xr2)  = Fmul l xr0 xr1 xr2
+mapR _ (Fneg l xr0 xr1)      = Fneg l xr0 xr1
 mapR _ (FcmpZ l xr)          = FcmpZ l xr
 mapR _ (Ret l)               = Ret l
 mapR f (MulRR l r0 r1 r2)    = MulRR l (f r0) (f r1) (f r2)
@@ -299,6 +301,7 @@ mapFR f (LdpD l d0 d1 a)      = LdpD l (f d0) (f d1) a
 mapFR f (Fmadd l d0 d1 d2 d3) = Fmadd l (f d0) (f d1) (f d2) (f d3)
 mapFR f (Fmsub l d0 d1 d2 d3) = Fmsub l (f d0) (f d1) (f d2) (f d3)
 mapFR f (Fsqrt l d0 d1)       = Fsqrt l (f d0) (f d1)
+mapFR f (Fneg l d0 d1)        = Fneg l (f d0) (f d1)
 mapFR f (Frintm l d0 d1)      = Frintm l (f d0) (f d1)
 mapFR _ (MrsR l r)            = MrsR l r
 mapFR _ (Blr l r)             = Blr l r
@@ -361,6 +364,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fsub _ rD r0 r1)     = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fdiv _ rD r0 r1)     = i4 ("fdiv" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (FcmpZ _ xr)          = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
+    pretty (Fneg _ d0 d1)        = i4 ("fneg" <+> pretty d0 <> "," <+> pretty d1)
     pretty Ret{}                 = i4 "ret"
     pretty (Scvtf _ d r)         = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
     pretty (Fcvtms _ r d)        = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
