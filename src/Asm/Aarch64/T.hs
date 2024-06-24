@@ -254,9 +254,7 @@ feval (IR.FU Op.FSin e) t = do
         :Label () lc:c
         ++[Label () endL]
         ++[Fneg () nres d0, CmpRC () i 4, Fcsel () d0 nres d0 Geq]
-feval (IR.FU Op.FCos e) t = do
-    plE <- feval e t
-    (plE ++) <$> cosϵ t
+feval (IR.FU Op.FCos e) t = feval (IR.FU Op.FSin ((IR.ConstF$pi/2)-e)) t
 feval (IR.FB Op.FExp (IR.ConstF 2.718281828459045) e) t = do
     r <- nextR
     plE <- feval e IR.F0
