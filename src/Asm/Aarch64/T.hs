@@ -55,6 +55,9 @@ iop Op.ILt  = Lt
 nextR :: WM AbsReg
 nextR = IReg <$> nextI
 
+nextF :: WM FAbsReg
+nextF = FReg <$> nextI
+
 irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
 irToAarch64 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
@@ -199,6 +202,26 @@ mw64 w r =
     let w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
     in MovRC () r (fromIntegral w0):[MovK () r (fromIntegral wi) s | (wi, s) <- [(w1, 16), (w2, 32), (w3, 48)], wi /= 0 ]
 
+ssin :: IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
+ssin t = do
+    d1 <- nextF; d2 <- nextF; d3 <- nextF
+    tsI <- nextI
+    let tsIR=IR.FTemp tsI; tsC=FReg tsI
+    pl3 <- feval (IR.ConstF$ -(1/6)) tsIR; pl5 <- feval (IR.ConstF$1/120) tsIR; pl7 <- feval (IR.ConstF$ -(1/5040)) tsIR
+    pure $ [Fmul () d1 d0 d0, Fmul () d2 d1 d0, Fmul () d3 d2 d1, Fmul () d1 d1 d3] ++ pl3 ++ Fmadd () d0 d2 tsC d0 : pl5 ++ Fmadd () d0 d3 tsC d0 : pl7 ++ [Fmadd () d0 d1 tsC d0]
+  where
+    d0 = fabsReg t
+
+cosϵ :: IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
+cosϵ t = do
+    d1 <- nextF; d2 <- nextF; d3 <- nextF
+    tsI <- nextI
+    let tsIR=IR.FTemp tsI; tsC=FReg tsI
+    pl0 <- feval 1 tsIR; pl2 <- feval (IR.ConstF$ -(1/2)) tsIR; pl4 <- feval (IR.ConstF$1/24) tsIR; pl6 <- feval (IR.ConstF$ -(1/720)) tsIR
+    pure $ [Fmul () d1 d0 d0, Fmul () d2 d1 d1, Fmul () d3 d2 d1] ++ pl0 ++ FMovXX () d0 tsC : pl2 ++ Fmadd () d0 d1 tsC d0 : pl4 ++ Fmadd () d0 d2 tsC d0 : pl6 ++ [Fmadd () d0 d3 tsC d0]
+  where
+    d0 = fabsReg t
+
 feval :: IR.FExp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
 feval (IR.ConstF d) t = do
@@ -211,19 +234,29 @@ feval (IR.FAt (IR.AP tS (Just (IR.ConstI i)) _)) tD | Just i8 <- mp i = pure [Ld
 feval (IR.FU Op.FSin e) t = do
     plE <- feval e t
     let d0=fabsReg t
-    d1 <- FReg<$>nextI; d2 <- FReg<$>nextI; d3 <- FReg<$>nextI
-    tsI <- nextI
-    let tsIR=IR.FTemp tsI; tsC=FReg tsI
-    pl3 <- feval (IR.ConstF$ -(1/6)) tsIR; pl5 <- feval (IR.ConstF$1/120) tsIR; pl7 <- feval (IR.ConstF$ -(1/5040)) tsIR
-    pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d0, Fmul () d3 d2 d1, Fmul () d1 d1 d3] ++ pl3 ++ Fmadd () d0 d2 tsC d0 : pl5 ++ Fmadd () d0 d3 tsC d0 : pl7 ++ [Fmadd () d0 d1 tsC d0]
+    s <- ssin t; c <- cosϵ t
+    ls <- nextL; lc <- nextL; endL <- nextL
+    i <- nextR; d2 <- nextF; i7 <- nextI
+    π4i<-nextI; plπ4 <- feval (IR.ConstF$pi/4) (IR.FTemp π4i); pl7 <- eval (IR.ConstI 7) (IR.ITemp i7)
+    let π4=FReg π4i
+    dRot <- nextF; nres <- nextF
+    pure $
+        plE
+        ++plπ4
+        ++[Fdiv () d2 d0 π4, Frintm () d2 d2, Fmsub () d0 π4 d2 d0, Fcvtas () i d2]
+        ++pl7
+        ++[AndRR () i i (IReg i7), TstI () i 1, Fsub () dRot π4 d0, Fcsel () d0 dRot d0 Neq]
+        ++[CmpRC () i 0, Bc () Eq ls, CmpRC () i 2, Bc () Eq lc]
+        ++[CmpRC () i 1, Bc () Eq lc, CmpRC () i 3, Bc () Eq ls]
+        ++[CmpRC () i 4, Bc () Eq ls, CmpRC () i 5, Bc () Eq lc]
+        ++[CmpRC () i 6, Bc () Eq lc, CmpRC () i 7, Bc () Eq ls]
+        ++Label () ls:s++B () endL
+        :Label () lc:c
+        ++[Label () endL]
+        ++[Fneg () nres d0, CmpRC () i 4, Fcsel () d0 nres d0 Geq]
 feval (IR.FU Op.FCos e) t = do
     plE <- feval e t
-    let d0=fabsReg t
-    d1 <- FReg<$>nextI; d2 <- FReg<$>nextI; d3 <- FReg<$>nextI
-    tsI <- nextI
-    let tsIR=IR.FTemp tsI; tsC=FReg tsI
-    pl0 <- feval 1 tsIR; pl2 <- feval (IR.ConstF$ -(1/2)) tsIR; pl4 <- feval (IR.ConstF$1/24) tsIR; pl6 <- feval (IR.ConstF$ -(1/720)) tsIR
-    pure $ plE ++ [Fmul () d1 d0 d0, Fmul () d2 d1 d1, Fmul () d3 d2 d1] ++ pl0 ++ FMovXX () d0 tsC : pl2 ++ Fmadd () d0 d1 tsC d0 : pl4 ++ Fmadd () d0 d2 tsC d0 : pl6 ++ [Fmadd () d0 d3 tsC d0]
+    (plE ++) <$> cosϵ t
 feval (IR.FB Op.FExp (IR.ConstF 2.718281828459045) e) t = do
     r <- nextR
     plE <- feval e IR.F0
