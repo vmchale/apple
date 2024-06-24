@@ -105,6 +105,7 @@ asm ix st (Sdiv _ r0 r1 r2:asms) = [0b10011010, 0b110 `shiftL` 5 .|. be r2, 0b11
 asm ix st (Madd _ r0 r1 r2 r3:asms) = [0b10011011, be r2, be r3 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Msub _ r0 r1 r2 r3:asms) = [0b10011011, be r2, 0b1 `shiftL` 7 .|. be r3 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (AddRR _ r0 r1 r2:asms) = [0b10001011, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
+asm ix st (AndRR _ r0 r1 r2:asms) = [0b10001010, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (AddRC _ r0 r1 i:asms) = [0b10010001, fromIntegral (i `shiftR` 6), fromIntegral (0b111111 .&. i) `shiftL` 2 .|. (be r1 `shiftR` 3), lb r1 r0]:asm (ix+4) st asms
 asm ix st (SubRC _ r0 r1 i:asms) = [0b11010001, fromIntegral (i `shiftR` 6), fromIntegral (0b111111 .&. i) `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (MovRR x r0 SP:asms) = asm ix st (AddRC x r0 SP 0:asms)
