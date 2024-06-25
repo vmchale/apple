@@ -56,8 +56,9 @@ T16 = T13.dim[0]
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
 # Performance
+- [ ] bitmask immediates for `and` on aarch64
 - [ ] Use `Word64` for sets of registers
-- [ ] Modify state (+1) instead of using lazy list to supply e.g. temps
+- [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
 - [ ]
 ```
