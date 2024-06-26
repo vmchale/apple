@@ -133,7 +133,7 @@ data CS = For Temp CE IRel CE [CS]
         | Sa Temp CE | Pop CE
         | Cmov PE Temp CE | Fcmov PE FTemp CFE
         | Cset PE Temp
-        | SZ Temp Temp CE (Maybe AL)
+        | SZ Temp Temp CE (Maybe AL) -- dest., pointer to array, rank, label
         | PlProd Temp [CE]
         | Rnd Temp
         -- TODO: PlDims cause we have diml
