@@ -546,6 +546,19 @@ aeval (EApp _ (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isIF tX = do
     putN <- eval n nR; putX <- eeval x xR
     let loop=For i 0 ILt (Tmp nR) [wt (AElem t 1 (Tmp i) (Just a) 8) xR]
     pure (Just a, putN++aV++putX++[loop])
+aeval (EApp _ (EApp _ (Builtin _ Re) n) x) t | Arr _ tO <- eAnn x, sz <- bT tO = do
+    a <- nextArr t
+    xR <- newITemp; nR <- newITemp; k <- newITemp
+    (lX, plX) <- aeval x xR; plN <- eval n nR
+    xRnk <- newITemp; oRnk <- newITemp
+    szX <- newITemp
+    let loop = For k 0 ILt (Tmp nR) [CpyE (AElem t (Tmp oRnk) (Tmp k*Tmp szX) (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szX) sz]
+    pure (Just a, 
+        plX
+        ++xRnk:=EAt (ARnk xR lX):oRnk:=(Tmp xRnk+1):SZ szX xR (Tmp xRnk) lX
+        :plN
+        ++Ma a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr (ADim t 0 (Just a)) (Tmp nR):CpyD (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
+        :[loop])
 aeval (EApp oTy (Builtin _ Init) x) t | if1p oTy = do
     xR <- newITemp; nR <- newITemp
     (a,aV) <- v8 t (Tmp nR)
