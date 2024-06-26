@@ -78,7 +78,7 @@ isB B = True; isB _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
 isΠIF (P ts)=all isIF ts; isΠIF _=False
-isΠ (P ts)=True; isΠ _=False
+isΠ P{}=True; isΠ _=False
 
 rel :: Builtin -> Maybe IRel
 rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Just ILeq; rel Gte=Just IGeq; rel _=Nothing
@@ -194,8 +194,11 @@ part (Index i:is) = second (i:) $ part is
 diml :: (Temp, Maybe AL) -> [CE] -> [CS]
 diml (t,l) ds = zipWith (\d i -> Wr (ADim t (ConstI i) l) d) ds [0..]
 
+vSz :: Temp -> CE -> Int64 -> CM (AL, [CS])
+vSz t n sz = do {a <- nextArr t; pure (a, [Ma a t 1 n sz, Wr (ADim t 0 (Just a)) n])}
+
 v8 :: Temp -> CE -> CM (AL, [CS])
-v8 t n = do {a <- nextArr t; pure (a, [Ma a t 1 n 8, Wr (ADim t 0 (Just a)) n])}
+v8 t n = vSz t n 8
 
 plDim :: Int64 -> (Temp, Maybe AL) -> CM ([Temp], [CS])
 plDim rnk (a,l) =
@@ -546,6 +549,13 @@ aeval (EApp _ (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isIF tX = do
     putN <- eval n nR; putX <- eeval x xR
     let loop=For i 0 ILt (Tmp nR) [wt (AElem t 1 (Tmp i) (Just a) 8) xR]
     pure (Just a, putN++aV++putX++[loop])
+aeval (EApp _ (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
+    xR <- newITemp; nR <- newITemp; k <- newITemp
+    plN <- eval n nR
+    (a,aV) <- vSz t (Tmp nR) sz
+    (_, mSz, _, plX) <- πe x xR
+    let loop = For k 0 ILt (Tmp nR) [CpyE (AElem t 1 (Tmp k) (Just a) sz) (Raw xR 0 Nothing undefined) 1 sz]
+    pure (Just a, m'sa xR mSz++plX++plN++aV++loop:m'pop mSz)
 aeval (EApp _ (EApp _ (Builtin _ Re) n) x) t | Arr _ tO <- eAnn x, sz <- bT tO = do
     a <- nextArr t
     xR <- newITemp; nR <- newITemp; k <- newITemp
@@ -675,10 +685,10 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠIF (eAnn seed
     acc <- newITemp
     (szs,mP,_,plS) <- πe seed acc
     let πsz=last szs
-    a <- nextArr t
+    (a,aV) <- vSz t (Tmp nR) πsz
     (_, ss) <- writeF op [IPA acc] (Right acc)
     let loop=For i 0 ILt (Tmp nR) (CpyE (AElem t 1 (Tmp i) (Just a) πsz) (Raw acc 0 Nothing undefined) 1 πsz:ss)
-    pure (Just a, Sa acc (ConstI πsz):plS++plN++Ma a t 1 (Tmp nR) πsz:Wr (ADim t 0 (Just a)) (Tmp nR):loop:m'pop mP)
+    pure (Just a, Sa acc (ConstI πsz):plS++plN++aV++loop:m'pop mP)
 aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     | (Arrow _ tC) <- eAnn f
     , Just (tX, xRnk) <- tRnk (eAnn x)
@@ -1033,6 +1043,9 @@ feval e _ = error (show e)
 
 m'pop :: Maybe CE -> [CS]
 m'pop = maybe [] ((:[]).Pop)
+
+m'sa :: Temp -> Maybe CE -> [CS]
+m'sa t = maybe []  ((:[]).Sa t)
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [AL], [CS]) -- element offsets, size to be popped off the stack, array labels kept live
 πe (EApp (P tys) (Builtin _ Head) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
