@@ -21,9 +21,9 @@
   - [ ] automatic differentiation (pytorch eh)
 # Features
 - [ ] special case for `𝔯 0 1 :: float` etc.
-- [ ] folds/scans shouldn't take seeds
+- [x] folds/scans shouldn't take seeds
 - [ ] allow type signatures in lambdas?
-- [ ] mko executable - compile expression into .o file, with some name
+- [x] mko executable - compile expression into .o file, with some name
 - [ ] random number generation
 - [ ] lift constants out of loops (precompute)
 - [x] tuples idk.
@@ -37,7 +37,7 @@
 - [ ] https://en.wiktionary.org/wiki/Appendix:APL
 - [ ] `Mᵢⱼ` should parse as `Arr (i `Cons` j `Cons` Nil)` maybe? (subscript
   unicode block)
-- [ ] more laconic syntax for type signatures (no Arr... Cons) (`Vec`) (`M` for matrix)
+- [x] more laconic syntax for type signatures (no Arr... Cons) (`Vec`) (`M` for matrix)
 - [x] `zipWith` builtin (2-ary)
   - [x] rename ` because it's only used as `2 1 anyway
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
@@ -51,7 +51,7 @@
 T13 = A_0
 T16 = T13.dim[0]
 ```
-- [ ] `neg` instruction, not `0-`...
+- [x] `neg` instruction, not `0-`...
 - [x] Back/forward loops (compare to 0 or whatever)
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
@@ -66,12 +66,11 @@ T16 = T13.dim[0]
  > ([1.0<|x]')
 (λx. 1.0 ⊲ x ') : Arr (i `Cons` i `Cons` Nil) float → Arr (i `Cons` i + 1 `Cons` Nil) float
  > ((1.0<|)')
-1:1: could not unify 'float' with 'Arr (i `Cons` Nil) a' in expression '1.0'
-```
 - [ ] embarassing!
 ```
 [|:(x::Arr(i`Cons`j`Cons`Nil)float)] ⟨⟨1::int,2⟩,⟨3,4⟩,⟨5,6⟩⟩
 ```
+- [ ] {. ⟨⟨1,1.0⟩,⟨2,3⟩⟩ type
 - [ ] segfault when `aso` is called pre-register allocation (arm)
 - [ ] Should display constraints
 ```
@@ -88,13 +87,9 @@ o → o → o
 - [ ] `fsin` instruction requires reduction module 2pi or w/e
 - [ ] ` |: ⟨⟨1.0,2⟩,⟨3,4⟩,⟨5,6.0⟩⟩`
 - [ ] beta-reduction with 'rand' or w/e (needs to be llet ... in)
-- [ ]
-```
-{sig<-[1%(1+(e:(_x)))];sig'1 (frange _6 6 12)}
-```
 - [ ] Pass over to ensure everything is monomorphized
 - [ ] `itof (:xs)` - would prefer w/o parens?
-- [ ] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
+- [x] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
 - [ ] `(+)/1 0 ((_.'1) frange 2 6 5)`
 - [ ] match doesn't check constraints on annotations
 - [ ] check in assembler phase for labels not being duplicate
@@ -109,14 +104,14 @@ o → o → o
 - [ ] color!
   - [ ] https://en.wikipedia.org/wiki/YUV
 - [ ] https://optimized-einsum.readthedocs.io/en/stable/
-- [ ] polynomial evaluation
+- [x] polynomial evaluation
 - [ ] https://mathworld.wolfram.com/MotzkinNumber.html
 - [ ] perceptual hash
   - [ ] median lol (indexing?)
 - [ ] Pascal's triangle
 - [ ] FFT
 - [ ] generating functions
-- [ ] continued fractions
+- [x] continued fractions
 - [ ] `+//. y` in J... maybe `/.` takes `∀n. (Arr (n `Cons` Nil)) -> ...`
 - [ ] https://www.labri.fr/perso/nrougier/from-python-to-numpy/
 - [ ] neural net!
@@ -152,7 +147,6 @@ o → o → o
 - [ ] https://stat.ethz.ch/R-manual/R-devel/library/stats/html/00Index.html
   - [ ] https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Tukey.html
 - [ ] https://github.com/profConradi/Python_Simulations/blob/599e7c66903166c1e5997318878a6db6f1aaa3d8/Nice_orbits.ipynb
-- [ ] numpy meshgrid
 - [ ] http://falstad.com/mathphysics.html
 - [ ] https://mathstodon.xyz/@bitartbot@botsin.space/111992137516554370
 - [ ] https://math.ucr.edu/home/baez/roots/
