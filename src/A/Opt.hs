@@ -71,7 +71,7 @@ optA (EApp l0 (EApp _ (Builtin _ Map) f) (EApp _ (EApp _ (Builtin _ Map) g) xs))
         x <- nextU "x" gDom
         let vx=Var gDom x
             fog=Lam (gDom ~> fCod) x (EApp undefined f' (EApp undefined g' vx))
-        pure $ (EApp l0 (EApp undefined (Builtin undefined Map) fog) xs')
+        pure (EApp l0 (EApp undefined (Builtin undefined Map) fog) xs')
 optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ Map) f) x))
     | fTy@(Arrow dom fCod) <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
