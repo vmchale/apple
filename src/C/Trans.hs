@@ -433,13 +433,13 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     let loop=forAll complts oDims $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, di+=1]
     pure (Just a,
         plX++dss
-        ++PlProd oSz (Tmp<$>oDims)
-            :Ma a t (ConstI oRnk) (Tmp oSz) 8
-            :diml (t, Just a) (Tmp<$>oDims)
         ++PlProd slopSz (Tmp<$>complDims)
             :slopE := Bin IAsl (Tmp slopSz+ConstI (slopRnk+1)) 3
             :Sa slopP (Tmp slopE):Wr (ARnk slopP Nothing) (ConstI slopRnk)
             :diml (slopP, Nothing) (Tmp<$>complDims)
+        ++PlProd oSz (Tmp<$>oDims)
+            :Ma a t (ConstI oRnk) (Tmp oSz) 8
+            :diml (t, Just a) (Tmp<$>oDims)
         ++sss
         ++xRd := DP xR (ConstI rnk):slopPd := DP slopP (ConstI slopRnk):di := 0:loop
         ++[Pop (Tmp slopE)])
@@ -453,7 +453,9 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     slopIP <- newITemp; slopOP <- newITemp
     let ixIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixIs then Cell() else Index() | ix <- [1..fromIntegral rnk] ]
     (dts,dss) <- plDim rnk (xR,lX)
-    pure (Just a, plX++dss++undefined)
+    pure (Just a,
+        plX++dss
+        ++undefined)
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk (eAnn x) = do
     xR <- newITemp; yR <- newITemp
     xnR <- newITemp; ynR <- newITemp; tn <- newITemp
@@ -563,7 +565,7 @@ aeval (EApp _ (EApp _ (Builtin _ Re) n) x) t | Arr _ tO <- eAnn x, sz <- bT tO =
     xRnk <- newITemp; oRnk <- newITemp
     szX <- newITemp
     let loop = For k 0 ILt (Tmp nR) [CpyE (AElem t (Tmp oRnk) (Tmp k*Tmp szX) (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szX) sz]
-    pure (Just a, 
+    pure (Just a,
         plX
         ++xRnk:=EAt (ARnk xR lX):oRnk:=(Tmp xRnk+1):SZ szX xR (Tmp xRnk) lX
         :plN
