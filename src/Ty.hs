@@ -722,51 +722,9 @@ checkClass s i c =
 
 tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Nm a, C)], Int)
 tyClosed u e = do
-    (((e', s), scs), i) <- runTyM u (do { res@(_, s) <- tyE mempty e ; cvs <- gets varConstr ; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs) ; pure (res, scs) })
-    let eS = fmap (rwArr.aT (void s)) e'
-    eS' <- do {(e'', s') <- rAn eS; pure (fmap (rwArr.aT s') e'') }
-    let vs = occ (eAnn eS'); scs' = filter (\(Nm _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
-    chkE (eAnn eS') $> (eS', nubOrd scs', i)
-
-rAn :: E (T ()) -> Either (TyE a) (E (T ()), Subst ())
-rAn (Ann _ e t) = do
-    s <- maM (eAnn e) t
-    pure (e, s)
-rAn (EApp t e0 e1) = do
-    (e0', s0) <- rAn e0
-    (e1', s1) <- rAn e1
-    pure (EApp t e0' e1', s0<>s1)
-rAn e@Builtin{} = pure (e, mempty)
-rAn e@FLit{} = pure (e, mempty)
-rAn e@ILit{} = pure (e, mempty)
-rAn e@BLit{} = pure (e, mempty)
-rAn e@Var{} = pure (e, mempty)
-rAn (Let t (n, e0) e1) = do
-    (e0', s) <- rAn e0
-    (e1', s') <- rAn e1
-    pure (Let t (n, e0') e1', s<>s')
-rAn (LLet t (n, e0) e1) = do
-    (e0', s) <- rAn e0
-    (e1', s') <- rAn e1
-    pure (LLet t (n, e0') e1', s<>s')
-rAn (Def t (n, e0) e1) = do
-    (e0', s) <- rAn e0
-    (e1', s') <- rAn e1
-    pure (Def t (n, e0') e1', s<>s')
-rAn (Lam t n e) = do
-    (e', s) <- rAn e
-    pure (Lam t n e', s)
-rAn (ALit t es) = do
-    (es', ss) <- unzip <$> traverse rAn es
-    pure (ALit t es', mconcat ss)
-rAn (Tup t es) = do
-    (es', ss) <- unzip <$> traverse rAn es
-    pure (Tup t es', mconcat ss)
-rAn (Cond t p e0 e1) = do
-    (p',sP) <- rAn p
-    (e0',s0) <- rAn e0
-    (e1',s1) <- rAn e1
-    pure (Cond t p' e0' e1', sP<>s0<>s1)
+    ((eS, scs), i) <- runTyM u (do { (e', s) <- tyE mempty e; cvs <- gets varConstr; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs); pure (rwArr.aT (void s)<$>e', scs) })
+    let vs = occ (eAnn eS); scs' = filter (\(Nm _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
+    chkE (eAnn eS) $> (eS, nubOrd scs', i)
 
 tyE :: Subst a -> E a -> TyM a (E (T ()), Subst a)
 tyE s (EApp _ (Builtin _ Re) (ILit _ n)) = do
@@ -901,9 +859,10 @@ tyE s (Tup _ es) = do
     (es', s') <- sSt s es
     let eTys = eAnn<$>es'
     pure (Tup (P eTys) es', s')
-tyE s (Ann _ e t) = do
+tyE s (Ann l e t) = do
     (e', s') <- tyE s e
-    pure (Ann (eAnn e') e' t, s')
+    s'' <- liftEither $ maM (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
+    pure (e', s'<>s'')
 
 sSt :: Subst a -> [E a] -> TyM a ([E (T ())], Subst a)
 sSt s []     = pure([], s)

@@ -282,8 +282,8 @@ E :: { E AlexPosn }
   | re { Builtin $1 Re }
   | diag { Builtin $1 Di }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
-  | E sig T { Ann $2 $1 (void $3) }
-  | E tsig parens(Sh) {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (void$Arr $3 (TVar a))} }
+  | E sig T { Ann $2 $1 $3 }
+  | E tsig parens(Sh) {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (Arr $3 (TVar a))} }
   | e { EApp $1 (Builtin $1 Exp) (FLit $1 (exp 1)) }
   | E at { EApp (eAnn $1) (Builtin (loc $2) (TAt (iat $ sym $2))) $1 }
   | parens(at) { Builtin (loc $1) (TAt (iat $ sym $1)) }
