@@ -75,7 +75,7 @@ unroll _           = Nothing
 
 instance PS (Sh a) where
     ps _ (SVar n)    = pretty n
-    ps d sh@Cons{}   | Just is <- unroll sh = tupledBy " × " (pretty <$> is)
+    ps _ sh@Cons{}   | Just is <- unroll sh = tupledBy " × " (pretty <$> is)
     ps d (Cons i sh) = parensp (d>6) (pretty i <+> "`Cons`" <+> pretty sh)
     ps _ Nil         = "Nil"
     ps d (Cat s s')  = parensp (d>5) (ps 6 s <+> "⧺" <+> ps 6 s')
