@@ -5,7 +5,7 @@
 module Asm.Aarch64 ( AArch64 (..)
                    , Addr (..)
                    , Cond (..)
-                   , Shift (..)
+                   , Shift (..), BM (..)
                    , AbsReg (..)
                    , FAbsReg (..)
                    , AReg (..)
@@ -113,6 +113,12 @@ data Shift = Zero | Three
 instance Pretty Shift where
     pretty Zero = "#0"; pretty Three = "#3"
 
+-- left: shift left by this much
+data BM = BM { ims, left :: !Word8 } deriving Eq
+
+instance Pretty BM where
+    pretty (BM m l) = "0b" <> pretty (replicate (fromIntegral m) '1' ++ replicate (fromIntegral l) '0')
+
 data Addr reg = R reg | RP reg Word16 | BI reg reg Shift deriving Functor
 
 instance Pretty reg => Pretty (Addr reg) where
@@ -190,7 +196,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Cbnz { ann :: a, rSrc :: reg, label :: Label }
                         | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
                         | Cset { ann :: a, rDest :: reg, cond :: Cond }
-                        | TstI { ann :: a, rSrc1 :: reg, cSrc :: Word16 }
+                        | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
                         deriving (Functor)
 
 instance Copointed (AArch64 reg freg) where copoint = ann

@@ -61,6 +61,11 @@ nextF = FReg <$> nextI
 irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
 irToAarch64 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
+aR :: AbsReg -> WM [AArch64 AbsReg FAbsReg ()]
+aR t = do
+    l <- nextL
+    pure [TstI () t (BM 1 3), Bc () Eq l, AddRC () t t 8, Label () l]
+
 ir :: IR.Stmt -> WM [AArch64 AbsReg FAbsReg ()]
 ir (IR.L l)      = pure [Label () l]
 ir (IR.J l)      = pure [B () l]
@@ -69,15 +74,19 @@ ir (IR.MT t e)   = eval e t
 ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}
 ir (IR.Free t) = do {r <- nextR; pure $ puL ++ [MovRR () CArg0 (absReg t), AddRC () FP ASP 16, MovRCf () r Free, Blr () r] ++ poL}
 ir (IR.Sa t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u, MovRR () (absReg t) ASP]
-ir (IR.Sa t (IR.Reg r)) = pure [SubRR () ASP ASP (absReg r), MovRR () (absReg t) ASP]
+ir (IR.Sa t (IR.Reg r)) = let r'=absReg r in do {plR <- aR r'; pure $ plR++[SubRR () ASP ASP (absReg r), MovRR () (absReg t) ASP]}
 ir (IR.Sa t e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
-    pure $ plE ++ [SubRR () ASP ASP (IReg r), MovRR () (absReg t) ASP]
+    let r'=IReg r
+    plR <- aR r'
+    pure $ plE ++ plR ++ [SubRR () ASP ASP r', MovRR () (absReg t) ASP]
 ir (IR.Pop (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [AddRC () ASP ASP u]
-ir (IR.Pop (IR.Reg r)) = pure [AddRR () ASP ASP (absReg r)]
+ir (IR.Pop (IR.Reg r)) = let r'=absReg r in do {plR <- aR r'; pure $ plR ++ [AddRR () ASP ASP r']}
 ir (IR.Pop e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
-    pure $ plE ++ [AddRR () ASP ASP (IReg r)]
+    let r'=IReg r
+    plR <- aR r'
+    pure $ plE ++ plR ++ [AddRR () ASP ASP r']
 ir (IR.Wr (IR.AP t Nothing _) e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Str () (IReg r) (R $ absReg t)]
@@ -144,7 +153,7 @@ ir (IR.Fcmov (IR.IRel op (IR.Reg r0) (IR.ConstI i64)) t e) | c <- iop op, Just u
     pure $ plE ++ [CmpRC () (absReg r0) u, Fcsel () (fabsReg t) (FReg i) (fabsReg t) c]
 ir (IR.Fcmov (IR.IU Op.IOdd (IR.Reg r0)) t e) = do
     i <- nextI; plE <- feval e (IR.FTemp i)
-    pure $ plE ++ [TstI () (absReg r0) 1, Fcsel () (fabsReg t) (FReg i) (fabsReg t) Neq]
+    pure $ plE ++ [TstI () (absReg r0) (BM 1 0), Fcsel () (fabsReg t) (FReg i) (fabsReg t) Neq]
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 2, n' <= 4 = do
     t0 <- nextR; t1 <- nextR
     pure $ concat [ [Ldp () t0 t1 (RP (absReg tS) (i*16)), Stp () t0 t1 (RP (absReg tD) (i*16))] | i <- fromIntegral<$>[0..(n'-1)] ]
@@ -239,7 +248,7 @@ feval (IR.FU Op.FSin e) t = do
         ++plπ4
         ++[Fdiv () d2 d0 π4, Frintm () d2 d2, Fmsub () d0 π4 d2 d0, Fcvtas () i d2]
         ++pl7
-        ++[AndRR () i i (IReg i7), TstI () i 1, Fsub () dRot π4 d0, Fcsel () d0 dRot d0 Neq]
+        ++[AndRR () i i (IReg i7), TstI () i (BM 1 0), Fsub () dRot π4 d0, Fcsel () d0 dRot d0 Neq]
         ++[CmpRC () i 0, Bc () Eq ls, CmpRC () i 2, Bc () Eq lc]
         ++[CmpRC () i 1, Bc () Eq lc, CmpRC () i 3, Bc () Eq ls]
         ++[CmpRC () i 4, Bc () Eq ls, CmpRC () i 5, Bc () Eq lc]
@@ -247,7 +256,7 @@ feval (IR.FU Op.FSin e) t = do
         ++Label () ls:s++B () endL
         :Label () lc:c
         ++[Label () endL]
-        ++[Fneg () nres d0, CmpRC () i 4, Fcsel () d0 nres d0 Geq]
+        ++[Fneg () nres d0, TstI () i (BM 1 2), Fcsel () d0 nres d0 Neq]
 feval (IR.FU Op.FCos e) t = feval (IR.FU Op.FSin (IR.ConstF(pi/2)-e)) t
 feval (IR.FB Op.FExp (IR.ConstF 2.718281828459045) e) t = do
     r <- nextR

@@ -50,6 +50,7 @@ instance Pretty FTemp where
     pretty FRet1     = "FRet1"
 
 data ArrAcc = AElem Temp CE CE (Maybe AL) Int64 -- pointer, rank, elem., label for tracking liveness, elem. size (bytes)
+            -- TODO: more robust way to handle rank (often statically known)
             | ARnk Temp (Maybe AL)
             | ADim Temp CE (Maybe AL) -- pointer, #, label
             | At Temp [CE] [CE] (Maybe AL) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
