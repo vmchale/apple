@@ -70,7 +70,9 @@ optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (EApp _ (Builtin _ FR
     start' <- optA start
     incrN <- optA $ (end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)
     fF <- optA op
-    pure $ Id l0 $ FoldGen start' fF (EApp (F ~> F) (Builtin (F ~> F) Plus) incrN) nSteps
+    pure $ Id l0 $ FoldGen start' (EApp (F ~> F) (Builtin (F ~> F) Plus) incrN) fF nSteps
+optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) f) n)) =
+    Id l0 <$> (FoldGen <$> optA seed <*> optA f <*> optA op <*> optA n)
 optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (Builtin _ Map) f) x))
     | Arrow dom fCod <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
