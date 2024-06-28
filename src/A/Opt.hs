@@ -7,8 +7,10 @@ import           A
 import           R
 import           R.R
 
--- FIXME: fold-of-zip-of-map... as in dotprod.
 -- TODO zip-of-map->zip
+
+fop op e0 = EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) op) e0)
+eMinus = fop Minus; eDiv = fop Div
 
 mShLit (Id _ (AShLit is es)) = Just (is, es)
 mShLit (ALit _ es)           = Just ([length es], es)
@@ -40,8 +42,22 @@ optA (EApp l0 (EApp l1 op@(Builtin _ Times) x) y) = do
     xO <- optA x
     yO <- optA y
     pure $ case (xO, yO) of
+        (FLit _ x', FLit _ y') -> FLit F (x'*y')
         (FLit _ x', ILit _ y') -> FLit F (x'*realToFrac y')
         (ILit _ x', FLit _ y') -> FLit F (realToFrac x'*y')
+        _                      -> EApp l0 (EApp l1 op xO) yO
+optA (EApp l0 f@(Builtin _ ItoF) x) = do
+    x' <- optA x
+    pure $ case x' of
+        ILit _ n -> FLit F (realToFrac n)
+        _        -> EApp l0 f x'
+optA (EApp l0 (EApp l1 op@(Builtin _ Minus) x) y) = do
+    xO <- optA x
+    yO <- optA y
+    pure $ case (xO, yO) of
+        (FLit _ x', FLit _ y') -> FLit F (x'-y')
+        (FLit _ x', ILit _ y') -> FLit F (x'-realToFrac y')
+        (ILit _ x', FLit _ y') -> FLit F (realToFrac x'-y')
         _                      -> EApp l0 (EApp l1 op xO) yO
 optA (EApp l op@(Builtin _ Sqrt) x) = do
     xO <- optA x
@@ -50,6 +66,11 @@ optA (EApp l op@(Builtin _ Sqrt) x) = do
         _        -> EApp l op xO
 optA (EApp _ (Builtin _ Floor) (EApp _ (Builtin _ ItoF) x)) = optA x
 optA (EApp ty (EApp _ (Builtin _ IntExp) x) (ILit _ 2)) = pure $ EApp ty (EApp (ty ~> ty) (Builtin (ty ~> ty ~> ty) Times) x) x
+optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps)) = do
+    start' <- optA start
+    incrN <- optA $ (end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)
+    fF <- optA op
+    pure $ Id l0 $ FoldGen start' fF (EApp (F ~> F) (Builtin (F ~> F) Plus) incrN) nSteps
 optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (Builtin _ Map) f) x))
     | Arrow dom fCod <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
@@ -158,4 +179,5 @@ optA (Cond l p e0 e1) = Cond l <$> optA p <*> optA e0 <*> optA e1
 
 optI (FoldSOfZip seed op es) = FoldSOfZip <$> optA seed <*> optA op <*> traverse optA es
 optI (FoldOfZip zop op es)   = FoldOfZip <$> optA zop <*> optA op <*> traverse optA es
+optI (FoldGen seed f g n)    = FoldGen <$> optA seed <*> optA f <*> optA g <*> optA n
 optI (AShLit ds es)          = AShLit ds <$> traverse optA es

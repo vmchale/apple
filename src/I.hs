@@ -119,3 +119,4 @@ bid :: Idiom -> M (T ()) Idiom
 bid (FoldSOfZip seed op es) = FoldSOfZip <$> bM seed <*> bM op <*> traverse bM es
 bid (FoldOfZip zop op es)   = FoldOfZip <$> bM zop <*> bM op <*> traverse bM es
 bid (AShLit ds es)          = AShLit ds <$> traverse bM es
+bid (FoldGen seed f g n)    = FoldGen <$> bM seed <*> bM f <*> bM g <*> bM n

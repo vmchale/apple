@@ -1041,6 +1041,13 @@ feval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
     pure $ plT ++ MX t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
+feval (Id _ (FoldGen seed f g n)) t = do
+    seedR <- newFTemp; x <- newFTemp; acc <- newFTemp
+    nR <- newITemp; k <- newITemp
+    plSeed <- feval seed seedR; plN <- eval n nR
+    uss <- writeRF g [Left x] (Left x)
+    fss <- writeRF f [Left acc, Left x] (Left acc)
+    pure $ plSeed++plN++[MX acc (FTmp seedR), MX acc (FTmp seedR), For k 0 ILt (Tmp nR) (fss++uss), MX t (FTmp acc)]
 feval e _ = error (show e)
 
 m'pop :: Maybe CE -> [CS]

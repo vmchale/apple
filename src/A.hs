@@ -331,12 +331,14 @@ instance Pretty ResVar where
 
 data Idiom = FoldSOfZip { seedI, opI :: E (T ()), esI :: [E (T ())] }
            | FoldOfZip { zopI, opI :: E (T ()), esI :: [E (T ())] }
+           | FoldGen { seedG, ufG, fG, nG :: E (T ()) }
            | AShLit { litSh :: [Int], esLit :: [E (T ())] }
            deriving (Generic)
 
 instance Pretty Idiom where
     pretty (FoldSOfZip seed op es) = parens ("foldS-of-zip" <+> pretty seed <+> pretty op <+> pretty es)
     pretty (FoldOfZip zop op es)   = parens ("fold-of-zip" <+> pretty zop <+> pretty op <+> pretty es)
+    pretty (FoldGen seed g f n)    = parens ("fold-gen" <+> brackets (pretty seed) <+> parens (pretty g) <+> parens (pretty f) <+> parens (pretty n))
     pretty (AShLit re es)          = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
