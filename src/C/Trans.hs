@@ -380,7 +380,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
     (lX, plX) <- aeval xs xR; (lY, plY) <- aeval ys yR
     slopP <- newITemp; x <- rtemp tD1
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell() else Index() | ix <- [1..fromIntegral yRnk] ]
-    oSz <- newITemp; slopSz <- newITemp; slopOSz <- newITemp
+    oSz <- newITemp; slopSz <- newITemp; zSz <- newITemp
     slopE <- newITemp
     (dts, dss) <- plDim yRnk (yR, lY)
     (sts, sssϵ) <- offByDim (reverse dts)
@@ -393,7 +393,8 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
     yRd <- newITemp; slopPd <- newITemp
     (complts, place) <- extrCell ecArg sstrides (yRd, lY) slopPd
     ix <- newITemp; iy <- newITemp
-    let loop=forAll complts oDims $ mt (AElem xR (ConstI xRnk) (Tmp ix) lX 8) x:place ++ ss ++ [CpyE undefined undefined undefined 8, ix+=1, iy+=Tmp slopOSz]
+    let loop=forAll complts oDims $ mt (AElem xR (ConstI xRnk) (Tmp ix) lX 8) x:place ++ ss ++ [CpyE undefined undefined undefined 8, ix+=1, iy+=Tmp zSz]
+    (dots, doss) <- plDim opRnk (zR, lZ)
     pure (Just a,
         plX
         ++plY
@@ -405,9 +406,13 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
         ++[tϵ:=0 | tϵ <- complts]
         ++mt (AElem xR (ConstI xRnk) 0 lX 8) x
         :sss
-        ++place
+        ++yRd := DP yR (ConstI yRnk):slopPd := DP slopP (ConstI slopRnk)
+        :place
         ++ss
-        ++undefined
+        ++doss
+        ++PlProd oSz (Tmp<$>(oDims++dots))
+            :Ma a t (ConstI oRnk) (Tmp oSz) 8
+            :diml (t, Just a) (Tmp<$>(oDims++dots))
         ++[Pop (Tmp slopE)])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
                                                                     , Just tOR <- mIF tO
@@ -453,6 +458,10 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     slopIP <- newITemp; slopOP <- newITemp
     let ixIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixIs then Index() else Cell() | ix <- [1..fromIntegral rnk] ]
     (dts,dss) <- plDim rnk (xR,lX)
+    (sts, sssϵ) <- offByDim (reverse dts)
+    let _:sstrides = sts; sss=init sssϵ
+        allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
+        ~(oDims, complDims) = part allDims
     pure (Just a,
         plX++dss
         ++undefined)
