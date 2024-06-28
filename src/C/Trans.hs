@@ -417,7 +417,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     slopP <- newITemp; y <- rtemp tOR
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell() else Index() | ix <- [1..fromIntegral rnk] ]
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp; slopE <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
@@ -451,7 +451,7 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     xR <- newITemp
     (lX, plX) <- aeval xs xR
     slopIP <- newITemp; slopOP <- newITemp
-    let ixIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixIs then Cell() else Index() | ix <- [1..fromIntegral rnk] ]
+    let ixIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixIs then Index() else Cell() | ix <- [1..fromIntegral rnk] ]
     (dts,dss) <- plDim rnk (xR,lX)
     pure (Just a,
         plX++dss
