@@ -16,6 +16,11 @@ mShLit (Id _ (AShLit is es)) = Just (is, es)
 mShLit (ALit _ es)           = Just ([length es], es)
 mShLit _                     = Nothing
 
+mSz :: Sh a -> Maybe Int
+mSz (Ix _ i `Cons` sh) = (i*)<$>mSz sh
+mSz Nil                = Just 1
+mSz _                  = Nothing
+
 optA :: E (T ()) -> RM (E (T ()))
 optA (ILit F x)            = pure (FLit F (realToFrac x))
 optA e@ILit{}              = pure e
@@ -24,6 +29,8 @@ optA e@BLit{}              = pure e
 optA e@Var{}               = pure e
 optA (Builtin t (Rank rs)) = pure (Builtin t (Rank (g<$>rs))) where g r@(_,Just{})=r; g (cr,Nothing)=(cr, Just [1..cr])
 optA e@Builtin{}           = pure e
+optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
+optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
 optA (EApp l0 (EApp l1 op@(Builtin _ Exp) e0) e1) = do
     e0' <- optA e0
     e1' <- optA e1
