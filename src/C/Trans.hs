@@ -379,7 +379,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
     xR <- newITemp; yR <- newITemp; zR <- newITemp
     (lX, plX) <- aeval xs xR; (lY, plY) <- aeval ys yR
     slopP <- newITemp; x <- rtemp tD1
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Cell() else Index() | ix <- [1..fromIntegral yRnk] ]
+    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral yRnk] ]
     oSz <- newITemp; slopSz <- newITemp; zSz <- newITemp
     slopE <- newITemp
     (dts, dss) <- plDim yRnk (yR, lY)
@@ -392,8 +392,8 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     yRd <- newITemp; slopPd <- newITemp
     (complts, place) <- extrCell ecArg sstrides (yRd, lY) slopPd
-    ix <- newITemp; iy <- newITemp
-    let loop=forAll complts oDims $ mt (AElem xR (ConstI xRnk) (Tmp ix) lX 8) x:place ++ ss ++ [CpyE undefined undefined undefined 8, ix+=1, iy+=Tmp zSz]
+    ix <- newITemp; it <- newITemp
+    let loop=forAll complts oDims $ mt (AElem xR (ConstI xRnk) (Tmp ix) lX 8) x:place ++ ss ++ [CpyE (AElem t (ConstI oRnk) (Tmp it) (Just a) 8) (AElem zR (ConstI opRnk) 0 lZ 0) (Tmp zSz) 8, ix+=1, it+=Tmp zSz]
     (dots, doss) <- plDim opRnk (zR, lZ)
     pure (Just a,
         plX
@@ -413,6 +413,8 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
         ++PlProd oSz (Tmp<$>(oDims++dots))
             :Ma a t (ConstI oRnk) (Tmp oSz) 8
             :diml (t, Just a) (Tmp<$>(oDims++dots))
+        ++PlProd zSz (Tmp<$>dots)
+        :ix:=0:it:=0:loop
         ++[Pop (Tmp slopE)])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
                                                                     , Just tOR <- mIF tO
