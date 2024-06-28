@@ -8,7 +8,7 @@ extern U aaa(U, U);
 int main(int argc, char *argv[]) {
     F xs[] = {1,0,0};
     F ys[] = {2,3,4,5,6,9};
-    J dx[] = {2};
+    J dx[] = {3};
     J dy[] = {3,2};
     Af a = {1,dx,xs};
     Af b = {2,dy,ys};
