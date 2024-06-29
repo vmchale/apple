@@ -410,11 +410,11 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
         :place
         ++ss
         ++doss
-        ++PlProd oSz (Tmp<$>(oDims++dots))
+        ++PlProd zSz (Tmp<$>dots)
+        :PlProd oSz (Tmp<$>(zSz:oDims))
             :Ma a t (ConstI oRnk) (Tmp oSz) 8
             :diml (t, Just a) (Tmp<$>(oDims++dots))
-        ++PlProd zSz (Tmp<$>dots)
-        :ix:=0:it:=0:loop
+        ++ix:=0:it:=0:loop
         ++[Pop (Tmp slopE)])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
                                                                     , Just tOR <- mIF tO
