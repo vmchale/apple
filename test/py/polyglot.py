@@ -64,3 +64,7 @@ print('hidden_weights\n',hidden_weights)
 hb=apple.jit("λbh.λhΔ. {sum ← [(+)/x]; sum'((<|)`{0,1} bh (hΔ::M float))}")
 hidden_bias=apple.f(hb,hidden_bias,d_hidden_layer)
 print('hidden_bias\n',hidden_bias)
+
+bo=apple.jit("λbo.λl1Δ. {sum ← [(+)/x]; bo + sum (l1Δ::Vec 4 float)}")
+output_bias=apple.f(bo,output_bias,d_predicted_output)
+print('output_bias\n',output_bias)
