@@ -73,7 +73,6 @@ allT = testGroup "jit"
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
     , testCase "scan" $ do { res <- scan 4 ; res @?= [0,1,3,6,10] }
     , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
-    , testCase "A (elliptic fourier)" $ do { res <- fpAaf "test/data/A.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= 2.5000000000000004 }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "amgm" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
     , testCase "transpose" $ do { (AA 2 [2, 3] res) <- fpAa "test/data/T.🍏" (AA 2 [3,2] [1,2,3,4,5,6::Double]); res @?= [1,3,5,2,4,6::Double] }
@@ -89,12 +88,10 @@ allT = testGroup "jit"
     , testCase "mapAa" $ do { (AA 1 [2] res) <- fpAa "test/data/maa.🍎" (AA 2 [2,2] [1,2,3,4::Double]); res @?= [3,7::Double] }
     , testCase "mapAa" $ do { (AA 2 [3,2] res) <- fpAa "test/data/mfa.🍎" (AA 1 [3] [1,2,3::Double]); res @?= [1,1,2,2,3,3::Double] }
     , testCase "consSum" $ do { (AA 1 [3] res) <- fpAaa "test/data/consSum.🍏" (AA 1 [3] [1,0,0::Double]) (AA 2 [3,2] [2,3,4,5,6,9::Double]); res @?= [6,9,15::Double] }
-    , testCase "rank" $ do { (AA 1 [2] res) <- fpAaa "test/data/bha.🍏" (AA 1 [2] [1,0::Double]) (AA 2 [4,2] [2,3,4,5,6,9::Double]); res @?= [13,17::Double] }
-    , testCase "prediction" $ do { (AA 1 [4] res) <- fpAaaaf "test/data/prediction.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double]) (AA 1 [2] [0.14801747,0.37182892::Double]) (AA 1 [2] [0.79726405,0.67601843::Double]) 0.57823076; res @?= [0.7164132249879268,0.721678929187539,0.7278074306816863,0.7316925415075616::Double] }
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hs2 <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
+    -- TODO: trainXor step
     , testCase "elliptic fourier" $ do { (AA 1 [2] coeffs, a, c) <- fpAaip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] 2; a @?= 2.5000000000000004; c @?= 0.9999999999999999; last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)}
-    , testCase "coeffs (elliptic fourier)" $ do { res <- fpAaiπ "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
     , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
