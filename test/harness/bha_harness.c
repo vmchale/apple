@@ -3,7 +3,7 @@
 
 #include"../../include/apple_p.h"
 
-extern U aaa(U, U);
+extern U bha(U, U);
 
 int main(int argc, char *argv[]) {
     F xs[] = {0.79726405,0.67601843};
@@ -14,6 +14,6 @@ int main(int argc, char *argv[]) {
     Af b = {2,dy,ys};
     U x = poke_af(a);
     U y = poke_af(b);
-    paf(aaa(x,y));
+    paf(bha(x,y));
     free(x);free(y);
 }

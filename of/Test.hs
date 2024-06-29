@@ -40,6 +40,7 @@ main = do
             , ccOut pwd "test/data/predictionStep.🍏" "aafa" sys "1 4\n0.716413,0.721679,0.727807,0.731693\n"
             , ccOut pwd "test/data/map.🍏" "aaa" sys "2 2,2\n1.000000,2.000000,2.000000,2.000000\n"
             , ccOut pwd "test/data/maa.🍎" "aa" sys "1 2\n1.000000,3.000000\n"
+            , ccOut pwd "test/data/bha.🍏" "bha" sys "1 2\n0.792800,0.663306\n"
             , ccOut pwd "test/data/mfa.🍎" "a" sys "2 4,2\n1.000000,1.000000,3.000000,3.000000,2.000000,2.000000,5.000000,5.000000\n"
             , ccOut pwd "test/data/cfLeft.🍏" "af" sys "4.123106\n"
             , ccOut pwd "test/data/sin.🍏" "ff" sys "-1.000000\n"
