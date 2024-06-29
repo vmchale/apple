@@ -61,6 +61,7 @@ nextF = FReg <$> nextI
 irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
 irToAarch64 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
+-- only needs to be "quadword aligned" when it is the base register for load/store instructions
 aR :: AbsReg -> WM [AArch64 AbsReg FAbsReg ()]
 aR t = do
     l <- nextL
