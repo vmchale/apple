@@ -363,10 +363,18 @@ printExpr s = do
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 p <- callFFI fp (retPtr undefined) []
-                                (P4 pa0 pa1 pa2 f) <- (peek :: Ptr (P4 (Ptr (Apple Double)) (Ptr (Apple Double)) (Ptr (Apple Double)) Double) -> IO (P4 (Ptr (Apple Double)) (Ptr (Apple Double)) (Ptr (Apple Double)) Double)) p
+                                (P4 pa0 pa1 pa2 f) <- (peek :: Ptr (P4 (U Double) (U Double) (U Double) Double) -> IO (P4 (U Double) (U Double) (U Double) Double)) p
                                 a0 <- peek pa0; a1 <- peek pa1; a2 <- peek pa2
                                 putDoc$(<>hardline)$tupled [pretty a0, pretty a1, pretty a2, pretty f]
                                 free p *> free pa0 *> free pa1 *> free pa2 *> freeAsm asm
+                        (P [Arr _ F, Arr _ F, F]) ->
+                            liftIO $ do
+                                asm@(_, fp, _) <- efp eC
+                                p <- callFFI fp (retPtr undefined) []
+                                (P3 pa0 pa1 f) <- (peek :: Ptr (P3 (U Double) (U Double) Double) -> IO (P3 (U Double) (U Double) Double)) p
+                                a0 <- peek pa0; a1 <- peek pa1
+                                putDoc$(<>hardline)$tupled [pretty a0, pretty a1, pretty f]
+                                free p *> free pa0 *> free pa1 *> freeAsm asm
                         (P [F,F,F,F]) ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
