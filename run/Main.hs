@@ -376,6 +376,7 @@ benchE s = do
                                 asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                                 freeAsm asm
+                        A.Arrow{} -> liftIO $ putDoc ("Cannot benchmark a function without arguments" <> hardline)
     where bs = ubs s
 
 printExpr :: String -> Repl AlexPosn ()
