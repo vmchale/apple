@@ -6,7 +6,7 @@ import qualified Data.ByteString.Lazy  as BSL
 import           Data.Functor          (($>))
 import           Data.Number.Erf       (erf, normcdf)
 import           Foreign.Marshal.Alloc (free, mallocBytes)
-import           Foreign.Ptr           (FunPtr, Ptr)
+import           Foreign.Ptr           (FunPtr)
 import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           I
