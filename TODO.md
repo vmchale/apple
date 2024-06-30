@@ -56,23 +56,11 @@ T16 = T13.dim[0]
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
 # Performance
+- [ ] map-of-gen. idiom
 - [ ] bitmask immediates for `and` on aarch64
 - [ ] Use `Word64` for sets of registers
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
-- [ ]
-```
-(λx. 1 ⊲ x ') : Arr (i `Cons` i `Cons` Nil) a → Arr (i `Cons` i + 1 `Cons` Nil) a
- > ([1.0<|x]')
-(λx. 1.0 ⊲ x ') : Arr (i `Cons` i `Cons` Nil) float → Arr (i `Cons` i + 1 `Cons` Nil) float
- > ((1.0<|)')
-- [ ] embarassing!
-```
-[|:(x::Arr(i`Cons`j`Cons`Nil)float)] ⟨⟨1::int,2⟩,⟨3,4⟩,⟨5,6⟩⟩
-```
-- [ ] segfault (<|)`{0,1} ⟨1,0⟩ ⟨⟨2,3.0⟩,⟨4,5⟩,⟨6,9⟩⟩
-  - [ ] works: (<|)`{0,1} ⟨1,0,0⟩ ⟨⟨2,3.0,2⟩,⟨4,5,6⟩⟩, (<|)`{0,1} ⟨1,0⟩ ⟨⟨2,3.0⟩,⟨4,5⟩⟩
-- [ ] segfault ((+)/)' ⟨⟨1,3⟩,⟨2.0,0⟩⟩
 - [ ] {. ⟨⟨1,1.0⟩,⟨2,3⟩⟩ type
 - [ ] segfault when `aso` is called pre-register allocation (arm)
 - [ ] Should display constraints
@@ -83,17 +71,14 @@ a → a → a
 o → o → o
 ```
 - [ ]  `> (𝔯 _10 10) :: int 26`
-- [ ] `> ⟨⟨2,1,1⟩,⟨5,4,1⟩⟩%.⟨⟨2,0⟩,⟨2,0⟩,⟨7,3::float⟩⟩ -> Arr (2×2) [6.0, 10.0, 12.0, 31.0]`
 - [ ] `:asm [x(%.)(y::Arr(i`Cons`j`Cons`Nil)float)]` type inference??
 - [ ] `xmm0` and `xmm1` incorrectly marked as clobbered when return value is not
   actually in `xmm0`/`xmm1` or whatever
 - [ ] `fsin` instruction requires reduction module 2pi or w/e
-- [ ] ` |: ⟨⟨1.0,2⟩,⟨3,4⟩,⟨5,6.0⟩⟩`
 - [ ] beta-reduction with 'rand' or w/e (needs to be llet ... in)
 - [ ] Pass over to ensure everything is monomorphized
 - [ ] `itof (:xs)` - would prefer w/o parens?
 - [x] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
-- [ ] `(+)/1 0 ((_.'1) frange 2 6 5)`
 - [ ] match doesn't check constraints on annotations
 - [ ] check in assembler phase for labels not being duplicate
 ## Type system
