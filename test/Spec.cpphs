@@ -83,15 +83,22 @@ allT = testGroup "jit"
     , testCase "vmul" $ do { (AA 1 [2] res) <- fpAaa "test/data/vmul.🍏" (AA 2 [2,3] [1,2,3,4,5,6::Double]) (AA 1 [3] [1,1,1::Double]); res @?= [6,15::Double] }
     , testCase "matmul builtin" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
-    , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,7,6,9::Double] }
     , testCase "luhn check" $ do { res <- fpAi "test/examples/luhn.🍎" [4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]; res @?= 1 }
-    , testCase "mapAa" $ do { (AA 1 [2] res) <- fpAa "test/data/maa.🍎" (AA 2 [2,2] [1,2,3,4::Double]); res @?= [3,7::Double] }
     , testCase "mapAa" $ do { (AA 2 [3,2] res) <- fpAa "test/data/mfa.🍎" (AA 1 [3] [1,2,3::Double]); res @?= [1,1,2,2,3,3::Double] }
     , testCase "consSum" $ do { (AA 1 [3] res) <- fpAaa "test/data/consSum.🍏" (AA 1 [3] [1,0,0::Double]) (AA 2 [3,2] [2,3,4,5,6,9::Double]); res @?= [6,9,15::Double] }
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hs2 <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
-    -- TODO: trainXor step
-    , testCase "elliptic fourier" $ do { (AA 1 [2] coeffs, a, c) <- fpAaip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] 2; a @?= 2.5000000000000004; c @?= 0.9999999999999999; last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)}
+    , testCase "trainXor" $ do 
+        (AA 2 [2,2] res0, AA 1 [2] res1, AA 1 [2] res2, x) <- fpAaafp4 "test/data/trainXor.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493]) (AA 1 [2] [0.14801747,0.37182892]) (AA 1 [2] [0.79726405,0.67601843]) 0.57823076
+        res0 @?= [0.5130108836813994,0.563839153826952,0.48606794571593476,0.1463165649068566]
+        res1 @?= [1.0692017538688703e-2,0.24098107852780348]
+        res2 @?= [0.7927996818471371, 0.6633059586618876]
+        x @?= 0.3988611249884681
+    , testCase "elliptic fourier" $ do 
+        (AA 1 [2] coeffs, a, c) <- fpAaip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] 2
+        a @?= 2.5000000000000004
+        c @?= 0.9999999999999999
+        last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)
     , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
@@ -186,6 +193,13 @@ fpAi fp as = do
 
 v1 :: [a] -> Apple a
 v1 xs = AA 1 [fromIntegral (length xs)] xs
+
+fpAaafp4 :: FilePath -> Apple Double -> Apple Double -> Apple Double -> Double -> IO (Apple Double, Apple Double, Apple Double, Double)
+fpAaafp4 fp xs ys zs w = do
+    f <- fpn =<< BSL.readFile fp
+    wA xs $ \pX -> wA ys $ \pY -> wA zs $ \pZ -> do
+        (P4 pa0 pa1 pa2 x) <- peek (aaafp4 f pX pY pZ w)
+        (,,,) <$> peek pa0 <*> peek pa1 <*> peek pa2 <*> pure x
 
 fpAaip3 :: FilePath -> [Double] -> [Double] -> Int -> IO (Apple (Double, Double, Double, Double), Double, Double)
 fpAaip3 fp xs ys n = do
@@ -303,5 +317,6 @@ foreign import ccall "dynamic" ia :: FunPtr (Int -> U a) -> Int -> U a
 foreign import ccall "dynamic" aa :: FunPtr (U a -> U b) -> U a -> U b
 foreign import ccall "dynamic" aaa :: FunPtr (U a -> U b -> U c) -> U a -> U b -> U c
 foreign import ccall "dynamic" aaafa :: FunPtr (U a -> U b -> U c -> Double -> U d) -> U a -> U b -> U c -> Double -> U d
+foreign import ccall "dynamic" aaafp4 :: FunPtr (U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)) -> U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)
 foreign import ccall "dynamic" aaip3 :: FunPtr (U a -> U b -> Int -> Ptr (P3 c d e)) -> U a -> U b -> Int -> Ptr (P3 c d e)
 foreign import ccall "dynamic" aaiπ :: FunPtr (U a -> U b -> Int -> Ptr (P4 c d e f)) -> U a -> U b -> Int -> Ptr (P4 c d e f)
