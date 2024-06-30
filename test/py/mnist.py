@@ -12,7 +12,7 @@
 import apple
 import numpy as np
 
-vize=apple.jit("λn.[?x=n,.1::int,.0]'irange 0 9 1")
+vize=apple.jit("λn.[?x=n,.1::float,.0]'irange 0 9 1")
 print(apple.f(vize,4))
 
 ssoftmax=apple.jit('''
