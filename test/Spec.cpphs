@@ -90,13 +90,13 @@ allT = testGroup "jit"
     , testCase "consSum" $ do { (AA 1 [3] res) <- fpAaa "test/data/consSum.🍏" (AA 1 [3] [1,0,0::Double]) (AA 2 [3,2] [2,3,4,5,6,9::Double]); res @?= [6,9,15::Double] }
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hs2 <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
-    , testCase "trainXor" $ do 
+    , testCase "trainXor" $ do
         (AA 2 [2,2] res0, AA 1 [2] res1, AA 1 [2] res2, x) <- fpAaafp4 "test/data/trainXor.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493]) (AA 1 [2] [0.14801747,0.37182892]) (AA 1 [2] [0.79726405,0.67601843]) 0.57823076
         res0 @?= [0.5130108836813994,0.563839153826952,0.48606794571593476,0.1463165649068566]
         res1 @?= [1.0692017538688703e-2,0.24098107852780348]
         res2 @?= [0.7927996818471371, 0.6633059586618876]
         x @?= 0.3988611249884681
-    , testCase "elliptic fourier" $ do 
+    , testCase "elliptic fourier" $ do
         (AA 1 [2] coeffs, a, c) <- fpAaip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] 2
         a @?= 2.5000000000000004
         c @?= 0.9999999999999999
@@ -147,13 +147,6 @@ fpAaa fp x y =
         wA y $ \pY -> do
             f <- fmap aaa.fpn =<< BSL.readFile fp
             peek (f pX pY)
-
-fpAaaaf fp x y z a =
-    wA x $ \pX ->
-        wA y $ \pY -> do
-            wA z $ \pZ -> do
-                f <- fmap aaafa.fpn =<< BSL.readFile fp
-                peek (f pX pY pZ a)
 
 aaFp fp xs =
     let xA = v1 xs in
@@ -212,13 +205,6 @@ fpAaip3 fp xs ys n = do
             (P3 pa x0 x1) <- peek (aaip3 f p q n)
             a <- peek pa
             pure (hs4<$>a, x0, x1)
-
-fpAaiπ :: FilePath -> [Double] -> [Double] -> Int -> IO (Double, Double, Double, Double)
-fpAaiπ fp xs ys n = do
-    f <- fpn =<< BSL.readFile fp
-    let a=v1 xs; b=v1 ys
-    wA a $ \p -> wA b $ \q -> do
-        hs4 <$> peek (aaiπ f p q n)
 
 -- leaks memory
 fpn = fmap fst . case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
@@ -318,7 +304,5 @@ foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> In
 foreign import ccall "dynamic" ia :: FunPtr (Int -> U a) -> Int -> U a
 foreign import ccall "dynamic" aa :: FunPtr (U a -> U b) -> U a -> U b
 foreign import ccall "dynamic" aaa :: FunPtr (U a -> U b -> U c) -> U a -> U b -> U c
-foreign import ccall "dynamic" aaafa :: FunPtr (U a -> U b -> U c -> Double -> U d) -> U a -> U b -> U c -> Double -> U d
 foreign import ccall "dynamic" aaafp4 :: FunPtr (U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)) -> U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)
 foreign import ccall "dynamic" aaip3 :: FunPtr (U a -> U b -> Int -> Ptr (P3 c d e)) -> U a -> U b -> Int -> Ptr (P3 c d e)
-foreign import ccall "dynamic" aaiπ :: FunPtr (U a -> U b -> Int -> Ptr (P4 c d e f)) -> U a -> U b -> Int -> Ptr (P4 c d e f)
