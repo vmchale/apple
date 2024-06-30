@@ -310,6 +310,9 @@ eval (IR.EAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [Ldr 
 eval (IR.IB Op.IPlus e (IR.ConstI i)) t | Just u <- m12 i = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [AddRC () (absReg t) (IReg r) u]
+eval (IR.IB Op.IMinus e (IR.ConstI i)) t | Just u <- m12 i = do
+    r <- nextI; plE <- eval e (IR.ITemp r)
+    pure $ plE ++ [SubRC () (absReg t) (IReg r) u]
 eval (IR.IB Op.IAsl e (IR.ConstI i)) t = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     pure $ plE ++ [Lsl () (absReg t) (IReg r) (fromIntegral (i `mod` 64))]

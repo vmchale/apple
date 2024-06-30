@@ -146,6 +146,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                         | MovRR { ann :: a, rDest, rSrc :: reg }
                         | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
+                        | MovZ { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                         | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
                         | LdrRL { ann :: a, rDest :: reg, lSrc :: Int }
                         | MovK { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
@@ -239,6 +240,7 @@ mapR f (Scvtf l d r)         = Scvtf l d (f r)
 mapR f (Fcvtms l r d)        = Fcvtms l (f r) d
 mapR f (Fcvtas l r d)        = Fcvtas l (f r) d
 mapR f (MovK l r u s)        = MovK l (f r) u s
+mapR f (MovZ l r u s)        = MovZ l (f r) u s
 mapR f (FMovDR l d r)        = FMovDR l d (f r)
 mapR _ (Fcmp l d0 d1)        = Fcmp l d0 d1
 mapR f (Ldp l r0 r1 a)       = Ldp l (f r0) (f r1) (f <$> a)
@@ -301,6 +303,7 @@ mapFR f (Scvtf l d r)         = Scvtf l (f d) r
 mapFR f (Fcvtms l r d)        = Fcvtms l r (f d)
 mapFR f (Fcvtas l r d)        = Fcvtas l r (f d)
 mapFR _ (MovK l r u s)        = MovK l r u s
+mapFR _ (MovZ l r u s)        = MovZ l r u s
 mapFR f (FMovDR l d r)        = FMovDR l (f d) r
 mapFR f (Fcmp l d0 d1)        = Fcmp l (f d0) (f d1)
 mapFR _ (Stp l r0 r1 a)       = Stp l r0 r1 a
@@ -379,7 +382,8 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Scvtf _ d r)         = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
     pretty (Fcvtms _ r d)        = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
     pretty (Fcvtas _ r d)        = i4 ("fcvtas" <+> pretty r <> "," <+> pretty d)
-    pretty (MovK _ r i s)        = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s )
+    pretty (MovK _ r i s)        = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s)
+    pretty (MovZ _ r i s)        = i4 ("movz" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s)
     pretty (Fcmp _ d0 d1)        = i4 ("fcmp" <+> pretty d0 <> "," <+> pretty d1)
     pretty (Stp _ r0 r1 a)       = i4 ("stp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
     pretty (Ldp _ r0 r1 a)       = i4 ("ldp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
