@@ -25,22 +25,26 @@ import           Op
 data CSt = CSt { tempU       :: !Int
                , arrU        :: !AL
                , assemblerSt :: !Int
+               , label       :: !Label
                , vars        :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                , dvars       :: IM.IntMap FTemp
                , avars       :: IM.IntMap (Maybe AL, Temp)
-               , fvars       :: IM.IntMap (Label, [(Maybe Int, Temp)], (Maybe Int, Temp))
+               , fvars       :: IM.IntMap (Label, [Arg], Either FTemp Temp)
                , _aa         :: AsmData
                , mts         :: IM.IntMap Temp
                }
 
 nextI :: CM Int
-nextI = state (\(CSt tϵ ar as v d a f aas ts) -> (tϵ, CSt (tϵ+1) ar as v d a f aas ts))
+nextI = state (\(CSt tϵ ar as l v d a f aas ts) -> (tϵ, CSt (tϵ+1) ar as l v d a f aas ts))
 
 nextArr :: Temp -> CM AL
-nextArr r = state (\(CSt t a@(AL i) as v d aϵ f aas ts) -> (a, CSt t (AL$i+1) as v d aϵ f aas (AL.insert a r ts)))
+nextArr r = state (\(CSt t a@(AL i) as l v d aϵ f aas ts) -> (a, CSt t (AL$i+1) as l v d aϵ f aas (AL.insert a r ts)))
 
 nextAA :: CM Int
-nextAA = state (\(CSt t ar as v d a f aas ts) -> (as, CSt t ar (as+1) v d a f aas ts))
+nextAA = state (\(CSt t ar as l v d a f aas ts) -> (as, CSt t ar (as+1) l v d a f aas ts))
+
+neL :: CM Label
+neL = state (\(CSt t ar as l v d a f aas ts) -> (l, CSt t ar as (l+1) v d a f aas ts))
 
 newITemp :: CM Temp
 newITemp = ITemp <$> nextI
@@ -49,16 +53,19 @@ newFTemp :: CM FTemp
 newFTemp = FTemp <$> nextI
 
 addAA :: Int -> [Word64] -> CSt -> CSt
-addAA i aa (CSt t ar as v d a f aas ts) = CSt t ar as v d a f (IM.insert i aa aas) ts
+addAA i aa (CSt t ar as l v d a f aas ts) = CSt t ar as l v d a f (IM.insert i aa aas) ts
 
 addVar :: Nm a -> Temp -> CSt -> CSt
-addVar n r (CSt t ar as v d a f aas ts) = CSt t ar as (insert n r v) d a f aas ts
+addVar n r (CSt t ar as l v d a f aas ts) = CSt t ar as l (insert n r v) d a f aas ts
 
 addD :: Nm a -> FTemp -> CSt -> CSt
-addD n r (CSt t ar as v d a f aas ts) = CSt t ar as v (insert n r d) a f aas ts
+addD n r (CSt t ar as l v d a f aas ts) = CSt t ar as l v (insert n r d) a f aas ts
 
 addAVar :: Nm a -> (Maybe AL, Temp) -> CSt -> CSt
-addAVar n r (CSt t ar as v d a f aas ts) = CSt t ar as v d (insert n r a) f aas ts
+addAVar n r (CSt t ar as l v d a f aas ts) = CSt t ar as l v d (insert n r a) f aas ts
+
+addF :: Nm a -> (Label, [Arg], Either FTemp Temp) -> CSt -> CSt
+addF n f (CSt t ar as l v d a fs aas ts) = CSt t ar as l v d a (insert n f fs) aas ts
 
 getT :: IM.IntMap b -> Nm a -> b
 getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " not assigned to a temp.")) n st
@@ -124,7 +131,7 @@ mIFs :: [E a] -> Maybe [Word64]
 mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
 
 writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
-writeC = π.flip runState (CSt 0 (AL 0) 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ _ _ _ _ aa a) = (s, LSt 0 t, aa, a)
+writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ aa a) = (s, LSt l t, aa, a)
 
 writeCM :: E (T ()) -> CM [CS]
 writeCM eϵ = do
