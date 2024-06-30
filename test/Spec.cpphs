@@ -181,9 +181,9 @@ jitKl = fpAaf "test/examples/kl.🍎"
 jitB = fpAaf "test/examples/b.🍎"
 
 fpAi :: FilePath -> [Int64] -> IO Int64
-fpAi fp as = do
+fpAi fp bs = do
     f <- fpn =<< BSL.readFile fp
-    let a=v1 as
+    let a=v1 bs
     wA a $ \p -> pure $ ai f p
 
 v1 :: [a] -> Apple a
@@ -203,8 +203,8 @@ fpAaip3 fp xs ys n = do
     wA a $ \p ->
         wA b $ \q -> do
             (P3 pa x0 x1) <- peek (aaip3 f p q n)
-            a <- peek pa
-            pure (hs4<$>a, x0, x1)
+            c <- peek pa
+            pure (hs4<$>c, x0, x1)
 
 -- leaks memory
 fpn = fmap fst . case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
