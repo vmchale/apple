@@ -28,7 +28,6 @@ import qualified Asm.Aarch64          as Aarch64
 import qualified Asm.Aarch64.Byte     as Aarch64
 import qualified Asm.Aarch64.P        as Aarch64
 import           Asm.Aarch64.T
-import           Asm.BB
 import           Asm.L
 import           Asm.LI
 import           Asm.M
@@ -149,15 +148,6 @@ dumpX86Liveness = fmap (X86.prettyDebugX86 . mkLive . (\(x,_,st) -> snd (irToX86
 
 dumpALiveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpALiveness = fmap (Aarch64.prettyDebug . mkLive . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
-
-prettyBBs :: Pretty (arch reg freg ()) => [BB arch reg freg () Liveness] -> Doc ann
-prettyBBs = concatWith (\x y -> x <#> "==BB==" <#> y) . fmap (\(BB asms _) -> prettyLines (pretty <$> asms))
-
-prettyBBLs :: Pretty (arch reg freg ()) => [BB arch reg freg () Liveness] -> Doc ann
-prettyBBLs = prettyLines . fmap prettyBBL
-
-prettyBBL :: Pretty (arch reg freg ()) => BB arch reg freg () Liveness -> Doc ann
-prettyBBL (BB asms l) = pretty l <#> prettyLines (fmap pretty asms)
 
 x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Live]
 x86Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToX86 st x))) . ir
