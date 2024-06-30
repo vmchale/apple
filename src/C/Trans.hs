@@ -561,13 +561,27 @@ aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isIF tX = do
     plX <- eeval x xR
     (l, plXs) <- aeval xs xsR
     pure (Just a, plXs++plX++nϵR := EAt (ADim xsR 0 l):nR := (Tmp nϵR+1):aV++wt (AElem t 1 0 (Just a) 8) xR:[CpyE (AElem t 1 1 (Just a) 8) (AElem xsR 1 0 l 8) (Tmp nϵR) 8])
+aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
+    xR <- newITemp; xsR <- newITemp
+    nR <- newITemp; nϵR <- newITemp
+    (_, mSz, _, plX) <- πe x xR
+    (lX, plXs) <- aeval xs xsR
+    (a,aV) <- vSz t (Tmp nR) sz
+    pure (Just a, plXs++m'sa xR mSz++plX++nϵR := EAt (ADim xsR 0 lX):nR := (Tmp nϵR+1):aV++[CpyE (AElem t 1 0 (Just a) sz) (Raw xR 0 Nothing undefined) 1 sz, CpyE (AElem t 1 1 (Just a) sz) (AElem xsR 1 0 lX sz) (Tmp nϵR) sz]++m'pop mSz)
 aeval (EApp _ (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isIF tX = do
     xR <- rtemp tX; xsR <- newITemp
     nR <- newITemp; nϵR <- newITemp
     (a,aV) <- v8 t (Tmp nR)
     plX <- eeval x xR
     (l, plXs) <- aeval xs xsR
-    pure (Just a, plXs++plX++nϵR := EAt (ADim xsR 0 l):nR := (Tmp nϵR+1):aV++wt (AElem t 1 (Tmp nR-1) (Just a) 8) xR:[CpyE (AElem t 1 0 (Just a) 8) (AElem xsR 1 0 l 8) (Tmp nϵR) 8])
+    pure (Just a, plXs++plX++nϵR := EAt (ADim xsR 0 l):nR := (Tmp nϵR+1):aV++wt (AElem t 1 (Tmp nϵR) (Just a) 8) xR:[CpyE (AElem t 1 0 (Just a) 8) (AElem xsR 1 0 l 8) (Tmp nϵR) 8])
+aeval (EApp _ (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
+    xR <- newITemp; xsR <- newITemp
+    nR <- newITemp; nϵR <- newITemp
+    (_, mSz, _, plX) <- πe x xR
+    (lX, plXs) <- aeval xs xsR
+    (a,aV) <- vSz t (Tmp nR) sz
+    pure (Just a, plXs++m'sa xR mSz++plX++nϵR := EAt (ADim xsR 0 lX):nR := (Tmp nϵR+1):aV++[CpyE (AElem t 1 (Tmp nϵR) (Just a) sz) (Raw xR 0 Nothing undefined) 1 sz, CpyE (AElem t 1 0 (Just a) sz) (AElem xsR 1 0 lX sz) (Tmp nϵR) sz]++m'pop mSz)
 aeval (EApp _ (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isIF tX = do
     xR <- rtemp tX; nR <- newITemp
     (a,aV) <- v8 t (Tmp nR)
