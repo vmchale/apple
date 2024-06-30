@@ -10,6 +10,7 @@ import           Control.Composition        (thread)
 import           Control.Monad              (zipWithM)
 import           Control.Monad.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor             (first, second)
+import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
@@ -227,11 +228,23 @@ extrCell fixBounds sstrides (srcP, srcL) dest = do
           switch (Fixed:ds)   = do {f <- newITemp; qmap id id (f:) (f:) <$> switch ds}
           switch []           = pure ([], [], [], [])
 
+llet :: (Nm (T ()), E (T ())) -> CM [CS]
+llet (n,e') | isArr (eAnn e') = do
+    eR <- newITemp
+    (l, ss) <- aeval e' eR
+    modify (addAVar n (l,eR)) $> ss
+llet (n,e') | isI (eAnn e') = do
+    eR <- newITemp
+    ss <- eval e' eR
+    modify (addVar n eR) $> ss
+llet (n,e') | isF (eAnn e') = do
+    eR <- newFTemp
+    ss <- feval e' eR
+    modify (addD n eR) $> ss
+
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS])
-aeval (LLet _ (n,e') e) t | isArr (eAnn e') = do
-    t' <- newITemp
-    (l, ss) <- aeval e' t'
-    modify (addAVar n (l, t'))
+aeval (LLet _ b e) t = do
+    ss <- llet b
     second (ss ++) <$> aeval e t
 aeval (Var _ x) t = do
     st <- gets avars
@@ -738,11 +751,9 @@ plEV e = do
     pure ((pl++), t)
 
 eval :: E (T ()) -> Temp -> CM [CS]
-eval (LLet _ (n,e') e) t = do
-    eR <- newITemp
-    plE <- eval e' eR
-    modify (addVar n eR)
-    (plE++) <$> eval e t
+eval (LLet _ b e) t = do
+    ss <- llet b
+    (ss++) <$> eval e t
 eval (ILit _ n) t = pure [t := fromInteger n]
 eval (Var _ x) t = do
     st <- gets vars
@@ -893,16 +904,9 @@ cond p e0 e1 t | isIF (eAnn e0) = do
     pure (Nothing, plP ++ [If (Is pR) plE0 plE1])
 
 feval :: E (T ()) -> FTemp -> CM [CS]
-feval (LLet _ (n,e') e) t | isF (eAnn e') = do
-    eR <- newFTemp
-    plE <- feval e' eR
-    modify (addD n eR)
-    (plE++) <$> feval e t
-feval (LLet _ (n,e') e) t | isArr (eAnn e') = do
-    t' <- newITemp
-    (l, ss) <- aeval e' t'
-    modify (addAVar n (l, t'))
-    (ss ++) <$> feval e t
+feval (LLet _ b e) t = do
+    ss <- llet b
+    (ss++) <$> feval e t
 feval (ILit _ x) t = pure [MX t (ConstF $ fromIntegral x)] -- if it overflows you deserve it
 feval (FLit _ x) t = pure [MX t (ConstF x)]
 feval (Var _ x) t = do
@@ -1091,21 +1095,9 @@ m'sa t = maybe []  ((:[]).Sa t)
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [t := Tmp (getT st x)])
-πe (LLet _ (n,e') e) t | isArr (eAnn e') = do
-    t' <- newITemp
-    (l, ss) <- aeval e' t'
-    modify (addAVar n (l, t'))
+πe (LLet _ b e) t = do
+    ss <- llet b
     fourth (ss++) <$> πe e t
-πe (LLet _ (n,e') e) t | isF (eAnn e') = do
-    eR <- newFTemp
-    plE <- feval e' eR
-    modify (addD n eR)
-    fourth (plE++) <$> πe e t
-πe (LLet _ (n,e') e) t | isI (eAnn e') = do
-    eR <- newITemp
-    plE <- eval e' eR
-    modify (addVar n eR)
-    fourth (plE++) <$> πe e t
 πe e _ = error (show e)
 
 fourth f ~(x,y,z,w) = (x,y,z,f w)
