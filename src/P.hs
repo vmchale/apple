@@ -144,6 +144,7 @@ as :: T.Text -> BSL.ByteString -> Doc ann
 as f = prolegomena.either throw (second aso).aarch64
     where prolegomena (d,i) = ".p2align 2\n\n.data\n\n" <> pAD d <#> ".text\n\n.global " <> pSym f <#> pSym f <> ":" <#> pAsm i
 
+-- TODO: Call internal
 aso (MovRCf () r0 f:Blr () r1:asms) | r0 == r1 = Bl () f:aso asms
 aso (asm:asms) = asm:aso asms; aso [] = []
 

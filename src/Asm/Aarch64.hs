@@ -139,7 +139,7 @@ pSym = case os of {"linux" -> id; "darwin" -> ("_"<>)}.pretty
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | B { ann :: a, label :: Label }
                         | Blr { ann :: a, rSrc :: reg }
-                        | BlL { ann :: a, label :: Label }
+                        | C { ann :: a, label :: Label }
                         | Bl { ann :: a, cfunc :: CFunc }
                         | Bc { ann :: a, cond :: Cond, label :: Label }
                         | Ret { ann :: a } | RetL { ann :: a, label :: Label }
@@ -208,7 +208,7 @@ mapR _ (Label x l)           = Label x l
 mapR _ (B x l)               = B x l
 mapR _ (Bc x c l)            = Bc x c l
 mapR _ (Bl x f)              = Bl x f
-mapR _ (BlL x l)             = BlL x l
+mapR _ (C x l)               = C x l
 mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
 mapR f (MovRR l r0 r1)       = MovRR l (f r0) (f r1)
 mapR f (MovRC l r c)         = MovRC l (f r) c
@@ -274,7 +274,7 @@ mapFR _ (Label x l)           = Label x l
 mapFR _ (B x l)               = B x l
 mapFR _ (Bc x c l)            = Bc x c l
 mapFR _ (Bl x f)              = Bl x f
-mapFR _ (BlL x l)             = BlL x l
+mapFR _ (C x l)               = C x l
 mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
 mapFR _ (MovRR l r0 r1)       = MovRR l r0 r1
 mapFR _ (MovRC l r0 c)        = MovRC l r0 c
@@ -356,7 +356,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (B _ l)               = i4 ("b" <+> prettyLabel l)
     pretty (Blr _ r)             = i4 ("blr" <+> pretty r)
     pretty (Bl _ l)              = i4 ("bl" <+> pSym l)
-    pretty (BlL _ l)             = i4 ("bl" <+> prettyLabel l)
+    pretty (C _ l)               = i4 ("call" <+> pretty l)
     pretty (Bc _ c l)            = i4 ("b." <> pretty c <+> prettyLabel l)
     pretty (FMovXX _ xr0 xr1)    = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
     pretty (FMovDR _ d r)        = i4 ("fmov" <+> pretty d <> "," <+> pretty r)

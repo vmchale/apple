@@ -43,6 +43,8 @@ addControlFlow (BB asms _:bbs) = do
             Tbnz _ _ _ lϵ -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
             Tbz _ _ _ lϵ  -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
             Cbnz _ _ lϵ   -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            C _ lϵ        -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            RetL _ lϵ     -> lC lϵ
             _             -> pure (f [])
     ; pure (BB asms (ControlAnn i acc (udb asms)) : bbs')
     }
@@ -128,7 +130,7 @@ uses (Tbz _ r _ _)       = singleton r
 uses Ret{}               = singleton CArg0
 uses Cset{}              = IS.empty
 uses Bl{}                = IS.empty
-uses BlL{}               = IS.empty
+uses C{}                 = singleton ASP
 uses RetL{}              = singleton LR
 
 defs FMovXX{}            = IS.empty
@@ -196,7 +198,7 @@ defs Tbz{}               = IS.empty
 defs Ret{}               = IS.empty
 defs (Cset _ r _)        = singleton r
 defs Bl{}                = singleton LR
-defs BlL{}               = singleton LR
+defs C{}                 = fromList [LR, FP]
 defs RetL{}              = IS.empty
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
@@ -265,7 +267,7 @@ defsF Ret{}              = IS.empty
 defsF RetL{}             = IS.empty
 defsF Cset{}             = IS.empty
 defsF Bl{}               = IS.empty
-defsF BlL{}              = IS.empty
+defsF C{}                = IS.empty
 
 usesF (FMovXX _ _ r)       = singleton r
 usesF MovRR{}              = IS.empty
@@ -331,7 +333,7 @@ usesF Tbz{}                = IS.empty
 usesF Ret{}                = fromList [FArg0, FArg1]
 usesF Cset{}               = IS.empty
 usesF Bl{}                 = IS.empty
-usesF BlL{}                = IS.empty
+usesF C{}                  = IS.empty
 usesF RetL{}               = IS.empty
 
 next :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM ([Int] -> [Int], [BB AArch64 reg freg () ControlAnn])
@@ -341,14 +343,9 @@ next bbs = do
         []    -> pure (id, [])
         (b:_) -> pure ((node (caBB b) :), nextBs)
 
-peekBl :: [AArch64 reg freg a] -> Label
-peekBl asms | [BlL _ l, Ldp{}, AddRC _ _ _ 16] <- last3 asms = l
-  where
-    last3 = reverse . take 3 . reverse
-
 broadcasts :: [BB AArch64 reg freg a ()] -> FreshM [BB AArch64 reg freg a ()]
 broadcasts [] = pure []
-broadcasts (b0@(BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | l <- peekBl asms = do
+broadcasts (b0@(BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | C _ l <- last asms = do
     { i <- fm retL; b3 i l
     ; case asm of {Label _ lϵ -> void $ fm lϵ; _ -> pure ()}
     ; (b0:) <$> broadcasts bbs

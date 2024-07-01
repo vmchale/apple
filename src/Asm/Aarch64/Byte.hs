@@ -60,6 +60,7 @@ allFp (ds, instrs) = do
 
 mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
 mkIx ix (Label _ l:asms) = second (M.insert l ix) $ mkIx ix asms
+mkIx ix (C{}:asms)       = mkIx (ix+20) asms
 mkIx ix (MovRCf{}:asms)  = mkIx (ix+16) asms
 mkIx ix (LdrRL{}:asms)   = mkIx (ix+16) asms
 mkIx ix (_:asms)         = mkIx (ix+4) asms
@@ -175,16 +176,16 @@ asm ix st (Tbnz _ r 0 l:asms) =
         offs=(lIx-ix) `quot` 4
         isn=[0b00110111, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
     in isn:asm (ix+4) st asms
+asm ix st (C _ l:asms) =
+    let lIx=get l st
+        offs=(lIx-(ix+8)) `quot` 4
+        isn=[0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
+        pro=asm ix undefined [SubRC () SP SP 16, Stp () X29 X30 (R SP)]
+    in pro++isn:asm (ix+12) st (Ldp () X29 X30 (R SP):AddRC () SP SP 16:asms)
 asm ix st (B _ l:asms) =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
         isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
-    in isn:asm (ix+4) st asms
-asm ix st (BlL _ l:asms) =
-    let lIx=get l st
-        offs=(lIx-ix) `quot` 4
-        isn = [0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
-        -- FIXME: assert +/- 128MB
     in isn:asm (ix+4) st asms
 asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
 asm ix st@(_, (Just (m, _), _), _) (MovRCf _ r Malloc:asms) =
