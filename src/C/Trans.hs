@@ -1007,13 +1007,24 @@ feval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
         loop = For i 1 ILt (Tmp szR) step
     sseed <- writeRF zop [x] (Left acc)
     pure $ plP++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
+    -- TODO: fold-of-zip with FRange
+feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) steps, ys])) acc | Just tQ <- if1 (eAnn ys) = do
+    x <- newFTemp; yR <- newITemp; y <- rtemp tQ
+    incrR <- newFTemp; n <- newITemp; i <- newITemp
+    plX <- feval start x; plY <- eeval (EApp tQ (Builtin undefined Head) ys) y
+    (lY, plYs) <- aeval ys yR
+    plN <- eval steps n
+    plIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
+    seed <- writeRF zop [Left x, y] (Left acc)
+    ss <- writeRF op [Left acc, Left x, y] (Left acc)
+    pure $ plYs ++ plY ++ plX ++ seed ++ plIncr ++ plN ++ [For i 1 ILt (Tmp n) (mt (AElem yR 1 (Tmp i) lY 8) y:MX x (FTmp x+FTmp incrR):ss)]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, ys])) acc | Just tQ <- if1 (eAnn ys) = do
     x <- newITemp; yR <- newITemp; y <- rtemp tQ
     incrR <- newITemp; szR <- newITemp; i <- newITemp
     plX <- eval start x; plY <- eeval (EApp tQ (Builtin undefined Head) ys) y; (lY, plYs) <- aeval ys yR; plI <- eval incr incrR
     seed <- writeRF zop [Right x, y] (Left acc)
     ss <- writeRF op [Left acc, Right x, y] (Left acc)
-    pure $ plX ++ plY ++ plYs ++ seed ++ plI ++ szR := EAt (ADim yR 0 lY):[For i 1 ILt (Tmp szR) (mt (AElem yR 1 (Tmp i) lY 8) y:x+=Tmp incrR:ss)]
+    pure $ plYs ++ plY ++ plX ++ seed ++ plI ++ szR := EAt (ADim yR 0 lY):[For i 1 ILt (Tmp szR) (mt (AElem yR 1 (Tmp i) lY 8) y:x+=Tmp incrR:ss)]
 feval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <- if1 (eAnn q) = do
     x <- rtemp tP; y <- rtemp tQ
     pR <- newITemp; qR <- newITemp
