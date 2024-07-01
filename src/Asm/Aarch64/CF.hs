@@ -351,8 +351,7 @@ broadcasts (b0@(BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | C _ l <- l
     ; (b0:) <$> broadcasts bbs
     }
 broadcasts (b@(BB (Label _ l:_) _):asms) = do
-    { i <- getFresh
-    ; broadcast i l
-    ; (b :) <$> broadcasts asms
+    { void $ fm l
+    ; (b:) <$> broadcasts asms
     }
 broadcasts (asm:asms) = (asm :) <$> broadcasts asms
