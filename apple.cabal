@@ -318,7 +318,7 @@ benchmark apple-bench
         criterion,
         bytestring,
         erf,
-        hypergeometric >=0.1.1.0
+        hypergeometric >=0.1.2.0
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
