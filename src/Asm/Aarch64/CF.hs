@@ -9,7 +9,7 @@ import           Asm.CF
 import           Asm.M
 import           CF
 import           Class.E      as E
-import           Data.Functor (($>))
+import           Data.Functor (void, ($>))
 import qualified Data.IntSet  as IS
 
 mkControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> [BB AArch64 reg freg () ControlAnn]
@@ -341,8 +341,18 @@ next bbs = do
         []    -> pure (id, [])
         (b:_) -> pure ((node (caBB b) :), nextBs)
 
+peekBl :: [AArch64 reg freg a] -> Label
+peekBl asms | [BlL _ l, Ldp{}, AddRC _ _ _ 16] <- last3 asms = l
+  where
+    last3 = reverse . take 3 . reverse
+
 broadcasts :: [BB AArch64 reg freg a ()] -> FreshM [BB AArch64 reg freg a ()]
 broadcasts [] = pure []
+broadcasts (b0@(BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | l <- peekBl asms = do
+    { i <- fm retL; b3 i l
+    ; case asm of {Label _ lϵ -> void $ fm lϵ; _ -> pure ()}
+    ; (b0:) <$> broadcasts bbs
+    }
 broadcasts (b@(BB (Label _ l:_) _):asms) = do
     { i <- getFresh
     ; broadcast i l
