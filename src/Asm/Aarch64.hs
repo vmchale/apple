@@ -139,9 +139,10 @@ pSym = case os of {"linux" -> id; "darwin" -> ("_"<>)}.pretty
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | B { ann :: a, label :: Label }
                         | Blr { ann :: a, rSrc :: reg }
+                        | BlL { ann :: a, label :: Label }
                         | Bl { ann :: a, cfunc :: CFunc }
                         | Bc { ann :: a, cond :: Cond, label :: Label }
-                        | Ret { ann :: a }
+                        | Ret { ann :: a } | RetL { ann :: a, label :: Label }
                         | FMovXX { ann :: a, dDest, dSrc :: freg }
                         | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                         | MovRR { ann :: a, rDest, rSrc :: reg }
@@ -207,6 +208,7 @@ mapR _ (Label x l)           = Label x l
 mapR _ (B x l)               = B x l
 mapR _ (Bc x c l)            = Bc x c l
 mapR _ (Bl x f)              = Bl x f
+mapR _ (BlL x l)             = BlL x l
 mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
 mapR f (MovRR l r0 r1)       = MovRR l (f r0) (f r1)
 mapR f (MovRC l r c)         = MovRC l (f r) c
@@ -230,6 +232,7 @@ mapR _ (Fmul l xr0 xr1 xr2)  = Fmul l xr0 xr1 xr2
 mapR _ (Fneg l xr0 xr1)      = Fneg l xr0 xr1
 mapR _ (FcmpZ l xr)          = FcmpZ l xr
 mapR _ (Ret l)               = Ret l
+mapR _ (RetL x l)            = RetL x l
 mapR f (MulRR l r0 r1 r2)    = MulRR l (f r0) (f r1) (f r2)
 mapR f (Madd l r0 r1 r2 r3)  = Madd l (f r0) (f r1) (f r2) (f r3)
 mapR f (Msub l r0 r1 r2 r3)  = Msub l (f r0) (f r1) (f r2) (f r3)
@@ -271,6 +274,7 @@ mapFR _ (Label x l)           = Label x l
 mapFR _ (B x l)               = B x l
 mapFR _ (Bc x c l)            = Bc x c l
 mapFR _ (Bl x f)              = Bl x f
+mapFR _ (BlL x l)             = BlL x l
 mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
 mapFR _ (MovRR l r0 r1)       = MovRR l r0 r1
 mapFR _ (MovRC l r0 c)        = MovRC l r0 c
@@ -293,6 +297,7 @@ mapFR f (Fadd l xr0 xr1 xr2)  = Fadd l (f xr0) (f xr1) (f xr2)
 mapFR f (Fsub l xr0 xr1 xr2)  = Fsub l (f xr0) (f xr1) (f xr2)
 mapFR f (FcmpZ l xr)          = FcmpZ l (f xr)
 mapFR _ (Ret l)               = Ret l
+mapFR _ (RetL x l)            = RetL x l
 mapFR f (Fdiv l d0 d1 d2)     = Fdiv l (f d0) (f d1) (f d2)
 mapFR _ (MulRR l r0 r1 r2)    = MulRR l r0 r1 r2
 mapFR _ (Madd l r0 r1 r2 r3)  = Madd l r0 r1 r2 r3
@@ -351,6 +356,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (B _ l)               = i4 ("b" <+> prettyLabel l)
     pretty (Blr _ r)             = i4 ("blr" <+> pretty r)
     pretty (Bl _ l)              = i4 ("bl" <+> pSym l)
+    pretty (BlL _ l)             = i4 ("bl" <+> prettyLabel l)
     pretty (Bc _ c l)            = i4 ("b." <> pretty c <+> prettyLabel l)
     pretty (FMovXX _ xr0 xr1)    = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
     pretty (FMovDR _ d r)        = i4 ("fmov" <+> pretty d <> "," <+> pretty r)
@@ -379,6 +385,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (FcmpZ _ xr)          = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
     pretty (Fneg _ d0 d1)        = i4 ("fneg" <+> pretty d0 <> "," <+> pretty d1)
     pretty Ret{}                 = i4 "ret"
+    pretty RetL{}                = i4 "ret"
     pretty (Scvtf _ d r)         = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
     pretty (Fcvtms _ r d)        = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
     pretty (Fcvtas _ r d)        = i4 ("fcvtas" <+> pretty r <> "," <+> pretty d)

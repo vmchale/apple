@@ -68,8 +68,10 @@ aR t = do
     pure [TstI () t (BM 1 3), Bc () Eq l, AddRC () t t 8, Label () l]
 
 ir :: IR.Stmt -> WM [AArch64 AbsReg FAbsReg ()]
+ir (IR.R l)      = pure [RetL () l]
 ir (IR.L l)      = pure [Label () l]
 ir (IR.J l)      = pure [B () l]
+ir (IR.C l)      = pure $ puL ++ BlL () l : poL
 ir (IR.MX t e)   = feval e t
 ir (IR.MT t e)   = eval e t
 ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}

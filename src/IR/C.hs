@@ -40,6 +40,11 @@ cLog n | popCount n == 1 = Just (fromIntegral$countTrailingZeros n) | otherwise 
 
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (G l)               = do {retL <- nextL; pure [IR.C l, IR.L retL]}
+-- FIXME: put this at the end so it doesn't have to be skipped
+cToIRM (Def l cs)          = do
+    endL <- nextL
+    irs <- foldMapM cToIRM cs
+    pure (J endL:L l:irs++[IR.R l, L endL])
 cToIRM (C.PlProd t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT t' (IR.Reg t'*irE eϵ) | eϵ <- es])
 cToIRM (t := e)            = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]

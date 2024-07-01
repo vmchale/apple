@@ -98,6 +98,7 @@ asm ix st (Fmadd _ d0 d1 d2 d3:asms) = [0b00011111, 0x2 `shiftL` 5 .|. be d2, be
 asm ix st (Fmsub _ d0 d1 d2 d3:asms) = [0b00011111, 0x2 `shiftL` 5 .|. be d2, 0x1 `shiftL` 7 .|. be d3 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Label{}:asms) = asm ix st asms
 asm ix st (Ret{}:asms) = [0b11010110, 0b01011111, be X30 `shiftR` 3, (0x7 .&. be X30) `shiftL` 5]:asm (ix+4) st asms
+asm ix st (RetL{}:asms) = [0b11010110, 0b01011111, be X30 `shiftR` 3, (0x7 .&. be X30) `shiftL` 5]:asm (ix+4) st asms
 asm ix st (MrsR _ r:asms) = [0b11010101, 0b00111011, 0b00100100, be r]:asm (ix+4) st asms
 asm _ _ (SubRR _ _ SP SP:_) = error "encoding not valid/supported"
 asm _ _ (AddRR _ _ SP SP:_) = error "encoding not valid/supported."
@@ -178,6 +179,12 @@ asm ix st (B _ l:asms) =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
         isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
+    in isn:asm (ix+4) st asms
+asm ix st (BlL _ l:asms) =
+    let lIx=get l st
+        offs=(lIx-ix) `quot` 4
+        isn = [0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
+        -- FIXME: assert +/- 128MB
     in isn:asm (ix+4) st asms
 asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
 asm ix st@(_, (Just (m, _), _), _) (MovRCf _ r Malloc:asms) =
