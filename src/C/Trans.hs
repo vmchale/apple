@@ -1007,7 +1007,7 @@ feval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
         loop = For i 1 ILt (Tmp szR) step
     sseed <- writeRF zop [x] (Left acc)
     pure $ plP++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
-    -- TODO: fold-of-zip with FRange
+    -- TODO: frange special cases
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) steps, ys])) acc | Just tQ <- if1 (eAnn ys) = do
     x <- newFTemp; yR <- newITemp; y <- rtemp tQ
     incrR <- newFTemp; n <- newITemp; i <- newITemp
