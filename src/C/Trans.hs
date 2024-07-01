@@ -1007,7 +1007,15 @@ feval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
         loop = For i 1 ILt (Tmp szR) step
     sseed <- writeRF zop [x] (Left acc)
     pure $ plP++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
-    -- TODO: frange special cases
+feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) (FLit _ start)) (FLit _ end)) (ILit _ steps), ys])) acc | Just tQ <- if1 (eAnn ys) = do
+    x <- newFTemp; yR <- newITemp; y <- rtemp tQ
+    incrR <- newFTemp; i <- newITemp
+    plY <- eeval (EApp tQ (Builtin undefined Head) ys) y
+    (lY, plYs) <- aeval ys yR
+    plIncr <- feval (FLit F$(end-start)/realToFrac (steps-1)) incrR
+    seed <- writeRF zop [Left x, y] (Left acc)
+    ss <- writeRF op [Left acc, Left x, y] (Left acc)
+    pure $ plYs ++ plY ++ MX x (ConstF start):seed ++ plIncr ++ [For i 1 ILt (ConstI$fromIntegral steps) (mt (AElem yR 1 (Tmp i) lY 8) y:MX x (FTmp x+FTmp incrR):ss)]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) steps, ys])) acc | Just tQ <- if1 (eAnn ys) = do
     x <- newFTemp; yR <- newITemp; y <- rtemp tQ
     incrR <- newFTemp; n <- newITemp; i <- newITemp
