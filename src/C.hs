@@ -16,7 +16,7 @@ import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
 import           Op
-import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, indent, lbrace, parens, rbrace, tupled, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, hardline, indent, lbrace, parens, rbrace, tupled, (<+>))
 import           Prettyprinter.Ext
 
 type Label=Word; type AsmData = IM.IntMap [Word64]
@@ -137,6 +137,7 @@ data CS = For Temp CE IRel CE [CS]
         | SZ Temp Temp CE (Maybe AL) -- dest., pointer to array, rank, label
         | PlProd Temp [CE]
         | Rnd Temp
+        | Def Label [CS] | G Label
         -- TODO: PlDims cause we have diml
 
 instance Pretty CS where
@@ -163,6 +164,11 @@ instance Pretty CS where
     pretty (SZ td t _ _)        = pretty td <+> "=" <+> "SIZE" <> parens (pretty t)
     pretty (PlProd t ts)        = pretty t <+> "=" <+> "PRODUCT" <> tupled (pretty<$>ts)
     pretty (Rnd t)              = pretty t <+> "=" <+> "(rnd)"
+    pretty (Def l cs)           = hardline <> pS l <> ":" <#> indent 4 (pCS cs)
+    pretty (G l)                = "GOTO" <+> pS l
+
+pS :: Label -> Doc ann
+pS l = "fun_" <> pretty l
 
 instance Show CS where show=show.pretty
 

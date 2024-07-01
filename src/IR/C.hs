@@ -39,6 +39,7 @@ cLog :: FiniteBits a => a -> Maybe Int64
 cLog n | popCount n == 1 = Just (fromIntegral$countTrailingZeros n) | otherwise = Nothing
 
 cToIRM :: CS -> IRM [Stmt]
+cToIRM (G l)               = do {retL <- nextL; pure [IR.C l, IR.L retL]}
 cToIRM (C.PlProd t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT t' (IR.Reg t'*irE eϵ) | eϵ <- es])
 cToIRM (t := e)            = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]

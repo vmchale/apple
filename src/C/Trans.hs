@@ -248,6 +248,12 @@ llet (n,e') | isF (eAnn e') = do
     eR <- newFTemp
     ss <- feval e' eR
     modify (addD n eR) $> ss
+llet (n,e') | Arrow F F <- eAnn e' = do
+    l <- neL
+    x <- newFTemp; y <- newFTemp
+    (_, ss) <- writeF e' [FA x] (Left y)
+    modify (addF n (l, [FA x], (Left y)))
+    pure [C.Def l ss]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS])
 aeval (LLet _ b e) t = do
@@ -1077,6 +1083,11 @@ feval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
     pure $ plT ++ MX t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
+feval (EApp _ (Var _ f) x) t | isF (eAnn x) = do
+    st <- gets fvars
+    let (l, [FA a], Left r) = getT st f
+    plX <- feval x a
+    pure $ plX ++ [G l, MX t (FTmp r)]
 feval (Id _ (FoldGen seed g f n)) t = do
     seedR <- newFTemp; x <- newFTemp; acc <- newFTemp
     nR <- newITemp; k <- newITemp
