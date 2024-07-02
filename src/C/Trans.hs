@@ -741,7 +741,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠIF (eAnn seed
     (a,aV) <- vSz t (Tmp nR) πsz
     (_, ss) <- writeF op [IPA acc] (Right acc)
     let loop=For i 0 ILt (Tmp nR) (CpyE (AElem t 1 (Tmp i) (Just a) πsz) (Raw acc 0 Nothing undefined) 1 πsz:ss)
-    pure (Just a, Sa acc (ConstI πsz):plS++plN++aV++loop:m'pop mP)
+    pure (Just a, m'sa acc mP++plS++plN++aV++loop:m'pop mP)
 aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     | (Arrow _ tC) <- eAnn f
     , Just (tX, xRnk) <- tRnk (eAnn x)
@@ -851,7 +851,7 @@ eval (EApp _ (Builtin _ Floor) x) t = do
 eval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
-    pure $ plT ++ t := EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1):m'pop a
+    pure $ m'sa t a++plT ++ t := EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1):m'pop a
 eval (Cond _ p e0 e1) t = snd <$> cond p e0 e1 (Right t)
 eval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
     x <- rtemp tP
@@ -1101,7 +1101,7 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
 feval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
-    pure $ plT ++ MX t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
+    pure $ m'sa k a++plT ++ MX t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
 feval (EApp _ (Var _ f) x) t | isF (eAnn x) = do
     st <- gets fvars
     let (l, [FA a], Left r) = getT st f
@@ -1126,11 +1126,11 @@ m'sa t = maybe []  ((:[]).Sa t)
 πe (EApp (P tys) (Builtin _ Head) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR
-    pure (offs, Just szE, [], plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 0 lX sz) 1 sz])
+    pure (offs, Just szE, [], plX++[CpyE (Raw t 0 Nothing undefined) (AElem xR 1 0 lX sz) 1 sz])
 πe (EApp (P tys) (Builtin _ Last) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR
-    pure (offs, Just szE, [], plX++[Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
+    pure (offs, Just szE, [], plX++[CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (EAt (ADim xR 0 lX)-1) lX sz) 1 sz])
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     (ls, ss) <- unzip <$>
         zipWithM (\e off ->
@@ -1142,7 +1142,7 @@ m'sa t = maybe []  ((:[]).Sa t)
 πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp; iR <- newITemp
     (lX, plX) <- aeval e xR; plI <- eval i iR
-    pure (offs, Just szE, mempty, plX ++ plI ++ [Sa t szE, CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (Tmp iR) lX sz) 1 sz])
+    pure (offs, Just szE, mempty, plX ++ plI ++ [CpyE (Raw t 0 Nothing undefined) (AElem xR 1 (Tmp iR) lX sz) 1 sz])
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [t := Tmp (getT st x)])
