@@ -73,6 +73,9 @@ be = fromIntegral.fromEnum
 bp :: Cond -> Word8
 bp Eq=0b0000; bp Neq=0b0001; bp Gt=0b1100; bp Leq=0b1101; bp Geq=0b1010; bp Lt=0b1011
 
+ip :: Cond -> Word8
+ip = bp.inv where inv Eq=Neq; inv Neq=Eq; inv Gt=Leq; inv Geq=Lt; inv Lt=Geq; inv Leq=Gt
+
 bs :: Shift -> Word8
 bs Zero=0b0; bs Three=0b1
 
@@ -122,7 +125,7 @@ asm ix st (MovRR x SP r1:asms) = asm ix st (AddRC x SP r1 0:asms)
 asm ix st (MovRR _ r0 r1:asms) = [0b10101010, be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (ZeroR _ r:asms) = [0b11001010, be r, be r `shiftR` 3, lb r r]:asm (ix+4) st asms
 asm ix st (Csel _ r0 r1 r2 p:asms) = [0b10011010, 0x1 `shiftL` 7 .|. be r2, bp p `shiftL` 4 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
-asm ix st (Cset _ r p:asms) = [0b10011010, 0b10011111, bp p `shiftL` 4 .|. 0x7, 0x7 `shiftL` 5 .|. be r]:asm (ix+4) st asms
+asm ix st (Cset _ r p:asms) = [0b10011010, 0b10011111, ip p `shiftL` 4 .|. 0x7, 0x7 `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (TstI _ r (BM 1 ro):asms) | ro <= 0b111111 = [0b11110010, 0x1 `shiftL` 6 .|. (0b111111 .&. (-ro)), be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
 asm ix st (Fcsel _ d0 d1 d2 p:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, bp p `shiftL` 4 .|. 0x3 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fcmp _ d0 d1:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d1, 0b1000 `shiftL` 2 .|. be d0 `shiftR` 5, be d0 `shiftL` 5]:asm (ix+4) st asms
@@ -164,7 +167,7 @@ asm ix st (Bc _ p l:asms) =
 asm ix st (Cbnz _ r l:asms) =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
-        isn=[0b10110101, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs `shiftL` 5) .|. be r]
+        isn=[0b10110101, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
     in isn:asm (ix+4) st asms
 asm ix st (Tbz _ r 0 l:asms) =
     let lIx=get l st

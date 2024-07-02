@@ -125,6 +125,8 @@ ir (IR.WrF (IR.AP t Nothing _) e) = do
     pure $ plE ++ [StrD () (FReg i) (R (absReg t))]
 ir (IR.MJ (IR.IRel Op.INeq (IR.Reg r) (IR.ConstI 0)) l) =
     pure [Cbnz () (absReg r) l]
+ir (IR.MJ (IR.Is r) l) =
+    pure [Cbnz () (absReg r) l]
 ir (IR.MJ (IR.IU Op.IEven (IR.Reg r)) l) =
     pure [Tbz () (absReg r) 0 l]
 ir (IR.MJ (IR.IRel op e (IR.ConstI i)) l) | c <- iop op, Just u <- m12 i = do
@@ -143,8 +145,14 @@ ir (IR.MJ (IR.FRel op e0 e1) l) | c <- frel op = do
     pure $ plE0 ++ plE1 ++ [Fcmp () (FReg r0) (FReg r1), Bc () c l]
 ir (IR.Cmov (IR.IRel op (IR.Reg r0) (IR.Reg r1)) t (IR.Reg r)) | c <- iop op = do
     pure [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (absReg r) (absReg t) c]
+ir (IR.Cmov (IR.IRel op (IR.Reg r0) (IR.Reg r1)) t e) | c <- iop op = do
+    r <- nextI
+    plE <- eval e (IR.ITemp r)
+    pure $ plE ++ [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) (IReg r) (absReg t) c]
 ir (IR.Cset t (IR.IRel op (IR.Reg r0) (IR.Reg r1))) | c <- iop op = do
     pure [CmpRR () (absReg r0) (absReg r1), Cset () (absReg t) c]
+ir (IR.Cset t (IR.FRel op (IR.FReg r0) (IR.FReg r1))) | c <- frel op = do
+    pure [Fcmp () (fabsReg r0) (fabsReg r1), Cset () (absReg t) c]
 ir (IR.Fcmov (IR.IRel op (IR.Reg r0) (IR.Reg r1)) t e) | c <- iop op = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [CmpRR () (absReg r0) (absReg r1), Fcsel () (fabsReg t) (FReg i) (fabsReg t) c]
