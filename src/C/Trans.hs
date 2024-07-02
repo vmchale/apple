@@ -719,6 +719,17 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow
     ss <- writeRF op [x,y] z
     let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem yR 1 (Tmp j) lY 8) y:ss++[wt (AElem t 2 (Tmp k) (Just a) 8) z,k+=1])]
     pure (Just a, plX++plY++szX := EAt (ADim xR 0 lX):szY := EAt (ADim yR 0 lY):Ma a t 2 (Tmp szX*Tmp szY) 8:diml (t, Just a) [Tmp szX, Tmp szY]++k := 0:[loop])
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, isIF tX && isIF tY && isΠ tC = do
+    a <- nextArr t
+    x <- rtemp tX; y <- rtemp tY; slopO <- newITemp
+    let sz=bT tC; slopE=ConstI sz
+    xR <- newITemp; yR <- newITemp; szX <- newITemp; szY <- newITemp
+    i <- newITemp; j <- newITemp; k <- newITemp
+    (lX, plX) <- aeval xs xR; (lY, plY)<- aeval ys yR
+    ss <- writeRF op [x,y] (Right slopO)
+    -- small pattern: copy args (tuples), pass arguments in registers... setup
+    let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem yR 1 (Tmp j) lY 8) y:ss++[CpyE (AElem t 2 (Tmp k) lX 16) (Raw slopO 0 Nothing undefined) 1 sz, k+=1])]
+    pure (Just a, plX++plY++szX:=EAt (ADim xR 0 lX):szY:=EAt (ADim yR 0 lY):Ma a t 2 (Tmp szX*Tmp szY) sz:diml (t, Just a) [Tmp szX, Tmp szY]++Sa slopO slopE:k:=0:[loop, Pop slopE])
 aeval (EApp _ (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tD) <- eAnn op, isIF tX && isIF tD= do
     xR <- newITemp
     szR <- newITemp; sz'R <- newITemp
