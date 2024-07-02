@@ -125,6 +125,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     sqrt { TokB $$ BuiltinSqrt }
     pi { TokB $$ BuiltinPi }
     gen { TokB $$ BuiltinGen }
+    grid { TokB $$ BuiltinGrid }
     log { TokSym $$ SymLog }
     re { TokB $$ BuiltinRep }
     diag { TokB $$ BuiltinD }
@@ -263,7 +264,7 @@ E :: { E AlexPosn }
   | frange { Builtin $1 FRange } | iota { Builtin $1 IRange }
   | floor { Builtin $1 Floor } | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
   | underscore { Builtin $1 Neg }
-  | gen { Builtin $1 Gen }
+  | gen { Builtin $1 Gen } | grid { Builtin $1 Grid }
   | colon { Builtin $1 Size }
   | i { Builtin $1 ItoF }
   | t { Builtin $1 Dim }
