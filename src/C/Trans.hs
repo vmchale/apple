@@ -172,7 +172,7 @@ writeF (Lam _ x e) (FA fr:rs) ret = do
     modify (addD x fr)
     writeF e rs ret
 writeF e [] (Right r) | isArr (eAnn e) = aeval e r
-writeF e [] (Right r) | isI (eAnn e) = (Nothing,)<$>eval e r
+writeF e [] (Right r) | ty <- eAnn e, isI ty || isB ty = (Nothing,)<$>eval e r
 writeF e [] (Right r) | isΠIF (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
 writeF e [] (Left r) = (Nothing,)<$>feval e r
 
@@ -863,6 +863,13 @@ eval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
     pure $ m'sa t a++plT ++ t := EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1):m'pop a
+eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, isIF tD = do
+    xsR <- newITemp; x <- rtemp tD; pR <- newITemp
+    szR <- newITemp; i <- newITemp; done <- newITemp
+    (lX, plX) <- aeval xs xsR
+    ss <- writeRF p [x] (Right pR)
+    let loop=While done INeq 1 (mt (AElem xsR 1 (Tmp i) lX 8) x:ss++[If (Is pR) [t:=Tmp i, done:=1] [], i+=1, Cmov (IRel IGeq (Tmp i) (Tmp szR)) done 1])
+    pure $ plX ++ szR:=EAt (ADim xsR 0 lX):t:=(-1):done:=0:i:=0:[loop]
 eval (Cond _ p e0 e1) t = snd <$> cond p e0 e1 (Right t)
 eval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
     x <- rtemp tP
