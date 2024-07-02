@@ -350,12 +350,7 @@ benchE s = do
                     c <- lift $ gets mf
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     case eAnn e of
-                        (Arr _ F) -> do
-                            liftIO $ do
-                                asm@(_, fp, _) <- efp eC
-                                benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
-                                freeAsm asm
-                        (Arr _ I) -> do
+                        (Arr _ _) -> do
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
