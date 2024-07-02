@@ -301,8 +301,19 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, isIF t
     let slopSz=bT tC; slopE=ConstI slopSz
     (_, ss) <- writeF f [ra x] (Right slopO)
     let loop=For k 0 ILt (Tmp szR)
-                $ mt (AElem xR 1 (Tmp k) lX 8) x:ss++[CpyE (AElem t 1 (Tmp k) (Just a) slopSz) (Raw slopO 0 Nothing slopSz) 1 slopSz]
+                $ mt (AElem xR 1 (Tmp k) lX 8) x:ss++[CpyE (AElem t 1 (Tmp k) (Just a) slopSz) (Raw slopO 0 Nothing undefined) 1 slopSz]
     pure (Just a, plX++Sa slopO slopE:szR:=EAt (ADim xR 0 lX):Ma a t 1 (Tmp szR) slopSz:Wr (ADim t 0 (Just a)) (Tmp szR):loop:[Pop slopE])
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, isΠ tD, isIF tC = do
+    slop <- newITemp; y <- rtemp tC
+    xR <- newITemp; szR <- newITemp
+    k <- newITemp
+    (lX, plX) <- aeval xs xR
+    (a,aV) <- v8 t (Tmp szR)
+    let slopSz=bT tD; slopE=ConstI slopSz
+    (_, ss) <- writeF f [IPA slop] y
+    let loop=For k 0 ILt (Tmp szR)
+                $ CpyE (Raw slop 0 Nothing undefined) (AElem xR 1 (Tmp k) lX slopSz) 1 slopSz:ss++[wt (AElem t 1 (Tmp k) (Just a) 8) y]
+    pure (Just a, plX++Sa slop slopE:szR:=EAt (ADim xR 0 lX):aV++loop:[Pop slopE])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, isIF tC && isIF ta = do
     a <- nextArr t
     y <- rtemp tC
