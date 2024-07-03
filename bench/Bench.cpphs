@@ -59,7 +59,7 @@ main = do
                       [ bench "tyParse (tcdf)" $ nf tyParse t
                       , bench "tyParse (xor)" $ nf tyParse x
                       , bench "x86asm (gamma)" $ nf x86G 𝛾
-                      -- , bench "x86asm (fcdf)" $ nf x86G ꜰ
+                      , bench "x86asm (fcdf)" $ nf x86G ꜰ
                       , bench "x86asm (A)" $ nf x86G ᴀ
                       ]
                       -- TODO: thunks after type checking?
