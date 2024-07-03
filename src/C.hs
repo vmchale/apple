@@ -55,6 +55,7 @@ data ArrAcc = AElem Temp CE CE (Maybe AL) Int64 -- pointer, rank, elem., label f
             | ADim Temp CE (Maybe AL) -- pointer, #, label
             | At Temp [CE] [CE] (Maybe AL) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
             | Raw Temp CE (Maybe AL) Int64 -- pointer to data, offset, label, element size
+            | TupM Temp (Maybe AL)
 
 instance Pretty ArrAcc where
     pretty (AElem t _ e _ _) = pretty t <> brackets (pretty e)
@@ -62,6 +63,7 @@ instance Pretty ArrAcc where
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
     pretty (At t s ix _ _)   = pretty t <> foldMap (brackets.pretty) ix <+> foldMap (parens.pretty) s
     pretty (Raw t o _ _)     = pretty t <> "@" <> pretty o
+    pretty (TupM t _)        = "tup@" <> pretty t
 
 instance Show ArrAcc where show=show.pretty
 
