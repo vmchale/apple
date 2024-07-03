@@ -26,9 +26,9 @@ typedef struct AppleCache {
 } AppleCache;
 
 SEXP rf(U x) {
-    I* i_p=x;
-    I t=1;
-    I rnk=i_p[0];
+    J* i_p=x;
+    J t=1;
+    J rnk=i_p[0];
     SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
     DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
     SEXP ret=PROTECT(allocArray(REALSXP,dims));
@@ -40,14 +40,12 @@ SEXP rf(U x) {
 
 // vector only
 U fr(SEXP x) {
-    I rnk=1;I dim=length(x);
-    I* ret=malloc(8*(2+dim));
+    J rnk=1;J dim=length(x);
+    J* ret=malloc(8*(2+dim));
     ret[0]=rnk;ret[1]=dim;
     memcpy(ret+2,REAL(x),dim*8);
     R ret;
 }
-
-void freety(FnTy* x){free(x->args);free(x);}
 
 SEXP hs_init_R(void) {
     hs_init(0,0);
@@ -65,7 +63,7 @@ SEXP ty_R(SEXP a) {
     R mkString(ret);
 }
 
-SEXP cache_R(SEXP a){
+SEXP jit_R(SEXP a){
     char* err; char** err_p=&err;
     const char* inp=CHAR(asChar(a));
     FnTy* ty=apple_ty(inp,err_p);
@@ -74,7 +72,7 @@ SEXP cache_R(SEXP a){
         R ret;
     };
     U fp;S f_sz;U s;
-    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
+    fp=apple_compile((P)&malloc,(P)&free,(P)&exp,(P)&log,inp,&f_sz,&s);
     AppleCache* rc=malloc(sizeof(AppleCache));
     ffi_cif* ffi=apple_ffi(ty);
     rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;rc->sa=s;rc->ffi=ffi;
@@ -109,52 +107,14 @@ SEXP run_R(SEXP args){
         Sw(ty->args[k]){
             C FA: {U* x=alloca(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
             C F_t: {F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
-            C I_t: {I* xi=alloca(sizeof(I));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
+            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
         }
     }
     ffi_call(cif,fp,ret,vals);
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR
         C F_t: r=ScalarReal(*(F*)ret);BR
-        C I_t: r=ScalarInteger((int)(*(I*)ret));BR
+        C I_t: r=ScalarInteger((int)(*(J*)ret));BR
     }
-    R r;
-}
-
-SEXP apple_R(SEXP args) {
-    char* err;char** err_p=&err;
-    args=CDR(args);
-    SEXP str=CAR(args);
-    const char* inp=CHAR(asChar(str));
-    FnTy* ty=apple_ty(inp,err_p);
-    if(ty==NULL) {
-        SEXP ret=mkString(err);free(err);
-        R ret;
-    }
-    U fp; S f_sz;U s;
-    fp=apple_compile((P)&malloc,(P)&free,inp,&f_sz,&s);
-    SEXP r;
-    ffi_cif* cif=apple_ffi(ty);
-    int argc=ty->argc;
-    U* vals=malloc(sizeof(U)*argc);
-    U ret=malloc(sizeof(F));
-    for(int k=0;k<argc;k++){
-        args=CDR(args);SEXP arg=CAR(args);
-        Sw(ty->args[k]){
-            C FA: {U* x=malloc(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
-            C F_t: {F* xf=malloc(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
-            C I_t: {I* xi=malloc(sizeof(I));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
-        }
-    }
-    ffi_call(cif,fp,ret,vals);
-    DO(k,argc,free(vals[k]));
-    free(vals);free(cif);
-    Sw(ty->res){
-        C FA: r=rf(*(U*)ret);BR
-        C F_t: r=ScalarReal(*(F*)ret);BR
-        C I_t: r=ScalarInteger((int)(*(I*)ret));BR
-    }
-    free(ret);freety(ty);
-    munmap(fp,f_sz);free(s);
     R r;
 }

@@ -3,7 +3,7 @@
 , name = "apple"
 , scopeName = "source.apple"
 , patterns =
-  [ { match = "(Arr|float|int)", name = "storage.type" }
+  [ { match = "(Arr|Vec|M|float|int)", name = "storage.type" }
   , { match =
         "(frange|irange|itof|gen\\.|di\\.|sin\\.|cos\\.|rand\\.|cyc\\.|odd\\.|even\\.|abs\\.|re:)"
     , name = "keyword.other"

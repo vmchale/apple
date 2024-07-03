@@ -1,5 +1,8 @@
-GHC_VER := $(shell ghc --numeric-version)
+HC ?= ghc
+
+GHC_VER := $(shell ${HC} --numeric-version)
 HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
+PY_VER := $(shell python3 --version | ja '.?{|`2 ~* 1 /(\d+\.\d+)\.\d+/}')
 
 all: apple.so
 
@@ -10,8 +13,8 @@ install: apple.so
 
 apple.o: applemodule.c
 	$(CC) -fPIC -O2 -c $< \
-		-I "$$(python3 -m site --user-site)/numpy/core/include" \
-		-I /usr/local/include/python3.12 \
+		-I "$$(python3 -m site --user-site)/numpy/_core/include" \
+		-I /usr/local/include/python$(PY_VER) \
 		-I ../include \
 		-I $(HS_INCLUDE_DIR) \
 		-o $@

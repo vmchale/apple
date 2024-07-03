@@ -5,7 +5,7 @@
 module Asm.Aarch64 ( AArch64 (..)
                    , Addr (..)
                    , Cond (..)
-                   , Shift (..)
+                   , Shift (..), BM (..)
                    , AbsReg (..)
                    , FAbsReg (..)
                    , AReg (..)
@@ -17,6 +17,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , fToInt
                    , pus, pos
                    , puds, pods
+                   , pSym
                    ) where
 
 import           Asm.M
@@ -27,6 +28,7 @@ import           GHC.Generics      (Generic)
 import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
 import           Prettyprinter.Ext
+import           System.Info       (os)
 
 -- https://developer.arm.com/documentation/102374/0101/Registers-in-AArch64---other-registers
 data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
@@ -111,6 +113,12 @@ data Shift = Zero | Three
 instance Pretty Shift where
     pretty Zero = "#0"; pretty Three = "#3"
 
+-- left: shift left by this much
+data BM = BM { ims, left :: !Word8 } deriving Eq
+
+instance Pretty BM where
+    pretty (BM m l) = "0b" <> pretty (replicate (fromIntegral m) '1' ++ replicate (fromIntegral l) '0')
+
 data Addr reg = R reg | RP reg Word16 | BI reg reg Shift deriving Functor
 
 instance Pretty reg => Pretty (Addr reg) where
@@ -124,61 +132,73 @@ instance Pretty Cond where
     pretty Eq = "EQ"; pretty Neq = "NE"; pretty Geq = "GE"
     pretty Lt = "LT"; pretty Gt = "GT"; pretty Leq = "LE"
 
+pSym :: Pretty a => a -> Doc ann
+pSym = case os of {"linux" -> id; "darwin" -> ("_"<>)}.pretty
+
 -- https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | B { ann :: a, label :: Label }
                         | Blr { ann :: a, rSrc :: reg }
+                        | C { ann :: a, label :: Label }
                         | Bl { ann :: a, cfunc :: CFunc }
                         | Bc { ann :: a, cond :: Cond, label :: Label }
-                        | Ret { ann :: a }
-                        | FMovXX { ann :: a, dDest :: freg, dSrc :: freg }
+                        | Ret { ann :: a } | RetL { ann :: a, label :: Label }
+                        | FMovXX { ann :: a, dDest, dSrc :: freg }
                         | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
-                        | FMovXC { ann :: a, dDest :: freg, dC :: Double }
-                        | MovRR { ann :: a, rDest :: reg, rSrc :: reg }
+                        | MovRR { ann :: a, rDest, rSrc :: reg }
                         | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
+                        | MovZ { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                         | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
-                        | MovRL { ann :: a, rDest :: reg, lSrc :: Int }
+                        | LdrRL { ann :: a, rDest :: reg, lSrc :: Int }
                         | MovK { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                         | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
                         | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
                         | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
                         | StrD { ann :: a, dSrc :: freg, aDest :: Addr reg }
-                        | SubRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
-                        | AddRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
-                        | MulRR { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg }
-                        | Madd { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg, rSrc3 :: reg }
-                        | AddRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
-                        | SubRC { ann :: a, rDest :: reg, rSrc :: reg, rC :: Word16 }
-                        | Lsl { ann :: a, rDest :: reg, rSrc :: reg, sC :: Word8 }
-                        | Asr { ann :: a, rDest :: reg, rSrc :: reg, sC :: Word8 }
+                        | SubRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                        | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                        | ZeroR { ann :: a, rDest :: reg }
+                        | AndRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                        | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                        | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
+                        | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
+                        | Sdiv { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                        | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
+                        | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
+                        | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
+                        | Asr { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
                         | CmpRC { ann :: a, rSrc :: reg, cSrc :: Word16 }
-                        | CmpRR { ann :: a, rSrc1 :: reg, rSrc2 :: reg }
-                        | Neg { ann :: a, rDest :: reg, rSrc :: reg }
-                        | Fmul { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
-                        | Fadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
-                        | Fsub { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
-                        | Fdiv { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
+                        | CmpRR { ann :: a, rSrc1, rSrc2 :: reg }
+                        | Neg { ann :: a, rDest, rSrc :: reg }
+                        | Fmul { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fadd { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fsub { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                         | FcmpZ { ann :: a, dSrc :: freg }
-                        | Fcmp { ann :: a, dSrc1 :: freg, dSrc2 :: freg }
+                        | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
+                        | Fneg { ann :: a, dDest, dSrc :: freg }
                         | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
                         | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
-                        | Stp { ann :: a, rSrc1 :: reg, rSrc2 :: reg, aDest :: Addr reg }
-                        | Ldp { ann :: a, rDest1 :: reg, rDest2 :: reg, aSrc :: Addr reg }
-                        | StpD { ann :: a, dSrc1 :: freg, dSrc2 :: freg, aDest :: Addr reg }
-                        | LdpD { ann :: a, dDest1 :: freg, dDest2 :: freg, aSrc :: Addr reg }
-                        | Fmadd { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, dSrc3 :: freg }
-                        | Fmsub { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, dSrc3 :: freg }
-                        | Fsqrt { ann :: a, dDest :: freg, dSrc :: freg }
+                        | Fcvtas { ann :: a, rDest :: reg, dSrc :: freg }
+                        | Stp { ann :: a, rSrc1, rSrc2 :: reg, aDest :: Addr reg }
+                        | Ldp { ann :: a, rDest1, rDest2 :: reg, aSrc :: Addr reg }
+                        | StpD { ann :: a, dSrc1, dSrc2 :: freg, aDest :: Addr reg }
+                        | LdpD { ann :: a, dDest1, dDest2 :: freg, aSrc :: Addr reg }
+                        | Fmadd { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
+                        | Fmsub { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
+                        | Fsqrt { ann :: a, dDest, dSrc :: freg }
+                        | Frintm { ann :: a, dDest, dSrc :: freg }
                         | MrsR { ann :: a, rDest :: reg }
-                        | Fmax { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg }
-                        | Fabs { ann :: a, dDest :: freg, dSrc :: freg }
-                        | Csel { ann :: a, rDest :: reg, rSrc1 :: reg, rSrc2 :: reg, cond :: Cond }
+                        | Fmax { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fmin { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                        | Fabs { ann :: a, dDest, dSrc :: freg }
+                        | Csel { ann :: a, rDest, rSrc1, rSrc2 :: reg, cond :: Cond }
                         | Tbnz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                         | Tbz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                         | Cbnz { ann :: a, rSrc :: reg, label :: Label }
-                        | Fcsel { ann :: a, dDest :: freg, dSrc1 :: freg, dSrc2 :: freg, cond :: Cond }
+                        | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
                         | Cset { ann :: a, rDest :: reg, cond :: Cond }
-                        | TstI { ann :: a, rSrc1 :: reg, cSrc :: Word16 }
+                        | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
                         deriving (Functor)
 
 instance Copointed (AArch64 reg freg) where copoint = ann
@@ -188,8 +208,8 @@ mapR _ (Label x l)           = Label x l
 mapR _ (B x l)               = B x l
 mapR _ (Bc x c l)            = Bc x c l
 mapR _ (Bl x f)              = Bl x f
+mapR _ (C x l)               = C x l
 mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
-mapR _ (FMovXC l r0 c)       = FMovXC l r0 c
 mapR f (MovRR l r0 r1)       = MovRR l (f r0) (f r1)
 mapR f (MovRC l r c)         = MovRC l (f r) c
 mapR f (Ldr l r a)           = Ldr l (f r) (f <$> a)
@@ -199,6 +219,8 @@ mapR f (AddRR l r0 r1 r2)    = AddRR l (f r0) (f r1) (f r2)
 mapR f (SubRR l r0 r1 r2)    = SubRR l (f r0) (f r1) (f r2)
 mapR f (AddRC l r0 r1 c)     = AddRC l (f r0) (f r1) c
 mapR f (SubRC l r0 r1 c)     = SubRC l (f r0) (f r1) c
+mapR f (ZeroR l r)           = ZeroR l (f r)
+mapR f (AndRR l r0 r1 r2)    = AndRR l (f r0) (f r1) (f r2)
 mapR f (Lsl l r0 r1 s)       = Lsl l (f r0) (f r1) s
 mapR f (Asr l r0 r1 s)       = Asr l (f r0) (f r1) s
 mapR f (CmpRR l r0 r1)       = CmpRR l (f r0) (f r1)
@@ -207,15 +229,21 @@ mapR f (Neg l r0 r1)         = Neg l (f r0) (f r1)
 mapR _ (Fadd l xr0 xr1 xr2)  = Fadd l xr0 xr1 xr2
 mapR _ (Fsub l xr0 xr1 xr2)  = Fsub l xr0 xr1 xr2
 mapR _ (Fmul l xr0 xr1 xr2)  = Fmul l xr0 xr1 xr2
+mapR _ (Fneg l xr0 xr1)      = Fneg l xr0 xr1
 mapR _ (FcmpZ l xr)          = FcmpZ l xr
 mapR _ (Ret l)               = Ret l
+mapR _ (RetL x l)            = RetL x l
 mapR f (MulRR l r0 r1 r2)    = MulRR l (f r0) (f r1) (f r2)
 mapR f (Madd l r0 r1 r2 r3)  = Madd l (f r0) (f r1) (f r2) (f r3)
+mapR f (Msub l r0 r1 r2 r3)  = Msub l (f r0) (f r1) (f r2) (f r3)
+mapR f (Sdiv l r0 r1 r2)     = Sdiv l (f r0) (f r1) (f r2)
 mapR f (StrD l d a)          = StrD l d (f <$> a)
 mapR _ (Fdiv l d0 d1 d2)     = Fdiv l d0 d1 d2
 mapR f (Scvtf l d r)         = Scvtf l d (f r)
 mapR f (Fcvtms l r d)        = Fcvtms l (f r) d
+mapR f (Fcvtas l r d)        = Fcvtas l (f r) d
 mapR f (MovK l r u s)        = MovK l (f r) u s
+mapR f (MovZ l r u s)        = MovZ l (f r) u s
 mapR f (FMovDR l d r)        = FMovDR l d (f r)
 mapR _ (Fcmp l d0 d1)        = Fcmp l d0 d1
 mapR f (Ldp l r0 r1 a)       = Ldp l (f r0) (f r1) (f <$> a)
@@ -225,11 +253,13 @@ mapR f (StpD l d0 d1 a)      = StpD l d0 d1 (f <$> a)
 mapR _ (Fmadd l d0 d1 d2 d3) = Fmadd l d0 d1 d2 d3
 mapR _ (Fmsub l d0 d1 d2 d3) = Fmsub l d0 d1 d2 d3
 mapR _ (Fsqrt l d0 d1)       = Fsqrt l d0 d1
+mapR _ (Frintm l d0 d1)      = Frintm l d0 d1
 mapR f (MrsR l r)            = MrsR l (f r)
 mapR f (MovRCf l r cf)       = MovRCf l (f r) cf
-mapR f (MovRL x r l)         = MovRL x (f r) l
+mapR f (LdrRL x r l)         = LdrRL x (f r) l
 mapR f (Blr l r)             = Blr l (f r)
 mapR _ (Fmax l d0 d1 d2)     = Fmax l d0 d1 d2
+mapR _ (Fmin l d0 d1 d2)     = Fmin l d0 d1 d2
 mapR _ (Fabs l d0 d1)        = Fabs l d0 d1
 mapR f (Csel l r0 r1 r2 p)   = Csel l (f r0) (f r1) (f r2) p
 mapR f (Tbnz l r n p)        = Tbnz l (f r) n p
@@ -244,8 +274,8 @@ mapFR _ (Label x l)           = Label x l
 mapFR _ (B x l)               = B x l
 mapFR _ (Bc x c l)            = Bc x c l
 mapFR _ (Bl x f)              = Bl x f
+mapFR _ (C x l)               = C x l
 mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
-mapFR f (FMovXC l xr c)       = FMovXC l (f xr) c
 mapFR _ (MovRR l r0 r1)       = MovRR l r0 r1
 mapFR _ (MovRC l r0 c)        = MovRC l r0 c
 mapFR _ (Ldr l r a)           = Ldr l r a
@@ -255,6 +285,8 @@ mapFR _ (AddRR l r0 r1 r2)    = AddRR l r0 r1 r2
 mapFR _ (AddRC l r0 r1 c)     = AddRC l r0 r1 c
 mapFR _ (SubRR l r0 r1 r2)    = SubRR l r0 r1 r2
 mapFR _ (SubRC l r0 r1 c)     = SubRC l r0 r1 c
+mapFR _ (ZeroR l r)           = ZeroR l r
+mapFR _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
 mapFR _ (Lsl l r0 r1 s)       = Lsl l r0 r1 s
 mapFR _ (Asr l r0 r1 s)       = Asr l r0 r1 s
 mapFR _ (CmpRC l r c)         = CmpRC l r c
@@ -265,13 +297,18 @@ mapFR f (Fadd l xr0 xr1 xr2)  = Fadd l (f xr0) (f xr1) (f xr2)
 mapFR f (Fsub l xr0 xr1 xr2)  = Fsub l (f xr0) (f xr1) (f xr2)
 mapFR f (FcmpZ l xr)          = FcmpZ l (f xr)
 mapFR _ (Ret l)               = Ret l
+mapFR _ (RetL x l)            = RetL x l
 mapFR f (Fdiv l d0 d1 d2)     = Fdiv l (f d0) (f d1) (f d2)
 mapFR _ (MulRR l r0 r1 r2)    = MulRR l r0 r1 r2
 mapFR _ (Madd l r0 r1 r2 r3)  = Madd l r0 r1 r2 r3
+mapFR _ (Msub l r0 r1 r2 r3)  = Msub l r0 r1 r2 r3
+mapFR _ (Sdiv l r0 r1 r2)     = Sdiv l r0 r1 r2
 mapFR f (StrD l d a)          = StrD l (f d) a
 mapFR f (Scvtf l d r)         = Scvtf l (f d) r
 mapFR f (Fcvtms l r d)        = Fcvtms l r (f d)
+mapFR f (Fcvtas l r d)        = Fcvtas l r (f d)
 mapFR _ (MovK l r u s)        = MovK l r u s
+mapFR _ (MovZ l r u s)        = MovZ l r u s
 mapFR f (FMovDR l d r)        = FMovDR l (f d) r
 mapFR f (Fcmp l d0 d1)        = Fcmp l (f d0) (f d1)
 mapFR _ (Stp l r0 r1 a)       = Stp l r0 r1 a
@@ -281,11 +318,14 @@ mapFR f (LdpD l d0 d1 a)      = LdpD l (f d0) (f d1) a
 mapFR f (Fmadd l d0 d1 d2 d3) = Fmadd l (f d0) (f d1) (f d2) (f d3)
 mapFR f (Fmsub l d0 d1 d2 d3) = Fmsub l (f d0) (f d1) (f d2) (f d3)
 mapFR f (Fsqrt l d0 d1)       = Fsqrt l (f d0) (f d1)
+mapFR f (Fneg l d0 d1)        = Fneg l (f d0) (f d1)
+mapFR f (Frintm l d0 d1)      = Frintm l (f d0) (f d1)
 mapFR _ (MrsR l r)            = MrsR l r
 mapFR _ (Blr l r)             = Blr l r
 mapFR _ (MovRCf l r cf)       = MovRCf l r cf
-mapFR _ (MovRL x r l)         = MovRL x r l
+mapFR _ (LdrRL x r l)         = LdrRL x r l
 mapFR f (Fmax l d0 d1 d2)     = Fmax l (f d0) (f d1) (f d2)
+mapFR f (Fmin l d0 d1 d2)     = Fmin l (f d0) (f d1) (f d2)
 mapFR f (Fabs l d0 d1)        = Fabs l (f d0) (f d1)
 mapFR _ (Csel l r0 r1 r2 p)   = Csel l r0 r1 r2 p
 mapFR _ (Tbnz l r n p)        = Tbnz l r n p
@@ -315,7 +355,8 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Label _ l)           = prettyLabel l <> ":"
     pretty (B _ l)               = i4 ("b" <+> prettyLabel l)
     pretty (Blr _ r)             = i4 ("blr" <+> pretty r)
-    pretty (Bl _ l)              = i4 ("bl" <+> "_" <> pretty l)
+    pretty (Bl _ l)              = i4 ("bl" <+> pSym l)
+    pretty (C _ l)               = i4 ("call" <+> pretty l)
     pretty (Bc _ c l)            = i4 ("b." <> pretty c <+> prettyLabel l)
     pretty (FMovXX _ xr0 xr1)    = i4 ("fmov" <+> pretty xr0 <> "," <+> pretty xr1)
     pretty (FMovDR _ d r)        = i4 ("fmov" <+> pretty d <> "," <+> pretty r)
@@ -327,6 +368,8 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (StrD _ xr a)         = i4 ("str" <+> pretty xr <> "," <+> pretty a)
     pretty (AddRR _ rD rS rS')   = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (SubRR _ rD rS rS')   = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (AndRR _ rD rS rS')   = i4 ("and" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (ZeroR _ rD)          = i4 ("eor" <+> pretty rD <> "," <+> pretty rD <> "," <+> pretty rD)
     pretty (MulRR _ rD rS rS')   = i4 ("mul" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (SubRC _ rD rS u)     = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
     pretty (AddRC _ rD rS u)     = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
@@ -340,10 +383,14 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fsub _ rD r0 r1)     = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fdiv _ rD r0 r1)     = i4 ("fdiv" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (FcmpZ _ xr)          = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
+    pretty (Fneg _ d0 d1)        = i4 ("fneg" <+> pretty d0 <> "," <+> pretty d1)
     pretty Ret{}                 = i4 "ret"
+    pretty RetL{}                = i4 "ret"
     pretty (Scvtf _ d r)         = i4 ("scvtf" <+> pretty d <> "," <+> pretty r)
     pretty (Fcvtms _ r d)        = i4 ("fcvtms" <+> pretty r <> "," <+> pretty d)
-    pretty (MovK _ r i s)        = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s )
+    pretty (Fcvtas _ r d)        = i4 ("fcvtas" <+> pretty r <> "," <+> pretty d)
+    pretty (MovK _ r i s)        = i4 ("movk" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s)
+    pretty (MovZ _ r i s)        = i4 ("movz" <+> pretty r <> "," <+> hexd i <> "," <+> "LSL" <+> "#" <> pretty s)
     pretty (Fcmp _ d0 d1)        = i4 ("fcmp" <+> pretty d0 <> "," <+> pretty d1)
     pretty (Stp _ r0 r1 a)       = i4 ("stp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
     pretty (Ldp _ r0 r1 a)       = i4 ("ldp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
@@ -352,11 +399,15 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (Fmadd _ d0 d1 d2 d3) = i4 ("fmadd" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
     pretty (Fmsub _ d0 d1 d2 d3) = i4 ("fmsub" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
     pretty (Madd _ r0 r1 r2 r3)  = i4 ("madd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3)
+    pretty (Msub _ r0 r1 r2 r3)  = i4 ("msub" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3)
+    pretty (Sdiv _ rD rS rS')    = i4 ("sdiv" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (Fsqrt _ d0 d1)       = i4 ("fsqrt" <+> pretty d0 <> "," <+> pretty d1)
+    pretty (Frintm _ d0 d1)      = i4 ("frintm" <+> pretty d0 <> "," <+> pretty d1)
     pretty (MrsR _ r)            = i4 ("mrs" <+> pretty r <> "," <+> "rndr")
     pretty (MovRCf _ r cf)       = i4 ("mov" <+> pretty r <> "," <+> pretty cf)
-    pretty (MovRL _ r l)         = i4 ("mov" <+> pretty r <> "," <+> pretty l)
+    pretty (LdrRL _ r l)         = i4 ("ldr" <+> pretty r <> "," <+> "=arr_" <> pretty l)
     pretty (Fmax _ d0 d1 d2)     = i4 ("fmax" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2)
+    pretty (Fmin _ d0 d1 d2)     = i4 ("fmin" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2)
     pretty (Fabs _ d0 d1)        = i4 ("fabs" <+> pretty d0 <> "," <+> pretty d1)
     pretty (Csel _ r0 r1 r2 p)   = i4 ("csel" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty p)
     pretty (Tbnz _ r n l)        = i4 ("tbnz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l)

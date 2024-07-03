@@ -1,26 +1,38 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CGen ( CType(..), TTE(..), tCTy, pCty ) where
+module CGen (CType(..), TTE(..), tCTy, pCty) where
 
 import           A
 import           Control.Exception (Exception)
 import           Data.Bifunctor    (first)
 import qualified Data.Text         as T
-import           Prettyprinter     (Doc, Pretty (..), tupled, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), braces, parens, tupled, (<+>))
 import           Prettyprinter.Ext
 
 data CType = CR | CI | Af | Ai
 
 instance Pretty CType where
-    pretty CR = "F"
-    pretty CI = "I"
-    pretty Af = "Af"
-    pretty Ai = "Ai"
+    pretty CR = "F"; pretty CI = "I"; pretty Af = "Af"; pretty Ai = "Ai"
 
 data CF = CF !T.Text [CType] CType
 
 instance Pretty CF where
-    pretty (CF n ins out) = pretty out <+> pretty n <+> tupled (pretty<$>ins)
+    pretty (CF n ins out) =
+        let args = zip ins ['a'..] in
+        "extern" <+> pretty out <+> pretty n <+> tupled (px<$>ins) <> ";"
+            <#> px out <+> pretty n <> "_wrapper" <+> tupled (fmap (\(t,var) -> pretty t <+> pretty var) args)
+            <> braces
+                (foldMap d args
+                <> pretty out <+> "res" <> "=" <> ax out (pretty n<>tupled (l.snd<$>args))<>";"
+                <> foldMap f args
+                <> "R res;")
+        where px CR="F"; px CI="I"; px _="U"
+              ax Af=("poke_af"<>).parens;ax Ai=("poke_ai"<>).parens;ax _=id
+              d (t,var) = px t <+> l var <> "=" <> ax t (pretty var) <> ";"
+              f (Af,var) = "free" <> parens (l var) <> ";"
+              f (Ai,var) = "free" <> parens (l var) <> ";"
+              f _        = mempty
+              l var = "_" <> pretty var
 
 -- type translation error
 data TTE = HO | Poly | FArg | ArrFn deriving Show

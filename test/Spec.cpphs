@@ -18,9 +18,6 @@ import           System.Info           (arch)
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
-hsEntropy :: Floating a => [a] -> a
-hsEntropy xs = sum [ x * log x | x <- xs ]
-
 kl :: Floating a => [a] -> [a] -> a
 kl xs ys = sum [ x * log (x/y) | x <- xs, y <- ys ]
 
@@ -42,7 +39,6 @@ rTy = testGroup "Regression tests"
     [ tyF "test/data/polymorphic.🍎"
     , tyF "math/gamma.🍏"
     , tyF "test/examples/regress.🍎"
-    , tyF "test/data/rank.🍎"
     , tyF "test/examples/weekMean.🍎"
     , tyF "test/examples/convolve.🍎"
     , tyF "test/examples/mul.🍏"
@@ -55,11 +51,8 @@ tyT :: TestTree
 tyT = testGroup "Type system"
     [ tyF "test/examples/kl.🍎"
     , tyF "math/chisqcdf.🍎"
-    , tyF "math/fcdf.🍎"
-    , tyF "math/tcdf.🍎"
     , tyF "math/completeElliptic.🍎"
     , tyF "math/hypergeometric.🍏"
-    , tyF "math/erf.🍏"
     , tyF "math/amgm.🍏"
     , tyS "[(+)/\\o 0 (irange 0 x 1)]"
     , tyS "((-)\\~)"
@@ -79,34 +72,52 @@ allT = testGroup "jit"
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int,6,1] ; res @?= [0::Int,4,6,6] }
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
     , testCase "scan" $ do { res <- scan 4 ; res @?= [0,1,3,6,10] }
-    , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] } -- 7 (+/%#) \ (i.8)
-    , testCase "A (elliptic fourier)" $ do { res <- fpAaf "test/data/A.🍏" [0,4,4::Double] [0,0,3::Double]; res @?= 2.5000000000000004 }
+    , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "amgm" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
-    , testCase "vmul builtin" $ do { (AA 1 [2] res) <- fpAaa "test/data/vb.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [1,1::Double]); res @?= [3,7::Double] }
-    , testCase "vmul" $ do { (AA 1 [2] res) <- fpAaa "test/data/vmul.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [1,1::Double]); res @?= [3,7::Double] }
+    , testCase "transpose" $ do { (AA 2 [2, 3] res) <- fpAa "test/data/T.🍏" (AA 2 [3,2] [1,2,3,4,5,6::Double]); res @?= [1,3,5,2,4,6::Double] }
+    , testCase "vmul builtin" $ do { (AA 1 [3] res) <- fpAaa "test/data/vb.🍏" (AA 2 [3,2] [1,2,3,4,5,6::Double]) (AA 1 [2] [1,1::Double]); res @?= [3,7,11::Double] }
+    , testCase "vmul builtin" $ do { (AA 1 [2] res) <- fpAaa "test/data/vb.🍏" (AA 2 [2,3] [1,2,3,4,5,6::Double]) (AA 1 [3] [1,1,1::Double]); res @?= [6,15::Double] }
+    , testCase "vmul" $ do { (AA 1 [3] res) <- fpAaa "test/data/vmul.🍏" (AA 2 [3,2] [1,2,3,4,5,6::Double]) (AA 1 [2] [1,1::Double]); res @?= [3,7,11::Double] }
+    -- 3,4,5 instead of 4,5,6!
+    , testCase "vmul" $ do { (AA 1 [2] res) <- fpAaa "test/data/vmul.🍏" (AA 2 [2,3] [1,2,3,4,5,6::Double]) (AA 1 [3] [1,1,1::Double]); res @?= [6,15::Double] }
     , testCase "matmul builtin" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
+    , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,7,6,9::Double] }
+    , testCase "luhn check" $ do { res <- fpAi "test/examples/luhn.🍎" [4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]; res @?= 1 }
+    , testCase "mapAa" $ do { (AA 1 [2] res) <- fpAa "test/data/maa.🍎" (AA 2 [2,2] [1,2,3,4::Double]); res @?= [3,7::Double] }
+    , testCase "mapAa" $ do { (AA 2 [3,2] res) <- fpAa "test/data/mfa.🍎" (AA 1 [3] [1,2,3::Double]); res @?= [1,1,2,2,3,3::Double] }
+    , testCase "consSum" $ do { (AA 1 [3] res) <- fpAaa "test/data/consSum.🍏" (AA 1 [3] [1,0,0::Double]) (AA 2 [3,2] [2,3,4,5,6,9::Double]); res @?= [6,9,15::Double] }
+    , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hs2 <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
+    , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
+    , testCase "trainXor" $ do
+        (AA 2 [2,2] res0, AA 1 [2] res1, AA 1 [2] res2, x) <- fpAaafp4 "test/data/trainXor.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493]) (AA 1 [2] [0.14801747,0.37182892]) (AA 1 [2] [0.79726405,0.67601843]) 0.57823076
+        res0 @?= [0.5130108836813994,0.563839153826952,0.48606794571593476,0.1463165649068566]
+        res1 @?= [1.0692017538688703e-2,0.24098107852780348]
+        res2 @?= [0.7927996818471371, 0.6633059586618876]
+        x @?= 0.3988611249884681
+    , testCase "elliptic fourier" $ do
+        (AA 1 [2] coeffs, a, c) <- fpAaip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] 2
+        a @?= 2.5000000000000004
+        c @?= 0.9999999999999999
+        last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)
+    , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
+    , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
+    , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
+    , testCase "fizzbuzz" $ do { (AA 1 [10] res) <- fpAa "test/examples/fizzbuzz.🍎" (AA 1 [10] [0..9::Double]); res @?= [15.0,3.0,0.0,3.0,5.0,3.0,0.0,0.0,3.0,0.0::Double] }
+    , testCase "filt" $ do { (AA 1 [10] res) <- fpAa "test/examples/partition.🍏" (AA 1 [10] [0..9::Double]); res @?= [0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0::Double] }
+    , testCase "gamma" $ do { res <- gammaJit (-3.5) ; res @?= gamma (-3.5) }
+    , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res @?= tcdf 12 2 }
     ]
 
 x64T :: TestTree
 x64T = testGroup "x64"
     [ rfTest
-    , testCase "entropy" $ do { res <- jitEntropy [0.25, 0.25, 0.5] ; res @?= hsEntropy [0.25, 0.25, 0.5] }
-    , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
-    , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
-    , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
-    , testCase "gamma" $ do { res <- gammaJit (-3.5) ; res @?= gamma (-3.5) }
     , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
     , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
     , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res @?= 0.6339381452606089 }
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
-    , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res @?= tcdf 12 2 }
-    , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hsTup <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
-    , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res @?= completeElliptic 0.8 }
-    , testCase "coeffs (elliptic fourier)" $ do { res <- fpAait "test/data/coeffN.🍎" [0,4,4::Double] [0,0,3::Double] 2; res @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514) }
-    , testCase "array of floats" $ do { res <- fpAf "test/data/farr.🍎" [3, 6, 9] ; res @?= 36 }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
@@ -120,12 +131,16 @@ sSq i = do
     f <- ia <$> fpn "[(^2)'(irange 0 x 1)]"
     asI (f i)
 
-asI :: Ptr (Apple Int) -> IO [Int]
+asI :: U Int -> IO [Int]
 asI = asN
 
-asN :: Storable a => Ptr (Apple a) -> IO [a]
+asN :: Storable a => U a -> IO [a]
 asN = fmap asV.peek
 asV (AA _ _ xs) = xs
+
+fpAa fp x = wA x $ \pX -> do
+    f <- fmap aa.fpn =<< BSL.readFile fp
+    peek (f pX)
 
 fpAaa fp x y =
     wA x $ \pX ->
@@ -134,7 +149,7 @@ fpAaa fp x y =
             peek (f pX pY)
 
 aaFp fp xs =
-    let xA = AA 1 [fromIntegral(length xs)] xs in
+    let xA = v1 xs in
     wA xA $ \p -> do
         f <- fmap aa.fpn =<< BSL.readFile fp
         asN (f p)
@@ -162,28 +177,34 @@ fpAf fp xs = do
     f <- bytesE <$> BSL.readFile fp
     jitAf f xs
 
-jitEntropy = fpAf "test/examples/entropy.🍏"
 jitKl = fpAaf "test/examples/kl.🍎"
 jitB = fpAaf "test/examples/b.🍎"
 
-fpFaf :: FilePath -> Double -> [Double] -> IO Double
-fpFaf fp x ys = do
-    f <- bytesE <$> BSL.readFile fp
-    jitFaf f x ys
-
-fpAait :: FilePath -> [Double] -> [Double] -> Int -> IO (Double, Double, Double, Double)
-fpAait fp xs ys n = do
+fpAi :: FilePath -> [Int64] -> IO Int64
+fpAi fp bs = do
     f <- fpn =<< BSL.readFile fp
-    let a=AA 1 [fromIntegral(length xs)] xs; b=AA 1 [fromIntegral(length ys)] ys
-    wA a $ \p -> wA b $ \q -> do
-        hs4 <$> peek (aait f p q n)
+    let a=v1 bs
+    wA a $ \p -> pure $ ai f p
 
-fpAaft :: FilePath -> [Double] -> [Double] -> Double -> IO (Double, Double, Double, Double)
-fpAaft fp xs ys n = do
+v1 :: [a] -> Apple a
+v1 xs = AA 1 [fromIntegral (length xs)] xs
+
+fpAaafp4 :: FilePath -> Apple Double -> Apple Double -> Apple Double -> Double -> IO (Apple Double, Apple Double, Apple Double, Double)
+fpAaafp4 fp xs ys zs w = do
     f <- fpn =<< BSL.readFile fp
-    let a=AA 1 [fromIntegral(length xs)] xs; b=AA 1 [fromIntegral(length ys)] ys
-    wA a $ \p -> wA b $ \q -> do
-        hs4 <$> peek (aaft f p q n)
+    wA xs $ \pX -> wA ys $ \pY -> wA zs $ \pZ -> do
+        (P4 pa0 pa1 pa2 x) <- peek (aaafp4 f pX pY pZ w)
+        (,,,) <$> peek pa0 <*> peek pa1 <*> peek pa2 <*> pure x
+
+fpAaip3 :: FilePath -> [Double] -> [Double] -> Int -> IO (Apple (Double, Double, Double, Double), Double, Double)
+fpAaip3 fp xs ys n = do
+    f <- fpn =<< BSL.readFile fp
+    let a=v1 xs; b=v1 ys
+    wA a $ \p ->
+        wA b $ \q -> do
+            (P3 pa x0 x1) <- peek (aaip3 f p q n)
+            c <- peek pa
+            pure (hs4<$>c, x0, x1)
 
 -- leaks memory
 fpn = fmap fst . case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
@@ -198,29 +219,20 @@ fpAaff fp xs ys z = do {f <- bytesE <$> BSL.readFile fp; jitAaff f xs ys z}
 
 jitAaff :: BS.ByteString -> [Double] -> [Double] -> Double -> IO Double
 jitAaff code xs ys z =
-    let a = AA 1 [fromIntegral(length xs)] xs
-        b = AA 1 [fromIntegral(length ys)] ys in
+    let a=v1 xs; b=v1 ys in
     wA a $ \p -> wA b $ \q -> do
         (fp,_) <- bsFp code
         pure $ aaff fp p q z
 
-jitAaf :: FunPtr (Ptr (Apple Double) -> Ptr (Apple Double) -> Double) -> [Double] -> [Double] -> IO Double
+jitAaf :: FunPtr (U Double-> U Double -> Double) -> [Double] -> [Double] -> IO Double
 jitAaf fp xs ys =
-    let a = AA 1 [fromIntegral(length xs)] xs
-        b = AA 1 [fromIntegral(length ys)] ys in
+    let a=v1 xs; b=v1 ys in
     wA a $ \p -> wA b $ \q -> do
         pure $ aaf fp p q
 
-jitFaf :: BS.ByteString -> Double -> [Double] -> IO Double
-jitFaf code x ys =
-    let a = AA 1 [fromIntegral (length ys)] ys in
-    wA a $ \p -> do
-        (fp,_) <- bsFp code
-        pure $ faf fp x p
-
 jitAf :: BS.ByteString -> [Double] -> IO Double
 jitAf code xs =
-    let a = AA 1 [fromIntegral(length xs)] xs in
+    let a = v1 xs in
     wA a $ \p -> do
         (fp,_) <- bsFp code
         pure $ af fp p
@@ -272,25 +284,25 @@ jitRF m n = do
     fp <- fpn =<< BSL.readFile "test/examples/risingFactorial.🍎"
     pure $ runRF fp m n
 
-wA :: Storable a => Apple a -> (Ptr (Apple a) -> IO b) -> IO b
+wA :: Storable a => Apple a -> (U a -> IO b) -> IO b
 wA x act =
     allocaBytes (sizeOf x) $ \p ->
         poke p x *> act p
 
 bytesE = either throw id . bytes
 
-foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" faf :: FunPtr (Double -> Ptr (Apple a) -> Double) -> Double -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" aaff :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double -> Double
+foreign import ccall "dynamic" ai :: FunPtr (U a -> Int64) -> U a -> Int64
+foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
+foreign import ccall "dynamic" aaf :: FunPtr (U a -> U a -> Double) -> U a -> U a -> Double
+foreign import ccall "dynamic" aaff :: FunPtr (U a -> U a -> Double -> Double) -> U a -> U a -> Double -> Double
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
 foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
 foreign import ccall "dynamic" ffff :: FunPtr (Double -> Double -> Double -> Double) -> Double -> Double -> Double -> Double
-foreign import ccall "dynamic" ffa :: FunPtr (Double -> Double -> Ptr (Apple a)) -> Double -> Double -> Ptr (Apple a)
+foreign import ccall "dynamic" ffa :: FunPtr (Double -> Double -> U a) -> Double -> Double -> U a
 foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double
 foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> Int -> Int)
-foreign import ccall "dynamic" ia :: FunPtr (Int -> Ptr (Apple a)) -> Int -> Ptr (Apple a)
-foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b)) -> Ptr (Apple a) -> Ptr (Apple b)
-foreign import ccall "dynamic" aaa :: FunPtr (Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c)) -> Ptr (Apple a) -> Ptr (Apple b) -> Ptr (Apple c)
-foreign import ccall "dynamic" aait :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Int -> Ptr (P4 a b c d)) -> Ptr (Apple a) -> Ptr (Apple a) -> Int -> Ptr (P4 a b c d)
-foreign import ccall "dynamic" aaft :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double -> Ptr (P4 a b c d)) -> Ptr (Apple a) -> Ptr (Apple a) -> Double -> Ptr (P4 a b c d)
+foreign import ccall "dynamic" ia :: FunPtr (Int -> U a) -> Int -> U a
+foreign import ccall "dynamic" aa :: FunPtr (U a -> U b) -> U a -> U b
+foreign import ccall "dynamic" aaa :: FunPtr (U a -> U b -> U c) -> U a -> U b -> U c
+foreign import ccall "dynamic" aaafp4 :: FunPtr (U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)) -> U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)
+foreign import ccall "dynamic" aaip3 :: FunPtr (U a -> U b -> Int -> Ptr (P3 c d e)) -> U a -> U b -> Int -> Ptr (P3 c d e)

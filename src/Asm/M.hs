@@ -46,16 +46,16 @@ pAsm :: Pretty isn => [isn] -> Doc ann
 pAsm = prettyLines.fmap pretty
 
 nextI :: WM Int
-nextI = state (\(IR.WSt l (i:t)) -> (i, IR.WSt l t))
+nextI = state (\(IR.WSt l i) -> (i, IR.WSt l (i+1)))
 
 nextL :: WM Label
-nextL = state (\(IR.WSt (i:l) t) -> (i, IR.WSt l t))
+nextL = state (\(IR.WSt i t) -> (i, IR.WSt (i+1) t))
 
-data CFunc = Malloc | Free deriving (Generic)
+data CFunc = Malloc | Free | Exp | Log deriving (Generic)
 
 instance NFData CFunc where
 
-instance Pretty CFunc where pretty Malloc = "malloc"; pretty Free = "free"
+instance Pretty CFunc where pretty Malloc="malloc"; pretty Free="free"; pretty Exp="exp"; pretty Log="log"
 
 mFree :: Maybe (Ptr a) -> IO ()
 mFree = traverse_ free

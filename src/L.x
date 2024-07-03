@@ -55,7 +55,7 @@ $sub = [$subscript $digitsubscript]
 
 @follow_char = [$letter $digit \_]
 
-@name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek $sub* | $mathlatin $sub* | ∫ | 𝛻 | ∇)
+@name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek $sub* | $mathlatin $sub* | ∫ | 𝛻 | ∇) [′″‴⁗]?
 
 @exp = e\-?$digit+
 @float = $digit+\.$digit+@exp?
@@ -125,6 +125,7 @@ tokens :-
         _                        { mkSym Underscore }
         "?"                      { mkSym QuestionMark }
         ",."                     { mkSym CondSplit }
+        ⸎                        { mkSym Cor }
         ⟨                        { mkSym ArrL }
         ⟩                        { mkSym ArrR }
         "_."                     { mkSym SymLog }
@@ -193,6 +194,7 @@ tokens :-
         √                        { mkBuiltin BuiltinSqrt }
         𝜋                        { mkBuiltin BuiltinPi }
         "gen."                   { mkBuiltin BuiltinGen }
+        "grid."                  { mkBuiltin BuiltinGrid }
         "cyc."                   { mkBuiltin BuiltinCyc }
         "re:"                    { mkBuiltin BuiltinRep }
         "di."                    { mkBuiltin BuiltinD }
@@ -205,6 +207,8 @@ tokens :-
         "%."                     { mkBuiltin BuiltinMMul }
         "%:"                     { mkBuiltin BuiltinVMul }
         Arr                      { mkBuiltin BuiltinArr }
+        Vec                      { mkBuiltin BuiltinVec }
+        M                        { mkBuiltin BuiltinM }
         float                    { mkBuiltin BuiltinFloat }
         int                      { mkBuiltin BuiltinInt }
         𝔯                        { mkBuiltin BuiltinR }
@@ -266,7 +270,7 @@ alexEOF = EOF <$> get_pos
 data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Pow
          | LSqBracket | RSqBracket | LBrace | RBrace | LParen | RParen | Lam
          | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
-         | CondSplit | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
+         | CondSplit | Cor | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | Init
@@ -302,6 +306,7 @@ instance Pretty Sym where
     pretty Underscore   = "_"
     pretty QuestionMark = "?"
     pretty CondSplit    = ",."
+    pretty Cor          = "⸎"
     pretty ArrL         = "⟨"
     pretty ArrR         = "⟩"
     pretty SymLog       = "_."
@@ -354,11 +359,11 @@ instance Pretty Var where
 
 data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
-             | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
+             | BuiltinGen | BuiltinGrid | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
-             | BuiltinD
+             | BuiltinD | BuiltinVec | BuiltinM
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -373,6 +378,7 @@ instance Pretty Builtin where
     pretty BuiltinSqrt   = "√"
     pretty BuiltinPi     = "𝜋"
     pretty BuiltinGen    = "gen."
+    pretty BuiltinGrid   = "grid."
     pretty BuiltinRep    = "re:"
     pretty BuiltinScan   = "Λ"
     pretty BuiltinScanS  = "Λₒ"
@@ -381,6 +387,8 @@ instance Pretty Builtin where
     pretty BuiltinMMul   = "%."
     pretty BuiltinVMul   = "%:"
     pretty BuiltinArr    = "Arr"
+    pretty BuiltinVec    = "Vec"
+    pretty BuiltinM      = "M"
     pretty BuiltinInt    = "int"
     pretty BuiltinFloat  = "float"
     pretty BuiltinT      = "𝓉"

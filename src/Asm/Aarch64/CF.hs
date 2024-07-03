@@ -9,7 +9,7 @@ import           Asm.CF
 import           Asm.M
 import           CF
 import           Class.E      as E
-import           Data.Functor (($>))
+import           Data.Functor (void, ($>))
 import qualified Data.IntSet  as IS
 
 mkControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> [BB AArch64 reg freg () ControlAnn]
@@ -43,6 +43,8 @@ addControlFlow (BB asms _:bbs) = do
             Tbnz _ _ _ lϵ -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
             Tbz _ _ _ lϵ  -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
             Cbnz _ _ lϵ   -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            C _ lϵ        -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
+            RetL _ lϵ     -> lC lϵ
             _             -> pure (f [])
     ; pure (BB asms (ControlAnn i acc (udb asms)) : bbs')
     }
@@ -67,7 +69,6 @@ defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
 uses (MovRR _ _ r)       = singleton r
 uses MovRC{}             = IS.empty
 uses FMovXX{}            = IS.empty
-uses FMovXC{}            = IS.empty
 uses (Ldr _ _ a)         = uA a
 uses (Str _ r a)         = IS.insert (E.toInt r) $ uA a
 uses (Ldp _ _ _ a)       = uA a
@@ -75,6 +76,8 @@ uses (Stp _ r0 r1 a)     = fromList [r0, r1] <> uA a
 uses (LdrD _ _ a)        = uA a
 uses (SubRR _ _ r0 r1)   = fromList [r0, r1]
 uses (AddRR _ _ r0 r1)   = fromList [r0, r1]
+uses (AndRR _ _ r0 r1)   = fromList [r0, r1]
+uses ZeroR{}             = IS.empty
 uses (AddRC _ _ r _)     = singleton r
 uses (SubRC _ _ r _)     = singleton r
 uses (Lsl _ _ r _)       = singleton r
@@ -89,22 +92,31 @@ uses FcmpZ{}             = IS.empty
 uses (StrD _ _ a)        = uA a
 uses (MulRR _ _ r0 r1)   = fromList [r0, r1]
 uses (Madd _ _ r0 r1 r2) = fromList [r0, r1, r2]
+uses (Msub _ _ r0 r1 r2) = fromList [r0, r1, r2]
+uses (Sdiv _ _ r0 r1)    = fromList [r0, r1]
 uses Fdiv{}              = IS.empty
 uses (Scvtf _ _ r)       = singleton r
 uses Fcvtms{}            = IS.empty
+uses Fcvtas{}            = IS.empty
 uses (FMovDR _ _ r)      = singleton r
-uses MovK{}              = IS.empty
+uses (MovK _ r _ _)      = singleton r
+uses MovZ{}              = IS.empty
 uses Fcmp{}              = IS.empty
 uses (StpD _ _ _ a)      = uA a
 uses (LdpD _ _ _ a)      = uA a
 uses Fmadd{}             = IS.empty
 uses Fmsub{}             = IS.empty
 uses Fsqrt{}             = IS.empty
+uses Fneg{}              = IS.empty
+uses Frintm{}            = IS.empty
 uses MrsR{}              = IS.empty
-uses MovRCf{}            = singleton CArg0
-uses MovRL{}             = IS.empty
+uses (MovRCf _ _ Free)   = singleton CArg0
+uses (MovRCf _ _ Malloc) = singleton CArg0
+uses MovRCf{}            = IS.empty
+uses LdrRL{}             = IS.empty
 uses (Blr _ r)           = singleton r
 uses Fmax{}              = IS.empty
+uses Fmin{}              = IS.empty
 uses Fabs{}              = IS.empty
 uses (Csel _ _ r1 r2 _)  = fromList [r1, r2]
 uses Fcsel{}             = IS.empty
@@ -118,9 +130,10 @@ uses (Tbz _ r _ _)       = singleton r
 uses Ret{}               = singleton CArg0
 uses Cset{}              = IS.empty
 uses Bl{}                = IS.empty
+uses C{}                 = singleton ASP
+uses RetL{}              = singleton LR
 
 defs FMovXX{}            = IS.empty
-defs FMovXC{}            = IS.empty
 defs (MovRC _ r _)       = singleton r
 defs (MovRR _ r _)       = singleton r
 defs (Ldr _ r _)         = singleton r
@@ -132,6 +145,8 @@ defs StpD{}              = IS.empty
 defs (Ldp _ r0 r1 _)     = fromList [r0, r1]
 defs (SubRR _ r _ _)     = singleton r
 defs (AddRR _ r _ _)     = singleton r
+defs (AndRR _ r _ _)     = singleton r
+defs (ZeroR _ r)         = singleton r
 defs (AddRC _ r _ _)     = singleton r
 defs (SubRC _ r _ _)     = singleton r
 defs (Lsl _ r _ _)       = singleton r
@@ -146,21 +161,30 @@ defs FcmpZ{}             = IS.empty
 defs StrD{}              = IS.empty
 defs (MulRR _ r _ _)     = singleton r
 defs (Madd _ r _ _ _)    = singleton r
+defs (Msub _ r _ _ _)    = singleton r
+defs (Sdiv _ r _ _)      = singleton r
 defs Fdiv{}              = IS.empty
 defs Scvtf{}             = IS.empty
 defs (Fcvtms _ r _)      = singleton r
+defs (Fcvtas _ r _)      = singleton r
 defs FMovDR{}            = IS.empty
 defs (MovK _ r _ _)      = singleton r
+defs (MovZ _ r _ _)      = singleton r
 defs Fcmp{}              = IS.empty
 defs Fmadd{}             = IS.empty
 defs Fmsub{}             = IS.empty
 defs Fsqrt{}             = IS.empty
+defs Fneg{}              = IS.empty
+defs Frintm{}            = IS.empty
 defs (MrsR _ r)          = singleton r
-defs Blr{}               = IS.empty
+defs Blr{}               = singleton LR
 defs (MovRCf _ _ Free)   = IS.empty
+defs (MovRCf _ _ Exp)    = IS.empty
+defs (MovRCf _ _ Log)    = IS.empty
 defs (MovRCf _ r Malloc) = singleton r <> singleton CArg0
-defs (MovRL _ r _)       = singleton r
+defs (LdrRL _ r _)       = singleton r
 defs Fmax{}              = IS.empty
+defs Fmin{}              = IS.empty
 defs Fabs{}              = IS.empty
 defs (Csel _ r _ _ _)    = singleton r
 defs Fcsel{}             = IS.empty
@@ -173,11 +197,12 @@ defs Tbnz{}              = IS.empty
 defs Tbz{}               = IS.empty
 defs Ret{}               = IS.empty
 defs (Cset _ r _)        = singleton r
-defs Bl{}                = IS.empty
+defs Bl{}                = singleton LR
+defs C{}                 = fromList [LR, FP]
+defs RetL{}              = IS.empty
 
 defsF, usesF :: E freg => AArch64 reg freg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
-defsF (FMovXC _ r _)     = singleton r
 defsF MovRR{}            = IS.empty
 defsF MovRC{}            = IS.empty
 defsF Ldr{}              = IS.empty
@@ -185,6 +210,8 @@ defsF Str{}              = IS.empty
 defsF (LdrD _ r _)       = singleton r
 defsF AddRR{}            = IS.empty
 defsF SubRR{}            = IS.empty
+defsF AndRR{}            = IS.empty
+defsF ZeroR{}            = IS.empty
 defsF AddRC{}            = IS.empty
 defsF SubRC{}            = IS.empty
 defsF Lsl{}              = IS.empty
@@ -200,10 +227,14 @@ defsF (Fdiv _ d _ _)     = singleton d
 defsF StrD{}             = IS.empty
 defsF MulRR{}            = IS.empty
 defsF Madd{}             = IS.empty
+defsF Msub{}             = IS.empty
+defsF Sdiv{}             = IS.empty
 defsF (Scvtf _ r _)      = singleton r
 defsF Fcvtms{}           = IS.empty
+defsF Fcvtas{}           = IS.empty
 defsF (FMovDR _ r _)     = singleton r
 defsF MovK{}             = IS.empty
+defsF MovZ{}             = IS.empty
 defsF Fcmp{}             = IS.empty
 defsF (LdpD _ r0 r1 _)   = fromList [r0, r1]
 defsF Ldp{}              = IS.empty
@@ -212,11 +243,16 @@ defsF StpD{}             = IS.empty
 defsF (Fmadd _ d0 _ _ _) = singleton d0
 defsF (Fmsub _ d0 _ _ _) = singleton d0
 defsF (Fsqrt _ d _)      = singleton d
+defsF (Fneg _ d _)       = singleton d
+defsF (Frintm _ d _)     = singleton d
 defsF MrsR{}             = IS.empty
 defsF Blr{}              = IS.empty
+defsF (MovRCf _ _ Exp)   = singleton FArg0
+defsF (MovRCf _ _ Log)   = singleton FArg0
 defsF MovRCf{}           = IS.empty
-defsF MovRL{}            = IS.empty
+defsF LdrRL{}            = IS.empty
 defsF (Fmax _ d _ _)     = singleton d
+defsF (Fmin _ d _ _)     = singleton d
 defsF (Fabs _ d _)       = singleton d
 defsF Csel{}             = IS.empty
 defsF TstI{}             = IS.empty
@@ -228,11 +264,12 @@ defsF Cbnz{}             = IS.empty
 defsF Tbnz{}             = IS.empty
 defsF Tbz{}              = IS.empty
 defsF Ret{}              = IS.empty
+defsF RetL{}             = IS.empty
 defsF Cset{}             = IS.empty
 defsF Bl{}               = IS.empty
+defsF C{}                = IS.empty
 
 usesF (FMovXX _ _ r)       = singleton r
-usesF FMovXC{}             = IS.empty
 usesF MovRR{}              = IS.empty
 usesF MovRC{}              = IS.empty
 usesF Ldr{}                = IS.empty
@@ -240,6 +277,8 @@ usesF LdrD{}               = IS.empty
 usesF Str{}                = IS.empty
 usesF AddRR{}              = IS.empty
 usesF SubRR{}              = IS.empty
+usesF ZeroR{}              = IS.empty
+usesF AndRR{}              = IS.empty
 usesF AddRC{}              = IS.empty
 usesF SubRC{}              = IS.empty
 usesF Lsl{}                = IS.empty
@@ -255,9 +294,13 @@ usesF (Fdiv _ _ r0 r1)     = fromList [r0, r1]
 usesF (StrD _ r _)         = singleton r
 usesF MulRR{}              = IS.empty
 usesF Madd{}               = IS.empty
+usesF Msub{}               = IS.empty
+usesF Sdiv{}               = IS.empty
 usesF Scvtf{}              = IS.empty
 usesF (Fcvtms _ _ r)       = singleton r
+usesF (Fcvtas _ _ r)       = singleton r
 usesF MovK{}               = IS.empty
+usesF MovZ{}               = IS.empty
 usesF FMovDR{}             = IS.empty
 usesF (Fcmp _ r0 r1)       = fromList [r0, r1]
 usesF (StpD _ r0 r1 _)     = fromList [r0, r1]
@@ -267,11 +310,16 @@ usesF LdpD{}               = IS.empty
 usesF (Fmadd _ _ d0 d1 d2) = fromList [d0, d1, d2]
 usesF (Fmsub _ _ d0 d1 d2) = fromList [d0, d1, d2]
 usesF (Fsqrt _ _ d)        = singleton d
+usesF (Fneg _ _ d)         = singleton d
+usesF (Frintm _ _ d)       = singleton d
 usesF MrsR{}               = IS.empty
 usesF Blr{}                = IS.empty
+usesF (MovRCf _ _ Exp)     = singleton FArg0
+usesF (MovRCf _ _ Log)     = singleton FArg0
 usesF MovRCf{}             = IS.empty
-usesF MovRL{}              = IS.empty
+usesF LdrRL{}              = IS.empty
 usesF (Fmax _ _ d0 d1)     = fromList [d0, d1]
+usesF (Fmin _ _ d0 d1)     = fromList [d0, d1]
 usesF (Fabs _ _ d)         = singleton d
 usesF Csel{}               = IS.empty
 usesF TstI{}               = IS.empty
@@ -285,6 +333,8 @@ usesF Tbz{}                = IS.empty
 usesF Ret{}                = fromList [FArg0, FArg1]
 usesF Cset{}               = IS.empty
 usesF Bl{}                 = IS.empty
+usesF C{}                  = IS.empty
+usesF RetL{}               = IS.empty
 
 next :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM ([Int] -> [Int], [BB AArch64 reg freg () ControlAnn])
 next bbs = do
@@ -295,9 +345,13 @@ next bbs = do
 
 broadcasts :: [BB AArch64 reg freg a ()] -> FreshM [BB AArch64 reg freg a ()]
 broadcasts [] = pure []
+broadcasts (b0@(BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | C _ l <- last asms = do
+    { i <- fm retL; b3 i l
+    ; case asm of {Label _ lϵ -> void $ fm lϵ; _ -> pure ()}
+    ; (b0:) <$> broadcasts bbs
+    }
 broadcasts (b@(BB (Label _ l:_) _):asms) = do
-    { i <- getFresh
-    ; broadcast i l
-    ; (b :) <$> broadcasts asms
+    { void $ fm l
+    ; (b:) <$> broadcasts asms
     }
 broadcasts (asm:asms) = (asm :) <$> broadcasts asms

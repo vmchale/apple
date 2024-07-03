@@ -1,8 +1,15 @@
 #include <stdio.h>
+#include<string.h>
 #include <stdlib.h>
 
-extern void* a(void);
+#include"../../include/apple_p.h"
+
+extern U a(U);
 
 int main(int argc, char *argv[]) {
-    printf("%p\n", a());
+    F xs[] = {1,3,2,5};
+    U x;
+    V(4,xs,x);
+    paf(a(x));
+    free(x);
 }

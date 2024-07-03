@@ -7,6 +7,7 @@ import           Control.Monad.State.Strict (State, gets, modify, runState)
 import           Data.Bifunctor             (second)
 import qualified Data.IntMap                as IM
 import           Nm
+import           Nm.IntMap
 import           R
 import           Ty
 import           U
@@ -21,7 +22,7 @@ instance HasRs (ISt a) where
 type M a = State (ISt a)
 
 bind :: Nm a -> E a -> ISt a -> ISt a
-bind (Nm _ (U u) _) e (ISt r bs) = ISt r (IM.insert u e bs)
+bind n e (ISt r bs) = ISt r (insert n e bs)
 
 runI i = second (max_.renames) . flip runState (ISt (Rs i mempty) mempty)
 
@@ -105,6 +106,7 @@ bM (Lam l n e) = Lam l n <$> bM e
 bM e@(Var _ (Nm _ (U i) _)) = do
     st <- gets binds
     case IM.lookup i st of
+        -- TODO: track if looked up once before (avoid spurious clones?)
         Just e' -> rE e' -- rE vs. match ... t?
         Nothing -> pure e
 bM (LLet l (n, e') e) = do
@@ -117,3 +119,4 @@ bid :: Idiom -> M (T ()) Idiom
 bid (FoldSOfZip seed op es) = FoldSOfZip <$> bM seed <*> bM op <*> traverse bM es
 bid (FoldOfZip zop op es)   = FoldOfZip <$> bM zop <*> bM op <*> traverse bM es
 bid (AShLit ds es)          = AShLit ds <$> traverse bM es
+bid (FoldGen seed f g n)    = FoldGen <$> bM seed <*> bM f <*> bM g <*> bM n

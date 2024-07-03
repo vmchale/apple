@@ -1,3 +1,4 @@
+a.out
 *.o
 *.so
 *.dylib
@@ -5,3 +6,5 @@
 dist-newstyle
 .RData
 .Rhistory
+tags
+tags.mtime

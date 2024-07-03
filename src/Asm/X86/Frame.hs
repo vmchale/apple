@@ -7,7 +7,7 @@ import           Data.Functor   (void)
 import qualified Data.IntSet    as IS
 import           Data.Maybe     (mapMaybe)
 
-frameC :: [X86 X86Reg FX86Reg Interval] -> [X86 X86Reg FX86Reg ()]
+frameC :: [X86 X86Reg FX86Reg Live] -> [X86 X86Reg FX86Reg ()]
 frameC = concat . go IS.empty IS.empty
     where go _ _ [] = []
           go s fs (isn:isns) =
@@ -30,8 +30,8 @@ frameC = concat . go IS.empty IS.empty
           handleRax Free   = id
           puxmm xr = [ISubRI () Rsp 8, MovqAX () (R Rsp) xr]
           poxmm xr = [MovqXA () xr (R Rsp), IAddRI () Rsp 8]
-          mx Free = const []
-          mx _    = id
+          mx Free   = const []
+          mx Malloc = id
 
 fromInt :: Int -> Maybe X86Reg
 fromInt 1    = Just Rsi

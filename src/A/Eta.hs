@@ -17,7 +17,7 @@ thread = foldr (.) id
 
 unseam :: [T ()] -> RM (E (T ()) -> E (T ()), E (T ()) -> E (T ()))
 unseam ts = do
-    lApps <- traverse (\t -> do { n <- nextN t ; pure (\e' -> let t' = eAnn e' in Lam (Arrow t t') n e', \e' -> let Arrow _ cod = eAnn e' in EApp cod e' (Var t n)) }) ts
+    lApps <- traverse (\t -> do { n <- nextN t ; pure (\e' -> let t' = eAnn e' in Lam (t ~> t') n e', \e' -> let Arrow _ cod = eAnn e' in EApp cod e' (Var t n)) }) ts
     let (ls, eApps) = unzip lApps
     pure (thread ls, thread (reverse eApps))
 
@@ -58,6 +58,7 @@ tuck e           = (id, e)
 
 ηIdm (FoldSOfZip seed op es) = FoldSOfZip <$> ηAt seed <*> ηAt op <*> traverse ηAt es
 ηIdm (FoldOfZip zop op es)   = FoldOfZip <$> ηAt zop <*> ηAt op <*> traverse ηAt es
+ηIdm (FoldGen seed g f n)    = FoldGen <$> ηAt seed <*> ηM g <*> ηM f <*> ηAt n
 ηIdm (AShLit ds es)          = AShLit ds <$> traverse ηAt es
 
 -- outermost only
@@ -66,6 +67,9 @@ tuck e           = (id, e)
 ηM e@ILit{}                = pure e
 ηM e@ALit{}                = pure e
 ηM e@(Id _ AShLit{})       = pure e
+ηM e@(Id _ FoldGen{})      = pure e
+ηM e@(Id _ FoldOfZip{})    = pure e
+ηM e@(Id _ FoldSOfZip{})   = pure e
 ηM e@Cond{}                = pure e
 ηM e@BLit{}                = pure e
 ηM e@Tup{}                 = pure e

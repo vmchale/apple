@@ -1,9 +1,1 @@
-\x.\y.
-{
-  vec ← \A.\x.
-  {
-    dotprod ← [(+)/((*)`x y)];
-    (dotprod x)`{1∘[1]} (A::Arr (i`Cons`j`Cons`Nil) float)
-  };
-  (vec x)`{1∘[2]} (y::Arr (i`Cons`j`Cons`Nil) float)
-}
+\x.\y. |: ((x%:)`{1∘[1]} (y::M float))

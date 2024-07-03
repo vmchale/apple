@@ -6,7 +6,7 @@ import qualified Data.ByteString.Lazy  as BSL
 import           Data.Functor          (($>))
 import           Data.Number.Erf       (erf, normcdf)
 import           Foreign.Marshal.Alloc (free, mallocBytes)
-import           Foreign.Ptr           (FunPtr, Ptr)
+import           Foreign.Ptr           (FunPtr)
 import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           I
@@ -26,7 +26,7 @@ hsEntropy xs = sum [ x * log x | x <- xs ]
 kl :: Floating a => [a] -> [a] -> a
 kl xs ys = sum [ x * log (x/y) | x <- xs, y <- ys ]
 
-aA :: Storable a => Apple a -> IO (Ptr (Apple a))
+aA :: Storable a => Apple a -> IO (U a)
 aA x = do
     p <- mallocBytes (sizeOf x)
     poke p x $> p
@@ -46,20 +46,21 @@ main = do
     fp <- fmap iii . leakFp =<< BSL.readFile "test/examples/risingFactorial.🍎"
     entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
-    gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
 #endif
     erfFp <- fmap ff . leakFp =<< BSL.readFile "math/erf.🍏"
     ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
     scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
     scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
     ᴀFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/offset.🍏"
+    gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
+    tcdfFp <- fmap fff . leakFp =<< BSL.readFile "math/tcdf.🍎"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
                       , bench "tyParse (xor)" $ nf tyParse x
-                      , bench "bytes (gamma)" $ nf bytes 𝛾
-                      , bench "bytes (fcdf)" $ nf bytes ꜰ
-                      , bench "asm (A)" $ nf x86G ᴀ
+                      , bench "x86asm (gamma)" $ nf x86G 𝛾
+                      -- , bench "x86asm (fcdf)" $ nf x86G ꜰ
+                      , bench "x86asm (A)" $ nf x86G ᴀ
                       ]
                       -- TODO: thunks after type checking?
                 , env (fmap yeet erfParsed) $ \ast ->
@@ -95,13 +96,15 @@ main = do
                       ]
                 , bgroup "ncdf"
                       [ bench "lib" $ nf normcdf (2 :: Double)
-                      , bench "jit" $ nfIO (pure $ ncdfFp 2)
+                      , bench "jit" $ nf ncdfFp 2
+                      ]
+                , bgroup "tcdf"
+                      [ bench "hs" $ nf (Math.tcdf (12::Double)) (2::Double)
+                      , bench "jit" $ nf (tcdfFp 2) 12
                       ]
                 , bgroup "Γ"
                       [ bench "hs" $ nf Math.gamma (1.5 :: Double)
-#ifdef x86_64_HOST_ARCH
-                      , bench "jit" $ nfIO (pure $ gammaFp 1.5)
-#endif
+                      , bench "jit" $ nf gammaFp 1.5
                       ]
                 , bgroup "scanmax"
                       [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
@@ -115,7 +118,7 @@ main = do
           tcdf = BSL.readFile "math/tcdf.🍎"
           xor = BSL.readFile "test/examples/xor.🍎"
           fcdf = BSL.readFile "math/fcdf.🍎"
-          offA = BSL.readFile "test/data/A.🍏"
+          offA = BSL.readFile "test/examples/ellipticFourier.🍎"
           files = (,,,,) <$> tcdf <*> xor <*> gamma <*> fcdf <*> offA
           erfParsed = parseRename <$> erfSrc
           erfTy = tyParse <$> erfSrc
@@ -126,6 +129,7 @@ main = do
 
 foreign import ccall "dynamic" iii :: FunPtr (Int -> Int -> Int) -> Int -> Int -> Int
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
-foreign import ccall "dynamic" aaf :: FunPtr (Ptr (Apple a) -> Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" af :: FunPtr (Ptr (Apple a) -> Double) -> Ptr (Apple a) -> Double
-foreign import ccall "dynamic" aa :: FunPtr (Ptr (Apple a) -> IO (Ptr (Apple a))) -> Ptr (Apple a) -> IO (Ptr (Apple a))
+foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
+foreign import ccall "dynamic" aaf :: FunPtr (U a -> U a -> Double) -> U a -> U a -> Double
+foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
+foreign import ccall "dynamic" aa :: FunPtr (U a -> IO (U a)) -> U a -> IO (U a)

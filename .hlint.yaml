@@ -2,3 +2,9 @@
 - ignore: {name: Use lambda-case}
 - ignore: {name: Avoid lambda}
 - ignore: {name: Use const}
+- ignore: {name: Use foldr, within: [C.Trans]}
+
+- fixity: infixr 0 ~>
+- fixity: infixl 4 $>
+- fixity: infix 9 +=
+- fixity: infix 9 :=

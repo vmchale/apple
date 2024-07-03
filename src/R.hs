@@ -1,14 +1,12 @@
 {-# LANGUAGE RankNTypes #-}
 
-module R ( Rs (..)
-         , HasRs (..)
+module R ( Rs (..), HasRs (..)
          , maxLens
-         , rG
-         , rE
+         , rG, rE
          ) where
 
 import           A
-import           Control.Monad.State.Strict (MonadState, runState)
+import           Control.Monad.State.Strict (StateT, runState)
 import           Data.Bifunctor             (second)
 import           Data.Functor               (($>))
 import qualified Data.IntMap                as IM
@@ -23,8 +21,7 @@ data Rs = Rs { max_ :: Int, bound :: IM.IntMap Int }
 class HasRs a where
     rename :: Lens' a Rs
 
-instance HasRs Rs where
-    rename = id
+instance HasRs Rs where rename = id
 
 maxLens :: Lens' Rs Int
 maxLens f s = fmap (\x -> s { max_ = x }) (f (max_ s))
@@ -33,24 +30,24 @@ boundLens :: Lens' Rs (IM.IntMap Int)
 boundLens f s = fmap (\x -> s { bound = x }) (f (bound s))
 
 -- Make sure you don't have cycles in the renames map!
-replaceUnique :: (MonadState s m, HasRs s) => U -> m U
+replaceUnique :: (Monad m, HasRs s) => U -> StateT s m U
 replaceUnique u@(U i) = do
     rSt <- use (rename.boundLens)
     case IM.lookup i rSt of
         Nothing -> pure u
         Just j  -> replaceUnique (U j)
 
-replaceVar :: (MonadState s m, HasRs s) => Nm a -> m (Nm a)
+replaceVar :: (Monad m, HasRs s) => Nm a -> StateT s m (Nm a)
 replaceVar (Nm n u l) = do
     u' <- replaceUnique u
     pure $ Nm n u' l
 
-doLocal :: (HasRs s, MonadState s m) => m a -> m a
+doLocal :: (HasRs s, Monad m) => StateT s m a -> StateT s m a
 doLocal act = do
     preB <- use (rename.boundLens)
     act <* ((rename.boundLens) .= preB)
 
-freshen :: (HasRs s, MonadState s m) => Nm a -> m (Nm a)
+freshen :: (HasRs s, Monad m) => Nm a -> StateT s m (Nm a)
 freshen (Nm t (U i) l) = do
     m <- use (rename.maxLens)
     let nU=m+1
@@ -62,14 +59,14 @@ rG :: Int -> E a -> (E a, Int)
 rG i = second max_ . flip runState (Rs i IM.empty) . rE
 
 {-# INLINABLE liftR #-}
-liftR :: (HasRs s, MonadState s m) => T a -> m (T a)
+liftR :: (HasRs s, Monad m) => T a -> StateT s m (T a)
 liftR t = do
     i <- use (rename.maxLens)
     let (u,t',_) = cloneT i t
     (rename.maxLens .= u) $> t'
 
 {-# INLINABLE rE #-}
-rE :: (HasRs s, MonadState s m) => E a -> m (E a)
+rE :: (HasRs s, Monad m) => E a -> StateT s m (E a)
 rE (Lam l n e) = doLocal $ do
     n' <- freshen n
     Lam l n' <$> rE e

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Sys.DL ( libc, mem' ) where
+module Sys.DL ( CCtx, MCtx, libc, mem', math' ) where
 
 import           Data.Functor                          (($>))
 import           Foreign.C.Types                       (CSize)
@@ -9,14 +9,24 @@ import           System.Posix.DynamicLinker.ByteString (DL, RTLDFlags (RTLD_LAZY
 
 #include <gnu/lib-names.h>
 
-mem' :: IO (Int, Int)
-mem' = do {(m,f) <- mem; pure (g m, g f)}
-    where g = (\(IntPtr i) -> i) . ptrToIntPtr . castFunPtrToPtr
+type CCtx = (Int, Int); type MCtx = (Int, Int)
+
+math' :: IO MCtx
+math' = do {(e,l) <- math; pure (ip e, ip l)}
+
+mem' :: IO CCtx
+mem' = do {(m,f) <- mem; pure (ip m, ip f)}
+
+ip = (\(IntPtr i) -> i) . ptrToIntPtr . castFunPtrToPtr
 
 mem :: IO (FunPtr (CSize -> IO (Ptr a)), FunPtr (Ptr a -> IO ()))
-mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; dlclose c$>(m, f)}
+mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; dlclose c$>(m,f)}
+
+math :: IO (FunPtr (Double -> Double), FunPtr (Double -> Double))
+math = do {m <- libm; e <- dlsym m "exp"; l <- dlsym m "log"; dlclose m$>(e,l)}
 
 ll p = dlopen p [RTLD_LAZY]
 
-libc :: IO DL
+libc, libm :: IO DL
 libc = ll {# const LIBC_SO #}
+libm = ll {# const LIBM_SO #}

@@ -48,6 +48,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     underscore { TokSym $$ Underscore }
     question { TokSym $$ QuestionMark }
     condSplit { TokSym $$ CondSplit }
+    coronis { TokSym $$ Cor }
     larr { TokSym $$ ArrL }
     rarr { TokSym $$ ArrR }
     colon { TokSym $$ Colon }
@@ -124,12 +125,15 @@ import Prettyprinter (Pretty (pretty), (<+>))
     sqrt { TokB $$ BuiltinSqrt }
     pi { TokB $$ BuiltinPi }
     gen { TokB $$ BuiltinGen }
+    grid { TokB $$ BuiltinGrid }
     log { TokSym $$ SymLog }
     re { TokB $$ BuiltinRep }
     diag { TokB $$ BuiltinD }
     nil { TokB $$ BuiltinNil }
     cons { TokB $$ BuiltinCons }
     arr { TokB $$ BuiltinArr }
+    vec { TokB $$ BuiltinVec }
+    matrix { TokB $$ BuiltinM }
     int { TokB $$ BuiltinInt }
     float { TokB $$ BuiltinFloat }
     scanS { TokB $$ BuiltinScanS }
@@ -187,6 +191,8 @@ Sh :: { Sh AlexPosn }
 
 T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }
+  | vec I T { Arr ($2 `A.Cons` Nil) $3 }
+  | matrix T {% do {i <- lift $ freshName "i"; j <- lift $ freshName "j"; pure $ Arr (IVar $1 i `A.Cons` IVar $1 j `A.Cons` Nil) $2 } }
   | int { I }
   | float { F }
   | parens(T) { $1 }
@@ -253,11 +259,12 @@ E :: { E AlexPosn }
   | lparen tupled(E,comma) rparen { Tup $1 (reverse $2) }
   | lam name dot E { A.Lam $1 $2 $4 }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
+  | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
   | lsqbracket E rsqbracket { Dfn $1 $2 }
   | frange { Builtin $1 FRange } | iota { Builtin $1 IRange }
   | floor { Builtin $1 Floor } | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
   | underscore { Builtin $1 Neg }
-  | gen { Builtin $1 Gen }
+  | gen { Builtin $1 Gen } | grid { Builtin $1 Grid }
   | colon { Builtin $1 Size }
   | i { Builtin $1 ItoF }
   | t { Builtin $1 Dim }
@@ -276,8 +283,8 @@ E :: { E AlexPosn }
   | re { Builtin $1 Re }
   | diag { Builtin $1 Di }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
-  | E sig T { Ann $2 $1 (void $3) }
-  | E tsig parens(Sh) {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (void$Arr $3 (TVar a))} }
+  | E sig T { Ann $2 $1 $3 }
+  | E tsig parens(Sh) {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (Arr $3 (TVar a))} }
   | e { EApp $1 (Builtin $1 Exp) (FLit $1 (exp 1)) }
   | E at { EApp (eAnn $1) (Builtin (loc $2) (TAt (iat $ sym $2))) $1 }
   | parens(at) { Builtin (loc $1) (TAt (iat $ sym $1)) }

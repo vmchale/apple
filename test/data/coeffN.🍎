@@ -2,11 +2,11 @@
 λxs.λys.λn.
   { sum ← [(+)/x]
   ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
-  ; dxs ⟜ Δ xs; dys ⟜ Δ ys; n ⟜ ℝn
+  ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys
   ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)
-  ; pts ⟜ (+)Λₒ 0 dts
-  ; T ⟜}. pts; k ⟜ 2*n*𝜋
+  ; pts ⟜ (+)Λₒ 0 dts ; T ⟜}. pts
+  ; n ⟜ ℝn; k ⟜ 2*n*𝜋
   ; scaleRad ← [k*x%T]
   ; cosDiffs ⟜ (-)\~([cos.(scaleRad x)]' pts)
   ; sinDiffs ⟜ (-)\~([sin.(scaleRad x)]' pts)

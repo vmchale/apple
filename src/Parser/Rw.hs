@@ -33,18 +33,14 @@ isBinOp Abs    = False
 isBinOp _      = True
 
 fi :: Builtin -> Int
-fi Succ   = 9
-fi Fold   = 9
-fi IntExp = 8
-fi Exp    = 8
-fi Times  = 7
-fi Div    = 7
-fi Mod    = 7
-fi Plus   = 6
-fi Minus  = 6
-fi Map{}  = 5
-fi ConsE  = 4
-fi Snoc   = 4
+fi Succ = 9; fi Fold = 9
+fi IntExp = 8; fi Exp = 8
+fi Times = 7; fi Div = 7; fi Mod = 7
+fi Plus = 6; fi Minus = 6
+fi Map{} = 5
+fi ConsE = 4; fi Snoc = 4
+fi Eq = 4; fi Neq = 4; fi Gt = 4
+fi Lt = 4; fi Lte = 4; fi Gte = 4
 fi CatE   = 5
 
 lassoc :: Builtin -> Bool
@@ -64,18 +60,16 @@ shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1
 
 rw :: E a -> E a
--- TODO: guard against rewriting unary ops (transpose, reverse, floor?)
 rw (EApp l0 (EApp l1 e0@(Builtin _ op0) e1) e2) | isBinOp op0 =
     case rw e2 of
         (EApp l2 (EApp l3 e3@(Builtin _ op1) e4) e5) | isBinOp op1 && shuntl op0 op1 -> EApp l0 (EApp l1 e3 (rw (EApp l2 (EApp l3 e0 e1) e4))) e5
         e2'                                                                          -> EApp l0 (EApp l1 e0 (rw e1)) e2'
 rw (EApp l e0 e') =
     case rw e' of
-        (EApp lϵ e1@(EApp lϵϵ e3@(Builtin _ op) e4) e2) | not (isBinOp op) -> EApp l (rw $ EApp lϵ e0 e1) e2
-                                                        | otherwise -> EApp l (EApp lϵϵ e3 (rw $ EApp lϵ e0 e4)) e2
-        (EApp lϵ e1@EApp{} e2) -> EApp l (rw $ EApp lϵ e0 e1) e2
-        (EApp lϵ e1 e2)        -> EApp l (EApp lϵ (rw e0) e1) e2
-        eRw                    -> EApp l (rw e0) eRw
+        (EApp lϵ (EApp lϵϵ e3@(Builtin _ op) e4) e2) | isBinOp op -> EApp l (EApp lϵϵ e3 (rw $ EApp lϵ e0 e4)) e2
+        (EApp lϵ e1@EApp{} e2)                                    -> EApp l (rw $ EApp lϵ e0 e1) e2
+        (EApp lϵ e1 e2)                                           -> EApp l (EApp lϵ (rw e0) e1) e2
+        eRw                                                       -> EApp l (rw e0) eRw
 rw (Let l (n, e') e) = Let l (n, rw e') (rw e)
 rw (Def l (n, e') e) = Def l (n, rw e') (rw e)
 rw (LLet l (n, e') e) = LLet l (n, rw e') (rw e)

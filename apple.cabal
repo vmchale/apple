@@ -1,20 +1,16 @@
-cabal-version:   1.18
-name:            apple
-version:         0.1.0.0
-license:         AGPL-3
-license-file:    LICENSE
-copyright:       Copyright: (c) 2022 Vanessa McHale
-maintainer:      vamchale@gmail.com
-author:          Vanessa McHale
-synopsis:        Apple array language compiler
-description:     Compiler for a typed, APL-inspired array language.
-category:        Language, Array
-build-type:      Simple
-data-files:      ./c/apple.c
-extra-doc-files:
-    README.md
-    CHANGELOG.md
-
+cabal-version:      2.0
+name:               apple
+version:            0.1.0.0
+license:            AGPL-3
+license-file:       LICENSE
+copyright:          Copyright: (c) 2022 Vanessa McHale
+maintainer:         vamchale@gmail.com
+author:             Vanessa McHale
+synopsis:           Apple array language compiler
+description:        Compiler for a typed, APL-inspired array language.
+category:           Language, Array
+build-type:         Simple
+data-files:         ./include/apple_abi.h
 extra-source-files:
     include/apple.h
     test/examples/*.🍎
@@ -23,6 +19,10 @@ extra-source-files:
     test/data/*.🍏
     math/*.🍎
     math/*.🍏
+
+extra-doc-files:
+    README.md
+    CHANGELOG.md
 
 source-repository head
     type:     git
@@ -50,6 +50,7 @@ library
     hs-source-dirs:     src
     other-modules:
         CF
+        CF.AL
         LI
         R
         LR
@@ -62,11 +63,14 @@ library
         A.Eta
         A.Opt
         U
+        Op
+        C
+        C.Trans
         IR
         IR.Alloc
         IR.CF
         IR.Opt
-        IR.Trans
+        IR.C
         Class.E
         Data.Copointed
         Asm.Ar
@@ -94,6 +98,7 @@ library
         Asm.G
         Asm.M
         Asm.CF
+        Nm.IntMap
 
     default-language:   Haskell2010
     other-extensions:
@@ -102,7 +107,12 @@ library
         ScopedTypeVariables TupleSections BinaryLiterals MagicHash
         MultiParamTypeClasses DeriveTraversable GeneralizedNewtypeDeriving
 
-    ghc-options:        -Wall -fno-warn-missing-signatures -Wno-x-partial
+    ghc-options:
+        -Wall -fno-warn-missing-signatures -Wno-x-partial
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wmissing-export-lists
+        -Wcpp-undef
+
     build-depends:
         base >=4.11 && <5,
         prettyprinter >=1.7.0,
@@ -116,19 +126,39 @@ library
         bytestring,
         transformers,
         unix,
-        split,
-        extra >=1.7.4
-
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
+        split >=0.2.0.0,
+        extra >=1.7.4,
+        composition-prelude >=1.1.0.1
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
 
     if impl(ghc >=9.2)
         ghc-options: -Wno-operator-whitespace-ext-conflict
+
+library as
+    exposed-modules:
+        H
+    other-modules: Nasm, As
+
+    hs-source-dirs:   as
+    default-language: Haskell2010
+    ghc-options:
+        -Wall -Wno-x-partial -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
+
+    build-depends:
+        base,
+        apple,
+        process,
+        temporary,
+        prettyprinter,
+        text,
+        bytestring
+
+    if impl(ghc >=8.10)
+        ghc-options: -Wunused-packages
 
 foreign-library apple
     type:               native-shared
@@ -138,7 +168,10 @@ foreign-library apple
     default-language:   Haskell2010
     include-dirs:       include
     install-includes:   apple.h
-    ghc-options:        -Wall
+    ghc-options:
+        -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Wmissing-export-lists
+
     build-depends:
         base,
         apple,
@@ -146,14 +179,11 @@ foreign-library apple
         prettyprinter >=1.7.0,
         text
 
-    lib-version-info:   1:0:0
+    if os(linux)
+        lib-version-info:   1:0:0
 
     if os(windows)
         options: standalone
-
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Wmissing-export-lists
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -162,18 +192,18 @@ executable atc
     main-is:          Main.hs
     hs-source-dirs:   app
     other-modules:    Paths_apple
+    autogen-modules:  Paths_apple
     default-language: Haskell2010
-    ghc-options:      -Wall
+    ghc-options:
+        -Wall -Wno-x-partial -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
+
     build-depends:
         base,
         apple,
         optparse-applicative >=0.13.0.0,
         bytestring
-
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -181,27 +211,19 @@ executable atc
 executable writeo
     main-is:          Main.hs
     hs-source-dirs:   exe
-    other-modules:
-        As
-        Nasm
-        Paths_apple
-
+    other-modules:    Paths_apple
+    autogen-modules:  Paths_apple
     default-language: Haskell2010
-    ghc-options:      -Wall
+    ghc-options:
+        -Wall -Wno-x-partial -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wcpp-undef -Wmissing-export-lists
+
     build-depends:
         base,
-        apple,
+        as,
         optparse-applicative >=0.14.0.0,
-        bytestring,
-        prettyprinter,
-        temporary,
-        process,
         text
-
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wcpp-undef
-        -Wmissing-export-lists
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -210,7 +232,12 @@ executable arepl
     main-is:          Main.hs
     hs-source-dirs:   run
     default-language: Haskell2010
-    ghc-options:      -Wall -Wno-missing-signatures
+    ghc-options:
+        -Wall -Wno-missing-signatures -Wno-x-partial
+        -Wincomplete-uni-patterns -Wincomplete-record-updates
+        -Wredundant-constraints -Widentities -Wmissing-export-lists
+        -Wcpp-undef
+
     build-depends:
         base,
         apple,
@@ -225,11 +252,6 @@ executable arepl
         filepath,
         extra
 
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
-
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
 
@@ -240,8 +262,10 @@ test-suite apple-test
     hs-source-dirs:     test
     default-language:   Haskell2010
     ghc-options:
-        -threaded -rtsopts -with-rtsopts=-N -Wall
-        -fno-warn-missing-signatures
+        -threaded -rtsopts "-with-rtsopts=-N -k1k" -Wall
+        -fno-warn-missing-signatures -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
 
     build-depends:
         base,
@@ -251,10 +275,30 @@ test-suite apple-test
         bytestring,
         hypergeometric >=0.1.4.0
 
+    if impl(ghc >=8.10)
+        ghc-options: -Wunused-packages
+
+test-suite apple-o
+    type:             exitcode-stdio-1.0
+    main-is:          Test.hs
+    hs-source-dirs:   of
+    default-language: Haskell2010
     ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
+        -rtsopts -with-rtsopts=-k1k -Wall
+        -fno-warn-missing-signatures -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
+
+    build-depends:
+        base,
+        as,
+        tasty,
+        tasty-hunit,
+        temporary,
+        process,
+        text,
+        filepath,
+        directory
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
@@ -265,19 +309,18 @@ benchmark apple-bench
     build-tool-depends: cpphs:cpphs
     hs-source-dirs:     bench
     default-language:   Haskell2010
-    ghc-options:        -rtsopts -Wall
+    ghc-options:
+        -rtsopts -Wall -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints -Widentities
+        -Wmissing-export-lists -Wcpp-undef
+
     build-depends:
         base,
         apple,
         criterion,
         bytestring,
         erf,
-        hypergeometric >=0.1.1.0
-
-    ghc-options:
-        -Wincomplete-uni-patterns -Wincomplete-record-updates
-        -Wredundant-constraints -Widentities
-        -Wmissing-export-lists -Wcpp-undef
+        hypergeometric >=0.1.2.0
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages

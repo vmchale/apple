@@ -1,50 +1,66 @@
+{-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Hs.A ( Apple (..)
+module Hs.A ( Apple (..), U
             , AI
             , AF
-            , Pp (..), P4 (..)
+            , P2 (..), P3 (..), P4 (..)
             , dbgAB
-            , hsTup, hs4
+            , hs2, hs3, hs4
             ) where
 
 import           Control.Monad         (forM, zipWithM_)
 import           Data.Int              (Int64)
+import           Data.List.Split       (chunksOf)
 import qualified Data.Text             as T
 import           Data.Word             (Word8)
 import           Foreign.Marshal.Array (peekArray)
 import           Foreign.Ptr           (Ptr, castPtr, plusPtr)
 import           Foreign.Storable      (Storable (..))
 import           Numeric               (showHex)
-import           Prettyprinter         (Pretty (..), (<+>))
+import           Prettyprinter         (Doc, Pretty (..), align, brackets, concatWith, hardline, space, (<+>))
 import           Prettyprinter.Ext
 
-type AI = Apple Int64
-type AF = Apple Double
+type AI = Apple Int64; type AF = Apple Double
+type U a = Ptr (Apple a)
 
 -- TODO: Int8, Int32?
-data Apple a = AA !Int64 [Int64] [a]
+data Apple a = AA !Int64 [Int64] [a] deriving (Functor)
 
-data Pp a b = Pp a b
-hsTup (Pp a b) = (a,b)
+data P2 a b = P2 a b; hs2 (P2 a b) = (a,b)
+data P3 a b c = P3 a b c; hs3 (P3 a b c) = (a,b,c)
 data P4 a b c d = P4 a b c d; hs4 (P4 a b c d) = (a,b,c,d)
 
-instance (Storable a, Storable b) => Storable (Pp a b) where
+instance (Storable a, Storable b) => Storable (P2 a b) where
     sizeOf _ = sizeOf(undefined::a)+sizeOf(undefined::b)
-    peek p = Pp <$> peek (castPtr p) <*> peek (p `plusPtr` sizeOf(undefined::a))
+    peek p = P2 <$> peek (castPtr p) <*> peek (p `plusPtr` sizeOf(undefined::a))
+
+instance (Storable a, Storable b, Storable c) => Storable (P3 a b c) where
+    sizeOf _ = sizeOf (undefined::a)+sizeOf (undefined::b)+sizeOf (undefined::c)
+    peek p = P3 <$> peek (castPtr p) <*> peek (p `plusPtr` sizeOf (undefined::a)) <*> peek (p `plusPtr` (sizeOf (undefined::a)+sizeOf (undefined::b)))
 
 instance (Storable a, Storable b, Storable c, Storable d) => Storable (P4 a b c d) where
     sizeOf _ = sizeOf(undefined::a)+sizeOf(undefined::b)+sizeOf(undefined::c)+sizeOf(undefined::d)
     peek p = P4 <$> peek (castPtr p) <*> peek (p `plusPtr` sizeOf(undefined::a)) <*> peek (p `plusPtr` (sizeOf(undefined::a)+sizeOf(undefined::b))) <*> peek (p `plusPtr` (sizeOf(undefined::a)+sizeOf(undefined::b)+sizeOf(undefined::c)))
 
+pE :: Pretty a => [Int64] -> [a] -> Doc ann
+pE [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ", " <> y) (pretty<$>chunksOf (fromIntegral n) xs) <> space))
+pE _ xs      = pretty xs
+
 instance Pretty a => Pretty (Apple a) where
-    pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pretty xs
+    pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pE dims xs
 
-instance (Pretty a, Pretty b) => Pretty (Pp a b) where
-    pretty (Pp x y) = tupledBy "*" [pretty x, pretty y]
+instance (Pretty a, Pretty b) => Pretty (P2 a b) where
+    pretty (P2 x y) = tupledBy "*" [pretty x, pretty y]
 
-dbgAB :: forall a. Storable a => Ptr (Apple a) -> IO T.Text
+instance (Pretty a, Pretty b, Pretty c) => Pretty (P3 a b c) where
+    pretty (P3 x y z) = tupledBy "*" [pretty x, pretty y, pretty z]
+
+instance (Pretty a, Pretty b, Pretty c, Pretty d) => Pretty (P4 a b c d) where
+    pretty (P4 x y z w) = tupledBy "*" [pretty x, pretty y, pretty z, pretty w]
+
+dbgAB :: forall a. Storable a => U a -> IO T.Text
 dbgAB p = do
     rnk <- peek (castPtr p :: Ptr Int64)
     dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)

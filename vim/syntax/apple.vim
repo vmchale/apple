@@ -6,7 +6,7 @@ endif
 
 syntax match appleComment "\v--.*$"
 syntax keyword appleKeyword frange irange itof
-syntax keyword appleType Arr Nil Vec float int
+syntax keyword appleType Arr Nil M Vec float int
 
 highlight link appleComment Comment
 highlight link appleKeyword Keyword

@@ -1,7 +1,7 @@
-module IR.CF ( mkControlFlow
-             ) where
+module IR.CF ( mkControlFlow ) where
 
 import           CF
+import           CF.AL
 -- seems to pretty clearly be faster
 import           Control.Monad.State.Strict (State, evalState, gets, modify)
 import qualified Data.IntSet                as IS
@@ -73,8 +73,8 @@ addControlFlow (stmt:stmts) = do
     }
 
 uE :: Exp -> IS.IntSet
-uE (EAt (AP _ Nothing (Just m)))  = IS.singleton m
-uE (EAt (AP _ (Just e) (Just m))) = IS.insert m$uE e
+uE (EAt (AP _ Nothing (Just m)))  = singleton m
+uE (EAt (AP _ (Just e) (Just m))) = sinsert m$uE e
 uE (EAt (AP _ Nothing Nothing))   = IS.empty
 uE (EAt (AP _ (Just e) Nothing))  = uE e
 uE (IRel _ e0 e1)                 = uE e0<>uE e1
@@ -88,8 +88,8 @@ uE (IU _ e)                       = uE e
 uE LA{}                           = IS.empty
 
 uF :: FExp -> IS.IntSet
-uF (FAt (AP _ Nothing (Just m)))  = IS.singleton m
-uF (FAt (AP _ (Just e) (Just m))) = IS.insert m$uE e
+uF (FAt (AP _ Nothing (Just m)))  = singleton m
+uF (FAt (AP _ (Just e) (Just m))) = sinsert m$uE e
 uF (FAt (AP _ (Just e) Nothing))  = uE e
 uF (FAt (AP _ Nothing Nothing))   = IS.empty
 uF ConstF{}                       = IS.empty
@@ -98,9 +98,9 @@ uF (FU _ e)                       = uF e
 uF (FConv e)                      = uE e
 uF (FB _ e0 e1)                   = uF e0<>uF e1
 
-uA (AP _ (Just e) (Just m)) = IS.insert m $ uE e
+uA (AP _ (Just e) (Just m)) = sinsert m $ uE e
 uA (AP _ (Just e) Nothing)  = uE e
-uA (AP _ Nothing (Just m))  = IS.singleton m
+uA (AP _ Nothing (Just m))  = singleton m
 uA _                        = IS.empty
 
 uses :: Stmt -> IS.IntSet
@@ -108,7 +108,7 @@ uses (Ma _ _ e)      = uE e
 uses (MX _ e)        = uF e
 uses (MT _ e)        = uE e
 uses (Wr a e)        = uA a <> uE e
-uses (RA l)          = IS.singleton l
+uses (RA l)          = singleton l
 uses (Cmov e0 _ e1)  = uE e0<>uE e1
 uses (Fcmov e0 _ e1) = uE e0<>uF e1
 uses Sa{}            = IS.empty
@@ -119,7 +119,7 @@ uses IRnd{}          = IS.empty
 uses (Cset _ e)      = uE e
 
 defs :: Stmt -> IS.IntSet
-defs (Ma a _ _) = IS.singleton a
+defs (Ma a _ _) = singleton a
 defs _          = IS.empty
 
 next :: [Stmt] -> FreshM ([Int] -> [Int], [(Stmt, ControlAnn)])

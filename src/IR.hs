@@ -4,28 +4,24 @@ module IR ( Exp (..)
           , FExp (..)
           , Stmt (..)
           , Temp (..)
-          , FBin (..)
-          , FUn (..)
-          , AE (..)
-          , IBin (..)
-          , IUn (..)
-          , IRel (..)
-          , FRel (..)
           , Label, AsmData
+          , AE (..)
           , WSt (..)
           , prettyIR
           ) where
 
+import           CF.AL
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
+import           Op
 import           Prettyprinter     (Doc, Pretty (..), hardline, parens, (<+>))
 import           Prettyprinter.Ext
 
 -- see https://my.eng.utah.edu/~cs4400/sse-fp.pdf
 type Label = Word; type AsmData = IM.IntMap [Word64]
 
-data WSt = WSt { wlabels :: [Label], wtemps :: [Int] }
+data WSt = WSt { wlabel :: !Label, wtemps :: !Int }
 
 prettyLabel :: Label -> Doc ann
 prettyLabel l = "apple_" <> pretty l
@@ -61,25 +57,22 @@ instance Pretty Temp where
     pretty FRet      = "f_ret"
     pretty FRet1     = "f_ret1"
 
-instance Show Temp where show = show . pretty
+instance Show Temp where show=show.pretty
 
 data Stmt = L Label
           | MJ Exp Label
           | J Label
-          | MT Temp Exp
-          | MX Temp FExp -- move targeting xmm0, etc.
-          | Ma Int Temp Exp -- label, register, size
-          | Free Temp | RA !Int -- "return array" no-op (takes label)
-          | Wr AE Exp
-          | WrF AE FExp
+          | MT Temp Exp | MX Temp FExp -- move targeting xmm0 &c.
+          | Ma AL Temp Exp -- label, register, size
+          | Free Temp | RA !AL -- "return array" no-op
+          | Wr AE Exp | WrF AE FExp
           | Cmov Exp Temp Exp | Fcmov Exp Temp FExp
           | Cset Temp Exp
           | Sa Temp Exp -- register, size
           | Pop Exp -- pop salloc
-          | Cpy AE AE Exp -- bytes
+          | Cpy AE AE Exp
           | C Label | R Label
           | IRnd Temp
-          -- TODO: ccall?
 
 instance Pretty Stmt where
     pretty (L l)         = hardline <> prettyLabel l <> ":"
@@ -104,7 +97,7 @@ instance Pretty Stmt where
 
 instance Show Stmt where show = show . pretty
 
-data AE = AP Temp (Maybe Exp) (Maybe Int) -- offset, label for tracking liveness
+data AE = AP Temp (Maybe Exp) (Maybe AL) -- offset, label for tracking liveness
 
 instance Pretty AE where
     pretty (AP t Nothing _)  = parens ("ptr" <+> pretty t)
@@ -160,56 +153,5 @@ instance Pretty Exp where
 
 instance Show Exp where show = show.pretty
 
-data FUn = FSqrt | FLog | FSin | FCos | FAbs
-
-data IUn = ISgn | INot | IEven | IOdd
-
-data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp
-
-data IBin = IPlus | IMinus | ITimes | IAsr | IAnd | IMax | IMin | IDiv | IAsl | IRem
-
-data IRel = IEq | INeq | IGt | ILt | ILeq | IGeq
-data FRel = FEq | FNeq | FGt | FLt | FLeq | FGeq
-
-instance Pretty IRel where
-    pretty IEq  = "="; pretty INeq = "!="; pretty IGt  = ">"
-    pretty ILt  = "<"; pretty ILeq = "≤"; pretty IGeq = "≥"
-
-instance Pretty FRel where
-    pretty FEq  = "="; pretty FNeq = "!="; pretty FGt  = ">"
-    pretty FLt  = "<"; pretty FLeq = "≤"; pretty FGeq = "≥"
-
-instance Pretty IBin where
-    pretty IPlus  = "+"
-    pretty IMinus = "-"
-    pretty ITimes = "*"
-    pretty IDiv   = "div"
-    pretty IAsl   = "asl"; pretty IAsr   = "asr"
-    pretty IMax   = "max"; pretty IMin   = "min"
-    pretty IAnd   = "∧"
-    pretty IRem   = "rem"
-
-instance Pretty FBin where
-    pretty FPlus  = "+";
-    pretty FMinus = "-"
-    pretty FTimes = "*"
-    pretty FDiv   = "%"
-    pretty FExp   = "^"
-    pretty FMax   = "max"
-    pretty FMin   = "min"
-
-instance Pretty FUn where
-    pretty FSqrt = "sqrt"
-    pretty FLog  = "log"
-    pretty FSin  = "sin"; pretty FCos  = "cos"
-    pretty FAbs  = "abs"
-
-instance Pretty IUn where
-    pretty ISgn = "sgn"; pretty INot = "¬"; pretty IEven = "even"; pretty IOdd = "odd"
-
-
 prettyIR :: (AsmData, [Stmt]) -> Doc ann
-prettyIR (ds,ss) = pAD ds <#> pIR ss
-
-pIR :: [Stmt] -> Doc ann
-pIR = prettyLines.fmap pretty
+prettyIR (ds,ss) = pAD ds <#> prettyLines (pretty<$>ss)

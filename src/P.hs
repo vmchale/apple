@@ -4,6 +4,7 @@
 
 -- pipeline
 module P ( Err (..)
+         , CCtx
          , tyParse
          , tyParseCtx
          , tyExpr
@@ -14,6 +15,8 @@ module P ( Err (..)
          , rwP
          , opt
          , ir
+         , cmm
+         , eDumpC
          , eDumpIR
          , aarch64
          , as, x86G
@@ -39,6 +42,8 @@ import           Asm.X86.Byte
 import           Asm.X86.Opt
 import qualified Asm.X86.P                  as X86
 import           Asm.X86.Trans
+import           C
+import           C.Trans                    as C
 import           Control.DeepSeq            (NFData)
 import           Control.Exception          (Exception, throw, throwIO)
 import           Control.Monad              ((<=<))
@@ -46,6 +51,7 @@ import           Control.Monad.State.Strict (evalState, state)
 import           Data.Bifunctor             (first, second)
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
+import qualified Data.IntMap                as IM
 import qualified Data.Text                  as T
 import           Data.Tuple.Extra           (first3)
 import           Data.Typeable              (Typeable)
@@ -55,8 +61,8 @@ import           GHC.Generics               (Generic)
 import           I
 import           IR
 import           IR.Alloc
+import           IR.C
 import           IR.Opt
-import           IR.Trans
 import           L
 import           Nm
 import           Parser
@@ -65,6 +71,7 @@ import           Prettyprinter              (Doc, Pretty (..))
 import           Prettyprinter.Ext
 import           R.Dfn
 import           R.R
+import           Sys.DL
 import           Ty
 import           Ty.M
 
@@ -105,18 +112,18 @@ getTy = fmap (first eAnn) . eCheck <=< annTy
 annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
-eFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
+eFunP :: (Pretty a, Typeable a) => Int -> CCtx -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
 eFunP = eFunPG assembleCtx ex86G
 
-eAFunP :: (Pretty a, Typeable a) => Int -> (Int, Int) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
+eAFunP :: (Pretty a, Typeable a) => Int -> (CCtx, MCtx) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
 eAFunP = eFunPG Aarch64.assembleCtx eAarch64
 
 eFunPG jit asm m ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm m)
 
-ctxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
+ctxFunP :: CCtx -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
 ctxFunP = ctxFunPG assembleCtx x86G
 
-actxFunP :: (Int, Int) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
+actxFunP :: (CCtx, MCtx) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
 actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
 
 ctxFunPG jit asm ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm)
@@ -134,19 +141,23 @@ bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
 bytes = fmap assemble . x86G
 
 as :: T.Text -> BSL.ByteString -> Doc ann
-as f = (prolegomena <#>) . prettyAsm . either throw id . aarch64
-    where prolegomena = ".p2align 2\n\n.text\n\n.global _" <> pretty f <#> "_" <> pretty f <> ":"
+as f = prolegomena.either throw (second aso).aarch64
+    where prolegomena (d,i) = ".p2align 2\n\n.data\n\n" <> pAD d <#> ".text\n\n.global " <> pSym f <#> pSym f <> ":" <#> pAsm i
 
-aarch64 :: BSL.ByteString -> Either (Err AlexPosn) (AsmData, [AArch64 AReg FAReg ()])
+-- TODO: Call internal
+aso (MovRCf () r0 f:Blr () r1:asms) | r0 == r1 = Bl () f:aso asms
+aso (asm:asms) = asm:aso asms; aso [] = []
+
+aarch64 :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [AArch64 AReg FAReg ()])
 aarch64 = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . ir
 
-x86G :: BSL.ByteString -> Either (Err AlexPosn) (AsmData, [X86 X86Reg FX86Reg ()])
+x86G :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [X86 X86Reg FX86Reg ()])
 x86G = walloc (uncurry X86.gallocFrame)
 
-eAarch64 :: Int -> E a -> Either (Err a) (AsmData, [AArch64 AReg FAReg ()])
+eAarch64 :: Int -> E a -> Either (Err a) (IR.AsmData, [AArch64 AReg FAReg ()])
 eAarch64 i = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . eir i
 
-ex86G :: Int -> E a -> Either (Err a) (AsmData, [X86 X86Reg FX86Reg ()])
+ex86G :: Int -> E a -> Either (Err a) (IR.AsmData, [X86 X86Reg FX86Reg ()])
 ex86G i = wallocE i (uncurry X86.gallocFrame)
 
 eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
@@ -158,11 +169,20 @@ eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 walloc f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . ir
 wallocE i f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . eir i
 
-ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], AsmData, WSt)
-ir = fmap (f.writeC) . opt where f (s,r,aa,t) = (frees t (optIR s),aa,r)
+cmm :: BSL.ByteString -> Either (Err AlexPosn) ([CS], C.AsmData)
+cmm = fmap (f.C.writeC).opt where f (cs,_,aa,_)=(cs,aa)
 
-eir :: Int -> E a -> Either (Err a) ([Stmt], AsmData, WSt)
-eir i = fmap (f.writeC) . optE i where f (s,r,aa,t) = (frees t (optIR s),aa,r)
+ec :: Int -> E a -> Either (Err a) ([CS], LSt, C.AsmData, IM.IntMap C.Temp)
+ec i = fmap C.writeC . optE i
+
+ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IR.AsmData, WSt)
+ir = fmap (f.C.writeC).opt where f (cs,u,aa,t) = let (s,u')=cToIR u cs in (frees (ctemp<$>t) (optIR s),aa,u')
+
+eir :: Int -> E a -> Either (Err a) ([Stmt], IR.AsmData, WSt)
+eir i = fmap (f.C.writeC).optE i where f (cs,u,aa,t) = let (s,u')=cToIR u cs in (frees (ctemp<$>t) (optIR s),aa,u')
+
+eDumpC :: Int -> E a -> Either (Err a) (Doc ann)
+eDumpC i = fmap (prettyCS.𝜋).ec i where 𝜋 (a,_,c,_)=(c,a)
 
 eDumpIR :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpIR i = fmap (prettyIR.𝜋) . eir i where 𝜋 (a,b,_)=(b,a)

@@ -7,12 +7,10 @@ module Dbg ( dumpAAbs
            , dumpX86G
            , dumpX86Abs
            , dumpX86Liveness
+           , dumpC
            , dumpIR
            , dumpIRI
            , dumpX86Intervals
-           , dumpX86BB
-           , dumpX86BBL
-           , dumpABB
            , dumpALiveness
            , dumpAIntervals
            , dumpX86Ass
@@ -30,8 +28,6 @@ import qualified Asm.Aarch64          as Aarch64
 import qualified Asm.Aarch64.Byte     as Aarch64
 import qualified Asm.Aarch64.P        as Aarch64
 import           Asm.Aarch64.T
-import           Asm.Ar
-import           Asm.BB
 import           Asm.L
 import           Asm.LI
 import           Asm.M
@@ -39,6 +35,7 @@ import qualified Asm.X86              as X86
 import           Asm.X86.Byte
 import           Asm.X86.P
 import           Asm.X86.Trans
+import           C
 import           CF
 import           Control.Exception    (throw, throwIO)
 import           Control.Monad        ((<=<))
@@ -48,6 +45,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
 import qualified Data.Text            as T
 import qualified Data.Text.IO         as TIO
+import           Data.Tuple           (swap)
 import           Data.Tuple.Extra     (fst3)
 import           Data.Word            (Word64)
 import           IR
@@ -88,7 +86,9 @@ dAtxt = aAsmTxt aarch64
 
 aAsmTxt f = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM Aarch64.dbgFp) . f
     where zipS [] []                                    = []
+          zipS (x@Aarch64.C{}:xs) (y0:y1:y2:y3:y4:ys)   = (x,y0):(x,y1):(x,y2):(x,y3):(x,y4):zipS xs ys
           zipS (x@Aarch64.MovRCf{}:xs) (y0:y1:y2:y3:ys) = (x,y0):(x,y1):(x,y2):(x,y3):zipS xs ys
+          zipS (x@Aarch64.LdrRL{}:xs) (y0:y1:y2:y3:ys)  = (x,y0):(x,y1):(x,y2):(x,y3):zipS xs ys
           zipS (x@Aarch64.Label{}:xs) ys                = (x,BS.empty):zipS xs ys
           zipS (x:xs) (y:ys)                            = (x,y):zipS xs ys
 
@@ -129,6 +129,9 @@ dumpX86Abs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToX86 st x)))) . ir
 dumpAAbs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
 
+dumpC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpC = fmap (prettyCS.swap).cmm
+
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
 
@@ -147,27 +150,10 @@ dumpX86Liveness = fmap (X86.prettyDebugX86 . mkLive . (\(x,_,st) -> snd (irToX86
 dumpALiveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpALiveness = fmap (Aarch64.prettyDebug . mkLive . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
-dumpABB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpABB = fmap (prettyBBLs . liveBB . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
-
-dumpX86BBL :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86BBL = fmap (prettyBBLs . liveBB . (\(x,_,st) -> snd (irToX86 st x))) . ir
-
-dumpX86BB :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpX86BB = fmap (prettyBBs . bb . (\(x,_,st) -> snd (irToX86 st x))) . ir
-
-prettyBBs = concatWith (\x y -> x <#> "==BB==" <#> y) . fmap (\(BB asms _) -> prettyLines (pretty <$> asms))
-
-prettyBBLs :: Pretty (arch reg freg ()) => [BB arch reg freg () Liveness] -> Doc ann
-prettyBBLs = prettyLines . fmap prettyBBL
-
-prettyBBL :: Pretty (arch reg freg ()) => BB arch reg freg () Liveness -> Doc ann
-prettyBBL (BB asms l) = pretty l <#> prettyLines (fmap pretty asms)
-
-x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Interval]
+x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Live]
 x86Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToX86 st x))) . ir
 
-aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Interval]
+aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Live]
 aarch64Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
 printParsed :: BSL.ByteString -> Doc ann
