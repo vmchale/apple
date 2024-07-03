@@ -20,6 +20,7 @@
   - [ ] quickcheck!
   - [ ] automatic differentiation (pytorch eh)
 # Features
+- [ ] Use `arc4random_buf` and also `arc4random_uniform`, `random`, `drand48`
 - [ ] special case for `𝔯 0 1 :: float` etc.
 - [x] folds/scans shouldn't take seeds
 - [ ] allow type signatures in lambdas?
