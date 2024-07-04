@@ -2,4 +2,5 @@
 
 (declare-native
   :name "apple"
-  :source ["japple.c"])
+  :source ["japple.c"]
+  :cflags ["-lapple" "-rpath" "/usr/local/lib"])
