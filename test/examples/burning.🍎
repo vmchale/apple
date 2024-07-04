@@ -1,0 +1,12 @@
+-- https://paulbourke.net/fractals/burnship/
+{
+  seq ← λcx.λcy. {
+    curry ← λf.λx. f (x->1) (x->2);
+    next ← λx.λy. {
+      (x^2-y^2-cx,2*abs.(x*y)-cy)
+    };
+    gen. (cx,cy) (curry next) 256
+  };
+  N ← λcx.λcy. (>=10)@.([x->1^2+x->2^2]'seq cx cy);
+  (frange _1 1 100) N⊗ (frange _1 1 100)
+}
