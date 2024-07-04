@@ -103,8 +103,8 @@ instance Show (T a) where show=show.pretty
 instance Pretty (T a) where pretty=ps 0
 
 instance PS (T a) where
-    ps d (Arr (i `Cons` Nil) t) = parensp (d>appPrec) ("Vec" <+> ps (appPrec+1) i <+> pretty t)
-    ps d (Arr i t)              = parensp (d>appPrec) ("Arr" <+> ps (appPrec+1) i <+> pretty t)
+    ps d (Arr (i `Cons` Nil) t) = parensp (d>appPrec) ("Vec" <+> ps (appPrec+1) i <+> ps (appPrec+1) t)
+    ps d (Arr i t)              = parensp (d>appPrec) ("Arr" <+> ps (appPrec+1) i <+> ps (appPrec+1) t)
     ps _ F                      = "float"
     ps _ I                      = "int"
     ps _ (Li i)                 = "int" <> parens (pretty i)
