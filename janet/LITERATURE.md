@@ -1,1 +1,2 @@
-https://janet.guide/xenofunctions/
+- https://janet.guide/xenofunctions/
+- https://janet-lang.org/capi/index.html
