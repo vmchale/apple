@@ -253,7 +253,7 @@ feval (IR.FU Op.FSin e) t = do
     plE <- feval e t
     let d0=fabsReg t
     s <- ssin t; c <- cosϵ t
-    ls <- nextL; lc <- nextL; endL <- nextL
+    lc <- nextL; endL <- nextL
     i <- nextR; d2 <- nextF; i7 <- nextI
     π4i<-nextI; plπ4 <- feval (IR.ConstF$pi/4) (IR.FTemp π4i); pl7 <- eval (IR.ConstI 7) (IR.ITemp i7)
     let π4=FReg π4i
@@ -264,11 +264,10 @@ feval (IR.FU Op.FSin e) t = do
         ++[Fdiv () d2 d0 π4, Frintm () d2 d2, Fmsub () d0 π4 d2 d0, Fcvtas () i d2]
         ++pl7
         ++[AndRR () i i (IReg i7), TstI () i (BM 1 0), Fsub () dRot π4 d0, Fcsel () d0 dRot d0 Neq]
-        ++[CmpRC () i 0, Bc () Eq ls, CmpRC () i 2, Bc () Eq lc]
-        ++[CmpRC () i 1, Bc () Eq lc, CmpRC () i 3, Bc () Eq ls]
-        ++[CmpRC () i 4, Bc () Eq ls, CmpRC () i 5, Bc () Eq lc]
-        ++[CmpRC () i 6, Bc () Eq lc, CmpRC () i 7, Bc () Eq ls]
-        ++Label () ls:s++B () endL
+        ++[ CmpRC () i 1, Bc () Eq lc, CmpRC () i 2, Bc () Eq lc
+          , CmpRC () i 5, Bc () Eq lc, CmpRC () i 6, Bc () Eq lc
+          ]
+        ++s++B () endL
         :Label () lc:c
         ++[Label () endL]
         ++[Fneg () nres d0, TstI () i (BM 1 2), Fcsel () d0 nres d0 Neq]
