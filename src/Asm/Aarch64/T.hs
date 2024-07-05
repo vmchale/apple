@@ -276,6 +276,10 @@ feval (IR.FB Op.FExp (IR.ConstF 2.718281828459045) e) t = do
     r <- nextR
     plE <- feval e IR.F0
     pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Exp, Blr () r, FMovXX () (fabsReg t) FArg0] ++ poL
+feval (IR.FB Op.FExp e0 e1) t = do
+    r <- nextR
+    plE0 <- feval e0 IR.F0; plE1 <- feval e1 IR.F1
+    pure $ plE0 ++ plE1 ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Pow, Blr () r, FMovXX () (fabsReg t) FArg0] ++ poL
 feval (IR.FU Op.FLog e) t = do
     r <- nextR
     plE <- feval e IR.F0

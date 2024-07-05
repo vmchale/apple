@@ -28,8 +28,8 @@ frameC = concat.go IS.empty IS.empty
                 s' = s `IS.union` new i `IS.difference` done i
                 fs' = fs `IS.union` fnew i `IS.difference` fdone i
             in [void isn] : go s' fs' isns
-          handleX0 Malloc=filter (/=X0); handleX0 Free=id; handleX0 Exp=id; handleX0 Log=id
-          handleD0 Exp=filter (/=D0); handleD0 Log=filter (/=D0);handleD0 Malloc=id;handleD0 Free=id
+          handleX0 Malloc=filter (/=X0); handleX0 Free=id; handleX0 Exp=id; handleX0 Log=id; handleX0 Pow=id
+          handleD0 Exp=filter (/=D0); handleD0 Log=filter (/=D0);handleD0 Malloc=id;handleD0 Free=id; handleD0 Pow=filter (\d->d/=D0 && d/=D1)
 
 -- https://developer.arm.com/documentation/102374/0101/Procedure-Call-Standard
 fromInt :: Int -> Maybe AReg

@@ -25,7 +25,7 @@ hasMa :: [AArch64 reg freg a] -> Bool
 hasMa = any g where g (MovRCf _ _ Malloc)=True; g (MovRCf _ _ Free)=True; g _=False
 
 hasMath :: [AArch64 reg freg a] -> Bool
-hasMath = any g where g (MovRCf _ _ Exp)=True; g (MovRCf _ _ Log)=True; g _=False
+hasMath = any g where g (MovRCf _ _ Exp)=True; g (MovRCf _ _ Log)=True; g (MovRCf _ _ Pow)=True; g _=False
 
 prepAddrs :: [AArch64 reg freg a] -> IO (Maybe CCtx, Maybe MCtx)
 prepAddrs ss = case (hasMa ss, hasMath ss) of
@@ -195,10 +195,12 @@ asm ix st@(_, (Just (m, _), _), _) (MovRCf _ r Malloc:asms) =
     asm ix st (m4 r m++asms)
 asm ix st@(_, (Just (_, f), _), _) (MovRCf _ r Free:asms) =
     asm ix st (m4 r f++asms)
-asm ix st@(_, (_, Just (_, l)),_) (MovRCf _ r Log:asms) =
+asm ix st@(_, (_, Just (_, l, _)),_) (MovRCf _ r Log:asms) =
     asm ix st (m4 r l++asms)
-asm ix st@(_, (_, Just (e, _)),_) (MovRCf _ r Exp:asms) =
+asm ix st@(_, (_, Just (e, _, _)),_) (MovRCf _ r Exp:asms) =
     asm ix st (m4 r e++asms)
+asm ix st@(_, (_, Just (_, _, p)),_) (MovRCf _ r Pow:asms) =
+    asm ix st (m4 r p++asms)
 asm ix st (LdrRL _ r l:asms) =
     let p = pI$arr l st
         w0=p .&. 0xffff; w1=(p .&. 0xffff0000) `lsr` 16; w2=(p .&. 0xFFFF00000000) `lsr` 32; w3=(p .&. 0xFFFF000000000000) `lsr` 48
