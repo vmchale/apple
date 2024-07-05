@@ -324,7 +324,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, nind 
         plE
         ++szR:=EAt (ADim xR 0 l):aV
         ++sas pinches [loop])
-aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, isIF tC && isIF ta = do
+aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, nind tC && isIF ta = do
     a <- nextArr t
     xR <- newITemp; slopP <- newITemp; szR <- newITemp; slopSz <- newITemp
     xd <- newITemp; i <- newITemp; k <- newITemp
