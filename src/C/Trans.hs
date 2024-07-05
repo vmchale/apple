@@ -177,7 +177,7 @@ writeF e [] (Right r) | isΠIF (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe
 writeF e [] (Left r) = (Nothing,)<$>feval e r
 
 m'pinch :: Maybe (CS, CS) -> [CS] -> [CS]
-m'pinch Nothing = id
+m'pinch Nothing        = id
 m'pinch (Just (a,pop)) = (++[pop]).(a:)
 
 arg :: T () -> (Temp, Maybe AL) -> Temp -> CM (Either FTemp Temp, CS, Maybe (CS, CS))
@@ -188,6 +188,15 @@ arg ty (xR, lX) i | isΠ ty = do
     slop <- newITemp
     let sz=bT ty; slopE=ConstI sz
     pure (Right slop, CpyE (TupM slop Nothing) (AElem xR 1 (Tmp i) lX sz) 1 sz, Just (Sa slop slopE, Pop slopE))
+
+ret :: T () -> (Temp, Maybe AL) -> Temp -> CM (Either FTemp Temp, CS, Maybe (CS, CS))
+ret ty (xR, lX) i | isIF ty = do
+    t <- rtemp ty
+    pure (t, wt (AElem xR 1 (Tmp i) lX 8) t, Nothing)
+ret ty (xR, lX) i | isΠ ty = do
+    slopO <- newITemp
+    let sz=bT ty; slopE=ConstI sz
+    pure (Right slopO, CpyE (AElem xR 1 (Tmp i) lX sz) (TupM slopO Nothing) 1 sz, Just (Sa slopO slopE, Pop slopE))
 
 writeRF :: E (T ()) -> [Either FTemp Temp] -> Either FTemp Temp -> CM [CS]
 writeRF e args = fmap snd.writeF e (ra<$>args)
@@ -292,31 +301,21 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
         plRnd = [Rnd iR, iR := (Bin IRem (Tmp iR) (Tmp e1R - Tmp e0R + 1) + Tmp e0R), Wr (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
         loop=For k 0 ILt (ConstI n) plRnd
     pure (Just a, plE0++plE1++Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[loop])
-aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, (isΠ tD || isIF tD) && isIF tC = do
+aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, (isΠ tD || isIF tD) && (isIF tC || isΠ tC) = do
     arrT <- newITemp
     (l, plE) <- aeval e arrT
     iR <- newITemp; szR <- newITemp
-    (a,aV) <- v8 t (Tmp szR)
-    rC <- rtemp tC
+    let sz=bT tC
+    (a,aV) <- vSz t (Tmp szR) sz
     (rD, pArg, pinch) <- arg tD (arrT, l) iR
+    (rC, wArg, pinchO) <- ret tC (t, Just a) iR
     ss <- writeRF op [rD] rC
     let loop=For iR 0 ILt (Tmp szR)
-                $ pArg:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
+                $ pArg:ss++[wArg]
     pure (Just a,
         plE
         ++szR:=EAt (ADim arrT 0 l):aV
-        ++m'pinch pinch [loop])
-aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, isIF tD, isΠ tC = do
-    a <- nextArr t
-    x <- rtemp tD; slopO <- newITemp
-    xR <- newITemp; szR <- newITemp
-    k <- newITemp
-    (lX, plX) <- aeval xs xR
-    let slopSz=bT tC; slopE=ConstI slopSz
-    (_, ss) <- writeF f [ra x] (Right slopO)
-    let loop=For k 0 ILt (Tmp szR)
-                $ mt (AElem xR 1 (Tmp k) lX 8) x:ss++[CpyE (AElem t 1 (Tmp k) (Just a) slopSz) (TupM slopO Nothing) 1 slopSz]
-    pure (Just a, plX++Sa slopO slopE:szR:=EAt (ADim xR 0 lX):Ma a t 1 (Tmp szR) slopSz:Wr (ADim t 0 (Just a)) (Tmp szR):loop:[Pop slopE])
+        ++m'pinch pinchO (m'pinch pinch [loop]))
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, isIF tC && isIF ta = do
     a <- nextArr t
     y <- rtemp tC
