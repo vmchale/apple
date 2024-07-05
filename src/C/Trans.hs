@@ -176,6 +176,19 @@ writeF e [] (Right r) | ty <- eAnn e, isI ty || isB ty = (Nothing,)<$>eval e r
 writeF e [] (Right r) | isΠIF (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
 writeF e [] (Left r) = (Nothing,)<$>feval e r
 
+m'pinch :: Maybe (CS, CS) -> [CS] -> [CS]
+m'pinch Nothing = id
+m'pinch (Just (a,pop)) = (++[pop]).(a:)
+
+arg :: T () -> (Temp, Maybe AL) -> Temp -> CM (Either FTemp Temp, CS, Maybe (CS, CS))
+arg ty (xR, lX) i | isIF ty = do
+    t <- rtemp ty
+    pure (t, mt (AElem xR 1 (Tmp i) lX 8) t, Nothing)
+arg ty (xR, lX) i | isΠ ty = do
+    slop <- newITemp
+    let sz=bT ty; slopE=ConstI sz
+    pure (Right slop, CpyE (TupM slop Nothing) (AElem xR 1 (Tmp i) lX sz) 1 sz, Just (Sa slop slopE, Pop slopE))
+
 writeRF :: E (T ()) -> [Either FTemp Temp] -> Either FTemp Temp -> CM [CS]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
@@ -279,19 +292,20 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
         plRnd = [Rnd iR, iR := (Bin IRem (Tmp iR) (Tmp e1R - Tmp e0R + 1) + Tmp e0R), Wr (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
         loop=For k 0 ILt (ConstI n) plRnd
     pure (Just a, plE0++plE1++Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[loop])
-aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, isIF tD && isIF tC= do
+aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, (isΠ tD || isIF tD) && isIF tC = do
     arrT <- newITemp
     (l, plE) <- aeval e arrT
     iR <- newITemp; szR <- newITemp
     (a,aV) <- v8 t (Tmp szR)
-    rC <- rtemp tC; rD <- rtemp tD
+    rC <- rtemp tC
+    (rD, pArg, pinch) <- arg tD (arrT, l) iR
     ss <- writeRF op [rD] rC
     let loop=For iR 0 ILt (Tmp szR)
-                $ mt (AElem arrT 1 (Tmp iR) l 8) rD:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
+                $ pArg:ss++[wt (AElem t 1 (Tmp iR) (Just a) 8) rC]
     pure (Just a,
         plE
         ++szR:=EAt (ADim arrT 0 l):aV
-        ++[loop])
+        ++m'pinch pinch [loop])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, isIF tD, isΠ tC = do
     a <- nextArr t
     x <- rtemp tD; slopO <- newITemp
@@ -303,17 +317,6 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, isIF t
     let loop=For k 0 ILt (Tmp szR)
                 $ mt (AElem xR 1 (Tmp k) lX 8) x:ss++[CpyE (AElem t 1 (Tmp k) (Just a) slopSz) (TupM slopO Nothing) 1 slopSz]
     pure (Just a, plX++Sa slopO slopE:szR:=EAt (ADim xR 0 lX):Ma a t 1 (Tmp szR) slopSz:Wr (ADim t 0 (Just a)) (Tmp szR):loop:[Pop slopE])
-aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, isΠ tD, isIF tC = do
-    slop <- newITemp; y <- rtemp tC
-    xR <- newITemp; szR <- newITemp
-    k <- newITemp
-    (lX, plX) <- aeval xs xR
-    (a,aV) <- v8 t (Tmp szR)
-    let slopSz=bT tD; slopE=ConstI slopSz
-    (_, ss) <- writeF f [IPA slop] y
-    let loop=For k 0 ILt (Tmp szR)
-                $ CpyE (TupM slop Nothing) (AElem xR 1 (Tmp k) lX slopSz) 1 slopSz:ss++[wt (AElem t 1 (Tmp k) (Just a) 8) y]
-    pure (Just a, plX++Sa slop slopE:szR:=EAt (ADim xR 0 lX):aV++loop:[Pop slopE])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, isIF tC && isIF ta = do
     a <- nextArr t
     y <- rtemp tC
