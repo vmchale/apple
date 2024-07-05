@@ -421,17 +421,18 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (0, _)])) op) xs) ys) t 
     let step=pAX:pAY:ss++[wR]
         loop=For i 0 ILt (Tmp szR) step
     pure (Just a, plX ++ plY ++ rnkR := EAt (ARnk xR lX):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):xRd := DP xR (Tmp rnkR):yRd := DP yR (Tmp rnkR):tD := DP t (Tmp rnkR):sas [pinchX, pinchY, pinchZ] [loop])
-aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs) ys) t | Just (tA, yRnk) <- tRnk (eAnn ys)
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs) ys) t | Just (_, yRnk) <- tRnk (eAnn ys)
                                                                                         , Just (_, xRnk) <- tRnk (eAnn xs)
-                                                                                        , (Arrow tD1 (Arrow _ tCod)) <- eAnn op
+                                                                                        , (Arrow tX (Arrow _ tCod)) <- eAnn op
                                                                                         , Just (tC, opRnk) <- tRnk tCod
-                                                                                        , isIF tA && isIF tC = do
+                                                                                        , nind tX && isIF tC = do
     a <- nextArr t
     xR <- newITemp; yR <- newITemp; zR <- newITemp
     (lX, plX) <- aeval xs xR; (lY, plY) <- aeval ys yR
-    slopP <- newITemp; x <- rtemp tD1
+    slopP <- newITemp
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral yRnk] ]
     oSz <- newITemp; slopSz <- newITemp; zSz <- newITemp
+    ix <- newITemp; it <- newITemp
     slopE <- newITemp
     (dts, dss) <- plDim yRnk (yR, lY)
     (sts, sssϵ) <- offByDim (reverse dts)
@@ -439,12 +440,13 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
         allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         ~(oDims, complDims) = part allDims
         slopRnk=fromIntegral cr::Int64; oRnk=yRnk+opRnk-slopRnk
+        xSz=bT tX
+    (x, pAX, pinch) <- arg tX (AElem xR (ConstI xRnk) (Tmp ix) lX xSz)
     (lZ, ss) <- writeF op [ra x, AA slopP Nothing] (Right zR)
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     yRd <- newITemp; slopPd <- newITemp
     (complts, place) <- extrCell ecArg sstrides (yRd, lY) slopPd
-    ix <- newITemp; it <- newITemp
-    let loop=forAll complts oDims $ mt (AElem xR (ConstI xRnk) (Tmp ix) lX 8) x:place ++ ss ++ [CpyE (AElem t (ConstI oRnk) (Tmp it) (Just a) 8) (AElem zR (ConstI opRnk) 0 lZ undefined) (Tmp zSz) 8, ix+=1, it+=Tmp zSz]
+    let loop=forAll complts oDims $ pAX:place ++ ss ++ [CpyE (AElem t (ConstI oRnk) (Tmp it) (Just a) 8) (AElem zR (ConstI opRnk) 0 lZ undefined) (Tmp zSz) 8, ix+=1, it+=Tmp zSz]
     (dots, doss) <- plDim opRnk (zR, lZ)
     pure (Just a,
         plX
@@ -455,7 +457,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
             :Sa slopP (Tmp slopE):Wr (ARnk slopP Nothing) (ConstI slopRnk)
             :diml (slopP, Nothing) (Tmp<$>complDims)
         ++[tϵ:=0 | tϵ <- complts]
-        ++mt (AElem xR (ConstI xRnk) 0 lX 8) x
+        ++mt (AElem xR (ConstI xRnk) 0 lX undefined) x
         :sss
         ++yRd := DP yR (ConstI yRnk):slopPd := DP slopP (ConstI slopRnk)
         :place
@@ -465,7 +467,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
         :PlProd oSz (Tmp<$>(zSz:oDims))
             :Ma a t (ConstI oRnk) (Tmp oSz) 8
             :diml (t, Just a) (Tmp<$>(oDims++dots))
-        ++ix:=0:it:=0:loop
+        ++ix:=0:it:=0:m'p pinch loop
         ++[Pop (Tmp slopE)])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
                                                                     , Just tOR <- mIF tO
