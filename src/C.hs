@@ -22,10 +22,10 @@ import           Prettyprinter.Ext
 type Label=Word; type AsmData = IM.IntMap [Word64]
 
 data Temp = ITemp !Int | ATemp !Int
-          | C0 | C1 | C2 | C3 | C4 | C5 | CRet deriving Eq
+          | C0 | C1 | C2 | C3 | C4 | C5 | CRet deriving (Eq, Ord)
 
 data FTemp = FTemp !Int
-           | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
+           | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving (Eq, Ord)
 
 instance Pretty Temp where
     pretty (ITemp i) = "T" <> pretty i

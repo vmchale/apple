@@ -63,6 +63,7 @@ library
         U
         Op
         C
+        C.Loop
         C.Trans
         IR
         IR.Alloc
