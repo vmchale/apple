@@ -685,16 +685,19 @@ aeval (EApp oTy (Builtin _ Tail) x) t | if1p oTy = do
     (a,aV) <- v8 t (Tmp nR)
     (lX, plX) <- aeval x xR
     pure (Just a, plX++nR := (EAt (ADim xR 0 lX)-1):aV++[CpyE (AElem t 1 0 (Just a) 8) (AElem xR 1 1 lX 8) (Tmp nR) 8])
-aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, isIF tX && isIF tY && isIF tC = do
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, nind tX && nind tY && nind tC = do
     aPX <- newITemp; aPY <- newITemp
     nR <- newITemp; i <- newITemp
-    x <- rtemp tX; y <- rtemp tY; z <- rtemp tC
-    (a,aV) <- v8 t (Tmp nR)
+    let xSz=bT tX; ySz=bT tY; zSz=bT tC
+    (a,aV) <- vSz t (Tmp nR) zSz
     (lX, plEX) <- aeval xs aPX; (lY, plEY) <- aeval ys aPY
+    (x, pAX, pinchX) <- arg tX (AElem aPX 1 (Tmp i) lX xSz)
+    (y, pAY, pinchY) <- arg tY (AElem aPY 1 (Tmp i) lY ySz)
+    (z, wZ, pinchZ) <- ret tC (AElem t 1 (Tmp i) (Just a) zSz)
     ss <- writeRF op [x,y] z
-    let loopBody=mt (AElem aPX 1 (Tmp i) lX 8) x:mt (AElem aPY 1 (Tmp i) lY 8) y:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) z]
+    let loopBody=pAX:pAY:ss++[wZ]
         loop=For i 0 ILt (Tmp nR) loopBody
-    pure (Just a, plEX++plEY++nR := EAt (ADim aPX 0 lX):aV++[loop])
+    pure (Just a, plEX++plEY++nR := EAt (ADim aPX 0 lX):aV++sas [pinchX, pinchY, pinchZ] [loop])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arrow tY _)) <- eAnn op, isIF tX && isIF tY = do
     aP <- newITemp
     acc <- rtemp tX; x <- rtemp tY
