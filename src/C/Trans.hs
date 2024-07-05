@@ -689,16 +689,12 @@ aeval (EApp oTy (Builtin _ Tail) x) t | if1p oTy = do
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, nind tX && nind tY && nind tC = do
     aPX <- newITemp; aPY <- newITemp
     nR <- newITemp; i <- newITemp
-    let xSz=bT tX; ySz=bT tY; zSz=bT tC
+    let zSz=bT tC
     (a,aV) <- vSz t (Tmp nR) zSz
     (lX, plEX) <- aeval xs aPX; (lY, plEY) <- aeval ys aPY
-    (x, pAX, pinchX) <- arg tX (AElem aPX 1 (Tmp i) lX xSz)
-    (y, pAY, pinchY) <- arg tY (AElem aPY 1 (Tmp i) lY ySz)
-    (z, wZ, pinchZ) <- ret tC (AElem t 1 (Tmp i) (Just a) zSz)
-    ss <- writeRF op [x,y] z
-    let loopBody=pAX:pAY:ss++[wZ]
-        loop=For i 0 ILt (Tmp nR) loopBody
-    pure (Just a, plEX++plEY++nR := EAt (ADim aPX 0 lX):aV++sas [pinchX, pinchY, pinchZ] [loop])
+    (step, pinches) <- aS op [(tX, AElem aPX 1 (Tmp i) lX), (tY, AElem aPY 1 (Tmp i) lY)] tC (AElem t 1 (Tmp i) (Just a))
+    let loop=For i 0 ILt (Tmp nR) step
+    pure (Just a, plEX++plEY++nR := EAt (ADim aPX 0 lX):aV++sas pinches [loop])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arrow tY _)) <- eAnn op, isIF tX && isIF tY = do
     aP <- newITemp
     acc <- rtemp tX; x <- rtemp tY
