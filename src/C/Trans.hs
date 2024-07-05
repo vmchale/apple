@@ -755,37 +755,32 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     is <- traverse (\_ -> newITemp) [1..rnk]
     let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>is) l sze) 1 sze]
     pure (Just a, plX++plDs++plSs++Ma a t (ConstI rnk) (Tmp n) sze:diml (t, Just a) (Tmp<$>reverse dts)++init plSd++xd := (Tmp xR+dO):td := (Tmp t+dO):loop)
-aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, isIF tX && isIF tY && isIF tC = do
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, nind tX && nind tY && nind tC = do
     a <- nextArr t
-    x <- rtemp tX; y <- rtemp tY; z <- rtemp tC
     xR <- newITemp; yR <- newITemp; szX <- newITemp; szY <- newITemp; i <- newITemp; j <- newITemp; k <- newITemp
+    let xSz=bT tX; ySz=bT tY; zSz=bT tC
     (lX, plX) <- aeval xs xR
     (lY, plY) <- aeval ys yR
+    (x, pAX, pinchX) <- arg tX (AElem xR 1 (Tmp i) lX xSz)
+    (y, pAY, pinchY) <- arg tY (AElem yR 1 (Tmp j) lY ySz)
+    (z, wZ, pinchZ) <- ret tC (AElem t 2 (Tmp k) (Just a) zSz)
     ss <- writeRF op [x,y] z
-    let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem yR 1 (Tmp j) lY 8) y:ss++[wt (AElem t 2 (Tmp k) (Just a) 8) z,k+=1])]
-    pure (Just a, plX++plY++szX := EAt (ADim xR 0 lX):szY := EAt (ADim yR 0 lY):Ma a t 2 (Tmp szX*Tmp szY) 8:diml (t, Just a) [Tmp szX, Tmp szY]++k := 0:[loop])
-aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, isIF tX && isIF tY && isΠ tC = do
-    a <- nextArr t
-    x <- rtemp tX; y <- rtemp tY; slopO <- newITemp
-    let sz=bT tC; slopE=ConstI sz
-    xR <- newITemp; yR <- newITemp; szX <- newITemp; szY <- newITemp
-    i <- newITemp; j <- newITemp; k <- newITemp
-    (lX, plX) <- aeval xs xR; (lY, plY)<- aeval ys yR
-    ss <- writeRF op [x,y] (Right slopO)
-    -- small pattern: copy args (tuples), pass arguments in registers... setup
-    let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (mt (AElem xR 1 (Tmp i) lX 8) x:mt (AElem yR 1 (Tmp j) lY 8) y:ss++[CpyE (AElem t 2 (Tmp k) lX 16) (TupM slopO Nothing) 1 sz, k+=1])]
-    pure (Just a, plX++plY++szX:=EAt (ADim xR 0 lX):szY:=EAt (ADim yR 0 lY):Ma a t 2 (Tmp szX*Tmp szY) sz:diml (t, Just a) [Tmp szX, Tmp szY]++Sa slopO slopE:k:=0:[loop, Pop slopE])
-aeval (EApp _ (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tD) <- eAnn op, isIF tX && isIF tD= do
+    let loop=For i 0 ILt (Tmp szX) [For j 0 ILt (Tmp szY) (pAX:pAY:ss++[wZ,k+=1])]
+    pure (Just a, plX++plY++szX := EAt (ADim xR 0 lX):szY := EAt (ADim yR 0 lY):Ma a t 2 (Tmp szX*Tmp szY) 8:diml (t, Just a) [Tmp szX, Tmp szY]++k:=0:sas [pinchX, pinchY, pinchZ] [loop])
+aeval (EApp _ (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tZ) <- eAnn op, nind tX && nind tZ = do
     xR <- newITemp
     szR <- newITemp; sz'R <- newITemp
-    (a,aV) <- v8 t (Tmp sz'R)
-    x <- rtemp tX; y <- rtemp tX; z <- rtemp tD
+    let zSz=bT tZ; xSz=bT tX
+    (a,aV) <- vSz t (Tmp sz'R) zSz
     (lX, plX) <- aeval xs xR
     i <- newITemp
+    (x, pAX, pinchX) <- arg tX (AElem xR 1 (Tmp i+1) lX xSz)
+    (y, pAY, pinchY) <- arg tX (AElem xR 1 (Tmp i) lX xSz)
+    (z, wZ, pinchZ) <- ret tZ (AElem t 1 (Tmp i) (Just a) zSz)
     ss <- writeRF op [x,y] z
-    let loopBody = mt (AElem xR 1 (Tmp i+1) lX 8) x:mt (AElem xR 1 (Tmp i) lX 8) y:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) z]
+    let loopBody = pAX:pAY:ss++[wZ]
         loop=For i 0 ILt (Tmp sz'R) loopBody
-    pure (Just a, plX++szR := EAt (ADim xR 0 lX):sz'R := (Tmp szR-1):aV++[loop])
+    pure (Just a, plX++szR := EAt (ADim xR 0 lX):sz'R := (Tmp szR-1):aV++sas [pinchX, pinchY, pinchZ] [loop])
 aeval (EApp oTy (Builtin _ RevE) e) t | Just ty <- if1 oTy = do
     eR <- newITemp; n <- newITemp; i <- newITemp; o <- rtemp ty
     (a,aV) <- v8 t (Tmp n)
