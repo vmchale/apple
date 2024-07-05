@@ -36,10 +36,11 @@ import           Asm.X86.Byte
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           C
+import           C.Loop
 import           CF
 import           Control.Exception    (throw, throwIO)
 import           Control.Monad        ((<=<))
-import           Data.Bifunctor       (second)
+import           Data.Bifunctor       (first, second)
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
@@ -130,7 +131,7 @@ dumpAAbs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
 
 dumpC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpC = fmap (prettyCS.swap).cmm
+dumpC = fmap (prettyCS.swap.first lift).cmm
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
