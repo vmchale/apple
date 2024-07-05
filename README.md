@@ -37,6 +37,25 @@ array([3., 4., 5., 6.])
 
 This is based on J (and APL?). Looping is replaced by functoriality (rerank).
 
+To supply a zero-cells (scalars) as the first argument to `⊲` (cons) and 1-cells as the second:
+
+```
+(⊲)`{0,1}
+```
+
+We can further specify that the cells should be selected along some axis, e.g.
+to get vector-matrix multiplication:
+
+```
+λA.λx.
+{
+  dot ⇐ [(+)/((*)`x y)];
+  (dot x)`{1∘[2]} (A::Arr (i`Cons`j`Cons`Nil) float)
+}
+```
+
+The `2` means "iterate over the second axis" i.e. columns.
+
 ## Installation
 
 Use [ghcup](https://www.haskell.org/ghcup/) to install [cabal](https://www.haskell.org/cabal/) and GHC. Then:
