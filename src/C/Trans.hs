@@ -405,7 +405,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(0, _)])) f) xs) t | (Arrow tX tY) <- eA
     ss <- writeRF f [x] y
     let step=pArg:ss++[wArg]
         loop=For i 0 ILt (Tmp szR) step
-    pure (Just a, plX++rnkR := EAt (ARnk xR lX):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):xRd := DP xR (Tmp rnkR):tD := DP t (Tmp rnkR):sas [pinch, pinchO] [loop])
+    pure (Just a, plX++rnkR := EAt (ARnk xR lX):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) szY:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):xRd := DP xR (Tmp rnkR):tD := DP t (Tmp rnkR):sas [pinch, pinchO] [loop])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (0, _)])) op) xs) ys) t | Arrow tX (Arrow tY tC) <- eAnn op, nind tX && nind tY && nind tC = do
     a <- nextArr t
     xR <- newITemp; yR <- newITemp; rnkR <- newITemp; szR <- newITemp
@@ -420,7 +420,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (0, _)])) op) xs) ys) t 
     ss <- writeRF op [x,y] z
     let step=pAX:pAY:ss++[wR]
         loop=For i 0 ILt (Tmp szR) step
-    pure (Just a, plX ++ plY ++ rnkR := EAt (ARnk xR lX):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) 8:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):xRd := DP xR (Tmp rnkR):yRd := DP yR (Tmp rnkR):tD := DP t (Tmp rnkR):sas [pinchX, pinchY, pinchZ] [loop])
+    pure (Just a, plX ++ plY ++ rnkR := EAt (ARnk xR lX):SZ szR xR (Tmp rnkR) lX:Ma a t (Tmp rnkR) (Tmp szR) szC:CpyD (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):xRd := DP xR (Tmp rnkR):yRd := DP yR (Tmp rnkR):tD := DP t (Tmp rnkR):sas [pinchX, pinchY, pinchZ] [loop])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs) ys) t | Just (_, yRnk) <- tRnk (eAnn ys)
                                                                                         , Just (_, xRnk) <- tRnk (eAnn xs)
                                                                                         , (Arrow tX (Arrow _ tCod)) <- eAnn op
@@ -471,26 +471,28 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
         ++[Pop (Tmp slopE)])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
                                                                     , Just tOR <- mIF tO
-                                                                    , (Arrow _ tF) <- eAnn f
-                                                                    , isIF tF && isIF tA = do
+                                                                    , (Arrow _ tC) <- eAnn f
+                                                                    , nind tC && isIF tA = do
     a <- nextArr t
     xR <- newITemp
     (lX, plX) <- aeval xs xR
-    slopP <- newITemp; y <- rtemp tOR
+    slopP <- newITemp
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral rnk] ]
     oSz <- newITemp; slopSz <- newITemp; slopE <- newITemp
+    di <- newITemp
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
         allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         ~(oDims, complDims) = part allDims
         oRnk=rnk-fromIntegral cr; slopRnk=fromIntegral cr::Int64
+        ySz=bT tC
+    (y, wY, pinch) <- ret tC (AElem t (ConstI oRnk) (Tmp di) Nothing ySz)
     (_, ss) <- writeF f [AA slopP Nothing] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     xRd <- newITemp; slopPd <- newITemp
     (complts, place) <- extrCell ecArg sstrides (xRd, lX) slopPd
-    di <- newITemp
-    let loop=forAll complts oDims $ place ++ ss ++ [wt (AElem t (ConstI oRnk) (Tmp di) Nothing 8) y, di+=1]
+    let loop=forAll complts oDims $ place ++ ss ++ [wY, di+=1]
     pure (Just a,
         plX++dss
         ++PlProd slopSz (Tmp<$>complDims)
@@ -498,10 +500,10 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
             :Sa slopP (Tmp slopE):Wr (ARnk slopP Nothing) (ConstI slopRnk)
             :diml (slopP, Nothing) (Tmp<$>complDims)
         ++PlProd oSz (Tmp<$>oDims)
-            :Ma a t (ConstI oRnk) (Tmp oSz) 8
+            :Ma a t (ConstI oRnk) (Tmp oSz) ySz
             :diml (t, Just a) (Tmp<$>oDims)
         ++sss
-        ++xRd := DP xR (ConstI rnk):slopPd := DP slopP (ConstI slopRnk):di := 0:loop
+        ++xRd := DP xR (ConstI rnk):slopPd := DP slopP (ConstI slopRnk):di := 0:m'p pinch loop
         ++[Pop (Tmp slopE)])
 aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, xRnk) <- tRnk (eAnn xs)
                                                                     , Just {} <- mIF tO
