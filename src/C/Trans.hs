@@ -800,7 +800,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     , Just (_, oRnk) <- tRnk oTy
     , isIF tC && isIF tX && oRnk==xRnk = do
     a <- nextArr t
-    xR <- newITemp; szR <- newITemp; slopP <- newITemp
+    xR <- newITemp; xRd <- newITemp; szR <- newITemp; slopP <- newITemp
     (lX, plX) <- aeval x xR
     (dts, plDs) <- plDim xRnk (xR, lX)
     (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- newITemp; pure (odim, odim := (Tmp dt-fromIntegral i))}) dts is
@@ -813,7 +813,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     (sts, plS) <- offByDim (reverse dts)
     let _:strides = sts; sss=init plS
         extrWindow = j:=0:forAll iw (ConstI . fromIntegral<$>is)
-                            [mt (At xR (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX 8) o, wt (AElem slopP (ConstI$fromIntegral slopRnk) (Tmp j) Nothing 8) o, j+=1]
+                            [mt (At xRd (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX 8) o, wt (AElem slopP (ConstI$fromIntegral slopRnk) (Tmp j) Nothing 8) o, j+=1]
         step = extrWindow++ss++[wt (AElem t rnk (Tmp k) (Just a) 8) z, k+=1]
         loop=forAll io (Tmp<$>tdims) step
     pure (Just a,
@@ -823,7 +823,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
         ++sss
         ++PlProd szR (Tmp<$>tdims):Ma a t rnk (Tmp szR) 8:diml (t, Just a) (Tmp<$>tdims)
         ++Sa slopP slopE:Wr (ARnk slopP Nothing) (ConstI$fromIntegral slopRnk):diml (slopP, Nothing) slopDims
-        ++k:=0:loop
+        ++xRd:=DP xR (ConstI xRnk):k:=0:loop
         ++[Pop slopE])
 aeval e _ = error (show e)
 
