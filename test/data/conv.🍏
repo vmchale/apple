@@ -1,2 +1,2 @@
 -- mean filter
-([((+)/* 0 (x::Arr (3`Cons`3`Cons`Nil) float))%ℝ(:x)] ⨳ {3,3})
+([((+)/* 0 (x::Arr (2`Cons`2`Cons`Nil) float))%ℝ(:x)] ⨳ {2,2})
