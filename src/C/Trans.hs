@@ -434,7 +434,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
     (dts, dss) <- plDim yRnk (yR, lY)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
-        allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
+        allDims = zipWith (\ixϵ dt -> case ixϵ of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
         ~(oDims, complDims) = part allDims
         slopRnk=fromIntegral cr::Int64; oRnk=yRnk+opRnk-slopRnk
         xSz=bT tX
@@ -466,8 +466,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
             :diml (t, Just a) (Tmp<$>(oDims++dots))
         ++ix:=0:it:=0:m'p pinch loop
         ++[Pop (Tmp slopE)])
-aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
-                                                                    , Just tOR <- mIF tO
+aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
                                                                     , (Arrow _ tC) <- eAnn f
                                                                     , nind tC && isIF tA = do
     a <- nextArr t
@@ -812,7 +811,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     z <- rtemp tC; k <- newITemp; o <- rtemp tX
     (_, ss) <- writeF f [AA slopP Nothing] z
     (sts, plS) <- offByDim (reverse dts)
-    let _:strides = sts
+    let _:strides = sts; sss=init plS
         extrWindow = j:=0:forAll iw (ConstI . fromIntegral<$>is)
                             [mt (At xR (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX 8) o, wt (AElem slopP (ConstI$fromIntegral slopRnk) (Tmp j) Nothing 8) o, j+=1]
         step = extrWindow++ss++[wt (AElem t rnk (Tmp k) (Just a) 8) z, k+=1]
@@ -821,9 +820,9 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
         plX
         ++plDs
         ++dims
-        ++init plS
+        ++sss
         ++PlProd szR (Tmp<$>tdims):Ma a t rnk (Tmp szR) 8:diml (t, Just a) (Tmp<$>tdims)
-        ++Sa slopP slopE:diml (slopP, Nothing) slopDims
+        ++Sa slopP slopE:Wr (ARnk slopP Nothing) (ConstI$fromIntegral slopRnk):diml (slopP, Nothing) slopDims
         ++k:=0:loop
         ++[Pop slopE])
 aeval e _ = error (show e)
