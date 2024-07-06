@@ -6,8 +6,8 @@
 extern U conv(U);
 
 int main(int argc, char *argv[]) {
-    F xs[] = {9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
-    J dx[] = {5,5};
+    F xs[] = {9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
+    J dx[] = {4,4};
     Af a = {2,dx,xs};
     U x = poke_af(a);
     paf(conv(x));

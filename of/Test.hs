@@ -44,7 +44,7 @@ main = do
             , ccOut pwd "test/data/mfa.🍎" "a" sys "2 4,2\n1.000000,1.000000,3.000000,3.000000,2.000000,2.000000,5.000000,5.000000\n"
             , ccOut pwd "test/data/cfLeft.🍏" "af" sys "4.123106\n"
             , ccOut pwd "test/data/sin.🍏" "ff" sys "-1.000000\n"
-            , ccOut pwd "test/data/conv.🍏" "conv" sys "2 2,2\n9.000000,9.000000,9.000000,9.000000\n"
+            , ccOut pwd "test/data/conv.🍏" "conv" sys "2 3,3\n9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000\n"
             ]
   where
     sys = case arch of {"x86_64" -> X64; "aarch64" -> Aarch64}
