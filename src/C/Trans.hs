@@ -187,7 +187,7 @@ sas = thread.fmap m'p
 aS :: E (T ()) -> [(T (), Int64 -> ArrAcc)] -> T () -> (Int64 -> ArrAcc) -> CM ([CS], [Maybe (CS, CS)])
 aS f as rT rAt = do
     (args, rArgs, pinchArgs) <- unzip3 <$> traverse (uncurry arg) (fmap (\(t,r) -> (t,r$bT t)) as)
-    (r, wR, pinch) <- ret rT (rAt$bT rT)
+    (r, wR, pinch) <- rW rT (rAt$bT rT)
     ss <- writeRF f args r
     pure (rArgs++ss++[wR], pinch:pinchArgs)
 
@@ -200,11 +200,11 @@ arg ty at | isΠ ty = do
     let sz=bT ty; slopE=ConstI sz
     pure (Right slop, CpyE (TupM slop Nothing) at 1 sz, Just (Sa slop slopE, Pop slopE))
 
-ret :: T () -> ArrAcc -> CM (Either FTemp Temp, CS, Maybe (CS, CS))
-ret ty at | isIF ty = do
+rW :: T () -> ArrAcc -> CM (Either FTemp Temp, CS, Maybe (CS, CS))
+rW ty at | isIF ty = do
     t <- rtemp ty
     pure (t, wt at t, Nothing)
-ret ty at | isΠ ty = do
+rW ty at | isΠ ty = do
     slopO <- newITemp
     let sz=bT ty; slopE=ConstI sz
     pure (Right slopO, CpyE at (TupM slopO Nothing) 1 sz, Just (Sa slopO slopE, Pop slopE))
@@ -255,14 +255,14 @@ offByDim dims = do
 data Cell a b = Fixed -- set by the larger procedure
               | Bound b -- to be iterated over
 
-forAll is bs = thread (zipWith (\t b -> (:[]) . For t 0 ILt (Tmp b)) is bs)
+forAll is bs = thread (zipWith (\t b -> (:[]) . For t 0 ILt b) is bs)
 
 -- the resulting expressions/statement contain free variables that will be iterated over in the main rank-ification loop, these free variables are returned alongside
 extrCell :: [Cell () Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM ([Temp], [CS])
 extrCell fixBounds sstrides (srcP, srcL) dest = do
     (dims, ts, arrIxes, complts) <- switch fixBounds
     t <- newITemp; i <- newITemp
-    pure (complts, (i := 0:) $ forAll ts dims
+    pure (complts, (i := 0:) $ forAll ts (Tmp<$>dims)
         [t := EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL 8), Wr (Raw dest (Tmp i) Nothing 8) (Tmp t), i+=1])
     where switch (Bound d:ds) = do {t <- newITemp; qmap (d:) (t:) (t:) id <$> switch ds}
           switch (Fixed:ds)   = do {f <- newITemp; qmap id id (f:) (f:) <$> switch ds}
@@ -294,7 +294,7 @@ aeval (LLet _ b e) t = do
     second (ss ++) <$> aeval e t
 aeval (Var _ x) t = do
     st <- gets avars
-    let (i, r) = getT st x
+    let (i, r) = {-# SCC "getA" #-} getT st x
     pure (i, [t := Tmp r])
 aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
     a <- nextArr t
@@ -330,7 +330,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
     xd <- newITemp; i <- newITemp; k <- newITemp
     (lX, plX) <- aeval xs xR
     let sz=bT tC
-    (y, wRet, pinch) <- ret tC (AElem t 1 (Tmp k) (Just a) sz)
+    (y, wRet, pinch) <- rW tC (AElem t 1 (Tmp k) (Just a) sz)
     (_, ss) <- writeF f [AA slopP Nothing] y
     let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk..(xRnk-1)]]
         xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk-1)]]
@@ -443,7 +443,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     yRd <- newITemp; slopPd <- newITemp
     (complts, place) <- extrCell ecArg sstrides (yRd, lY) slopPd
-    let loop=forAll complts oDims $ pAX:place ++ ss ++ [CpyE (AElem t (ConstI oRnk) (Tmp it) (Just a) 8) (AElem zR (ConstI opRnk) 0 lZ undefined) (Tmp zSz) 8, ix+=1, it+=Tmp zSz]
+    let loop=forAll complts (Tmp<$>oDims) $ pAX:place ++ ss ++ [CpyE (AElem t (ConstI oRnk) (Tmp it) (Just a) 8) (AElem zR (ConstI opRnk) 0 lZ undefined) (Tmp zSz) 8, ix+=1, it+=Tmp zSz]
     (dots, doss) <- plDim opRnk (zR, lZ)
     pure (Just a,
         plX
@@ -484,12 +484,12 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
         ~(oDims, complDims) = part allDims
         oRnk=rnk-fromIntegral cr; slopRnk=fromIntegral cr::Int64
         ySz=bT tC
-    (y, wY, pinch) <- ret tC (AElem t (ConstI oRnk) (Tmp di) Nothing ySz)
+    (y, wY, pinch) <- rW tC (AElem t (ConstI oRnk) (Tmp di) Nothing ySz)
     (_, ss) <- writeF f [AA slopP Nothing] y
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     xRd <- newITemp; slopPd <- newITemp
     (complts, place) <- extrCell ecArg sstrides (xRd, lX) slopPd
-    let loop=forAll complts oDims $ place ++ ss ++ [wY, di+=1]
+    let loop=forAll complts (Tmp<$>oDims) $ place ++ ss ++ [wY, di+=1]
     pure (Just a,
         plX++dss
         ++PlProd slopSz (Tmp<$>complDims)
@@ -525,7 +525,8 @@ aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, 
     slopE <- newITemp; oSz <- newITemp
     (complts, place) <- extrCell ecArg sstrides (xRd, lX) slopPd
     it <- newITemp
-    let loop=forAll complts oDims $ place ++ ss ++ [CpyE (AElem t (ConstI oRnk) (Tmp it) (Just a) 8) (AElem yR (ConstI opRnk) 0 lY undefined) (Tmp ySz) 8, it+=Tmp ySz]
+    let loop=forAll complts (Tmp<$>oDims)
+                $ place ++ ss ++ [CpyE (AElem t (ConstI oRnk) (Tmp it) (Just a) 8) (AElem yR (ConstI opRnk) 0 lY undefined) (Tmp ySz) 8, it+=Tmp ySz]
     (dots, doss) <- plDim opRnk (yR, lY)
     pure (Just a,
         plX
@@ -804,19 +805,26 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     (lX, plX) <- aeval x xR
     (dts, plDs) <- plDim xRnk (xR, lX)
     (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- newITemp; pure (odim, odim := (Tmp dt-fromIntegral i))}) dts is
-    let slopSz=product is; slopE=fromIntegral ((slopSz+length is+1)*8); slopDims=fromIntegral<$>is
+    io <- traverse (\_ -> newITemp) tdims
+    iw <- traverse (\_ -> newITemp) is; j <- newITemp
+    let slopSz=product is; slopRnk=length is; slopE=fromIntegral ((slopSz+slopRnk+1)*8); slopDims=fromIntegral<$>is
         rnk=ConstI oRnk
-    z <- rtemp tC; k <- newITemp
-    (_, ss) <- writeF f [IPA slopP] z
-    let extrWindow = undefined
-        step = extrWindow++ss++[wt (AElem t rnk (Tmp k) (Just a) 8) z]
+    z <- rtemp tC; k <- newITemp; o <- rtemp tX
+    (_, ss) <- writeF f [AA slopP Nothing] z
+    (sts, plS) <- offByDim (reverse dts)
+    let _:strides = sts
+        extrWindow = j:=0:forAll iw (ConstI . fromIntegral<$>is)
+                            [mt (At xR (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX 8) o, wt (AElem slopP (ConstI$fromIntegral slopRnk) (Tmp j) Nothing 8) o, j+=1]
+        step = extrWindow++ss++[wt (AElem t rnk (Tmp k) (Just a) 8) z, k+=1]
+        loop=forAll io (Tmp<$>tdims) step
     pure (Just a,
         plX
         ++plDs
         ++dims
+        ++init plS
         ++PlProd szR (Tmp<$>tdims):Ma a t rnk (Tmp szR) 8:diml (t, Just a) (Tmp<$>tdims)
         ++Sa slopP slopE:diml (slopP, Nothing) slopDims
-        ++undefined
+        ++k:=0:loop
         ++[Pop slopE])
 aeval e _ = error (show e)
 
