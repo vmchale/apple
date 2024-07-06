@@ -803,7 +803,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     xR <- newITemp; xRd <- newITemp; szR <- newITemp; slopP <- newITemp
     (lX, plX) <- aeval x xR
     (dts, plDs) <- plDim xRnk (xR, lX)
-    (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- newITemp; pure (odim, odim := (Tmp dt-fromIntegral i))}) dts is
+    (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- newITemp; pure (odim, odim := (Tmp dt-fromIntegral (i-1)))}) dts is
     io <- traverse (\_ -> newITemp) tdims
     iw <- traverse (\_ -> newITemp) is; j <- newITemp
     let slopSz=product is; slopRnk=length is; slopE=fromIntegral ((slopSz+slopRnk+1)*8); slopDims=fromIntegral<$>is
