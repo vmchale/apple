@@ -144,3 +144,4 @@ o → o → o
 - [ ] https://rosalind.info/problems/locations/
 - [ ] https://en.wikipedia.org/wiki/Newton_fractal
 - [ ] https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
+- [ ] https://prng.di.unimi.it/splitmix64.c
