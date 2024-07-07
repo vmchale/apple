@@ -57,6 +57,7 @@ T16 = T13.dim[0]
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
 # Performance
+- [ ] think of a better way to handle functions of tuples (internally)
 - [ ] map-of-gen. idiom
 - [ ] bitmask immediates for `and` on aarch64
 - [ ] Use `Word64` for sets of registers
@@ -142,3 +143,4 @@ o → o → o
 - [ ] http://xahlee.info/math/algorithmic_math_art.html
 - [ ] https://rosalind.info/problems/locations/
 - [ ] https://en.wikipedia.org/wiki/Newton_fractal
+- [ ] https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
