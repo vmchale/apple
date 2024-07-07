@@ -1,6 +1,6 @@
 %! TeX program = lualatex
 
-\documentclass[sigplan,screen,anonymous]{acmart}
+\documentclass[sigplan,screen]{acmart}
 
 \usepackage{fontspec}
 \usepackage{bytefield}
@@ -175,6 +175,7 @@ apple_0:
 (condjump (< (reg r_2) (int 2)) apple_1)
 (movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
+(movtemp r_2 (+ (reg r_2) (int 1)))
 (jump apple_0)
 
 apple_1:
@@ -188,6 +189,7 @@ But rather:
 apple_0:
 (movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
+(movtemp r_2 (+ (reg r_2) (int 1)))
 (condjump (< (reg r_2) (int 2) apple_0)
 
 apple_1:
@@ -200,6 +202,7 @@ apple_0:
 (condjump (< (reg r_2) (int 2)) apple_1)
 (movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
+(movtemp r_2 (+ (reg r_2) (int 1)))
 (jump apple_0)
 (free r_2)
 
@@ -214,6 +217,7 @@ This is not the case with the latter:
 apple_0:
 (movtemp r_0
   @(ptr r_1+(+ (asl (reg r_2) (int 3)) (int 16))))
+(movtemp r_2 (+ (reg r_2) (int 1)))
 (condjump (< (reg r_2) (int 2) apple_0)
 (free r_2)
 
