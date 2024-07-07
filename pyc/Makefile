@@ -3,7 +3,7 @@ HC ?= ghc
 GHC_VER := $(shell ${HC} --numeric-version)
 PY_VER := $(shell python3 --version | ja '.?{|`2 ~* 1 /(\d+\.\d+)\.\d+/}')
 HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | ja '{ix=1}{`2}')
-HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=2}{`1}')
+HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
 
 all: apple.so
 
@@ -23,7 +23,6 @@ apple.o: applemodule.c
 # needs to pull in/bundle all those GHC shared libraries...
 
 apple.so: apple.o
-<<<<<<< HEAD
 	$(CC) -shared $^ -o $@ -lapple -lffi
 
 clean:
