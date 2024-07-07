@@ -136,6 +136,9 @@ ir (IR.Cmov (IR.IU Op.IEven (IR.Reg r)) rD e) = do
 ir (IR.Cmov (IR.IU Op.IOdd (IR.Reg r)) rD e) = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (absReg r) 1, Cmovne () (absReg rD) (IReg i)]
+ir (IR.Fcmov (IR.IRel Op.IEq (IR.Reg r0) (IR.Reg r1)) t e) = do
+    plE <- feval e t; l <- nextL
+    pure $ [CmpRR () (absReg r0) (absReg r1), Jne () l] ++ plE ++ [Label () l]
 ir (IR.Cmov (IR.IRel Op.IGt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
     iS <- nextI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovnle () (absReg rD) (IReg iS)]
