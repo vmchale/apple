@@ -350,6 +350,13 @@ mm l = do
     pushVarConstraint n l IsOrd
     pure (n' ~> n' ~> n', mempty)
 
+tyBoo :: a -> TyM a (T (), Subst a)
+tyBoo l = do
+    n <- freshN "b" l
+    let n'=TVar (void n)
+    pushVarConstraint n l HasBits
+    pure (n' ~> n' ~> n', mempty)
+
 tyOrdBinRel :: a -> TyM a (T (), Subst a)
 tyOrdBinRel l = do
     n <- freshN "o" l
@@ -461,18 +468,13 @@ tyB _ Fib = do
 tyB _ IRange = do
     n <- IEVar () <$> freshN "n" ()
     pure (I ~> I ~> I ~> Arr (n `Cons` Nil) I, mempty)
-tyB l Plus = tyNumBinOp l
-tyB l Minus = tyNumBinOp l
+tyB l Plus = tyNumBinOp l; tyB l Minus = tyNumBinOp l
 tyB l Times = tyNumBinOp l
-tyB l Gte = tyOrdBinRel l
-tyB l Gt = tyOrdBinRel l
-tyB l Lt = tyOrdBinRel l
-tyB l Lte = tyOrdBinRel l
-tyB l Eq = tyOrdBinRel l
-tyB l Neq = tyOrdBinRel l
+tyB l Gte = tyOrdBinRel l; tyB l Gt = tyOrdBinRel l; tyB l Lt = tyOrdBinRel l
+tyB l Lte = tyOrdBinRel l; tyB l Eq = tyOrdBinRel l; tyB l Neq = tyOrdBinRel l
+tyB l And = tyBoo l; tyB l Or = tyBoo l; tyB l Xor = tyBoo l
 tyB _ Exp = pure (F ~> F ~> F, mempty)
-tyB l Min = mm l
-tyB l Max = mm l
+tyB l Min = mm l; tyB l Max = mm l
 tyB l IntExp = do
     n <- freshN "a" l
     let n' = TVar (void n)

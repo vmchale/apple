@@ -174,6 +174,9 @@ tokens :-
         "@."                     { mkSym AtDot }
         👁️                        { mkSym Eye }
         ♭                        { mkSym B }
+        ⊻                        { mkSym Xor }
+        ∧                        { mkSym And }
+        ∨                        { mkSym Or }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -276,6 +279,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Last | LastM | Head | HeadM | Tail | Init
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | FoldS | Tilde | Cyc | A1 | Mod | AtDot | Eye | B
+         | And | Or | Xor
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -349,6 +353,9 @@ instance Pretty Sym where
     pretty AtDot        = "@."
     pretty Eye          = "👁️"
     pretty B            = "♭"
+    pretty Xor          = "⊻"
+    pretty And          = "∧"
+    pretty Or           = "∨"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

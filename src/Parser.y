@@ -74,6 +74,9 @@ import Prettyprinter (Pretty (pretty), (<+>))
     lt { TokSym $$ L.Lt }
     eq { TokSym $$ L.Eq }
     neq { TokSym $$ L.Neq }
+    and { TokSym $$ L.And }
+    or { TokSym $$ L.Or }
+    xor { TokSym $$ L.Xor }
     tilde { TokSym $$ Tilde }
     pp { TokSym $$ PlusPlus }
     rot { TokSym $$ Rotate }
@@ -204,13 +207,10 @@ R :: { (Int, Maybe [Int]) }
 
 -- binary operator
 BBin :: { E AlexPosn }
-     : plus { Builtin $1 A.Plus }
-     | minus { Builtin $1 A.Minus }
-     | times { Builtin $1 A.Times }
-     | percent { Builtin $1 Div }
+     : plus { Builtin $1 A.Plus } | minus { Builtin $1 A.Minus }
+     | times { Builtin $1 A.Times } | percent { Builtin $1 Div }
      | caret { Builtin $1 IntExp }
-     | max { Builtin $1 Max }
-     | min { Builtin $1 Min }
+     | max { Builtin $1 Max } | min { Builtin $1 Min }
      | scan { Builtin $1 Scan }
      | quot { Builtin $1 Map }
      | di intLit { Builtin $1 (DI (fromInteger $ int $2)) }
@@ -224,12 +224,9 @@ BBin :: { E AlexPosn }
      | mul { Builtin $1 Mul }
      | vmul { Builtin $1 VMul }
      | do { Builtin $1 Iter }
-     | geq { Builtin $1 Gte }
-     | gt { Builtin $1 A.Gt }
-     | leq { Builtin $1 Lte }
-     | lt { Builtin $1 A.Lt }
-     | eq { Builtin $1 A.Eq }
-     | neq { Builtin $1 A.Neq }
+     | geq { Builtin $1 Gte } | gt { Builtin $1 A.Gt }
+     | leq { Builtin $1 Lte } | lt { Builtin $1 A.Lt }
+     | eq { Builtin $1 A.Eq } | neq { Builtin $1 A.Neq }
      | pp { Builtin $1 CatE }
      | rot { Builtin $1 Rot }
      | fold { Builtin $1 A.Fold }
@@ -237,6 +234,8 @@ BBin :: { E AlexPosn }
      | iat { Builtin $1 A.A1 }
      | mod { Builtin $1 A.Mod }
      | atDot { Builtin $1 IOf }
+     | and { Builtin $1 A.And } | or { Builtin $1 A.Or }
+     | xor { Builtin $1 A.Xor }
 
 B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
