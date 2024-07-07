@@ -373,6 +373,9 @@ feval (IR.FAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl (IR.Reg i) (IR.Const
 feval (IR.FAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl e (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [MovqXA () (fabsReg rD) (RSD (absReg m) Eight (IReg i) i8)]
+feval (IR.FAt (IR.AP m (Just (IR.IB Op.IAsl e (IR.ConstI 3))) _)) rD = do
+    i <- nextI; plE <- evalE e (IR.ITemp i)
+    pure $ plE ++ [MovqXA () (fabsReg rD) (RS (absReg m) Eight (IReg i))]
 feval e _                                           = error (show e)
 
 evalE :: IR.Exp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
