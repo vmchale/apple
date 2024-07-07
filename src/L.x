@@ -39,6 +39,7 @@ import U
 %wrapper "monadUserState-bytestring"
 
 $digit = [0-9]
+$hexit = [0-9a-f]
 
 $latin = [a-zA-Z]
 
@@ -224,6 +225,8 @@ tokens :-
         "abs."                   { mkBuiltin BuiltinAbs }
 
         _$digit+                 { tok (\p s -> alex $ TokInt p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
+        "0x"$hexit+              { tok (\p s -> alex $ TokInt p (hexP $ BSL.drop 2 s)) }
+        _"0x"$hexit+             { tok (\p s -> alex $ TokInt p (negate $ hexP $ BSL.drop 3 s)) }
 
         @float                   { tok (\p s -> alex $ TokFloat p (read $ ASCII.unpack s)) }
         _@float                  { tok (\p s -> alex $ TokFloat p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
@@ -249,6 +252,14 @@ mkBuiltin = constructor TokB
 
 mkText :: BSL.ByteString -> T.Text
 mkText = decodeUtf8 . BSL.toStrict
+
+hexP :: BSL.ByteString -> Integer
+hexP b = ASCII.foldl' (\seed x -> 10 * seed + f x) 0 b
+    where f '0' = 0; f '1' = 1; f '2' = 2; f '3' = 3;
+          f '4' = 4; f '5' = 5; f '6' = 6; f '7' = 7;
+          f '8' = 8; f '9' = 9; f 'a' = 10; f 'b' = 11
+          f 'c' = 12; f 'd' = 13; f 'e'= 14; f 'f'=15
+          f c   = error (c:" is not a valid hexit!")
 
 instance Pretty AlexPosn where
     pretty (AlexPn _ line col) = pretty line <> colon <> pretty col
