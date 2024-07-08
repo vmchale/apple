@@ -313,6 +313,8 @@ mgu l s (Arr (SVar n) t) F = mapShSubst (insert n Nil) <$> mguPrep l s t F
 mgu l s (Arr (SVar n) t) I = mapShSubst (insert n Nil) <$> mguPrep l s t I
 mgu l s F (Arr (SVar n) t) = mapShSubst (insert n Nil) <$> mguPrep l s F t
 mgu l s I (Arr (SVar n) t) = mapShSubst (insert n Nil) <$> mguPrep l s I t
+mgu l s (Arr (SVar n) t) t'@P{} = mapShSubst (insert n Nil) <$> mguPrep l s t t'
+mgu l s t'@P{} (Arr (SVar n) t) = mapShSubst (insert n Nil) <$> mguPrep l s t' t
 mgu l s (P ts) (P ts') | length ts == length ts' = zS (mguPrep l) s ts ts'
 -- TODO: rho occurs check
 mgu l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = tS (\sϵ (i, tϵ) -> mapTySubst (insert n t') <$> mguPrep l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
