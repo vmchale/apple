@@ -312,6 +312,13 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
         plRnd = [Rnd iR, iR := (Bin IRem (Tmp iR) (Tmp e1R - Tmp e0R + 1) + Tmp e0R), Wr (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
         loop=For k 0 ILt (ConstI n) plRnd
     pure (Just a, plE0++plE1++Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[loop])
+aeval (EApp _ (Builtin _ Flat) xs) t | (Arr _ ty) <- eAnn xs, nind ty = do
+    xR <- newITemp
+    (lX, plX) <- aeval xs xR
+    let sz=bT ty
+    xRnk <- newITemp; szR <- newITemp
+    (a,aV) <- vSz t (Tmp szR) sz
+    pure (Just a, plX++xRnk:=EAt (ARnk xR lX):SZ szR xR (Tmp xRnk) lX:aV++[CpyE (AElem t 1 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
 aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, nind tD && nind tC = do
     xR <- newITemp
     (l, plE) <- aeval e xR
