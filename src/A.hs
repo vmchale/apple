@@ -137,7 +137,6 @@ instance Pretty Builtin where
     pretty Times     = "*"
     pretty FRange    = "𝒻"
     pretty IRange    = "⍳"
-    pretty Grid      = "grid."
     pretty Floor     = "⌊"
     pretty Minus     = "-"
     pretty Max       = "⋉"
@@ -205,7 +204,7 @@ instance Pretty Builtin where
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
              | Max | Min | Neg | Sqrt | T | Di | Flat
-             | IRange | FRange | Grid
+             | IRange | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
              | Fold | FoldS | Foldl | Floor | ItoF | Iter

@@ -198,7 +198,6 @@ tokens :-
         √                        { mkBuiltin BuiltinSqrt }
         𝜋                        { mkBuiltin BuiltinPi }
         "gen."                   { mkBuiltin BuiltinGen }
-        "grid."                  { mkBuiltin BuiltinGrid }
         "cyc."                   { mkBuiltin BuiltinCyc }
         "re:"                    { mkBuiltin BuiltinRep }
         "di."                    { mkBuiltin BuiltinD }
@@ -377,7 +376,7 @@ instance Pretty Var where
 
 data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
-             | BuiltinGen | BuiltinGrid | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
+             | BuiltinGen | BuiltinRep | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
@@ -396,7 +395,6 @@ instance Pretty Builtin where
     pretty BuiltinSqrt   = "√"
     pretty BuiltinPi     = "𝜋"
     pretty BuiltinGen    = "gen."
-    pretty BuiltinGrid   = "grid."
     pretty BuiltinRep    = "re:"
     pretty BuiltinScan   = "Λ"
     pretty BuiltinScanS  = "Λₒ"
