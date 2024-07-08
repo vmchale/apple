@@ -702,12 +702,15 @@ chkE :: T () -> Either (TyE a) ()
 chkE t = if hasE t then Left (ExistentialArg t) else Right ()
 
 checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
-checkTy (TVar n) (c, _) = pure $ Just(n, c)
-checkTy I (IsNum, _)    = pure Nothing
-checkTy F (IsNum, _)    = pure Nothing
-checkTy I (IsOrd, _)    = pure Nothing
-checkTy F (IsOrd, _)    = pure Nothing
-checkTy t (c@IsNum, l)  = Left$ Doesn'tSatisfy l t c
+checkTy (TVar n) (c, _)  = pure $ Just(n, c)
+checkTy I (IsNum, _)     = pure Nothing
+checkTy F (IsNum, _)     = pure Nothing
+checkTy I (IsOrd, _)     = pure Nothing
+checkTy I (HasBits, _)   = pure Nothing
+checkTy B (HasBits, _)   = pure Nothing
+checkTy F (IsOrd, _)     = pure Nothing
+checkTy t (c@IsNum, l)   = Left$ Doesn'tSatisfy l t c
+checkTy t (c@HasBits, l) = Left$ Doesn'tSatisfy l t c
 
 substI :: Subst a -> Int -> Maybe (T a)
 substI s@(Subst ts is sh) i =
