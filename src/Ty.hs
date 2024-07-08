@@ -507,6 +507,9 @@ tyB _ T = do
 tyB _ Flat = do
     sh <- SVar <$> freshN "sh" (); a <- TVar <$> freshN "a" ()
     pure (Arr sh a ~> Arr (Π sh) a, mempty)
+tyB _ AddDim = do
+    sh <- SVar <$> freshN "sh" (); a <- TVar <$> freshN "a" ()
+    pure (Arr sh a ~> Arr (Ix()1 `Cons` sh) a, mempty)
 tyB _ CatE = do
     i <- freshN "i" (); j <- freshN "j" ()
     n <- freshN "a" ()

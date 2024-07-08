@@ -175,6 +175,7 @@ tokens :-
         "@."                     { mkSym AtDot }
         👁️                        { mkSym Eye }
         ♭                        { mkSym B }
+        ♮                        { mkSym Sharp }
         ⊻                        { mkSym Xor }
         ∧                        { mkSym And }
         ∨                        { mkSym Or }
@@ -288,7 +289,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | Init
          | Geq | Gt | Eq | Neq | Leq | Lt
-         | FoldA | FoldS | Tilde | Cyc | A1 | Mod | AtDot | Eye | B
+         | FoldA | FoldS | Tilde | Cyc | A1 | Mod | AtDot | Eye | B | Sharp
          | And | Or | Xor
          deriving (Generic, NFData)
 
@@ -363,6 +364,7 @@ instance Pretty Sym where
     pretty AtDot        = "@."
     pretty Eye          = "👁️"
     pretty B            = "♭"
+    pretty Sharp        = "♮"
     pretty Xor          = "⊻"
     pretty And          = "∧"
     pretty Or           = "∨"

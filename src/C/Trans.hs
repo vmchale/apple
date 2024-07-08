@@ -312,6 +312,31 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
         plRnd = [Rnd iR, iR := (Bin IRem (Tmp iR) (Tmp e1R - Tmp e0R + 1) + Tmp e0R), Wr (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
         loop=For k 0 ILt (ConstI n) plRnd
     pure (Just a, plE0++plE1++Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[loop])
+aeval (EApp _ (Builtin _ AddDim) x) t | F <- eAnn x = do
+    xR <- newFTemp
+    plX <- feval x xR
+    (a,aV) <- v8 t 1
+    pure (Just a, plX++aV++[WrF (AElem t 1 0 (Just a) 8) (FTmp xR)])
+aeval (EApp _ (Builtin _ AddDim) x) t | I <- eAnn x = do
+    xR <- newITemp
+    plX <- eval x xR
+    (a,aV) <- v8 t 1
+    pure (Just a, plX++aV++[Wr (AElem t 1 0 (Just a) 8) (Tmp xR)])
+aeval (EApp _ (Builtin _ AddDim) x) t | P{} <- eAnn x = do
+    xR <- newITemp
+    (szs, mS, _, plX) <- πe x xR
+    let sz=last szs
+    (a,aV) <- vSz t 1 sz
+    pure (Just a, m'sa xR mS++plX++aV++[CpyE (AElem t 1 0 (Just a) sz) (TupM xR Nothing) 1 sz]++m'pop mS)
+aeval (EApp _ (Builtin _ AddDim) xs) t | (Arr _ ty) <- eAnn xs, nind ty = do
+    xR <- newITemp
+    (lX, plX) <- aeval xs xR
+    let sz=bT ty
+    xRnk <- newITemp; szR <- newITemp; rnk <- newITemp
+    a <- nextArr t
+    pure (Just a,
+            plX++xRnk:=EAt (ARnk xR lX):SZ szR xR (Tmp xRnk) lX:rnk := (Tmp xRnk+1):Ma a t (Tmp rnk) (Tmp szR) sz:
+           [Wr (ADim t 0 (Just a)) 1, CpyD (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk), CpyE (AElem t (Tmp rnk) 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
 aeval (EApp _ (Builtin _ Flat) xs) t | (Arr _ ty) <- eAnn xs, nind ty = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR

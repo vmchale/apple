@@ -197,13 +197,14 @@ instance Pretty Builtin where
     pretty Di        = "di."
     pretty RevE      = "~"
     pretty Flat      = "♭"
+    pretty AddDim    = "♮"
     pretty Xor       = "⊻"
     pretty And       = "∧"
     pretty Or        = "∨"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
-             | Max | Min | Neg | Sqrt | T | Di | Flat
+             | Max | Min | Neg | Sqrt | T | Di | Flat | AddDim
              | IRange | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
