@@ -184,6 +184,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "@." "index of" "di." "diagonal"
     , lOption "%:" "vector mul" "odd." "parity"
     , lOption "~" "reverse" "⊻,∧,∨" "logical"
+    , lOption "♭" "flatten" "" ""
     ]
 
 lOption op0 desc0 op1 desc1 =
