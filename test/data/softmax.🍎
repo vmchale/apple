@@ -1,9 +1,10 @@
+-- https://towardsdatascience.com/mnist-handwritten-digits-classification-from-scratch-using-python-numpy-b08e401c4dab
 -- def softmax(x):
 --      exp_element=np.exp(x-x.max())
 --      return exp_element/np.sum(exp_element,axis=0)
 λxs.
   { m ⟜ (⋉)/* _1 xs; a ⟜ [e:(x-m)]`{0} xs
   ; sum ← [(+)/x]
-  ; n ⟜ sum`{1∘[2]} (a::M float)
-  ; (([(x%)'y]`{0,1∘[2]} n a))
+  ; n ⟜ sum`{1∘[1]} (a::M float)
+  ; |:(([(%x)'y]`{0,1∘[1]} n a))
   }
