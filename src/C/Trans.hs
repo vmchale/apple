@@ -1206,7 +1206,8 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | (Arrow _ (Ar
     ss <- writeRF op [x, Left acc] (Left acc)
     let step=mt (AElem xsR (Tmp rnkR) (Tmp k) lX 8) x:ss
         loop=For k 0 ILt (Tmp szR) step
-    pure $ plE ++ plAcc ++ [rnkR := EAt (ARnk xsR lX), szR := 1, For i 0 ILt (Tmp rnkR) [szR := (Tmp szR*EAt (ADim xsR (Tmp i) lX))], loop]
+        plSz = case tIx (eAnn xs) of {Just (_, is) -> szR:=ConstI (product is); Nothing -> SZ szR xsR (Tmp rnkR) lX}
+    pure $ plE ++ plAcc ++ [rnkR := EAt (ARnk xsR lX), plSz, loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr)) acc = do
     i <- newITemp
     endR <- newITemp; incrR <- newITemp
