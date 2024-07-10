@@ -16,7 +16,7 @@ import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (scanl')
-import           Data.Maybe                 (catMaybes)
+import           Data.Maybe                 (catMaybes, isJust)
 import           Data.Word                  (Word64)
 import           GHC.Float                  (castDoubleToWord64)
 import           Nm
@@ -796,6 +796,16 @@ aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
     n <- nextAA
     modify (addAA n (rnk:fmap fromIntegral ns++ws))
     pure (Nothing, [t := LA n])
+aeval (EApp _ (Builtin _ T) x) t | Just (ty, ixes) <- tIx (eAnn x), rnk <- fromIntegral$length ixes, any isJust (cLog<$>ixes) = do
+    a <- nextArr t
+    let sze=bT ty; rnkE=ConstI rnk
+    xR <- newITemp; xd <- newITemp; td <- newITemp
+    (lX, plX) <- aeval x xR
+    (dts, plDs) <- plDim rnk (xR, lX)
+    let n:sstrides = reverse $ scanl' (*) 1 (reverse ixes); _:dstrides=reverse $ scanl' (*) 1 ixes
+    is <- traverse (\_ -> newITemp) [1..rnk]
+    let loop=thread (zipWith (\i tt -> (:[]) . For i 0 ILt (Tmp tt)) is dts) [CpyE (At td (ConstI<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (ConstI<$>sstrides) (Tmp<$>is) lX sze) 1 sze]
+    pure (Just a, plX++plDs++Ma a t (ConstI rnk) (ConstI n) sze:diml (t, Just a) (Tmp<$>reverse dts)++xd:=DP xR rnkE:td:=DP t rnkE:loop)
 aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     a <- nextArr t
     let sze=bT ty; dO=ConstI$8+8*rnk
