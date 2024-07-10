@@ -3,6 +3,7 @@
 module C.Trans ( writeC ) where
 
 import           A
+import           Bits
 import           C
 import           CF.AL                      (AL (..))
 import qualified CF.AL                      as AL
@@ -121,6 +122,12 @@ staRnk _             = Nothing
 tRnk :: T a -> Maybe (T a, Int64)
 tRnk (Arr sh t) = (t,) <$> staRnk sh
 tRnk _          = Nothing
+
+staIx :: Sh a -> Maybe [Int64]
+staIx Nil=Just[]; staIx (Ix _ i `Cons` s) = (fromIntegral i:)<$>staIx s; staIx _=Nothing
+
+tIx :: T a -> Maybe (T a, [Int64])
+tIx (Arr sh t) = (t,)<$>staIx sh; tIx _=Nothing
 
 staR :: Sh a -> [Int64]
 staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s
@@ -618,6 +625,23 @@ aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
     ix <- newITemp
     let body=For i 0 ILt (Tmp nR) [CpyE (AElem t 1 (Tmp ix) (Just a) 8) (AElem xR 1 0 lX 8) (Tmp szR) 8, ix+=Tmp szR]
     pure (Just a, plX ++ plN ++ szR := EAt (ADim xR 0 lX):nO := (Tmp szR*Tmp nR):aV++ix := 0:[body])
+aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | Just (F, [m,n]) <- tIx$eAnn a, Just s <- cLog n = do
+    xR <- newITemp; aR <- newITemp; i <- newITemp; j <- newITemp; mR <- newITemp; nR <- newITemp; z <- newFTemp
+    (aL,aV) <- v8 t (Tmp mR)
+    (lA, plA) <- aeval a aR; (lX, plX) <- aeval x xR
+    let loop = For i 0 ILt (Tmp mR)
+                  [ MX z 0,
+                    For j 0 ILt (Tmp nR)
+                        [ MX z (FTmp z+FAt (AElem aR 2 ((Bin IAsl (Tmp i) (ConstI s))+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
+                  , WrF (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
+                  ]
+    pure (Just aL,
+        plA
+        ++plX
+        ++mR:=ConstI m
+        :aV
+        ++nR:=ConstI n
+        :[loop])
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
     xR <- newITemp; aR <- newITemp; i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
     (aL,aV) <- v8 t (Tmp m)
