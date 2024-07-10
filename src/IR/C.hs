@@ -105,8 +105,12 @@ irAt (Raw t o l 1)                                             = AP (ctemp t) (J
 irAt (Raw t o l sz) | Just n <- cLog sz                        = AP (ctemp t) (Just$IR.IB IAsl (irE o) (IR.ConstI n)) l
                     | otherwise                                = AP (ctemp t) (Just$irE o*IR.ConstI sz) l
 irAt (At dt s ix l sz) | Just sϵ <- cLog sz =
-    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> irE i*irE d) s ix
+    let offs=foldl1 (IB IPlus) $ zipWith (\d i -> sm (irE i) (irE d)) s ix
     in AP (ctemp dt) (Just$IR.IB IAsl offs (IR.ConstI sϵ)) l
+  where
+    sm i (IR.ConstI 1) = i
+    sm i (IR.ConstI d) | Just sϵ <- cLog d = IR.IB IAsl i (IR.ConstI sϵ)
+    sm d i = i*d
 
 irE :: CE -> Exp
 irE (Tmp t)               = Reg (ctemp t)
