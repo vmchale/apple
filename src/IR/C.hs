@@ -1,10 +1,9 @@
 module IR.C ( ctemp, cToIR ) where
 
+import           Bits
 import           C
 import           Control.Monad              (foldM)
 import           Control.Monad.State.Strict (State, runState, state)
-import           Data.Bits                  (FiniteBits, countTrailingZeros, popCount)
-import           Data.Int                   (Int64)
 import           IR
 import           Op
 
@@ -34,9 +33,6 @@ cToIR (LSt ls ts) cs = runState (foldMapM cToIRM cs) (WSt ls ts)
 tick reg = IR.MT reg (Reg reg+1)
 
 nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
-
-cLog :: FiniteBits a => a -> Maybe Int64
-cLog n | popCount n == 1 = Just (fromIntegral$countTrailingZeros n) | otherwise = Nothing
 
 cToIRM :: CS -> IRM [Stmt]
 cToIRM (G l)               = do {retL <- nextL; pure [IR.C l, IR.L retL]}

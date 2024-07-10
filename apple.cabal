@@ -47,6 +47,7 @@ library
     build-tool-depends: alex:alex >=3.5.0.0, happy:happy, hsc2hs:hsc2hs
     hs-source-dirs:     src
     other-modules:
+        Bits
         CF
         CF.AL
         LI
