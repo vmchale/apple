@@ -1184,11 +1184,12 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <-
     szR <- newITemp
     i <- newITemp
     (lP, plP) <- aeval p pR; (lQ, plQ) <- aeval q qR
+    pd <- newITemp; qd <- newITemp
     ss <- writeRF op [Left acc, x, y] (Left acc)
-    let step = mt (AElem pR 1 (Tmp i) lP 8) x:mt (AElem qR 1 (Tmp i) lQ 8) y:ss
+    let step = mt (Raw pd (Tmp i) lP 8) x:mt (Raw qd (Tmp i) lQ 8) y:ss
         loop = For i 1 ILt (Tmp szR) step
     seed <- writeRF zop [x,y] (Left acc)
-    pure $ plP++plQ++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:mt (AElem qR 1 0 lQ 8) y:seed++[loop]
+    pure $ plP++plQ++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:mt (AElem qR 1 0 lQ 8) y:seed++pd:=DP pR 1:qd:=DP qR 1:[loop]
 feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isF tX = do
     x <- newFTemp
     aP <- newITemp
