@@ -129,16 +129,22 @@ staIx Nil=Just[]; staIx (Ix _ i `Cons` s) = (fromIntegral i:)<$>staIx s; staIx _
 tIx :: T a -> Maybe (T a, [Int64])
 tIx (Arr sh t) = (t,)<$>staIx sh; tIx _=Nothing
 
-nz :: I a -> Bool
+nz, ni1 :: I a -> Bool
 nz (Ix _ i) | i > 0 = True
 nz (StaPlus _ i0 i1) = nz i0 || nz i1 -- no negative dims
 nz (StaMul _ i0 i1) = nz i0 && nz i1
 nz _ = False
 
-ne :: T a -> Bool
-ne (Arr (i `Cons` _) _) = nz i; ne _=False
+ni1 (Ix _ i) | i > 1 = True
+ni1 (StaPlus _ i0 i1) = ni1 i0 || ni1 i1
+ni1 (StaMul _ i0 i1) = (nz i0&&ni1 i1) || (nz i1&&ni1 i0)
+ni1 _ = False
 
-for t = if ne t then For1 else For
+ne, n1 :: T a -> Bool
+ne (Arr (i `Cons` _) _) = nz i; ne _=False
+n1 (Arr (i `Cons` _) _) = ni1 i; n1 _=False
+
+for t = if ne t then For1 else For; for1 t = if n1 t then For1 else For
 
 staR :: Sh a -> [Int64]
 staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s
@@ -771,7 +777,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arro
     (l, plE) <- aeval e aP
     ss <- writeRF op [acc, x] acc
     let loopBody=wt (AElem t 1 (Tmp i) (Just a) 8) acc:mt (AElem aP 1 (Tmp i) l 8) x:ss
-        loop=For i 0 ILt (Tmp n) loopBody
+        loop=for (eAnn e) i 0 ILt (Tmp n) loopBody
     pure (Just a, plE++plS++n := (EAt (ADim aP 0 l)+1):aV++[loop])
 aeval (EApp _ (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- eAnn op, isIF tAcc && isIF tX = do
     aP <- newITemp
@@ -781,7 +787,7 @@ aeval (EApp _ (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- 
     (l, plE) <- aeval xs aP
     ss <- writeRF op [acc, x] acc
     let loopBody=wt (AElem t 1 (Tmp i-1) (Just a) 8) acc:mt (AElem aP 1 (Tmp i) l 8) x:ss
-        loop=For i 1 ILeq (Tmp n) loopBody
+        loop=for1 (eAnn xs) i 1 ILeq (Tmp n) loopBody
     pure (Just a, plE++n := EAt (ADim aP 0 l):aV++mt (AElem aP 1 0 l 8) acc:[loop])
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just ot <- if1 oTy, if1p (eAnn xs) = do
     aP <- newITemp
@@ -1006,7 +1012,7 @@ eval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
     (lP, plP) <- aeval p pR
     ss <- writeRF op [Right acc, x] (Right acc)
     let step = mt (AElem  pR 1 (Tmp i) lP 8) x:ss
-        loop = For i 1 ILt (Tmp szR) step
+        loop = for1 (eAnn p) i 1 ILt (Tmp szR) step
     sseed <- writeRF zop [x] (Right acc)
     pure $ plP++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
 eval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <- if1 (eAnn q) = do
@@ -1017,7 +1023,7 @@ eval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <- 
     (lP, plP) <- aeval p pR; (lQ, plQ) <- aeval q qR
     ss <- writeRF op [Right acc, x, y] (Right acc)
     let step = mt (AElem pR 1 (Tmp i) lP 8) x:mt (AElem qR 1 (Tmp i) lQ 8) y:ss
-        loop = For i 1 ILt (Tmp szR) step
+        loop = for1 (eAnn p) i 1 ILt (Tmp szR) step
     seed <- writeRF zop [x,y] (Right acc)
     pure $ plP++plQ++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:mt (AElem qR 1 0 lQ 8) y:seed++[loop]
 eval e _          = error (show e)
@@ -1149,7 +1155,7 @@ feval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
     (lP, plP) <- aeval p pR
     ss <- writeRF op [Left acc, x] (Left acc)
     let step = mt (AElem  pR 1 (Tmp i) lP 8) x:ss
-        loop = For i 1 ILt (Tmp szR) step
+        loop = for1 (eAnn p) i 1 ILt (Tmp szR) step
     sseed <- writeRF zop [x] (Left acc)
     pure $ plP++szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) (FLit _ start)) (FLit _ end)) (ILit _ steps), ys])) acc | Just tQ <- if1 (eAnn ys) = do
@@ -1197,7 +1203,7 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isF
     (l, plE) <- aeval e aP
     ss <- writeRF op [Left acc, Left x] (Left acc)
     let loopBody=MX x (FAt (AElem aP 1 (Tmp i) l 8)):ss
-        loop=For i 1 ILt (Tmp szR) loopBody
+        loop=for1 (eAnn e) i 1 ILt (Tmp szR) loopBody
     pure $ plE++szR := EAt (ADim aP 0 l):MX acc (FAt (AElem aP 1 0 l 8)):[loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
     x <- rtemp tX
