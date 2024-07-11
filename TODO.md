@@ -145,3 +145,7 @@ o → o → o
 - [ ] https://en.wikipedia.org/wiki/Newton_fractal
 - [ ] https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
 - [ ] https://prng.di.unimi.it/splitmix64.c
+- [ ] https://github.com/tonio-m/python_neural_network/blob/main/main.py
+- [ ] https://computational-discovery-on-jupyter.github.io/Computational-Discovery-on-Jupyter/Contents/Computing-with-Fibonacci.html
+# Debug
+- [ ] sanity check negative dims
