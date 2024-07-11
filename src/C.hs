@@ -27,6 +27,10 @@ data Temp = ITemp !Int | ATemp !Int
 data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
 
+data F2 = YT !Int deriving Eq
+
+instance Pretty F2 where pretty (YT i) = "Y" <> pretty i
+
 instance Pretty Temp where
     pretty (ITemp i) = "T" <> pretty i
     pretty (ATemp i) = "AT" <> pretty i
@@ -122,7 +126,7 @@ instance Show CFE where show=show.pretty
 
 infix 9 :=
 
-data CS = For Temp CE IRel CE [CS]
+data CS = For Temp CE IRel CE [CS] | For1 Temp CE IRel CE [CS]
         | While Temp IRel CE [CS]
         | Temp := CE | MX FTemp CFE
         | Wr ArrAcc CE | WrF ArrAcc CFE
@@ -152,6 +156,7 @@ instance Pretty CS where
     pretty (Ma _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
     pretty (MaΠ _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
+    pretty (For1 t el rel eu ss) = "for-1" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty (While t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
     pretty (Ifn't p s)          = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s) <#> rbrace
     pretty (If p s0 s1)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS s1) <#> rbrace

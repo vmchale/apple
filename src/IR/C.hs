@@ -59,6 +59,12 @@ cToIRM (For t el rel eu s) = do
     pure $ IR.MT t' (irE el):MJ (IR.IRel (nr rel) (Reg t') (irE eu)) eL:L l:irs++[tick t', MJ (IR.IRel rel (Reg t') (irE eu)) l, L eL]
   where
     t'=ctemp t
+cToIRM (For1 t el rel eu s) = do
+    l <- nextL
+    irs <- foldMapM cToIRM s
+    pure $ IR.MT t' (irE el):L l:irs++[tick t', MJ (IR.IRel rel (Reg t') (irE eu)) l]
+  where
+    t'=ctemp t
 cToIRM (While t rel eb s) = do
     l <- nextL; eL <- nextL
     s' <- foldMapM cToIRM s

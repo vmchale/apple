@@ -129,6 +129,17 @@ staIx Nil=Just[]; staIx (Ix _ i `Cons` s) = (fromIntegral i:)<$>staIx s; staIx _
 tIx :: T a -> Maybe (T a, [Int64])
 tIx (Arr sh t) = (t,)<$>staIx sh; tIx _=Nothing
 
+nz :: I a -> Bool
+nz (Ix _ i) | i > 0 = True
+nz (StaPlus _ i0 i1) = nz i0 || nz i1 -- no negative dims
+nz (StaMul _ i0 i1) = nz i0 && nz i1
+nz _ = False
+
+ne :: T a -> Bool
+ne (Arr (i `Cons` _) _) = nz i; ne _=False
+
+for t = if ne t then For1 else For
+
 staR :: Sh a -> [Int64]
 staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s
 
@@ -358,7 +369,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, nind 
     let sz=bT tC
     (a,aV) <- vSz t (Tmp szR) sz
     (step, pinches) <- aS op [(tD, AElem xR 1 (Tmp iR) l)] tC (AElem t 1 (Tmp iR) (Just a))
-    let loop=For iR 0 ILt (Tmp szR) step
+    let loop=for (eAnn e) iR 0 ILt (Tmp szR) step
     pure (Just a,
         plE
         ++szR:=EAt (ADim xR 0 l):aV
@@ -923,7 +934,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arro
     plAcc <- eval seed acc
     ss <- writeRF op [Right acc, x] (Right acc)
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
-        loop=For i 0 ILt (Tmp szR) loopBody
+        loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE++plAcc++szR := EAt (ADim eR 0 l):[loop]
 eval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
     (pl0,t0) <- plEV e0; (pl1,t1) <- plEV e1
@@ -1205,7 +1216,7 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | (Arrow _ (Ar
     plAcc <- feval seed acc
     ss <- writeRF op [x, Left acc] (Left acc)
     let step=mt (AElem xsR (Tmp rnkR) (Tmp k) lX 8) x:ss
-        loop=For k 0 ILt (Tmp szR) step
+        loop=for (eAnn xs) k 0 ILt (Tmp szR) step
         plSz = case tIx (eAnn xs) of {Just (_, is) -> szR:=ConstI (product is); Nothing -> SZ szR xsR (Tmp rnkR) lX}
     pure $ plE ++ plAcc ++ [rnkR := EAt (ARnk xsR lX), plSz, loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr)) acc = do
@@ -1231,7 +1242,7 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     plAcc <- feval seed acc
     ss <- writeRF op [Left acc, x] (Left acc)
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
-        loop=For i 0 ILt (Tmp szR) loopBody
+        loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE++plAcc++szR := EAt (ADim eR 0 l):[loop]
 feval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
