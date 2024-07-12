@@ -1,0 +1,9 @@
+λa.λb.
+{
+  xx ⟜ re: 500 (frange 0 499 500); yy ⟜ |: xx;
+  g ← λz.
+    { x ⟜ z->1; y ⟜ z->2
+    ; (sin. (x^2-y^2+a), cos. (2*x*y+b))
+    };
+  [gen. (x,y) g 200]`{0,0} xx yy
+}
