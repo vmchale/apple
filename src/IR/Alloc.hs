@@ -6,7 +6,7 @@ import qualified Data.IntSet       as IS
 import           Data.Maybe        (mapMaybe)
 import           Data.Tuple.Extra  (first3)
 import           IR
-import qualified IR.CF             as IR
+import qualified IR.CFA            as IR
 import           LI
 import           LR
 import           Prettyprinter     (Doc, pretty, (<+>))
