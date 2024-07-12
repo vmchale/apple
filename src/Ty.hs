@@ -325,8 +325,18 @@ mgu l s (Ρ n rs) (Ρ n' rs') = do
     pure $ mapTySubst (insert n (Ρ n' (rs<>rs'))) rss
 mgu (l, e) _ F t@Arr{} = Left $ UF l e F t
 mgu (l, e) _ t@Arr{} F = Left $ UF l e t F
+mgu (l, e) _ B t@Arr{} = Left $ UF l e B t
+mgu (l, e) _ t@Arr{} B = Left $ UF l e t B
 mgu (l, e) _ I t@Arr{} = Left $ UF l e I t
 mgu (l, e) _ t@Arr{} I = Left $ UF l e t I
+mgu (l, e) _ F t@P{} = Left $ UF l e F t
+mgu (l, e) _ t@P{} F = Left $ UF l e t F
+mgu (l, e) _ I t@P{} = Left $ UF l e I t
+mgu (l, e) _ t@P{} I = Left $ UF l e t I
+mgu (l, e) _ B t@P{} = Left $ UF l e B t
+mgu (l, e) _ t@P{} B = Left $ UF l e t B
+mgu (l, e) _ t@P{} t'@Arr{} = Left $ UF l e t t'
+mgu (l, e) _ t@Arr{} t'@P{} = Left $ UF l e t t'
 
 zS _ s [] _           = pure s
 zS _ s _ []           = pure s
