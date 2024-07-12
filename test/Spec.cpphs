@@ -110,12 +110,12 @@ allT = testGroup "jit"
     , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res @?= tcdf 12 2 }
     , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res @?= 0.6339381452606089 }
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
+    , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
     ]
 
 x64T :: TestTree
 x64T = testGroup "x64"
     [ rfTest
-    , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
     , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
     ]
