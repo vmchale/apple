@@ -296,6 +296,10 @@ feval (IR.FB Op.FMinus e0 (IR.FB Op.FTimes e1 e2)) t = do
     i0 <- nextI; i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1); plE2 <- feval e2 (IR.FTemp i2)
     pure $ plE0 ++ plE1 ++ plE2 ++ [Fmsub () (fabsReg t) (FReg i1) (FReg i2) (FReg i0)]
+feval (IR.FB Op.FMinus (IR.ConstF 0) e) t = do
+    i <- nextI
+    plE <- feval e (IR.FTemp i)
+    pure $ plE ++ [Fneg () (fabsReg t) (FReg i)]
 feval (IR.FB fop e0 e1) t | Just isn <- mFop fop = do
     i1 <- nextI; i2 <- nextI
     plE0 <- feval e0 (IR.FTemp i1); plE1 <- feval e1 (IR.FTemp i2)
