@@ -1,5 +1,5 @@
 #include<stdio.h>
-#include<aaff.h>
+#include<hyper.h>
 
 int main(int argc, char *argv[]) {
     F xs[] = {1};
@@ -7,5 +7,5 @@ int main(int argc, char *argv[]) {
     J d[] = {1};
     Af a = {1,d,xs};
     Af b = {1,d,ys};
-    printf("%f", aaff_wrapper(a, b, 1));
+    printf("%f", hyper_wrapper(a, b, 1));
 }

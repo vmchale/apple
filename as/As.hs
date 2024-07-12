@@ -21,6 +21,6 @@ writeO f contents dbg = withSystemTempFile "apple.S" $ \fp h -> do
     TLIO.hPutStr h txt
     hFlush h
     let debugFlag = if dbg then ("-g":) else id
-    void $ readCreateProcess ((proc exe (debugFlag [fp, "-o", fpO])) { std_err = Inherit }) ""
+    {-# SCC "as" #-} void $ readCreateProcess ((proc exe (debugFlag [fp, "-o", fpO])) { std_err = Inherit }) ""
     where fpO = T.unpack f <> ".o"
           exe=case (arch, os) of {("aarch64",_) -> "as"; (_,"linux") -> "aarch64-linux-gnu-as"}
