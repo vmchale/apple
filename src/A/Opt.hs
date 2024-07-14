@@ -190,3 +190,19 @@ optI (FoldSOfZip seed op es) = FoldSOfZip <$> optA seed <*> optA op <*> traverse
 optI (FoldOfZip zop op es)   = FoldOfZip <$> optA zop <*> optA op <*> traverse optA es
 optI (FoldGen seed f g n)    = FoldGen <$> optA seed <*> optA f <*> optA g <*> optA n
 optI (AShLit ds es)          = AShLit ds <$> traverse optA es
+
+extrConst :: E (T ()) -> RM (E (T ()) -> E (T ()), E (T ()))
+extrConst c@FLit{} = do
+    n <- nextU "n" F
+    pure (\e -> LLet (eAnn e) (n, c) e, Var F n)
+extrConst (Lam l n e) = do
+    (f, e') <- extrConst e
+    pure (f, Lam l n e')
+extrConst (EApp l e0 e1) = do
+    (f, e0') <- extrConst e0
+    (g, e1') <- extrConst e1
+    pure (f.g, EApp l e0' e1')
+extrConst e@Builtin{} = pure (id, e)
+extrConst e@Var{} = pure (id, e)
+extrConst e@ILit{} = pure (id, e)
+extrConst e = error (show e)
