@@ -68,7 +68,6 @@ library
         IR
         IR.Alloc
         IR.CF
-        IR.CFA
         IR.Opt
         IR.C
         Class.E

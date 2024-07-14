@@ -6,7 +6,7 @@ import qualified Data.IntSet       as IS
 import           Data.Maybe        (mapMaybe)
 import           Data.Tuple.Extra  (first3)
 import           IR
-import qualified IR.CFA            as A
+import qualified IR.CF             as IR
 import           LI
 import           LR
 import           Prettyprinter     (Doc, pretty, (<+>))
@@ -16,7 +16,7 @@ frees :: IM.IntMap Temp -> [Stmt] -> [Stmt]
 frees a = pf.iF a.live
 
 live :: [Stmt] -> [(Stmt, Live)]
-live = intervals . reconstruct . A.mkControlFlow
+live = intervals . reconstruct . IR.mkControlFlow
 
 prettyIRI :: [(Stmt, Live)] -> Doc ann
 prettyIRI = prettyLines . fmap (\(s,i) -> pretty s <+> pretty i)

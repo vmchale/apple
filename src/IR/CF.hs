@@ -1,6 +1,7 @@
 module IR.CF ( mkControlFlow ) where
 
 import           CF
+import           CF.AL
 -- seems to pretty clearly be faster
 import           Control.Monad.State.Strict (State, evalState, gets, modify)
 import qualified Data.IntSet                as IS
@@ -68,37 +69,58 @@ addControlFlow (MJ e l:stmts) = do
 addControlFlow (stmt:stmts) = do
     { i <- getFresh
     ; (f, stmts') <- next stmts
-    ; pure ((stmt, ControlAnn i (f []) (UD (uses stmt) (usesF stmt) (defs stmt) (defsF stmt))):stmts')
+    ; pure ((stmt, ControlAnn i (f []) (UD (uses stmt) IS.empty (defs stmt) IS.empty)):stmts')
     }
 
-rToInt :: Temp -> Int
-rToInt (ITemp i) = i
-
-singleton :: Temp -> IS.IntSet
-singleton = IS.singleton . rToInt
-
 uE :: Exp -> IS.IntSet
-uE (Reg r)        = singleton r
-uE ConstI{}       = IS.empty
-uE (IB _ e0 e1)   = uE e0 <> uE e1
-uE (IRel _ e0 e1) = uE e0 <> uE e1
-uE (Is t)         = singleton t
-uE (IU _ e)       = uE e
-uE LA{}           = IS.empty
+uE (EAt (AP _ Nothing (Just m)))  = singleton m
+uE (EAt (AP _ (Just e) (Just m))) = sinsert m$uE e
+uE (EAt (AP _ Nothing Nothing))   = IS.empty
+uE (EAt (AP _ (Just e) Nothing))  = uE e
+uE (IRel _ e0 e1)                 = uE e0<>uE e1
+uE Reg{}                          = IS.empty
+uE ConstI{}                       = IS.empty
+uE Is{}                           = IS.empty
+uE (IB _ e0 e1)                   = uE e0<>uE e1
+uE (FRel _ e0 e1)                 = uF e0 <> uF e1
+uE (IRFloor e)                    = uF e
+uE (IU _ e)                       = uE e
+uE LA{}                           = IS.empty
 
 uF :: FExp -> IS.IntSet
-uF ConstF{}     = IS.empty
-uF (FB _ e0 e1) = uF e0 <> uF e1
+uF (FAt (AP _ Nothing (Just m)))  = singleton m
+uF (FAt (AP _ (Just e) (Just m))) = sinsert m$uE e
+uF (FAt (AP _ (Just e) Nothing))  = uE e
+uF (FAt (AP _ Nothing Nothing))   = IS.empty
+uF ConstF{}                       = IS.empty
+uF FReg{}                         = IS.empty
+uF (FU _ e)                       = uF e
+uF (FConv e)                      = uE e
+uF (FB _ e0 e1)                   = uF e0<>uF e1
 
-uses, defs :: Stmt -> IS.IntSet
-uses IRnd{} = IS.empty
+uA (AP _ (Just e) (Just m)) = sinsert m $ uE e
+uA (AP _ (Just e) Nothing)  = uE e
+uA (AP _ Nothing (Just m))  = singleton m
+uA _                        = IS.empty
 
-defs (IRnd t) = singleton t
+uses :: Stmt -> IS.IntSet
+uses (Ma _ _ e)      = uE e
+uses (MX _ e)        = uF e
+uses (MT _ e)        = uE e
+uses (Wr a e)        = uA a <> uE e
+uses (RA l)          = singleton l
+uses (Cmov e0 _ e1)  = uE e0<>uE e1
+uses (Fcmov e0 _ e1) = uE e0<>uF e1
+uses Sa{}            = IS.empty
+uses (WrF a e)       = uA a <> uF e
+uses (Cpy d s e)     = uA d <> uA s <> uE e
+uses Pop{}           = IS.empty
+uses IRnd{}          = IS.empty
+uses (Cset _ e)      = uE e
 
-usesF, defsF :: Stmt -> IS.IntSet
-usesF IRnd{} = IS.empty
-
-defsF IRnd{} = IS.empty
+defs :: Stmt -> IS.IntSet
+defs (Ma a _ _) = singleton a
+defs _          = IS.empty
 
 next :: [Stmt] -> FreshM ([Int] -> [Int], [(Stmt, ControlAnn)])
 next stmts = do
