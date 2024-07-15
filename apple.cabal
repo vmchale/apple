@@ -230,6 +230,7 @@ executable writeo
 
 executable arepl
     main-is:          Main.hs
+    other-modules:    QC
     hs-source-dirs:   run
     default-language: Haskell2010
     ghc-options:
@@ -251,7 +252,8 @@ executable arepl
         text,
         directory,
         filepath,
-        extra
+        extra,
+        QuickCheck
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
