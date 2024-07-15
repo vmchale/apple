@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 
@@ -207,7 +208,7 @@ imm8 Ordq   = 7
 
 instance NFData Pred where
 
-data Addr reg = R reg | RC reg Int8 | RC32 reg Int32 | RS reg Scale reg | RSD reg Scale reg Int8 deriving (Eq, Generic, Functor, Foldable, Traversable)
+data Addr reg = R reg | RC reg Int8 | RC32 reg Int32 | RS reg Scale reg | RSD reg Scale reg Int8 deriving (Eq, Generic, Functor, Foldable)
 
 instance NFData Scale where
 

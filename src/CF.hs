@@ -7,8 +7,8 @@ module CF ( ControlAnn (..)
           , Live (..)
           ) where
 
-import qualified Data.IntSet     as IS
-import           Prettyprinter   (Pretty (pretty), braces, punctuate, (<+>))
+import qualified Data.IntSet   as IS
+import           Prettyprinter (Pretty (pretty), braces, punctuate, (<+>))
 
 data Liveness = Liveness { ins, out, fins, fout :: !IS.IntSet } deriving Eq
 
