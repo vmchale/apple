@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module CF ( ControlAnn (..)
@@ -9,19 +7,14 @@ module CF ( ControlAnn (..)
           , Live (..)
           ) where
 
-import           Control.DeepSeq (NFData)
 import qualified Data.IntSet     as IS
-import           GHC.Generics    (Generic)
 import           Prettyprinter   (Pretty (pretty), braces, punctuate, (<+>))
 
-data Liveness = Liveness { ins, out, fins, fout :: !IS.IntSet }
-    deriving (Eq, Generic, NFData)
+data Liveness = Liveness { ins, out, fins, fout :: !IS.IntSet } deriving Eq
 
 data NLiveness = NLiveness { nx :: Int, liveness :: !Liveness }
-    deriving (Generic, NFData)
 
 data Live = Live { new, done, fnew, fdone :: !IS.IntSet }
-    deriving (Generic, NFData)
 
 instance Pretty Liveness where
     pretty (Liveness is os fis fos) = pretty (Live is os fis fos)
@@ -34,6 +27,6 @@ instance Pretty Live where
 data ControlAnn = ControlAnn { node :: !Int
                              , conn :: [Int]
                              , ud   :: !UD
-                             } deriving (Generic, NFData)
+                             }
 
-data UD = UD { usesNode, usesFNode, defsNode, defsFNode  :: !IS.IntSet } deriving (Generic, NFData)
+data UD = UD { usesNode, usesFNode, defsNode, defsFNode  :: !IS.IntSet }
