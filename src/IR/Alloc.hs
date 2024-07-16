@@ -16,7 +16,7 @@ frees :: IM.IntMap Temp -> [Stmt] -> [Stmt]
 frees a = pf.iF a.live
 
 live :: [Stmt] -> [(Stmt, Live)]
-live = intervals . reconstruct . fst . A.mkControlFlow
+live = intervals . reconstruct . fst. A.mkControlFlow
 
 prettyIRI :: [(Stmt, Live)] -> Doc ann
 prettyIRI = prettyLines . fmap (\(s,i) -> pretty s <+> pretty i)

@@ -16,7 +16,7 @@ type N=Int
 type FreshM = State (N, M.Map Label N, M.Map Label [N])
 
 runFreshM :: FreshM a -> (a, Int)
-runFreshM = second (fst3).flip runState (0, mempty, mempty)
+runFreshM = second fst3.flip runState (0, mempty, mempty)
 
 mkControlFlow :: [Stmt] -> ([(Stmt, ControlAnn)], Int)
 mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)

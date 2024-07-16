@@ -45,11 +45,13 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
 import qualified Data.Text            as T
 import qualified Data.Text.IO         as TIO
+import           Data.Tree            (drawForest)
 import           Data.Tuple           (swap)
 import           Data.Tuple.Extra     (fst3)
 import           Data.Word            (Word64)
 import           IR
 import           IR.Alloc
+import           IR.Hoist
 import           L
 import           Numeric              (showHex)
 import           P
@@ -131,6 +133,9 @@ dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
 
 dumpC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpC = fmap (prettyCS.swap).cmm
+
+dumpSCC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpSCC = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (t,ss) = pS ss<#>pretty (drawForest (fmap show<$>t)); pS=prettyDumpBinds
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
