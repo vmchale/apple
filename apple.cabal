@@ -35,6 +35,7 @@ library
         A
         Ty
         Nm
+        U
         I
         L
         Parser
@@ -61,7 +62,6 @@ library
         Ty.M
         A.Eta
         A.Opt
-        U
         Op
         C
         C.Trans
@@ -105,7 +105,7 @@ library
         DeriveGeneric DeriveAnyClass OverloadedStrings StandaloneDeriving
         RankNTypes FlexibleContexts DeriveFoldable DeriveFunctor
         ScopedTypeVariables TupleSections BinaryLiterals MagicHash
-        MultiParamTypeClasses DeriveTraversable GeneralizedNewtypeDeriving
+        MultiParamTypeClasses GeneralizedNewtypeDeriving
 
     ghc-options:
         -Wall -fno-warn-missing-signatures -Wno-x-partial
@@ -253,7 +253,8 @@ executable arepl
         directory,
         filepath,
         extra,
-        QuickCheck
+        QuickCheck,
+        containers
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
