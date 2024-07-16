@@ -12,13 +12,15 @@ import qualified Data.ByteString.Lazy      as BSL
 import           Data.Foldable             (traverse_)
 import           Data.Int                  (Int64)
 import           Data.List
+import           Data.Maybe                (catMaybes)
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
+import           Data.Traversable          (for)
 import           Data.Tuple.Extra          (first3)
 import           Dbg
-import           Foreign.LibFFI            (callFFI, retCDouble, retInt64, retPtr, retWord8)
+import           Foreign.LibFFI            (argPtr, callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc     (free)
 import           Foreign.Ptr               (Ptr, castPtr)
 import           Foreign.Storable          (peek)
@@ -28,6 +30,7 @@ import           L
 import           Nm
 import           Prettyprinter             (hardline, pretty, tupled, (<+>))
 import           Prettyprinter.Render.Text (putDoc)
+import           QC
 import           Sys.DL
 import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, completeFilename, defaultSettings, fallbackCompletion, getInputLine, historyFile, runInputT,
                                             setComplete, simpleCompletion)
@@ -129,28 +132,30 @@ loop :: Repl AlexPosn ()
 loop = do
     inp <- getInputLine " > "
     case words <$> inp of
-        Just []               -> loop
-        Just (":h":_)         -> showHelp *> loop
-        Just (":help":_)      -> showHelp *> loop
-        Just ("\\l":_)        -> langHelp *> loop
-        Just (":ty":e)        -> tyExprR (unwords e) *> loop
-        Just [":q"]           -> pure ()
-        Just [":quit"]        -> pure ()
-        Just (":asm":e)       -> dumpAsm (unwords e) *> loop
-        Just (":ann":e)       -> annR (unwords e) *> loop
-        Just (":b":e)         -> benchE (unwords e) *> loop
-        Just (":bench":e)     -> benchE (unwords e) *> loop
-        Just (":ir":e)        -> irR (unwords e) *> loop
-        Just (":c":e)         -> cR (unwords e) *> loop
-        Just (":cmm":e)       -> cR (unwords e) *> loop
-        Just (":disasm":e)    -> disasm (unwords e) *> loop
-        Just (":inspect":e)   -> inspect (unwords e) *> loop
-        Just (":compile":e)   -> benchC (unwords e) *> loop
-        Just (":yank":f:[fp]) -> iCtx f fp *> loop
-        Just (":y":f:[fp])    -> iCtx f fp *> loop
-        Just (":graph":e)     -> graph (unwords e) *> loop
-        Just e                -> printExpr (unwords e) *> loop
-        Nothing               -> pure ()
+        Just []                -> loop
+        Just (":h":_)          -> showHelp *> loop
+        Just (":help":_)       -> showHelp *> loop
+        Just ("\\l":_)         -> langHelp *> loop
+        Just (":ty":e)         -> tyExprR (unwords e) *> loop
+        Just [":q"]            -> pure ()
+        Just [":quit"]         -> pure ()
+        Just (":asm":e)        -> dumpAsm (unwords e) *> loop
+        Just (":ann":e)        -> annR (unwords e) *> loop
+        Just (":b":e)          -> benchE (unwords e) *> loop
+        Just (":bench":e)      -> benchE (unwords e) *> loop
+        Just (":ir":e)         -> irR (unwords e) *> loop
+        Just (":c":e)          -> cR (unwords e) *> loop
+        Just (":cmm":e)        -> cR (unwords e) *> loop
+        Just (":disasm":e)     -> disasm (unwords e) *> loop
+        Just (":inspect":e)    -> inspect (unwords e) *> loop
+        Just (":compile":e)    -> benchC (unwords e) *> loop
+        Just (":yank":f:[fp])  -> iCtx f fp *> loop
+        Just (":y":f:[fp])     -> iCtx f fp *> loop
+        Just (":graph":e)      -> graph (unwords e) *> loop
+        Just (":qc":e)         -> qc (unwords e) *> loop
+        Just (":quickcheck":e) -> qc (unwords e) *> loop
+        Just e                 -> printExpr (unwords e) *> loop
+        Nothing                -> pure ()
 
 graph :: String -> Repl AlexPosn ()
 graph s = liftIO $ case dumpX86Ass (ubs s) of
@@ -336,8 +341,12 @@ benchC s = case tyParse bs of
         liftIO $ benchmark (nfIO (do{asm <- cfp bs; freeAsm asm}))
     where bs = ubs s
 
-benchE :: String -> Repl AlexPosn ()
-benchE s = do
+up :: T a -> Maybe [T a]
+up (A.Arrow t0 t1@A.Arrow{}) = (t0:)<$>up t1
+up (A.Arrow t A.B)           = Just [t]
+
+qc :: String -> Repl AlexPosn ()
+qc s = do
     st <- lift $ gets _lex
     a <- lift $ gets _arch
     case rwP st bs of
@@ -346,6 +355,38 @@ benchE s = do
             eC <- eRepl eP
             case tyClosed i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
+                Right (e, _, i') -> do
+                    c <- lift$gets mf
+                    let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
+                    case up (eAnn e) of
+                        Nothing -> pErr ("must be a proposition." :: T.Text)
+                        Just ty -> liftIO $ do
+                            asm@(_, fp, _) <- efp eC
+                            -- TODO: stop on counterexample
+                            res <- for [1..100] $ \_ -> do
+                                arrs <- gas ty
+                                b <- callFFI fp retCUChar (argPtr<$>arrs)
+                                (if cb b
+                                    then pure Nothing
+                                    else do {aa <- traverse peek arrs; pure (Just aa)}) <* traverse_ free arrs
+                            case catMaybes res of
+                                []    -> putDoc ("Passed, 100." <> hardline)
+                                (a:_) -> putDoc ("Proposition failed!" <> hardline <> pretty a <> hardline)
+                            freeAsm asm
+
+  where bs = ubs s
+        cb 0=False; cb 1=True
+
+benchE :: String -> Repl AlexPosn ()
+benchE s = do
+    st <- lift $ gets _lex
+    a <- lift $ gets _arch
+    case rwP st bs of
+        Left err -> pErr err
+        Right (eP, i) -> do
+            eC <- eRepl eP
+            case tyClosed i eC of
+                Left err -> pErr err
                 Right (e, _, i') -> do
                     c <- lift $ gets mf
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
@@ -496,3 +537,5 @@ parseE st bs = fst . either (error "Internal error?") id $ rwP st bs
 eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
 eRepl e = do { ees <- lift $ gets ee; pure $ foldLet ees e }
     where foldLet = thread . fmap (\b@(_,eϵ) -> Let (eAnn eϵ) b) where thread = foldr (.) id
+
+pErr err = liftIO $ putDoc (pretty err <> hardline)

@@ -1,7 +1,7 @@
-module QC ( gD ) where
+module QC ( gas ) where
 
 import           A
-import           Control.Monad.State.Strict (StateT, gets, modify, runStateT)
+import           Control.Monad.State.Strict (StateT, evalStateT, get, gets, modify, put, runStateT)
 import           Control.Monad.Trans.Class  (lift)
 import           Data.Bifunctor             (bimap)
 import           Data.Functor               (($>))
@@ -23,15 +23,12 @@ dim = chooseInt64 (0, 20)
 
 data RSubst = RSubst { iS :: IM.IntMap Int64, sS :: IM.IntMap (Int64, [Int64]) }
 
-mapI :: (IM.IntMap Int64 -> IM.IntMap Int64) -> RSubst -> RSubst
 mapI f (RSubst i s) = RSubst (f i) s
-
-mapS :: (IM.IntMap (Int64, [Int64]) -> IM.IntMap (Int64, [Int64])) -> RSubst -> RSubst
 mapS g (RSubst i s) = RSubst i (g s)
 
 type ShM = StateT RSubst Gen
 
-gg :: Sh () -> ShM (Int64, [Int64])
+gg :: Sh a -> ShM (Int64, [Int64])
 gg Nil = pure (0, [])
 gg (Ix _ i `Cons` sh) = bimap (+1) (fromIntegral i:)<$>gg sh
 gg (IVar _ (Nm _ (U n) _) `Cons` sh) = do
@@ -39,21 +36,31 @@ gg (IVar _ (Nm _ (U n) _) `Cons` sh) = do
     case IM.lookup n iSt of
         Nothing -> do {d <- lift$dim; modify (mapI (IM.insert n d)); bimap (+1) (d:)<$>gg sh}
         Just d  -> bimap (+1) (d:)<$>gg sh
+gg (StaPlus _ (IVar _ (Nm _ (U n) _)) (Ix _ i) `Cons` sh) | i' <- fromIntegral i = do
+    iSt <- gets iS
+    case IM.lookup n iSt of
+        Nothing -> do {d <- lift$chooseInt64 (0,10); modify (mapI (IM.insert n d)); bimap (+1) ((d+i'):)<$>gg sh}
+        Just d  -> bimap (+1) ((d+i'):)<$>gg sh
 gg (SVar (Nm _ (U n) _)) = do
     sSt <- gets sS
     case IM.lookup n sSt of
         Nothing -> do {r <- lift$rnk; ds <- lift$vectorOf (fromIntegral r) dim; modify (mapS (IM.insert n (r,ds))) $> (r,ds)}
         Just s  -> pure s
 
-ga :: RSubst -> T () -> IO (RSubst, Ptr ())
-ga st (Arr sh F) = do
-    (st', a) <- generate (gD st sh)
-    p <- mallocBytes (sizeOf a)
-    poke p a $> (st', castPtr p)
+gas :: [T a] -> IO [Ptr (Apple Double)]
+gas = flip evalStateT (RSubst IM.empty IM.empty).traverse ga
 
-gD :: RSubst -> Sh () -> Gen (RSubst, Apple Double)
-gD st sh = do
-    ((r, ds), st') <- runStateT (gg sh) st
+ga :: T a -> StateT RSubst IO (Ptr (Apple Double))
+ga (Arr sh F) = do
+    st <- get
+    (a, st') <- lift $ generate $ runStateT (gD sh) st
+    put st'
+    p <- lift $ mallocBytes (sizeOf a)
+    lift (poke p a $> p)
+
+gD :: Sh a -> ShM (Apple Double)
+gD sh = do
+    (r, ds) <- gg sh
     let n=fromIntegral$product ds
-    es <- vectorOf n genDouble
-    pure (st', AA r ds es)
+    es <- lift$vectorOf n genDouble
+    pure (AA r ds es)
