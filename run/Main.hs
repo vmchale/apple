@@ -344,6 +344,7 @@ benchC s = case tyParse bs of
 up :: T a -> Maybe [T a]
 up (A.Arrow t0 t1@A.Arrow{}) = (t0:)<$>up t1
 up (A.Arrow t A.B)           = Just [t]
+up _                         = Nothing
 
 qc :: String -> Repl AlexPosn ()
 qc s = do
