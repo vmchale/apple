@@ -9,64 +9,66 @@ import qualified Data.Map                   as M
 import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
 import           IR
 
+type N=Int
+
 -- map of labels by node
-type FreshM = State (Int, M.Map Label Int, M.Map Label [Int])
+type FreshM = State (N, M.Map Label N, M.Map Label [N])
 
 runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
 
 mkControlFlow :: [Stmt] -> [(Stmt, ControlAnn)]
-mkControlFlow instrs = runFreshM (brs instrs *> addControlFlow instrs)
+mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
 
-getFresh :: FreshM Int
+getFresh :: FreshM N
 getFresh = state (\(i,m0,m1) -> (i,(i+1,m0,m1)))
 
-lookupLabel :: Label -> FreshM Int
-lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
+ll :: Label -> FreshM N
+ll l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
 
-lC :: Label -> FreshM [Int]
+lC :: Label -> FreshM [N]
 lC l = gets (M.findWithDefault (error "Internal error in CF graph: node label not in map.") l . thd3)
 
-br :: Int -> Label -> FreshM ()
+br :: N -> Label -> FreshM ()
 br i l = modify (second3 (M.insert l i))
 
-b3 :: Int -> Label -> FreshM ()
+b3 :: N -> Label -> FreshM ()
 b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is -> i:is}) l))
 
 -- | Pair 'Stmt's with a unique node name and a list of all possible
 -- destinations.
-addControlFlow :: [Stmt] -> FreshM [(Stmt, ControlAnn)]
-addControlFlow [] = pure []
-addControlFlow ((L l):stmts) = do
-    { i <- lookupLabel l
+addCF :: [Stmt] -> FreshM [(Stmt, ControlAnn)]
+addCF [] = pure []
+addCF ((L l):stmts) = do
+    { i <- ll l
     ; (f, stmts') <- next stmts
     ; pure ((L l, ControlAnn i (f []) (UD IS.empty IS.empty IS.empty IS.empty)):stmts')
     }
-addControlFlow (J l:stmts) = do
+addCF (J l:stmts) = do
     { i <- getFresh
-    ; nextStmts <- addControlFlow stmts
-    ; l_i <- lookupLabel l
+    ; nextStmts <- addCF stmts
+    ; l_i <- ll l
     ; pure ((J l, ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)):nextStmts)
     }
-addControlFlow (C l:stmts) = do
+addCF (C l:stmts) = do
     { i <- getFresh
-    ; nextStmts <- addControlFlow stmts
-    ; l_i <- lookupLabel l
+    ; nextStmts <- addCF stmts
+    ; l_i <- ll l
     ; pure ((C l, ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)):nextStmts)
     }
-addControlFlow (R l:stmts) = do
+addCF (R l:stmts) = do
     { i <- getFresh
-    ; nextStmts <- addControlFlow stmts
+    ; nextStmts <- addCF stmts
     ; l_is <- lC l
     ; pure ((R l, ControlAnn i l_is (UD IS.empty IS.empty IS.empty IS.empty)):nextStmts)
     }
-addControlFlow (MJ e l:stmts) = do
+addCF (MJ e l:stmts) = do
     { i <- getFresh
     ; (f, stmts') <- next stmts
-    ; l_i <- lookupLabel l
+    ; l_i <- ll l
     ; pure ((MJ e l, ControlAnn i (f [l_i]) (UD (uE e) IS.empty IS.empty IS.empty)):stmts')
     }
-addControlFlow (stmt:stmts) = do
+addCF (stmt:stmts) = do
     { i <- getFresh
     ; (f, stmts') <- next stmts
     ; pure ((stmt, ControlAnn i (f []) (UD (uses stmt) IS.empty (defs stmt) IS.empty)):stmts')
@@ -122,16 +124,16 @@ defs :: Stmt -> IS.IntSet
 defs (Ma a _ _) = singleton a
 defs _          = IS.empty
 
-next :: [Stmt] -> FreshM ([Int] -> [Int], [(Stmt, ControlAnn)])
+next :: [Stmt] -> FreshM ([N] -> [N], [(Stmt, ControlAnn)])
 next stmts = do
-    nextStmts <- addControlFlow stmts
+    nextStmts <- addCF stmts
     case nextStmts of
         []       -> pure (id, [])
         (stmt:_) -> pure ((node (snd stmt) :), nextStmts)
 
 -- | Construct map assigning labels to their node name.
 brs :: [Stmt] -> FreshM ()
-brs [] = pure ()
+brs []                 = pure ()
 brs (C l:L retL:stmts) = do {i <- getFresh; br i retL; b3 i l ; brs stmts}
-brs (L l:stmts) = do {i <- getFresh; br i l; brs stmts}
-brs (_:asms) = brs asms
+brs (L l:stmts)        = do {i <- getFresh; br i l; brs stmts}
+brs (_:asms)           = brs asms
