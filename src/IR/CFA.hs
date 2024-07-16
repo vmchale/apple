@@ -3,10 +3,10 @@ module IR.CFA ( mkControlFlow ) where
 import           CF
 import           CF.AL
 -- seems to pretty clearly be faster
-import           Control.Monad.State.Strict (State, evalState, gets, modify)
+import           Control.Monad.State.Strict (State, evalState, gets, modify, state)
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
-import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
+import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
 import           IR
 
 -- map of labels by node
@@ -19,7 +19,7 @@ mkControlFlow :: [Stmt] -> [(Stmt, ControlAnn)]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
 getFresh :: FreshM Int
-getFresh = gets fst3 <* modify (first3 (+1))
+getFresh = state (\(i,m0,m1) -> (i,(i+1,m0,m1)))
 
 lookupLabel :: Label -> FreshM Int
 lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
