@@ -132,12 +132,12 @@ next stmts = do
 -- | Construct map assigning labels to their node name.
 broadcasts :: [Stmt] -> FreshM ()
 broadcasts [] = pure ()
-broadcasts (stmt@(C l):stmt'@(L retL):stmts) = do
+broadcasts (C l:L retL:stmts) = do
     { i <- getFresh
     ; broadcast i retL; b3 i l
     ; broadcasts stmts
     }
-broadcasts (stmt@(L l):stmts) = do
+broadcasts (L l:stmts) = do
     { i <- getFresh
     ; broadcast i l
     ; broadcasts stmts

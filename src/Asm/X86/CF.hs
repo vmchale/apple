@@ -432,15 +432,12 @@ next asms = do
         (asm:_) -> pure ((node (caBB asm) :), nextAsms)
 
 -- | Construct map assigning labels to their node name.
-broadcasts :: [BB X86 reg freg a ()] -> FreshM [BB X86 reg freg a ()]
-broadcasts [] = pure []
-broadcasts (b0@(BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | C _ l <- last asms = do
+broadcasts :: [BB X86 reg freg a ()] -> FreshM ()
+broadcasts [] = pure ()
+broadcasts ((BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | C _ l <- last asms = do
     { i <- fm retL; b3 i l
     ; case asm of {Label _ lϵ -> void $ fm lϵ; _ -> pure ()}
-    ; (b0:) <$> broadcasts bbs
+    ; broadcasts bbs
     }
-broadcasts (b@(BB (Label _ l:_) _):bbs) = do
-    { void $ fm l
-    ; (b:) <$> broadcasts bbs
-    }
-broadcasts (b:bbs) = (b:) <$> broadcasts bbs
+broadcasts ((BB (Label _ l:_) _):bbs) = fm l *> broadcasts bbs
+broadcasts (_:bbs) = broadcasts bbs

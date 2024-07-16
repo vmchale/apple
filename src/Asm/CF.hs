@@ -12,11 +12,11 @@ module Asm.CF ( FreshM
 
 import           Asm.M
 import           Class.E                    as E
-import           Control.Monad.State.Strict (State, evalState, gets, modify)
+import           Control.Monad.State.Strict (State, evalState, gets, modify, state)
 import           Data.Functor               (($>))
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
-import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
+import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
 
 -- map of labels by node
 type FreshM = State (Int, M.Map Label Int, M.Map Label [Int])
@@ -25,7 +25,7 @@ runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
 
 getFresh :: FreshM Int
-getFresh = gets fst3 <* modify (first3 (+1))
+getFresh = state (\(i,m0,m1) -> (i,(i+1,m0,m1)))
 
 fm :: Label -> FreshM Int
 fm l = do {st <- gets snd3; case M.lookup l st of {Just i -> pure i; Nothing -> do {i <- getFresh; broadcast i l $> i}}}
