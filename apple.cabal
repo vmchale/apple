@@ -49,6 +49,7 @@ library
     hs-source-dirs:     src
     other-modules:
         Bits
+        Dom
         CF
         CF.AL
         LI
