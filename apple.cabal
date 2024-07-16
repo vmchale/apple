@@ -70,6 +70,7 @@ library
         IR.Alloc
         IR.CF
         IR.CFA
+        IR.Hoist
         IR.Opt
         IR.C
         Class.E
