@@ -340,7 +340,7 @@ usesF Bl{}                 = IS.empty
 usesF C{}                  = IS.empty
 usesF RetL{}               = IS.empty
 
-next :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM ([Int] -> [Int], [BB AArch64 reg freg () ControlAnn])
+next :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM ([N] -> [N], [BB AArch64 reg freg () ControlAnn])
 next bbs = do
     nextBs <- addControlFlow bbs
     case nextBs of
