@@ -134,6 +134,9 @@ dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
 dumpC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpC = fmap (prettyCS.swap).cmm
 
+dumpLoop :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss) = pS ss<#>pretty t; pS=prettyDumpBinds
+
 dumpSCC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpSCC = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (t,ss) = pS ss<#>pretty (drawForest (fmap show<$>t)); pS=prettyDumpBinds
 

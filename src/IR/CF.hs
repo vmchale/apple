@@ -2,19 +2,20 @@ module IR.CF ( mkControlFlow ) where
 
 import           CF
 -- seems to pretty clearly be faster
-import           Control.Monad.State.Strict (State, evalState, gets, modify, state)
+import           Control.Monad.State.Strict (State, gets, modify, runState, state)
+import           Data.Bifunctor             (second)
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
-import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
+import           Data.Tuple.Extra           (fst3, second3, snd3, thd3, third3)
 import           IR
 
 -- map of labels by node
 type FreshM = State (Int, M.Map Label Int, M.Map Label [Int])
 
-runFreshM :: FreshM a -> a
-runFreshM = flip evalState (0, mempty, mempty)
+runFreshM :: FreshM a -> (a, Int)
+runFreshM = second fst3.flip runState (0, mempty, mempty)
 
-mkControlFlow :: [Stmt] -> [(Stmt, ControlAnn)]
+mkControlFlow :: [Stmt] -> ([(Stmt, ControlAnn)], Int)
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
 getFresh :: FreshM Int
