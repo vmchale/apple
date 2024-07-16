@@ -16,7 +16,7 @@ runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
 
 mkControlFlow :: [Stmt] -> [(Stmt, ControlAnn)]
-mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
+mkControlFlow instrs = runFreshM (brs instrs *> addControlFlow instrs)
 
 getFresh :: FreshM Int
 getFresh = state (\(i,m0,m1) -> (i,(i+1,m0,m1)))
@@ -27,8 +27,8 @@ lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow g
 lC :: Label -> FreshM [Int]
 lC l = gets (M.findWithDefault (error "Internal error in CF graph: node label not in map.") l . thd3)
 
-broadcast :: Int -> Label -> FreshM ()
-broadcast i l = modify (second3 (M.insert l i))
+br :: Int -> Label -> FreshM ()
+br i l = modify (second3 (M.insert l i))
 
 b3 :: Int -> Label -> FreshM ()
 b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is -> i:is}) l))
@@ -130,16 +130,8 @@ next stmts = do
         (stmt:_) -> pure ((node (snd stmt) :), nextStmts)
 
 -- | Construct map assigning labels to their node name.
-broadcasts :: [Stmt] -> FreshM ()
-broadcasts [] = pure ()
-broadcasts (C l:L retL:stmts) = do
-    { i <- getFresh
-    ; broadcast i retL; b3 i l
-    ; broadcasts stmts
-    }
-broadcasts (L l:stmts) = do
-    { i <- getFresh
-    ; broadcast i l
-    ; broadcasts stmts
-    }
-broadcasts (_:asms) = broadcasts asms
+brs :: [Stmt] -> FreshM ()
+brs [] = pure ()
+brs (C l:L retL:stmts) = do {i <- getFresh; br i retL; b3 i l ; brs stmts}
+brs (L l:stmts) = do {i <- getFresh; br i l; brs stmts}
+brs (_:asms) = brs asms
