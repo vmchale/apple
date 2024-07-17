@@ -20,8 +20,9 @@ lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 hl :: (Loop, IM.IntMap (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, Stmt)]
 hl ((n,ns), info, linfo) = go ss
   where
-    liveInH = fins.liveness$gN n linfo
-    go ((s@(MX x ConstF{}), a):ssϵ) | rToInt x `IS.notMember` liveInH && notFDef x (node a) = (n, node a, s):go ssϵ
+    lH=liveness (gN n linfo)
+    fliveInH=fins lH
+    go ((s@(MX x ConstF{}), a):ssϵ) | rToInt x `IS.notMember` fliveInH && notFDef x (node a) = (n, node a, s):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
     otherDefFs nL = defsFNode.ud.snd.flip gN info<$>(IS.toList$IS.delete nL ns)
@@ -35,6 +36,7 @@ pall ss =
     in go ss'
   where
     go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
+    -- TODO: consolidate 1.0 1.0 1.0
     go ((s,n):ssϵ) | Just cs <- IM.lookup n is = cs++s:go ssϵ
     go ((s,_):ssϵ) = s:go ssϵ
     go [] = []
