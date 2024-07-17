@@ -2,7 +2,7 @@ module IR.Hoist ( hoist, pall ) where
 
 import           CF
 import           Control.Composition (thread)
-import           Data.Bifunctor      (first, second)
+import           Data.Bifunctor      (second)
 import           Data.Graph          (Tree (Node))
 import qualified Data.IntMap         as IM
 import qualified Data.IntSet         as IS
@@ -38,14 +38,14 @@ pall ss =
     go ((s,n):ssϵ) | Just cs <- IM.lookup n is = cs++s:go ssϵ
     go ((s,_):ssϵ) = s:go ssϵ
     go [] = []
-    (cf, is, dels) = ids ss
+    (cf, is, dels) = indels ss
 
-ids :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [Stmt], IS.IntSet)
-ids ss = (c, is IM.empty, ds)
+indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [Stmt], IS.IntSet)
+indels ss = (c, is IM.empty, ds)
   where
     (c,h) = hs ss
     ds = IS.fromList (snd3<$>h)
-    go n s = IM.alter (\d -> case d of {Nothing -> Just [s]; Just ss -> Just$s:ss}) n
+    go n s = IM.alter (\d -> case d of {Nothing -> Just [s]; Just ssϵ -> Just$s:ssϵ}) n
     is = thread ((\(n,_,s) -> go n s)<$>h)
 
 hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, Stmt)])
@@ -67,5 +67,6 @@ cTree (Node _ []:ts)  = cTree ts
 cTree (Node n [t]:ts) = (n:et t):cTree ts
 
 et :: Tree N -> [N]
-et (Node n [])  = [n]
-et (Node n [t]) = n:et t
+et (Node n [])      = [n]
+et (Node n [t])     = n:et t
+et (Node n [t0,t1]) = n:et t0++et t1
