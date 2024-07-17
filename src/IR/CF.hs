@@ -18,57 +18,57 @@ runFreshM :: FreshM a -> (a, Int)
 runFreshM = second fst3.flip runState (0, mempty, mempty)
 
 mkControlFlow :: [Stmt] -> ([(Stmt, ControlAnn)], Int)
-mkControlFlow instrs = runFreshM (brs instrs *> addControlFlow instrs)
+mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
 
 getFresh :: FreshM Int
 getFresh = state (\(i,m0,m1) -> (i,(i+1,m0,m1)))
 
-lookupLabel :: Label -> FreshM Int
-lookupLabel l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
+ll :: Label -> FreshM Int
+ll l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
 
 lC :: Label -> FreshM [Int]
 lC l = gets (M.findWithDefault (error "Internal error in CF graph: node label not in map.") l . thd3)
 
-broadcast :: Int -> Label -> FreshM ()
-broadcast i l = modify (second3 (M.insert l i))
+br :: Int -> Label -> FreshM ()
+br i l = modify (second3 (M.insert l i))
 
 b3 :: Int -> Label -> FreshM ()
 b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is -> i:is}) l))
 
 -- | Pair 'Stmt's with a unique node name and a list of all possible
 -- destinations.
-addControlFlow :: [Stmt] -> FreshM [(Stmt, ControlAnn)]
-addControlFlow [] = pure []
-addControlFlow ((L l):stmts) = do
-    { i <- lookupLabel l
+addCF :: [Stmt] -> FreshM [(Stmt, ControlAnn)]
+addCF [] = pure []
+addCF ((L l):stmts) = do
+    { i <- ll l
     ; (f, stmts') <- next stmts
     ; pure ((L l, ControlAnn i (f []) (UD IS.empty IS.empty IS.empty IS.empty)):stmts')
     }
-addControlFlow (J l:stmts) = do
+addCF (J l:stmts) = do
     { i <- getFresh
-    ; nextStmts <- addControlFlow stmts
-    ; l_i <- lookupLabel l
-    ; pure ((J l, ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)):nextStmts)
+    ; ns <- addCF stmts
+    ; l_i <- ll l
+    ; pure ((J l, ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)):ns)
     }
-addControlFlow (C l:stmts) = do
+addCF (C l:stmts) = do
     { i <- getFresh
-    ; nextStmts <- addControlFlow stmts
-    ; l_i <- lookupLabel l
-    ; pure ((C l, ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)):nextStmts)
+    ; ns <- addCF stmts
+    ; l_i <- ll l
+    ; pure ((C l, ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)):ns)
     }
-addControlFlow (R l:stmts) = do
+addCF (R l:stmts) = do
     { i <- getFresh
-    ; nextStmts <- addControlFlow stmts
+    ; ns <- addCF stmts
     ; l_is <- lC l
-    ; pure ((R l, ControlAnn i l_is (UD IS.empty IS.empty IS.empty IS.empty)):nextStmts)
+    ; pure ((R l, ControlAnn i l_is (UD IS.empty IS.empty IS.empty IS.empty)):ns)
     }
-addControlFlow (MJ e l:stmts) = do
+addCF (MJ e l:stmts) = do
     { i <- getFresh
     ; (f, stmts') <- next stmts
-    ; l_i <- lookupLabel l
+    ; l_i <- ll l
     ; pure ((MJ e l, ControlAnn i (f [l_i]) (UD (uE e) IS.empty IS.empty IS.empty)):stmts')
     }
-addControlFlow (stmt:stmts) = do
+addCF (stmt:stmts) = do
     { i <- getFresh
     ; (f, stmts') <- next stmts
     ; pure ((stmt, ControlAnn i (f []) (UD (uses stmt) (usesF stmt) (defs stmt) (defsF stmt))):stmts')
@@ -205,7 +205,7 @@ defsF _             = IS.empty
 
 next :: [Stmt] -> FreshM ([Int] -> [Int], [(Stmt, ControlAnn)])
 next stmts = do
-    nextStmts <- addControlFlow stmts
+    nextStmts <- addCF stmts
     case nextStmts of
         []       -> pure (id, [])
         (stmt:_) -> pure ((node (snd stmt) :), nextStmts)
@@ -213,6 +213,6 @@ next stmts = do
 -- | Construct map assigning labels to their node name.
 brs :: [Stmt] -> FreshM ()
 brs []                     = pure ()
-brs ((C l):(L retL):stmts) = do {i <- getFresh; broadcast i retL; b3 i l ; brs stmts}
-brs ((L l):stmts)          = do {i <- getFresh; broadcast i l; brs stmts}
+brs ((C l):(L retL):stmts) = do {i <- getFresh; br i retL; b3 i l ; brs stmts}
+brs ((L l):stmts)          = do {i <- getFresh; br i l; brs stmts}
 brs (_:asms)               = brs asms
