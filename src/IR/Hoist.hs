@@ -3,7 +3,7 @@ module IR.Hoist ( hoist, pall ) where
 import           CF
 import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (gets, modify, runState)
-import           Data.Bifunctor             (first, second)
+import           Data.Bifunctor             (bimap, first, second)
 import           Data.Functor               (($>))
 import           Data.Graph                 (Tree (Node))
 import qualified Data.IntMap                as IM
@@ -82,13 +82,13 @@ hl ((n,ns), info, linfo) = go ss
 pall :: [Stmt] -> [Stmt]
 pall ss =
     let ss' = fmap (second node) cf
-    in go ss'
+        (s, ss'') = go ss'
+    in applySubst s ss''
   where
     go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
-    -- TODO: consolidate
-    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (_, subst)) = consolidate cs in css++applySubst subst (s:go ssϵ)
-    go ((s,_):ssϵ) = s:go ssϵ
-    go [] = []
+    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (_, subst)) = consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
+    go ((s,_):ssϵ) = second (s:)$go ssϵ
+    go [] = (M.empty, [])
     (cf, is, dels) = indels ss
     applySubst s = fmap (mapF (\t -> case M.lookup t s of Just r -> r; Nothing -> t))
     consolidate = first catMaybes . flip runState (M.empty, M.empty) . traverse (\(t,x) -> do
@@ -96,7 +96,6 @@ pall ss =
         case M.lookup x seen of
             Nothing -> modify (first (M.insert x t)) $> Just (MX t (ConstF x))
             Just r  -> modify (second (M.insert t r)) $> Nothing)
-            -- TODO: this does not get cleaned up lmao
 
 indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [(FTemp, Double)], IS.IntSet)
 indels ss = (c, is IM.empty, ds)
