@@ -4,6 +4,7 @@ import           CF
 import           CF.AL
 -- seems to pretty clearly be faster
 import           Control.Monad.State.Strict (State, evalState, gets, modify, state)
+import           Data.Functor               (($>))
 import qualified Data.IntSet                as IS
 import qualified Data.Map                   as M
 import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
@@ -22,6 +23,9 @@ mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
 
 getFresh :: FreshM N
 getFresh = state (\(i,m0,m1) -> (i,(i+1,m0,m1)))
+
+fm :: Label -> FreshM N
+fm l = do {i <- getFresh; br i l $> i}
 
 ll :: Label -> FreshM N
 ll l = gets (M.findWithDefault (error "Internal error in control-flow graph: node label not in map.") l . snd3)
@@ -135,6 +139,6 @@ next stmts = do
 -- | Construct map assigning labels to their node name.
 brs :: [Stmt] -> FreshM ()
 brs []                 = pure ()
-brs (C l:L retL:stmts) = do {i <- getFresh; br i retL; b3 i l ; brs stmts}
-brs (L l:stmts)        = do {i <- getFresh; br i l; brs stmts}
+brs (C l:L retL:stmts) = do {i <- fm retL; b3 i l ; brs stmts}
+brs (L l:stmts)        = fm l *> brs stmts
 brs (_:asms)           = brs asms
