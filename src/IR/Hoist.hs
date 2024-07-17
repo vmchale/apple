@@ -3,18 +3,20 @@ module IR.Hoist ( hoist, pall ) where
 import           CF
 import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (gets, modify, runState)
+import qualified Data.Array                 as A
 import           Data.Bifunctor             (bimap, first, second)
 import           Data.Functor               (($>))
-import           Data.Graph                 (Tree (Node))
+import           Data.Graph                 (Tree (Node), scc)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import qualified Data.Map.Strict            as M
 import           Data.Maybe                 (catMaybes)
 import           Data.Tuple.Extra           (first3, snd3)
-import           Dom
 import           IR
 import           IR.CF
 import           LR
+
+type N=Int
 
 mapFA :: (FTemp -> FTemp) -> AE -> AE
 mapFA f (AP t (Just e) l) = AP t (Just$mapFE f e) l
@@ -83,10 +85,10 @@ pall :: [Stmt] -> [Stmt]
 pall ss =
     let ss' = fmap (second node) cf
         (s, ss'') = go ss'
-    in applySubst s ss''
+    in {-# SCC "applySubst" #-} applySubst s ss''
   where
     go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
-    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (_, subst)) = consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
+    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (_, subst)) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
     go ((s,_):ssϵ) = second (s:)$go ssϵ
     go [] = (M.empty, [])
     (cf, is, dels) = indels ss
@@ -127,3 +129,6 @@ et :: Tree N -> [N]
 et (Node n [])      = [n]
 et (Node n [t])     = n:et t
 et (Node n [t0,t1]) = n:et t0++et t1
+
+mkG :: ([(Stmt, ControlAnn)], Int) -> ([Tree N], IM.IntMap (Stmt, ControlAnn))
+mkG (ns, m)= (scc$A.array (0,m-1) ((\(_,ann) -> (node ann, conn ann))<$>ns), IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
