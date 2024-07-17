@@ -17,12 +17,12 @@ type Loop = (N, IS.IntSet)
 lm :: [(Stmt, NLiveness)] -> IM.IntMap NLiveness
 lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 
-hl :: (Loop, IM.IntMap (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, Stmt)]
+hl :: (Loop, IM.IntMap (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, (Temp, Double))]
 hl ((n,ns), info, linfo) = go ss
   where
     lH=liveness (gN n linfo)
     fliveInH=fins lH
-    go ((s@(MX x ConstF{}), a):ssϵ) | rToInt x `IS.notMember` fliveInH && notFDef x (node a) = (n, node a, s):go ssϵ
+    go (((MX x (ConstF i)), a):ssϵ) | rToInt x `IS.notMember` fliveInH && notFDef x (node a) = (n, node a, (x,i)):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
     otherDefFs nL = defsFNode.ud.snd.flip gN info<$>(IS.toList$IS.delete nL ns)
@@ -36,13 +36,14 @@ pall ss =
     in go ss'
   where
     go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
-    -- TODO: consolidate 1.0 1.0 1.0
-    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = cs++s:go ssϵ
+    -- TODO: consolidate
+    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = consolidate cs++s:go ssϵ
     go ((s,_):ssϵ) = s:go ssϵ
     go [] = []
     (cf, is, dels) = indels ss
+    consolidate = fmap (\(t,x) -> MX t (ConstF x))
 
-indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [Stmt], IS.IntSet)
+indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [(Temp, Double)], IS.IntSet)
 indels ss = (c, is IM.empty, ds)
   where
     (c,h) = hs ss
@@ -50,7 +51,7 @@ indels ss = (c, is IM.empty, ds)
     go n s = IM.alter (\d -> case d of {Nothing -> Just [s]; Just ssϵ -> Just$s:ssϵ}) n
     is = thread ((\(n,_,s) -> go n s)<$>h)
 
-hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, Stmt)])
+hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, (Temp, Double))])
 hs ss = let (ls, cf, dm) = loop ss
             mm = lm (reconstruct cf)
      in (cf, concatMap (\l -> (hl (l,dm,mm))) ls)
