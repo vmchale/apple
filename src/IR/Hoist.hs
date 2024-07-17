@@ -6,7 +6,7 @@ import           Data.Bifunctor      (first, second)
 import           Data.Graph          (Tree (Node))
 import qualified Data.IntMap         as IM
 import qualified Data.IntSet         as IS
-import           Data.Tuple.Extra    (snd3)
+import           Data.Tuple.Extra    (first3, snd3)
 import           Dom
 import           IR
 import           IR.CF
@@ -31,37 +31,35 @@ hl ((n,ns), info, linfo) = go ss
 
 pall :: [Stmt] -> [Stmt]
 pall ss =
-    let (cf,_)=mkControlFlow ss
-        ss' = fmap (second node) cf
+    let ss' = fmap (second node) cf
     in go ss'
   where
     go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
     go ((s,n):ssϵ) | Just cs <- IM.lookup n is = cs++s:go ssϵ
     go ((s,_):ssϵ) = s:go ssϵ
     go [] = []
-    (is, dels) = ids ss
+    (cf, is, dels) = ids ss
 
-ids :: [Stmt] -> (IM.IntMap [Stmt], IS.IntSet)
-ids ss = (is IM.empty, ds)
+ids :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [Stmt], IS.IntSet)
+ids ss = (c, is IM.empty, ds)
   where
-    h = hs ss
+    (c,h) = hs ss
     ds = IS.fromList (snd3<$>h)
     go n s = IM.alter (\d -> case d of {Nothing -> Just [s]; Just ss -> Just$s:ss}) n
     is = thread ((\(n,_,s) -> go n s)<$>h)
 
-hs :: [Stmt] -> [(N, N, Stmt)]
-hs ss = let (ls, dm) = loop ss
-            -- TODO: recomputed?
-            mm = lm (reconstruct.fst$mkControlFlow ss)
-     in concatMap (\l -> (hl (l,dm,mm))) ls
+hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, Stmt)])
+hs ss = let (ls, cf, dm) = loop ss
+            mm = lm (reconstruct cf)
+     in (cf, concatMap (\l -> (hl (l,dm,mm))) ls)
 
-loop :: [Stmt] -> ([Loop], IM.IntMap (Stmt, ControlAnn))
-loop = first (fmap mkL.cTree).hoist
+loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
+loop = first3 (fmap mkL.cTree).hoist
   where
     mkL ns@(n:_) = (n, IS.fromList ns)
 
-hoist :: [Stmt] -> ([Tree N], IM.IntMap (Stmt, ControlAnn))
-hoist = mkG.mkControlFlow
+hoist :: [Stmt] -> ([Tree N], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
+hoist ss = (\c@(ssϵ,_) -> (\(x,y) -> (x,ssϵ,y))$mkG c) (mkControlFlow ss)
 
 cTree :: [Tree N] -> [[N]]
 cTree []              = []

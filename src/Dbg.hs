@@ -141,7 +141,7 @@ dumpC = fmap (prettyCS.swap).cmm
 -- dumpHs = fmap (pretty.show.hs.π).ir where π (a,_,_)=a
 
 dumpSCC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpSCC = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (t,ss) = pS ss<#>pretty (drawForest (fmap show<$>t)); pS=prettyDumpBinds.fmap fst
+dumpSCC = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (t,_,ss) = pS ss<#>pretty (drawForest (fmap show<$>t)); pS=prettyDumpBinds.fmap fst
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
