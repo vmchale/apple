@@ -1,4 +1,4 @@
-module IR.CF ( mkControlFlow ) where
+module IR.CF ( rToInt, mkControlFlow ) where
 
 import           CF
 -- seems to pretty clearly be faster

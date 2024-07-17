@@ -8,5 +8,5 @@ import           IR
 
 type N=Int
 
-mkG :: ([(Stmt, ControlAnn)], Int) -> ([Tree N], IM.IntMap Stmt)
-mkG (ns, m)= (scc$A.array (0,m-1) ((\(_,ann) -> (node ann, conn ann))<$>ns), IM.fromList ((\(s, ann) -> (node ann, s))<$>ns))
+mkG :: ([(Stmt, ControlAnn)], Int) -> ([Tree N], IM.IntMap (Stmt, ControlAnn))
+mkG (ns, m)= (scc$A.array (0,m-1) ((\(_,ann) -> (node ann, conn ann))<$>ns), IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
