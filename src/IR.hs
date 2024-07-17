@@ -1,9 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module IR ( Exp (..)
-          , FExp (..)
+module IR ( Exp (..), FExp (..)
           , Stmt (..)
-          , Temp (..)
+          , Temp (..), FTemp (..)
           , Label, AsmData
           , AE (..)
           , WSt (..)
@@ -26,15 +25,15 @@ data WSt = WSt { wlabel :: !Label, wtemps :: !Int }
 prettyLabel :: Label -> Doc ann
 prettyLabel l = "apple_" <> pretty l
 
+data FTemp = FTemp !Int
+           | F0 | F1 | F2 | F3 | F4 | F5
+           | FRet | FRet1
+           deriving Eq
+
 data Temp = ITemp !Int
           | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5
           | CRet
-          | FTemp !Int
-          -- 512-bit
-          | F8Temp !Int -- ZMM0-ZMM31
-          | F0 | F1 | F2 | F3 | F4 | F5
-          | FRet | FRet1
           deriving (Eq)
 
 instance Pretty Temp where
@@ -47,6 +46,8 @@ instance Pretty Temp where
     pretty C4        = "r_arg4"
     pretty C5        = "r_arg5"
     pretty CRet      = "r_ret"
+
+instance Pretty FTemp where
     pretty (FTemp i) = "f_" <> pretty i
     pretty F0        = "f_arg0"
     pretty F1        = "f_arg1"
@@ -62,11 +63,11 @@ instance Show Temp where show=show.pretty
 data Stmt = L Label
           | MJ Exp Label
           | J Label
-          | MT Temp Exp | MX Temp FExp -- move targeting xmm0 &c.
+          | MT Temp Exp | MX FTemp FExp -- move targeting xmm0 &c.
           | Ma AL Temp Exp -- label, register, size
           | Free Temp | RA !AL -- "return array" no-op
           | Wr AE Exp | WrF AE FExp
-          | Cmov Exp Temp Exp | Fcmov Exp Temp FExp
+          | Cmov Exp Temp Exp | Fcmov Exp FTemp FExp
           | Cset Temp Exp
           | Sa Temp Exp -- register, size
           | Pop Exp -- pop salloc
@@ -106,7 +107,7 @@ instance Pretty AE where
 data FExp = ConstF Double
           | FB FBin FExp FExp
           | FConv Exp
-          | FReg Temp
+          | FReg FTemp
           | FU FUn FExp
           | FAt AE
 

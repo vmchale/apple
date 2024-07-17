@@ -20,16 +20,16 @@ type Loop = (N, IS.IntSet)
 lm :: [(Stmt, NLiveness)] -> IM.IntMap NLiveness
 lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 
-hl :: (Loop, IM.IntMap (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, (Temp, Double))]
+hl :: (Loop, IM.IntMap (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, (FTemp, Double))]
 hl ((n,ns), info, linfo) = go ss
   where
     lH=liveness (gN n linfo)
     fliveInH=fins lH
-    go (((MX x (ConstF i)), a):ssϵ) | rToInt x `IS.notMember` fliveInH && notFDef x (node a) = (n, node a, (x,i)):go ssϵ
+    go (((MX x (ConstF i)), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef x (node a) = (n, node a, (x,i)):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
     otherDefFs nL = defsFNode.ud.snd.flip gN info<$>(IS.toList$IS.delete nL ns)
-    notFDef r nL = not $ any (rToInt r `IS.member`) (otherDefFs nL)
+    notFDef r nL = not $ any (fToInt r `IS.member`) (otherDefFs nL)
     ss = flip gN info<$>IS.toList ns
     gN = IM.findWithDefault (error "internal error: node not in map.")
 
@@ -51,7 +51,7 @@ pall ss =
             Just r  -> pure $ MX t (FReg r))
             -- TODO: this does not get cleaned up lmao
 
-indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [(Temp, Double)], IS.IntSet)
+indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [(FTemp, Double)], IS.IntSet)
 indels ss = (c, is IM.empty, ds)
   where
     (c,h) = hs ss
@@ -59,7 +59,7 @@ indels ss = (c, is IM.empty, ds)
     go n s = IM.alter (\d -> case d of {Nothing -> Just [s]; Just ssϵ -> Just$s:ssϵ}) n
     is = thread ((\(n,_,s) -> go n s)<$>h)
 
-hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, (Temp, Double))])
+hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, (FTemp, Double))])
 hs ss = let (ls, cf, dm) = loop ss
             mm = lm (reconstruct cf)
      in (cf, concatMap (\l -> (hl (l,dm,mm))) ls)

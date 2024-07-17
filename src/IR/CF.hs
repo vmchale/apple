@@ -1,4 +1,6 @@
-module IR.CF ( rToInt, mkControlFlow ) where
+module IR.CF ( rToInt, fToInt
+             , mkControlFlow
+             ) where
 
 import           CF
 -- seems to pretty clearly be faster
@@ -74,7 +76,6 @@ addControlFlow (stmt:stmts) = do
 
 rToInt :: Temp -> Int
 rToInt (ITemp i) = i
-rToInt (FTemp i) = i
 rToInt C0        = -1
 rToInt C1        = -2
 rToInt C2        = -3
@@ -82,17 +83,23 @@ rToInt C3        = -4
 rToInt C4        = -5
 rToInt C5        = -6
 rToInt CRet      = -7
-rToInt F0        = -8
-rToInt F1        = -9
-rToInt F2        = -10
-rToInt F3        = -11
-rToInt F4        = -12
-rToInt F5        = -13
-rToInt FRet      = -14
-rToInt FRet1     = -15
+
+fToInt :: FTemp -> Int
+fToInt (FTemp i) = i
+fToInt F0        = -8
+fToInt F1        = -9
+fToInt F2        = -10
+fToInt F3        = -11
+fToInt F4        = -12
+fToInt F5        = -13
+fToInt FRet      = -14
+fToInt FRet1     = -15
 
 singleton :: Temp -> IS.IntSet
 singleton = IS.singleton . rToInt
+
+fsingleton :: FTemp -> IS.IntSet
+fsingleton = IS.singleton . fToInt
 
 uE :: Exp -> IS.IntSet
 uE (Reg r)        = singleton r
@@ -122,7 +129,7 @@ uF :: FExp -> IS.IntSet
 uF ConstF{}     = IS.empty
 uF (FB _ e0 e1) = uF e0 <> uF e1
 uF (FConv e)    = uFF e
-uF (FReg t)     = singleton t
+uF (FReg t)     = fsingleton t
 uF (FU _ e)     = uF e
 uF (FAt a)      = uAF a
 
@@ -192,8 +199,8 @@ usesF C{}           = IS.empty
 usesF R{}           = IS.empty
 usesF (Cpy a0 a1 e) = uAF a0<>uAF a1<>uFF e
 
-defsF (MX t _)      = singleton t
-defsF (Fcmov _ x _) = singleton x
+defsF (MX t _)      = fsingleton t
+defsF (Fcmov _ x _) = fsingleton x
 defsF _             = IS.empty
 
 next :: [Stmt] -> FreshM ([Int] -> [Int], [(Stmt, ControlAnn)])

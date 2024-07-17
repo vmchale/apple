@@ -21,7 +21,7 @@ ctemp C.C0 = IR.C0; ctemp C.C1 = IR.C1; ctemp C.C2 = IR.C2
 ctemp C.C3 = IR.C3; ctemp C.C4 = IR.C4; ctemp C.C5 = IR.C5
 ctemp C.CRet = IR.CRet
 
-fx :: FTemp -> IR.Temp
+fx :: C.FTemp -> IR.FTemp
 fx (C.FTemp i) = IR.FTemp i
 fx FRet0 = FRet; fx C.FRet1 = IR.FRet1
 fx C.F0 = IR.F0; fx C.F1 = IR.F1; fx C.F2 = IR.F2

@@ -24,7 +24,7 @@ absReg IR.C4        = CArg4
 absReg IR.C5        = CArg5
 absReg IR.CRet      = CRet
 
-fabsReg :: IR.Temp -> FAbsReg
+fabsReg :: IR.FTemp -> FAbsReg
 fabsReg (IR.FTemp i) = FReg i
 fabsReg IR.F0        = FArg0
 fabsReg IR.F1        = FArg1
@@ -286,7 +286,7 @@ ir s                                                    = error (show s)
 
 saI i | i`rem`16 == 0 = fromIntegral i | otherwise = fromIntegral i+8
 
-feval :: IR.FExp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()] -- TODO: feval 0 (xor?)
+feval :: IR.FExp -> IR.FTemp -> WM [X86 AbsReg FAbsReg ()] -- TODO: feval 0 (xor?)
 feval (IR.FB Op.FDiv (IR.FReg r0) (IR.FReg r1)) t   | t == r0 = pure [Divsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FTimes (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Mulsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FMinus (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Subsd () (fabsReg t) (fabsReg r1)]

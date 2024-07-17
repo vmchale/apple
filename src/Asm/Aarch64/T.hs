@@ -17,7 +17,7 @@ absReg IR.C0 = CArg0; absReg IR.C1 = CArg1; absReg IR.C2 = CArg2
 absReg IR.C3 = CArg3; absReg IR.C4 = CArg4; absReg IR.C5 = CArg5
 absReg IR.CRet = CArg0
 
-fabsReg :: IR.Temp -> FAbsReg
+fabsReg :: IR.FTemp -> FAbsReg
 fabsReg (IR.FTemp i) = FReg i
 fabsReg IR.F0 = FArg0; fabsReg IR.F1 = FArg1; fabsReg IR.F2 = FArg2
 fabsReg IR.F3 = FArg3; fabsReg IR.F4 = FArg4; fabsReg IR.F5 = FArg5
@@ -220,7 +220,7 @@ mw64 w r =
     let w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
     in MovRC () r (fromIntegral w0):[MovK () r (fromIntegral wi) s | (wi, s) <- [(w1, 16), (w2, 32), (w3, 48)], wi /= 0 ]
 
-ssin :: IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
+ssin :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 ssin t = do
     d1 <- nextF; d2 <- nextF; d3 <- nextF
     tsI <- nextI
@@ -230,7 +230,7 @@ ssin t = do
   where
     d0 = fabsReg t
 
-cosϵ :: IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
+cosϵ :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 cosϵ t = do
     d1 <- nextF; d2 <- nextF; d3 <- nextF
     tsI <- nextI
@@ -240,7 +240,7 @@ cosϵ t = do
   where
     d0 = fabsReg t
 
-feval :: IR.FExp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
+feval :: IR.FExp -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
 feval (IR.ConstF d) t = do
     i <- nextI
