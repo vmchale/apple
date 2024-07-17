@@ -28,13 +28,13 @@ prettyLabel l = "apple_" <> pretty l
 data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5
            | FRet | FRet1
-           deriving Eq
+           deriving (Eq, Ord)
 
 data Temp = ITemp !Int
           | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5
           | CRet
-          deriving (Eq)
+          deriving Eq
 
 instance Pretty Temp where
     pretty (ITemp i) = "r_" <> pretty i
