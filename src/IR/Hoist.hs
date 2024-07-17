@@ -1,12 +1,15 @@
 module IR.Hoist ( hoist, pall ) where
 
 import           CF
-import           Control.Composition (thread)
-import           Data.Bifunctor      (second)
-import           Data.Graph          (Tree (Node))
-import qualified Data.IntMap         as IM
-import qualified Data.IntSet         as IS
-import           Data.Tuple.Extra    (first3, snd3)
+import           Control.Composition        (thread)
+import           Control.Monad.State.Strict (evalState, get, modify)
+import           Data.Bifunctor             (second)
+import           Data.Functor               (($>))
+import           Data.Graph                 (Tree (Node))
+import qualified Data.IntMap                as IM
+import qualified Data.IntSet                as IS
+import qualified Data.Map.Strict            as M
+import           Data.Tuple.Extra           (first3, snd3)
 import           Dom
 import           IR
 import           IR.CF
@@ -41,7 +44,12 @@ pall ss =
     go ((s,_):ssϵ) = s:go ssϵ
     go [] = []
     (cf, is, dels) = indels ss
-    consolidate = fmap (\(t,x) -> MX t (ConstF x))
+    consolidate = flip evalState M.empty . traverse (\(t,x) -> do
+        seen <- get
+        case M.lookup x seen of
+            Nothing -> modify (M.insert x t) $> MX t (ConstF x)
+            Just r  -> pure $ MX t (FReg r))
+            -- TODO: this does not get cleaned up lmao
 
 indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [(Temp, Double)], IS.IntSet)
 indels ss = (c, is IM.empty, ds)
