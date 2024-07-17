@@ -16,7 +16,7 @@ runFreshM :: FreshM a -> (a, Int)
 runFreshM = second fst3.flip runState (0, mempty, mempty)
 
 mkControlFlow :: [Stmt] -> ([(Stmt, ControlAnn)], Int)
-mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
+mkControlFlow instrs = runFreshM (brs instrs *> addControlFlow instrs)
 
 getFresh :: FreshM Int
 getFresh = state (\(i,m0,m1) -> (i,(i+1,m0,m1)))
@@ -74,6 +74,22 @@ addControlFlow (stmt:stmts) = do
 
 rToInt :: Temp -> Int
 rToInt (ITemp i) = i
+rToInt (FTemp i) = i
+rToInt C0        = -1
+rToInt C1        = -2
+rToInt C2        = -3
+rToInt C3        = -4
+rToInt C4        = -5
+rToInt C5        = -6
+rToInt CRet      = -7
+rToInt F0        = -8
+rToInt F1        = -9
+rToInt F2        = -10
+rToInt F3        = -11
+rToInt F4        = -12
+rToInt F5        = -13
+rToInt FRet      = -14
+rToInt FRet1     = -15
 
 singleton :: Temp -> IS.IntSet
 singleton = IS.singleton . rToInt
@@ -86,20 +102,127 @@ uE (IRel _ e0 e1) = uE e0 <> uE e1
 uE (Is t)         = singleton t
 uE (IU _ e)       = uE e
 uE LA{}           = IS.empty
+uE (IRFloor x)    = uFR x
+uE (EAt a)        = uA a
+uE (FRel _ x0 x1) = uFR x0<>uFR x1
+
+uFF :: Exp -> IS.IntSet
+uFF (IRFloor e)    = uF e
+uFF ConstI{}       = IS.empty
+uFF Reg{}          = IS.empty
+uFF (IB _ e0 e1)   = uFF e0<>uFF e1
+uFF (IRel _ e0 e1) = uFF e0<>uFF e1
+uFF (FRel _ e0 e1) = uF e0<>uF e1
+uFF (IU _ e)       = uFF e
+uFF LA{}           = IS.empty
+uFF Is{}           = IS.empty
+uFF (EAt e)        = uAF e
 
 uF :: FExp -> IS.IntSet
 uF ConstF{}     = IS.empty
 uF (FB _ e0 e1) = uF e0 <> uF e1
+uF (FConv e)    = uFF e
+uF (FReg t)     = singleton t
+uF (FU _ e)     = uF e
+uF (FAt a)      = uAF a
+
+uAF :: AE -> IS.IntSet
+uAF (AP _ (Just e) _) = uFF e
+uAF _                 = IS.empty
+
+uA :: AE -> IS.IntSet
+uA (AP t Nothing _)  = singleton t
+uA (AP t (Just e) _) = IS.insert (rToInt t) (uE e)
+
+uFR :: FExp -> IS.IntSet
+uFR (FAt a)      = uA a
+uFR (FConv e)    = uE e
+uFR (FB _ e0 e1) = uFR e0<>uFR e1
+uFR FReg{}       = IS.empty
+uFR (FU _ e)     = uFR e
+uFR ConstF{}     = IS.empty
 
 uses, defs :: Stmt -> IS.IntSet
-uses IRnd{} = IS.empty
+uses IRnd{}         = IS.empty
+uses L{}            = IS.empty
+uses J{}            = IS.empty
+uses (MJ e _)       = uE e
+uses (MT _ e)       = uE e
+uses (MX _ e)       = uFR e
+uses (Ma _ _ e)     = uE e
+uses (Free t)       = singleton t
+uses RA{}           = IS.empty
+uses (Wr a e)       = uA a<>uE e
+uses (WrF a e)      = uA a<>uFR e
+uses (Sa _ e)       = uE e
+uses (Pop e)        = uE e
+uses (Cmov e0 _ e1) = uE e0<>uE e1
+uses (Fcmov e _ x)  = uE e<>uFR x
+uses R{}            = IS.empty
+uses C{}            = IS.empty
+uses (Cset _ e)     = uE e
+uses (Cpy a0 a1 e)  = uA a0<>uA a1<>uE e
 
-defs (IRnd t) = singleton t
+defs (IRnd t)     = singleton t
+defs C{}          = IS.empty
+defs L{}          = IS.empty
+defs MJ{}         = IS.empty
+defs (MT t _)     = singleton t
+defs MX{}         = IS.empty
+defs (Ma _ t _)   = singleton t
+defs Free{}       = IS.empty
+defs RA{}         = IS.empty
+defs J{}          = IS.empty
+defs (Cmov _ t _) = singleton t
+defs Fcmov{}      = IS.empty
+defs (Sa t _)     = singleton t
+defs Pop{}        = IS.empty
+defs (Cset t _)   = singleton t
+defs R{}          = IS.empty
+defs Cpy{}        = IS.empty
+defs Wr{}         = IS.empty
+defs WrF{}        = IS.empty
 
 usesF, defsF :: Stmt -> IS.IntSet
-usesF IRnd{} = IS.empty
+usesF IRnd{}        = IS.empty
+usesF (MX _ e)      = uF e
+usesF L{}           = IS.empty
+usesF J{}           = IS.empty
+usesF MJ{}          = IS.empty
+usesF (MT _ e)      = uFF e
+usesF (Ma _ _ e)    = uFF e
+usesF Free{}        = IS.empty
+usesF RA{}          = IS.empty
+usesF (Cmov e _ e') = uFF e<>uFF e'
+usesF (Fcmov e _ x) = uFF e<>uF x
+usesF (Wr a e)      = uAF a<>uFF e
+usesF (WrF a x)     = uAF a<>uF x
+usesF (Cset _ e)    = uFF e
+usesF (Sa _ e)      = uFF e
+usesF (Pop e)       = uFF e
+usesF C{}           = IS.empty
+usesF R{}           = IS.empty
+usesF (Cpy a0 a1 e) = uAF a0<>uAF a1<>uFF e
 
-defsF IRnd{} = IS.empty
+defsF IRnd{}        = IS.empty
+defsF MT{}          = IS.empty
+defsF (MX t _)      = singleton t
+defsF Ma{}          = IS.empty
+defsF Wr{}          = IS.empty
+defsF WrF{}         = IS.empty
+defsF L{}           = IS.empty
+defsF MJ{}          = IS.empty
+defsF (Fcmov _ x _) = singleton x
+defsF Free{}        = IS.empty
+defsF RA{}          = IS.empty
+defsF Sa{}          = IS.empty
+defsF J{}           = IS.empty
+defsF Cpy{}         = IS.empty
+defsF C{}           = IS.empty
+defsF R{}           = IS.empty
+defsF Cmov{}        = IS.empty
+defsF Pop{}         = IS.empty
+defsF Cset{}        = IS.empty
 
 next :: [Stmt] -> FreshM ([Int] -> [Int], [(Stmt, ControlAnn)])
 next stmts = do
@@ -109,16 +232,8 @@ next stmts = do
         (stmt:_) -> pure ((node (snd stmt) :), nextStmts)
 
 -- | Construct map assigning labels to their node name.
-broadcasts :: [Stmt] -> FreshM ()
-broadcasts [] = pure ()
-broadcasts (stmt@(C l):stmt'@(L retL):stmts) = do
-    { i <- getFresh
-    ; broadcast i retL; b3 i l
-    ; broadcasts stmts
-    }
-broadcasts (stmt@(L l):stmts) = do
-    { i <- getFresh
-    ; broadcast i l
-    ; broadcasts stmts
-    }
-broadcasts (_:asms) = broadcasts asms
+brs :: [Stmt] -> FreshM ()
+brs []                     = pure ()
+brs ((C l):(L retL):stmts) = do {i <- getFresh; broadcast i retL; b3 i l ; brs stmts}
+brs ((L l):stmts)          = do {i <- getFresh; broadcast i l; brs stmts}
+brs (_:asms)               = brs asms
