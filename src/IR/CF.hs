@@ -163,25 +163,13 @@ uses C{}            = IS.empty
 uses (Cset _ e)     = uE e
 uses (Cpy a0 a1 e)  = uA a0<>uA a1<>uE e
 
-defs (IRnd t)     = singleton t
-defs C{}          = IS.empty
-defs L{}          = IS.empty
-defs MJ{}         = IS.empty
 defs (MT t _)     = singleton t
-defs MX{}         = IS.empty
+defs (IRnd t)     = singleton t
 defs (Ma _ t _)   = singleton t
-defs Free{}       = IS.empty
-defs RA{}         = IS.empty
-defs J{}          = IS.empty
 defs (Cmov _ t _) = singleton t
-defs Fcmov{}      = IS.empty
 defs (Sa t _)     = singleton t
-defs Pop{}        = IS.empty
 defs (Cset t _)   = singleton t
-defs R{}          = IS.empty
-defs Cpy{}        = IS.empty
-defs Wr{}         = IS.empty
-defs WrF{}        = IS.empty
+defs _            = IS.empty
 
 usesF, defsF :: Stmt -> IS.IntSet
 usesF IRnd{}        = IS.empty
@@ -204,25 +192,9 @@ usesF C{}           = IS.empty
 usesF R{}           = IS.empty
 usesF (Cpy a0 a1 e) = uAF a0<>uAF a1<>uFF e
 
-defsF IRnd{}        = IS.empty
-defsF MT{}          = IS.empty
 defsF (MX t _)      = singleton t
-defsF Ma{}          = IS.empty
-defsF Wr{}          = IS.empty
-defsF WrF{}         = IS.empty
-defsF L{}           = IS.empty
-defsF MJ{}          = IS.empty
 defsF (Fcmov _ x _) = singleton x
-defsF Free{}        = IS.empty
-defsF RA{}          = IS.empty
-defsF Sa{}          = IS.empty
-defsF J{}           = IS.empty
-defsF Cpy{}         = IS.empty
-defsF C{}           = IS.empty
-defsF R{}           = IS.empty
-defsF Cmov{}        = IS.empty
-defsF Pop{}         = IS.empty
-defsF Cset{}        = IS.empty
+defsF _             = IS.empty
 
 next :: [Stmt] -> FreshM ([Int] -> [Int], [(Stmt, ControlAnn)])
 next stmts = do
