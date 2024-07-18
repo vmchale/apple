@@ -6,7 +6,7 @@ import           Control.Monad.State.Strict (gets, modify, runState)
 import qualified Data.Array                 as A
 import           Data.Bifunctor             (bimap, first, second)
 import           Data.Functor               (($>))
-import           Data.Graph                 (Tree (Node), scc)
+import           Data.Graph                 (Graph, Tree (Node), scc)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import qualified Data.Map.Strict            as M
@@ -113,22 +113,26 @@ hs ss = let (ls, cf, dm) = loop ss
      in (cf, concatMap (\l -> (hl (l,dm,mm))) ls)
 
 loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
-loop = first3 (fmap mkL.cTree).hoist
+loop = first3 (fmap mkL).(\(x,y,z) -> (cTree (fmap fst z) x,y,z)).hoist
   where
     mkL ns@(n:_) = (n, IS.fromList ns)
 
 hoist :: [Stmt] -> ([Tree N], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
-hoist ss = (\c@(ssϵ,_) -> (\(x,y) -> (x,ssϵ,y))$mkG c) (mkControlFlow ss)
+hoist ss = (\c@(ssϵ,_) -> (\(_,x,y) -> (x,ssϵ,y))$mkG c) (mkControlFlow ss)
 
-cTree :: [Tree N] -> [[N]]
-cTree []              = []
-cTree (Node _ []:ts)  = cTree ts
-cTree (Node n [t]:ts) = (n:et t):cTree ts
+cTree :: IM.IntMap Stmt -> [Tree N] -> [[N]]
+cTree _ []              = []
+cTree s (Node _ []:ts)  = cTree s ts
+-- TODO: loops within a call, e.g. ncdf
+cTree s (Node n [t]:ts) | mL <- n:et t, Just MJ{} <- IM.lookup (last mL) s = mL:cTree s ts
+                        | otherwise = cTree s ts
 
 et :: Tree N -> [N]
 et (Node n [])      = [n]
 et (Node n [t])     = n:et t
 et (Node n [t0,t1]) = n:et t0++et t1
 
-mkG :: ([(Stmt, ControlAnn)], Int) -> ([Tree N], IM.IntMap (Stmt, ControlAnn))
-mkG (ns, m)= (scc$A.array (0,m-1) ((\(_,ann) -> (node ann, conn ann))<$>ns), IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
+mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, [Tree N], IM.IntMap (Stmt, ControlAnn))
+mkG (ns, m)= (g, scc g, IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
+  where
+    g = A.array (0,m-1) ((\(_,ann) -> (node ann, conn ann))<$>ns)
