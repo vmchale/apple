@@ -1,15 +1,25 @@
+include mk/os.mk
+
 HC ?= ghc
 
 HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
+ifeq ($(UNAME),Linux)
+	LD_VER := $(shell ja '{%/^\s*lib-version-info:/}{`2}' -i apple.cabal | sed 's/:/./g')
+endif
 
-libapple.dylib: $(HS_SRC) include/apple.h
+libapple$(EXT): $(HS_SRC) include/apple.h
 	cabal build flib:apple -w $(HC)
+ifeq ($(UNAME),Linux)
+	cp $$(cabal-plan list-bins apple:flib:apple | awk '{print $$2}').$(LD_VER) $@
+	strip $@
+else
 	cp $$(cabal-plan list-bins apple:flib:apple | awk '{print $$2}') $@
+endif
 
 moddeps.svg: $(HS_SRC)
 	graphmod -i src | dot -Tsvg -o $@
 
-install-lib: libapple.dylib
+install-lib: libapple$(EXT)
 	cp $^ /usr/local/lib
 
 install-py:
