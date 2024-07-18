@@ -8,7 +8,7 @@ import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import           Foreign.Marshal.Alloc      (mallocBytes)
-import           Foreign.Ptr                (Ptr, castPtr)
+import           Foreign.Ptr                (Ptr)
 import           Foreign.Storable           (poke, sizeOf)
 import           Hs.A
 import           Nm
