@@ -860,12 +860,12 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow
     xR <- newITemp; yR <- newITemp; szX <- newITemp; szY <- newITemp; szZ <- newITemp; i <- newITemp; j <- newITemp; k <- newITemp
     rnkZ <- newITemp; rnkO <- newITemp
     let szXT=bT tX; szYT=bT tY; szZT=bT tEC
-    z <- newITemp
+    z <- newITemp; z0 <- newITemp
     (lX, plX) <- aeval xs xR
     (lY, plY) <- aeval ys yR
     (x, wX, pinchX) <- arg tX (AElem xR 1 (Tmp i) lX szXT)
     (y, wY, pinchY) <- arg tY (AElem yR 1 (Tmp j) lY szYT)
-    (lZ0, ss0) <- writeF op [ra x, ra y] (Right z)
+    (lZ0, ss0) <- writeF op [ra x, ra y] (Right z0)
     (lZ, ss) <- writeF op [ra x, ra y] (Right z)
     let step=[wX, wY]++ss++[CpyE (AElem t (Tmp rnkO) (Tmp k*Tmp szZ) (Just a) szZT) (AElem z (Tmp rnkZ) 0 lZ szZT) (Tmp szZ) szZT, k+=1]
         loop=for (eAnn xs) i 0 ILt (Tmp szX) [for (eAnn ys) j 0 ILt (Tmp szY) step]
@@ -875,14 +875,14 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow
         ++i:=0:j:=0:
         sas [pinchX, pinchY] (
         wX:wY:ss0
-        ++rnkZ:=EAt (ARnk z lZ0)
+        ++rnkZ:=EAt (ARnk z0 lZ0)
         :rnkO:=(Tmp rnkZ+2)
-        :SZ szZ z (Tmp rnkZ) lZ0
+        :SZ szZ z0 (Tmp rnkZ) lZ0
         :szX:=EAt (ADim xR 0 lX)
         :szY:=EAt (ADim yR 0 lY)
         :Ma a t (Tmp rnkO) (Tmp szX*Tmp szY*Tmp szZ) szZT
         :diml (t, Just a) [Tmp szX, Tmp szY]
-        ++[CpyD (ADim t 2 (Just a)) (ADim z 0 lZ0) (Tmp rnkZ), loop]
+        ++[CpyD (ADim t 2 (Just a)) (ADim z0 0 lZ0) (Tmp rnkZ), loop]
         ))
 aeval (EApp ty (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tZ) <- eAnn op, nind tX && nind tZ = do
     xR <- newITemp
