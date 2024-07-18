@@ -48,8 +48,8 @@ PyObject* npy_i(U x) {
     J* i_p=x;
     J t=1;
     J rnk=i_p[0];
-    long* dims=malloc(sizeof(long)*rnk);
-    DO(i,rnk,t*=i_p[i+1];dims[i]=(long)i_p[i+1]);
+    npy_intp* dims=malloc(sizeof(npy_intp)*rnk);
+    DO(i,rnk,t*=i_p[i+1];dims[i]=(npy_intp)i_p[i+1]);
     S sz=8*t;
     U data=malloc(sz);
     memcpy(data,i_p+rnk+1,sz);
@@ -62,8 +62,8 @@ PyObject* npy_f(U x) {
     J* i_p=x;
     J t=1;
     J rnk=i_p[0];
-    long* dims=malloc(sizeof(long)*rnk);
-    DO(i,rnk,t*=i_p[i+1];dims[i]=(long)i_p[i+1]);
+    npy_intp* dims=malloc(sizeof(npy_intp)*rnk);
+    DO(i,rnk,t*=i_p[i+1];dims[i]=(npy_intp)i_p[i+1]);
     S sz=8*t;
     U data=malloc(sz);
     memcpy(data,i_p+rnk+1,sz);
