@@ -57,6 +57,12 @@ T16 = T13.dim[0]
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
 # Performance
+- [ ] consolidate move-zero for floats and ints
+  ```
+  eor x5, x5, x5                           a5 00 05 ca
+  fmov d2, x5                              a2 00 67 9e
+  eor x5, x5, x5                           a5 00 05 ca
+  ```
 - [ ] think of a better way to handle functions of tuples (internally)
 - [ ] map-of-gen. idiom
 - [ ] bitmask immediates for `and` on aarch64
