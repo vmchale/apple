@@ -693,7 +693,7 @@ rwArr t@Li{}       = t
 rwArr t@TVar{}     = t
 rwArr (P ts)       = P (rwArr<$>ts)
 rwArr (Arr Nil t)  = rwArr t
-rwArr (Arr ixes arr) | (is, Nil) <- unroll ixes, Arr sh t <- rwArr arr = Arr (roll sh is) t
+rwArr (Arr ixes arr) | (is, Nil) <- unroll (rwSh ixes), Arr sh t <- rwArr arr = Arr (roll sh is) t
 rwArr (Arr sh t)   = Arr (rwSh sh) (rwArr t)
 rwArr (Ρ n fs)     = Ρ n (rwArr<$>fs)
 
