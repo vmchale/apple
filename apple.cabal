@@ -44,8 +44,9 @@ library
         Hs.FFI
         Sys.DL
         Prettyprinter.Ext
+    build-tool-depends:
+        alex:alex >=3.5.0.0, happy:happy, hsc2hs:hsc2hs, c2hs:c2hs
 
-    build-tool-depends: alex:alex >=3.5.0.0, happy:happy, hsc2hs:hsc2hs
     hs-source-dirs:     src
     other-modules:
         Bits

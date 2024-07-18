@@ -7,6 +7,10 @@ import           Foreign.C.Types                       (CSize)
 import           Foreign.Ptr                           (FunPtr, IntPtr (..), Ptr, castFunPtrToPtr, ptrToIntPtr)
 import           System.Posix.DynamicLinker.ByteString (DL, RTLDFlags (RTLD_LAZY), dlclose, dlopen, dlsym)
 
+#ifdef linux_HOST_OS
+#include <gnu/lib-names.h>
+#endif
+
 type CCtx = (Int, Int); type MCtx = (Int, Int, Int)
 
 math' :: IO MCtx
@@ -26,5 +30,10 @@ math = do {m <- libm; e <- dlsym m "exp"; l <- dlsym m "log"; p <- dlsym m "pow"
 ll p = dlopen p [RTLD_LAZY]
 
 libc, libm :: IO DL
+#ifdef linux_HOST_OS
+libc = ll {# const LIBC_SO #}
+libm = ll {# const LIBM_SO #}
+#elif darwin_HOST_OS
 libc = ll "libc.dylib"
 libm = ll "libm.dylib"
+#endif
