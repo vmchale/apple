@@ -311,7 +311,6 @@ test-suite apple-o
 benchmark apple-bench
     type:               exitcode-stdio-1.0
     main-is:            Bench.hs
-    build-tool-depends: cpphs:cpphs
     hs-source-dirs:     bench
     default-language:   Haskell2010
     ghc-options:
