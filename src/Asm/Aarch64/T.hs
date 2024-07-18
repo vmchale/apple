@@ -153,6 +153,10 @@ ir (IR.Cset t (IR.IRel op (IR.Reg r0) (IR.Reg r1))) | c <- iop op = do
     pure [CmpRR () (absReg r0) (absReg r1), Cset () (absReg t) c]
 ir (IR.Cset t (IR.FRel op (IR.FReg r0) (IR.FReg r1))) | c <- frel op = do
     pure [Fcmp () (fabsReg r0) (fabsReg r1), Cset () (absReg t) c]
+ir (IR.Cset t (IR.IU Op.IOdd (IR.Reg r0))) = do
+    pure $ [TstI () (absReg r0) (BM 1 0), Cset () (absReg t) Neq]
+ir (IR.Cset t (IR.IU Op.IEven (IR.Reg r0))) = do
+    pure $ [TstI () (absReg r0) (BM 1 0), Cset () (absReg t) Eq]
 ir (IR.Fcmov (IR.IRel op (IR.Reg r0) (IR.Reg r1)) t e) | c <- iop op = do
     i <- nextI; plE <- feval e (IR.FTemp i)
     pure $ plE ++ [CmpRR () (absReg r0) (absReg r1), Fcsel () (fabsReg t) (FReg i) (fabsReg t) c]
