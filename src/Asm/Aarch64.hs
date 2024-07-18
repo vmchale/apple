@@ -20,7 +20,6 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
-import           Control.DeepSeq   (NFData (..))
 import           Data.Copointed
 import           Data.Word         (Word16, Word8)
 import           Numeric           (showHex)
