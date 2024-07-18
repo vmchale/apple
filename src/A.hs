@@ -266,6 +266,12 @@ mPrec CatE   = Just 5
 mPrec Xor    = Just 6
 mPrec And    = Just 3
 mPrec Or     = Just 2
+mPrec Eq     = Just 4
+mPrec Neq    = Just 4
+mPrec Gt     = Just 4
+mPrec Lt     = Just 4
+mPrec Gte    = Just 4
+mPrec Lte    = Just 4
 mPrec _      = Nothing
 
 isBinOp :: Builtin -> Bool
@@ -305,7 +311,7 @@ instance PS (E a) where
     ps d (EApp _ (Builtin _ (TAt i)) e)                           = parensp (d>9) (ps 10 e <> "->" <> pretty i)
     ps _ (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (pretty e0 <+> pretty op)
     ps d (EApp _ (EApp _ (Builtin _ op) e0) e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <+> pretty op <+> ps (d'+1) e1)
-    ps _ (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (pretty e0 <+> pretty op <+> pretty e1)
+    ps _ (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (ps 10 e0 <+> pretty op <+> ps 10 e1)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)    = parens (pretty e0 <> "/" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
@@ -351,6 +357,8 @@ instance Pretty Idiom where
     pretty (FoldOfZip zop op es)   = parens ("fold-of-zip" <+> pretty zop <+> pretty op <+> pretty es)
     pretty (FoldGen seed g f n)    = parens ("fold-gen" <+> brackets (pretty seed) <+> parens (pretty g) <+> parens (pretty f) <+> parens (pretty n))
     pretty (AShLit re es)          = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
+
+instance Show Idiom where show=show.pretty
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          -- TODO: bool array
