@@ -1016,18 +1016,23 @@ eval (EApp _ (EApp _ (Builtin _ Min) e0) e1) t = do
     t1 <- newITemp
     pl1 <- eval e1 t1
     pure $ pl0 $ pl1 ++ [t := Tmp t0, Cmov (IRel ILt (Tmp t1) (Tmp t0)) t (Tmp t1)]
+eval (EApp _ (Builtin _ Odd) e0) t = do
+    (pl,eR) <- plEV e0
+    pure $ pl [Cset (IUn IOdd (Tmp eR)) t]
+eval (EApp _ (Builtin _ Even) e0) t = do
+    (pl,eR) <- plEV e0
+    pure $ pl [Cset (IUn IEven (Tmp eR)) t]
 eval (EApp _ (EApp _ (Builtin (Arrow I _) op) e0) e1) t | Just iop <- rel op = do
-    e0R <- newITemp; e1R <- newITemp
-    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (IRel iop (Tmp e0R) (Tmp e1R)) t]
+    (plE0,e0R) <- plEV e0; (plE1, e1R) <- plEV e1
+    pure $ plE0 $ plE1 [Cset (IRel iop (Tmp e0R) (Tmp e1R)) t]
 eval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op = do
-    e0R <- newFTemp; e1R <- newFTemp
-    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Cset (FRel fop' (FTmp e0R) (FTmp e1R)) t]
+    (plE0,e0R) <- plF e0; (plE1, e1R) <- plF e1
+    pure $ plE0 $ plE1 [Cset (FRel fop' (FTmp e0R) (FTmp e1R)) t]
 eval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
-    eR <- newITemp; iR <- newITemp
-    (lE, plE) <- aeval e eR; plI <- eval i iR
-    pure $ plE ++ plI ++ [t := EAt (AElem eR 1 (Tmp iR) lE 8)]
+    eR <- newITemp
+    (lE, plE) <- aeval e eR
+    (plI,iR) <- plEV i
+    pure $ plE ++ plI [t := EAt (AElem eR 1 (Tmp iR) lE 8)]
 eval (EApp _ (Builtin _ Head) xs) t = do
     a <- newITemp
     (l, plX) <- aeval xs a
