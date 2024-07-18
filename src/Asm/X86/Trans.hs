@@ -161,6 +161,10 @@ ir (IR.Cmov (IR.FRel Op.FGt (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nextI; plE <- evalE e (IR.ITemp i1)
     f <- nextF; r <- nextR
     pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Nleus, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
+ir (IR.Fcmov (IR.FRel Op.FGt (IR.FReg xr0) (IR.FReg xr1)) t e) = do
+    plE <- feval e t; l <- nextL
+    f <- nextF; r <- nextR
+    pure $ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Leos, MovqRX () r f, TestI () r maxBound, Jne () l] ++ plE ++ [Label () l]
 ir (IR.Cmov (IR.FRel Op.FGeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nextI; plE <- evalE e (IR.ITemp i1)
     f <- nextF; r <- nextR
@@ -372,6 +376,9 @@ feval (IR.FAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl (IR.Reg i) (IR.Const
 feval (IR.FAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl e (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [MovqXA () (fabsReg rD) (RSD (absReg m) Eight (IReg i) i8)]
+feval (IR.FAt (IR.AP m (Just (IR.IB Op.IAsl e (IR.ConstI 3))) _)) rD = do
+    i <- nextI; plE <- evalE e (IR.ITemp i)
+    pure $ plE ++ [MovqXA () (fabsReg rD) (RS (absReg m) Eight (IReg i))]
 feval e _                                           = error (show e)
 
 evalE :: IR.Exp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
