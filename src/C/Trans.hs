@@ -939,6 +939,10 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
         ++[Pop slopE])
 aeval e _ = error (show e)
 
+plC :: E (T ()) -> CM ([CS] -> [CS], CE)
+plC (ILit _ i) = pure (id, ConstI$fromIntegral i)
+plC e          = do {t <- newITemp; pl <- eval e t; pure ((pl++), Tmp t)}
+
 plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
 plEV (Var I x) = do
     st <- gets vars
@@ -971,6 +975,12 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arro
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
         loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE++plAcc++szR := EAt (ADim eR 0 l):[loop]
+eval (EApp _ (EApp _ (Builtin _ op) (ILit _ n)) e1) t | Just cop <- mOp op = do
+    (pl1,t1) <- plEV e1
+    pure $ pl1 $ [t:=Bin cop (ConstI$fromIntegral n) (Tmp t1)]
+eval (EApp _ (EApp _ (Builtin _ op) e0) (ILit _ n)) t | Just cop <- mOp op = do
+    (pl0,t0) <- plEV e0
+    pure $ pl0 $ [t:=Bin cop (Tmp t0) (ConstI$fromIntegral n)]
 eval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
     (pl0,t0) <- plEV e0; (pl1,t1) <- plEV e1
     pure $ pl0 $ pl1 [t := Bin cop (Tmp t0) (Tmp t1)]
@@ -1256,10 +1266,11 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | (Arrow _ (Ar
     pure $ plE ++ plAcc ++ [rnkR := EAt (ARnk xsR lX), plSz, loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr)) acc = do
     i <- newITemp
-    endR <- newITemp; incrR <- newITemp
-    plStart <- eval start i; plAcc <- feval seed acc; plEnd <- eval end endR; plIncr <- eval incr incrR
+    endR <- newITemp
+    (plI,iE) <- plC incr
+    plStart <- eval start i; plAcc <- feval seed acc; plEnd <- eval end endR
     ss <- writeRF op [Left acc, Right i] (Left acc)
-    pure $ plStart ++ plAcc ++ plEnd ++ plIncr ++ [While i ILeq (Tmp endR) (ss++[i+=Tmp incrR])]
+    pure $ plStart ++ plAcc ++ plEnd ++ plI [While i ILeq (Tmp endR) (ss++[i+=iE])]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps)) acc = do
     i <- newITemp; startR <- newFTemp; incrR <- newFTemp; xR <- newFTemp; endI <- newITemp
     plStart <- feval start startR
