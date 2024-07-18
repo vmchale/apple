@@ -10,6 +10,7 @@ module Dbg ( dumpAAbs
            , dumpC
            , dumpIR
            , dumpIRI
+           , dumpSCC
            , dumpX86Intervals
            , dumpALiveness
            , dumpAIntervals
