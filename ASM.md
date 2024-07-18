@@ -8,6 +8,8 @@
 - [ ] avx512 has: https://www.felixcloutier.com/x86/vexp2pd
 - [ ] https://www.felixcloutier.com/x86/leave
 - [ ] cneg is cool.
+- [ ] https://learn.microsoft.com/en-us/cpp/build/arm64-windows-abi-conventions?view=msvc-170#floating-pointsimd-registers
+- [ ] https://developer.arm.com/documentation/dui0801/a/Advanced-SIMD-and-Floating-point-Programming/Views-of-the-Advanced-SIMD-register-bank-in-AArch64-state
 # Min/max
 - [ ] http://web.archive.org/web/20130821015554/http://bob.allegronetwork.com/prog/tricks.html
   - [ ] quick absolute value
