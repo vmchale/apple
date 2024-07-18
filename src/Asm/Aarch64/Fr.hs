@@ -54,6 +54,7 @@ fromInt (-10) = Just X17
 fromInt (-11) = Just X18
 fromInt _     = Nothing
 
+-- https://learn.microsoft.com/en-us/cpp/build/arm64-windows-abi-conventions?view=msvc-170#floating-pointsimd-registers
 fInt :: Int -> Maybe FAReg
 fInt 10    = Just D0
 fInt 11    = Just D1
