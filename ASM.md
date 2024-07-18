@@ -1,3 +1,4 @@
+- https://developer.arm.com/documentation/dui0056/d/using-the-procedure-call-standard
 - [ ] floor function: https://stackoverflow.com/a/37573707/11296354
     -- check parity: AND with 00010 or w/e
 - [ ] note: fused multiply-add etc. for doubles
@@ -6,6 +7,7 @@
   (-1)^n
 - [ ] avx512 has: https://www.felixcloutier.com/x86/vexp2pd
 - [ ] https://www.felixcloutier.com/x86/leave
+- [ ] cneg is cool.
 # Min/max
 - [ ] http://web.archive.org/web/20130821015554/http://bob.allegronetwork.com/prog/tricks.html
   - [ ] quick absolute value
