@@ -50,12 +50,12 @@ tCTy :: T a -> Either TTE ([CType], CType)
 tCTy t = do{(ins,out) <- irTy (rLi t); (,)<$>traverse cTy ins<*>cTy out}
 
 cTy :: T a -> Either TTE CType
-cTy F               = pure CR
-cTy I               = pure CI
-cTy (Arr _ F)       = pure Af
-cTy (Arr _ I)       = pure Ai
-cTy (Arr _ Arr{})   = Left FArg
-cTy (Arr _ Arrow{}) = Left ArrFn
+cTy F                 = pure CR
+cTy I                 = pure CI
+cTy (Arr _ F)         = pure Af
+cTy (Arr _ I)         = pure Ai
+cTy (Arrow Arrow{} _) = Left FArg
+cTy (Arr _ Arrow{})   = Left ArrFn
 
 instance Exception TTE where
 
