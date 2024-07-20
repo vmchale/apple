@@ -26,6 +26,9 @@ fabsReg IR.FRet = FArg0; fabsReg IR.FRet1 = FArg1
 mIop Op.IPlus  = Just AddRR
 mIop Op.IMinus = Just SubRR
 mIop Op.ITimes = Just MulRR
+mIop Op.IAnd   = Just AndRR
+mIop Op.IOr    = Just OrRR
+mIop Op.IXor   = Just Eor
 mIop _         = Nothing
 
 mFop Op.FPlus  = Just Fadd

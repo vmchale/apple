@@ -1099,7 +1099,7 @@ mFop :: Builtin -> Maybe FBin
 mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp; mFop Max=Just FMax; mFop Min=Just FMin; mFop _=Nothing
 
 mOp :: Builtin -> Maybe IBin
-mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem;mOp _=Nothing
+mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem;mOp And=Just IAnd;mOp Or=Just IOr;mOp Xor=Just IXor;mOp _=Nothing
 
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
