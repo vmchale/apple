@@ -25,7 +25,7 @@ hsEntropy :: Floating a => [a] -> a
 hsEntropy xs = sum [ x * log x | x <- xs ]
 
 kl :: Floating a => [a] -> [a] -> a
-kl xs ys = sum [ x * log (x/y) | x <- xs, y <- ys ]
+kl xs ys = sum (zipWith (\x y -> x * log (x/y)) xs ys)
 
 aA :: Storable a => Apple a -> IO (U a)
 aA x = do
