@@ -882,7 +882,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow
         :szY:=EAt (ADim yR 0 lY)
         :Ma a t (Tmp rnkO) (Tmp szX*Tmp szY*Tmp szZ) szZT
         :diml (t, Just a) [Tmp szX, Tmp szY]
-        ++[CpyD (ADim t 2 (Just a)) (ADim z0 0 lZ0) (Tmp rnkZ), loop]
+        ++[CpyD (ADim t 2 (Just a)) (ADim z0 0 lZ0) (Tmp rnkZ), k:=0, loop]
         ))
 aeval (EApp ty (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tZ) <- eAnn op, nind tX && nind tZ = do
     xR <- newITemp
