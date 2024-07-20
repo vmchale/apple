@@ -7,7 +7,7 @@ import           Data.Functor          (($>))
 import           Data.Int              (Int64)
 import           Data.Number.Erf       (erf, normcdf)
 import           Foreign.Marshal.Alloc (free, mallocBytes)
-import           Foreign.Ptr           (FunPtr)
+import           Foreign.Ptr           (FunPtr, Ptr)
 import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           I
@@ -43,6 +43,9 @@ main = do
     fPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Double)))
     p0Ptr <- aA (AA 1 [3] [0.0::Double,4,4])
     p1Ptr <- aA (AA 1 [3] [0.0::Double,0.3])
+    whPtr <- aA (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double])
+    woPtr <- aA (AA 1 [2] [0.14801747,0.37182892::Double])
+    bhPtr <- aA (AA 1 [2] [0.79726405,0.67601843::Double])
     fp <- fmap iii . leakFp =<< BSL.readFile "test/examples/risingFactorial.🍎"
     entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
@@ -53,6 +56,7 @@ main = do
     ᴀFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/offset.🍏"
     gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
     tcdfFp <- fmap fff . leakFp =<< BSL.readFile "math/tcdf.🍎"
+    xorFp <- fmap aaafp4 . leakFp =<< BSL.readFile "test/data/trainXor.🍎"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
@@ -105,6 +109,8 @@ main = do
                       ]
                 , bgroup "elliptic"
                       [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
+                , bgroup "xor"
+                      [ bench "train" $ nfIO (xorFp whPtr woPtr bhPtr 0.57823076) ]
                 ]
     where erfSrc = BSL.readFile "math/erf.🍏"
           gamma = BSL.readFile "math/gamma.🍏"
@@ -126,3 +132,4 @@ foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Dou
 foreign import ccall "dynamic" aaf :: FunPtr (U a -> U a -> Double) -> U a -> U a -> Double
 foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
 foreign import ccall "dynamic" aa :: FunPtr (U a -> IO (U a)) -> U a -> IO (U a)
+foreign import ccall "dynamic" aaafp4 :: FunPtr (U a -> U b -> U c -> Double -> IO (Ptr (P4 (U d) (U e) (U f) g))) -> U a -> U b -> U c -> Double -> IO (Ptr (P4 (U d) (U e) (U f) g))
