@@ -46,7 +46,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
 import qualified Data.Text            as T
 import qualified Data.Text.IO         as TIO
-import           Data.Tree            (drawForest)
+import           Data.Tree            (drawTree)
 import           Data.Tuple           (swap)
 import           Data.Tuple.Extra     (fst3)
 import           Data.Word            (Word64)
@@ -142,7 +142,7 @@ dumpC = fmap (prettyCS.swap).cmm
 -- dumpHs = fmap (pretty.show.hs.π).ir where π (a,_,_)=a
 
 dumpSCC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpSCC = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (t,asϵ,_) = pS asϵ<#>pretty (drawForest (fmap show<$>t)); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
+dumpSCC = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (t,asϵ,_) = pS asϵ<#>pretty (drawTree (show<$>t)); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)

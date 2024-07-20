@@ -130,7 +130,8 @@ library
         unix,
         split >=0.2.0.0,
         extra >=1.7.4,
-        composition-prelude >=1.1.0.1
+        composition-prelude >=1.1.0.1,
+        dom-lt
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages

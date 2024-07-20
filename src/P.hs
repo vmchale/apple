@@ -182,10 +182,10 @@ ec :: Int -> E a -> Either (Err a) ([CS], LSt, C.AsmData, IM.IntMap C.Temp)
 ec i = fmap C.writeC . optE i
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IR.AsmData, WSt)
-ir = fmap (f.C.writeC).opt where f (cs,u,aa,t) = let (s,u')=cToIR u cs in (frees (ctemp<$>t) (pall$optIR s),aa,u')
+ir = fmap (f.C.writeC).opt where f (cs,u,aa,t) = let (s,u')=cToIR u cs in (frees (ctemp<$>t) ({-pall$-}optIR s),aa,u')
 
 eir :: Int -> E a -> Either (Err a) ([Stmt], IR.AsmData, WSt)
-eir i = fmap (f.C.writeC).optE i where f (cs,u,aa,t) = let (s,u')=cToIR u cs in (frees (ctemp<$>t) (pall$optIR s),aa,u')
+eir i = fmap (f.C.writeC).optE i where f (cs,u,aa,t) = let (s,u')=cToIR u cs in (frees (ctemp<$>t) ({-pall$-}optIR s),aa,u')
 
 eDumpC :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpC i = fmap (prettyCS.𝜋).ec i where 𝜋 (a,_,c,_)=(c,a)

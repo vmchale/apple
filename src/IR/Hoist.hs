@@ -3,10 +3,10 @@ module IR.Hoist ( hoist, pall ) where
 import           CF
 import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (gets, modify, runState)
-import qualified Data.Array                 as A
 import           Data.Bifunctor             (bimap, first, second)
 import           Data.Functor               (($>))
-import           Data.Graph                 (Graph, Tree (Node), scc)
+import           Data.Graph                 (Tree (Node))
+import           Data.Graph.Dom             (domTree)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import qualified Data.Map.Strict            as M
@@ -113,26 +113,19 @@ hs ss = let (ls, cf, dm) = loop ss
      in (cf, concatMap (\l -> (hl (l,dm,mm))) ls)
 
 loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
-loop = first3 (fmap mkL).(\(x,y,z) -> (cTree (fmap fst z) x,y,z)).hoist
+loop = first3 (fmap mkL).(\(x,y,z) -> (tLoops (fmap fst z) IS.empty x,y,z)).hoist
   where
     mkL ns@(n:_) = (n, IS.fromList ns)
 
-hoist :: [Stmt] -> ([Tree N], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
-hoist ss = (\c@(ssϵ,_) -> (\(_,x,y) -> (x,ssϵ,y))$mkG c) (mkControlFlow ss)
+hoist :: [Stmt] -> (Tree N, [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
+hoist ss = (\ssϵ -> (\(x,y) -> (x,ssϵ,y))$mkG ssϵ) (mkControlFlow ss)
 
-cTree :: IM.IntMap Stmt -> [Tree N] -> [[N]]
-cTree _ []              = []
-cTree s (Node _ []:ts)  = cTree s ts
--- TODO: loops within a call, e.g. ncdf
-cTree s (Node n [t]:ts) | mL <- n:et t, Just MJ{} <- IM.lookup (last mL) s = mL:cTree s ts
-                        | otherwise = cTree s ts
+-- loops, put head first!
+tLoops :: IM.IntMap Stmt -> IS.IntSet -> Tree N -> [[N]]
+tLoops ss seen = undefined
+-- back edge: edge from a node n to a node h that dominates n
 
-et :: Tree N -> [N]
-et (Node n [])      = [n]
-et (Node n [t])     = n:et t
-et (Node n [t0,t1]) = n:et t0++et t1
-
-mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, [Tree N], IM.IntMap (Stmt, ControlAnn))
-mkG (ns, m)= (g, scc g, IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
+mkG :: [(Stmt, ControlAnn)] -> (Tree N, IM.IntMap (Stmt, ControlAnn))
+mkG ns = (domTree ((node (snd (head ns))), domG), IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
   where
-    g = A.array (0,m-1) ((\(_,ann) -> (node ann, conn ann))<$>ns)
+    domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
