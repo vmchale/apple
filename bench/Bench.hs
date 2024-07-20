@@ -36,7 +36,7 @@ leakFp = fmap fst.case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
 
 main :: IO ()
 main = do
-    -- this sucks but using env segfaults idk
+    -- this sucks but using env segfaults?
     xsPtr <- aA (AA 1 [500] xs)
     ysPtr <- aA (AA 1 [500] ys)
     iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int)))
@@ -57,6 +57,7 @@ main = do
     gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
     tcdfFp <- fmap fff . leakFp =<< BSL.readFile "math/tcdf.🍎"
     xorFp <- fmap aaafp4 . leakFp =<< BSL.readFile "test/data/trainXor.🍎"
+    v'izeFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/vize.🍏"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
@@ -111,6 +112,8 @@ main = do
                       [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
                 , bgroup "xor"
                       [ bench "train" $ nfIO (xorFp whPtr woPtr bhPtr 0.57823076) ]
+                , bgroup "mnist"
+                      [ bench "vize" $ nfIO (v'izeFp iPtr) ]
                 ]
     where erfSrc = BSL.readFile "math/erf.🍏"
           gamma = BSL.readFile "math/gamma.🍏"
