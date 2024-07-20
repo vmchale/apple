@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 -- pipeline
 module P ( Err (..)
@@ -9,6 +10,7 @@ module P ( Err (..)
          , tyParseCtx
          , tyExpr
          , tyOf
+         , tyC
          , getTy
          , parseInline
          , parseRename
@@ -101,6 +103,9 @@ renameECtx i ast = let (e, m) = dedfn i ast in rG m e
 parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
 parseRename = parseRenameCtx alexInitUserState
 
+tyC :: Int -> E a -> Either (Err a) (E (T ()), [(Nm a, C)], Int)
+tyC u = (\(e,cs,uϵ) -> (,cs,uϵ)<$>checkM e) <=< first TyErr . tyClosed u
+
 tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 tyExpr = fmap prettyC.tyOf
 
@@ -108,7 +113,7 @@ tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Nm AlexPosn, C)])
 tyOf = fmap (first eAnn) . annTy
 
 getTy :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Nm AlexPosn, C)])
-getTy = fmap (first eAnn) . eCheck <=< annTy
+getTy = fmap (first eAnn) . checkCtx <=< annTy
 
 annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
@@ -203,14 +208,17 @@ opt bsl =
     optA' e = state (\k -> runM k (optA e))
 
 eInline :: Int -> E a -> Either (Err a) (E (T ()), Int)
-eInline m e = (\(eϵ, i) -> inline i eϵ) <$> (eCheck =<< liftErr (fmap sel (tyClosed m e))) where sel ~(x, _, z) = (x, z); liftErr = first TyErr
+eInline m e = (\(eϵ, i) -> inline i eϵ) <$> (checkCtx =<< liftErr (fmap sel (tyClosed m e))) where sel ~(x, _, z) = (x, z); liftErr = first TyErr
 
-eCheck :: (E (T ()), b) -> Either (Err a) (E (T ()), b)
-eCheck e = maybe (Right e) (Left . RErr) $ check (fst e)
+checkM :: E (T ()) -> Either (Err a) (E (T ()))
+checkM e = maybe (Right e) (Left . RErr) $ check e
+
+checkCtx :: (E (T ()), b) -> Either (Err a) (E (T ()), b)
+checkCtx (e, u) = (,u)<$>checkM e
 
 parseInline :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline bsl =
-    (\(e, i) -> inline i e) <$> (eCheck =<< tyParse bsl)
+    (\(e, i) -> inline i e) <$> (checkCtx =<< tyParse bsl)
 
 tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)], Int)
 tyConstrCtx st bsl =

@@ -37,7 +37,6 @@ import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, 
 import           System.Directory          (getHomeDirectory)
 import           System.FilePath           ((</>))
 import           System.Info               (arch)
-import           Ty
 
 main :: IO ()
 main = runRepl loop
@@ -73,7 +72,7 @@ appleCompletions :: CompletionFunc (StateT Env IO)
 appleCompletions (":","")         = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "list", "ann", "bench", "y", "yank"])
 appleCompletions ("i:", "")       = pure ("i:", cyclicSimple ["r", "nspect", ""])
 appleCompletions ("ri:", "")      = pure ("ri:", cyclicSimple [""])
-appleCompletions ("c:", "")       = pure ("c:", cyclicSimple ["mm"])
+appleCompletions ("c:", "")       = pure ("c:", cyclicSimple ["mm", "ompile"])
 appleCompletions ("mc:", "")      = pure ("mc:", cyclicSimple ["m"])
 appleCompletions ("mmc:", "")     = pure ("mmc:", cyclicSimple [""])
 appleCompletions ("ni:", "")      = pure ("ni:", [simpleCompletion "spect"])
@@ -88,7 +87,6 @@ appleCompletions ("eb:", "")      = pure ("eb:", [simpleCompletion "nch"])
 appleCompletions ("neb:", "")     = pure ("neb:", [simpleCompletion "ch"])
 appleCompletions ("cneb:", "")    = pure ("cneb:", [simpleCompletion "h"])
 appleCompletions ("hcneb:", "")   = pure ("hcneb:", [simpleCompletion ""])
-appleCompletions ("c:", "")       = pure ("c:", cyclicSimple ["ompile"])
 appleCompletions ("oc:", "")      = pure ("oc:", cyclicSimple ["mpile"])
 appleCompletions ("moc:", "")     = pure ("moc:", cyclicSimple ["pile"])
 appleCompletions ("pmoc:", "")    = pure ("pmoc:", cyclicSimple ["ile"])
@@ -277,7 +275,7 @@ tyExprR s = do
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            liftIO $ case tyClosed i eC of
+            liftIO $ case tyC i eC of
                 Left err      -> putDoc (pretty err <> hardline)
                 Right (e,c,_) -> putDoc (prettyC (eAnn e, c) <> hardline)
 
@@ -288,7 +286,7 @@ annR s = do
         Left err    -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            liftIO $ case tyClosed i eC of
+            liftIO $ case tyC i eC of
                 Left err      -> putDoc (pretty err <> hardline)
                 Right (e,_,_) -> putDoc (prettyTyped e <> hardline)
 
@@ -302,7 +300,7 @@ inspect s = do
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            case tyClosed i eC of
+            case tyC i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
                     let dbgPrint =
@@ -354,7 +352,7 @@ qc s = do
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            case tyClosed i eC of
+            case tyC i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
                     c <- lift$gets mf
@@ -371,8 +369,8 @@ qc s = do
                                     then pure Nothing
                                     else do {aa <- traverse peek arrs; pure (Just aa)}) <* traverse_ free arrs
                             case catMaybes res of
-                                []    -> putDoc ("Passed, 100." <> hardline)
-                                (a:_) -> putDoc ("Proposition failed!" <> hardline <> pretty a <> hardline)
+                                []     -> putDoc ("Passed, 100." <> hardline)
+                                (ex:_) -> putDoc ("Proposition failed!" <> hardline <> pretty ex <> hardline)
                             freeAsm asm
 
   where bs = ubs s
@@ -386,7 +384,7 @@ benchE s = do
         Left err -> pErr err
         Right (eP, i) -> do
             eC <- eRepl eP
-            case tyClosed i eC of
+            case tyC i eC of
                 Left err -> pErr err
                 Right (e, _, i') -> do
                     c <- lift $ gets mf
@@ -424,7 +422,7 @@ printExpr s = do
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            case first3 (fmap rLi) <$> tyClosed i eC of
+            case first3 (fmap rLi) <$> tyC i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
                     c <- lift $ gets mf
