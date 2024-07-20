@@ -1001,9 +1001,12 @@ eval (EApp _ (EApp _ (Builtin _ op) (ILit _ n)) e1) t | Just cop <- mOp op = do
 eval (EApp _ (EApp _ (Builtin _ op) e0) (ILit _ n)) t | Just cop <- mOp op = do
     (pl0,t0) <- plEV e0
     pure $ pl0 $ [t:=Bin cop (Tmp t0) (ConstI$fromIntegral n)]
-eval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
+eval (EApp I (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
     (pl0,t0) <- plEV e0; (pl1,t1) <- plEV e1
     pure $ pl0 $ pl1 [t := Bin cop (Tmp t0) (Tmp t1)]
+eval (EApp B (EApp _ (Builtin _ op) e0) e1) t | Just boo <- mB op = do
+    (pl0,t0) <- plEV e0; (pl1,t1) <- plEV e1
+    pure $ pl0 $ pl1 $ [t:=Bin boo (Tmp t0) (Tmp t1)]
 eval (EApp _ (EApp _ (Builtin _ Max) e0) e1) t = do
     (pl0,t0) <- plEV e0
     -- in case t==t1
@@ -1097,6 +1100,9 @@ frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; fr
 
 mFop :: Builtin -> Maybe FBin
 mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp; mFop Max=Just FMax; mFop Min=Just FMin; mFop _=Nothing
+
+mB :: Builtin -> Maybe IBin
+mB And=Just IAnd;mB Or=Just IOr;mB Xor=Just IXor;mB _=Nothing
 
 mOp :: Builtin -> Maybe IBin
 mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem;mOp And=Just IAnd;mOp Or=Just IOr;mOp Xor=Just IXor;mOp _=Nothing
