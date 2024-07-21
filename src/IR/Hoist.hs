@@ -1,4 +1,6 @@
-module IR.Hoist ( hoist, pall ) where
+{-# LANGUAGE TupleSections #-}
+
+module IR.Hoist ( loop, hoist, pall ) where
 
 import           CF
 import           Control.Composition        (thread)
@@ -6,7 +8,7 @@ import           Control.Monad.State.Strict (gets, modify, runState)
 import           Data.Bifunctor             (bimap, first, second)
 import           Data.Functor               (($>))
 import           Data.Graph                 (Tree (Node))
-import           Data.Graph.Dom             (domTree)
+import           Data.Graph.Dom             (Graph, Node, domTree)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import qualified Data.Map.Strict            as M
@@ -113,19 +115,31 @@ hs ss = let (ls, cf, dm) = loop ss
      in (cf, concatMap (\l -> (hl (l,dm,mm))) ls)
 
 loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
-loop = first3 (fmap mkL).(\(x,y,z) -> (tLoops (fmap fst z) IS.empty x,y,z)).hoist
+loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).hoist
   where
-    mkL ns@(n:_) = (n, IS.fromList ns)
+    mkL (n, ns) = (n, IS.fromList ns)
 
-hoist :: [Stmt] -> (Tree N, [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
-hoist ss = (\ssϵ -> (\(x,y) -> (x,ssϵ,y))$mkG ssϵ) (mkControlFlow ss)
+hoist :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
+hoist ss = (\ssϵ -> (\(x,y,z) -> (x,y,ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
--- loops, put head first!
-tLoops :: IM.IntMap Stmt -> IS.IntSet -> Tree N -> [[N]]
-tLoops ss seen = undefined
--- back edge: edge from a node n to a node h that dominates n
+et :: Graph -> IM.IntMap Stmt -> [N] -> Tree N -> [(N, [N])]
+et g ss seen = fmap expandLoop . tLoops g ss seen
 
-mkG :: [(Stmt, ControlAnn)] -> (Tree N, IM.IntMap (Stmt, ControlAnn))
-mkG ns = (domTree ((node (snd (head ns))), domG), IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
+expandLoop :: (N,N) -> (N,[N])
+expandLoop = undefined
+
+tLoops :: Graph -> IM.IntMap Stmt -> [N] -> Tree N -> [(N, N)]
+tLoops g ss seen (Node n cs) =
+    let bes=filter (hasEdge g n) seen
+    in (if isMJ n then (fmap (,n) bes++) else id) $ concatMap (tLoops g ss (n:seen)) cs
+  where
+    isMJ nϵ = p $ IM.findWithDefault (error "internal error: node not in map.") nϵ ss
+    p MJ{}=True; p _=False
+
+hasEdge :: Graph -> Node -> Node -> Bool
+hasEdge g n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
+
+mkG :: [(Stmt, ControlAnn)] -> (Graph, Tree N, IM.IntMap (Stmt, ControlAnn))
+mkG ns = (domG, domTree ((node (snd (head ns))), domG), IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]

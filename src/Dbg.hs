@@ -10,7 +10,8 @@ module Dbg ( dumpAAbs
            , dumpC
            , dumpIR
            , dumpIRI
-           , dumpSCC
+           , dumpDomTree
+           , dumpLoop
            , dumpX86Intervals
            , dumpALiveness
            , dumpAIntervals
@@ -42,6 +43,7 @@ import           Control.Exception    (throw, throwIO)
 import           Control.Monad        ((<=<))
 import           Data.Bifunctor       (second)
 import qualified Data.ByteString      as BS
+import qualified Data.IntSet as IS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.IntMap          as IM
 import qualified Data.Text            as T
@@ -135,14 +137,11 @@ dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
 dumpC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpC = fmap (prettyCS.swap).cmm
 
--- dumpLoop :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
--- dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss) = pS ss<#>pretty (show t); pS=prettyDumpBinds.fmap fst
+dumpLoop :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss,_) = pS ss<#>pretty (fmap (IS.toList . snd) t); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
 
--- dumpHs :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
--- dumpHs = fmap (pretty.show.hs.π).ir where π (a,_,_)=a
-
-dumpSCC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpSCC = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (t,asϵ,_) = pS asϵ<#>pretty (drawTree (show<$>t)); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
+dumpDomTree :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpDomTree = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (_,t,asϵ,_) = pS asϵ<#>pretty (drawTree (show<$>t)); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
