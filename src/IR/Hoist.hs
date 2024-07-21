@@ -5,15 +5,15 @@ module IR.Hoist ( loop, hoist, pall ) where
 import           CF
 import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (gets, modify, runState)
+import qualified Data.Array                 as A
 import           Data.Bifunctor             (bimap, first, second)
-import Data.Maybe (fromJust)
 import           Data.Functor               (($>))
 import           Data.Graph                 (Tree (Node))
 import           Data.Graph.Dom             (Graph, Node, domTree)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import qualified Data.Map.Strict            as M
-import           Data.Maybe                 (catMaybes)
+import           Data.Maybe                 (catMaybes, fromJust)
 import           Data.Tuple.Extra           (first3, snd3)
 import           IR
 import           IR.CF
@@ -71,7 +71,7 @@ type Loop = (N, IS.IntSet)
 lm :: [(Stmt, NLiveness)] -> IM.IntMap NLiveness
 lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 
-hl :: (Loop, IM.IntMap (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, (FTemp, Double))]
+hl :: (Loop, A.Array Int (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, (FTemp, Double))]
 hl ((n,ns), info, linfo) = go ss
   where
     lH=liveness (gN n linfo)
@@ -79,9 +79,9 @@ hl ((n,ns), info, linfo) = go ss
     go (((MX x (ConstF i)), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef x (node a) = (n, node a, (x,i)):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
-    otherDefFs nL = defsFNode.ud.snd.flip gN info<$>(IS.toList$IS.delete nL ns)
+    otherDefFs nL = defsFNode.ud.snd.(info A.!)<$>(IS.toList$IS.delete nL ns)
     notFDef r nL = not $ any (fToInt r `IS.member`) (otherDefFs nL)
-    ss = flip gN info<$>IS.toList ns
+    ss = (info A.!)<$>IS.toList ns
     gN = IM.findWithDefault (error "internal error: node not in map.")
 
 pall :: [Stmt] -> [Stmt]
@@ -115,19 +115,19 @@ hs ss = let (ls, cf, dm) = loop ss
             mm = lm (reconstruct cf)
      in (cf, concatMap (\l -> (hl (l,dm,mm))) (ols ls))
 
-loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
+loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], A.Array Int (Stmt, ControlAnn))
 loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).hoist
   where
     mkL (n, ns) = (n, IS.fromList ns)
 
-hoist :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
-hoist ss = (\ssϵ -> (\(x,y,z) -> (x,y,ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
+hoist :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], A.Array Int (Stmt, ControlAnn))
+hoist ss = (\ssϵ -> (\(x,y,z,_) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
 {-# SCC ols #-}
 ols :: [Loop] -> [Loop]
 ols ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isSubsetOf` ns') ls) ls
 
-et :: Graph -> IM.IntMap Stmt -> [N] -> Tree N -> [(N, [N])]
+et :: Graph -> A.Array Int Stmt -> [N] -> Tree N -> [(N, [N])]
 et g ss seen t = expandLoop t <$> tLoops g ss seen t
 
 {-# SCC expandLoop #-}
@@ -139,19 +139,19 @@ expandLoop t se = fromJust (go [] se t)
     go _ _ (Node _ [])       = Nothing
     go seen seϵ (Node n ns)  = mh ((go (n:seen) seϵ) <$> ns) where mh xs=case catMaybes xs of {[] -> Nothing; (nϵ:_) -> Just nϵ}
 
--- TODO: A.Array Stmt
-tLoops :: Graph -> IM.IntMap Stmt -> [N] -> Tree N -> [(N, N)]
+tLoops :: Graph -> A.Array Int Stmt -> [N] -> Tree N -> [(N, N)]
 tLoops g ss seen (Node n cs) =
     let bes=filter (hasEdge g n) seen
     in (if isMJ n then (fmap (,n) bes++) else id) $ concatMap (tLoops g ss (n:seen)) cs
   where
-    isMJ nϵ = p $ IM.findWithDefault (error "internal error: node not in map.") nϵ ss
+    isMJ nϵ = p (ss A.! nϵ)
     p MJ{}=True; p _=False
 
 hasEdge :: Graph -> Node -> Node -> Bool
 hasEdge g n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
 
-mkG :: [(Stmt, ControlAnn)] -> (Graph, Tree N, IM.IntMap (Stmt, ControlAnn))
-mkG ns = (domG, domTree ((node (snd (head ns))), domG), IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
+mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, A.Array Int (Stmt, ControlAnn), IM.IntMap (Stmt, ControlAnn))
+mkG (ns,m) = (domG, domTree ((node (snd (head ns))), domG), sa, IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
+    sa = A.listArray (0,m-1) ns
