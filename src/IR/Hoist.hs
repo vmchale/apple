@@ -6,6 +6,7 @@ import           CF
 import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (gets, modify, runState)
 import           Data.Bifunctor             (bimap, first, second)
+import Data.Maybe (fromJust)
 import           Data.Functor               (($>))
 import           Data.Graph                 (Tree (Node))
 import           Data.Graph.Dom             (Graph, Node, domTree)
@@ -112,7 +113,7 @@ indels ss = (c, is IM.empty, ds)
 hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, (FTemp, Double))])
 hs ss = let (ls, cf, dm) = loop ss
             mm = lm (reconstruct cf)
-     in (cf, concatMap (\l -> (hl (l,dm,mm))) ls)
+     in (cf, concatMap (\l -> (hl (l,dm,mm))) (ols ls))
 
 loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
 loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).hoist
@@ -122,12 +123,23 @@ loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).hoist
 hoist :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], IM.IntMap (Stmt, ControlAnn))
 hoist ss = (\ssϵ -> (\(x,y,z) -> (x,y,ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
+{-# SCC ols #-}
+ols :: [Loop] -> [Loop]
+ols ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isSubsetOf` ns') ls) ls
+
 et :: Graph -> IM.IntMap Stmt -> [N] -> Tree N -> [(N, [N])]
-et g ss seen = fmap expandLoop . tLoops g ss seen
+et g ss seen t = expandLoop t <$> tLoops g ss seen t
 
-expandLoop :: (N,N) -> (N,[N])
-expandLoop = undefined
+{-# SCC expandLoop #-}
+expandLoop :: Tree N -> (N,N) -> (N,[N])
+-- wir müssen wissen, wir werden wissen
+expandLoop t se = fromJust (go [] se t)
+  where
+    go seen (s,e) (Node n _) | e == n = Just (s, dropWhile (/=s) (reverse seen))
+    go _ _ (Node _ [])       = Nothing
+    go seen seϵ (Node n ns)  = mh ((go (n:seen) seϵ) <$> ns) where mh xs=case catMaybes xs of {[] -> Nothing; (nϵ:_) -> Just nϵ}
 
+-- TODO: A.Array Stmt
 tLoops :: Graph -> IM.IntMap Stmt -> [N] -> Tree N -> [(N, N)]
 tLoops g ss seen (Node n cs) =
     let bes=filter (hasEdge g n) seen
