@@ -16,9 +16,9 @@ import           Data.Functor     (($>))
 import           Data.Int         (Int32, Int64, Int8)
 import qualified Data.IntMap      as IM
 import qualified Data.Map.Strict  as M
+import           Data.Tuple.Extra (fst3)
 import           Data.Word
 import           Foreign.Ptr      (FunPtr, IntPtr (..), Ptr, ptrToIntPtr)
-import Data.Tuple.Extra (fst3)
 import           Foreign.Storable (Storable, sizeOf)
 import           Hs.FFI
 import           Sys.DL
