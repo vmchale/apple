@@ -18,6 +18,7 @@ import qualified Data.IntMap      as IM
 import qualified Data.Map.Strict  as M
 import           Data.Word
 import           Foreign.Ptr      (FunPtr, IntPtr (..), Ptr, ptrToIntPtr)
+import Data.Tuple.Extra (fst3)
 import           Foreign.Storable (Storable, sizeOf)
 import           Hs.FFI
 import           Sys.DL
@@ -25,17 +26,17 @@ import           Sys.DL
 pI :: Ptr a -> Int
 pI = (\(IntPtr i) -> i) . ptrToIntPtr
 
-prepAddrs :: [X86 reg freg a] -> IO (Maybe (Int, Int))
+prepAddrs :: [X86 reg freg a] -> IO (Maybe CCtx)
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
 dbgFp asmϵ = do
     (bs, _, ps) <- allFp asmϵ
     mFree ps $> bs
 
-assembleCtx :: (Int, Int) -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
+assembleCtx :: CCtx -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
-    p <- if hasMa isns then allocNear (fst ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
+    p <- if hasMa isns then allocNear (fst3 ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
     arrs <- aArr ds
     let b = BS.pack.concat$asm 0 (pI p, arrs, Just ctx, lbls) isns
         mP = snd<$>IM.lookupMin arrs
@@ -47,8 +48,8 @@ allFp (ds, instrs) = do
     (fn, p) <- do
         res <- prepAddrs instrs
         case res of
-            Just (m, _) -> (res,) <$> allocNear m (fromIntegral sz)
-            _           -> (res,) <$> allocExec (fromIntegral sz)
+            Just (m, _, _) -> (res,) <$> allocNear m (fromIntegral sz)
+            _              -> (res,) <$> allocExec (fromIntegral sz)
     arrs <- aArr ds
     let is = asm 0 (pI p, arrs, fn, lbls) instrs; b = BS.pack.concat$is; bs = BS.pack<$>is
         mP = snd<$>IM.lookupMin arrs
@@ -327,7 +328,7 @@ mkIx _ (instr:_) = error (show instr)
 fits :: RMB reg => reg -> Bool
 fits r = let (e, _) = modRM r in e == 0
 
-asm :: Int -> (Int, IM.IntMap (Ptr Word64), Maybe (Int, Int), M.Map Label Int) -> [X86 X86Reg FX86Reg a] -> [[Word8]]
+asm :: Int -> (Int, IM.IntMap (Ptr Word64), Maybe CCtx, M.Map Label Int) -> [X86 X86Reg FX86Reg a] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (Push _ r:asms) | fits r =
     let (_, b0) = modRM r
@@ -897,10 +898,10 @@ asm ix st (Rdrand _ r:asms) =
         pre = 0x48 .|. e
         modB = 3 `shiftL` 6 .|. 6 `shiftL` 3 .|. b
     in [pre,0xf,0xc7,modB]:asm(ix+4) st asms
-asm ix st@(self, _, Just (m, _), _) (Call _ Malloc:asms) | Just i32 <- mi32 (m-(self+ix+5)) =
+asm ix st@(self, _, Just (m, _, _), _) (Call _ Malloc:asms) | Just i32 <- mi32 (m-(self+ix+5)) =
     let instr = 0xe8:le i32
     in instr:asm (ix+5) st asms
-asm ix st@(self, _, Just (_, f), _) (Call _ Free:asms) | Just i32 <- mi32 (f-(self+ix+5)) =
+asm ix st@(self, _, Just (_, f, _), _) (Call _ Free:asms) | Just i32 <- mi32 (f-(self+ix+5)) =
     let instr = 0xe8:le i32
     in instr:asm (ix+5) st asms
 asm _ (_, _, Nothing, _) (Call{}:_) = error "Internal error? no dynlibs"
@@ -912,11 +913,11 @@ encS Two   = 1
 encS Four  = 2
 encS Eight = 3
 
-get :: Label -> (Int, IM.IntMap (Ptr Word64), Maybe (Int, Int), M.Map Label Int) -> Int
+get :: Label -> (Int, IM.IntMap (Ptr Word64), Maybe CCtx, M.Map Label Int) -> Int
 get l =
     M.findWithDefault (error "Internal error: label not found") l . fth where fth (_,_,_,z) = z
 
-arr :: Int -> (Int, IM.IntMap (Ptr Word64), Maybe (Int, Int), M.Map Label Int) -> Ptr Word64
+arr :: Int -> (Int, IM.IntMap (Ptr Word64), Maybe CCtx, M.Map Label Int) -> Ptr Word64
 arr n = IM.findWithDefault (error "Internal error: array not found during assembler stage") n . snd4 where snd4 (_,y,_,_) = y
 
 mi64i8 :: Int64 -> Maybe Int8

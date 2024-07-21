@@ -51,11 +51,11 @@ nextI = state (\(IR.WSt l i) -> (i, IR.WSt l (i+1)))
 nextL :: WM Label
 nextL = state (\(IR.WSt i t) -> (i, IR.WSt (i+1) t))
 
-data CFunc = Malloc | Free | Exp | Log | Pow deriving (Generic)
+data CFunc = Malloc | Free | DR | Exp | Log | Pow deriving (Generic)
 
 instance NFData CFunc where
 
-instance Pretty CFunc where pretty Malloc="malloc"; pretty Free="free"; pretty Exp="exp"; pretty Log="log"; pretty Pow="pow"
+instance Pretty CFunc where pretty Malloc="malloc"; pretty Free="free"; pretty DR="drand48"; pretty Exp="exp"; pretty Log="log"; pretty Pow="pow"
 
 mFree :: Maybe (Ptr a) -> IO ()
 mFree = traverse_ free

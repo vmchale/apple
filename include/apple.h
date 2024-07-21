@@ -3,10 +3,11 @@ typedef intptr_t P;
 
 // first argument: pointer to malloc
 // second argument: pointer to free
+// third argument: pointer to drand48
 // third argument: pointer to exp (can be NULL on X86)
 // fourth argument: pointer to log (can be NULL on X86)
 // fifth argument: pointer to pow (can be NULL on X86)
-void* apple_compile(P,P,P,P,P,const char*,size_t*,void**);
+void* apple_compile(P,P,P,P,P,P,const char*,size_t*,void**);
 
 // NULL on error
 // first argument: source

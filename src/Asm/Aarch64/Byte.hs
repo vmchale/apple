@@ -22,7 +22,7 @@ import           Hs.FFI
 import           Sys.DL
 
 hasMa :: [AArch64 reg freg a] -> Bool
-hasMa = any g where g (MovRCf _ _ Malloc)=True; g (MovRCf _ _ Free)=True; g _=False
+hasMa = any g where g (MovRCf _ _ Malloc)=True; g (MovRCf _ _ Free)=True; g (MovRCf _ _ DR)=True; g _=False
 
 hasMath :: [AArch64 reg freg a] -> Bool
 hasMath = any g where g (MovRCf _ _ Exp)=True; g (MovRCf _ _ Log)=True; g (MovRCf _ _ Pow)=True; g _=False
@@ -37,7 +37,7 @@ prepAddrs ss = case (hasMa ss, hasMath ss) of
 assembleCtx :: (CCtx, MCtx) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
-    p <- if hasMa isns then allocNear (fst (fst ctx)) (fromIntegral sz) else allocExec (fromIntegral sz)
+    p <- if hasMa isns then allocNear (fst3 (fst ctx)) (fromIntegral sz) else allocExec (fromIntegral sz)
     when (p==nullPtr) $ error "failed to allocate memory for JIT"
     ps <- aArr ds
     let b = BS.pack.concatMap reverse$asm 0 (ps, bimap Just Just ctx, lbls) isns
@@ -52,8 +52,8 @@ allFp (ds, instrs) = do
     (fn, p) <- do
         res <- prepAddrs instrs
         case res of
-            (Just (m, _),_) -> (res,) <$> allocNear m (fromIntegral sz)
-            _               -> (res,) <$> allocExec (fromIntegral sz)
+            (Just (m, _, _),_) -> (res,) <$> allocNear m (fromIntegral sz)
+            _                  -> (res,) <$> allocExec (fromIntegral sz)
     ps <- aArr ds
     let is = asm 0 (ps, fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bsϵ = BS.pack.reverse<$>is
     (bsϵ,,snd<$>IM.lookupMin ps)<$>finish b p
@@ -194,9 +194,9 @@ asm ix st (B _ l:asms) =
         isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
     in isn:asm (ix+4) st asms
 asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
-asm ix st@(_, (Just (m, _), _), _) (MovRCf _ r Malloc:asms) =
+asm ix st@(_, (Just (m, _, _), _), _) (MovRCf _ r Malloc:asms) =
     asm ix st (m4 r m++asms)
-asm ix st@(_, (Just (_, f), _), _) (MovRCf _ r Free:asms) =
+asm ix st@(_, (Just (_, f, _), _), _) (MovRCf _ r Free:asms) =
     asm ix st (m4 r f++asms)
 asm ix st@(_, (_, Just (_, l, _)),_) (MovRCf _ r Log:asms) =
     asm ix st (m4 r l++asms)

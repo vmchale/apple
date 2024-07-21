@@ -11,18 +11,18 @@ import           System.Posix.DynamicLinker.ByteString (DL, RTLDFlags (RTLD_LAZY
 #include <gnu/lib-names.h>
 #endif
 
-type CCtx = (Int, Int); type MCtx = (Int, Int, Int)
+type CCtx = (Int, Int, Int); type MCtx = (Int, Int, Int)
 
 math' :: IO MCtx
 math' = do {(e,l,p) <- math; pure (ip e, ip l, ip p)}
 
 mem' :: IO CCtx
-mem' = do {(m,f) <- mem; pure (ip m, ip f)}
+mem' = do {(m,f,r) <- mem; pure (ip m, ip f, ip r)}
 
 ip = (\(IntPtr i) -> i) . ptrToIntPtr . castFunPtrToPtr
 
-mem :: IO (FunPtr (CSize -> IO (Ptr a)), FunPtr (Ptr a -> IO ()))
-mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; dlclose c$>(m,f)}
+mem :: IO (FunPtr (CSize -> IO (Ptr a)), FunPtr (Ptr a -> IO ()), FunPtr (IO Double))
+mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; r <- dlsym c "drand48"; dlclose c$>(m,f,r)}
 
 math :: IO (FunPtr (Double -> Double), FunPtr (Double -> Double), FunPtr (Double -> Double -> Double))
 math = do {m <- libm; e <- dlsym m "exp"; l <- dlsym m "log"; p <- dlsym m "pow"; dlclose m$>(e,l,p)}
