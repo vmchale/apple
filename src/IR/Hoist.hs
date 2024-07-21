@@ -68,6 +68,7 @@ mapF f (Cset t p)    = Cset t (mapFE f p)
 
 type Loop = (N, IS.IntSet)
 
+-- TODO: array?
 lm :: [(Stmt, NLiveness)] -> IM.IntMap NLiveness
 lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 
