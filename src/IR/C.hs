@@ -15,6 +15,9 @@ nextI = C.ITemp <$> state (\(WSt ls t) -> (t, WSt ls (t+1)))
 nextL :: IRM IR.Label
 nextL = state (\(WSt l ts) -> (l, WSt (l+1) ts))
 
+cbtemp :: C.BTemp -> IR.Temp
+cbtemp (C.BTemp i) = IR.ITemp i; cbtemp C.CBRet = IR.CRet
+
 ctemp :: C.Temp -> IR.Temp
 ctemp (C.ATemp i) = IR.ATemp i; ctemp (C.ITemp i) = IR.ITemp i
 ctemp C.C0 = IR.C0; ctemp C.C1 = IR.C1; ctemp C.C2 = IR.C2
@@ -44,6 +47,7 @@ cToIRM (Def l cs)          = do
 cToIRM (C.PlProd t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT t' (IR.Reg t'*irE eϵ) | eϵ <- es])
 cToIRM (t := e)            = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]
+cToIRM (C.MB t e)          = pure [IR.MT (cbtemp t) (irp e)]
 cToIRM (Rnd t)             = pure [IR.IRnd (ctemp t)]
 cToIRM (C.Ma l t (C.ConstI rnkI) n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) (IR.ConstI s)+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just l)) (IR.ConstI rnkI)]
 -- TODO: allocate rnk `shiftL` 3 for dims
@@ -86,7 +90,7 @@ cToIRM (If p s0 s1) = do
     pure $ MJ (irp p) l:s1'++J l':L l:s0'++[L l']
 cToIRM (C.Cmov p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
 cToIRM (C.Fcmov p t e) = pure [IR.Fcmov (irp p) (fx t) (irX e)]
-cToIRM (C.Cset p t) = pure [IR.Cset (ctemp t) (irp p)]
+cToIRM (C.Cset p t) = pure [IR.Cset (cbtemp t) (irp p)]
 cToIRM (SZ td t rnk l) = do
     i <- nextI
     foldMapM cToIRM
@@ -132,7 +136,7 @@ irp :: PE -> Exp
 irp (C.IRel rel e0 e1) = IR.IRel rel (irE e0) (irE e1)
 irp (C.FRel rel x0 x1) = IR.FRel rel (irX x0) (irX x1)
 irp (C.IUn p e)        = IR.IU p (irE e)
-irp (C.Is t)           = IR.Is (ctemp t)
+irp (C.Is t)           = IR.Is (cbtemp t)
 
 irX :: CFE -> FExp
 irX (C.ConstF x)    = IR.ConstF x

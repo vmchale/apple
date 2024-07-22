@@ -334,6 +334,7 @@ eval (IR.Reg tS) tD = pure [MovRR () (absReg tD) (absReg tS)]
 eval (IR.ConstI 0) tD = pure [ZeroR () (absReg tD)]
 eval (IR.ConstI i) tD | Just u <- mu16 i = pure [MovRC () (absReg tD) u]
 eval (IR.ConstI i) tD = pure $ mw64 (fromIntegral i) (absReg tD)
+eval (IR.Is p) tD = pure [MovRR () (absReg tD) (absReg p)]
 eval (IR.EAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [Ldr () (absReg tD) (RP (absReg tB) p)]
 eval (IR.IB Op.IPlus (IR.IB Op.IAsl e0 (IR.ConstI i)) e1) t | Just u <- ms i = do
     r0 <- nextI; r1 <- nextI

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- first IR with for loops and array accesses, inspired by C
-module C ( Temp (..), FTemp (..)
+module C ( Temp (..), FTemp (..), BTemp (..)
          , ArrAcc (..)
          , CE (..), CFE (..)
          , PE (..)
@@ -24,12 +24,12 @@ type Label=Word; type AsmData = IM.IntMap [Word64]
 data Temp = ITemp !Int | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5 | CRet deriving Eq
 
+data BTemp = BTemp !Int | CBRet deriving Eq
+
 data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
 
-data F2 = YT !Int deriving Eq
-
-instance Pretty F2 where pretty (YT i) = "Y" <> pretty i
+instance Pretty BTemp where pretty (BTemp i) = "P" <> pretty i
 
 instance Pretty Temp where
     pretty (ITemp i) = "T" <> pretty i
@@ -105,7 +105,7 @@ instance Fractional CFE where
 
 instance Pretty CFE where pretty=ps 0
 
-data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is Temp
+data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is BTemp
 
 instance Pretty PE where
     pretty (IRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
@@ -128,7 +128,7 @@ infix 9 :=
 
 data CS = For Temp CE IRel CE [CS] | For1 Temp CE IRel CE [CS]
         | While Temp IRel CE [CS]
-        | Temp := CE | MX FTemp CFE
+        | Temp := CE | MX FTemp CFE | MB BTemp PE
         | Wr ArrAcc CE | WrF ArrAcc CFE
         | Ma AL Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
         | MaΠ AL Temp CE
@@ -139,10 +139,10 @@ data CS = For Temp CE IRel CE [CS] | For1 Temp CE IRel CE [CS]
         | If PE [CS] [CS]
         | Sa Temp CE | Pop CE
         | Cmov PE Temp CE | Fcmov PE FTemp CFE
-        | Cset PE Temp
+        | Cset PE BTemp
         | SZ Temp Temp CE (Maybe AL) -- dest., pointer to array, rank, label
         | PlProd Temp [CE]
-        | Rnd Temp
+        | Rnd Temp | FRnd FTemp
         | Def Label [CS] | G Label
         -- TODO: PlDims cause we have diml
 
@@ -171,6 +171,7 @@ instance Pretty CS where
     pretty (SZ td t _ _)        = pretty td <+> "=" <+> "SIZE" <> parens (pretty t)
     pretty (PlProd t ts)        = pretty t <+> "=" <+> "PRODUCT" <> tupled (pretty<$>ts)
     pretty (Rnd t)              = pretty t <+> "=" <+> "(rnd)"
+    pretty (FRnd x)             = pretty x <+> "=" <+> "(frnd)"
     pretty (Def l cs)           = hardline <> pS l <> ":" <#> indent 4 (pCS cs)
     pretty (G l)                = "GOTO" <+> pS l
 
