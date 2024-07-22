@@ -39,6 +39,10 @@ optE e                       = e
 
 optF :: FExp -> FExp
 optF (FAt p) = FAt (optP p)
+optF (FU FLog e) =
+    case optF e of
+        ConstF d -> ConstF$log d
+        e'       -> FU FLog e'
 optF fe      = fe
 
 optP :: AE -> AE
