@@ -22,7 +22,6 @@ dedfnM :: E a -> RM (E a)
 dedfnM e@ILit{} = pure e
 dedfnM e@FLit{} = pure e
 dedfnM e@BLit{} = pure e
-dedfnM e@ALit{} = pure e
 dedfnM e@Var{} = pure e
 dedfnM e@Builtin{} = pure e
 dedfnM e@ResVar{} = pure e
