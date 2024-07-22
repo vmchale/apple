@@ -324,6 +324,7 @@ benchmark apple-bench
         base,
         apple,
         criterion,
+        statistics,
         bytestring,
         erf,
         hypergeometric >=0.1.2.0

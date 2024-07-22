@@ -1,20 +1,22 @@
 module Main (main) where
 
-import           Control.Exception     (Exception, throw)
+import           Control.Exception                (Exception, throw)
 import           Criterion.Main
-import qualified Data.ByteString.Lazy  as BSL
-import           Data.Functor          (($>))
-import           Data.Int              (Int64)
-import           Data.Number.Erf       (erf, normcdf)
-import           Foreign.Marshal.Alloc (free, mallocBytes)
-import           Foreign.Ptr           (FunPtr, Ptr)
-import           Foreign.Storable      (Storable (..))
+import qualified Data.ByteString.Lazy             as BSL
+import           Data.Functor                     (($>))
+import           Data.Int                         (Int64)
+import           Data.Number.Erf                  (erf, normcdf)
+import           Foreign.Marshal.Alloc            (free, mallocBytes)
+import           Foreign.Ptr                      (FunPtr, Ptr)
+import           Foreign.Storable                 (Storable (..))
 import           Hs.A
 import           I
-import qualified Math.Hypergeometric   as Hyper
-import qualified Math.SpecialFunction  as Math
+import qualified Math.Hypergeometric              as Hyper
+import qualified Math.SpecialFunction             as Math
 import           P
-import           System.Info           (arch)
+import           Statistics.Distribution          (cumulative)
+import           Statistics.Distribution.StudentT (studentT)
+import           System.Info                      (arch)
 import           Ty
 
 risingFactorial :: Integral a => a -> a -> a
@@ -98,6 +100,7 @@ main = do
                       ]
                 , bgroup "tcdf"
                       [ bench "hs" $ nf (Math.tcdf (12::Double)) (2::Double)
+                      , bench "stat" $ nf (cumulative (studentT 12)) 2
                       , bench "jit" $ nf (tcdfFp 2) 12
                       ]
                 , bgroup "Γ"
