@@ -67,6 +67,9 @@ main = do
                       , bench "x86asm (gamma)" $ nf x86G 𝛾
                       , bench "x86asm (fcdf)" $ nf x86G ꜰ
                       , bench "x86asm (A)" $ nf x86G ᴀ
+                      , bench "arm (fcdf)" $ nf aarch64 ꜰ
+                      , bench "arm (tcdf)" $ nf aarch64 t
+                      , bench "arm (A)" $ nf aarch64 ᴀ
                       ]
                       -- TODO: thunks after type checking?
                 , env (fmap yeet erfParsed) $ \ast ->

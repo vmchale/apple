@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Asm.Aarch64 ( AArch64 (..)
@@ -20,15 +21,17 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
+import           Control.DeepSeq   (NFData (..))
 import           Data.Copointed
 import           Data.Word         (Word16, Word8)
+import           GHC.Generics      (Generic)
 import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
 import           Prettyprinter.Ext
 import           System.Info       (os)
 
 -- https://developer.arm.com/documentation/102374/0101/Registers-in-AArch64---other-registers
-data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum)
+data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
 
 instance Pretty AReg where
     pretty X0 = "x0"; pretty X1 = "x1"; pretty X2 = "x2"; pretty X3 = "x3"; pretty X4 = "x4"; pretty X5 = "x5"; pretty X6 = "x6"; pretty X7 = "x7"
@@ -38,7 +41,7 @@ instance Pretty AReg where
 
 instance Show AReg where show = show.pretty
 
-data FAReg = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9 | D10 | D11 | D12 | D13 | D14 | D15 | D16 | D17 | D18 | D19 | D20 | D21 | D22 | D23 | D24 | D25 | D26 | D27 | D28 | D29 | D30 | D31 deriving (Eq, Ord, Enum)
+data FAReg = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9 | D10 | D11 | D12 | D13 | D14 | D15 | D16 | D17 | D18 | D19 | D20 | D21 | D22 | D23 | D24 | D25 | D26 | D27 | D28 | D29 | D30 | D31 deriving (Eq, Ord, Enum, Generic)
 
 instance Pretty FAReg where
     pretty D0 = "d0"; pretty D1 = "d1"; pretty D2 = "d2"; pretty D3 = "d3"; pretty D4 = "d4"; pretty D5 = "d5"; pretty D6 = "d6"; pretty D7 = "d7"
@@ -47,6 +50,9 @@ instance Pretty FAReg where
     pretty D24 = "d24"; pretty D25 = "d25"; pretty D26 = "d26"; pretty D27 = "d27"; pretty D28 = "d28"; pretty D29 = "d29"; pretty D30 = "d30"; pretty D31 = "d31"
 
 instance Show FAReg where show = show.pretty
+
+instance NFData AReg where
+instance NFData FAReg where
 
 data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 | CArg7 | LR | FP | ASP
 -- r0-r7 used for return values as well
@@ -105,16 +111,22 @@ fToInt (FReg i) = 19+i
 
 data Shift = Zero | Three
 
+instance NFData Shift where rnf Zero = (); rnf Three = ()
+
 instance Pretty Shift where
     pretty Zero = "#0"; pretty Three = "#3"
 
 -- left: shift left by this much
 data BM = BM { ims, left :: !Word8 } deriving Eq
 
+instance NFData BM where rnf (BM i ls) = rnf i `seq` rnf ls
+
 instance Pretty BM where
     pretty (BM m l) = "0b" <> pretty (replicate (fromIntegral m) '1' ++ replicate (fromIntegral l) '0')
 
-data Addr reg = R reg | RP reg Word16 | BI reg reg Shift deriving Functor
+data Addr reg = R reg | RP reg Word16 | BI reg reg Shift deriving (Functor, Generic)
+
+instance NFData a => NFData (Addr a) where
 
 instance Pretty reg => Pretty (Addr reg) where
     pretty (R r)      = brackets (pretty r)
@@ -122,6 +134,8 @@ instance Pretty reg => Pretty (Addr reg) where
     pretty (BI b i s) = brackets (pretty b <> "," <+> pretty i <> "," <+> "LSL" <+> pretty s)
 
 data Cond = Eq | Neq | Geq | Lt | Gt | Leq
+
+instance NFData Cond where rnf Eq=(); rnf Neq=(); rnf Geq=(); rnf Lt=(); rnf Gt=(); rnf Leq=()
 
 instance Pretty Cond where
     pretty Eq = "EQ"; pretty Neq = "NE"; pretty Geq = "GE"
@@ -198,7 +212,9 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
                         | Cset { ann :: a, rDest :: reg, cond :: Cond }
                         | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
-                        deriving (Functor)
+                        deriving (Functor, Generic)
+
+instance (NFData r, NFData d, NFData a) => NFData (AArch64 r d a) where
 
 instance Copointed (AArch64 reg freg) where copoint = ann
 
