@@ -13,6 +13,10 @@ import           Foreign.Storable           (peek, poke)
 import qualified IR
 import qualified Op
 
+plF :: IR.FExp -> WM ([X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ()], FAbsReg)
+plF (IR.FReg t) = pure (id, fabsReg t)
+plF e           = do {i <- nextI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
+
 absReg :: IR.Temp -> AbsReg
 absReg (IR.ITemp i) = IReg i
 absReg (IR.ATemp i) = IReg i
@@ -295,10 +299,6 @@ feval (IR.FB Op.FDiv (IR.FReg r0) (IR.FReg r1)) t   | t == r0 = pure [Divsd () (
 feval (IR.FB Op.FTimes (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Mulsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FMinus (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Subsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FPlus (IR.FReg r0) (IR.FReg r1)) t  | t == r0 = pure [Addsd () (fabsReg t) (fabsReg r1)]
-feval (IR.FB Op.FDiv (IR.FReg r0) (IR.FReg r1)) t   = pure [Vdivsd () (fabsReg t) (fabsReg r0) (fabsReg r1)]
-feval (IR.FB Op.FTimes (IR.FReg r0) (IR.FReg r1)) t = pure [Vmulsd () (fabsReg t) (fabsReg r0) (fabsReg r1)]
-feval (IR.FB Op.FPlus (IR.FReg r0) (IR.FReg r1)) t  = pure [Vaddsd () (fabsReg t) (fabsReg r0) (fabsReg r1)]
-feval (IR.FB Op.FMinus (IR.FReg r0) (IR.FReg r1)) t = pure [Vsubsd () (fabsReg t) (fabsReg r0) (fabsReg r1)]
 feval (IR.FConv (IR.Reg r)) t                       = pure [Cvtsi2sd () (fabsReg t) (absReg r)]
 feval (IR.FReg r) t                                 = pure [Movapd () (fabsReg t) (fabsReg r)]
 feval (IR.FB Op.FPlus (IR.FReg r0) (IR.FB Op.FTimes (IR.FReg r1) (IR.FReg r2))) t =
@@ -308,35 +308,25 @@ feval (IR.FB Op.FPlus (IR.FReg r0) (IR.FB Op.FTimes e (IR.FAt (IR.AP b (Just (IR
     plE <- feval e (IR.FTemp i); plEI <- evalE eI (IR.ITemp iI)
     pure $ plE ++ plEI ++ [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sdA () (fabsReg t) (FReg i) (RSD (absReg b) Eight (IReg iI) i8)]
 feval (IR.FB Op.FPlus (IR.FReg r0) (IR.FB Op.FTimes e0 e1)) t = do
-    i0 <- nextI; i1 <- nextI
-    plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1)
-    pure $ plE0 ++ plE1 ++ [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sd () (fabsReg t) (FReg i0) (FReg i1)]
+    (plE0,i0) <- plF e0; (plE1,i1) <- plF e1
+    pure $ plE0 $ plE1 [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sd () (fabsReg t) i0 i1]
 feval (IR.FB Op.FMinus (IR.FReg r0) (IR.FB Op.FTimes (IR.FReg r1) (IR.FReg r2))) t =
     pure [Movapd () (fabsReg t) (fabsReg r0), Vfmnadd231sd () (fabsReg t) (fabsReg r1) (fabsReg r2)]
-feval (IR.FB Op.FMinus (IR.FReg r0) e) t            = do
-    i <- nextI
-    putR <- feval e (IR.FTemp i)
-    pure $ putR ++ [Vsubsd () (fabsReg t) (fabsReg r0) (FReg i)]
-feval (IR.FB Op.FMinus e (IR.FReg r)) t            = do
-    i <- nextI
-    putR <- feval e (IR.FTemp i)
-    pure $ putR ++ [Vsubsd () (fabsReg t) (FReg i) (fabsReg r)]
+feval (IR.FB Op.FMinus e0 e1) t                     = do
+    (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
+    pure $ plR0 $ plR1 [Vsubsd () (fabsReg t) i0 i1]
 feval (IR.FB Op.FPlus e0 e1) t                     = do
-    i0 <- nextI; i1 <- nextI
-    putR0 <- feval e0 (IR.FTemp i0); putR1 <- feval e1 (IR.FTemp i1)
-    pure $ putR0 ++ putR1 ++ [Vaddsd () (fabsReg t) (FReg i0) (FReg i1)]
+    (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
+    pure $ plR0 $ plR1 [Vaddsd () (fabsReg t) i0 i1]
 feval (IR.FB Op.FDiv e0 e1) t                     = do
-    i0 <- nextI; i1 <- nextI
-    putR0 <- feval e0 (IR.FTemp i0); putR1 <- feval e1 (IR.FTemp i1)
-    pure $ putR0 ++ putR1 ++ [Vdivsd () (fabsReg t) (FReg i0) (FReg i1)]
+    (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
+    pure $ plR0 $ plR1 [Vdivsd () (fabsReg t) i0 i1]
 feval (IR.FB Op.FMax e0 e1) t                      = do
-    i0 <- nextI; i1 <- nextI
-    putR0 <- feval e0 (IR.FTemp i0); putR1 <- feval e1 (IR.FTemp i1)
-    pure $ putR0 ++ putR1 ++ [Vmaxsd () (fabsReg t) (FReg i0) (FReg i1)]
+    (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
+    pure $ plR0 $ plR1 [Vmaxsd () (fabsReg t) i0 i1]
 feval (IR.FB Op.FTimes e0 e1) t                    = do
-    i0 <- nextI; i1 <- nextI
-    plE0 <- feval e0 (IR.FTemp i0); plE1 <- feval e1 (IR.FTemp i1)
-    pure $ plE0 ++ plE1 ++ [Vmulsd () (fabsReg t) (FReg i0) (FReg i1)]
+    (plE0,i0) <- plF e0; (plE1,i1) <- plF e1
+    pure $ plE0 $ plE1 [Vmulsd () (fabsReg t) i0 i1]
 feval (IR.ConstF x) t = do
     iR <- nextR
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]
@@ -356,20 +346,17 @@ feval (IR.FU Op.FCos (IR.FReg r)) t =
     let sa = RC SP (-8) in
     pure [MovqAX () sa (fabsReg r), Fld () sa, Fcos (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FB Op.FExp (IR.ConstF 2.718281828459045) e) t = do
-    i <- nextI
-    putE <- feval e (IR.FTemp i)
+    (plE,i) <- plF e
     let sa = RC SP (-8)
     -- https://www.madwizard.org/programming/snippets?id=36
-    pure $ putE ++ [MovqAX () sa (FReg i), Fninit (), Fld () sa, Fldl2e (), Fmulp (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa, MovqXA () (fabsReg t) sa]
+    pure $ plE [MovqAX () sa i, Fninit (), Fld () sa, Fldl2e (), Fmulp (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa, MovqXA () (fabsReg t) sa]
 feval (IR.FB Op.FExp e0 e1) t = do
-    i0 <- nextI
-    i1 <- nextI
-    putE0 <- feval e0 (IR.FTemp i0)
-    putE1 <- feval e1 (IR.FTemp i1)
+    (plE0,i0) <- plF e0
+    (plE1,i1) <- plF e1
     let sa0 = RC SP (-8)
         sa1 = RC SP (-16)
     -- https://www.madwizard.org/programming/snippets?id=36
-    pure $ putE0 ++ putE1 ++ [MovqAX () sa0 (FReg i0), MovqAX () sa1 (FReg i1), Fld () sa1, Fld () sa0, Fyl2x (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa0, MovqXA () (fabsReg t) sa0]
+    pure $ plE0 $ plE1 [MovqAX () sa0 i0, MovqAX () sa1 i1, Fld () sa1, Fld () sa0, Fyl2x (), Fld1 (), FldS () (ST 1), Fprem (), F2xm1 (), Faddp (), Fscale (), Fstp () sa0, MovqXA () (fabsReg t) sa0]
 feval (IR.FU Op.FSqrt (IR.FReg r)) t =
     pure [Sqrtsd () (fabsReg t) (fabsReg r)]
 feval (IR.FAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = pure [MovqXA () (fabsReg rD) (RSD (absReg m) Eight (absReg i) i8)]
