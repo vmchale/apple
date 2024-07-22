@@ -89,7 +89,8 @@ isI I = True; isI _ = False
 isB B = True; isB _ = False
 isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
-nind I=True; nind F=True; nind P{}=True; nind _=False
+isR B=True; isR t=isIF t
+nind I=True; nind F=True; nind P{}=True; nind B{}=True; nind _=False
 isΠIF (P ts)=all isIF ts; isΠIF _=False
 isΠ P{}=True; isΠ _=False
 
@@ -113,10 +114,10 @@ f1 :: T a -> Bool
 f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
 bT :: Integral b => T a -> b
-bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT Arr{}=8
+bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT B=1; bT Arr{}=8
 
 bSz :: Integral b => T a -> Maybe b
-bSz (P ts)=sum<$>traverse bSz ts; bSz F=Just 8; bSz I=Just 8; bSz _=Nothing
+bSz (P ts)=sum<$>traverse bSz ts; bSz F=Just 8; bSz I=Just 8; bSz B=Just 1; bSz _=Nothing
 
 szT = scanl' (\off ty -> off+bT ty::Int64) 0
 
@@ -196,7 +197,7 @@ writeCM eϵ = do
              | ty@P{} <- eAnn e, b64 <- bT ty, (n,0) <- b64 `quotRem` 8 = let b=ConstI b64 in do {t <- newITemp; a <- nextArr CRet; (_,_,ls,pl) <- πe e t; pure (Sa t b:pl++MaΠ a CRet b:CpyE (TupM CRet (Just a)) (TupM t Nothing) (ConstI n) 8:Pop b:RA a:(RA<$>ls))}
 
 rtemp :: T a -> CM RT
-rtemp F=FT<$>newFTemp; rtemp I=IT<$>newITemp
+rtemp F=FT<$>newFTemp; rtemp I=IT<$>newITemp; rtemp B=PT<$>nBT
 
 writeF :: E (T ())
        -> [Arg]
@@ -232,7 +233,7 @@ aS f as rT rAt = do
     pure (rArgs++ss++[wR], pinch:pinchArgs)
 
 arg :: T () -> ArrAcc -> CM (RT, CS, Maybe (CS, CS))
-arg ty at | isIF ty = do
+arg ty at | isR ty = do
     t <- rtemp ty
     pure (t, mt at t, Nothing)
 arg ty at | isΠ ty = do
@@ -241,7 +242,7 @@ arg ty at | isΠ ty = do
     pure (IT slop, CpyE (TupM slop Nothing) at 1 sz, Just (Sa slop slopE, Pop slopE))
 
 rW :: T () -> ArrAcc -> CM (RT, CS, Maybe (CS, CS))
-rW ty at | isIF ty = do
+rW ty at | isR ty = do
     t <- rtemp ty
     pure (t, wt at t, Nothing)
 rW ty at | isΠ ty = do
@@ -258,10 +259,12 @@ data RT = IT Temp | FT FTemp | PT BTemp
 mt :: ArrAcc -> RT -> CS
 mt p (IT t) = t := EAt p
 mt p (FT t) = MX t (FAt p)
+mt p (PT t) = MB t (PAt p)
 
 wt :: ArrAcc -> RT -> CS
 wt p (IT t) = Wr p (Tmp t)
 wt p (FT t) = WrF p (FTmp t)
+wt p (PT t) = WrP p (Is t)
 
 ra (FT f)=FA f; ra (IT r)=IPA r
 

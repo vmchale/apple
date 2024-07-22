@@ -57,6 +57,7 @@ cToIRM (C.Ma l t rnk n sz) = let t'=ctemp t in pure [IR.Ma l t' ((irE rnk+irE n)
 cToIRM (C.MaΠ l t sz)      = pure [IR.Ma l (ctemp t) (irE sz)]
 cToIRM (C.Wr a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF a x)         = pure [IR.WrF (irAt a) (irX x)]
+cToIRM (C.WrP a b)         = pure [IR.WrB (irAt a) (irp b)]
 cToIRM (For t el rel eu s) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
@@ -137,6 +138,7 @@ irp (C.IRel rel e0 e1) = IR.IRel rel (irE e0) (irE e1)
 irp (C.FRel rel x0 x1) = IR.FRel rel (irX x0) (irX x1)
 irp (C.IUn p e)        = IR.IU p (irE e)
 irp (C.Is t)           = IR.Is (cbtemp t)
+irp (C.PAt a)          = IR.BAt (irAt a)
 
 irX :: CFE -> FExp
 irX (C.ConstF x)    = IR.ConstF x

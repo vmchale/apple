@@ -450,6 +450,12 @@ printExpr s = do
                                 p <- callFFI fp (retPtr undefined) []
                                 putDoc.(<>hardline).pretty =<< (peek :: Ptr AI -> IO AI) p
                                 free p *> freeAsm asm
+                        (Arr _ A.B) ->
+                            liftIO $ do
+                                asm@(_, fp, _) <- efp eC
+                                p <- callFFI fp (retPtr undefined) []
+                                putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple Bool) -> IO (Apple Bool)) p
+                                free p *> freeAsm asm
                         A.B ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC

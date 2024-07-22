@@ -66,7 +66,7 @@ data Stmt = L Label
           | MT Temp Exp | MX FTemp FExp -- move targeting xmm0 &c.
           | Ma AL Temp Exp -- label, register, size
           | Free Temp | RA !AL -- "return array" no-op
-          | Wr AE Exp | WrF AE FExp
+          | Wr AE Exp | WrF AE FExp | WrB AE Exp
           | Cmov Exp Temp Exp | Fcmov Exp FTemp FExp
           | Cset Temp Exp
           | Sa Temp Exp -- register, size
@@ -83,6 +83,7 @@ instance Pretty Stmt where
     pretty (J l)         = parens ("j" <+> prettyLabel l)
     pretty (Wr p e)      = parens ("write" <+> pretty p <+> pretty e)
     pretty (WrF p e)     = parens ("write" <+> pretty p <+> pretty e)
+    pretty (WrB p e)     = parens ("write" <+> pretty p <+> pretty e)
     pretty (Ma _ t e)    = parens ("malloc" <+> pretty t <+> ":" <+> pretty e)
     pretty (Free t)      = parens ("free" <+> pretty t)
     pretty (Cmov p t e)  = parens ("cmov" <+> pretty p <+> pretty t <+> pretty e)
@@ -127,7 +128,7 @@ data Exp = ConstI Int64
          | IRel IRel Exp Exp | Is Temp
          | IU IUn Exp
          | IRFloor FExp
-         | EAt AE
+         | EAt AE | BAt AE
          | LA !Int -- assembler data
 
 instance Pretty FExp where
@@ -148,6 +149,7 @@ instance Pretty Exp where
     pretty (IU op e)      = parens (pretty op <+> pretty e)
     pretty (IRFloor e)    = parens ("floor" <+> pretty e)
     pretty (EAt p)        = "@" <> pretty p
+    pretty (BAt p)        = "b@" <> pretty p
     pretty (FRel op e e') = parens (pretty op <+> pretty e <+> pretty e')
     pretty (Is e)         = parens ("is?" <+> pretty e)
     pretty (LA n)         = "arr_" <> pretty n

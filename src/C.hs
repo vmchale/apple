@@ -29,7 +29,7 @@ data BTemp = BTemp !Int | CBRet deriving Eq
 data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
 
-instance Pretty BTemp where pretty (BTemp i) = "P" <> pretty i
+instance Pretty BTemp where pretty (BTemp i) = "P" <> pretty i; pretty CBRet = "PRet"
 
 instance Pretty Temp where
     pretty (ITemp i) = "T" <> pretty i
@@ -105,13 +105,14 @@ instance Fractional CFE where
 
 instance Pretty CFE where pretty=ps 0
 
-data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is BTemp
+data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is BTemp | PAt ArrAcc
 
 instance Pretty PE where
     pretty (IRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
     pretty (FRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
     pretty (IUn p e)        = pretty p <+> pretty e
     pretty (Is t)           = "is?" <+> pretty t
+    pretty (PAt a)          = "b@" <> pretty a
 
 instance PS CFE where
     ps _ (FAt a)         = pretty a
@@ -129,7 +130,7 @@ infix 9 :=
 data CS = For Temp CE IRel CE [CS] | For1 Temp CE IRel CE [CS]
         | While Temp IRel CE [CS]
         | Temp := CE | MX FTemp CFE | MB BTemp PE
-        | Wr ArrAcc CE | WrF ArrAcc CFE
+        | Wr ArrAcc CE | WrF ArrAcc CFE | WrP ArrAcc PE
         | Ma AL Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
         | MaΠ AL Temp CE
         | RA !AL -- return array no-op (takes label)
@@ -153,6 +154,7 @@ instance Pretty CS where
     pretty (MX t e)             = pretty t <+> "=" <+> pretty e
     pretty (Wr a e)             = pretty a <+> "=" <+> pretty e
     pretty (WrF a e)            = pretty a <+> "=" <+> pretty e
+    pretty (WrP a e)            = pretty a <+> "=" <+> pretty e
     pretty (Ma _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
     pretty (MaΠ _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz)
     pretty (For t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace

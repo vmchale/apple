@@ -28,6 +28,7 @@ mapFA _ a                 = a
 mapFE :: (FTemp -> FTemp) -> Exp -> Exp
 mapFE f (IRFloor x)      = IRFloor (mapFF f x)
 mapFE f (EAt a)          = EAt (mapFA f a)
+mapFE f (BAt a)          = BAt (mapFA f a)
 mapFE _ e@ConstI{}       = e
 mapFE _ e@Reg{}          = e
 mapFE _ e@Is{}           = e
@@ -57,6 +58,7 @@ mapF _ s@RA{}        = s
 mapF f (MT t e)      = MT t (mapFE f e)
 mapF f (Wr a e)      = Wr (mapFA f a) (mapFE f e)
 mapF f (WrF a x)     = WrF (mapFA f a) (mapFF f x)
+mapF f (WrB a e)     = WrB (mapFA f a) (mapFE f e)
 mapF f (Fcmov e t x) = Fcmov (mapFE f e) (f t) (mapFF f x)
 mapF f (MJ e l)      = MJ (mapFE f e) l
 mapF f (Ma l t e)    = Ma l t (mapFE f e)

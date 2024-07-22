@@ -106,6 +106,7 @@ uE (IU _ e)       = uE e
 uE LA{}           = IS.empty
 uE (IRFloor x)    = uFR x
 uE (EAt a)        = uA a
+uE (BAt a)        = uA a
 uE (FRel _ x0 x1) = uFR x0<>uFR x1
 
 uFF :: Exp -> IS.IntSet
@@ -119,6 +120,7 @@ uFF (IU _ e)       = uFF e
 uFF LA{}           = IS.empty
 uFF Is{}           = IS.empty
 uFF (EAt e)        = uAF e
+uFF (BAt e)        = uAF e
 
 uF :: FExp -> IS.IntSet
 uF ConstF{}     = IS.empty
@@ -156,6 +158,7 @@ uses (Free t)       = singleton t
 uses RA{}           = IS.empty
 uses (Wr a e)       = uA a<>uE e
 uses (WrF a e)      = uA a<>uFR e
+uses (WrB a e)      = uA a<>uE e
 uses (Sa _ e)       = uE e
 uses (Pop e)        = uE e
 uses (Cmov e0 _ e1) = uE e0<>uE e1
@@ -187,6 +190,7 @@ usesF (Cmov e _ e') = uFF e<>uFF e'
 usesF (Fcmov e _ x) = uFF e<>uF x
 usesF (Wr a e)      = uAF a<>uFF e
 usesF (WrF a x)     = uAF a<>uF x
+usesF (WrB a e)     = uAF a<>uFF e
 usesF (Cset _ e)    = uFF e
 usesF (Sa _ e)      = uFF e
 usesF (Pop e)       = uFF e
