@@ -40,6 +40,10 @@ optE e                       = e
 
 optF :: FExp -> FExp
 optF (FAt p) = FAt (optP p)
+optF (FConv e) =
+    case optE e of
+        ConstI i -> ConstF$fromIntegral i
+        e'       -> FConv e'
 optF (FU FLog e) =
     case optF e of
         ConstF d -> ConstF$log d
