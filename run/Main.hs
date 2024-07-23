@@ -308,6 +308,7 @@ inspect s = do
                                 (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (P2 Double Double)) -> IO T.Text) (castPtr p)
                                 (Arr _ F)         -> \p -> (dbgAB :: Ptr (Apple Double) -> IO T.Text) (castPtr p)
                                 (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
+                                (Arr _ A.B)       -> \p -> (dbgAB :: Ptr (Apple AB) -> IO T.Text) (castPtr p)
                     c <- lift $ gets mf
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     liftIO $ do
@@ -454,7 +455,7 @@ printExpr s = do
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 p <- callFFI fp (retPtr undefined) []
-                                putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple Bool) -> IO (Apple Bool)) p
+                                putDoc.(<>hardline).pretty =<< (peek :: Ptr (Apple AB) -> IO (Apple AB)) p
                                 free p *> freeAsm asm
                         A.B ->
                             liftIO $ do

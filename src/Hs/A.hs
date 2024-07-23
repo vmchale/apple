@@ -3,8 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Hs.A ( Apple (..), U
-            , AI
-            , AF
+            , AB, AI, AF
             , P2 (..), P3 (..), P4 (..)
             , dbgAB
             , hs2, hs3, hs4
@@ -25,12 +24,21 @@ import           Prettyprinter.Ext
 type AI = Apple Int64; type AF = Apple Double
 type U a = Ptr (Apple a)
 
--- TODO: Int8, Int32?
+data AB = F | T
+
+instance Pretty AB where pretty T="#t"; pretty F="#f"
+
 data Apple a = AA !Int64 [Int64] [a] deriving (Functor)
 
 data P2 a b = P2 a b; hs2 (P2 a b) = (a,b)
 data P3 a b c = P3 a b c; hs3 (P3 a b c) = (a,b,c)
 data P4 a b c d = P4 a b c d; hs4 (P4 a b c d) = (a,b,c,d)
+
+instance Storable AB where
+    sizeOf _ = 1
+    peek p = (\b -> case b of 1 -> T; 0 -> F) <$> (peek (castPtr p :: Ptr Word8))
+    poke p F = poke (castPtr p :: Ptr Word8) 0
+    poke p T = poke (castPtr p :: Ptr Word8) 1
 
 instance (Storable a, Storable b) => Storable (P2 a b) where
     sizeOf _ = sizeOf(undefined::a)+sizeOf(undefined::b)
@@ -49,6 +57,7 @@ pE [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ",
 pE _ xs      = pretty xs
 
 instance Pretty a => Pretty (Apple a) where
+
     pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pE dims xs
 
 instance (Pretty a, Pretty b) => Pretty (P2 a b) where
