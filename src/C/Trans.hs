@@ -1327,7 +1327,8 @@ feval (EApp _ (Var _ f) x) t | isF (eAnn x) = do
     st <- gets fvars
     let (l, [FA a], Left r) = getT st f
     plX <- feval x a
-    pure $ plX ++ [G l, MX t (FTmp r)]
+    retL <- neL
+    pure $ plX ++ [G l retL, MX t (FTmp r)]
 feval (Id _ (FoldGen seed g f n)) t = do
     x <- newFTemp; acc <- newFTemp
     nR <- newITemp; k <- newITemp

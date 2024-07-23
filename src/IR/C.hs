@@ -38,7 +38,7 @@ tick reg = IR.MT reg (Reg reg+1)
 nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 
 cToIRM :: CS -> IRM [Stmt]
-cToIRM (G l)               = do {retL <- nextL; pure [IR.C l, IR.L retL]}
+cToIRM (G l retL)          = pure [IR.C l, IR.L retL]
 -- FIXME: put this at the end so it doesn't have to be skipped
 cToIRM (Def l cs)          = do
     endL <- nextL

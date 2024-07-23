@@ -149,7 +149,7 @@ data CS = For Temp CE IRel CE [CS] | For1 Temp CE IRel CE [CS]
         | SZ Temp Temp CE (Maybe AL) -- dest., pointer to array, rank, label
         | PlProd Temp [CE]
         | Rnd Temp | FRnd FTemp
-        | Def Label [CS] | G Label
+        | Def Label [CS] | G Label Label
         -- TODO: PlDims cause we have diml
 
 instance Pretty CS where
@@ -180,7 +180,7 @@ instance Pretty CS where
     pretty (Rnd t)              = pretty t <+> "=" <+> "(rnd)"
     pretty (FRnd x)             = pretty x <+> "=" <+> "(frnd)"
     pretty (Def l cs)           = hardline <> pS l <> ":" <#> indent 4 (pCS cs)
-    pretty (G l)                = "GOTO" <+> pS l
+    pretty (G l _)              = "GOTO" <+> pS l
 
 pS :: Label -> Doc ann
 pS l = "fun_" <> pretty l
