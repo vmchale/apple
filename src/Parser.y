@@ -223,7 +223,6 @@ BBin :: { E AlexPosn }
      | snoc { Builtin $1 A.Snoc }
      | mul { Builtin $1 Mul }
      | vmul { Builtin $1 VMul }
-     | do { Builtin $1 Iter }
      | geq { Builtin $1 Gte } | gt { Builtin $1 A.Gt }
      | leq { Builtin $1 Lte } | lt { Builtin $1 A.Lt }
      | eq { Builtin $1 A.Eq } | neq { Builtin $1 A.Neq }
@@ -272,6 +271,7 @@ E :: { E AlexPosn }
   | E foldA E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldA) $1) $3) $4 }
   | E scanS E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 ScanS) $1) $3) $4 }
   | E zip E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Zip) $1) $3) $4 }
+  | E do E E { EApp (eAnn $1) (EApp $2 (EApp $2 (Builtin $2 Iter) $1) $3) $4 }
   | E E { EApp (eAnn $1) $1 $2 }
   | x { ResVar $1 X } | y { ResVar $1 Y }
   | f { Builtin $1 Fib }
