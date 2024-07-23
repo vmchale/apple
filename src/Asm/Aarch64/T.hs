@@ -163,6 +163,8 @@ ir (IR.MJ (IR.FRel op e0 e1) l) | c <- frel op = do
 ir (IR.Cmov (IR.IRel op (IR.Reg r0) (IR.Reg r1)) t e) | c <- iop op = do
     (plE,r) <- plI e
     pure $ plE [CmpRR () (absReg r0) (absReg r1), Csel () (absReg t) r (absReg t) c]
+ir (IR.Cset t (IR.IRel op (IR.Reg r0) (IR.ConstI i))) | c <- iop op, Just u <- m12 i = do
+    pure [CmpRC () (absReg r0) u, Cset () (absReg t) c]
 ir (IR.Cset t (IR.IRel op (IR.Reg r0) (IR.Reg r1))) | c <- iop op = do
     pure [CmpRR () (absReg r0) (absReg r1), Cset () (absReg t) c]
 ir (IR.Cset t (IR.FRel op (IR.FReg r0) (IR.FReg r1))) | c <- frel op = do
