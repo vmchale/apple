@@ -71,7 +71,9 @@ instance Pretty ArrAcc where
 
 instance Show ArrAcc where show=show.pretty
 
-mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing; mPrec IAnd=Just 3; mPrec IOr=Just 2
+bPrec AndB=3; bPrec OrB=2
+
+mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing; mPrec (BI p) = Just$bPrec p
 fprec FPlus=Just 6;fprec FMinus=Just 6;fprec FTimes=Just 7; fprec FDiv=Just 7; fprec FExp=Just 8; fprec FMax=Nothing; fprec FMin=Nothing
 
 data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor CFE
@@ -105,7 +107,7 @@ instance Fractional CFE where
 
 instance Pretty CFE where pretty=ps 0
 
-data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is BTemp | PAt ArrAcc | BConst Bool
+data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is BTemp | PAt ArrAcc | BConst Bool | Boo BBin PE PE
 
 instance Pretty PE where
     pretty (IRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
@@ -115,6 +117,7 @@ instance Pretty PE where
     pretty (PAt a)          = "b@" <> pretty a
     pretty (BConst True)    = "true"
     pretty (BConst False)   = "false"
+    pretty (Boo op e0 e1)   = pretty e0 <+> pretty op <+> pretty e1
 
 instance PS CFE where
     ps _ (FAt a)         = pretty a

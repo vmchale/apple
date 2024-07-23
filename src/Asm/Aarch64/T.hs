@@ -23,12 +23,14 @@ fabsReg IR.F0 = FArg0; fabsReg IR.F1 = FArg1; fabsReg IR.F2 = FArg2
 fabsReg IR.F3 = FArg3; fabsReg IR.F4 = FArg4; fabsReg IR.F5 = FArg5
 fabsReg IR.FRet = FArg0; fabsReg IR.FRet1 = FArg1
 
+mB Op.AndB = AndRR
+mB Op.OrB  = OrRR
+mB Op.XorB = Eor
+
 mIop Op.IPlus  = Just AddRR
 mIop Op.IMinus = Just SubRR
 mIop Op.ITimes = Just MulRR
-mIop Op.IAnd   = Just AndRR
-mIop Op.IOr    = Just OrRR
-mIop Op.IXor   = Just Eor
+mIop (Op.BI b) = Just$mB b
 mIop _         = Nothing
 
 mFop Op.FPlus  = Just Fadd

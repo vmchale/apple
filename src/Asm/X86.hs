@@ -43,7 +43,6 @@ data FX86Reg = XMM1 | XMM2 | XMM3 | XMM4 | XMM5 | XMM6 | XMM7 | XMM8 | XMM9 | XM
              deriving (Eq, Ord, Enum, Generic)
 
 instance NFData X86Reg where
-
 instance NFData FX86Reg where
 
 instance Pretty X86Reg where

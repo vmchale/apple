@@ -28,6 +28,7 @@ data CSt = CSt { tempU       :: !Int
                , assemblerSt :: !Int
                , label       :: !Label
                , vars        :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
+               , pvars       :: IM.IntMap BTemp
                , dvars       :: IM.IntMap FTemp
                , avars       :: IM.IntMap (Maybe AL, Temp)
                , fvars       :: IM.IntMap (Label, [Arg], Either FTemp Temp)
@@ -36,16 +37,16 @@ data CSt = CSt { tempU       :: !Int
                }
 
 nextI :: CM Int
-nextI = state (\(CSt tϵ ar as l v d a f aas ts) -> (tϵ, CSt (tϵ+1) ar as l v d a f aas ts))
+nextI = state (\(CSt tϵ ar as l v b d a f aas ts) -> (tϵ, CSt (tϵ+1) ar as l v b d a f aas ts))
 
 nextArr :: Temp -> CM AL
-nextArr r = state (\(CSt t a@(AL i) as l v d aϵ f aas ts) -> (a, CSt t (AL$i+1) as l v d aϵ f aas (AL.insert a r ts)))
+nextArr r = state (\(CSt t a@(AL i) as l v b d aϵ f aas ts) -> (a, CSt t (AL$i+1) as l v b d aϵ f aas (AL.insert a r ts)))
 
 nextAA :: CM Int
-nextAA = state (\(CSt t ar as l v d a f aas ts) -> (as, CSt t ar (as+1) l v d a f aas ts))
+nextAA = state (\(CSt t ar as l v b d a f aas ts) -> (as, CSt t ar (as+1) l v b d a f aas ts))
 
 neL :: CM Label
-neL = state (\(CSt t ar as l v d a f aas ts) -> (l, CSt t ar as (l+1) v d a f aas ts))
+neL = state (\(CSt t ar as l v b d a f aas ts) -> (l, CSt t ar as (l+1) v b d a f aas ts))
 
 nBT :: CM BTemp
 nBT = BTemp<$>nextI
@@ -57,19 +58,22 @@ newFTemp :: CM FTemp
 newFTemp = FTemp <$> nextI
 
 addAA :: Int -> [Word64] -> CSt -> CSt
-addAA i aa (CSt t ar as l v d a f aas ts) = CSt t ar as l v d a f (IM.insert i aa aas) ts
+addAA i aa (CSt t ar as l v b d a f aas ts) = CSt t ar as l v b d a f (IM.insert i aa aas) ts
 
 addVar :: Nm a -> Temp -> CSt -> CSt
-addVar n r (CSt t ar as l v d a f aas ts) = CSt t ar as l (insert n r v) d a f aas ts
+addVar n r (CSt t ar as l v b d a f aas ts) = CSt t ar as l (insert n r v) b d a f aas ts
 
 addD :: Nm a -> FTemp -> CSt -> CSt
-addD n r (CSt t ar as l v d a f aas ts) = CSt t ar as l v (insert n r d) a f aas ts
+addD n r (CSt t ar as l v b d a f aas ts) = CSt t ar as l v b (insert n r d) a f aas ts
+
+addB :: Nm a -> BTemp -> CSt -> CSt
+addB n r (CSt t ar as l v b d a f aas ts) = CSt t ar as l v (insert n r b) d a f aas ts
 
 addAVar :: Nm a -> (Maybe AL, Temp) -> CSt -> CSt
-addAVar n r (CSt t ar as l v d a f aas ts) = CSt t ar as l v d (insert n r a) f aas ts
+addAVar n r (CSt t ar as l v b d a f aas ts) = CSt t ar as l v b d (insert n r a) f aas ts
 
 addF :: Nm a -> (Label, [Arg], Either FTemp Temp) -> CSt -> CSt
-addF n f (CSt t ar as l v d a fs aas ts) = CSt t ar as l v d a (insert n f fs) aas ts
+addF n f (CSt t ar as l v b d a fs aas ts) = CSt t ar as l v b d a (insert n f fs) aas ts
 
 getT :: IM.IntMap b -> Nm a -> b
 getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " not assigned to a temp.")) n st
@@ -172,7 +176,7 @@ mIFs :: [E a] -> Maybe [Word64]
 mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
 
 writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
-writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ aa a) = (s, LSt l t, aa, a)
+writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
 
 writeCM :: E (T ()) -> CM [CS]
 writeCM eϵ = do
@@ -211,6 +215,9 @@ writeF (Lam _ x e) (IPA r:rs) ret = do
     writeF e rs ret
 writeF (Lam _ x e) (FA fr:rs) ret = do
     modify (addD x fr)
+    writeF e rs ret
+writeF (Lam _ x e) (BA r:rs) ret = do
+    modify (addB x r)
     writeF e rs ret
 writeF e [] (IT r) | isArr (eAnn e) = aeval e r
 writeF e [] (IT r) | isI (eAnn e) = (Nothing,)<$>eval e r
@@ -253,7 +260,7 @@ rW ty at | isΠ ty = do
 writeRF :: E (T ()) -> [RT] -> RT -> CM [CS]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
-data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe AL)
+data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe AL) | BA !BTemp
 data RT = IT Temp | FT FTemp | PT BTemp
 
 mt :: ArrAcc -> RT -> CS
@@ -961,6 +968,11 @@ plD (FLit _ x) = pure (id, ConstF x)
 plD (Var F x)  = do {st <- gets dvars; pure (id, FTmp$getT st x)}
 plD e          = do {t <- newFTemp; pl <- feval e t; pure ((pl++), FTmp t)}
 
+plP :: E (T ()) -> CM ([CS] -> [CS], PE)
+plP (BLit _ b) = pure (id, BConst b)
+plP (Var B x)  = do {st <- gets pvars; pure (id, Is$getT st x)}
+plP e          = do {t <- nBT; pl <- peval e t; pure ((pl++), Is t)}
+
 plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
 plEV (Var I x) = do
     st <- gets vars
@@ -997,6 +1009,9 @@ peval (EApp _ (EApp _ (Builtin (Arrow I _) op) e0) e1) t | Just iop <- rel op = 
 peval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op = do
     (plE0,e0e) <- plD e0; (plE1, e1e) <- plD e1
     pure $ plE0 $ plE1 [Cset (FRel fop' e0e e1e) t]
+peval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just boo <- mB op = do
+    (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
+    pure $ pl0 $ pl1 $ [MB t (Boo boo e0R e1R)]
 
 eval :: E (T ()) -> Temp -> CM [CS]
 eval (LLet _ b e) t = do
@@ -1023,9 +1038,6 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arro
 eval (EApp I (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
     (pl0,e0e) <- plC e0; (pl1,e1e) <- plC e1
     pure $ pl0 $ pl1 [t := Bin cop e0e e1e]
-eval (EApp B (EApp _ (Builtin _ op) e0) e1) t | Just boo <- mB op = do
-    (pl0,e0R) <- plEV e0; (pl1,e1R) <- plEV e1
-    pure $ pl0 $ pl1 $ [t:=Bin boo (Tmp e0R) (Tmp e1R)]
 eval (EApp _ (EApp _ (Builtin _ Max) e0) e1) t = do
     (pl0,t0) <- plEV e0
     -- in case t==t1
@@ -1108,11 +1120,11 @@ frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; fr
 mFop :: Builtin -> Maybe FBin
 mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp; mFop Max=Just FMax; mFop Min=Just FMin; mFop _=Nothing
 
-mB :: Builtin -> Maybe IBin
-mB And=Just IAnd;mB Or=Just IOr;mB Xor=Just IXor;mB _=Nothing
+mB :: Builtin -> Maybe BBin
+mB And=Just AndB;mB Or=Just OrB;mB Xor=Just XorB; mB _=Nothing
 
 mOp :: Builtin -> Maybe IBin
-mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem;mOp And=Just IAnd;mOp Or=Just IOr;mOp Xor=Just IXor;mOp _=Nothing
+mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem;mOp a=BI<$>mB a
 
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing

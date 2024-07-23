@@ -141,6 +141,7 @@ irp (C.Is t)           = IR.Is (cbtemp t)
 irp (C.PAt a)          = IR.BAt (irAt a)
 irp (C.BConst True)    = IR.ConstI 1
 irp (C.BConst False)   = IR.ConstI 0
+irp (C.Boo op e0 e1)   = IB (BI op) (irp e0) (irp e1)
 
 irX :: CFE -> FExp
 irX (C.ConstF x)    = IR.ConstF x
