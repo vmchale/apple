@@ -1086,6 +1086,13 @@ eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, nind tD 
     ss <- writeRF p [x] (PT pR)
     let loop=While done INeq 1 (wX:ss++[If (Is pR) [t:=Tmp i, done:=1] [], i+=1, Cmov (IRel IGeq (Tmp i) (Tmp szR)) done 1])
     pure $ plX ++ szR:=EAt (ADim xsR 0 lX):t:=(-1):done:=0:i:=0:m'p pinch [loop]
+eval (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
+    (plN,nR) <- plC n
+    plX <- eval x t
+    ss <- writeRF f [IT t] (IT t)
+    i <- newITemp
+    let loop=For i 0 ILt nR ss
+    pure $ plX++plN [loop]
 eval (Cond _ p e0 e1) t = snd <$> cond p e0 e1 (IT t)
 eval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
     x <- rtemp tP
@@ -1315,6 +1322,13 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
         loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE++plAcc++szR := EAt (ADim eR 0 l):[loop]
+feval (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
+    (plN,nR) <- plC n
+    plX <- feval x t
+    ss <- writeRF f [FT t] (FT t)
+    i <- newITemp
+    let loop=For i 0 ILt nR ss
+    pure $ plX ++ plN [loop]
 feval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
