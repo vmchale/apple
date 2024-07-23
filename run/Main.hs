@@ -37,6 +37,7 @@ import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, 
 import           System.Directory          (getHomeDirectory)
 import           System.FilePath           ((</>))
 import           System.Info               (arch)
+import           Ty
 
 main :: IO ()
 main = runRepl loop
@@ -275,7 +276,7 @@ tyExprR s = do
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            liftIO $ case tyC i eC of
+            liftIO $ case tyClosed i eC of
                 Left err      -> putDoc (pretty err <> hardline)
                 Right (e,c,_) -> putDoc (prettyC (eAnn e, c) <> hardline)
 
@@ -286,7 +287,7 @@ annR s = do
         Left err    -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            liftIO $ case tyC i eC of
+            liftIO $ case tyClosed i eC of
                 Left err      -> putDoc (pretty err <> hardline)
                 Right (e,_,_) -> putDoc (prettyTyped e <> hardline)
 
