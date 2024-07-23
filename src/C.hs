@@ -105,7 +105,7 @@ instance Fractional CFE where
 
 instance Pretty CFE where pretty=ps 0
 
-data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is BTemp | PAt ArrAcc
+data PE = IRel IRel CE CE | FRel FRel CFE CFE | IUn IUn CE | Is BTemp | PAt ArrAcc | BConst Bool
 
 instance Pretty PE where
     pretty (IRel rel e0 e1) = pretty e0 <+> pretty rel <+> pretty e1
@@ -113,6 +113,8 @@ instance Pretty PE where
     pretty (IUn p e)        = pretty p <+> pretty e
     pretty (Is t)           = "is?" <+> pretty t
     pretty (PAt a)          = "b@" <> pretty a
+    pretty (BConst True)    = "true"
+    pretty (BConst False)   = "false"
 
 instance PS CFE where
     ps _ (FAt a)         = pretty a

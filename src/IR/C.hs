@@ -139,6 +139,8 @@ irp (C.FRel rel x0 x1) = IR.FRel rel (irX x0) (irX x1)
 irp (C.IUn p e)        = IR.IU p (irE e)
 irp (C.Is t)           = IR.Is (cbtemp t)
 irp (C.PAt a)          = IR.BAt (irAt a)
+irp (C.BConst True)    = IR.ConstI 1
+irp (C.BConst False)   = IR.ConstI 0
 
 irX :: CFE -> FExp
 irX (C.ConstF x)    = IR.ConstF x

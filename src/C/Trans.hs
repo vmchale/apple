@@ -984,6 +984,7 @@ plA (Var _ x) = do {st <- gets avars; pure (id, getT st x)}
 plA e         = do {t <- newITemp; (lX,plX) <- aeval e t; pure ((plX++), (lX, t))}
 
 peval :: E (T ()) -> BTemp -> CM [CS]
+peval (BLit _ b) t = pure [MB t (BConst b)]
 peval (EApp _ (Builtin _ Odd) e0) t = do
     (pl,eR) <- plEV e0
     pure $ pl [Cset (IUn IOdd (Tmp eR)) t]
