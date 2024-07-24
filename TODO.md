@@ -22,11 +22,12 @@
 # Features
 - [ ] Use `arc4random_buf` and also `arc4random_uniform`, `random`, `drand48`
 - [ ] special case for `𝔯 0 1 :: float` etc.
+- [ ] `𝔯 0 1 :: Arr sh int` special case, apply bitmask over array?
 - [x] folds/scans shouldn't take seeds
 - [ ] allow type signatures in lambdas?
 - [x] mko executable - compile expression into .o file, with some name
 - [ ] random number generation
-- [ ] lift constants out of loops (precompute)
+- [x] lift constants out of loops (precompute)
 - [x] tuples idk.
   - [ ] float tuple return
 - [ ] reshape arrays
@@ -154,5 +155,7 @@ o → o → o
 - [ ] https://github.com/tonio-m/python_neural_network/blob/main/main.py
 - [ ] https://github.com/profConradi/Python_Simulations/blob/main/Nice_orbits.ipynb
 - [ ] https://github.com/profConradi?tab=repositories
+- [ ] `isPrime`
+- [ ] factors : int -> [(int, int)]
 # Debug
 - [ ] sanity check negative dims
