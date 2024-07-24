@@ -176,6 +176,7 @@ tokens :-
         ℘                        { mkSym Weier }
         §                        { mkSym Para }
         👁️                        { mkSym Eye }
+        "eye."                   { mkSym Eye }
         ♭                        { mkSym B }
         ♮                        { mkSym Sharp }
         ⊻                        { mkSym Xor }

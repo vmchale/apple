@@ -99,6 +99,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     atDot { TokSym $$ AtDot }
     weier { TokSym $$ Weier }
     para { TokSym $$ Para }
+    eye { TokSym $$ L.Eye }
 
     folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
@@ -304,6 +305,7 @@ E :: { E AlexPosn }
   | abs { Builtin $1 Abs }
   | flat { Builtin $1 Flat }
   | addd { Builtin $1 AddDim }
+  | eye { Builtin $1 A.Eye }
 
 {
 

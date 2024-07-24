@@ -216,7 +216,6 @@ ftv :: T.Text -> TyM a (T ())
 ftv n = ft n ()
 
 mapTySubst f (Subst t i sh) = Subst (f t) i sh
-
 mapShSubst f (Subst t i sh) = Subst t i (f sh)
 
 mguIPrep :: IM.IntMap (I a) -> I a -> I a -> Either (TyE a) (IM.IntMap (I a))
@@ -656,6 +655,12 @@ tyB l VMul = do
     pushVarConstraint a l IsNum
     let a' = TVar (void a)
     pure (Arr (i `Cons` j `Cons` Nil) a' ~> Arr (j `Cons` Nil) a' ~> Arr (i `Cons` Nil) a', mempty)
+tyB l Eye = do
+    a <- freshN "a" l
+    i <- IVar () <$> freshN "i" (); j <- IVar () <$> freshN "j" ()
+    pushVarConstraint a l IsNum
+    let a'=TVar (void a)
+    pure (Arr (i `Cons` j `Cons` Nil) a', mempty)
 tyB _ Sin = pure (F ~> F, mempty)
 tyB _ Cos = pure (F ~> F, mempty)
 tyB _ Tan = pure (F ~> F, mempty)
