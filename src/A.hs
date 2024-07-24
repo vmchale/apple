@@ -193,6 +193,7 @@ instance Pretty Builtin where
     pretty Odd       = "odd."
     pretty Mod       = "mod"
     pretty IOf       = "@."
+    pretty Filt      = "§"
     pretty Abs       = "abs."
     pretty Di        = "di."
     pretty RevE      = "~"
@@ -201,10 +202,13 @@ instance Pretty Builtin where
     pretty Xor       = "⊻"
     pretty And       = "∧"
     pretty Or        = "∨"
+    pretty Ices      = "℘"
+    pretty Eye       = "👁️"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
-             | Max | Min | Neg | Sqrt | T | Di | Flat | AddDim
+             | Max | Min | Neg | Sqrt | T | Di
+             | Flat | AddDim | Ices | Filt | Eye
              | IRange | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
@@ -299,6 +303,8 @@ isBinOp IOf    = True
 isBinOp And    = True
 isBinOp Or     = True
 isBinOp Xor    = True
+isBinOp Filt   = True
+isBinOp Ices   = True
 isBinOp _      = False
 
 instance Pretty (E a) where pretty=ps 0

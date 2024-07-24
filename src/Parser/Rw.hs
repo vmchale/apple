@@ -30,6 +30,10 @@ isBinOp Init   = False
 isBinOp Even   = False
 isBinOp Odd    = False
 isBinOp Abs    = False
+isBinOp Eye    = False
+isBinOp Flat   = False
+isBinOp AddDim = False
+isBinOp RevE   = False
 isBinOp _      = True
 
 fi :: Builtin -> Int
