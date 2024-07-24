@@ -29,6 +29,7 @@ import           Hs.FFI
 import           L
 import           Nm
 import           Prettyprinter             (hardline, pretty, tupled, (<+>))
+import           Prettyprinter.Ext
 import           Prettyprinter.Render.Text (putDoc)
 import           QC
 import           Sys.DL
@@ -111,7 +112,12 @@ appleCompletions ("sa:", "")      = pure ("sa:", [simpleCompletion "m"])
 appleCompletions ("msa:", "")     = pure ("msa:", [simpleCompletion ""])
 appleCompletions ("na:", "")      = pure ("na:", [simpleCompletion "n"])
 appleCompletions ("nna:", "")     = pure ("nna:", [simpleCompletion ""])
-appleCompletions ("q:", "")       = pure ("q:", cyclicSimple ["uit", ""])
+appleCompletions ("l:", "")       = pure ("l:", cyclicSimple ["ist"])
+appleCompletions ("il:", "")      = pure ("il:", cyclicSimple ["st"])
+appleCompletions ("sil:", "")     = pure ("sil:", cyclicSimple ["t"])
+appleCompletions ("tsil:", "")    = pure ("tsil:", cyclicSimple [])
+appleCompletions ("q:", "")       = pure ("q:", cyclicSimple ["uit", "c", ""])
+appleCompletions ("cq:", "")      = pure ("cq:", [simpleCompletion ""])
 appleCompletions ("uq:", "")      = pure ("uq:", [simpleCompletion "it"])
 appleCompletions ("iuq:", "")     = pure ("iuq:", [simpleCompletion "t"])
 appleCompletions ("tiuq:", "")    = pure ("tiuq:", [simpleCompletion ""])
@@ -150,12 +156,18 @@ loop = do
         Just (":inspect":e)    -> inspect (unwords e) *> loop
         Just (":compile":e)    -> benchC (unwords e) *> loop
         Just (":yank":f:[fp])  -> iCtx f fp *> loop
+        Just [":list"]         -> listCtx *> loop
         Just (":y":f:[fp])     -> iCtx f fp *> loop
         Just (":graph":e)      -> graph (unwords e) *> loop
         Just (":qc":e)         -> qc (unwords e) *> loop
         Just (":quickcheck":e) -> qc (unwords e) *> loop
         Just e                 -> printExpr (unwords e) *> loop
         Nothing                -> pure ()
+
+listCtx :: Repl AlexPosn ()
+listCtx = do
+    bs <- lift $ gets ee
+    liftIO $ putDoc (prettyLines (pretty.fst<$>bs)<>hardline)
 
 graph :: String -> Repl AlexPosn ()
 graph s = liftIO $ case dumpX86Ass (ubs s) of
@@ -169,6 +181,7 @@ showHelp = liftIO $ putStr $ concat
     , helpOption ":ann" "<expression>" "Annotate with types"
     , helpOption ":bench, :b" "<expression>" "Benchmark an expression"
     , helpOption ":list" "" "List all names that are in scope"
+    , helpOption ":qc" "<proposition>" "Property test"
     , helpOption ":quit, :q" "" "Quit REPL"
     , helpOption ":yank, :y" "<fn> <file>" "Read file"
     , helpOption "\\l" "" "Reference card"
