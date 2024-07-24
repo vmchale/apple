@@ -1079,6 +1079,11 @@ eval (EApp _ (Builtin _ Last) xs) t = do
 eval (EApp _ (Builtin _ Size) xs) t | Just (_, 1) <- tRnk (eAnn xs) = do
     (plE, (l, xsR)) <- plA xs
     pure $ plE [t := EAt (ADim xsR 0 l)]
+eval (EApp _ (Builtin _ Dim) xs) t | Arr (Ix _ i `Cons` _) _ <- eAnn xs = do
+    pure [t:=ConstI (fromIntegral i)]
+eval (EApp _ (Builtin _ Dim) xs) t = do
+    (plE, (l, xsR)) <- plA xs
+    pure $ plE [t := EAt (ADim xsR 0 l)]
 eval (EApp _ (Builtin _ Size) xs) t = do
     (plE, (l, xsR)) <- plA xs
     rnkR <- newITemp
