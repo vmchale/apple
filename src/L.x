@@ -127,6 +127,7 @@ tokens :-
         "?"                      { mkSym QuestionMark }
         ",."                     { mkSym CondSplit }
         ⸎                        { mkSym Cor }
+        ×                        { mkSym IxTimes }
         ⟨                        { mkSym ArrL }
         ⟩                        { mkSym ArrR }
         "_."                     { mkSym SymLog }
@@ -285,7 +286,7 @@ get_pos = gets_alex alex_pos
 alexEOF = EOF <$> get_pos
 
 data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Pow
-         | LSqBracket | RSqBracket | LBrace | RBrace | LParen | RParen | Lam
+         | LSqBracket | RSqBracket | LBrace | RBrace | IxTimes | LParen | RParen | Lam
          | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
          | CondSplit | Cor | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
@@ -374,6 +375,7 @@ instance Pretty Sym where
     pretty Or           = "∨"
     pretty Weier        = "℘"
     pretty Para         = "§"
+    pretty IxTimes      = "×"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

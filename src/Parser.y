@@ -138,6 +138,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     nil { TokB $$ BuiltinNil }
     cons { TokB $$ BuiltinCons }
     arr { TokB $$ BuiltinArr }
+    ixTimes { TokSym $$ IxTimes }
     vec { TokB $$ BuiltinVec }
     matrix { TokB $$ BuiltinM }
     int { TokB $$ BuiltinInt }
@@ -194,6 +195,7 @@ Sh :: { Sh AlexPosn }
    | I cons Sh { A.Cons $1 $3 }
    | name { SVar $1 }
    | parens(Sh) { $1 }
+   | parens(sepBy(I, ixTimes)) { foldr A.Cons Nil $1 }
 
 T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }

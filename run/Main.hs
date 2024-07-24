@@ -208,6 +208,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "~" "reverse" "⊻,∧,∨" "logical"
     , lOption "♭" "flatten" "♮" "add dimension"
     , lOption "℘" "indices of" "§" "filter"
+    , lOption "👁️" "identity m" "(i × j)" "dimensions"
     ]
 
 lOption op0 desc0 op1 desc1 =
