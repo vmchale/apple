@@ -664,12 +664,12 @@ tyB l Eye = do
 tyB _ Sin = pure (F ~> F, mempty)
 tyB _ Cos = pure (F ~> F, mempty)
 tyB _ Tan = pure (F ~> F, mempty)
-tyB l Ices = do
+tyB _ Ices = do
     a <- ftv "a"
     i <- IVar () <$> freshN "i" ()
     n <- IEVar () <$> freshN "n" ()
     pure ((a ~> B) ~> Arr (vx i) a ~> Arr (vx n) I, mempty)
-tyB l Filt = do
+tyB _ Filt = do
     a <- ftv "a"
     i <- IVar () <$> freshN "i" ()
     n <- IEVar () <$> freshN "n" ()
