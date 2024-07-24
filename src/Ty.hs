@@ -657,10 +657,10 @@ tyB l VMul = do
     pure (Arr (i `Cons` j `Cons` Nil) a' ~> Arr (j `Cons` Nil) a' ~> Arr (i `Cons` Nil) a', mempty)
 tyB l Eye = do
     a <- freshN "a" l
-    i <- IVar () <$> freshN "i" (); j <- IVar () <$> freshN "j" ()
+    i <- IVar () <$> freshN "i" ()
     pushVarConstraint a l IsNum
     let a'=TVar (void a)
-    pure (Arr (i `Cons` j `Cons` Nil) a', mempty)
+    pure (Arr (i `Cons` i `Cons` Nil) a', mempty)
 tyB _ Sin = pure (F ~> F, mempty)
 tyB _ Cos = pure (F ~> F, mempty)
 tyB _ Tan = pure (F ~> F, mempty)
