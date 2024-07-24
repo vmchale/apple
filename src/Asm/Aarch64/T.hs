@@ -315,6 +315,12 @@ feval (IR.FB Op.FMinus e0 (IR.FB Op.FTimes e1 e2)) t = do
 feval (IR.FB Op.FMinus (IR.ConstF 0) e) t = do
     (plE,i) <- plF e
     pure $ plE [Fneg () (fabsReg t) i]
+feval (IR.FB Op.FTimes (IR.ConstF (-1)) e) t = do
+    (plE,i) <- plF e
+    pure $ plE [Fneg () (fabsReg t) i]
+feval (IR.FB Op.FTimes e (IR.ConstF (-1))) t = do
+    (plE,i) <- plF e
+    pure $ plE [Fneg () (fabsReg t) i]
 feval (IR.FB fop e0 e1) t | Just isn <- mFop fop = do
     (plE0,r0) <- plF e0; (plE1,r1) <- plF e1
     pure $ plE0 $ plE1 [isn () (fabsReg t) r0 r1]
