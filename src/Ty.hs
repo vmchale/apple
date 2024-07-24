@@ -264,6 +264,10 @@ mgSh l inp (Rev sh) (Rev sh') = mgShPrep l inp sh sh'
 mgSh l inp (Cat sh0 sh0') (Cat sh1 sh1') = do
     s <- mgShPrep l inp sh0 sh1
     mgShPrep l s sh0' sh1'
+mgSh l inp (Rev sh) sh' | (is, Nil) <- unroll sh' = do
+    mgShPrep l inp sh (roll Nil$reverse is)
+mgSh l inp sh (Rev sh') | (is, Nil) <- unroll sh' = do
+    mgShPrep l inp (roll Nil$reverse is) sh
 
 mguPrep :: (a, E a) -> Subst a -> T a -> T a -> Either (TyE a) (Subst a)
 mguPrep l s t0 t1 =
