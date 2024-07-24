@@ -120,8 +120,9 @@ f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 bT :: Integral b => T a -> b
 bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT B=1; bT Arr{}=8
 
-bSz :: Integral b => T a -> Maybe b
+bSz, rSz :: Integral b => T a -> Maybe b
 bSz (P ts)=sum<$>traverse bSz ts; bSz F=Just 8; bSz I=Just 8; bSz B=Just 1; bSz _=Nothing
+rSz F=Just 8; rSz I=Just 8; rSz B=Just 1; rSz _=Nothing
 
 szT = scanl' (\off ty -> off+bT ty::Int64) 0
 
@@ -273,7 +274,7 @@ wt p (IT t) = Wr p (Tmp t)
 wt p (FT t) = WrF p (FTmp t)
 wt p (PT t) = WrP p (Is t)
 
-ra (FT f)=FA f; ra (IT r)=IPA r
+ra (FT f)=FA f; ra (IT r)=IPA r; ra (PT r)=BA r
 
 eeval :: E (T ()) -> RT -> CM [CS]
 eeval e (IT t) = eval e t
@@ -747,12 +748,12 @@ aeval (EApp _ (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isΠ tX, sz <- b
     (plXs, (lX, xsR)) <- plA xs
     (a,aV) <- vSz t (Tmp nR) sz
     pure (Just a, plXs$m'sa xR mSz++plX++nϵR := EAt (ADim xsR 0 lX):nR := (Tmp nϵR+1):aV++[CpyE (AElem t 1 (Tmp nϵR) (Just a) sz) (TupM xR Nothing) 1 sz, CpyE (AElem t 1 0 (Just a) sz) (AElem xsR 1 0 lX sz) (Tmp nϵR) sz]++m'pop mSz)
-aeval (EApp ty (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isIF tX = do
+aeval (EApp ty (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, Just xSz <- rSz tX = do
     xR <- rtemp tX; nR <- newITemp
-    (a,aV) <- v8 t (Tmp nR)
+    (a,aV) <- vSz t (Tmp nR) xSz
     i <- newITemp
     putN <- eval n nR; putX <- eeval x xR
-    let loop=for ty i 0 ILt (Tmp nR) [wt (AElem t 1 (Tmp i) (Just a) 8) xR]
+    let loop=for ty i 0 ILt (Tmp nR) [wt (AElem t 1 (Tmp i) (Just a) xSz) xR]
     pure (Just a, putN++aV++putX++[loop])
 aeval (EApp ty (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     xR <- newITemp; nR <- newITemp; k <- newITemp
@@ -1012,6 +1013,15 @@ peval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op 
 peval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just boo <- mB op = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
     pure $ pl0 $ pl1 $ [MB t (Boo boo e0R e1R)]
+peval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isB tX = do
+    x <- nBT
+    szR <- newITemp
+    i <- newITemp
+    (plE, (l, aP)) <- plA e
+    ss <- writeRF op [PT acc, PT x] (PT acc)
+    let loopBody=MB x (PAt (AElem aP 1 (Tmp i) l 1)):ss
+        loop=for1 (eAnn e) i 1 ILt (Tmp szR) loopBody
+    pure $ plE$szR := EAt (ADim aP 0 l):MB acc (PAt (AElem aP 1 0 l 1)):[loop]
 
 eval :: E (T ()) -> Temp -> CM [CS]
 eval (LLet _ b e) t = do
@@ -1106,12 +1116,12 @@ eval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <- 
     x <- rtemp tP; y <- rtemp tQ
     szR <- newITemp
     i <- newITemp
-    (plP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
+    (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
     ss <- writeRF op [IT acc, x, y] (IT acc)
     let step = mt (AElem pR 1 (Tmp i) lP 8) x:mt (AElem qR 1 (Tmp i) lQ 8) y:ss
         loop = for1 (eAnn p) i 1 ILt (Tmp szR) step
     seed <- writeRF zop [x,y] (IT acc)
-    pure $ plP$plQ$szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:mt (AElem qR 1 0 lQ 8) y:seed++[loop]
+    pure $ plPP$plQ$szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:mt (AElem qR 1 0 lQ 8) y:seed++[loop]
 eval e _          = error (show e)
 
 frel :: Builtin -> Maybe FRel
@@ -1253,12 +1263,12 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <-
     x <- rtemp tP; y <- rtemp tQ
     szR <- newITemp
     i <- newITemp
-    (plP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
+    (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
     ss <- writeRF op [FT acc, x, y] (FT acc)
     let step = mt (AElem pR 1 (Tmp i) lP 8) x:mt (AElem qR 1 (Tmp i) lQ 8) y:ss
         loop = for1 tP i 1 ILt (Tmp szR) step
     seed <- writeRF zop [x,y] (FT acc)
-    pure $ plP$plQ$szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:mt (AElem qR 1 0 lQ 8) y:seed++[loop]
+    pure $ plPP$plQ$szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:mt (AElem qR 1 0 lQ 8) y:seed++[loop]
 feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isF tX = do
     x <- newFTemp
     szR <- newITemp
