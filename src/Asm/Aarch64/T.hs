@@ -365,6 +365,12 @@ eval (IR.IB Op.IAsl e (IR.ConstI i)) t = do
 eval (IR.IB Op.IMinus (IR.ConstI 0) e) t = do
     (plE,r) <- plI e
     pure $ plE [Neg () (absReg t) r]
+eval (IR.IB Op.ITimes (IR.ConstI (-1)) e) t = do
+    (plE,r) <- plI e
+    pure $ plE [Neg () (absReg t) r]
+eval (IR.IB Op.ITimes e (IR.ConstI (-1))) t = do
+    (plE,r) <- plI e
+    pure $ plE [Neg () (absReg t) r]
 eval (IR.IB Op.IRem e0 e1) t = do
     r2 <- nextR
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
