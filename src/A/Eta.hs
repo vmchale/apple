@@ -34,6 +34,7 @@ tuck (Lam l n e) = let (f, e') = tuck e in (Lam l n.f, e')
 tuck e           = (id, e)
 
 ηAt :: E (T ()) -> RM (E (T ()))
+ηAt (EApp t0 (EApp t1 ho@(Builtin _ Gen) seed) op) = EApp t0 <$> EApp t1 ho <$> ηAt seed <*> η op
 ηAt (EApp t ho@(Builtin _ Scan{}) op)  = EApp t ho <$> η op
 ηAt (EApp t ho@(Builtin _ ScanS{}) op) = EApp t ho <$> η op
 ηAt (EApp t ho@(Builtin _ Zip{}) op)   = EApp t ho <$> η op
