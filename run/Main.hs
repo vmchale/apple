@@ -38,6 +38,7 @@ import           System.Directory          (getHomeDirectory)
 import           System.FilePath           ((</>))
 import           System.Info               (arch)
 import           Ty
+import           Ty.M
 
 main :: IO ()
 main = runRepl loop
@@ -426,7 +427,7 @@ printExpr s = do
         Right (eP, i) -> do
             eC <- eRepl eP
             case first3 (fmap rLi) <$> tyC i eC of
-                Left RErr{} -> liftIO $ case tyClosed i eC of
+                Left (RErr MR{}) -> liftIO $ case tyClosed i eC of
                     Left e -> putDoc (pretty e <> hardline)
                     Right (e, _, _) ->
                         let t=eAnn e in putDoc (pretty e <+> ":" <+> pretty t <> hardline)

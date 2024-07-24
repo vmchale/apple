@@ -34,6 +34,7 @@ library
         P
         A
         Ty
+        Ty.M
         Nm
         U
         I
@@ -60,7 +61,6 @@ library
         R.R
         Parser.Rw
         Ty.Clone
-        Ty.M
         A.Eta
         A.Opt
         Op
