@@ -36,6 +36,7 @@ optE (FRel rel fe fe')       = FRel rel (optF fe) (optF fe')
 optE (IU u e)                = IU u (optE e)
 optE (IRFloor fe)            = IRFloor (optF fe)
 optE (EAt p)                 = EAt (optP p)
+optE (BAt p)                 = BAt (optP p)
 optE e                       = e
 
 optF :: FExp -> FExp

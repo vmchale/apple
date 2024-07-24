@@ -161,6 +161,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | LdrRL { ann :: a, rDest :: reg, lSrc :: Int }
                         | MovK { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                         | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
+                        | LdrB { ann :: a, rDest :: reg, aSrc :: Addr reg }
                         | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
                         | StrB { ann :: a, rSrc :: reg, aDest :: Addr reg }
                         | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
@@ -228,6 +229,7 @@ mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
 mapR f (MovRR l r0 r1)       = MovRR l (f r0) (f r1)
 mapR f (MovRC l r c)         = MovRC l (f r) c
 mapR f (Ldr l r a)           = Ldr l (f r) (f <$> a)
+mapR f (LdrB l r a)          = LdrB l (f r) (f <$> a)
 mapR f (Str l r a)           = Str l (f r) (f <$> a)
 mapR f (StrB l r a)          = StrB l (f r) (f<$>a)
 mapR f (LdrD l xr a)         = LdrD l xr (f <$> a)
@@ -298,6 +300,7 @@ mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
 mapFR _ (MovRR l r0 r1)       = MovRR l r0 r1
 mapFR _ (MovRC l r0 c)        = MovRC l r0 c
 mapFR _ (Ldr l r a)           = Ldr l r a
+mapFR _ (LdrB l r a)          = LdrB l r a
 mapFR _ (Str l r a)           = Str l r a
 mapFR _ (StrB l r a)          = StrB l r a
 mapFR f (LdrD l xr a)         = LdrD l (f xr) a
@@ -386,6 +389,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (MovRR _ r0 r1)        = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
     pretty (MovRC _ r u)          = i4 ("mov" <+> pretty r <> "," <+> hexd u)
     pretty (Ldr _ r a)            = i4 ("ldr" <+> pretty r <> "," <+> pretty a)
+    pretty (LdrB _ r a)           = i4 ("ldrb" <+> pretty r <> "," <+> pretty a)
     pretty (Str _ r a)            = i4 ("str" <+> pretty r <> "," <+> pretty a)
     pretty (StrB _ r a)           = i4 ("strb" <+> pretty r <> "," <+> pretty a)
     pretty (LdrD _ xr a)          = i4 ("ldr" <+> pretty xr <> "," <+> pretty a)
