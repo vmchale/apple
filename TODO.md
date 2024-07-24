@@ -5,8 +5,10 @@
 - [x] `.🍎` file extension (`.🍏`)
   - [ ] ⍳ (apl iota)
   - [ ] ⩪ for filter
-  - [ ] ℘ ⊲ ⊳ ⪫ ⪪
-  - [ ] ⸎
+  - [x] § is fun I love typographers
+  - [x] ℘
+  - [ ] ⊲ ⊳ ⪫ ⪪
+  - [x] ⸎
   - [ ] ‰
   - [ ] https://en.wikipedia.org/wiki/Guillemet#Encoding
   - [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
@@ -46,15 +48,12 @@
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
 - [ ] https://www.compart.com/en/unicode/U+1D66
   - [ ] Ϟ (koppa), Ϡ (sampi)
-- [ ] § is fun I love typographers
 ## Optimization
 - [ ] arrays in assembler: register indirection?
 ```
 T13 = A_0
 T16 = T13.dim[0]
 ```
-- [x] `neg` instruction, not `0-`...
-- [x] Back/forward loops (compare to 0 or whatever)
 - [ ] Break dependency chains: use e.g. four accumulators per loop cycle when
   summing float array (see agner fog)
 # Performance
