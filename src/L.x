@@ -173,6 +173,8 @@ tokens :-
         ˙                        { mkSym A1 }
         "|"                      { mkSym Mod }
         "@."                     { mkSym AtDot }
+        ℘                        { mkSym Weier }
+        §                        { mkSym Para }
         👁️                        { mkSym Eye }
         ♭                        { mkSym B }
         ♮                        { mkSym Sharp }
@@ -289,7 +291,8 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | Init
          | Geq | Gt | Eq | Neq | Leq | Lt
-         | FoldA | FoldS | Tilde | Cyc | A1 | Mod | AtDot | Eye | B | Sharp
+         | FoldA | FoldS | Tilde | Cyc | A1 | Mod
+         | AtDot | Eye | Para | Weier | B | Sharp
          | And | Or | Xor
          deriving (Generic, NFData)
 
@@ -368,6 +371,8 @@ instance Pretty Sym where
     pretty Xor          = "⊻"
     pretty And          = "∧"
     pretty Or           = "∨"
+    pretty Weier        = "℘"
+    pretty Para         = "§"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

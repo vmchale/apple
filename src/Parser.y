@@ -97,6 +97,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     iat { TokSym $$ L.A1 }
     mod { TokSym $$ L.Mod }
     atDot { TokSym $$ AtDot }
+    weier { TokSym $$ Weier }
+    para { TokSym $$ Para }
 
     folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
@@ -235,6 +237,8 @@ BBin :: { E AlexPosn }
      | atDot { Builtin $1 IOf }
      | and { Builtin $1 A.And } | or { Builtin $1 A.Or }
      | xor { Builtin $1 A.Xor }
+     | weier { Builtin $1 Ices }
+     | para { Builtin $1 Filt }
 
 B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }

@@ -650,6 +650,16 @@ tyB l VMul = do
 tyB _ Sin = pure (F ~> F, mempty)
 tyB _ Cos = pure (F ~> F, mempty)
 tyB _ Tan = pure (F ~> F, mempty)
+tyB l Ices = do
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
+    n <- IEVar () <$> freshN "n" ()
+    pure ((a ~> B) ~> Arr (vx i) a ~> Arr (vx n) I, mempty)
+tyB l Filt = do
+    a <- TVar <$> freshN "a" ()
+    i <- IVar () <$> freshN "i" ()
+    n <- IEVar () <$> freshN "n" ()
+    pure ((a ~> B) ~> Arr (vx i) a ~> Arr (vx n) I, mempty)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do
