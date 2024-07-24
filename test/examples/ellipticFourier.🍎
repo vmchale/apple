@@ -1,4 +1,4 @@
-  λxs.λys.λN.
+λxs.λys.λN.
   { sum ← [(+)/x]
   ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
