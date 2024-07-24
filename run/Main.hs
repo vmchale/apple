@@ -425,6 +425,10 @@ printExpr s = do
         Right (eP, i) -> do
             eC <- eRepl eP
             case first3 (fmap rLi) <$> tyC i eC of
+                Left RErr{} -> liftIO $ case tyClosed i eC of
+                    Left e -> putDoc (pretty e <> hardline)
+                    Right (e, _, _) ->
+                        let t=eAnn e in putDoc (pretty e <+> ":" <+> pretty t <> hardline)
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
                     c <- lift $ gets mf
