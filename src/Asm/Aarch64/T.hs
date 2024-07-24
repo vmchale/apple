@@ -267,7 +267,6 @@ feval (IR.ConstF d) t = do
     let r=IReg i
         w=castDoubleToWord64 d
     pure $ mw64 w r ++ [FMovDR () (fabsReg t) r]
-feval (IR.FAt (IR.AP tS (Just (IR.ConstI i)) _)) tD | Just i8 <- mp i = pure [LdrD () (fabsReg tD) (RP (absReg tS) i8)]
 -- https://litchie.com/2020/04/sine
 feval (IR.FU Op.FSin e) t = do
     plE <- feval e t
@@ -322,6 +321,7 @@ feval (IR.FB fop e0 e1) t | Just isn <- mFop fop = do
 feval (IR.FU Op.FAbs e) t = do
     (plE,i) <- plF e
     pure $ plE [Fabs () (fabsReg t) i]
+feval (IR.FAt (IR.AP tS (Just (IR.ConstI i)) _)) tD | Just i8 <- mp i = pure [LdrD () (fabsReg tD) (RP (absReg tS) i8)]
 feval (IR.FAt (IR.AP tB (Just (IR.IB Op.IAsl eI (IR.ConstI 3))) _)) tD = do
     (plE,i) <- plI eI
     pure $ plE [LdrD () (fabsReg tD) (BI (absReg tB) i Three)]
@@ -343,7 +343,6 @@ eval (IR.ConstI 0) tD = pure [ZeroR () (absReg tD)]
 eval (IR.ConstI i) tD | Just u <- mu16 i = pure [MovRC () (absReg tD) u]
 eval (IR.ConstI i) tD = pure $ mw64 (fromIntegral i) (absReg tD)
 eval (IR.Is p) tD = pure [MovRR () (absReg tD) (absReg p)]
-eval (IR.EAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [Ldr () (absReg tD) (RP (absReg tB) p)]
 eval (IR.IB Op.IPlus (IR.IB Op.IAsl e0 (IR.ConstI i)) e1) t | Just u <- ms i = do
     r0 <- nextI; r1 <- nextI
     plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
@@ -371,6 +370,8 @@ eval (IR.IB op e0 e1) t | Just isn <- mIop op = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [isn () (absReg t) r0 r1]
 eval (IR.IRFloor (IR.FReg r)) t = pure [Fcvtms () (absReg t) (fabsReg r)]
+eval (IR.EAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [Ldr () (absReg tD) (RP (absReg tB) p)]
+eval (IR.BAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [LdrB () (absReg tD) (RP (absReg tB) p)]
 eval (IR.EAt (IR.AP rB (Just (IR.IB Op.IAsl eI (IR.ConstI 3))) _)) t = do
     (plE,i) <- plI eI
     pure $ plE [Ldr () (absReg t) (BI (absReg rB) i Three)]
@@ -379,6 +380,9 @@ eval (IR.EAt (IR.AP rB Nothing _)) t = do
 eval (IR.EAt (IR.AP rB (Just e) _)) t = do
     (plE,i) <- plI e
     pure $ plE [Ldr () (absReg t) (BI (absReg rB) i Zero)]
+eval (IR.BAt (IR.AP rB (Just e) _)) t = do
+    (plE,i) <- plI e
+    pure $ plE [LdrB () (absReg t) (BI (absReg rB) i Zero)]
 eval (IR.IB Op.IAsr (IR.Reg r) (IR.ConstI i)) t | Just s <- ms i = pure [Asr () (absReg t) (absReg r) s]
 eval (IR.LA n) t    = pure [LdrRL () (absReg t) n]
 eval e _            = error (show e)
