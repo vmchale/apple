@@ -13,6 +13,7 @@ typedef double F;typedef int64_t J; typedef void* U; typedef bool B;
 
 typedef struct Af { J rnk; J* dim; F* xs; } Af;
 typedef struct Ai { J rnk; J* dim; J* xs; } Ai;
+typedef struct Ab { J rnk; J* dim; B* xs; } Ab;
 
 static U poke_af (Af x) {
     J rnk = x.rnk;

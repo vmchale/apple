@@ -12,7 +12,7 @@ import           Prettyprinter.Ext
 data CType = CR | CI | CB | Af | Ai | Ab
 
 instance Pretty CType where
-    pretty CR="F"; pretty CI="I"; pretty CB="B"; pretty Af="Af"; pretty Ai="Ai"; pretty Ab="Ab"
+    pretty CR="F"; pretty CI="J"; pretty CB="B"; pretty Af="Af"; pretty Ai="Ai"; pretty Ab="Ab"
 
 data CF = CF !T.Text [CType] CType
 
@@ -26,11 +26,12 @@ instance Pretty CF where
                 <> pretty out <+> "res" <> "=" <> ax out (pretty n<>tupled (l.snd<$>args))<>";"
                 <> foldMap f args
                 <> "R res;")
-        where px CR="F"; px CI="I"; px _="U"
-              ax Af=("poke_af"<>).parens;ax Ai=("poke_ai"<>).parens;ax _=id
+        where px CR="F"; px CI="J"; px CB="B"; px _="U"
+              ax Af=("poke_af"<>).parens;ax Ai=("poke_ai"<>).parens;ax Ab=error "not implemented.";ax _=id
               d (t,var) = px t <+> l var <> "=" <> ax t (pretty var) <> ";"
               f (Af,var) = "free" <> parens (l var) <> ";"
               f (Ai,var) = "free" <> parens (l var) <> ";"
+              f (Ab,var) = "free" <> parens (l var) <> ";"
               f _        = mempty
               l var = "_" <> pretty var
 
