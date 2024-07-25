@@ -95,7 +95,7 @@ isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
 isR B=True; isR t=isIF t
 nind I=True; nind F=True; nind P{}=True; nind B{}=True; nind _=False
-isΠIF (P ts)=all isIF ts; isΠIF _=False
+isΠR (P ts)=all isR ts; isΠR _=False
 isΠ P{}=True; isΠ _=False
 
 rel :: Builtin -> Maybe IRel
@@ -222,7 +222,7 @@ writeF (Lam _ x e) (BA r:rs) ret = do
     writeF e rs ret
 writeF e [] (IT r) | isArr (eAnn e) = aeval e r
 writeF e [] (IT r) | isI (eAnn e) = (Nothing,)<$>eval e r
-writeF e [] (IT r) | isΠIF (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
+writeF e [] (IT r) | isΠR (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
 writeF e [] (FT r) = (Nothing,)<$>feval e r
 writeF e [] (PT r) = (Nothing,)<$>peval e r
 
@@ -923,7 +923,7 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | Just ty <- if1 
     ss <- writeRF op [acc] acc
     let loop=for oTy i 0 ILt (Tmp nR) (wt (AElem t 1 (Tmp i) (Just a) 8) acc:ss)
     pure (Just a, plS++plN++aV++[loop])
-aeval (EApp ty (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠIF (eAnn seed) = do
+aeval (EApp ty (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠR (eAnn seed) = do
     nR <- newITemp; plN <- eval n nR; i <- newITemp
     acc <- newITemp
     (szs,mP,_,plS) <- πe seed acc
@@ -1381,6 +1381,7 @@ m'sa t = maybe []  ((:[]).Sa t)
             case eAnn e of
                 F     -> do {f <- newFTemp; plX <- feval e f; pure (Nothing, plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)])}
                 I     -> do {i <- newITemp; plX <- eval e i; pure (Nothing, plX++[Wr (Raw t (ConstI off) Nothing 1) (Tmp i)])}
+                B     -> do {r <- nBT; plX <- peval e r; pure (Nothing, plX++[WrP (Raw t (ConstI off) Nothing 1) (Is r)])}
                 Arr{} -> do {r <- newITemp ; (l,pl) <- aeval e r; pure (l, pl++[Wr (Raw t (ConstI off) Nothing 1) (Tmp r)])}) es offs
     pure (offs, Just szE, catMaybes ls, concat ss)
 πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
@@ -1393,6 +1394,16 @@ m'sa t = maybe []  ((:[]).Sa t)
 πe (LLet _ b e) t = do
     ss <- llet b
     fourth (ss++) <$> πe e t
+πe (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
+    pre <- newITemp
+    temp <- newITemp
+    (plN,nR) <- plC n
+    (offs, mSz, _, plX) <- πe x pre
+    let sz=last offs; szE=ConstI sz
+    (_, ss) <- writeF f [IPA pre] (IT t)
+    i <- newITemp
+    let loop=For i 0 ILt nR (ss++[CpyE (TupM temp Nothing) (TupM t Nothing) 1 sz, CpyE (TupM pre Nothing) (TupM temp Nothing) 1 sz])
+    pure (offs, Just szE, [], m'sa pre mSz++plX++plN [Sa temp szE, loop, Pop szE]++m'pop mSz)
 πe e _ = error (show e)
 
 fourth f ~(x,y,z,w) = (x,y,z,f w)
