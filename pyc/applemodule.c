@@ -52,6 +52,7 @@ PyObject* npy_i(U x) {
     DO(i,rnk,t*=i_p[i+1];dims[i]=(npy_intp)i_p[i+1]);
     S sz=8*t;
     U data=malloc(sz);
+    // TODO figure out how to do this without copying
     memcpy(data,i_p+rnk+1,sz);
     PyObject* res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);
     PyArray_ENABLEFLAGS((PyArrayObject*)res,NPY_ARRAY_OWNDATA);
@@ -144,7 +145,8 @@ static PyObject* apple_jit(PyObject *self, PyObject *args) {
         free(err);R NULL;
     };
     U fp;S f_sz;U s;
-    fp=apple_compile((P)&malloc,(P)&free,(P)&drand48,(P)&exp,(P)&log,(P)&pow,inp,&f_sz,&s);
+    JC jc={(P)&malloc,(P)&free,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
+    fp=apple_compile(&jc,inp,&f_sz,&s);
     PyCacheObject* cc=PyObject_New(PyCacheObject, &CacheType);
     ffi_cif* ffi=apple_ffi(ty);
     cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;

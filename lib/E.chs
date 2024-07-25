@@ -24,6 +24,7 @@ import System.Info (arch)
 #include <apple.h>
 
 data FnTy
+data JitCtx
 
 {# fun memcpy as ^ { castPtr `Ptr a', castPtr `Ptr a', coerce `CSize' } -> `Ptr a' castPtr #}
 
@@ -92,14 +93,22 @@ apple_ty src errPtr = do
 cfp = case arch of {"aarch64" -> actxFunP; "x86_64" -> ctxFunP.fst}
 jNull x p = case x of {Nothing -> poke p nullPtr; Just xϵ -> poke p xϵ}
 
-apple_compile :: IntPtr -> IntPtr -> IntPtr -> IntPtr -> IntPtr -> IntPtr -> CString -> Ptr CSize -> Ptr (Ptr Word64) -> IO (Ptr Word8)
-apple_compile (IntPtr m) (IntPtr f) (IntPtr r) (IntPtr e) (IntPtr l) (IntPtr p) src szPtr sPtr = do
+apple_compile :: Ptr JitCtx -> CString -> Ptr CSize -> Ptr (Ptr Word64) -> IO (Ptr Word8)
+apple_compile jp src szPtr sPtr = do
+    m <- il <$> {# get JC->ma #} jp
+    f <- il <$> {# get JC->free #} jp
+    r <- il <$> {# get JC->r #} jp
+    e <- il <$> {# get JC->e #} jp
+    l <- il <$> {# get JC->log #} jp
+    p <- il <$> {# get JC->pow #} jp
     bSrc <- BS.unsafePackCString src
     (sz, fp, aa) <- cfp ((m,f,r), (e,l,p)) (BSL.fromStrict bSrc)
     jNull aa sPtr
     poke szPtr (fromIntegral sz) $> castFunPtrToPtr fp
+  where
+    il = fromIntegral
 
-foreign export ccall apple_compile :: IntPtr -> IntPtr -> IntPtr -> IntPtr -> IntPtr -> IntPtr -> CString -> Ptr CSize -> Ptr (Ptr Word64) -> IO (Ptr Word8)
+foreign export ccall apple_compile :: Ptr JitCtx -> CString -> Ptr CSize -> Ptr (Ptr Word64) -> IO (Ptr Word8)
 foreign export ccall apple_printty :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_dumpasm :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_dumpir :: CString -> Ptr CString -> IO CString
