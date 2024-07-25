@@ -1230,10 +1230,13 @@ feval (FLit _ x) t = pure [MX t (ConstF x)]
 feval (Var _ x) t = do
     st <- gets dvars
     pure [MX t (FTmp $ getT st x)]
+feval (EApp _ (EApp _ (Builtin _ A.R) (FLit _ 0)) (FLit _ 1)) t = pure [FRnd t]
+feval (EApp _ (EApp _ (Builtin _ A.R) (FLit _ 0)) e1) t = do
+    (plE1,e1e) <- plD e1
+    pure $ plE1 [FRnd t, MX t (FTmp t*e1e)]
 feval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
-    e0R <- newFTemp; e1R <- newFTemp
-    plE0 <- feval e0 e0R; plE1 <- feval e1 e1R
-    pure $ plE0 ++ plE1 ++ [FRnd t, MX t (((FTmp e1R-FTmp e0R)*FTmp t)+FTmp e0R)]
+    (plE0,e0e) <- plD e0; (plE1, e1e) <- plD e1
+    pure $ plE0 $ plE1 [FRnd t, MX t ((e1e-e0e)*FTmp t+e0e)]
 feval (EApp _ (EApp _ (Builtin _ Plus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
     (pl0,t0) <- plF e0; (pl1,t1) <- plF e1; (pl2,t2) <- plF e2
     pure $ pl0 $ pl1 $ pl2 [MX t (FTmp t0+FTmp t1*FTmp t2)]
