@@ -1,11 +1,10 @@
 # Apple Array System
 
-Many cases (folds of tuples, folds of arrays) are not implemented.
-This is provided as an artefact.
+Many cases are not implemented. This is provided as an artefact.
 
-In general, the compiler will bail out with arcane error messages rather than
+The compiler will bail out with arcane error messages rather than
 produce an incorrect result, except that the Python/R extension modules do not
-enforce type safety and thus may mysteriously segfault or produce unpredictable corrupt results!
+enforce type safety and thus may mysteriously segfault or produce unpredictable corrupt results.
 
 Spilling (during register allocation) is not implemented for Arm. Also
 floating-point registers aren't spilled on x86.
