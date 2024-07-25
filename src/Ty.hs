@@ -102,9 +102,10 @@ mI (Ix _ i) (Ix _ j) | i == j = Right mempty
 mI (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
-mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
 mI (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI i (Ix l (j-iϵ))
 mI (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI i (Ix l (iϵ-j))
+mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
+mI (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
 
 mSh :: Sh a -> Sh a -> Either (TyE b) (Subst a)
 mSh (SVar (Nm _ (U i) _)) sh      = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
@@ -239,6 +240,10 @@ mguI inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep i
 mguI inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguIPrep inp i (Ix lk (j-k))
                                                 | otherwise = Left $ UI l i0 i1
 mguI inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguIPrep inp i1 i0
+mguI inp (StaMul _ i0 i1) (StaMul _ j0 j1) = do
+    -- FIXME: too stringent
+    s <- mguI inp i0 j0
+    mguI s i1 j1
 mguI _ i0@(IEVar l _) i1@Ix{} = Left $ UI l i0 i1
 mguI _ i0@(Ix l _) i1@IEVar{} = Left $ UI l i0 i1
 
