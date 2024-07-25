@@ -708,6 +708,24 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
         :aV
         ++n:=EAt (ADim xR 0 lX)
         :[loop])
+aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, _) <- tRnk (eAnn a) = do
+    aL <- nextArr t
+    i <- newITemp; j <- newITemp; k <- newITemp; m <- newITemp; n <- newITemp; o <- newITemp; z <- newFTemp
+    (plAA, (lA, aR)) <- plA a
+    (plB, (lB, bR)) <- plA b
+    let loop=For i 0 ILt (Tmp m)
+                [For j 0 ILt (Tmp o)
+                    [ MX z 0, For k 0 ILt (Tmp n)
+                        [MX z (FTmp z+FAt (AElem aR 2 (Tmp k*Tmp m+Tmp i) lA 8)*FAt (AElem bR 2 (Tmp k*Tmp o+Tmp j) lB 8))]
+                    , WrF (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
+                ]
+    pure (Just aL,
+        plAA$
+        plB$
+        m:=EAt (ADim aR 1 lA):o:=EAt (ADim bR 1 lB)
+        :Ma aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
+        ++n:=EAt (ADim aR 0 lA)
+        :[loop])
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk (eAnn a) = do
     aL <- nextArr t
     i <- newITemp; j <- newITemp; k <- newITemp; m <- newITemp; n <- newITemp; o <- newITemp; z <- newFTemp
