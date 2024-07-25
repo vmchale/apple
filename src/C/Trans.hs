@@ -357,11 +357,11 @@ aeval (Var _ x) t = do
 aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
     a <- nextArr t
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
-    iR <- newITemp; xR <- newFTemp; k <- newITemp
+    xR <- newFTemp; scaleR <- newFTemp; k <- newITemp
     let rnk=fromIntegral(length ixs); n=product ixs
-        plRnd = [Rnd iR, MX xR (IE (Tmp iR)), MX xR ((e1e - e0e) * (FTmp xR / (2*9223372036854775807) + 0.5) + e0e), WrF (AElem t rnk (Tmp k) (Just a) 8) (FTmp xR)]
+        plRnd = [FRnd xR, MX xR (FTmp scaleR*FTmp xR+e0e), WrF (AElem t rnk (Tmp k) (Just a) 8) (FTmp xR)]
         loop=fors ty k 0 ILt (ConstI n) plRnd
-    pure (Just a, plE0 $ plE1 (Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[loop]))
+    pure (Just a, plE0 $ plE1 (Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++MX scaleR (e1e-e0e):[loop]))
 aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
     a <- nextArr t
     e0R <- newITemp; e1R <- newITemp; iR <- newITemp; k <- newITemp
