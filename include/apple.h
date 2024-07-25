@@ -1,13 +1,10 @@
 #include<stdint.h>
 typedef intptr_t P;
 
-// first argument: pointer to malloc
-// second argument: pointer to free
-// third argument: pointer to drand48
-// third argument: pointer to exp (can be NULL on X86)
-// fourth argument: pointer to log (can be NULL on X86)
-// fifth argument: pointer to pow (can be NULL on X86)
-void* apple_compile(P,P,P,P,P,P,const char*,size_t*,void**);
+// exp, log, pow can be NULL on X86
+typedef struct JC {P ma; P free;P r;P e;P log;P pow;} JC;
+
+void* apple_compile(JC*,const char*,size_t*,void**);
 
 // NULL on error
 // first argument: source
@@ -18,7 +15,7 @@ char* apple_x86(const char*, char**);
 char* apple_aarch64(const char*, char**);
 char* apple_dumpir(const char*, char**);
 
-enum apple_t{I_t,F_t,IA,FA};
+enum apple_t{I_t,F_t,B_t,IA,FA,BA};
 
 typedef struct FnTy {int argc; enum apple_t* args; enum apple_t res;} FnTy;
 

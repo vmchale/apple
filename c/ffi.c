@@ -9,7 +9,7 @@
 
 #define DO(i,n,a) {int i;for(i=0;i<n;i++){a;}}
 
-#define F(r,t) {Sw(t){C I_t: r=&ffi_type_sint64;BR;C F_t: r=&ffi_type_double;BR;C FA: r=&ffi_type_pointer;BR;C IA: r=&ffi_type_pointer;BR}}
+#define F(r,t) {Sw(t){C I_t: r=&ffi_type_sint64;BR;C F_t: r=&ffi_type_double;BR;C FA: r=&ffi_type_pointer;BR;C IA: r=&ffi_type_pointer;BR;C BA: r=&ffi_type_pointer;BR}}
 
 ffi_cif* apple_ffi(FnTy* ty) {
     ffi_cif* cif=malloc(sizeof(*cif));

@@ -13,7 +13,7 @@ import Dbg
 import Foreign.C.String (CString)
 import Foreign.C.Types (CInt (..), CSize (..), CChar)
 import Foreign.Marshal.Alloc (mallocBytes)
-import Foreign.Ptr (IntPtr(..), Ptr, castPtr, castFunPtrToPtr, nullPtr)
+import Foreign.Ptr (Ptr, castPtr, castFunPtrToPtr, nullPtr)
 import Foreign.Storable (poke, pokeByteOff, sizeOf)
 import Prettyprinter (Doc, Pretty)
 import Prettyprinter.Ext
@@ -28,14 +28,11 @@ data JitCtx
 
 {# fun memcpy as ^ { castPtr `Ptr a', castPtr `Ptr a', coerce `CSize' } -> `Ptr a' castPtr #}
 
--- how tf do C weenies store like... function types??
 {# enum apple_t as CT {} #}
 
 ct :: CType -> CT
-ct CR = F_t
-ct CI = I_t
-ct Af = FA
-ct Ai = IA
+ct CR = F_t; ct CI = I_t; ct CB = B_t
+ct Af = FA; ct Ai = IA; ct Ab = BA
 
 t32 :: CType -> CInt
 t32 = fromIntegral.fromEnum.ct

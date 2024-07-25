@@ -9,10 +9,10 @@ import qualified Data.Text         as T
 import           Prettyprinter     (Doc, Pretty (..), braces, parens, tupled, (<+>))
 import           Prettyprinter.Ext
 
-data CType = CR | CI | Af | Ai
+data CType = CR | CI | CB | Af | Ai | Ab
 
 instance Pretty CType where
-    pretty CR = "F"; pretty CI = "I"; pretty Af = "Af"; pretty Ai = "Ai"
+    pretty CR="F"; pretty CI="I"; pretty CB="B"; pretty Af="Af"; pretty Ai="Ai"; pretty Ab="Ab"
 
 data CF = CF !T.Text [CType] CType
 
@@ -52,8 +52,10 @@ tCTy t = do{(ins,out) <- irTy (rLi t); (,)<$>traverse cTy ins<*>cTy out}
 cTy :: T a -> Either TTE CType
 cTy F                 = pure CR
 cTy I                 = pure CI
+cTy B                 = pure CB
 cTy (Arr _ F)         = pure Af
 cTy (Arr _ I)         = pure Ai
+cTy (Arr _ B)         = pure Ab
 cTy (Arrow Arrow{} _) = Left FArg
 cTy (Arr _ Arrow{})   = Left ArrFn
 
