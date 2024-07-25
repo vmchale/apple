@@ -52,6 +52,7 @@ mapF _ s@L{}         = s
 mapF _ s@C{}         = s
 mapF _ s@R{}         = s
 mapF _ s@IRnd{}      = s
+mapF f (FRnd t)      = FRnd (f t)
 mapF _ s@J{}         = s
 mapF _ s@Free{}      = s
 mapF _ s@RA{}        = s

@@ -226,6 +226,9 @@ ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) eN) = do
     l <- nextL; eL <- nextL
     pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, CmpRR () i rNA, Bc () Geq eL, Tbz () rNA 0 l, Ldr () t0 (R rSA), Str () t0 (R rDA), MovRC () i 1, AddRC () rSA rSA 8, AddRC () rDA rDA 8, Label () l, Ldp () t0 t1 (R rSA), Stp () t0 t1 (R rDA), AddRC () rSA rSA 16, AddRC () rDA rDA 16, AddRC () i i 2, CmpRR () i rNA, Bc () Lt l, Label () eL]
 ir (IR.IRnd t) = pure [MrsR () (absReg t)]
+ir (IR.FRnd t) = do
+    r <- nextR
+    pure $ puL ++ [AddRC () FP ASP 16, MovRCf () r DR, Blr () r, FMovXX () (fabsReg t) FArg0] ++ poL
 ir s             = error (show s)
 
 puL, poL :: [AArch64 AbsReg freg ()]

@@ -73,7 +73,7 @@ data Stmt = L Label
           | Pop Exp -- pop salloc
           | Cpy AE AE Exp
           | C Label | R Label
-          | IRnd Temp
+          | IRnd Temp | FRnd FTemp
 
 instance Pretty Stmt where
     pretty (L l)         = hardline <> prettyLabel l <> ":"
@@ -95,6 +95,7 @@ instance Pretty Stmt where
     pretty (C l)         = parens ("call" <+> prettyLabel l)
     pretty R{}           = parens "ret" <> hardline
     pretty (IRnd t)      = parens (pretty t <+> "<- rnd")
+    pretty (FRnd t)      = parens (pretty t <+> "<- xrnd")
     pretty (Cset t e)    = parens ("cset" <+> pretty t <+> "<-" <+> pretty e)
 
 instance Show Stmt where show = show . pretty

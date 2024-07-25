@@ -145,6 +145,7 @@ data CS = For Temp CE IRel CE [CS] | For1 Temp CE IRel CE [CS]
         | If PE [CS] [CS]
         | Sa Temp CE | Pop CE
         | Cmov PE Temp CE | Fcmov PE FTemp CFE
+        -- TODO: Fcneg?
         | Cset PE BTemp
         | SZ Temp Temp CE (Maybe AL) -- dest., pointer to array, rank, label
         | PlProd Temp [CE]

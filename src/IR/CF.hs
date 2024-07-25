@@ -148,6 +148,7 @@ uFR ConstF{}     = IS.empty
 
 uses, defs :: Stmt -> IS.IntSet
 uses IRnd{}         = IS.empty
+uses FRnd{}         = IS.empty
 uses L{}            = IS.empty
 uses J{}            = IS.empty
 uses (MJ e _)       = uE e
@@ -178,6 +179,7 @@ defs _            = IS.empty
 
 usesF, defsF :: Stmt -> IS.IntSet
 usesF IRnd{}        = IS.empty
+usesF FRnd{}        = IS.empty
 usesF (MX _ e)      = uF e
 usesF L{}           = IS.empty
 usesF J{}           = IS.empty
@@ -200,6 +202,7 @@ usesF (Cpy a0 a1 e) = uAF a0<>uAF a1<>uFF e
 
 defsF (MX t _)      = fsingleton t
 defsF (Fcmov _ x _) = fsingleton x
+defsF (FRnd t)      = fsingleton t
 defsF _             = IS.empty
 
 next :: [Stmt] -> FreshM ([N] -> [N], [(Stmt, ControlAnn)])

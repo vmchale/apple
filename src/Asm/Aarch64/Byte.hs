@@ -207,6 +207,8 @@ asm ix st@(_, (_, Just (e, _, _)),_) (MovRCf _ r Exp:asms) =
     asm ix st (m4 r e++asms)
 asm ix st@(_, (_, Just (_, _, p)),_) (MovRCf _ r Pow:asms) =
     asm ix st (m4 r p++asms)
+asm ix st@(_, (Just (_, _, d), _),_) (MovRCf _ r DR:asms) =
+    asm ix st (m4 r d++asms)
 asm ix st (LdrRL _ r l:asms) =
     let p = pI$arr l st
         w0=p .&. 0xffff; w1=(p .&. 0xffff0000) `lsr` 16; w2=(p .&. 0xFFFF00000000) `lsr` 32; w3=(p .&. 0xFFFF000000000000) `lsr` 48
