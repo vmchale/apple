@@ -691,6 +691,23 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | Just (F, [m,n]) <- tIx$eAnn a, 
         :aV
         ++nR:=ConstI n
         :[loop])
+aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 (eAnn x) = do
+    i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
+    (aL,aV) <- v8 t (Tmp m)
+    (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
+    let loop = For i 0 ILt (Tmp m)
+                [ MX z 0,
+                  for (eAnn x) j 0 ILt (Tmp n)
+                      [ MX z (FTmp z+FAt (AElem aR 2 (Tmp m*Tmp j+Tmp i) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
+                , WrF (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
+                ]
+    pure (Just aL,
+        plAA$
+        plX$
+        m:=EAt (ADim aR 1 lA)
+        :aV
+        ++n:=EAt (ADim xR 0 lX)
+        :[loop])
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 (eAnn x) = do
     i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
     (aL,aV) <- v8 t (Tmp m)
