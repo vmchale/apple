@@ -11,8 +11,10 @@ def init(x,y):
     return np.random.uniform(-1.,1.,(x,y))/np.sqrt(x*y)
 
 np.random.seed(17)
+
 l1=init(28*28,128)
 l2=init(128,10)
+
 ssoftmax=apple.jit('''
 λxs.
   { m ⟜ (⋉)/* _1 xs; a ⟜ [e:(x-m)]`{0} xs
@@ -21,9 +23,11 @@ ssoftmax=apple.jit('''
   ; ⍉(([(%x)'y]`{0,1} n a))
   }
 ''')
+
 vsigmoid=apple.jit("([1%(1+ℯ(_x))]`{0})")
 vmap=apple.jit("((λn.[?x=n,.1::float,.0]'irange 0 9 1)')")
 mmul=apple.jit("[x%.(y::M float)]")
+
 train_labels_v=apple.f(vmap,train_labels)
 
 def fw(l1,l2,x):
@@ -66,4 +70,6 @@ def fw_bw(x,targets):
 
     return out,update_l1,update_l2
 
-print(fw_bw(train_images_v,train_labels_v))
+out, update_l1, update_l2 = fw_bw(train_images_v,train_labels_v)
+print('out\n',out)
+print('update_l2\n',update_l2)
