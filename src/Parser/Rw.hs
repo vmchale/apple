@@ -41,7 +41,7 @@ fi Succ = 9; fi Fold = 9
 fi IntExp = 8; fi Exp = 8
 fi Times = 7; fi Div = 7; fi Mod = 7
 fi Plus = 6; fi Minus = 6
-fi And = 3; fi Or = 2; fi Xor = 5
+fi And = 3; fi Or = 2; fi Xor = 6
 fi Map{} = 5
 fi ConsE = 4; fi Snoc = 4
 fi Eq = 4; fi Neq = 4; fi Gt = 4
@@ -60,8 +60,9 @@ lassoc Minus  = True
 lassoc ConsE  = False
 lassoc Map{}  = False
 lassoc CatE   = False
-lassoc Sr=    True
-lassoc Sl=    True
+lassoc Sr     = True
+lassoc Sl     = True
+lassoc Xor    = True
 
 shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1

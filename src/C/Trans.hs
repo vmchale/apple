@@ -1193,7 +1193,7 @@ mB :: Builtin -> Maybe BBin
 mB And=Just AndB;mB Or=Just OrB;mB Xor=Just XorB; mB _=Nothing
 
 mOp :: Builtin -> Maybe IBin
-mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem;mOp a=BI<$>mB a
+mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem; mOp Sl=Just IAsl;mOp Sr=Just IAsr;mOp a=BI<$>mB a
 
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing

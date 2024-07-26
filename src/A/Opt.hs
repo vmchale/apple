@@ -4,7 +4,7 @@ module A.Opt ( optA
              ) where
 
 import           A
-import           Data.Bits ((.>>.), (.<<.))
+import           Data.Bits ((.<<.), (.>>.))
 import           R
 import           R.R
 
