@@ -169,6 +169,8 @@ tokens :-
         "~"                      { mkSym Tilde }
         ⧺                        { mkSym PlusPlus }
         "++"                     { mkSym PlusPlus }
+        ">>"                     { mkSym Sr }
+        "<<"                     { mkSym Sl }
         ⊖                        { mkSym Rotate }
         ⊙                        { mkSym Cyc }
         ˙                        { mkSym A1 }
@@ -296,7 +298,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | FoldS | Tilde | Cyc | A1 | Mod
          | AtDot | Eye | Para | Weier | B | Sharp
-         | And | Or | Xor | Not
+         | And | Or | Xor | Not | Sr | Sl
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -378,6 +380,8 @@ instance Pretty Sym where
     pretty Weier        = "℘"
     pretty Para         = "§"
     pretty IxTimes      = "×"
+    pretty Sr           = ">>"
+    pretty Sl           = "<<"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

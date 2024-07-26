@@ -205,6 +205,8 @@ instance Pretty Builtin where
     pretty N         = "¬"
     pretty Ices      = "℘"
     pretty Eye       = "👁️"
+    pretty Sr        = ">>"
+    pretty Sl        = "<<"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -219,7 +221,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init | RevE
              | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd | IOf | Abs
-             | And | Or | Xor | N
+             | And | Or | Xor | N | Sr | Sl
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 
@@ -268,6 +270,8 @@ mPrec Map    = Just 5
 mPrec ConsE  = Just 4
 mPrec Snoc   = Just 4
 mPrec CatE   = Just 5
+mPrec Sr     = Just 8
+mPrec Sl     = Just 8
 mPrec Xor    = Just 6
 mPrec And    = Just 3
 mPrec Or     = Just 2
@@ -306,6 +310,8 @@ isBinOp Or     = True
 isBinOp Xor    = True
 isBinOp Filt   = True
 isBinOp Ices   = True
+isBinOp Sr     = True
+isBinOp Sl     = True
 isBinOp _      = False
 
 instance Pretty (E a) where pretty=ps 0

@@ -46,7 +46,7 @@ fi Map{} = 5
 fi ConsE = 4; fi Snoc = 4
 fi Eq = 4; fi Neq = 4; fi Gt = 4
 fi Lt = 4; fi Lte = 4; fi Gte = 4
-fi CatE = 5
+fi CatE = 5; fi Sr=8; fi Sl=8
 
 lassoc :: Builtin -> Bool
 lassoc IntExp = False
@@ -60,6 +60,8 @@ lassoc Minus  = True
 lassoc ConsE  = False
 lassoc Map{}  = False
 lassoc CatE   = False
+lassoc Sr=    True
+lassoc Sl=    True
 
 shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1

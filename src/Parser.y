@@ -81,6 +81,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     tilde { TokSym $$ Tilde }
     pp { TokSym $$ PlusPlus }
     rot { TokSym $$ Rotate }
+    sr { TokSym $$ L.Sr }
+    sl { TokSym $$ L.Sl }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -243,6 +245,7 @@ BBin :: { E AlexPosn }
      | xor { Builtin $1 A.Xor }
      | weier { Builtin $1 Ices }
      | para { Builtin $1 Filt }
+     | sr { Builtin $1 A.Sr } | sl { Builtin $1 A.Sl }
 
 B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }

@@ -71,7 +71,7 @@ instance Pretty ArrAcc where
 
 instance Show ArrAcc where show=show.pretty
 
-bPrec AndB=3; bPrec OrB=2
+bPrec AndB=3; bPrec OrB=2; bPrec XorB=6
 
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing; mPrec (BI p) = Just$bPrec p
 fprec FPlus=Just 6;fprec FMinus=Just 6;fprec FTimes=Just 7; fprec FDiv=Just 7; fprec FExp=Just 8; fprec FMax=Nothing; fprec FMin=Nothing
