@@ -246,6 +246,8 @@ mguI inp (StaMul _ i0 i1) (StaMul _ j0 j1) = do
     mguI s i1 j1
 mguI _ i0@(IEVar l _) i1@Ix{} = Left $ UI l i0 i1
 mguI _ i0@(Ix l _) i1@IEVar{} = Left $ UI l i0 i1
+mguI _ i0@(IEVar l _) i1@StaPlus{} = Left $ UI l i0 i1
+mguI _ i0@(StaPlus l _ _) i1@IEVar{} = Left $ UI l i0 i1
 
 mgShPrep :: a -> Subst a -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mgShPrep l s sh0 sh1 =
