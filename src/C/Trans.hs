@@ -1063,6 +1063,16 @@ peval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isB
     let loopBody=MB x (PAt (AElem aP 1 (Tmp i) l 1)):ss
         loop=for1 (eAnn e) i 1 ILt (Tmp szR) loopBody
     pure $ plE$szR := EAt (ADim aP 0 l):MB acc (PAt (AElem aP 1 0 l 1)):[loop]
+peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tY _)) <- eAnn op, Just szY <- rSz tY = do
+    x <- rtemp tY
+    szR <- newITemp
+    i <- newITemp
+    (plE, (l, aP)) <- plA e
+    plAcc <- peval seed acc
+    ss <- writeRF op [PT acc, x] (PT acc)
+    let loopBody=mt (AElem aP 1 (Tmp i) l szY) x:ss
+        loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
+    pure $ plE $ plAcc++szR:=EAt (ADim aP 0 l):[loop]
 
 eval :: E (T ()) -> Temp -> CM [CS]
 eval (LLet _ b e) t = do
@@ -1076,14 +1086,14 @@ eval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
     e0R <- newITemp; e1R <- newITemp
     plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
     pure $ plE0 ++ plE1 ++ [Rnd t, t := (Bin IRem (Tmp t) (Tmp e1R - Tmp e0R + 1) + Tmp e0R)]
-eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- rSz tX = do
     x <- rtemp tX
     szR <- newITemp
     i <- newITemp
     (plE, (l, eR)) <- plA e
     plAcc <- eval seed acc
     ss <- writeRF op [IT acc, x] (IT acc)
-    let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
+    let loopBody=mt (AElem eR 1 (Tmp i) l xSz) x:ss
         loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE$plAcc++szR := EAt (ADim eR 0 l):[loop]
 eval (EApp I (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
@@ -1361,14 +1371,14 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp ty (EApp _ (EApp
     plIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)) incrR
     ss <- writeRF op [FT acc, FT xR] (FT acc)
     pure $ plStart ++ MX xR (FTmp startR):plEnd++plIncr++plAcc++[for ty i 0 ILt (Tmp endI) (ss++[MX xR (FTmp xR+FTmp incrR)])]
-feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
+feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- rSz tX = do
     x <- rtemp tX
     szR <- newITemp
     i <- newITemp
     (plE, (l, eR)) <- plA e
     plAcc <- feval seed acc
     ss <- writeRF op [FT acc, x] (FT acc)
-    let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss
+    let loopBody=mt (AElem eR 1 (Tmp i) l xSz) x:ss
         loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE $ plAcc++szR := EAt (ADim eR 0 l):[loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
