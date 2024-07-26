@@ -35,6 +35,7 @@ mapFE _ e@Is{}           = e
 mapFE f (FRel rel x0 x1) = FRel rel (mapFF f x0) (mapFF f x1)
 mapFE f (IB op e0 e1)    = IB op (mapFE f e0) (mapFE f e1)
 mapFE f (IU op e)        = IU op (mapFE f e)
+mapFE f (BU op e)        = BU op (mapFE f e)
 mapFE f (IRel rel e0 e1) = IRel rel (mapFE f e0) (mapFE f e1)
 mapFE _ e@LA{}           = e
 

@@ -138,6 +138,7 @@ irp :: PE -> Exp
 irp (C.IRel rel e0 e1) = IR.IRel rel (irE e0) (irE e1)
 irp (C.FRel rel x0 x1) = IR.FRel rel (irX x0) (irX x1)
 irp (C.IUn p e)        = IR.IU p (irE e)
+irp (C.BU op e)        = IR.BU op (irp e)
 irp (C.Is t)           = IR.Is (cbtemp t)
 irp (C.PAt a)          = IR.BAt (irAt a)
 irp (C.BConst True)    = IR.ConstI 1

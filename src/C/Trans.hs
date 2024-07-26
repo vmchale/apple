@@ -1054,6 +1054,9 @@ peval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op 
 peval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just boo <- mB op = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
     pure $ pl0 $ pl1 $ [MB t (Boo boo e0R e1R)]
+peval (EApp _ (Builtin _ N) e0) t = do
+    (pl,e0R) <- plP e0
+    pure $ pl [MB t (BU BNeg e0R)]
 peval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isB tX = do
     x <- nBT
     szR <- newITemp

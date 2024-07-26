@@ -77,6 +77,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     and { TokSym $$ L.And }
     or { TokSym $$ L.Or }
     xor { TokSym $$ L.Xor }
+    not { TokSym $$ Not }
     tilde { TokSym $$ Tilde }
     pp { TokSym $$ PlusPlus }
     rot { TokSym $$ Rotate }
@@ -307,6 +308,7 @@ E :: { E AlexPosn }
   | abs { Builtin $1 Abs }
   | flat { Builtin $1 Flat }
   | addd { Builtin $1 AddDim }
+  | not { Builtin $1 N }
   | eye { Builtin $1 A.Eye }
 
 {

@@ -128,6 +128,7 @@ data Exp = ConstI Int64
          | FRel FRel FExp FExp
          | IRel IRel Exp Exp | Is Temp
          | IU IUn Exp
+         | BU BUn Exp
          | IRFloor FExp
          | EAt AE | BAt AE
          | LA !Int -- assembler data
@@ -148,6 +149,7 @@ instance Pretty Exp where
     pretty (IRel op e e') = parens (pretty op <+> pretty e <+> pretty e')
     pretty (IB op e e')   = parens (pretty op <+> pretty e <+> pretty e')
     pretty (IU op e)      = parens (pretty op <+> pretty e)
+    pretty (BU op e)      = pretty op <> pretty e
     pretty (IRFloor e)    = parens ("floor" <+> pretty e)
     pretty (EAt p)        = "@" <> pretty p
     pretty (BAt p)        = "b@" <> pretty p

@@ -3,6 +3,7 @@
 module Op ( FUn (..)
           , FBin (..)
           , IUn (..)
+          , BUn (..)
           , IBin (..)
           , BBin (..)
           , IRel (..)
@@ -14,6 +15,8 @@ import           Prettyprinter (Pretty (..))
 data FUn = FSqrt | FLog | FSin | FCos | FAbs
 
 data IUn = IEven | IOdd
+
+data BUn = BNeg
 
 data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp
 
@@ -29,8 +32,11 @@ instance Pretty IRel where
     pretty ILt  = "<"; pretty ILeq = "≤"; pretty IGeq = "≥"
 
 instance Pretty FRel where
-    pretty FEq  = "="; pretty FNeq = "!="; pretty FGt  = ">"
-    pretty FLt  = "<"; pretty FLeq = "≤"; pretty FGeq = "≥"
+    pretty FEq = "="; pretty FNeq = "!="; pretty FGt = ">"
+    pretty FLt = "<"; pretty FLeq = "≤"; pretty FGeq = "≥"
+
+instance Pretty BUn where
+    pretty BNeg = "¬"
 
 instance Pretty BBin where
    pretty AndB = "∧"; pretty XorB = "⊻"; pretty OrB = "∨"
