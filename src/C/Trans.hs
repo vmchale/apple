@@ -1430,10 +1430,10 @@ m'sa t = maybe []  ((:[]).Sa t)
     (ls, ss) <- unzip <$>
         zipWithM (\e off ->
             case eAnn e of
-                F     -> do {f <- newFTemp; plX <- feval e f; pure (Nothing, plX++[WrF (Raw t (ConstI off) Nothing 1) (FTmp f)])}
-                I     -> do {i <- newITemp; plX <- eval e i; pure (Nothing, plX++[Wr (Raw t (ConstI off) Nothing 1) (Tmp i)])}
-                B     -> do {r <- nBT; plX <- peval e r; pure (Nothing, plX++[WrP (Raw t (ConstI off) Nothing 1) (Is r)])}
-                Arr{} -> do {r <- newITemp ; (l,pl) <- aeval e r; pure (l, pl++[Wr (Raw t (ConstI off) Nothing 1) (Tmp r)])}) es offs
+                F     -> do {(plX, f) <- plD e; pure (Nothing, plX [WrF (Raw t (ConstI off) Nothing 1) f])}
+                I     -> do {(plX, i) <- plC e; pure (Nothing, plX [Wr (Raw t (ConstI off) Nothing 1) i])}
+                B     -> do {(plX, r) <- plP e; pure (Nothing, plX [WrP (Raw t (ConstI off) Nothing 1) r])}
+                Arr{} -> do {(pl, (l, r)) <- plA e; pure (l, pl [Wr (Raw t (ConstI off) Nothing 1) (Tmp r)])}) es offs
     pure (offs, Just szE, catMaybes ls, concat ss)
 πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp; iR <- newITemp
