@@ -214,6 +214,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
                         | Cset { ann :: a, rDest :: reg, cond :: Cond }
                         | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
+                        | EorI { ann :: a, rSrc, rDesg :: reg, imm :: BM }
                         deriving (Functor, Generic)
 
 instance (NFData r, NFData d, NFData a) => NFData (AArch64 r d a) where
@@ -291,6 +292,7 @@ mapR f (Cbnz x r l)          = Cbnz x (f r) l
 mapR _ (Fcsel l d0 d1 d2 p)  = Fcsel l d0 d1 d2 p
 mapR f (TstI l r i)          = TstI l (f r) i
 mapR f (Cset l r c)          = Cset l (f r) c
+mapR f (EorI l r0 r1 i)      = EorI l (f r0) (f r1) i
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -316,6 +318,7 @@ mapFR _ (Mvn l r0 r1)         = Mvn l r0 r1
 mapFR _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
 mapFR _ (OrRR l r0 r1 r2)     = OrRR l r0 r1 r2
 mapFR _ (Eor l r0 r1 r2)      = Eor l r0 r1 r2
+mapFR _ (EorI l r0 r1 i)      = EorI l r0 r1 i
 mapFR _ (Lsl l r0 r1 s)       = Lsl l r0 r1 s
 mapFR _ (Asr l r0 r1 s)       = Asr l r0 r1 s
 mapFR _ (CmpRC l r c)         = CmpRC l r c
@@ -403,6 +406,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (AndRR _ rD rS rS')    = i4 ("and" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (OrRR _ rD rS rS')     = i4 ("orr" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (Eor _ rD rS rS')      = i4 ("eor" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
+    pretty (EorI _ rD rS i)       = i4 ("eor" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty i)
     pretty (ZeroR _ rD)           = i4 ("eor" <+> pretty rD <> "," <+> pretty rD <> "," <+> pretty rD)
     pretty (Mvn _ rD rS)          = i4 ("mvn" <+> pretty rD <> "," <+> pretty rS)
     pretty (MulRR _ rD rS rS')    = i4 ("mul" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')

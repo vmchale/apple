@@ -399,7 +399,8 @@ eval (IR.BAt (IR.AP rB (Just e) _)) t = do
     (plE,i) <- plI e
     pure $ plE [LdrB () (absReg t) (BI (absReg rB) i Zero)]
 eval (IR.IB Op.IAsr (IR.Reg r) (IR.ConstI i)) t | Just s <- ms i = pure [Asr () (absReg t) (absReg r) s]
-eval (IR.LA n) t    = pure [LdrRL () (absReg t) n]
+eval (IR.LA n) t = pure [LdrRL () (absReg t) n]
+eval (IR.BU Op.BNeg (IR.Is r)) t = pure [EorI () (absReg t) (absReg r) (BM 1 0)]
 eval e _            = error (show e)
 
 ms :: Integral a => a -> Maybe Word8

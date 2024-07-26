@@ -45,6 +45,11 @@ optA (EApp l0 (EApp l1 op@(Builtin l2 Div) e0) e1) = do
         (FLit _ x, FLit _ y) -> FLit l0 (x/y)
         (x, FLit t y)        -> EApp l0 (EApp l1 (Builtin l2 Times) x) (FLit t (1/y))
         _                    -> EApp l0 (EApp l1 op e0') e1'
+optA (EApp l0 op@(Builtin _ N) e0) = do
+    e0' <- optA e0
+    pure $ case e0' of
+        (BLit _ b) -> BLit B (not b)
+        _          -> EApp l0 op e0'
 optA (EApp l0 (EApp l1 op@(Builtin _ Sr) e0) e1) = do
     e0' <- optA e0
     e1' <- optA e1
