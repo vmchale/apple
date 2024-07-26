@@ -459,10 +459,9 @@ peekInterpret (Arr _ t) p = do
   where
     elemSz :: Integral a => a
     elemSz = rSz t
--- FIXME: dereference arr
 peekInterpret (P ts) p = tupled <$>
     let ds=offs ts
-    in zipWithM (ctx peekInterpret) ts ((p `plusPtr`)<$>ds)
+    in zipWithM (use peekInterpret) ts ((p `plusPtr`)<$>ds)
 peekInterpret t p = pR t p
 
 offs = scanl' (\off t -> off+rSz t) 0
@@ -471,11 +470,11 @@ offs = scanl' (\off t -> off+rSz t) 0
 πp Arr{} p = peek (castPtr p)
 πp _ p     = pure p
 
-ctx f t addr = f t =<< πp t addr
+use f t addr = f t =<< πp t addr
 
 freeByT :: T a -> Ptr b -> IO ()
 freeByT Arr{} p  = free p
-freeByT (P ts) p = let ds = offs ts in zipWithM_ (ctx freeByT) ts ((p `plusPtr`)<$>ds)
+freeByT (P ts) p = let ds = offs ts in zipWithM_ (use freeByT) ts ((p `plusPtr`)<$>ds)
 freeByT _ _      = pure ()
 
 printExpr :: String -> Repl AlexPosn ()
