@@ -15,6 +15,7 @@
         ; n ⟜ sum`{1} (a::M float)
         ; ⍉([x*(1-x)]`{0} ([(%x)'y]`{0,1} n a))
         };
+    dsigmoid ← ((λx.⸎x⟜ℯ(_x);x%(1+x)^2)`{0});
     -- fw
     xl1p ⟜ x%.l1;
     xSigmoid ← [1%(1+ℯ(_x))]`{0} xl1p;
@@ -23,9 +24,6 @@
     -- bw
     error ⟜ (*)`{0,0} ({n⟜ℝ(𝓉out); [2*x%n]`{0} ((-)`{0,0} out targets)}) (dsoftmax xl2p);
     ul2 ← (⍉xSigmoid)%.error;
-    ul1 ← {
-      dsigmoid ← ((λx.⸎x⟜ℯ(_x);x%(1+x)^2)`{0});
-      (⍉x)%.((*)`{0,0} (⍉(l2%.(⍉error))) (dsigmoid xl1p))
-    };
+    ul1 ← (⍉x)%.((*)`{0,0} (⍉(l2%.(⍉error))) (dsigmoid xl1p));
     ((+)`{0,0} l1 ul1, (+)`{0,0} l2 ul2)
   }
