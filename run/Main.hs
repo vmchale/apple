@@ -512,6 +512,7 @@ printExpr s = do
                                 putStrLn (sB cb)
                                 freeAsm asm
                             where sB 1 = "#t"; sB 0 = "#f"
+                        t@A.Arrow{} -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
                         t ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
