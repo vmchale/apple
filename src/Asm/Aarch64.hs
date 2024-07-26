@@ -170,6 +170,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                         | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                         | AddRRS { ann :: a, rDest, rSrc1, rSrc2 :: reg, sC :: Word8 }
                         | ZeroR { ann :: a, rDest :: reg }
+                        | Mvn { ann :: a, rDest, rSrc :: reg }
                         | AndRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                         | OrRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                         | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
@@ -239,6 +240,7 @@ mapR f (SubRR l r0 r1 r2)    = SubRR l (f r0) (f r1) (f r2)
 mapR f (AddRC l r0 r1 c)     = AddRC l (f r0) (f r1) c
 mapR f (SubRC l r0 r1 c)     = SubRC l (f r0) (f r1) c
 mapR f (ZeroR l r)           = ZeroR l (f r)
+mapR f (Mvn l r0 r1)         = Mvn l (f r0) (f r1)
 mapR f (AndRR l r0 r1 r2)    = AndRR l (f r0) (f r1) (f r2)
 mapR f (OrRR l r0 r1 r2)     = OrRR l (f r0) (f r1) (f r2)
 mapR f (Eor l r0 r1 r2)      = Eor l (f r0) (f r1) (f r2)
@@ -310,6 +312,7 @@ mapFR _ (AddRC l r0 r1 c)     = AddRC l r0 r1 c
 mapFR _ (SubRR l r0 r1 r2)    = SubRR l r0 r1 r2
 mapFR _ (SubRC l r0 r1 c)     = SubRC l r0 r1 c
 mapFR _ (ZeroR l r)           = ZeroR l r
+mapFR _ (Mvn l r0 r1)         = Mvn l r0 r1
 mapFR _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
 mapFR _ (OrRR l r0 r1 r2)     = OrRR l r0 r1 r2
 mapFR _ (Eor l r0 r1 r2)      = Eor l r0 r1 r2
@@ -401,6 +404,7 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (OrRR _ rD rS rS')     = i4 ("orr" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (Eor _ rD rS rS')      = i4 ("eor" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (ZeroR _ rD)           = i4 ("eor" <+> pretty rD <> "," <+> pretty rD <> "," <+> pretty rD)
+    pretty (Mvn _ rD rS)          = i4 ("mvn" <+> pretty rD <> "," <+> pretty rS)
     pretty (MulRR _ rD rS rS')    = i4 ("mul" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS')
     pretty (SubRC _ rD rS u)      = i4 ("sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)
     pretty (AddRC _ rD rS u)      = i4 ("add" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u)

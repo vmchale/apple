@@ -115,6 +115,7 @@ asm ix st (AddRR l r0 r1 r2:asms) = asm ix st (AddRRS l r0 r1 r2 0:asms)
 asm ix st (AddRRS _ r0 r1 r2 s:asms) = [0b10001011, be r2, s `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (AndRR _ r0 r1 r2:asms) = [0b10001010, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Eor _ r0 r1 r2:asms) = [0b11001010, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
+asm ix st (Mvn _ r0 r1:asms) = [0b10101010, 0x1 `shiftL` 5 .|. be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (OrRR _ r0 r1 r2:asms) = [0b10101010, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Neg _ r0 r1:asms) = [0b11001011, be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (MulRR _ r0 r1 r2:asms) = [0b10011011, be r2, 0b11111 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
