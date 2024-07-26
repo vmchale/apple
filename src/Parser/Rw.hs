@@ -46,7 +46,7 @@ fi Map{} = 5
 fi ConsE = 4; fi Snoc = 4
 fi Eq = 4; fi Neq = 4; fi Gt = 4
 fi Lt = 4; fi Lte = 4; fi Gte = 4
-fi CatE   = 5
+fi CatE = 5
 
 lassoc :: Builtin -> Bool
 lassoc IntExp = False

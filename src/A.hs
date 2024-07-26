@@ -202,6 +202,7 @@ instance Pretty Builtin where
     pretty Xor       = "⊻"
     pretty And       = "∧"
     pretty Or        = "∨"
+    pretty N         = "¬"
     pretty Ices      = "℘"
     pretty Eye       = "👁️"
 
@@ -218,7 +219,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init | RevE
              | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd | IOf | Abs
-             | And | Or | Xor
+             | And | Or | Xor | N
              deriving (Generic)
              -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
 

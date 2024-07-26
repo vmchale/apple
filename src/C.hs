@@ -158,6 +158,7 @@ instance Pretty CS where
     pretty (t := e)             = pretty t <+> "=" <+> pretty e
     pretty (MX t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
     pretty (MX t e)             = pretty t <+> "=" <+> pretty e
+    pretty (MB t e)             = pretty t <+> "=" <+> pretty e
     pretty (Wr a e)             = pretty a <+> "=" <+> pretty e
     pretty (WrF a e)            = pretty a <+> "=" <+> pretty e
     pretty (WrP a e)            = pretty a <+> "=" <+> pretty e

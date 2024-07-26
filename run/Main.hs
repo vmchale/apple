@@ -201,7 +201,6 @@ langHelp = liftIO $ putStr $ concat
     , lOption "_" "negate" ":" "size"
     , lOption "𝓉" "dimension" "}.?" "last"
     , lOption "->n" "select" "**" "power"
-    , lOption "gen." "generate" "𝓕" "fibonacci"
     , lOption "re:" "repeat" "}." "typesafe last"
     , lOption "⊲" "cons" "⊳" "snoc"
     , lOption "^:" "iterate" "%." "matmul"
@@ -222,6 +221,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "♭" "flatten" "♮" "add dimension"
     , lOption "℘" "indices of" "§" "filter"
     , lOption "👁️" "identity m" "(i × j)" "dimensions"
+    , lOption "gen." "generate" "¬" "not"
     ]
 
 lOption op0 desc0 op1 desc1 =

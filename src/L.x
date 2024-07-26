@@ -183,6 +183,7 @@ tokens :-
         ⊻                        { mkSym Xor }
         ∧                        { mkSym And }
         ∨                        { mkSym Or }
+        ¬                        { mkSym Not }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -295,7 +296,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | FoldS | Tilde | Cyc | A1 | Mod
          | AtDot | Eye | Para | Weier | B | Sharp
-         | And | Or | Xor
+         | And | Or | Xor | Not
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -373,6 +374,7 @@ instance Pretty Sym where
     pretty Xor          = "⊻"
     pretty And          = "∧"
     pretty Or           = "∨"
+    pretty Not          = "¬"
     pretty Weier        = "℘"
     pretty Para         = "§"
     pretty IxTimes      = "×"
