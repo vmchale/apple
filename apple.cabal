@@ -65,6 +65,7 @@ library
         A.Opt
         Op
         C
+        -- C.CF
         C.Trans
         IR
         IR.Alloc
@@ -257,7 +258,8 @@ executable arepl
         filepath,
         extra,
         QuickCheck,
-        containers
+        containers,
+        split >=0.2.0.0
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
