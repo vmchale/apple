@@ -364,12 +364,12 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
     pure (Just a, plE0 $ plE1 (Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++MX scaleR (e1e-e0e):[loop]))
 aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
     a <- nextArr t
-    e0R <- newITemp; e1R <- newITemp; iR <- newITemp; k <- newITemp
-    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
+    scaleR <- newITemp; iR <- newITemp; k <- newITemp
+    (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     let rnk=fromIntegral$length ixs; n=product ixs
-        plRnd = [Rnd iR, iR := (Bin IRem (Tmp iR) (Tmp e1R - Tmp e0R + 1) + Tmp e0R), Wr (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
+        plRnd = [Rnd iR, iR := (Bin IRem (Tmp iR) (Tmp scaleR) + e0e), Wr (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
         loop=fors ty k 0 ILt (ConstI n) plRnd
-    pure (Just a, plE0++plE1++Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[loop])
+    pure (Just a, plE0$plE1$Ma a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++scaleR:=(e1e-e0e+1):[loop])
 aeval (Builtin ty Eye) t | (I, ixs@[i,_]) <- tRnd ty = do
     a <- nextArr t
     td <- newITemp; k <- newITemp
