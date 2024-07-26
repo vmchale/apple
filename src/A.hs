@@ -240,7 +240,7 @@ prettyTyped (BLit t True)                                         = parens ("#t"
 prettyTyped (BLit t False)                                        = parens ("#f" <+> colon <+> pretty t)
 prettyTyped (Cond t p e0 e1)                                      = parens ("?" <+> prettyTyped p <+> ",." <+> prettyTyped e0 <+> prettyTyped e1) <+> colon <+> pretty t
 prettyTyped (Lam _ n@(Nm _ _ xt) e)                               = parens ("λ" <> parens (pretty n <+> ":" <+> pretty xt) <> "." <+> prettyTyped e)
-prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2) = parens (prettyTyped e0 <> "/" <+> prettyTyped e1 <+> prettyTyped e2)
+prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2) = parens (prettyTyped e0 <> "/ₒ" <+> prettyTyped e1 <+> prettyTyped e2)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2) = parens (prettyTyped e0 <> "/*" <+> prettyTyped e1 <+> prettyTyped e2)
 prettyTyped (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2) = parens (prettyTyped e0 <> "/l" <+> prettyTyped e1 <+> prettyTyped e2)
 prettyTyped (EApp t (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2) = parens (prettyTyped e1 <+> pretty e0 <> "⊗" <+> prettyTyped e2 <+> ":" <+> pretty t)
@@ -319,7 +319,7 @@ instance PS (E a) where
     ps d (EApp _ (EApp _ (Builtin _ op) e0) e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <+> pretty op <+> ps (d'+1) e1)
     ps _ (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (ps 10 e0 <+> pretty op <+> ps 10 e1)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Iter) e0) e1) e2)     = parens (ps 10 e0 <> "^:" <+> ps 10 e1 <+> ps 11 e2)
-    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)    = parens (pretty e0 <> "/" <+> pretty e1 <+> pretty e2)
+    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)    = parens (pretty e0 <> "/ₒ" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)    = parens (pretty e0 <+> "Λₒ" <+> pretty e1 <+> pretty e2)
