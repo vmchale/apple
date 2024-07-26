@@ -452,8 +452,7 @@ peekInterpret :: T a -> Ptr b -> IO (Doc ann)
 peekInterpret (Arr _ t) p = do
     rnk <- peek (castPtr p :: Ptr Int64)
     dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)
-    let sz = 8+8*rnk+elemSz*product dims
-        datOffs = 8+8*fromIntegral rnk
+    let datOffs = 8+8*fromIntegral rnk
         xsP = [1..fromIntegral (product dims)] <&> \o -> p `plusPtr` (datOffs+elemSz*(o-1))
     xs <- traverse (pR t) xsP
     pure (pE dims xs)
