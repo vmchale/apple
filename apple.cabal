@@ -116,7 +116,7 @@ library
         -Wcpp-undef
 
     build-depends:
-        base >=4.11 && <5,
+        base >=4.17 && <5,
         prettyprinter >=1.7.0,
         deepseq,
         text,
