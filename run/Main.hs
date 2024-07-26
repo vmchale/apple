@@ -4,6 +4,7 @@
 module Main (main) where
 
 import           A
+import           Control.Monad             (zipWithM, zipWithM_)
 import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.State       (StateT, evalStateT, gets, modify)
 import           Control.Monad.Trans.Class (lift)
@@ -13,6 +14,7 @@ import           Data.Foldable             (traverse_)
 import           Data.Functor              ((<&>))
 import           Data.Int                  (Int64)
 import           Data.List
+import           Data.List                 (scanl')
 import           Data.List.Split           (chunksOf)
 import           Data.Maybe                (catMaybes)
 import qualified Data.Text                 as T
@@ -434,7 +436,7 @@ benchE s = do
                         A.Arrow{} -> liftIO $ putDoc ("Cannot benchmark a function without arguments" <> hardline)
     where bs = ubs s
 
-rSz A.B=1; rSz I=8; rSz F=8; rSz (P ts) = sum (rSz<$>ts)
+rSz A.B=1; rSz I=8; rSz F=8; rSz (P ts) = sum (rSz<$>ts); rSz Arr{}=8
 
 pE :: [Int64] -> [Doc ann] -> Doc ann
 pE [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ", " <> y) (list<$>chunksOf (fromIntegral n) xs) <> space))
@@ -454,13 +456,28 @@ peekInterpret (Arr _ t) p = do
         datOffs = 8+8*fromIntegral rnk
         xsP = [1..fromIntegral (product dims)] <&> \o -> p `plusPtr` (datOffs+elemSz*(o-1))
     xs <- traverse (pR t) xsP
-    pure (pE dims xs <> hardline)
+    pure (pE dims xs)
   where
     elemSz :: Integral a => a
     elemSz = rSz t
+-- FIXME: dereference arr
+peekInterpret (P ts) p = tupled <$>
+    let ds=offs ts
+    in zipWithM (ctx peekInterpret) ts ((p `plusPtr`)<$>ds)
+peekInterpret t p = pR t p
+
+offs = scanl' (\off t -> off+rSz t) 0
+
+πp :: T a -> Ptr a -> IO (Ptr a)
+πp Arr{} p = peek (castPtr p)
+πp _ p     = pure p
+
+ctx f t addr = f t =<< πp t addr
 
 freeByT :: T a -> Ptr b -> IO ()
-freeByT Arr{} p = free p
+freeByT Arr{} p  = free p
+freeByT (P ts) p = let ds = offs ts in zipWithM_ (ctx freeByT) ts ((p `plusPtr`)<$>ds)
+freeByT _ _      = pure ()
 
 printExpr :: String -> Repl AlexPosn ()
 printExpr s = do
@@ -501,7 +518,7 @@ printExpr s = do
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 p <- callFFI fp (retPtr undefined) []
-                                putDoc =<< peekInterpret t p
+                                putDoc.(<>hardline) =<< peekInterpret t p
                                 freeByT t p *> freeAsm asm
     where bs = ubs s
 
