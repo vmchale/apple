@@ -217,11 +217,11 @@ langHelp = liftIO $ putStr $ concat
     , lOption "˙" "at" "|" "rem"
     , lOption "@." "index of" "di." "diagonal"
     , lOption "%:" "vector mul" "odd." "parity"
-    , lOption "~" "reverse" "⊻,∧,∨" "logical"
+    , lOption "~" "reverse" "¬,⊻,∧,∨" "logical"
     , lOption "♭" "flatten" "♮" "add dimension"
     , lOption "℘" "indices of" "§" "filter"
     , lOption "👁️" "identity m" "(i × j)" "dimensions"
-    , lOption "gen." "generate" "¬" "not"
+    , lOption "gen." "generate" "{x⟜y;z}" "no inline"
     ]
 
 lOption op0 desc0 op1 desc1 =
