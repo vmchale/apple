@@ -1,5 +1,0 @@
--- wh: 2x2 bh: 2
-λX.λwh.λbh.
-  { sigmoid ← [1%(1+ℯ(_x))]
-  ; sigmoid`{0} ([(+)`bh x]'(X%.wh))
-  }
