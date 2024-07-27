@@ -23,15 +23,18 @@ import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
 import           Data.Traversable          (for, forM)
 import           Data.Tuple.Extra          (first3)
+import           Data.Word                 (Word8)
 import           Dbg
 import           Foreign.LibFFI            (argPtr, callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc     (free)
+import           Foreign.Marshal.Array     (peekArray)
 import           Foreign.Ptr               (Ptr, castPtr, plusPtr)
 import           Foreign.Storable          (peek)
 import           Hs.A
 import           Hs.FFI
 import           L
 import           Nm
+import           Numeric.Extra             (showHex)
 import           Prettyprinter             (Doc, Pretty, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
 import           Prettyprinter.Ext
 import           Prettyprinter.Render.Text (putDoc)
@@ -313,6 +316,16 @@ annR s = do
 
 freeAsm (sz, fp, mp) = freeFunPtr sz fp -- *> traverse_ free mp
 
+
+dbgAB :: T b -> U a -> IO T.Text
+dbgAB (Arr _ t) p = do
+    rnk <- peek (castPtr p :: Ptr Int64)
+    dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)
+    let sz = fromIntegral (8+8*rnk+rSz t*product dims)
+    hextext <$> peekArray sz (castPtr p :: Ptr Word8)
+
+hextext = T.unwords . fmap (T.pack.($"").showHex)
+
 inspect :: String -> Repl AlexPosn ()
 inspect s = do
     st <- lift $ gets _lex
@@ -324,18 +337,12 @@ inspect s = do
             case tyC i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
-                    let dbgPrint =
-                            case eAnn e of
-                                (Arr _ (P [F,F])) -> \p -> (dbgAB :: Ptr (Apple (P2 Double Double)) -> IO T.Text) (castPtr p)
-                                (Arr _ F)         -> \p -> (dbgAB :: Ptr (Apple Double) -> IO T.Text) (castPtr p)
-                                (Arr _ I)         -> \p -> (dbgAB :: Ptr (Apple Int64) -> IO T.Text) (castPtr p)
-                                (Arr _ A.B)       -> \p -> (dbgAB :: Ptr (Apple AB) -> IO T.Text) (castPtr p)
                     c <- lift $ gets mf
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     liftIO $ do
                         asm@(_, fp, _) <- efp eC
                         p <- callFFI fp (retPtr undefined) []
-                        TIO.putStrLn =<< dbgPrint p
+                        TIO.putStrLn =<< dbgAB (eAnn e) p
                         free p *> freeAsm asm
         where bs = ubs s
 

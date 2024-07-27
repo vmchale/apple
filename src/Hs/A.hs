@@ -5,20 +5,16 @@
 module Hs.A ( Apple (..), U
             , AB, AI, AF
             , P2 (..), P3 (..), P4 (..)
-            , dbgAB
             , hs2, hs3, hs4
             ) where
 
-import           Control.Monad         (forM, zipWithM_)
-import           Data.Int              (Int64)
-import           Data.List.Split       (chunksOf)
-import qualified Data.Text             as T
-import           Data.Word             (Word8)
-import           Foreign.Marshal.Array (peekArray)
-import           Foreign.Ptr           (Ptr, castPtr, plusPtr)
-import           Foreign.Storable      (Storable (..))
-import           Numeric               (showHex)
-import           Prettyprinter         (Doc, Pretty (..), align, brackets, concatWith, hardline, space, (<+>))
+import           Control.Monad     (forM, zipWithM_)
+import           Data.Int          (Int64)
+import           Data.List.Split   (chunksOf)
+import           Data.Word         (Word8)
+import           Foreign.Ptr       (Ptr, castPtr, plusPtr)
+import           Foreign.Storable  (Storable (..))
+import           Prettyprinter     (Doc, Pretty (..), align, brackets, concatWith, hardline, space, (<+>))
 import           Prettyprinter.Ext
 
 type AI = Apple Int64; type AF = Apple Double
@@ -57,7 +53,6 @@ pE [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ",
 pE _ xs      = pretty xs
 
 instance Pretty a => Pretty (Apple a) where
-
     pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pE dims xs
 
 instance (Pretty a, Pretty b) => Pretty (P2 a b) where
@@ -68,15 +63,6 @@ instance (Pretty a, Pretty b, Pretty c) => Pretty (P3 a b c) where
 
 instance (Pretty a, Pretty b, Pretty c, Pretty d) => Pretty (P4 a b c d) where
     pretty (P4 x y z w) = tupledBy "*" [pretty x, pretty y, pretty z, pretty w]
-
-dbgAB :: forall a. Storable a => U a -> IO T.Text
-dbgAB p = do
-    rnk <- peek (castPtr p :: Ptr Int64)
-    dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)
-    let sz = 8+8*rnk+fromIntegral (sizeOf (undefined::a))*product dims
-    hextext <$> peekArray (fromIntegral sz) (castPtr p :: Ptr Word8)
-
-hextext = T.unwords . fmap (T.pack.($"").showHex)
 
 instance Storable a => Storable (Apple a) where
     sizeOf (AA rnk dims _) = 8+8*fromIntegral rnk+(sizeOf (undefined::a)*fromIntegral (product dims))
