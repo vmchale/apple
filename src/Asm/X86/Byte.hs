@@ -16,7 +16,6 @@ import           Data.Functor     (($>))
 import           Data.Int         (Int32, Int64, Int8)
 import qualified Data.IntMap      as IM
 import qualified Data.Map.Strict  as M
-import           Data.Tuple.Extra (fst3)
 import           Data.Word
 import           Foreign.Ptr      (FunPtr, IntPtr (..), Ptr, ptrToIntPtr)
 import           Foreign.Storable (Storable, sizeOf)
@@ -36,7 +35,7 @@ dbgFp asmϵ = do
 assembleCtx :: CCtx -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
-    p <- if hasMa isns then allocNear (fst3 ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
+    p <- if hasMa isns then allocNear (fst4 ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
     arrs <- aArr ds
     let b = BS.pack.concat$asm 0 (pI p, arrs, Just ctx, lbls) isns
         mP = snd<$>IM.lookupMin arrs
@@ -48,8 +47,8 @@ allFp (ds, instrs) = do
     (fn, p) <- do
         res <- prepAddrs instrs
         case res of
-            Just (m, _, _) -> (res,) <$> allocNear m (fromIntegral sz)
-            _              -> (res,) <$> allocExec (fromIntegral sz)
+            Just (m, _, _, _) -> (res,) <$> allocNear m (fromIntegral sz)
+            _                 -> (res,) <$> allocExec (fromIntegral sz)
     arrs <- aArr ds
     let is = asm 0 (pI p, arrs, fn, lbls) instrs; b = BS.pack.concat$is; bs = BS.pack<$>is
         mP = snd<$>IM.lookupMin arrs
@@ -898,10 +897,10 @@ asm ix st (Rdrand _ r:asms) =
         pre = 0x48 .|. e
         modB = 3 `shiftL` 6 .|. 6 `shiftL` 3 .|. b
     in [pre,0xf,0xc7,modB]:asm(ix+4) st asms
-asm ix st@(self, _, Just (m, _, _), _) (Call _ Malloc:asms) | Just i32 <- mi32 (m-(self+ix+5)) =
+asm ix st@(self, _, Just (m, _, _, _), _) (Call _ Malloc:asms) | Just i32 <- mi32 (m-(self+ix+5)) =
     let instr = 0xe8:le i32
     in instr:asm (ix+5) st asms
-asm ix st@(self, _, Just (_, f, _), _) (Call _ Free:asms) | Just i32 <- mi32 (f-(self+ix+5)) =
+asm ix st@(self, _, Just (_, f, _, _), _) (Call _ Free:asms) | Just i32 <- mi32 (f-(self+ix+5)) =
     let instr = 0xe8:le i32
     in instr:asm (ix+5) st asms
 asm ix st@(self, _, Just (_, _, d), _) (Call _ DR:asms) | Just i32 <- mi32 (d-(self+ix+5)) =
@@ -984,3 +983,6 @@ le :: (Storable a, Integral a, Bits a) => a -> [Word8]
 le x = fromIntegral <$> zipWith (\m e -> (x .&. m) `rotateR` e) masks ee
     where ee = [0,8..(8*(sizeOf x-1))]
           masks = iterate (*0x100) 0xff
+
+fst4 :: (a, b, c, d) -> a
+fst4 (x, _, _, _) = x

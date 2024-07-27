@@ -37,7 +37,7 @@ prepAddrs ss = case (hasMa ss, hasMath ss) of
 assembleCtx :: (CCtx, MCtx) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
-    p <- if hasMa isns then allocNear (fst3 (fst ctx)) (fromIntegral sz) else allocExec (fromIntegral sz)
+    p <- if hasMa isns then allocNear (fst4 (fst ctx)) (fromIntegral sz) else allocExec (fromIntegral sz)
     when (p==nullPtr) $ error "failed to allocate memory for JIT"
     ps <- aArr ds
     let b = BS.pack.concatMap reverse$asm 0 (ps, bimap Just Just ctx, lbls) isns
@@ -52,8 +52,8 @@ allFp (ds, instrs) = do
     (fn, p) <- do
         res <- prepAddrs instrs
         case res of
-            (Just (m, _, _),_) -> (res,) <$> allocNear m (fromIntegral sz)
-            _                  -> (res,) <$> allocExec (fromIntegral sz)
+            (Just (m, _, _, _),_) -> (res,) <$> allocNear m (fromIntegral sz)
+            _                     -> (res,) <$> allocExec (fromIntegral sz)
     ps <- aArr ds
     let is = asm 0 (ps, fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bsϵ = BS.pack.reverse<$>is
     (bsϵ,,snd<$>IM.lookupMin ps)<$>finish b p
@@ -199,9 +199,9 @@ asm ix st (B _ l:asms) =
         isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
     in isn:asm (ix+4) st asms
 asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
-asm ix st@(_, (Just (m, _, _), _), _) (MovRCf _ r Malloc:asms) =
+asm ix st@(_, (Just (m, _, _, _), _), _) (MovRCf _ r Malloc:asms) =
     asm ix st (m4 r m++asms)
-asm ix st@(_, (Just (_, f, _), _), _) (MovRCf _ r Free:asms) =
+asm ix st@(_, (Just (_, f, _, _), _), _) (MovRCf _ r Free:asms) =
     asm ix st (m4 r f++asms)
 asm ix st@(_, (_, Just (_, l, _)),_) (MovRCf _ r Log:asms) =
     asm ix st (m4 r l++asms)
@@ -209,7 +209,7 @@ asm ix st@(_, (_, Just (e, _, _)),_) (MovRCf _ r Exp:asms) =
     asm ix st (m4 r e++asms)
 asm ix st@(_, (_, Just (_, _, p)),_) (MovRCf _ r Pow:asms) =
     asm ix st (m4 r p++asms)
-asm ix st@(_, (Just (_, _, d), _),_) (MovRCf _ r DR:asms) =
+asm ix st@(_, (Just (_, _, d, _), _),_) (MovRCf _ r DR:asms) =
     asm ix st (m4 r d++asms)
 asm ix st (LdrRL _ r l:asms) =
     let p = pI$arr l st
@@ -227,6 +227,9 @@ get l =
 
 arr :: Int -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Ptr Word64
 arr n = IM.findWithDefault (error "Internal error: array not found during assembler stage") n . fst3
+
+fst4 :: (a, b, c, d) -> a
+fst4 (x, _, _, _) = x
 
 pI :: Ptr a -> Int
 pI = (\(IntPtr i) -> i) . ptrToIntPtr

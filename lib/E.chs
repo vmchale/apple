@@ -95,11 +95,12 @@ apple_compile jp src szPtr sPtr = do
     m <- il <$> {# get JC->ma #} jp
     f <- il <$> {# get JC->free #} jp
     r <- il <$> {# get JC->r #} jp
+    xr <- il <$> {# get JC->xr #} jp
     e <- il <$> {# get JC->e #} jp
     l <- il <$> {# get JC->log #} jp
     p <- il <$> {# get JC->pow #} jp
     bSrc <- BS.unsafePackCString src
-    (sz, fp, aa) <- cfp ((m,f,r), (e,l,p)) (BSL.fromStrict bSrc)
+    (sz, fp, aa) <- cfp ((m,f,xr,r), (e,l,p)) (BSL.fromStrict bSrc)
     jNull aa sPtr
     poke szPtr (fromIntegral sz) $> castFunPtrToPtr fp
   where

@@ -4,6 +4,7 @@ module Sys.DL ( CCtx, MCtx, libc, mem', math' ) where
 
 import           Data.Functor                          (($>))
 import           Foreign.C.Types                       (CSize)
+import           Data.Int                              (Int32)
 import           Foreign.Ptr                           (FunPtr, IntPtr (..), Ptr, castFunPtrToPtr, ptrToIntPtr)
 import           System.Posix.DynamicLinker.ByteString (DL, RTLDFlags (RTLD_LAZY), dlclose, dlopen, dlsym)
 
@@ -11,18 +12,18 @@ import           System.Posix.DynamicLinker.ByteString (DL, RTLDFlags (RTLD_LAZY
 #include <gnu/lib-names.h>
 #endif
 
-type CCtx = (Int, Int, Int); type MCtx = (Int, Int, Int)
+type CCtx = (Int, Int, Int, Int); type MCtx = (Int, Int, Int)
 
 math' :: IO MCtx
 math' = do {(e,l,p) <- math; pure (ip e, ip l, ip p)}
 
 mem' :: IO CCtx
-mem' = do {(m,f,r) <- mem; pure (ip m, ip f, ip r)}
+mem' = do {(m,f,xr,r) <- mem; pure (ip m, ip f, ip xr, ip r)}
 
 ip = (\(IntPtr i) -> i) . ptrToIntPtr . castFunPtrToPtr
 
-mem :: IO (FunPtr (CSize -> IO (Ptr a)), FunPtr (Ptr a -> IO ()), FunPtr (IO Double))
-mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; r <- dlsym c "drand48"; dlclose c$>(m,f,r)}
+mem :: IO (FunPtr (CSize -> IO (Ptr a)), FunPtr (Ptr a -> IO ()), FunPtr (IO Double), FunPtr (IO Int32))
+mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; xr <- dlsym c "drand48"; r <- dlsym c "mrand48"; dlclose c$>(m,f,xr,r)}
 
 math :: IO (FunPtr (Double -> Double), FunPtr (Double -> Double), FunPtr (Double -> Double -> Double))
 math = do {m <- libm; e <- dlsym m "exp"; l <- dlsym m "log"; p <- dlsym m "pow"; dlclose m$>(e,l,p)}
