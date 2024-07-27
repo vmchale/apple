@@ -65,10 +65,10 @@ library
         A.Opt
         Op
         C
+        C.Alloc
         C.CF
         C.Trans
         IR
-        IR.Alloc
         IR.CF
         IR.CFA
         IR.Hoist

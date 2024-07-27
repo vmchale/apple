@@ -9,7 +9,6 @@ module Dbg ( dumpAAbs
            , dumpX86Liveness
            , dumpC
            , dumpIR
-           , dumpIRI
            , dumpDomTree
            , dumpLoop
            , dumpX86Intervals
@@ -38,6 +37,7 @@ import           Asm.X86.Byte
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           C
+import           C.Alloc
 import           CF
 import           Control.Exception    (throw, throwIO)
 import           Control.Monad        ((<=<))
@@ -53,7 +53,6 @@ import           Data.Tuple           (swap)
 import           Data.Tuple.Extra     (fst3)
 import           Data.Word            (Word64)
 import           IR
-import           IR.Alloc
 import           IR.Hoist
 import           L
 import           Numeric              (showHex)
@@ -146,8 +145,8 @@ dumpDomTree = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (_,t,asϵ,_) = pS as�
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
 
-dumpIRI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpIRI = fmap (prettyIRI.live.fst3).ir
+-- dumpIRI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+-- dumpIRI = fmap (prettyIRI.live.fst3).ir
 
 dumpX86Intervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Intervals = fmap X86.prettyDebugX86 . x86Iv

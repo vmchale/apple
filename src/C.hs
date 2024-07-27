@@ -14,6 +14,7 @@ module C ( Temp (..), FTemp (..), BTemp (..)
          ) where
 
 import           CF.AL
+import           Data.Copointed
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Word         (Word64)
@@ -154,6 +155,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE }
           | WrP { lann :: a, addr :: ArrAcc , wrB :: PE }
           | Ma { lann :: a, label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
+          | Free Temp
           | MaΠ { lann :: a, label :: AL, temp :: Temp, aBytes :: CE }
           | RA { lann :: a, label :: !AL } -- return array no-op (takes label)
           | CpyE { lann :: a, aDest, aSrc :: ArrAcc, nElem :: CE, elemSz :: !Int64 } -- copy elems
@@ -175,6 +177,8 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           deriving Functor
           -- TODO: PlDims cause we have diml
 
+instance Copointed CS where copoint=lann
+
 instance Pretty (CS a) where
     pretty (MT _ t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
     pretty (MT _ t e)             = pretty t <+> "=" <+> pretty e
@@ -184,6 +188,7 @@ instance Pretty (CS a) where
     pretty (Wr _ a e)             = pretty a <+> "=" <+> pretty e
     pretty (WrF _ a e)            = pretty a <+> "=" <+> pretty e
     pretty (WrP _ a e)            = pretty a <+> "=" <+> pretty e
+    pretty (Free t)               = "free" <+> pretty t
     pretty (Ma _ _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz)
     pretty (MaΠ _ _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz)
     pretty (For _ t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS ss) <#> rbrace
