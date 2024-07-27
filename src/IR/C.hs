@@ -38,65 +38,65 @@ tick reg = IR.MT reg (Reg reg+1)
 nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 
 cToIRM :: CS () -> IRM [Stmt]
-cToIRM (G l retL)          = pure [IR.C l, IR.L retL]
+cToIRM (G _ l retL)          = pure [IR.C l, IR.L retL]
 -- FIXME: put this at the end so it doesn't have to be skipped
-cToIRM (Def l cs)          = do
+cToIRM (Def _ l cs)          = do
     endL <- nextL
     irs <- foldMapM cToIRM cs
     pure (J endL:L l:irs++[IR.R l, L endL])
-cToIRM (C.PlProd t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT t' (IR.Reg t'*irE eϵ) | eϵ <- es])
-cToIRM (t := e)            = pure [IR.MT (ctemp t) (irE e)]
-cToIRM (C.MX t e)          = pure [IR.MX (fx t) (irX e)]
-cToIRM (C.MB t e)          = pure [IR.MT (cbtemp t) (irp e)]
-cToIRM (Rnd t)             = pure [IR.IRnd (ctemp t)]
-cToIRM (C.FRnd t)          = pure [IR.FRnd (fx t)]
-cToIRM (C.Ma l t (C.ConstI rnkI) n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) (IR.ConstI s)+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just l)) (IR.ConstI rnkI)]
+cToIRM (C.PlProd _ t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT t' (IR.Reg t'*irE eϵ) | eϵ <- es])
+cToIRM (C.MT _ t e)        = pure [IR.MT (ctemp t) (irE e)]
+cToIRM (C.MX _ t e)          = pure [IR.MX (fx t) (irX e)]
+cToIRM (C.MB _ t e)          = pure [IR.MT (cbtemp t) (irp e)]
+cToIRM (Rnd _ t)             = pure [IR.IRnd (ctemp t)]
+cToIRM (C.FRnd _ t)          = pure [IR.FRnd (fx t)]
+cToIRM (C.Ma _ l t (C.ConstI rnkI) n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) (IR.ConstI s)+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just l)) (IR.ConstI rnkI)]
 -- TODO: allocate rnk `shiftL` 3 for dims
-cToIRM (C.Ma l t rnk n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE rnk+irE n) (IR.ConstI s)+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
+cToIRM (C.Ma _ l t rnk n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE rnk+irE n) (IR.ConstI s)+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
 -- TODO: allocate rnk `shiftL` 3 for dims
-cToIRM (C.Ma l t rnk n sz) = let t'=ctemp t in pure [IR.Ma l t' ((irE rnk+irE n)*IR.ConstI sz+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
-cToIRM (C.MaΠ l t sz)      = pure [IR.Ma l (ctemp t) (irE sz)]
-cToIRM (C.Wr a e)          = pure [IR.Wr (irAt a) (irE e)]
-cToIRM (C.WrF a x)         = pure [IR.WrF (irAt a) (irX x)]
-cToIRM (C.WrP a b)         = pure [IR.WrB (irAt a) (irp b)]
-cToIRM (For t el rel eu s) = do
+cToIRM (C.Ma _ l t rnk n sz) = let t'=ctemp t in pure [IR.Ma l t' ((irE rnk+irE n)*IR.ConstI sz+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
+cToIRM (C.MaΠ _ l t sz)      = pure [IR.Ma l (ctemp t) (irE sz)]
+cToIRM (C.Wr _ a e)          = pure [IR.Wr (irAt a) (irE e)]
+cToIRM (C.WrF _ a x)         = pure [IR.WrF (irAt a) (irX x)]
+cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]
+cToIRM (For _ t el rel eu s) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
     pure $ IR.MT t' (irE el):MJ (IR.IRel (nr rel) (Reg t') (irE eu)) eL:L l:irs++[tick t', MJ (IR.IRel rel (Reg t') (irE eu)) l, L eL]
   where
     t'=ctemp t
-cToIRM (For1 t el rel eu s) = do
+cToIRM (For1 _ t el rel eu s) = do
     l <- nextL
     irs <- foldMapM cToIRM s
     pure $ IR.MT t' (irE el):L l:irs++[tick t', MJ (IR.IRel rel (Reg t') (irE eu)) l]
   where
     t'=ctemp t
-cToIRM (While t rel eb s) = do
+cToIRM (While _ t rel eb s) = do
     l <- nextL; eL <- nextL
     s' <- foldMapM cToIRM s
     pure $ MJ (IR.IRel (nr rel) (Reg t') (irE eb)) eL:L l:s'++[MJ (IR.IRel rel (Reg t') (irE eb)) l, L eL]
   where t'=ctemp t
-cToIRM (C.RA i) = pure [IR.RA i]
-cToIRM (CpyD a0 a1 e) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
-cToIRM (CpyE a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
-cToIRM (CpyE a0 a1 e sz) | (s,0) <- sz `quotRem` 8 = pure [Cpy (irAt a0) (irAt a1) (irE e*IR.ConstI s)]
-cToIRM (C.Sa t e) = pure [IR.Sa (ctemp t) (irE e)]
-cToIRM (C.Pop e) = pure [IR.Pop (irE e)]
-cToIRM (Ifn't p s) = do
+cToIRM (C.RA _ i) = pure [IR.RA i]
+cToIRM (CpyD _ a0 a1 e) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
+cToIRM (CpyE _ a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
+cToIRM (CpyE _ a0 a1 e sz) | (s,0) <- sz `quotRem` 8 = pure [Cpy (irAt a0) (irAt a1) (irE e*IR.ConstI s)]
+cToIRM (C.Sa _ t e) = pure [IR.Sa (ctemp t) (irE e)]
+cToIRM (C.Pop _ e) = pure [IR.Pop (irE e)]
+cToIRM (Ifn't _ p s) = do
     l <- nextL
     s' <- foldMapM cToIRM s
     pure $ MJ (irp p) l:s'++[L l]
-cToIRM (If p s0 s1) = do
+cToIRM (If _ p s0 s1) = do
     l <- nextL; l' <- nextL
     s0' <- foldMapM cToIRM s0; s1' <- foldMapM cToIRM s1
     pure $ MJ (irp p) l:s1'++J l':L l:s0'++[L l']
-cToIRM (C.Cmov p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
-cToIRM (C.Fcmov p t e) = pure [IR.Fcmov (irp p) (fx t) (irX e)]
-cToIRM (C.Cset p t) = pure [IR.Cset (cbtemp t) (irp p)]
-cToIRM (SZ td t rnk l) = do
+cToIRM (C.Cmov _ p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
+cToIRM (C.Fcmov _ p t e) = pure [IR.Fcmov (irp p) (fx t) (irX e)]
+cToIRM (C.Cset _ p t) = pure [IR.Cset (cbtemp t) (irp p)]
+cToIRM (SZ _ td t rnk l) = do
     i <- nextI
     foldMapM cToIRM
-        [td := C.EAt (ADim t 0 l), For i 1 ILt rnk [td := (Tmp td*C.EAt (ADim t (Tmp i) l))]]
+        [td =: C.EAt (ADim t 0 l), For () i 1 ILt rnk [td =: (Tmp td*C.EAt (ADim t (Tmp i) l))]]
 
 irAt :: ArrAcc -> AE
 irAt (ARnk t l)                                                = AP (ctemp t) Nothing l

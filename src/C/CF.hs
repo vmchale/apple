@@ -20,7 +20,7 @@ type FreshM = State (N, M.Map Label N, M.Map Label [N])
 runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
 
-mkControlFlow :: [CS ()] -> [(CS (), ControlAnn)]
+mkControlFlow :: [CS ()] -> [CS ControlAnn]
 mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
 
 getFresh :: FreshM N
@@ -49,12 +49,12 @@ mC f (ControlAnn l ds udϵ) = ControlAnn l (f ds) udϵ
 
 -- | Pair 'CS with a unique node name and a list of all possible
 -- destinations.
-addCF :: [CS ()] -> FreshM [(CS (), ControlAnn)]
+addCF :: [CS ()] -> FreshM [CS ControlAnn]
 addCF [] = pure []
-addCF ((Def l ss):stmts) =
+addCF ((Def _ l ss):stmts) =
     case uncons ss of
         Nothing -> undefined
-addCF (G l r:stmts) = undefined
+addCF (G _ l r:stmts) = undefined
 addCF (For{}:_) = undefined
 addCF (While{}:_) = undefined
 addCF (If{}:_) = undefined
@@ -62,7 +62,7 @@ addCF (Ifn't{}:_) = undefined
 addCF (stmt:stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    pure ((stmt, ControlAnn i (f []) (UD (uses stmt) IS.empty (defs stmt) IS.empty)):stmts')
+    pure ((stmt $> ControlAnn i (f []) (UD (uses stmt) IS.empty (defs stmt) IS.empty)):stmts')
 
 uE :: CE -> IS.IntSet
 uE ConstI{} = IS.empty
@@ -75,16 +75,16 @@ uF ConstF{}                       = IS.empty
 uA (ARnk _ (Just l)) = singleton l
 
 uses :: CS () -> IS.IntSet
-uses (Ma _ _ e _ _)  = uE e
-uses (MX _ e)        = uF e
-uses (Wr a e)        = uA a <> uE e
-uses (RA l)          = singleton l
-uses (Cmov e0 _ e1)  = uB e0<>uE e1
-uses (Fcmov e0 _ e1) = uB e0<>uF e1
-uses Sa{}            = IS.empty
-uses (WrF a e)       = uA a <> uF e
-uses Pop{}           = IS.empty
-uses (Cset e _)      = uB e
+uses (Ma _ _ _ e _ _)  = uE e
+uses (MX _ _ e)        = uF e
+uses (Wr _ a e)        = uA a <> uE e
+uses (RA _ l)          = singleton l
+uses (Cmov _ e0 _ e1)  = uB e0<>uE e1
+uses (Fcmov _ e0 _ e1) = uB e0<>uF e1
+uses Sa{}              = IS.empty
+uses (WrF _ a e)       = uA a <> uF e
+uses Pop{}             = IS.empty
+uses (Cset _ e _)      = uB e
 
 uB :: PE -> IS.IntSet
 uB (PAt a)        = uA a
@@ -94,20 +94,20 @@ uB (FRel _ e0 e1) = uF e0 <> uF e1
 
 
 defs :: CS () -> IS.IntSet
-defs (Ma a _ _ _ _) = singleton a
-defs (MaΠ a _ _)    = singleton a
-defs _              = IS.empty
+defs (Ma _ a _ _ _ _) = singleton a
+defs (MaΠ _ a _ _)    = singleton a
+defs _                = IS.empty
 
-next :: [CS ()] -> FreshM ([N] -> [N], [(CS (), ControlAnn)])
+next :: [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
 next stmts = do
     nextStmts <- addCF stmts
     case nextStmts of
         []       -> pure (id, [])
-        (stmt:_) -> pure ((node (snd stmt) :), nextStmts)
+        (stmt:_) -> pure ((node (lann stmt) :), nextStmts)
 
 -- | Construct map assigning labels to their node name.
 brs :: [CS ()] -> FreshM ()
-brs []               = pure ()
-brs (G l retL:stmts) = do {i <- fm retL; b3 i l; brs stmts}
-brs (Def f b:stmts)  = fm f *> brs b *> brs stmts
-brs (_:asms)         = brs asms
+brs []                 = pure ()
+brs (G _ l retL:stmts) = do {i <- fm retL; b3 i l; brs stmts}
+brs (Def _ f b:stmts)  = fm f *> brs b *> brs stmts
+brs (_:asms)           = brs asms
