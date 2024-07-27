@@ -25,6 +25,10 @@ optE (IB IPlus e0 e1) =
         (e0', ConstI 0)        -> e0'
         (ConstI i0, ConstI i1) -> ConstI$i0+i1
         (e0', e1')             -> IB IPlus e0' e1'
+optE (IB IMinus e0 e1) =
+    case (optE e0, optE e1) of
+        (e0', ConstI 0) -> e0'
+        (e0', e1')      -> IB IMinus e0' e1'
 optE (IB IAsl e0 e1) =
     case (optE e0, optE e1) of
         (ConstI i0, ConstI i1) -> ConstI$i0 `shiftL` (fromIntegral i1)
@@ -49,6 +53,28 @@ optF (FU FLog e) =
     case optF e of
         ConstF d -> ConstF$log d
         e'       -> FU FLog e'
+optF (FB FMinus e0 e1) =
+    case (optF e0, optF e1) of
+        (e0', ConstF 0) -> e0'
+        (e0', e1')      -> FB FMinus e0' e1'
+optF (FB FPlus e0 e1) =
+    case (optF e0, optF e1) of
+        (ConstF 0, e1')        -> e1'
+        (e0', ConstF 0)        -> e0'
+        (ConstF x0, ConstF x1) -> ConstF$x0+x1
+        (e0',e1')              -> FB FPlus e0' e1'
+optF (FB FTimes e0 e1) =
+    case (optF e0, optF e1) of
+        (ConstF 1, e1')        -> e1'
+        (e0', ConstF 1)        -> e0'
+        (ConstF x0, ConstF x1) -> ConstF$x0*x1
+        (e0',e1')              -> FB FTimes e0' e1'
+optF (FB FDiv e0 e1) =
+    case (optF e0, optF e1) of
+        (e0', ConstF 1)        -> e0'
+        (ConstF x0, ConstF x1) -> ConstF$x0/x1
+        (e0', ConstF x)        -> FB FTimes e0' (ConstF$1/x)
+        (e0',e1')              -> FB FDiv e0' e1'
 optF fe      = fe
 
 optP :: AE -> AE
