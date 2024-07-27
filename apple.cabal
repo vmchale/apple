@@ -65,7 +65,7 @@ library
         A.Opt
         Op
         C
-        -- C.CF
+        C.CF
         C.Trans
         IR
         IR.Alloc

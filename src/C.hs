@@ -140,28 +140,28 @@ instance Show CFE where show=show.pretty
 
 infix 9 :=
 
-data CS = For Temp CE IRel CE [CS] | For1 Temp CE IRel CE [CS]
-        | While Temp IRel CE [CS]
-        | Temp := CE | MX FTemp CFE | MB BTemp PE
-        | Wr ArrAcc CE | WrF ArrAcc CFE | WrP ArrAcc PE
-        | Ma AL Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
-        | MaΠ AL Temp CE
-        | RA !AL -- return array no-op (takes label)
-        | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
-        | CpyD ArrAcc ArrAcc CE -- copy dims
-        | Ifn't PE [CS]
-        | If PE [CS] [CS]
-        | Sa Temp CE | Pop CE
-        | Cmov PE Temp CE | Fcmov PE FTemp CFE
-        -- TODO: Fcneg?
-        | Cset PE BTemp
-        | SZ Temp Temp CE (Maybe AL) -- dest., pointer to array, rank, label
-        | PlProd Temp [CE]
-        | Rnd Temp | FRnd FTemp
-        | Def Label [CS] | G Label Label
-        -- TODO: PlDims cause we have diml
+data CS a = For Temp CE IRel CE [CS a] | For1 Temp CE IRel CE [CS a]
+          | While Temp IRel CE [CS a]
+          | Temp := CE | MX FTemp CFE | MB BTemp PE
+          | Wr ArrAcc CE | WrF ArrAcc CFE | WrP ArrAcc PE
+          | Ma AL Temp CE CE !Int64 -- label, temp, rank, #elements, element size in bytes
+          | MaΠ AL Temp CE
+          | RA !AL -- return array no-op (takes label)
+          | CpyE ArrAcc ArrAcc CE !Int64 -- copy elements
+          | CpyD ArrAcc ArrAcc CE -- copy dims
+          | Ifn't PE [CS a]
+          | If PE [CS a] [CS a]
+          | Sa Temp CE | Pop CE
+          | Cmov PE Temp CE | Fcmov PE FTemp CFE
+          -- TODO: Fcneg?
+          | Cset PE BTemp
+          | SZ Temp Temp CE (Maybe AL) -- dest., pointer to array, rank, label
+          | PlProd Temp [CE]
+          | Rnd Temp | FRnd FTemp
+          | Def Label [CS a] | G Label Label
+          -- TODO: PlDims cause we have diml
 
-instance Pretty CS where
+instance Pretty (CS a) where
     pretty (t := (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
     pretty (t := e)             = pretty t <+> "=" <+> pretty e
     pretty (MX t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e
@@ -195,11 +195,12 @@ instance Pretty CS where
 pS :: Label -> Doc ann
 pS l = "fun_" <> pretty l
 
-instance Show CS where show=show.pretty
+instance Show (CS a) where show=show.pretty
 
-prettyCS :: (AsmData, [CS]) -> Doc ann
+prettyCS :: (AsmData, [CS a]) -> Doc ann
 prettyCS (ds,ss) = pCS ss
 
+pCS :: [CS a] -> Doc ann
 pCS=prettyLines.fmap pretty
 
 data LSt = LSt { clabel :: !Label, ctemps :: !Int }

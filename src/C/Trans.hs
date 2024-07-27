@@ -180,10 +180,10 @@ tRnd (Arr sh t) = (t, staR sh)
 mIFs :: [E a] -> Maybe [Word64]
 mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
 
-writeC :: E (T ()) -> ([CS], LSt, AsmData, IM.IntMap Temp)
+writeC :: E (T ()) -> ([CS ()], LSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
 
-writeCM :: E (T ()) -> CM [CS]
+writeCM :: E (T ()) -> CM [CS ()]
 writeCM eϵ = do
     cs <- traverse (\_ -> newITemp) [(0::Int)..5]; fs <- traverse (\_ -> newFTemp) [(0::Int)..5]
     (zipWith (\xr xr' -> MX xr' (FTmp xr)) [F0,F1,F2,F3,F4,F5] fs ++) . (zipWith (\r r' -> r' := Tmp r) [C0,C1,C2,C3,C4,C5] cs ++) <$> go eϵ fs cs where
@@ -211,7 +211,7 @@ rtemp F=FT<$>newFTemp; rtemp I=IT<$>newITemp; rtemp B=PT<$>nBT
 writeF :: E (T ())
        -> [Arg]
        -> RT
-       -> CM (Maybe AL, [CS])
+       -> CM (Maybe AL, [CS ()])
 writeF (Lam _ x e) (AA r l:rs) ret = do
     modify (addAVar x (l,r))
     writeF e rs ret
@@ -230,21 +230,21 @@ writeF e [] (IT r) | isΠR (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
 writeF e [] (FT r) = (Nothing,)<$>feval e r
 writeF e [] (PT r) = (Nothing,)<$>peval e r
 
-m'p :: Maybe (CS, CS) -> [CS] -> [CS]
+m'p :: Maybe (CS (), CS ()) -> [CS ()] -> [CS ()]
 m'p Nothing        = id
 m'p (Just (a,pop)) = (++[pop]).(a:)
 
-sas :: [Maybe (CS, CS)] -> [CS] -> [CS]
+sas :: [Maybe (CS (), CS ())] -> [CS ()] -> [CS ()]
 sas = thread.fmap m'p
 
-aS :: E (T ()) -> [(T (), Int64 -> ArrAcc)] -> T () -> (Int64 -> ArrAcc) -> CM ([CS], [Maybe (CS, CS)])
+aS :: E (T ()) -> [(T (), Int64 -> ArrAcc)] -> T () -> (Int64 -> ArrAcc) -> CM ([CS ()], [Maybe (CS (), CS ())])
 aS f as rT rAt = do
     (args, rArgs, pinchArgs) <- unzip3 <$> traverse (uncurry arg) (fmap (\(t,r) -> (t,r$bT t)) as)
     (r, wR, pinch) <- rW rT (rAt$bT rT)
     ss <- writeRF f args r
     pure (rArgs++ss++[wR], pinch:pinchArgs)
 
-arg :: T () -> ArrAcc -> CM (RT, CS, Maybe (CS, CS))
+arg :: T () -> ArrAcc -> CM (RT, CS (), Maybe (CS (), CS ()))
 arg ty at | isR ty = do
     t <- rtemp ty
     pure (t, mt at t, Nothing)
@@ -253,7 +253,7 @@ arg ty at | isΠ ty = do
     let sz=bT ty; slopE=ConstI sz
     pure (IT slop, CpyE (TupM slop Nothing) at 1 sz, Just (Sa slop slopE, Pop slopE))
 
-rW :: T () -> ArrAcc -> CM (RT, CS, Maybe (CS, CS))
+rW :: T () -> ArrAcc -> CM (RT, CS (), Maybe (CS (), CS ()))
 rW ty at | isR ty = do
     t <- rtemp ty
     pure (t, wt at t, Nothing)
@@ -262,25 +262,25 @@ rW ty at | isΠ ty = do
     let sz=bT ty; slopE=ConstI sz
     pure (IT slopO, CpyE at (TupM slopO Nothing) 1 sz, Just (Sa slopO slopE, Pop slopE))
 
-writeRF :: E (T ()) -> [RT] -> RT -> CM [CS]
+writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
 data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe AL) | BA !BTemp
 data RT = IT Temp | FT FTemp | PT BTemp
 
-mt :: ArrAcc -> RT -> CS
+mt :: ArrAcc -> RT -> CS ()
 mt p (IT t) = t := EAt p
 mt p (FT t) = MX t (FAt p)
 mt p (PT t) = MB t (PAt p)
 
-wt :: ArrAcc -> RT -> CS
+wt :: ArrAcc -> RT -> CS ()
 wt p (IT t) = Wr p (Tmp t)
 wt p (FT t) = WrF p (FTmp t)
 wt p (PT t) = WrP p (Is t)
 
 ra (FT f)=FA f; ra (IT r)=IPA r; ra (PT r)=BA r
 
-eeval :: E (T ()) -> RT -> CM [CS]
+eeval :: E (T ()) -> RT -> CM [CS ()]
 eeval e (IT t) = eval e t
 eeval e (FT t) = feval e t
 eeval e (PT t) = peval e t
@@ -292,20 +292,20 @@ part []           = ([], [])
 part (Cell i:is)  = first (i:) $ part is
 part (Index i:is) = second (i:) $ part is
 
-diml :: (Temp, Maybe AL) -> [CE] -> [CS]
+diml :: (Temp, Maybe AL) -> [CE] -> [CS ()]
 diml (t,l) ds = zipWith (\d i -> Wr (ADim t (ConstI i) l) d) ds [0..]
 
-vSz :: Temp -> CE -> Int64 -> CM (AL, [CS])
+vSz :: Temp -> CE -> Int64 -> CM (AL, [CS ()])
 vSz t n sz = do {a <- nextArr t; pure (a, [Ma a t 1 n sz, Wr (ADim t 0 (Just a)) n])}
 
-v8 :: Temp -> CE -> CM (AL, [CS])
+v8 :: Temp -> CE -> CM (AL, [CS ()])
 v8 t n = vSz t n 8
 
-plDim :: Int64 -> (Temp, Maybe AL) -> CM ([Temp], [CS])
+plDim :: Int64 -> (Temp, Maybe AL) -> CM ([Temp], [CS ()])
 plDim rnk (a,l) =
     unzip <$> traverse (\at -> do {dt <- newITemp; pure (dt, dt := EAt at)}) [ ADim a (ConstI i) l | i <- [0..rnk-1] ]
 
-offByDim :: [Temp] -> CM ([Temp], [CS])
+offByDim :: [Temp] -> CM ([Temp], [CS ()])
 offByDim dims = do
     sts <- traverse (\_ -> newITemp) (undefined:dims)
     let ss=zipWith3 (\s1 s0 d -> s1 := (Tmp s0*Tmp d)) (tail sts) sts dims
@@ -320,7 +320,7 @@ forAll is bs = thread (zipWith g is bs) where
     g t b            = (:[]) . For t 0 ILt b
 
 -- the resulting expressions/statement contain free variables that will be iterated over in the main rank-ification loop, these free variables are returned alongside
-extrCell :: [Cell () Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM ([Temp], [CS])
+extrCell :: [Cell () Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM ([Temp], [CS ()])
 extrCell fixBounds sstrides (srcP, srcL) dest = do
     (dims, ts, arrIxes, complts) <- switch fixBounds
     t <- newITemp; i <- newITemp
@@ -330,7 +330,7 @@ extrCell fixBounds sstrides (srcP, srcL) dest = do
           switch (Fixed:ds)   = do {f <- newITemp; qmap id id (f:) (f:) <$> switch ds}
           switch []           = pure ([], [], [], [])
 
-llet :: (Nm (T ()), E (T ())) -> CM [CS]
+llet :: (Nm (T ()), E (T ())) -> CM [CS ()]
 llet (n,e') | isArr (eAnn e') = do
     eR <- newITemp
     (l, ss) <- aeval e' eR
@@ -350,7 +350,7 @@ llet (n,e') | Arrow F F <- eAnn e' = do
     modify (addF n (l, [FA x], (Left y)))
     pure [C.Def l ss]
 
-aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS])
+aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
     ss <- llet b
     second (ss ++) <$> aeval e t
@@ -1004,22 +1004,22 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
         ++[Pop slopE])
 aeval e _ = error (show e)
 
-plC :: E (T ()) -> CM ([CS] -> [CS], CE)
+plC :: E (T ()) -> CM ([CS ()] -> [CS ()], CE)
 plC (ILit _ i) = pure (id, ConstI$fromIntegral i)
 plC (Var I x)  = do {st <- gets vars; pure (id, Tmp$getT st x)}
 plC e          = do {t <- newITemp; pl <- eval e t; pure ((pl++), Tmp t)}
 
-plD :: E (T ()) -> CM ([CS] -> [CS], CFE)
+plD :: E (T ()) -> CM ([CS ()] -> [CS ()], CFE)
 plD (FLit _ x) = pure (id, ConstF x)
 plD (Var F x)  = do {st <- gets dvars; pure (id, FTmp$getT st x)}
 plD e          = do {t <- newFTemp; pl <- feval e t; pure ((pl++), FTmp t)}
 
-plP :: E (T ()) -> CM ([CS] -> [CS], PE)
+plP :: E (T ()) -> CM ([CS ()] -> [CS ()], PE)
 plP (BLit _ b) = pure (id, BConst b)
 plP (Var B x)  = do {st <- gets pvars; pure (id, Is$getT st x)}
 plP e          = do {t <- nBT; pl <- peval e t; pure ((pl++), Is t)}
 
-plEV :: E (T ()) -> CM ([CS] -> [CS], Temp)
+plEV :: E (T ()) -> CM ([CS ()] -> [CS ()], Temp)
 plEV (Var I x) = do
     st <- gets vars
     pure (id, getT st x)
@@ -1028,7 +1028,7 @@ plEV e = do
     pl <- eval e t
     pure ((pl++), t)
 
-plF :: E (T ()) -> CM ([CS] -> [CS], FTemp)
+plF :: E (T ()) -> CM ([CS ()] -> [CS ()], FTemp)
 plF (Var F x) = do
     st <- gets dvars
     pure (id, getT st x)
@@ -1037,11 +1037,11 @@ plF e = do
     pl <- feval e t
     pure ((pl++), t)
 
-plA :: E (T ()) -> CM ([CS] -> [CS], (Maybe AL, Temp))
+plA :: E (T ()) -> CM ([CS ()] -> [CS ()], (Maybe AL, Temp))
 plA (Var _ x) = do {st <- gets avars; pure (id, getT st x)}
 plA e         = do {t <- newITemp; (lX,plX) <- aeval e t; pure ((plX++), (lX, t))}
 
-peval :: E (T ()) -> BTemp -> CM [CS]
+peval :: E (T ()) -> BTemp -> CM [CS ()]
 peval (BLit _ b) t = pure [MB t (BConst b)]
 peval (EApp _ (Builtin _ Odd) e0) t = do
     (pl,eR) <- plEV e0
@@ -1081,7 +1081,7 @@ peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
         loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE $ plAcc++szR:=EAt (ADim aP 0 l):[loop]
 
-eval :: E (T ()) -> Temp -> CM [CS]
+eval :: E (T ()) -> Temp -> CM [CS ()]
 eval (LLet _ b e) t = do
     ss <- llet b
     (ss++) <$> eval e t
@@ -1208,7 +1208,7 @@ mFEval (Var _ x) = Just $ do
     pure (FTmp (getT st x))
 mFEval _ = Nothing
 
-cond :: E (T ()) -> E (T ()) -> E (T ()) -> RT -> CM (Maybe AL, [CS])
+cond :: E (T ()) -> E (T ()) -> E (T ()) -> RT -> CM (Maybe AL, [CS ()])
 cond (EApp _ (EApp _ (Builtin (Arrow F _) op) c0) c1) e e1 (FT t) | Just cmp <- frel op, Just cfe <- mFEval e1 = do
     c0R <- newFTemp; c1R <- newFTemp
     plC0 <- feval c0 c0R; plC1 <- feval c1 c1R
@@ -1237,7 +1237,7 @@ cond p e0 e1 t | isIF (eAnn e0) = do
     plPP <- peval p pR; plE0 <- eeval e0 t; plE1 <- eeval e1 t
     pure (Nothing, plPP ++ [If (Is pR) plE0 plE1])
 
-feval :: E (T ()) -> FTemp -> CM [CS]
+feval :: E (T ()) -> FTemp -> CM [CS ()]
 feval (LLet _ b e) t = do
     ss <- llet b
     (ss++) <$> feval e t
@@ -1414,13 +1414,13 @@ feval (Id _ (FoldGen seed g f n)) t = do
     pure $ plSeed $ plN++[MX acc (FTmp seedR), MX x (FTmp seedR), For k 0 ILt (Tmp nR) (fss++uss), MX t (FTmp acc)]
 feval e _ = error (show e)
 
-m'pop :: Maybe CE -> [CS]
+m'pop :: Maybe CE -> [CS ()]
 m'pop = maybe [] ((:[]).Pop)
 
-m'sa :: Temp -> Maybe CE -> [CS]
+m'sa :: Temp -> Maybe CE -> [CS ()]
 m'sa t = maybe []  ((:[]).Sa t)
 
-πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [AL], [CS]) -- element offsets, size to be popped off the stack, array labels kept live
+πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [AL], [CS ()]) -- element offsets, size to be popped off the stack, array labels kept live
 πe (EApp (P tys) (Builtin _ Head) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
     (lX, plX) <- aeval xs xR

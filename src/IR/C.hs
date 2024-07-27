@@ -30,14 +30,14 @@ fx FRet0 = FRet; fx C.FRet1 = IR.FRet1
 fx C.F0 = IR.F0; fx C.F1 = IR.F1; fx C.F2 = IR.F2
 fx C.F3 = IR.F3; fx C.F4 = IR.F4; fx C.F5 = IR.F5
 
-cToIR :: LSt -> [CS] -> ([Stmt], WSt)
+cToIR :: LSt -> [CS ()] -> ([Stmt], WSt)
 cToIR (LSt ls ts) cs = runState (foldMapM cToIRM cs) (WSt ls ts)
 
 tick reg = IR.MT reg (Reg reg+1)
 
 nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 
-cToIRM :: CS -> IRM [Stmt]
+cToIRM :: CS () -> IRM [Stmt]
 cToIRM (G l retL)          = pure [IR.C l, IR.L retL]
 -- FIXME: put this at the end so it doesn't have to be skipped
 cToIRM (Def l cs)          = do
