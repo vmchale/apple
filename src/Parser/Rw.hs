@@ -56,7 +56,6 @@ lassoc Div    = True
 lassoc Mod    = True
 lassoc Times  = True
 lassoc Mul    = True
-lassoc Mul    = True
 lassoc Plus   = True
 lassoc Minus  = True
 lassoc ConsE  = False
@@ -65,12 +64,9 @@ lassoc CatE   = False
 lassoc Sr     = True
 lassoc Sl     = True
 lassoc Xor    = True
-lassoc Eq     = False
-lassoc Neq    = False
-lassoc Gte    = False
-lassoc Lte    = False
-lassoc Gt     = False
-lassoc Lt     = False
+lassoc Eq = False; lassoc Neq = False
+lassoc Gte = False; lassoc Lte = False
+lassoc Gt = False; lassoc Lt = False
 
 shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1
