@@ -199,7 +199,7 @@ Sh :: { Sh AlexPosn }
    | I cons Sh { A.Cons $1 $3 }
    | name { SVar $1 }
    | parens(Sh) { $1 }
-   | parens(sepBy(I, ixTimes)) { foldr A.Cons Nil $1 }
+   | parens(sepBy(I, ixTimes)) { foldl (flip A.Cons) Nil $1 }
 
 T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }
