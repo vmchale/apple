@@ -394,16 +394,17 @@ qc s = do
                         Nothing -> pErr ("must be a proposition." :: T.Text)
                         Just ty -> liftIO $ do
                             asm@(_, fp, _) <- efp eC
-                            -- TODO: stop on counterexample
-                            res <- for [1..100] $ \_ -> do
-                                arrs <- gas ty
-                                b <- callFFI fp retCUChar (argPtr<$>arrs)
-                                (if cb b
-                                    then pure Nothing
-                                    else do {aa <- traverse peek arrs; pure (Just aa)}) <* traverse_ free arrs
-                            case catMaybes res of
-                                []     -> putDoc ("Passed, 100." <> hardline)
-                                (ex:_) -> putDoc ("Proposition failed!" <> hardline <> pretty ex <> hardline)
+                            let loop 0 = pure Nothing
+                                loop n = do
+                                    arrs <- gas ty
+                                    b <- callFFI fp retCUChar (argPtr<$>arrs)
+                                    (if cb b
+                                        then loop (n-1)
+                                        else do {aa <- traverse peek arrs; pure (Just aa)}) <* traverse_ free arrs
+                            res <- loop 100
+                            case res of
+                                Nothing -> putDoc ("Passed, 100." <> hardline)
+                                Just ex -> putDoc ("Proposition failed!" <> hardline <> pretty ex <> hardline)
                             freeAsm asm
 
   where bs = ubs s
