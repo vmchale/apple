@@ -1086,9 +1086,8 @@ eval (Var _ x) t = do
     st <- gets vars
     pure [t := Tmp (getT st x)]
 eval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
-    e0R <- newITemp; e1R <- newITemp
-    plE0 <- eval e0 e0R; plE1 <- eval e1 e1R
-    pure $ plE0 ++ plE1 ++ [Rnd t, t := (Bin IRem (Tmp t) (Tmp e1R - Tmp e0R + 1) + Tmp e0R)]
+    (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
+    pure $ plE0 $ plE1 [Rnd t, t := (Bin IRem (Tmp t) (e1e-e0e+1) + e0e)]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- rSz tX = do
     x <- rtemp tX
     szR <- newITemp
