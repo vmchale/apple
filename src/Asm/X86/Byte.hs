@@ -903,7 +903,7 @@ asm ix st@(self, _, Just (m, _, _, _), _) (Call _ Malloc:asms) | Just i32 <- mi3
 asm ix st@(self, _, Just (_, f, _, _), _) (Call _ Free:asms) | Just i32 <- mi32 (f-(self+ix+5)) =
     let instr = 0xe8:le i32
     in instr:asm (ix+5) st asms
-asm ix st@(self, _, Just (_, _, d), _) (Call _ DR:asms) | Just i32 <- mi32 (d-(self+ix+5)) =
+asm ix st@(self, _, Just (_, _, d, _), _) (Call _ DR:asms) | Just i32 <- mi32 (d-(self+ix+5)) =
     let isn=0xe8:le i32
     in isn:asm (ix+5) st asms
 asm _ (_, _, Nothing, _) (Call{}:_) = error "Internal error? no dynlibs"
