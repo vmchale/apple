@@ -176,6 +176,9 @@ ir (IR.Fcmov (IR.FRel Op.FGt (IR.FReg xr0) (IR.FReg xr1)) t e) = do
     plE <- feval e t; l <- nextL
     f <- nextF; r <- nextR
     pure $ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Leos, MovqRX () r f, TestI () r maxBound, Jne () l] ++ plE ++ [Label () l]
+ir (IR.Fcmov (IR.IRel Op.IEq (IR.Reg r0) (IR.ConstI n)) t e) | Just i32 <- mi32 n = do
+    plE <- feval e t; l <- nextL
+    pure $ [CmpRI () (absReg r0) i32, Jne () l] ++ plE ++ [Label () l]
 ir (IR.Cmov (IR.FRel Op.FGeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nextI; plE <- evalE e (IR.ITemp i1)
     f <- nextF; r <- nextR
