@@ -119,6 +119,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
 
     intLit { $$@(TokInt _ _) }
     floatLit { $$@(TokFloat _ _) }
+    six { $$@(TokIx _ _) }
 
     x { TokResVar $$ VarX }
     y { TokResVar $$ VarY }
@@ -203,6 +204,7 @@ Sh :: { Sh AlexPosn }
 T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }
   | vec I T { Arr ($2 `A.Cons` Nil) $3 }
+  | matrix six comma six T { Arr ((Ix (loc $2) (six $2)) `A.Cons` (Ix (loc $4) (six $4)) `A.Cons` Nil) $5 }
   | matrix T {% do {i <- lift $ freshName "i"; j <- lift $ freshName "j"; pure $ Arr (IVar $1 i `A.Cons` IVar $1 j `A.Cons` Nil) $2 } }
   | int { I }
   | float { F }

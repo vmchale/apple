@@ -56,6 +56,7 @@ $sub = [$subscript $digitsubscript]
 
 @follow_char = [$letter $digit \_]
 
+-- TODO: M₂,₂ without the space
 @name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek $sub* | $mathlatin $sub* | ∫ | 𝛻 | ∇) [′″‴⁗]?
 
 @exp = e\-?$digit+
@@ -234,6 +235,7 @@ tokens :-
         _$digit+                 { tok (\p s -> alex $ TokInt p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
         "0x"$hexit+              { tok (\p s -> alex $ TokInt p (hexP $ BSL.drop 2 s)) }
         _"0x"$hexit+             { tok (\p s -> alex $ TokInt p (negate $ hexP $ BSL.drop 3 s)) }
+        $digitsubscript+         { tok (\p s -> alex $ TokIx p (parseSubscript $ mkText s)) }
 
         @float                   { tok (\p s -> alex $ TokFloat p (read $ ASCII.unpack s)) }
         _@float                  { tok (\p s -> alex $ TokFloat p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
@@ -260,8 +262,12 @@ mkBuiltin = constructor TokB
 mkText :: BSL.ByteString -> T.Text
 mkText = decodeUtf8 . BSL.toStrict
 
+parseSubscript :: T.Text -> Int
+parseSubscript = T.foldl' (\seed c -> 10 * seed + f c) 0
+    where f = (subtract 8320).fromEnum
+
 hexP :: BSL.ByteString -> Integer
-hexP b = ASCII.foldl' (\seed x -> 10 * seed + f x) 0 b
+hexP = ASCII.foldl' (\seed x -> 10 * seed + f x) 0
     where f '0' = 0; f '1' = 1; f '2' = 2; f '3' = 3;
           f '4' = 4; f '5' = 5; f '6' = 6; f '7' = 7;
           f '8' = 8; f '9' = 9; f 'a' = 10; f 'b' = 11
@@ -437,6 +443,7 @@ instance Pretty Builtin where
 data Token a = EOF { loc :: a }
              | TokSym { loc :: a, sym :: Sym }
              | TokName { loc :: a, _name :: Nm a }
+             | TokIx { loc :: a, six :: Int }
              | TokB { loc :: a, _builtin :: Builtin }
              | TokResVar { loc :: a, _var :: Var }
              | TokInt { loc :: a, int :: Integer }
@@ -451,6 +458,15 @@ instance Pretty (Token a) where
     pretty (TokInt _ i)    = pretty i
     pretty (TokResVar _ v) = "reserved variable" <+> squotes (pretty v)
     pretty (TokFloat _ f)  = pretty f
+    pretty (TokIx _ i)     = pretty (pSubscript i)
+
+pSubscript :: Int -> T.Text
+pSubscript i =
+    case i `quotRem` 10 of
+        (0, d) -> pChar d
+        (b, d) -> pSubscript b <> pChar d
+  where
+    pChar iϵ = T.singleton (toEnum (iϵ+8320))
 
 freshName :: T.Text -> Alex (Nm AlexPosn)
 freshName t = do
