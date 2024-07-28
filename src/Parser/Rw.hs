@@ -40,6 +40,7 @@ fi :: Builtin -> Int
 fi Succ = 9; fi Fold = 9
 fi IntExp = 8; fi Exp = 8
 fi Times = 7; fi Div = 7; fi Mod = 7
+fi Mul =7
 fi Plus = 6; fi Minus = 6
 fi And = 3; fi Or = 2; fi Xor = 6
 fi Map{} = 5
@@ -55,6 +56,7 @@ lassoc Div    = True
 lassoc Mod    = True
 lassoc Times  = True
 lassoc Mul    = True
+lassoc Mul    = True
 lassoc Plus   = True
 lassoc Minus  = True
 lassoc ConsE  = False
@@ -63,6 +65,12 @@ lassoc CatE   = False
 lassoc Sr     = True
 lassoc Sl     = True
 lassoc Xor    = True
+lassoc Eq     = False
+lassoc Neq    = False
+lassoc Gte    = False
+lassoc Lte    = False
+lassoc Gt     = False
+lassoc Lt     = False
 
 shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1
