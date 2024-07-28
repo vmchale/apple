@@ -301,6 +301,14 @@ ir s                                                    = error (show s)
 
 saI i | i`rem`16 == 0 = fromIntegral i | otherwise = fromIntegral i+8
 
+mSse Op.FMinus = Just Vsubsd
+mSse Op.FPlus  = Just Vaddsd
+mSse Op.FDiv   = Just Vdivsd
+mSse Op.FMax   = Just Vmaxsd
+mSse Op.FMin   = Just Vminsd
+mSse Op.FTimes = Just Vmulsd
+mSse Op.FExp   = Nothing
+
 feval :: IR.FExp -> IR.FTemp -> WM [X86 AbsReg FAbsReg ()] -- TODO: feval 0 (xor?)
 feval (IR.FB Op.FDiv (IR.FReg r0) (IR.FReg r1)) t   | t == r0 = pure [Divsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FTimes (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Mulsd () (fabsReg t) (fabsReg r1)]
@@ -318,21 +326,9 @@ feval (IR.FB Op.FPlus (IR.FReg r0) (IR.FB Op.FTimes e0 e1)) t = do
     pure $ plE0 $ plE1 [Movapd () (fabsReg t) (fabsReg r0), Vfmadd231sd () (fabsReg t) i0 i1]
 feval (IR.FB Op.FMinus (IR.FReg r0) (IR.FB Op.FTimes (IR.FReg r1) (IR.FReg r2))) t =
     pure [Movapd () (fabsReg t) (fabsReg r0), Vfmnadd231sd () (fabsReg t) (fabsReg r1) (fabsReg r2)]
-feval (IR.FB Op.FMinus e0 e1) t                     = do
+feval (IR.FB fop e0 e1) t | Just isn <- mSse fop = do
     (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
-    pure $ plR0 $ plR1 [Vsubsd () (fabsReg t) i0 i1]
-feval (IR.FB Op.FPlus e0 e1) t                     = do
-    (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
-    pure $ plR0 $ plR1 [Vaddsd () (fabsReg t) i0 i1]
-feval (IR.FB Op.FDiv e0 e1) t                     = do
-    (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
-    pure $ plR0 $ plR1 [Vdivsd () (fabsReg t) i0 i1]
-feval (IR.FB Op.FMax e0 e1) t                      = do
-    (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
-    pure $ plR0 $ plR1 [Vmaxsd () (fabsReg t) i0 i1]
-feval (IR.FB Op.FTimes e0 e1) t                    = do
-    (plE0,i0) <- plF e0; (plE1,i1) <- plF e1
-    pure $ plE0 $ plE1 [Vmulsd () (fabsReg t) i0 i1]
+    pure $ plR0 $ plR1 [isn () (fabsReg t) i0 i1]
 feval (IR.ConstF x) t = do
     iR <- nextR
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]
