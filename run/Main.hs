@@ -42,7 +42,7 @@ import           QC
 import           Sys.DL
 import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, completeFilename, defaultSettings, fallbackCompletion, getInputLine, historyFile, runInputT,
                                             setComplete, simpleCompletion)
-import           System.Directory          (getHomeDirectory)
+import           System.Directory          (doesFileExist, getHomeDirectory)
 import           System.FilePath           ((</>))
 import           System.Info               (arch)
 import           Ty
@@ -348,14 +348,18 @@ inspect s = do
 
 iCtx :: String -> String -> Repl AlexPosn ()
 iCtx f fp = do
-    st <- lift $ gets _lex
-    bs <- liftIO $ BSL.readFile fp
-    case tyParseCtx st bs of
-        Left err -> liftIO $ putDoc (pretty err <> hardline)
-        Right (_,i) ->
-            let (st', n) = newIdent (AlexPn 0 0 0) (T.pack f) (setM i st)
-                x' = parseE st' bs
-            in lift $ do {modify (aEe n x'); modify (setL st')}
+    p <- liftIO $ doesFileExist fp
+    if not p
+        then liftIO $ putStrLn "file does not exist."
+        else do
+            st <- lift $ gets _lex
+            bs <- liftIO $ BSL.readFile fp
+            case tyParseCtx st bs of
+                Left err -> liftIO $ putDoc (pretty err <> hardline)
+                Right (_,i) ->
+                    let (st', n) = newIdent (AlexPn 0 0 0) (T.pack f) (setM i st)
+                        x' = parseE st' bs
+                    in lift $ do {modify (aEe n x'); modify (setL st')}
     where setM i' (_, mm, im) = (i', mm, im)
 
 benchC :: String -> Repl AlexPosn ()
