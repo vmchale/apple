@@ -290,6 +290,8 @@ ir (IR.Pop e)                                           = do
     iR <- nextI; plE <- evalE e (IR.ITemp iR)
     l <- nextL
     pure $ plE ++ [TestI () (IReg iR) 0x8, Je () l, IAddRI () (IReg iR) 8, Label () l, IAddRR () SP (IReg iR)]
+ir (IR.FRnd t) =
+    pure [Call () DR, Movapd () (fabsReg t) FRet0]
 ir (IR.IRnd t)                                          = pure [Rdrand () (absReg t)]
 ir (IR.R l)                                             = pure [RetL () l]
 ir (IR.C l)                                             = pure [C () l]

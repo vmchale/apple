@@ -28,10 +28,12 @@ frameC = concat . go IS.empty IS.empty
                 _ -> [void isn] : go s' fs' isns
           handleRax Malloc = filter (/=Rax)
           handleRax Free   = id
+          handleRax DR     = id
           puxmm xr = [ISubRI () Rsp 8, MovqAX () (R Rsp) xr]
           poxmm xr = [MovqXA () xr (R Rsp), IAddRI () Rsp 8]
           mx Free   = const []
           mx Malloc = id
+          mx DR     = filter (/=XMM0)
 
 fromInt :: Int -> Maybe X86Reg
 fromInt 1    = Just Rsi
