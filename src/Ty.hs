@@ -54,6 +54,7 @@ data TyE a = IllScoped a (Nm a)
            | ExistentialArg (T ())
            | MatchFailed (T ()) (T ())
            | MatchShFailed (Sh ()) (Sh ())
+           | MatchIFailed a (I a) (I a)
            | Doesn'tSatisfy a (T a) C
            deriving (Generic)
 
@@ -77,6 +78,7 @@ instance Pretty a => Pretty (TyE a) where
     pretty (ExistentialArg ty)     = "Existential occurs as an argument in" <+> squotes (pretty ty)
     pretty (MatchFailed t t')      = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
     pretty (MatchShFailed sh sh')  = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
+    pretty (MatchIFailed l i i')   = pretty l <> ":" <+> "failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
     pretty (Doesn'tSatisfy l ty c) = pretty l <+> squotes (pretty ty) <+> "is not a member of class" <+> pretty c
 
 instance (Pretty a) => Show (TyE a) where
@@ -99,7 +101,7 @@ type TyM a = StateT (TySt a) (Either (TyE a))
 
 mI :: I a -> I a -> Either (TyE a) (Subst a)
 mI i0@(Ix l i) i1@(Ix _ j) | i == j = Right mempty
-                           | otherwise = Left $ UI l i0 i1
+                           | otherwise = Left $ MatchIFailed l i0 i1
 mI (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
@@ -720,12 +722,12 @@ cloneWithConstraints t = do
 rwI :: I a -> I a
 rwI (StaPlus l i0 i1) =
     case (rwI i0, rwI i1) of
-        (Ix l i, Ix _ j) -> Ix l (i+j)
-        (i0', i1')       -> StaPlus l i0' i1'
+        (Ix lϵ i, Ix _ j) -> Ix lϵ (i+j)
+        (i0', i1')        -> StaPlus l i0' i1'
 rwI (StaMul l i0 i1) =
     case (rwI i0, rwI i1) of
-        (Ix l i, Ix _ j) -> Ix l (i*j)
-        (i0', i1')       -> StaMul l i0' i1'
+        (Ix lϵ i, Ix _ j) -> Ix lϵ (i*j)
+        (i0', i1')        -> StaMul l i0' i1'
 rwI i = i
 
 rwSh :: Sh a -> Sh a
