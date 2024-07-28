@@ -134,6 +134,9 @@ ir (IR.WrF (IR.AP m (Just ei) _) (IR.FReg r)) = do
     pure $ plE ++ [IAddRR () (IReg eR) m', MovqAX () (R (IReg eR)) (fabsReg r)]
 ir (IR.WrF (IR.AP m Nothing _) (IR.FReg r)) =
     pure [MovqAX () (R (absReg m)) (fabsReg r)]
+ir (IR.WrF (IR.AP m Nothing _) (IR.ConstF x)) = do
+    iR <- nextR
+    pure [MovRI () iR (fI64 x), MovAR () (R (absReg m)) iR]
 ir (IR.Cset t p) = foldMapA ir [IR.MT t 0, IR.Cmov p t 1]
 ir (IR.Fcmov (IR.IU Op.IOdd (IR.Reg r0)) t e) = do
     plE <- feval e t; l <- nextL
