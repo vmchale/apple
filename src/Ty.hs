@@ -224,7 +224,7 @@ mguIPrep :: IM.IntMap (I a) -> I a -> I a -> Either (TyE a) (IM.IntMap (I a))
 mguIPrep is i0 i1 =
     let i0' = is !> i0
         i1' = is !> i1
-    in mguI is i0' i1'
+    in mguI is (rwI i0') (rwI i1')
 
 mguI :: IM.IntMap (I a) -> I a -> I a -> Either (TyE a) (IM.IntMap (I a))
 mguI inp i0@(Ix l i) i1@(Ix _ j) | i == j = Right inp
@@ -243,18 +243,19 @@ mguI inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguIPrep inp i (Ix lk
 mguI inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguIPrep inp i1 i0
 mguI inp (StaMul _ i0 i1) (StaMul _ j0 j1) = do
     -- FIXME: too stringent
-    s <- mguI inp i0 j0
-    mguI s i1 j1
+    s <- mguIPrep inp i0 j0
+    mguIPrep s i1 j1
 mguI _ i0@(IEVar l _) i1@Ix{} = Left $ UI l i0 i1
 mguI _ i0@(Ix l _) i1@IEVar{} = Left $ UI l i0 i1
 mguI _ i0@(IEVar l _) i1@StaPlus{} = Left $ UI l i0 i1
 mguI _ i0@(StaPlus l _ _) i1@IEVar{} = Left $ UI l i0 i1
+mguI _ i0 i1 = error (show (i0,i1))
 
 mgShPrep :: a -> Subst a -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mgShPrep l s sh0 sh1 =
     let sh0' = shSubst s sh0
         sh1' = shSubst s sh1
-    in mgSh l s sh0' sh1'
+    in mgSh l s (rwSh sh0') (rwSh sh1')
 
 mgSh :: a -> Subst a -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mgSh _ inp Nil Nil = Right inp
@@ -316,7 +317,7 @@ mgu _ s F F = Right s
 mgu _ s B B = Right s
 mgu _ s Li{} I = Right s
 mgu _ s I Li{} = Right s
-mgu _ s (Li i0) (Li i1) = do {iS <- mguI (iSubst s) i0 i1; pure $ Subst mempty iS mempty <> s}
+mgu _ s (Li i0) (Li i1) = do {iS <- mguIPrep (iSubst s) i0 i1; pure $ Subst mempty iS mempty <> s}
 mgu _ s (TVar n) (TVar n') | n == n' = Right s
 mgu (l, _) s t'@(TVar (Nm _ (U i) _)) t | i `IS.member` occ t = Left$ OT l t' t
                                           | otherwise = Right $ mapTySubst (IM.insert i t) s
@@ -717,9 +718,15 @@ cloneWithConstraints t = do
     pure t'
 
 rwI :: I a -> I a
-rwI (StaPlus _ (Ix l i) (Ix _ j)) = Ix l (i+j)
-rwI (StaMul _ (Ix l i) (Ix _ j))  = Ix l (i*j)
-rwI i                             = i
+rwI (StaPlus l i0 i1) =
+    case (rwI i0, rwI i1) of
+        (Ix l i, Ix _ j) -> Ix l (i+j)
+        (i0', i1')       -> StaPlus l i0' i1'
+rwI (StaMul l i0 i1) =
+    case (rwI i0, rwI i1) of
+        (Ix l i, Ix _ j) -> Ix l (i*j)
+        (i0', i1')       -> StaMul l i0' i1'
+rwI i = i
 
 rwSh :: Sh a -> Sh a
 rwSh s@SVar{}     = s
