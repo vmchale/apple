@@ -1,0 +1,3 @@
+- [ ] spilling on arm, spilling x86 fp registers
+- [x] random numbers on m1
+- [ ] x86 is bitrotted
