@@ -23,7 +23,7 @@ mem' = do {(m,f,xr,r) <- mem; pure (ip m, ip f, ip xr, ip r)}
 ip = (\(IntPtr i) -> i) . ptrToIntPtr . castFunPtrToPtr
 
 mem :: IO (FunPtr (CSize -> IO (Ptr a)), FunPtr (Ptr a -> IO ()), FunPtr (IO Double), FunPtr (IO Int32))
-mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; xr <- dlsym c "drand48"; r <- dlsym c "mrand48"; dlclose c$>(m,f,xr,r)}
+mem = do {c <- libc; m <- dlsym c "malloc"; f <- dlsym c "free"; xr <- dlsym c "drand48"; r <- dlsym c "lrand48"; dlclose c$>(m,f,xr,r)}
 
 math :: IO (FunPtr (Double -> Double), FunPtr (Double -> Double), FunPtr (Double -> Double -> Double))
 math = do {m <- libm; e <- dlsym m "exp"; l <- dlsym m "log"; p <- dlsym m "pow"; dlclose m$>(e,l,p)}
