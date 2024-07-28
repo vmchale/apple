@@ -10,6 +10,8 @@ import qualified Data.IntSet      as IS
 import qualified Data.Set         as S
 import           Data.Tuple.Extra (fst3, snd3, thd3)
 
+type K=Int
+
 -- move list: map from abstract registers (def ∪ used) to nodes
 type Movs = IM.IntMap MS
 type GS = S.Set (Int, Int)
@@ -91,12 +93,12 @@ alloc :: (Ord reg, Arch arch areg afreg, Copointed (arch areg afreg))
       -> Either IS.IntSet (IM.IntMap reg) -- ^ Map from abs reg. id (temp) to concrete reg.
 alloc aIsns regs preC preCM =
     let st0 = buildOver (unBB<$>bb aIsns) (emptySt preC (IS.toList $ getIs nIsns IS.\\ preC))
-        st1 = mkWorklist st0
-        st2 = emptyWkl st1
+        st1 = mkWorklist ᴋ st0
+        st2 = emptyWkl ᴋ st1
         (st3, rs) = assign preCM regs st2
         s = spN (ɴs st3)
     in if IS.null s then Right rs else Left s
-    where nIsns = fmap snd3 <$> aIsns
+    where nIsns = fmap snd3 <$> aIsns; ᴋ = length regs
 
 allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg))
        => [arch areg afreg (UD, Liveness, Maybe (Int,Int))]
@@ -106,20 +108,20 @@ allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg))
        -> Either IS.IntSet (IM.IntMap freg) -- ^ Map from abs freg. id (temp) to concrete reg.
 allocF aIsns regs preC preCM =
     let st0 = buildOverF (unBB<$>bb aIsns) (emptySt preC (IS.toList $ getIFs nIsns IS.\\ preC))
-        st1 = mkWorklist st0
-        st2 = emptyWkl st1
+        st1 = mkWorklist ᴋ st0
+        st2 = emptyWkl ᴋ st1
         (st3, rs) = assign preCM regs st2
         s = spN (ɴs st3)
     in if IS.null s then Right rs else Left s
-    where nIsns = fmap snd3 <$> aIsns
+    where nIsns = fmap snd3 <$> aIsns; ᴋ = length regs
 
 {-# SCC emptyWkl #-}
-emptyWkl :: St -> St
-emptyWkl s | not $ IS.null (simp (wkls s)) = emptyWkl (simplify s)
-           | not $ S.null (wl (mvS s)) = emptyWkl (coalesce s)
-           | not $ IS.null (fr (wkls s)) = emptyWkl (freeze s)
-           | not $ IS.null (sp (wkls s)) = emptyWkl (sspill s)
-           | otherwise = s
+emptyWkl :: K -> St -> St
+emptyWkl ᴋ s | not $ IS.null (simp (wkls s)) = emptyWkl ᴋ (simplify ᴋ s)
+             | not $ S.null (wl (mvS s)) = emptyWkl ᴋ (coalesce ᴋ s)
+             | not $ IS.null (fr (wkls s)) = emptyWkl ᴋ (freeze ᴋ s)
+             | not $ IS.null (sp (wkls s)) = emptyWkl ᴋ (sspill ᴋ s)
+             | otherwise = s
 
 {-# SCC buildF #-}
 buildF :: (Copointed p) => IS.IntSet -> St -> [p (UD, Liveness, Maybe M)] -> (IS.IntSet, St)
@@ -184,13 +186,13 @@ addEdge u v st@(St ml as al mv ns ds i wk s a) =
         else st
 
 {-# SCC mkWorklist #-}
-mkWorklist :: St -> St
-mkWorklist st@(St _ _ _ _ _ ds i wk _ _) =
+mkWorklist :: K -> St -> St
+mkWorklist ᴋ st@(St _ _ _ _ _ ds i wk _ _) =
     let wk' = thread [ (case () of { _ | n !* ds >= ᴋ -> mapSp; _ | isMR n st -> mapFr; _-> mapSimp}) (IS.insert n) | n <- i ] wk
     in st { initial = [], wkls = wk' }
 
 -- same for xmm0, r15
-ᴋ = 16
+-- ᴋ = 16
 
 isMR :: Int -> St -> Bool
 isMR i st = not $ S.null (nodeMoves i st)
@@ -200,16 +202,16 @@ nodeMoves :: Int -> St -> MS
 nodeMoves n (St ml _ _ mv _ _ _ _ _ _) = ml !. n `S.intersection` (actv mv `S.union` wl mv)
 
 {-# SCC simplify #-}
-simplify :: St -> St
-simplify s@(St _ _ _ _ _ _ _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minView stϵ =
+simplify :: K -> St -> St
+simplify ᴋ s@(St _ _ _ _ _ _ _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minView stϵ =
     let s' = s { wkls = wk { simp = ns }, stack = n:st }
-    in thread [ ddg m | m <- adj n s' ] s'
+    in thread [ ddg ᴋ m | m <- adj n s' ] s'
                                                        | otherwise = s
 
 {-# SCC ddg #-}
 -- decrement degree
-ddg :: Int -> St -> St
-ddg m s | m `IS.member` pre (wkls s) = s
+ddg :: K -> Int -> St -> St
+ddg ᴋ m s | m `IS.member` pre (wkls s) = s
         | otherwise =
     let d = degs s; s' = s { degs = dec m d }
     in if d IM.! m == ᴋ
@@ -225,17 +227,17 @@ enaMv ns = thread (fmap g ns) where
                       | otherwise = st
 
 {-# SCC addWkl #-}
-addWkl :: Int -> St -> St
-addWkl u st | u `IS.notMember` pre (wkls st) && not (isMR u st) && u !* degs st < ᴋ = mapWk (mapFr (IS.delete u) . mapSimp (IS.insert u)) st
-            | otherwise = st
+addWkl :: K -> Int -> St -> St
+addWkl ᴋ u st | u `IS.notMember` pre (wkls st) && not (isMR u st) && u !* degs st < ᴋ = mapWk (mapFr (IS.delete u) . mapSimp (IS.insert u)) st
+              | otherwise = st
 
 {-# SCC ok #-}
-ok :: Int -> Int -> St -> Bool
-ok t r s = t `IS.member` pre (wkls s) || degs s IM.! t < ᴋ || (t,r) `S.member` aS s
+ok :: K -> Int -> Int -> St -> Bool
+ok ᴋ t r s = t `IS.member` pre (wkls s) || degs s IM.! t < ᴋ || (t,r) `S.member` aS s
 
 {-# SCC conserv #-}
-conserv :: [Int] -> St -> Bool
-conserv is s =
+conserv :: K -> [Int] -> St -> Bool
+conserv ᴋ is s =
     let d = degs s
         k = length (filter (\n -> (n !* d)>=ᴋ) is)
     in k<ᴋ
@@ -245,24 +247,24 @@ getAlias :: Int -> St -> Int
 getAlias i s = case IM.lookup i (alias s) of {Just i' -> getAlias i' s; Nothing -> i}
 
 {-# SCC combine #-}
-combine :: Int -> Int -> St -> St
-combine u v st =
+combine :: K -> Int -> Int -> St -> St
+combine ᴋ u v st =
     let st0 = mapWk (\(Wk p s f sm) -> if v `IS.member` f then Wk p s (IS.delete v f) sm else Wk p (IS.delete v s) f sm) st
         st1 = mapNs (mapCoalN (IS.insert v)) st0
         st2 = st1 { alias = IM.insert v u (alias st1) }
         -- https://github.com/sunchao/tiger/blob/d083a354987b7f1fe23f7065ab0c19c714e78cc4/color.sml#L265
         st3 = let m = mvs st2 -- default to S.empty if we haven't filled it in
                   mvu = m !. u; mvv = m !. v in st2 { mvs = IM.insert u (mvu `S.union` mvv) m }
-        st4 = thread [ ddg t.addEdge t u | t <- adj v st2 ] st3
+        st4 = thread [ ddg ᴋ t.addEdge t u | t <- adj v st2 ] st3
     in if u `IS.member` fr(wkls st3) && u !* degs st4 >= ᴋ then mapWk(\(Wk p s f sm) -> Wk p (IS.insert u s) (IS.delete u f) sm) st4 else st4
 
-freeze :: St -> St
-freeze s | Just (u, _) <- IS.minView (fr$wkls s) =
-    let s0 = mapWk (mapFr (IS.delete u).mapSimp (IS.insert u)) s in freezeMoves u s0
+freeze :: K -> St -> St
+freeze ᴋ s | Just (u, _) <- IS.minView (fr$wkls s) =
+    let s0 = mapWk (mapFr (IS.delete u).mapSimp (IS.insert u)) s in freezeMoves ᴋ u s0
 
 {-# SCC freezeMoves #-}
-freezeMoves :: Int -> St -> St
-freezeMoves u st = thread (fmap g (S.toList$nodeMoves u st)) st where
+freezeMoves :: K -> Int -> St -> St
+freezeMoves ᴋ u st = thread (fmap g (S.toList$nodeMoves u st)) st where
     g m@(x, y) s =
         let y' = getAlias y s; v = if y' == getAlias u s then getAlias x s else y'
             st0 = mapMv (mapActv (S.delete m).mapFrz (S.insert m)) s
@@ -281,21 +283,21 @@ dSet :: Ord reg => [reg] -> [reg] -> [reg]
 dSet x ys = filter (`S.notMember` yϵ) x where yϵ = S.fromList ys
 
 {-# SCC coalesce #-}
-coalesce :: St -> St
-coalesce s | Just (m@(x,y), nWl) <- S.minView (wl$mvS s) =
+coalesce :: K -> St -> St
+coalesce ᴋ s | Just (m@(x,y), nWl) <- S.minView (wl$mvS s) =
     let y' = getAlias y s
         preS = pre (wkls s)
         (u, v) = if y' `IS.member` preS then (y',x') else (x',y') where x' = getAlias x s
         s0 = mapMv (\mv -> mv { wl = nWl }) s
     in case () of
-        _ | u == v -> addWkl u $ mapMv (mapCoal (S.insert m)) s0
-          | v `IS.member` preS || (u,v) `S.member` aS s0 -> addWkl v $ addWkl u $ mapMv (mapConstr (S.insert m)) s0
-          | let av = adj v s0 in if u `IS.member` preS then all (\t -> ok t u s0) av else conserv (adj u s0 ++ av) s0 ->
-              addWkl u $ combine u v $ mapMv (mapCoal (S.insert m)) s0
+        _ | u == v -> addWkl ᴋ u $ mapMv (mapCoal (S.insert m)) s0
+          | v `IS.member` preS || (u,v) `S.member` aS s0 -> addWkl ᴋ v $ addWkl ᴋ u $ mapMv (mapConstr (S.insert m)) s0
+          | let av = adj v s0 in if u `IS.member` preS then all (\t -> ok ᴋ t u s0) av else conserv ᴋ (adj u s0 ++ av) s0 ->
+              addWkl ᴋ u $ combine ᴋ u v $ mapMv (mapCoal (S.insert m)) s0
           | otherwise -> mapMv (mapActv (S.insert m)) s0
 
-sspill :: St -> St
-sspill s | Just (m, nSp) <- IS.minView (sp$wkls s) = freezeMoves m $ mapWk (mapSimp (IS.insert m). \wk -> wk { sp = nSp }) s
+sspill :: K -> St -> St
+sspill ᴋ s | Just (m, nSp) <- IS.minView (sp$wkls s) = freezeMoves ᴋ m $ mapWk (mapSimp (IS.insert m). \wk -> wk { sp = nSp }) s
 
 {-# SCC assign #-}
 assign :: (Ord reg) => IM.IntMap reg -> [reg] -> St -> (St, IM.IntMap reg)
