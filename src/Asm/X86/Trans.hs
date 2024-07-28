@@ -60,6 +60,22 @@ mi32 i | i <= fromIntegral (maxBound :: Int32) && i >= fromIntegral (minBound ::
 fI64 :: Double -> Int64
 fI64 x = accursedUnutterablePerformIO $ alloca $ \bytes -> poke (castPtr bytes) x *> peek bytes
 
+opPred :: Op.FRel -> Pred
+opPred Op.FGeq = Nltus
+opPred Op.FGt  = Nleus
+opPred Op.FEq  = Eqoq
+opPred Op.FNeq = Nequq
+opPred Op.FLeq = Leos
+opPred Op.FLt  = Ltos
+
+nopPred :: Op.FRel -> Pred
+nopPred Op.FGeq = Ltos
+nopPred Op.FGt  = Leos
+nopPred Op.FEq  = Nequq
+nopPred Op.FNeq = Eqoq
+nopPred Op.FLt  = Nltus
+nopPred Op.FLeq = Nleus
+
 ir :: IR.Stmt -> WM [X86 AbsReg FAbsReg ()]
 ir (IR.MT t (IR.EAt (IR.AP m (Just (IR.ConstI i)) _))) | Just i8 <- mi8 i = pure [MovRA () (absReg t) (RC (absReg m) i8)]
 ir (IR.MT t (IR.EAt (IR.AP m Nothing _)))               = pure [MovRA () (absReg t) (R$absReg m)]
@@ -85,10 +101,10 @@ ir (IR.MJ (IR.IRel Op.ILt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = p
 ir (IR.MJ (IR.IRel Op.ILt (IR.Reg r0) e1) l) = do
     i1 <- nextI; plE1 <- evalE e1 (IR.ITemp i1)
     pure $ plE1 ++ [CmpRR () (absReg r0) (IReg i1), Jl () l]
-ir (IR.MJ (IR.FRel Op.FGeq (IR.FReg r0) e1) l) = do
+ir (IR.MJ (IR.FRel fop (IR.FReg r0) e1) l) = do
     (plE1,i1) <- plF e1
     f <- nextF; r <- nextR
-    pure $ plE1 [Vcmppd () f (fabsReg r0) i1 Nltus, MovqRX () r f, TestI () r maxBound, Jne () l]
+    pure $ plE1 [Vcmppd () f (fabsReg r0) i1 (opPred fop), MovqRX () r f, TestI () r maxBound, Jne () l]
 ir (IR.MJ (IR.Is p) l) = pure [TestI () (absReg p) 1, Jne () l]
 ir (IR.MJ (IR.IU Op.IOdd e) l) = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
@@ -168,37 +184,17 @@ ir (IR.Cmov (IR.IRel Op.ILeq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
 ir (IR.Cmov (IR.IRel Op.ILt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
     iS <- nextI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovl () (absReg rD) (IReg iS)]
-ir (IR.Cmov (IR.FRel Op.FGt (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
+ir (IR.Cmov (IR.FRel fop (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nextI; plE <- evalE e (IR.ITemp i1)
     f <- nextF; r <- nextR
-    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Nleus, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
-ir (IR.Fcmov (IR.FRel Op.FGt (IR.FReg xr0) (IR.FReg xr1)) t e) = do
+    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) (opPred fop), MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
+ir (IR.Fcmov (IR.FRel fop (IR.FReg xr0) (IR.FReg xr1)) t e) = do
     plE <- feval e t; l <- nextL
     f <- nextF; r <- nextR
-    pure $ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Leos, MovqRX () r f, TestI () r maxBound, Jne () l] ++ plE ++ [Label () l]
+    pure $ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) (nopPred fop), MovqRX () r f, TestI () r maxBound, Jne () l] ++ plE ++ [Label () l]
 ir (IR.Fcmov (IR.IRel Op.IEq (IR.Reg r0) (IR.ConstI n)) t e) | Just i32 <- mi32 n = do
     plE <- feval e t; l <- nextL
     pure $ [CmpRI () (absReg r0) i32, Jne () l] ++ plE ++ [Label () l]
-ir (IR.Cmov (IR.FRel Op.FGeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
-    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
-    f <- nextF; r <- nextR
-    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Nltus, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
-ir (IR.Cmov (IR.FRel Op.FEq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
-    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
-    f <- nextF; r <- nextR
-    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Eqoq, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
-ir (IR.Cmov (IR.FRel Op.FNeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
-    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
-    f <- nextF; r <- nextR
-    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Nequq, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
-ir (IR.Cmov (IR.FRel Op.FLt (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
-    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
-    f <- nextF; r <- nextR
-    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Ltos, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
-ir (IR.Cmov (IR.FRel Op.FLeq (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
-    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
-    f <- nextF; r <- nextR
-    pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) Leos, MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just eI) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just sd8 <- mi8 sD = do
     iT <- nextI
     plE <- evalE (IR.IB Op.IPlus (IR.Reg tS) eI) (IR.ITemp iT)
