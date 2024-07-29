@@ -445,36 +445,38 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
             (For () k 0 ILt (Tmp szR) step:[Pop () slopE]))
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tC, Just szO <- bSz ta, isIF tD = do
     a <- nextArr t
-    x <- rtemp tD; y <- newITemp; szX <- newITemp; szY <- newITemp
+    x <- rtemp tD; y <- newITemp; y0 <- newITemp; szX <- newITemp; szY <- newITemp
     j <- newITemp; k <- newITemp; td <- newITemp; yd <- newITemp
     (plX, (lX, xR)) <- plA xs
+    (lY0, ss0) <- writeF f [ra x] (IT y0)
     (lY, ss) <- writeF f [ra x] (IT y)
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(xRnk-1)]]
-        yDims=[EAt (ADim y (ConstI l) lY) | l <- [0..(rnk-1)]]
+        yDims=[EAt (ADim y0 (ConstI l) lY0) | l <- [0..(rnk-1)]]
         oRnk=xRnk+rnk
         step=mt (AElem xR (ConstI xRnk) (Tmp k) (Just a) 8) x:ss++[yd=:DP y (ConstI rnk), CpyE () (Raw td (Tmp j) (Just a) szO) (Raw yd 0 lY undefined) (Tmp szY) szO, j+=Tmp szY]
     pure (Just a,
         plX$
         mt (AElem xR (ConstI xRnk) 0 (Just a) 8) x
-        :ss
+        :ss0
         ++PlProd () szY yDims
         :PlProd () szX xDims
         :Ma () a t (ConstI oRnk) (Tmp szX*Tmp szY) szO
             :CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (ConstI xRnk)
-            :CpyD () (ADim t (ConstI xRnk) (Just a)) (ADim y 0 lY) (ConstI rnk)
+            :CpyD () (ADim t (ConstI xRnk) (Just a)) (ADim y0 0 lY0) (ConstI rnk)
         :td=:DP t (ConstI$xRnk+rnk)
         :j=:0
           :[For () k 0 ILt (Tmp szX) step])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs), Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), Just sz0 <- bSz ta0, Just sz1 <- bSz ta1 = do
     a <- nextArr t
-    slopP <- newITemp; y <- newITemp
+    slopP <- newITemp; y <- newITemp; y0 <- newITemp
     szR <- newITemp; slopSz <- newITemp; szY <- newITemp
     i <- newITemp; j <- newITemp; k <- newITemp; kL <- newITemp; xd <- newITemp; td <- newITemp
     (plX, (lX, xR)) <- plA xs
+    (lY0, ss0) <- writeF f [AA slopP Nothing] (IT y0)
     (lY, ss) <- writeF f [AA slopP Nothing] (IT y)
     let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk0..(xRnk-1)]]
         xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk0-1)]]
-        yDims=[EAt (ADim y (ConstI l) lY) | l <- [0..(rnk1-1)]]
+        yDims=[EAt (ADim y0 (ConstI l) lY0) | l <- [0..(rnk1-1)]]
         slopE=(Tmp slopSz)*(ConstI sz1)+fromIntegral (8+8*rnk0)
         dimsFromIn=ConstI$xRnk-rnk0
         oRnk=xRnk-rnk0+rnk1
@@ -484,11 +486,11 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
         PlProd () slopSz slopDims:Sa () slopP slopE:diml (slopP, Nothing) slopDims
         ++xd=:DP xR (ConstI xRnk)
         :CpyE () (AElem slopP (ConstI rnk0) 0 Nothing sz0) (Raw xd 0 lX sz0) (Tmp slopSz) sz0
-        :ss
+        :ss0
         ++PlProd () szR (xDims++yDims)
         :Ma () a t (ConstI oRnk) (Tmp szR) sz1
             :CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn
-            :CpyD () (ADim t dimsFromIn (Just a)) (ADim y 0 lY) (ConstI rnk1)
+            :CpyD () (ADim t dimsFromIn (Just a)) (ADim y0 0 lY0) (ConstI rnk1)
         :td=:DP t (ConstI oRnk)
         :PlProd () szY yDims
         :PlProd () kL xDims:i =: 0:j =: 0
