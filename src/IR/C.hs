@@ -56,6 +56,7 @@ cToIRM (C.Ma _ l t rnk n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma
 -- TODO: allocate rnk `shiftL` 3 for dims
 cToIRM (C.Ma _ l t rnk n sz) = let t'=ctemp t in pure [IR.Ma l t' ((irE rnk+irE n)*IR.ConstI sz+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
 cToIRM (C.MaΠ _ l t sz)      = pure [IR.Ma l (ctemp t) (irE sz)]
+cToIRM (C.Free t)            = pure [IR.Free (ctemp t)]
 cToIRM (C.Wr _ a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF _ a x)         = pure [IR.WrF (irAt a) (irX x)]
 cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]

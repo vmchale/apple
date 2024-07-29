@@ -22,7 +22,7 @@ runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
 
 cfC :: [CS ()] -> ([N], [CS ControlAnn], IM.IntMap (ControlAnn, Liveness))
-cfC cs = let cfs = mkControlFlow cs in (inspectOrder cfs, cfs, undefined)
+cfC cs = let cfs = mkControlFlow cs in (inspectOrder cfs, cfs, initLiveness cfs)
 
 mkControlFlow :: [CS ()] -> [CS ControlAnn]
 mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
@@ -56,7 +56,20 @@ unsnoc [x]    = ([], x)
 unsnoc (x:xs) = first (x:) $ unsnoc xs
 unsnoc _      = error "Internal error: unsnoc called on empty list."
 
--- TODO: initLiveness for CS
+emptyL :: Liveness
+emptyL = Liveness IS.empty IS.empty IS.empty IS.empty
+
+initLiveness :: [CS ControlAnn] -> IM.IntMap (ControlAnn, Liveness)
+initLiveness = IM.fromList . go where
+    go []                      = []
+    go (For ann _ _ _ _ ss:cs) = (node ann, (ann, emptyL)):go ss++go cs
+    go (For1{}:cs)             = undefined
+    go (While{}:cs)            = undefined
+    go (If{}:cs)               = undefined
+    go (Ifn't{}:cs)            = undefined
+    go (Def{}:cs)              = undefined
+    go (G{}:cs)                = undefined
+    go (c:cs)                  = let x=lann c in (node x, (x, emptyL)):go cs
 
 inspectOrder :: [CS ControlAnn] -> [N]
 inspectOrder (For ann _ _ _ _ ss:cs) = node ann:inspectOrder ss++inspectOrder cs
