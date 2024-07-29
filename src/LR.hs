@@ -2,6 +2,7 @@
 --
 -- live ranges
 module LR ( reconstruct
+          , reconstructFlat
           ) where
 
 import           CF               hiding (done, liveness)
@@ -35,14 +36,16 @@ done n0 n1 = {-# SCC "done" #-} and $ zipWith (\(_, l) (_, l') -> l == l') (IM.e
 inspectOrder :: Copointed p => [p ControlAnn] -> [Int]
 inspectOrder = fmap (node . copoint) -- don't need to reverse because thread goes in opposite order
 
-reconstruct :: (Copointed p) => [p ControlAnn] -> [p NLiveness]
-reconstruct asms = {-# SCC "reconstructL" #-} fmap (fmap lookupL) asms
-    where l = {-# SCC "mkLiveness" #-} mkLiveness asms
+reconstructFlat isns = reconstruct (inspectOrder isns) isns
+
+reconstruct :: (Copointed p) => [Int] -> [p ControlAnn] -> [p NLiveness]
+reconstruct is asms = {-# SCC "reconstructL" #-} fmap (fmap lookupL) asms
+    where l = {-# SCC "mkLiveness" #-} mkLiveness is asms
           lookupL x = let ni = node x in NLiveness ni (snd $ lookupNode ni l)
 
-mkLiveness :: Copointed p => [p ControlAnn] -> LivenessMap
-mkLiveness asms = liveness is (initLiveness asms)
-    where is = inspectOrder asms
+mkLiveness :: Copointed p => [Int] -> [p ControlAnn] -> LivenessMap
+mkLiveness is asms = liveness is (initLiveness asms)
+    -- where is = inspectOrder asms
 
 liveness :: [Int] -> LivenessMap -> LivenessMap
 liveness is nSt =

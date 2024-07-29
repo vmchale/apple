@@ -9,4 +9,4 @@ mkLive :: (Arch arch reg freg) => [arch reg freg ()] -> [arch reg freg Liveness]
 mkLive = concatMap expand. liveBB
 
 liveBB :: (Arch arch reg freg) => [arch reg freg ()] -> [BB arch reg freg () Liveness]
-liveBB = fmap (fmap liveness) . reconstruct . cf . bb
+liveBB = fmap (fmap liveness) . reconstructFlat . cf . bb

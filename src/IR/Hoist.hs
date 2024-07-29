@@ -117,7 +117,7 @@ indels ss = (c, is IM.empty, ds)
 
 hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, (FTemp, Double))])
 hs ss = let (ls, cf, dm) = loop ss
-            mm = lm (reconstruct cf)
+            mm = lm (reconstructFlat cf)
      in (cf, concatMap (\l -> (hl (l,dm,mm))) (ols ls))
 
 loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], A.Array Int (Stmt, ControlAnn))

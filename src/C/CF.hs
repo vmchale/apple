@@ -1,4 +1,4 @@
-module C.CF ( mkControlFlow ) where
+module C.CF ( cfC ) where
 
 import           C
 import           CF
@@ -19,6 +19,9 @@ type FreshM = State (N, M.Map Label N, M.Map Label [N])
 
 runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
+
+cfC :: [CS ()] -> ([N], [CS ControlAnn])
+cfC cs = let cfs = mkControlFlow cs in (inspectOrder cfs, cfs)
 
 mkControlFlow :: [CS ()] -> [CS ControlAnn]
 mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
@@ -51,6 +54,17 @@ unsnoc :: [a] -> ([a], a)
 unsnoc [x]    = ([], x)
 unsnoc (x:xs) = first (x:) $ unsnoc xs
 unsnoc _      = error "Internal error: unsnoc called on empty list."
+
+inspectOrder :: [CS ControlAnn] -> [N]
+inspectOrder (For ann _ _ _ _ ss:cs) = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (For1{}:cs)             = undefined
+inspectOrder (While{}:cs)            = undefined
+inspectOrder (If{}:cs)               = undefined
+inspectOrder (Ifn't{}:cs)            = undefined
+inspectOrder (Def{}:cs)              = undefined
+inspectOrder (G{}:cs)                = undefined
+inspectOrder (c:cs)                  = node (lann c):inspectOrder cs
+inspectOrder []                      = []
 
 -- | Pair 'CS with a unique node name and a list of all possible
 -- destinations.

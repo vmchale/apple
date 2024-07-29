@@ -17,7 +17,7 @@ frees :: IM.IntMap Temp -> [CS ()] -> [CS Live]
 frees a = iF a.live
 
 live :: [CS ()] -> [CS Live]
-live = intervals . reconstruct . mkControlFlow
+live = intervals . uncurry reconstruct . cfC
 
 iF :: IM.IntMap Temp -> [CS Live] -> [CS Live]
 iF a = concatMap g where
