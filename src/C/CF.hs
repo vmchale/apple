@@ -7,6 +7,7 @@ import           CF.AL
 import           Control.Monad.State.Strict (State, evalState, gets, modify, state)
 import           Data.Bifunctor             (first, second)
 import           Data.Functor               (($>))
+import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import           Data.List                  (uncons)
 import qualified Data.Map                   as M
@@ -20,8 +21,8 @@ type FreshM = State (N, M.Map Label N, M.Map Label [N])
 runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
 
-cfC :: [CS ()] -> ([N], [CS ControlAnn])
-cfC cs = let cfs = mkControlFlow cs in (inspectOrder cfs, cfs)
+cfC :: [CS ()] -> ([N], [CS ControlAnn], IM.IntMap (ControlAnn, Liveness))
+cfC cs = let cfs = mkControlFlow cs in (inspectOrder cfs, cfs, undefined)
 
 mkControlFlow :: [CS ()] -> [CS ControlAnn]
 mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
@@ -54,6 +55,8 @@ unsnoc :: [a] -> ([a], a)
 unsnoc [x]    = ([], x)
 unsnoc (x:xs) = first (x:) $ unsnoc xs
 unsnoc _      = error "Internal error: unsnoc called on empty list."
+
+-- TODO: initLiveness for CS
 
 inspectOrder :: [CS ControlAnn] -> [N]
 inspectOrder (For ann _ _ _ _ ss:cs) = node ann:inspectOrder ss++inspectOrder cs

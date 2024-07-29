@@ -36,16 +36,16 @@ done n0 n1 = {-# SCC "done" #-} and $ zipWith (\(_, l) (_, l') -> l == l') (IM.e
 inspectOrder :: Copointed p => [p ControlAnn] -> [Int]
 inspectOrder = fmap (node . copoint) -- don't need to reverse because thread goes in opposite order
 
-reconstructFlat isns = reconstruct (inspectOrder isns) isns
+reconstructFlat isns = let is=inspectOrder isns in reconstruct is (mkLiveness is isns) isns
 
-reconstruct :: (Copointed p) => [Int] -> [p ControlAnn] -> [p NLiveness]
-reconstruct is asms = {-# SCC "reconstructL" #-} fmap (fmap lookupL) asms
-    where l = {-# SCC "mkLiveness" #-} mkLiveness is asms
+reconstruct :: (Copointed p) => [Int] -> LivenessMap -> [p ControlAnn] -> [p NLiveness]
+reconstruct is li asms = {-# SCC "reconstructL" #-} fmap (fmap lookupL) asms
+    where l = liveness is li
           lookupL x = let ni = node x in NLiveness ni (snd $ lookupNode ni l)
 
+{-# SCC mkLiveness #-}
 mkLiveness :: Copointed p => [Int] -> [p ControlAnn] -> LivenessMap
 mkLiveness is asms = liveness is (initLiveness asms)
-    -- where is = inspectOrder asms
 
 liveness :: [Int] -> LivenessMap -> LivenessMap
 liveness is nSt =

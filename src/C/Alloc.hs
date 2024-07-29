@@ -3,21 +3,17 @@ module C.Alloc ( live, frees ) where
 import           C
 import           C.CF
 import           CF
-import           Data.Functor      (void)
-import qualified Data.IntMap       as IM
-import qualified Data.IntSet       as IS
-import           Data.Maybe        (mapMaybe)
-import           Data.Tuple.Extra  (first3)
+import qualified Data.IntMap as IM
+import qualified Data.IntSet as IS
+import           Data.Maybe  (mapMaybe)
 import           LI
 import           LR
-import           Prettyprinter     (Doc, pretty, (<+>))
-import           Prettyprinter.Ext
 
 frees :: IM.IntMap Temp -> [CS ()] -> [CS Live]
 frees a = iF a.live
 
 live :: [CS ()] -> [CS Live]
-live = intervals . uncurry reconstruct . cfC
+live = intervals . (\(is,isns,lm) -> reconstruct is lm isns) . cfC
 
 iF :: IM.IntMap Temp -> [CS Live] -> [CS Live]
 iF a = concatMap g where
