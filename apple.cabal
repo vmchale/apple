@@ -70,7 +70,6 @@ library
         C.Trans
         IR
         IR.CF
-        IR.CFA
         IR.Hoist
         IR.Opt
         IR.C
