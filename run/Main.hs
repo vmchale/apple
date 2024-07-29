@@ -14,14 +14,12 @@ import           Data.Foldable             (traverse_)
 import           Data.Functor              ((<&>))
 import           Data.Int                  (Int64)
 import           Data.List
-import           Data.List                 (scanl')
 import           Data.List.Split           (chunksOf)
-import           Data.Maybe                (catMaybes)
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
-import           Data.Traversable          (for, forM)
+import           Data.Traversable          (forM)
 import           Data.Tuple.Extra          (first3)
 import           Data.Word                 (Word8)
 import           Dbg
@@ -35,7 +33,7 @@ import           Hs.FFI
 import           L
 import           Nm
 import           Numeric.Extra             (showHex)
-import           Prettyprinter             (Doc, Pretty, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
+import           Prettyprinter             (Doc, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
 import           Prettyprinter.Ext
 import           Prettyprinter.Render.Text (putDoc)
 import           QC
@@ -394,14 +392,14 @@ qc s = do
                         Nothing -> pErr ("must be a proposition." :: T.Text)
                         Just ty -> liftIO $ do
                             asm@(_, fp, _) <- efp eC
-                            let loop 0 = pure Nothing
-                                loop n = do
+                            let loopϵ 0 = pure Nothing
+                                loopϵ n = do
                                     arrs <- gas ty
                                     b <- callFFI fp retCUChar (argPtr<$>arrs)
                                     (if cb b
-                                        then loop (n-1)
+                                        then loopϵ (n-1)
                                         else do {aa <- traverse peek arrs; pure (Just aa)}) <* traverse_ free arrs
-                            res <- loop 100
+                            res <- loopϵ (100::Int)
                             case res of
                                 Nothing -> putDoc ("Passed, 100." <> hardline)
                                 Just ex -> putDoc ("Proposition failed!" <> hardline <> pretty ex <> hardline)
