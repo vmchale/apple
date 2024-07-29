@@ -456,7 +456,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
         step=mt (AElem xR (ConstI xRnk) (Tmp k) (Just a) 8) x:ss++[yd=:DP y (ConstI rnk), CpyE () (Raw td (Tmp j) (Just a) szO) (Raw yd 0 lY undefined) (Tmp szY) szO, j+=Tmp szY]
     pure (Just a,
         plX$
-        mt (AElem xR (ConstI xRnk) 0 (Just a) 8) x
+        mt (AElem xR (ConstI xRnk) 0 lX 8) x
         :ss0
         ++PlProd () szY yDims
         :PlProd () szX xDims
