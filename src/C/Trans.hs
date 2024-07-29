@@ -1168,12 +1168,12 @@ eval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
     x <- rtemp tP
     szR <- newITemp
     i <- newITemp
-    (plP, (lP, pR)) <- plA p
+    (plPP, (lP, pR)) <- plA p
     ss <- writeRF op [IT acc, x] (IT acc)
     let step = mt (AElem  pR 1 (Tmp i) lP 8) x:ss
         loop = for1 (eAnn p) i 1 ILt (Tmp szR) step
     sseed <- writeRF zop [x] (IT acc)
-    pure $ plP$szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
+    pure $ plPP$szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
 eval (Id _ (FoldOfZip zop op [p, q])) acc | Just tP <- if1 (eAnn p), Just tQ <- if1 (eAnn q) = do
     x <- rtemp tP; y <- rtemp tQ
     szR <- newITemp
@@ -1290,12 +1290,12 @@ feval (Id _ (FoldOfZip zop op [p])) acc | Just tP <- if1 (eAnn p) = do
     x <- rtemp tP
     szR <- newITemp
     i <- newITemp
-    (plP, (lP, pR)) <- plA p
+    (plPP, (lP, pR)) <- plA p
     ss <- writeRF op [FT acc, x] (FT acc)
     let step = mt (AElem  pR 1 (Tmp i) lP 8) x:ss
         loop = for1 (eAnn p) i 1 ILt (Tmp szR) step
     sseed <- writeRF zop [x] (FT acc)
-    pure $ plP$szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
+    pure $ plPP$szR := EAt (ADim pR 0 lP):mt (AElem pR 1 0 lP 8) x:sseed++[loop]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) (FLit _ start)) (FLit _ end)) (ILit _ steps), ys])) acc | Just tQ <- if1 (eAnn ys) = do
     x <- newFTemp; y <- rtemp tQ
     incrR <- newFTemp; i <- newITemp
