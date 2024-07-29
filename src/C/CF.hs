@@ -5,7 +5,7 @@ import           CF
 import           CF.AL
 -- seems to pretty clearly be faster
 import           Control.Monad.State.Strict (State, evalState, gets, modify, state)
-import           Data.Bifunctor             (first, second)
+import           Data.Bifunctor             (first)
 import           Data.Functor               (($>))
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
@@ -64,8 +64,8 @@ initLiveness = IM.fromList . go where
     go (While ann _ _ _ ss:cs)  = (node ann, (ann, emptyL)):go ss++go cs
     go (If ann _ ss ss':cs)     = (node ann, (ann, emptyL)):go ss++go ss'++go cs
     go (Ifn't ann _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
-    go (Def{}:cs)               = undefined
-    go (G{}:cs)                 = undefined
+    go (Def ann _ ss:cs)        = (node ann, (ann, emptyL)):go ss++go cs
+    go (G ann _ _ :cs)          = (node ann, (ann, emptyL)):go cs
     go (c:cs)                   = let x=lann c in (node x, (x, emptyL)):go cs
 
 inspectOrder :: [CS ControlAnn] -> [N]
@@ -74,8 +74,8 @@ inspectOrder (For1 ann _ _ _ _ ss:cs) = node ann:inspectOrder ss++inspectOrder c
 inspectOrder (While ann _ _ _ ss:cs)  = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (If ann _ ss ss':cs)     = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
 inspectOrder (Ifn't ann _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (Def{}:cs)               = undefined
-inspectOrder (G{}:cs)                 = undefined
+inspectOrder (Def ann _ ss:cs)        = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (G ann _ _:cs)           = node ann:inspectOrder cs
 inspectOrder (c:cs)                   = node (lann c):inspectOrder cs
 inspectOrder []                       = []
 
@@ -107,10 +107,25 @@ tieBody h f ss = do
 -- destinations.
 addCF :: [CS ()] -> FreshM [CS ControlAnn]
 addCF [] = pure []
-addCF ((Def _ l ss):stmts) =
-    case uncons ss of
+addCF ((Def _ l ss):stmts) = do
+    i <- getFresh
+    nextStmts <- addCF stmts
+    preSs <- addCF ss
+    case uncons preSs of
         Nothing -> undefined
-addCF (G _ l r:stmts) = undefined
+        Just (h, _) ->
+            let hi=node (lann h)
+                (ss',lϵ) = unsnoc preSs
+            in do
+                l_is <- lC l
+                let l'= fmap (mC (const$l_is)) lϵ
+                    ss''=ss'++[l']
+                pure (Def (ControlAnn i [hi] (UD IS.empty IS.empty IS.empty IS.empty)) l ss'':nextStmts)
+addCF (G _ l r:stmts) = do
+    i <- getFresh
+    nextStmts <- addCF stmts
+    l_i <- ll l
+    pure (G (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) l r:nextStmts)
 addCF ((For _ t el c eu ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
