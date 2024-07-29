@@ -65,7 +65,6 @@ initLiveness = IM.fromList . go where
     go (If ann _ ss ss':cs)     = (node ann, (ann, emptyL)):go ss++go ss'++go cs
     go (Ifn't ann _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
     go (Def ann _ ss:cs)        = (node ann, (ann, emptyL)):go ss++go cs
-    go (G ann _ _ :cs)          = (node ann, (ann, emptyL)):go cs
     go (c:cs)                   = let x=lann c in (node x, (x, emptyL)):go cs
 
 inspectOrder :: [CS ControlAnn] -> [N]
@@ -75,18 +74,17 @@ inspectOrder (While ann _ _ _ ss:cs)  = node ann:inspectOrder ss++inspectOrder c
 inspectOrder (If ann _ ss ss':cs)     = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
 inspectOrder (Ifn't ann _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (Def ann _ ss:cs)        = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (G ann _ _:cs)           = node ann:inspectOrder cs
 inspectOrder (c:cs)                   = node (lann c):inspectOrder cs
 inspectOrder []                       = []
 
-tieBranch :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
-tieBranch h f ss = do
+tieBranch :: ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
+tieBranch f ss = do
     preSs <- addCF ss
     pure $ case uncons preSs of
         Just (i1, _) ->
             let hi=node (lann i1)
                 (ss',l) = unsnoc preSs
-                l' = fmap (mC ((h:).f)) l
+                l' = fmap (mC f) l
                 ss'' = ss'++[l']
             in ((hi:), ss'')
         Nothing -> (id, preSs)
@@ -150,15 +148,15 @@ addCF ((While _ t c ed ss):stmts) = do
 addCF (If _ p b0 b1:stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    (h0, b0') <- tieBranch i f b0
-    (h1, b1') <- tieBranch i f b1
+    (h0, b0') <- tieBranch f b0
+    (h1, b1') <- tieBranch f b1
     pure $ If (ControlAnn i (f (h0 (h1 []))) udϵ) p b0' b1':stmts'
   where
     udϵ = UD (uB p) IS.empty IS.empty IS.empty
 addCF (Ifn't _ p b:stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    (h, b') <- tieBranch i f b
+    (h, b') <- tieBranch f b
     pure $ Ifn't (ControlAnn i (f (h [])) udϵ) p b':stmts'
   where
     udϵ = UD (uB p) IS.empty IS.empty IS.empty
