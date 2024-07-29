@@ -241,7 +241,7 @@ executable arepl
         -Wall -Wno-missing-signatures -Wno-x-partial
         -Wincomplete-uni-patterns -Wincomplete-record-updates
         -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
+        -Wcpp-undef -Wno-operator-whitespace-ext-conflict
 
     build-depends:
         base,
