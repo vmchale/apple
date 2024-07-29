@@ -164,6 +164,7 @@ uA (At _ ss ixs l _)  = m'insert l (foldMap uE ss<>foldMap uE ixs)
 
 uses :: CS a -> IS.IntSet
 uses (Ma _ _ _ r n _)      = uE r<>uE n
+uses (MaΠ _ _ _ n)         = uE n
 uses (MX _ _ e)            = uF e
 uses (Wr _ a e)            = uA a <> uE e
 uses (RA _ l)              = singleton l
