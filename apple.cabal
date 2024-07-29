@@ -13,10 +13,13 @@ build-type:         Simple
 data-files:         ./include/apple_abi.h
 extra-source-files:
     include/apple.h
+    include/apple_p.h
     test/examples/*.🍎
     test/examples/*.🍏
+    bench/apple/*.🍏
     test/data/*.🍎
     test/data/*.🍏
+    test/harness/*.c
     math/*.🍎
     math/*.🍏
 
