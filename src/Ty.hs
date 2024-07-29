@@ -771,7 +771,8 @@ hasE (P ts)               = any hasE ts
 hasE _                    = False
 
 chkE :: T () -> Either (TyE a) ()
-chkE t = if hasE t then Left (ExistentialArg t) else Right ()
+chkE t@Arrow{} = if hasE t then Left (ExistentialArg t) else Right ()
+chkE _         = Right ()
 
 checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
 checkTy (TVar n) (c, _)  = pure $ Just(n, c)
