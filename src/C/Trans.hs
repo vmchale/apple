@@ -1234,8 +1234,8 @@ cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e0 e1 t | Just cmp <- rel 
     pure (Nothing, plC0 ++ plC1 ++ [If (IRel cmp (Tmp c0R) (Tmp c1R)) plE0 plE1])
 cond p e0 e1 t | isIF (eAnn e0) = do
     pR <- nBT
-    plP <- peval p pR; plE0 <- eeval e0 t; plE1 <- eeval e1 t
-    pure (Nothing, plP ++ [If (Is pR) plE0 plE1])
+    plPP <- peval p pR; plE0 <- eeval e0 t; plE1 <- eeval e1 t
+    pure (Nothing, plPP ++ [If (Is pR) plE0 plE1])
 
 feval :: E (T ()) -> FTemp -> CM [CS]
 feval (LLet _ b e) t = do
