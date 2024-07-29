@@ -1,4 +1,4 @@
-module QC ( gas ) where
+module QC ( gas, Val (..) ) where
 
 import           A
 import           Control.Monad.State.Strict (StateT, evalStateT, get, gets, modify, put, runStateT)
@@ -7,12 +7,15 @@ import           Data.Bifunctor             (bimap)
 import           Data.Functor               (($>))
 import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
+import           Foreign.C.Types            (CDouble (..))
+import           Foreign.LibFFI             (Arg, argCDouble, argInt64, argPtr)
 import           Foreign.Marshal.Alloc      (mallocBytes)
 import           Foreign.Ptr                (Ptr)
 import           Foreign.Storable           (poke, sizeOf)
 import           Hs.A
 import           Nm
-import           Test.QuickCheck.Gen        (Gen, chooseInt64, frequency, genDouble, generate, vectorOf)
+import           Prettyprinter              (Pretty (..))
+import           Test.QuickCheck.Gen        (Gen, chooseAny, chooseInt64, frequency, genDouble, generate, vectorOf)
 import           U
 
 rnk :: Gen Int64
@@ -47,16 +50,31 @@ gg (SVar (Nm _ (U n) _)) = do
         Nothing -> do {r <- lift$rnk; ds <- lift$vectorOf (fromIntegral r) dim; modify (mapS (IM.insert n (r,ds))) $> (r,ds)}
         Just s  -> pure s
 
-gas :: [T a] -> IO [Ptr (Apple Double)]
+data ValP = ArrDp (Ptr (Apple Double))
+
+gas :: [T a] -> IO [(Arg, Val, Maybe (Ptr (Apple Double)))]
 gas = flip evalStateT (RSubst IM.empty IM.empty).traverse ga
 
-ga :: T a -> StateT RSubst IO (Ptr (Apple Double))
+data Val = ArrD !(Apple Double) | II !Int64 | D !Double
+
+instance Pretty Val where
+    pretty (ArrD a) = pretty a
+    pretty (II i)   = pretty i
+    pretty (D d)    = pretty d
+
+ga :: T a -> StateT RSubst IO (Arg, Val, Maybe (Ptr (Apple Double)))
 ga (Arr sh F) = do
     st <- get
     (a, st') <- lift $ generate $ runStateT (gD sh) st
     put st'
     p <- lift $ mallocBytes (sizeOf a)
-    lift (poke p a $> p)
+    lift (poke p a $> (argPtr p, ArrD a, Just p))
+ga I = do
+    i <- lift $ generate $ chooseAny
+    pure (argInt64 i, II i, Nothing)
+ga F = do
+    x <- lift $ generate $ chooseAny
+    pure (argCDouble (CDouble x), D x, Nothing)
 
 gD :: Sh a -> ShM (Apple Double)
 gD sh = do

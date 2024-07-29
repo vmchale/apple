@@ -15,6 +15,7 @@ import           Data.Functor              ((<&>))
 import           Data.Int                  (Int64)
 import           Data.List
 import           Data.List.Split           (chunksOf)
+import           Data.Maybe                (catMaybes)
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
@@ -394,11 +395,11 @@ qc s = do
                             asm@(_, fp, _) <- efp eC
                             let loopϵ 0 = pure Nothing
                                 loopϵ n = do
-                                    arrs <- gas ty
-                                    b <- callFFI fp retCUChar (argPtr<$>arrs)
+                                    (args, es, mps) <- unzip3 <$> gas ty
+                                    b <- callFFI fp retCUChar args
                                     (if cb b
-                                        then loopϵ (n-1)
-                                        else do {aa <- traverse peek arrs; pure (Just aa)}) <* traverse_ free arrs
+                                        then traverse free (catMaybes mps) *> loopϵ (n-1)
+                                        else (Just es) <$ traverse_ free (catMaybes mps))
                             res <- loopϵ (100::Int)
                             case res of
                                 Nothing -> putDoc ("Passed, 100." <> hardline)
@@ -407,6 +408,7 @@ qc s = do
 
   where bs = ubs s
         cb 0=False; cb 1=True
+        catArrs (ArrD p:vs) = p:catArrs vs; catArrs [] = []; catArrs (_:vs) = catArrs vs
 
 benchE :: String -> Repl AlexPosn ()
 benchE s = do
