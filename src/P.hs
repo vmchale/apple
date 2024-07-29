@@ -47,7 +47,7 @@ import           Asm.X86.Trans
 import           C
 import           C.Alloc
 import           C.Trans                    as C
-import           CF                         (Live)
+import           CF                         (Liveness)
 import           Control.DeepSeq            (NFData)
 import           Control.Exception          (Exception, throw, throwIO)
 import           Control.Monad              ((<=<))
@@ -175,10 +175,10 @@ eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 walloc f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . ir
 wallocE i f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . eir i
 
-cmm :: BSL.ByteString -> Either (Err AlexPosn) ([CS Live], C.AsmData)
+cmm :: BSL.ByteString -> Either (Err AlexPosn) ([CS Liveness], C.AsmData)
 cmm = fmap (f.C.writeC).opt where f (cs,_,aa,t)=(frees t cs,aa)
 
-ec :: Int -> E a -> Either (Err a) ([CS Live], LSt, C.AsmData)
+ec :: Int -> E a -> Either (Err a) ([CS Liveness], LSt, C.AsmData)
 ec i = fmap ((\(cs,u,aa,t) -> (frees t cs,u,aa)) . C.writeC) . optE i
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IR.AsmData, WSt)

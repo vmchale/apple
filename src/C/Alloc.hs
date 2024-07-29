@@ -6,7 +6,6 @@ import           CF
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import           Data.Maybe  (mapMaybe)
--- import           LI
 import           LR
 
 frees :: IM.IntMap Temp -> [CS ()] -> [CS Liveness]

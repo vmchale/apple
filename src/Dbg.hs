@@ -8,6 +8,7 @@ module Dbg ( dumpAAbs
            , dumpX86Abs
            , dumpX86Liveness
            , dumpC
+           , dumpCI
            , dumpIR
            , dumpDomTree
            , dumpLoop
@@ -37,6 +38,8 @@ import           Asm.X86.Byte
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           C
+import           C.Alloc
+import qualified C.Trans              as C
 import           CF
 import           Control.Exception    (throw, throwIO)
 import           Control.Monad        ((<=<))
@@ -56,7 +59,7 @@ import           IR.Hoist
 import           L
 import           Numeric              (showHex)
 import           P
-import           Prettyprinter        (Doc, Pretty (..), comma, concatWith, punctuate, (<+>))
+import           Prettyprinter        (Doc, Pretty (..), comma, concatWith, punctuate, space, (<+>))
 import           Prettyprinter.Ext
 import           Ty
 
@@ -135,6 +138,12 @@ dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
 dumpC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpC = fmap (prettyCS.swap).cmm
 
+dumpCI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpCI = fmap (prettyCI.live.f.C.writeC).opt where f (cs,_,_,_) = cs
+
+prettyCI :: [CS Liveness] -> Doc ann
+prettyCI = prettyLines.fmap (pl ((space<>).pretty))
+
 dumpLoop :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss,_) = pS ss<#>pretty (fmap (IS.toList . snd) t); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
 
@@ -143,9 +152,6 @@ dumpDomTree = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (_,t,asϵ,_) = pS as�
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
-
--- dumpIRI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
--- dumpIRI = fmap (prettyIRI.live.fst3).ir
 
 dumpX86Intervals :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Intervals = fmap X86.prettyDebugX86 . x86Iv
