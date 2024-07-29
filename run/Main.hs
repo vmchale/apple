@@ -429,12 +429,12 @@ benchE s = do
                                 asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO $ callFFI fp retInt64 [])
                                 freeAsm asm
-                        F -> do
+                        A.F -> do
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO $ callFFI fp retCDouble [])
                                 freeAsm asm
-                        P [F,F] -> error "Haskell support for float ABI is poor :("
+                        P [A.F,A.F] -> error "Haskell support for float ABI is poor :("
                         (Arr _ _) -> do
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
@@ -448,7 +448,7 @@ benchE s = do
                         A.Arrow{} -> liftIO $ putDoc ("Cannot benchmark a function without arguments" <> hardline)
     where bs = ubs s
 
-rSz A.B=1; rSz I=8; rSz F=8; rSz (P ts) = sum (rSz<$>ts); rSz Arr{}=8
+rSz A.B=1; rSz I=8; rSz A.F=8; rSz (P ts) = sum (rSz<$>ts); rSz Arr{}=8
 
 pE :: [Int64] -> [Doc ann] -> Doc ann
 pE [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ", " <> y) (list<$>chunksOf (fromIntegral n) xs) <> space))
@@ -456,7 +456,7 @@ pE _ xs      = list xs
 
 pR :: T a -> Ptr b -> IO (Doc ann)
 pR I p      = do {i <- peek (castPtr p :: Ptr Int64); pure (pretty i)}
-pR F p      = do {f <- peek (castPtr p :: Ptr Double); pure (pretty f)}
+pR A.F p    = do {f <- peek (castPtr p :: Ptr Double); pure (pretty f)}
 pR A.B p    = do {b <- peek (castPtr p :: Ptr AB); pure (pretty b)}
 pR (P ts) p = tupledBy "*" <$> traverse (`pR` p) ts
 
@@ -512,7 +512,7 @@ printExpr s = do
                               asm@(_, fp, _) <- efp eC -- TODO: i after tyClosed gets discarded?
                               print =<< callFFI fp retInt64 []
                               freeAsm asm
-                        F ->
+                        A.F ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
                                 print =<< callFFI fp retCDouble []

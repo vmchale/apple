@@ -6,6 +6,7 @@ import           Control.Exception     (throw)
 import qualified Data.ByteString       as BS
 import qualified Data.ByteString.Lazy  as BSL
 import           Data.Int              (Int64)
+import           Foreign.C.Types       (CUChar (..))
 import           Foreign.Marshal.Alloc (allocaBytes)
 import           Foreign.Ptr           (FunPtr, Ptr)
 import           Foreign.Storable      (Storable (..))
@@ -53,6 +54,7 @@ allT = testGroup "jit"
     , testCase "euclidean" $ do { res <- fpAaf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
     , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
     , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
+    , testCase "primes" $ do { res <- fpIa "test/data/primes.🍏" 30; res @?= [T,T,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,F,F,F,F,T,F] }
     , testCase "twoSum" $ do { res <- fpAaf "test/data/twoSum.🍎" [1,2,3] [2,4,5] ; res @?= 17 }
     , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
     , testCase "shoelace" $ do { res <- fpAaf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
@@ -230,6 +232,11 @@ fpIff fp x y = do
     f <- fpn =<< BSL.readFile fp
     pure $ iff f x y
 
+fpIa :: Storable a => FilePath -> Int64 -> IO [a]
+fpIa fp n = do
+    f <- fpn =<< BSL.readFile fp
+    asN (ia f n)
+
 fpFfa :: Storable a => FilePath -> Double -> Double -> IO [a]
 fpFfa fp x y = do
     f <- fpn =<< BSL.readFile fp
@@ -266,6 +273,7 @@ wA x act =
 
 bytesE = either throw id . bytes
 
+foreign import ccall "dynamic" ia :: FunPtr (Int64 -> U a) -> Int64 -> U a
 foreign import ccall "dynamic" ai :: FunPtr (U a -> Int64) -> U a -> Int64
 foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
 foreign import ccall "dynamic" aaf :: FunPtr (U a -> U a -> Double) -> U a -> U a -> Double

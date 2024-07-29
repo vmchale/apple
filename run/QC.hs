@@ -63,7 +63,7 @@ instance Pretty Val where
     pretty (D d)    = pretty d
 
 ga :: T a -> StateT RSubst IO (Arg, Val, Maybe (Ptr (Apple Double)))
-ga (Arr sh F) = do
+ga (Arr sh A.F) = do
     st <- get
     (a, st') <- lift $ generate $ runStateT (gD sh) st
     put st'
@@ -72,7 +72,7 @@ ga (Arr sh F) = do
 ga I = do
     i <- lift $ generate $ chooseAny
     pure (argInt64 i, II i, Nothing)
-ga F = do
+ga A.F = do
     x <- lift $ generate $ chooseAny
     pure (argCDouble (CDouble x), D x, Nothing)
 

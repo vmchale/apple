@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Hs.A ( Apple (..), U
-            , AB, AI, AF
+            , AB (..), AI, AF
             , P2 (..), P3 (..), P4 (..)
             , hs2, hs3, hs4
             ) where
@@ -20,9 +20,11 @@ import           Prettyprinter.Ext
 type AI = Apple Int64; type AF = Apple Double
 type U a = Ptr (Apple a)
 
-data AB = F | T
+data AB = F | T deriving Eq
 
 instance Pretty AB where pretty T="#t"; pretty F="#f"
+
+instance Show AB where show=show.pretty
 
 data Apple a = AA !Int64 [Int64] [a] deriving (Functor)
 
