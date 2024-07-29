@@ -142,7 +142,7 @@ dumpCI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpCI = fmap (prettyCI.live.f.C.writeC).opt where f (cs,_,_,_) = cs
 
 prettyCI :: [CS Liveness] -> Doc ann
-prettyCI = prettyLines.fmap (pl ((space<>).pretty))
+prettyCI = prettyLines.fmap (pL ((space<>).pretty))
 
 dumpLoop :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss,_) = pS ss<#>pretty (fmap (IS.toList . snd) t); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)

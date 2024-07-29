@@ -11,7 +11,7 @@ module C ( Temp (..), FTemp (..), BTemp (..)
          , Label, AsmData
          , LSt (..)
          , prettyCS
-         , pl
+         , pL
          ) where
 
 import           CF.AL
@@ -181,38 +181,38 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
 instance Copointed CS where copoint=lann
 
 instance Pretty (CS a) where
-    pretty = pl (const"")
+    pretty = pL (const"")
 
-pl f (MT l t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e <> f l
-pl f (MT l t e)             = pretty t <+> "=" <+> pretty e <> f l
-pl f (MX l t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e <> f l
-pl f (MX l t e)             = pretty t <+> "=" <+> pretty e <> f l
-pl f (MB l t e)             = pretty t <+> "=" <+> pretty e <> f l
-pl f (Wr l a e)             = pretty a <+> "=" <+> pretty e <> f l
-pl f (WrF l a e)            = pretty a <+> "=" <+> pretty e <> f l
-pl f (WrP l a e)            = pretty a <+> "=" <+> pretty e <> f l
-pl _ (Free t)               = "free" <+> pretty t
-pl f (Ma l _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz) <> f l
-pl f (MaΠ l _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz) <> f l
-pl f (For l t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
-pl f (For1 l t el rel eu ss) = "for-1" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
-pl f (While l t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
-pl f (Ifn't l p s)          = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s) <#> rbrace <> f l
-pl f (If l p s0 s1)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS f s1) <#> rbrace <> f l
-pl _ RA{}                   = mempty
-pl f (CpyE l a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n) <> f l
-pl f (CpyD l a a' e)        = "cpydims" <+> pretty a <+> pretty a' <+> pretty e <> f l
-pl f (Sa l t e)             = pretty t <+> "=" <+> "salloc" <> parens (pretty e) <> f l
-pl f (Pop l e)              = "pop" <+> pretty e <> f l
-pl f (Cmov l p t e)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace <> f l
-pl f (Fcmov l p t e)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace <> f l
-pl f (Cset l p t)           = pretty t <+> "=" <+> pretty p <> f l
-pl f (SZ l td t _ _)        = pretty td <+> "=" <+> "SIZE" <> parens (pretty t) <> f l
-pl f (PlProd l t ts)        = pretty t <+> "=" <+> "PRODUCT" <> tupled (pretty<$>ts) <> f l
-pl f (Rnd l t)              = pretty t <+> "=" <+> "(rnd)" <> f l
-pl f (FRnd l x)             = pretty x <+> "=" <+> "(frnd)" <> f l
-pl f (Def la l cs)          = hardline <> pS l <> ":" <#> indent 4 (pCS f cs) <> f la
-pl f (G la l _)             = "GOTO" <+> pS l <> f la
+pL f (MT l t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e <> f l
+pL f (MT l t e)             = pretty t <+> "=" <+> pretty e <> f l
+pL f (MX l t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e <> f l
+pL f (MX l t e)             = pretty t <+> "=" <+> pretty e <> f l
+pL f (MB l t e)             = pretty t <+> "=" <+> pretty e <> f l
+pL f (Wr l a e)             = pretty a <+> "=" <+> pretty e <> f l
+pL f (WrF l a e)            = pretty a <+> "=" <+> pretty e <> f l
+pL f (WrP l a e)            = pretty a <+> "=" <+> pretty e <> f l
+pL _ (Free t)               = "free" <+> pretty t
+pL f (Ma l _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz) <> f l
+pL f (MaΠ l _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz) <> f l
+pL f (For l t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (For1 l t el rel eu ss) = "for-1" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (While l t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (Ifn't l p s)          = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s) <#> rbrace <> f l
+pL f (If l p s0 s1)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS f s1) <#> rbrace <> f l
+pL _ RA{}                   = mempty
+pL f (CpyE l a a' e n)      = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n) <> f l
+pL f (CpyD l a a' e)        = "cpydims" <+> pretty a <+> pretty a' <+> pretty e <> f l
+pL f (Sa l t e)             = pretty t <+> "=" <+> "salloc" <> parens (pretty e) <> f l
+pL f (Pop l e)              = "pop" <+> pretty e <> f l
+pL f (Cmov l p t e)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace <> f l
+pL f (Fcmov l p t e)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace <> f l
+pL f (Cset l p t)           = pretty t <+> "=" <+> pretty p <> f l
+pL f (SZ l td t _ _)        = pretty td <+> "=" <+> "SIZE" <> parens (pretty t) <> f l
+pL f (PlProd l t ts)        = pretty t <+> "=" <+> "PRODUCT" <> tupled (pretty<$>ts) <> f l
+pL f (Rnd l t)              = pretty t <+> "=" <+> "(rnd)" <> f l
+pL f (FRnd l x)             = pretty x <+> "=" <+> "(frnd)" <> f l
+pL f (Def la l cs)          = hardline <> pS l <> ":" <#> indent 4 (pCS f cs) <> f la
+pL f (G la l _)             = "GOTO" <+> pS l <> f la
 
 pS :: Label -> Doc ann
 pS l = "fun_" <> pretty l
@@ -223,6 +223,6 @@ prettyCS :: (AsmData, [CS a]) -> Doc ann
 prettyCS (ds,ss) = pCS (const"") ss
 
 pCS :: (a -> Doc ann) -> [CS a] -> Doc ann
-pCS f=prettyLines.fmap (pl f)
+pCS f=prettyLines.fmap (pL f)
 
 data LSt = LSt { clabel :: !Label, ctemps :: !Int }
