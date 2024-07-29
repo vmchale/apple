@@ -61,26 +61,38 @@ emptyL = Liveness IS.empty IS.empty IS.empty IS.empty
 
 initLiveness :: [CS ControlAnn] -> IM.IntMap (ControlAnn, Liveness)
 initLiveness = IM.fromList . go where
-    go []                      = []
-    go (For ann _ _ _ _ ss:cs) = (node ann, (ann, emptyL)):go ss++go cs
-    go (For1{}:cs)             = undefined
-    go (While{}:cs)            = undefined
-    go (If{}:cs)               = undefined
-    go (Ifn't{}:cs)            = undefined
-    go (Def{}:cs)              = undefined
-    go (G{}:cs)                = undefined
-    go (c:cs)                  = let x=lann c in (node x, (x, emptyL)):go cs
+    go []                       = []
+    go (For ann _ _ _ _ ss:cs)  = (node ann, (ann, emptyL)):go ss++go cs
+    go (For1 ann _ _ _ _ ss:cs) = (node ann, (ann, emptyL)):go ss++go cs
+    go (While ann _ _ _ ss:cs)  = (node ann, (ann, emptyL)):go ss++go cs
+    go (If ann _ ss ss':cs)     = (node ann, (ann, emptyL)):go ss++go ss'++go cs
+    go (Ifn't ann _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
+    go (Def{}:cs)               = undefined
+    go (G{}:cs)                 = undefined
+    go (c:cs)                   = let x=lann c in (node x, (x, emptyL)):go cs
 
 inspectOrder :: [CS ControlAnn] -> [N]
-inspectOrder (For ann _ _ _ _ ss:cs) = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (For1{}:cs)             = undefined
-inspectOrder (While{}:cs)            = undefined
-inspectOrder (If{}:cs)               = undefined
-inspectOrder (Ifn't{}:cs)            = undefined
-inspectOrder (Def{}:cs)              = undefined
-inspectOrder (G{}:cs)                = undefined
-inspectOrder (c:cs)                  = node (lann c):inspectOrder cs
-inspectOrder []                      = []
+inspectOrder (For ann _ _ _ _ ss:cs)  = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (For1 ann _ _ _ _ ss:cs) = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (While ann _ _ _ ss:cs)  = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (If ann _ ss ss':cs)     = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
+inspectOrder (Ifn't ann _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (Def{}:cs)               = undefined
+inspectOrder (G{}:cs)                 = undefined
+inspectOrder (c:cs)                   = node (lann c):inspectOrder cs
+inspectOrder []                       = []
+
+tieBody :: N -> ([N] -> [N]) -> [CS ()] -> FreshM (Maybe N, [CS ControlAnn])
+tieBody h f ss = do
+    preSs <- addCF ss
+    case uncons preSs of
+        Just (i1, _) ->
+            let hi=node (lann i1)
+                (ss',l) = unsnoc preSs
+                l'=fmap (addH hi.addH h.mC f) l
+                ss''=ss'++[l']
+            in pure (Just hi, ss'')
+        Nothing -> pure (Nothing, [])
 
 -- | Pair 'CS with a unique node name and a list of all possible
 -- destinations.
@@ -93,17 +105,27 @@ addCF (G _ l r:stmts) = undefined
 addCF ((For _ t el c eu ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    preSs <- addCF ss
-    case uncons preSs of
-        Just (i1, _) ->
-            let hi=node (lann i1)
-                (ss',l) = unsnoc preSs
-                l'=fmap (addH hi.mC f) l
-                ss''=ss'++[l']
-                ub=foldMap (usesNode.ud.lann) ss''; db=foldMap (defsNode.ud.lann) ss''
-            in pure (For (ControlAnn i (f [hi]) (UD (uE el<>uE eu<>ub) IS.empty db IS.empty)) t el c eu ss'':stmts')
-addCF (For1{}:_) = undefined
-addCF (While{}:_) = undefined
+    (mH, ss') <- tieBody i f ss
+    let d = case mH of Nothing -> []; Just hi -> [hi]
+    pure $ For (ControlAnn i (f d) ud) t el c eu ss':stmts'
+  where
+    ud = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+addCF ((For1 _ t el c eu ss):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (mH, ss') <- tieBody i f ss
+    let d = case mH of Nothing -> []; Just hi -> [hi]
+    pure $ For1 (ControlAnn i (f d) ud) t el c eu ss':stmts'
+  where
+    ud = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+addCF ((While _ t c ed ss):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (mH, ss') <- tieBody i f ss
+    let d = case mH of Nothing -> []; Just hi -> [hi]
+    pure $ While (ControlAnn i (f d) ud) t c ed ss':stmts'
+  where
+    ud = UD (uE ed) IS.empty IS.empty IS.empty
 addCF (If{}:_) = undefined
 addCF (Ifn't{}:_) = undefined
 addCF (stmt:stmts) = do

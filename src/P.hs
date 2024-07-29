@@ -47,6 +47,7 @@ import           Asm.X86.Trans
 import           C
 import           C.Alloc
 import           C.Trans                    as C
+import           CF                         (Live)
 import           Control.DeepSeq            (NFData)
 import           Control.Exception          (Exception, throw, throwIO)
 import           Control.Monad              ((<=<))
@@ -54,7 +55,6 @@ import           Control.Monad.State.Strict (evalState, state)
 import           Data.Bifunctor             (first, second)
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
-import qualified Data.IntMap                as IM
 import qualified Data.Text                  as T
 import           Data.Tuple.Extra           (first3)
 import           Data.Typeable              (Typeable)
@@ -175,11 +175,11 @@ eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 walloc f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . ir
 wallocE i f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . eir i
 
-cmm :: BSL.ByteString -> Either (Err AlexPosn) ([CS ()], C.AsmData)
-cmm = fmap (f.C.writeC).opt where f (cs,_,aa,_)=(cs,aa)
+cmm :: BSL.ByteString -> Either (Err AlexPosn) ([CS Live], C.AsmData)
+cmm = fmap (f.C.writeC).opt where f (cs,_,aa,t)=(frees t cs,aa)
 
-ec :: Int -> E a -> Either (Err a) ([CS ()], LSt, C.AsmData, IM.IntMap C.Temp)
-ec i = fmap C.writeC . optE i
+ec :: Int -> E a -> Either (Err a) ([CS Live], LSt, C.AsmData)
+ec i = fmap ((\(cs,u,aa,t) -> (frees t cs,u,aa)) . C.writeC) . optE i
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IR.AsmData, WSt)
 ir = fmap (f.C.writeC).opt where f (cs,u,aa,t) = let (s,u')=cToIR u (frees t cs) in (pall (optIR s),aa,u')
@@ -188,7 +188,7 @@ eir :: Int -> E a -> Either (Err a) ([Stmt], IR.AsmData, WSt)
 eir i = fmap (f.C.writeC).optE i where f (cs,u,aa,t) = let (s,u')=cToIR u (frees t cs) in (pall (optIR s),aa,u')
 
 eDumpC :: Int -> E a -> Either (Err a) (Doc ann)
-eDumpC i = fmap (prettyCS.𝜋).ec i where 𝜋 (a,_,c,_)=(c,a)
+eDumpC i = fmap (prettyCS.𝜋).ec i where 𝜋 (a,_,c)=(c,a)
 
 eDumpIR :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpIR i = fmap (prettyIR.𝜋) . eir i where 𝜋 (a,b,_)=(b,a)

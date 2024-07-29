@@ -37,7 +37,6 @@ import           Asm.X86.Byte
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           C
-import           C.Alloc
 import           CF
 import           Control.Exception    (throw, throwIO)
 import           Control.Monad        ((<=<))
