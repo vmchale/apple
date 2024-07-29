@@ -106,7 +106,7 @@ tieBody h f ss = do
 addCF :: [CS ()] -> FreshM [CS ControlAnn]
 addCF [] = pure []
 addCF ((Def _ l ss):stmts) = do
-    i <- getFresh
+    i <- ll l
     nextStmts <- addCF stmts
     preSs <- addCF ss
     case uncons preSs of
@@ -120,7 +120,7 @@ addCF ((Def _ l ss):stmts) = do
                     ss''=ss'++[l']
                 pure (Def (ControlAnn i [hi] (UD IS.empty IS.empty IS.empty IS.empty)) l ss'':nextStmts)
 addCF (G _ l r:stmts) = do
-    i <- getFresh
+    i <- ll r
     nextStmts <- addCF stmts
     l_i <- ll l
     pure (G (ControlAnn i [l_i] (UD IS.empty IS.empty IS.empty IS.empty)) l r:nextStmts)
