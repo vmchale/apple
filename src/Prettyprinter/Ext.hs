@@ -53,7 +53,7 @@ prettyBind (i, j) = pretty i <+> "→" <+> pretty j
 prettyDumpBinds :: Pretty b => IM.IntMap b -> Doc a
 prettyDumpBinds b = vsep (prettyBind <$> IM.toList b)
 
-hex2 :: (Integral a, Show a) => a -> Doc ann
+hex2 :: Integral a => a -> Doc ann
 hex2 i | i < 16 = pretty ((($"").(('0':).).showHex) i)
        | otherwise = pretty ((($"").showHex) i)
 

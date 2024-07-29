@@ -380,7 +380,7 @@ puds, pods :: [freg] -> [AArch64 AReg freg ()]
 puds = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 16, StpD () r0 r1 (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, StrD () r (R SP)]
 pods = concatMap go.reverse.s2 where go (r0, Just r1) = [LdpD () r0 r1 (R SP), AddRC () SP SP 16]; go (r, Nothing) = [LdrD () r (R SP), AddRC () SP SP 16]
 
-hexd :: (Integral a, Show a) => a -> Doc ann
+hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
 
 instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
