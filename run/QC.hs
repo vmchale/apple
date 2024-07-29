@@ -37,7 +37,7 @@ gg (Ix _ i `Cons` sh) = bimap (+1) (fromIntegral i:)<$>gg sh
 gg (IVar _ (Nm _ (U n) _) `Cons` sh) = do
     iSt <- gets iS
     case IM.lookup n iSt of
-        Nothing -> do {d <- lift$dim; modify (mapI (IM.insert n d)); bimap (+1) (d:)<$>gg sh}
+        Nothing -> do {d <- lift dim; modify (mapI (IM.insert n d)); bimap (+1) (d:)<$>gg sh}
         Just d  -> bimap (+1) (d:)<$>gg sh
 gg (StaPlus _ (IVar _ (Nm _ (U n) _)) (Ix _ i) `Cons` sh) | i' <- fromIntegral i = do
     iSt <- gets iS
@@ -47,7 +47,7 @@ gg (StaPlus _ (IVar _ (Nm _ (U n) _)) (Ix _ i) `Cons` sh) | i' <- fromIntegral i
 gg (SVar (Nm _ (U n) _)) = do
     sSt <- gets sS
     case IM.lookup n sSt of
-        Nothing -> do {r <- lift$rnk; ds <- lift$vectorOf (fromIntegral r) dim; modify (mapS (IM.insert n (r,ds))) $> (r,ds)}
+        Nothing -> do {r <- lift rnk; ds <- lift$vectorOf (fromIntegral r) dim; modify (mapS (IM.insert n (r,ds))) $> (r,ds)}
         Just s  -> pure s
 
 data ValP = ArrDp (Ptr (Apple Double))
@@ -70,10 +70,10 @@ ga (Arr sh A.F) = do
     p <- lift $ mallocBytes (sizeOf a)
     lift (poke p a $> (argPtr p, ArrD a, Just p))
 ga I = do
-    i <- lift $ generate $ chooseAny
+    i <- lift $ generate chooseAny
     pure (argInt64 i, II i, Nothing)
 ga A.F = do
-    x <- lift $ generate $ chooseAny
+    x <- lift $ generate chooseAny
     pure (argCDouble (CDouble x), D x, Nothing)
 
 gD :: Sh a -> ShM (Apple Double)

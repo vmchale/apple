@@ -239,7 +239,7 @@ sas = thread.fmap m'p
 
 aS :: E (T ()) -> [(T (), Int64 -> ArrAcc)] -> T () -> (Int64 -> ArrAcc) -> CM ([CS ()], [Maybe (CS (), CS ())])
 aS f as rT rAt = do
-    (args, rArgs, pinchArgs) <- unzip3 <$> traverse (uncurry arg) (fmap (\(t,r) -> (t,r$bT t)) as)
+    (args, rArgs, pinchArgs) <- unzip3 <$> traverse (\(t,r) -> arg t (r$bT t)) as
     (r, wR, pinch) <- rW rT (rAt$bT rT)
     ss <- writeRF f args r
     pure (rArgs++ss++[wR], pinch:pinchArgs)
@@ -347,7 +347,7 @@ llet (n,e') | Arrow F F <- eAnn e' = do
     l <- neL
     x <- newFTemp; y <- newFTemp
     (_, ss) <- writeF e' [FA x] (FT y)
-    modify (addF n (l, [FA x], (Left y)))
+    modify (addF n (l, [FA x], Left y))
     pure [C.Def () l ss]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
@@ -430,7 +430,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
     (_, ss) <- writeF f [AA slopP Nothing] y
     let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk..(xRnk-1)]]
         xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk-1)]]
-        slopE=(Tmp slopSz)*ConstI szD+fromIntegral (8+8*rnk)
+        slopE=Tmp slopSz*ConstI szD+fromIntegral (8+8*rnk)
         dimsFromIn=ConstI$xRnk-rnk
         oRnk=xRnk-rnk
         step=CpyE () (AElem slopP (ConstI rnk) 0 Nothing szD) (Raw xd (Tmp i) lX szD) (Tmp slopSz) szD:ss++[wRet, i+=Tmp slopSz]
@@ -477,7 +477,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs
     let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk0..(xRnk-1)]]
         xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk0-1)]]
         yDims=[EAt (ADim y0 (ConstI l) lY0) | l <- [0..(rnk1-1)]]
-        slopE=(Tmp slopSz)*(ConstI sz1)+fromIntegral (8+8*rnk0)
+        slopE=Tmp slopSz*ConstI sz1+fromIntegral (8+8*rnk0)
         dimsFromIn=ConstI$xRnk-rnk0
         oRnk=xRnk-rnk0+rnk1
         step=CpyE () (AElem slopP (ConstI rnk0) 0 Nothing sz0) (Raw xd (Tmp i) lX sz0) (Tmp slopSz) sz0:ss++[CpyE () (Raw td (Tmp j) (Just a) sz1) (AElem y (ConstI rnk1) 0 lY sz1) (Tmp szY) sz1, i+=Tmp slopSz, j+=Tmp szY]
@@ -687,7 +687,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | Just (F, [m,n]) <- tIx$eAnn a, 
     let loop = For () i 0 ILt (Tmp mR)
                   [ MX () z 0,
                     for (eAnn x) j 0 ILt (Tmp nR)
-                        [ MX () z (FTmp z+FAt (AElem aR 2 ((Bin IAsl (Tmp i) (ConstI s))+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
+                        [ MX () z (FTmp z+FAt (AElem aR 2 (Bin IAsl (Tmp i) (ConstI s)+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
                   , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
                   ]
     pure (Just aL,
@@ -883,7 +883,7 @@ aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
     n <- nextAA
     modify (addAA n (rnk:fmap fromIntegral ns++ws))
     pure (Nothing, [t =: LA n])
-aeval (EApp _ (Builtin _ T) x) t | Just (ty, ixes) <- tIx (eAnn x), rnk <- fromIntegral$length ixes, any isJust (cLog<$>ixes) = do
+aeval (EApp _ (Builtin _ T) x) t | Just (ty, ixes) <- tIx (eAnn x), rnk <- fromIntegral$length ixes, any (isJust.cLog) ixes = do
     a <- nextArr t
     let sze=bT ty; rnkE=ConstI rnk
     xd <- newITemp; td <- newITemp
@@ -1059,7 +1059,7 @@ peval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op 
     pure $ plE0 $ plE1 [Cset () (FRel fop' e0e e1e) t]
 peval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just boo <- mB op = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
-    pure $ pl0 $ pl1 $ [MB () t (Boo boo e0R e1R)]
+    pure $ pl0 $ pl1 [MB () t (Boo boo e0R e1R)]
 peval (EApp _ (Builtin _ N) e0) t = do
     (pl,e0R) <- plP e0
     pure $ pl [MB () t (BU BNeg e0R)]
@@ -1260,7 +1260,7 @@ feval (EApp _ (EApp _ (Builtin _ Plus) e0) (EApp _ (EApp _ (Builtin _ Times) e1)
     pure $ pl0 $ pl1 $ pl2 [MX () t (FTmp t0+FTmp t1*FTmp t2)]
 feval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just fb <- mFop op = do
     (pl0,e0e) <- plD e0; (pl1,e1R) <- plF e1
-    pure $ pl0 $ pl1 $ [MX () t (FBin fb e0e (FTmp e1R))]
+    pure $ pl0 $ pl1 [MX () t (FBin fb e0e (FTmp e1R))]
 feval (EApp _ (EApp _ (Builtin _ IntExp) (FLit _ (-1))) n) t = do
     (plR,nR) <- plEV n
     pure $ plR [MX () t 1, Fcmov () (IUn IOdd (Tmp nR)) t (ConstF (-1))]

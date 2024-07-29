@@ -23,7 +23,7 @@ readCc pwd aSrc tyt a =
         let n=T.unpack tyt
         run (pwd </> aSrc, a, tyt)
         let c = pwd </> "test/harness" </> n <> "_harness.c"
-        {-# SCC "cc" #-} void $ readCreateProcess ((proc "cc" [n <> ".o", c, "-I", dir, "-I", pwd </> "include"])) ""
+        {-# SCC "cc" #-} void $ readCreateProcess (proc "cc" [n <> ".o", c, "-I", dir, "-I", pwd </> "include"]) ""
         {-# SCC "a.out" #-} readCreateProcess (proc (dir </> "a.out") []) ""
 
 ccOut :: FilePath -> FilePath -> T.Text -> Arch -> String -> TestTree

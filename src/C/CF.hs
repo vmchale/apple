@@ -116,7 +116,7 @@ addCF ((Def _ l ss):stmts) = do
                 (ss',lϵ) = unsnoc preSs
             in do
                 l_is <- lC l
-                let l'= fmap (mC (const$l_is)) lϵ
+                let l'= fmap (mC (const l_is)) lϵ
                     ss''=ss'++[l']
                 pure (Def (ControlAnn i [hi] (UD IS.empty IS.empty IS.empty IS.empty)) l ss'':nextStmts)
 addCF (G _ l r:stmts) = do

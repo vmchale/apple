@@ -399,7 +399,7 @@ qc s = do
                                     b <- callFFI fp retCUChar args
                                     (if cb b
                                         then traverse free (catMaybes mps) *> loopϵ (n-1)
-                                        else (Just es) <$ traverse_ free (catMaybes mps))
+                                        else Just es <$ traverse_ free (catMaybes mps))
                             res <- loopϵ (100::Int)
                             case res of
                                 Nothing -> putDoc ("Passed, 100." <> hardline)
