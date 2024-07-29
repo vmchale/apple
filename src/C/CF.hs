@@ -45,9 +45,6 @@ br i l = modify (second3 (M.insert l i))
 b3 :: N -> Label -> FreshM ()
 b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is -> i:is}) l))
 
-addH :: Int -> ControlAnn -> ControlAnn
-addH n = mC (n:)
-
 mC :: ([N] -> [N]) -> ControlAnn -> ControlAnn
 mC f (ControlAnn l ds udϵ) = ControlAnn l (f ds) udϵ
 
@@ -82,17 +79,29 @@ inspectOrder (G{}:cs)                 = undefined
 inspectOrder (c:cs)                   = node (lann c):inspectOrder cs
 inspectOrder []                       = []
 
-tieBody :: N -> ([N] -> [N]) -> [CS ()] -> FreshM (Maybe N, [CS ControlAnn])
+tieBranch :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
+tieBranch h f ss = do
+    preSs <- addCF ss
+    pure $ case uncons preSs of
+        Just (i1, _) ->
+            let hi=node (lann i1)
+                (ss',l) = unsnoc preSs
+                l' = fmap (mC ((h:).f)) l
+                ss'' = ss'++[l']
+            in ((hi:), ss'')
+        Nothing -> (id, preSs)
+
+tieBody :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
 tieBody h f ss = do
     preSs <- addCF ss
     case uncons preSs of
         Just (i1, _) ->
             let hi=node (lann i1)
                 (ss',l) = unsnoc preSs
-                l'=fmap (addH hi.addH h.mC f) l
+                l'=fmap (mC ((h:).f)) l
                 ss''=ss'++[l']
-            in pure (Just hi, ss'')
-        Nothing -> pure (Nothing, [])
+            in pure ((hi:), ss'')
+        Nothing -> pure (id, [])
 
 -- | Pair 'CS with a unique node name and a list of all possible
 -- destinations.
@@ -105,29 +114,39 @@ addCF (G _ l r:stmts) = undefined
 addCF ((For _ t el c eu ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    (mH, ss') <- tieBody i f ss
-    let d = case mH of Nothing -> []; Just hi -> [hi]
-    pure $ For (ControlAnn i (f d) ud) t el c eu ss':stmts'
+    (h, ss') <- tieBody i f ss
+    pure $ For (ControlAnn i (f (h [])) udϵ) t el c eu ss':stmts'
   where
-    ud = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+    udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
 addCF ((For1 _ t el c eu ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    (mH, ss') <- tieBody i f ss
-    let d = case mH of Nothing -> []; Just hi -> [hi]
-    pure $ For1 (ControlAnn i (f d) ud) t el c eu ss':stmts'
+    (h, ss') <- tieBody i f ss
+    pure $ For1 (ControlAnn i (f (h [])) udϵ) t el c eu ss':stmts'
   where
-    ud = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+    udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
 addCF ((While _ t c ed ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    (mH, ss') <- tieBody i f ss
-    let d = case mH of Nothing -> []; Just hi -> [hi]
-    pure $ While (ControlAnn i (f d) ud) t c ed ss':stmts'
+    (h, ss') <- tieBody i f ss
+    pure $ While (ControlAnn i (f (h [])) udϵ) t c ed ss':stmts'
   where
-    ud = UD (uE ed) IS.empty IS.empty IS.empty
-addCF (If{}:_) = undefined
-addCF (Ifn't{}:_) = undefined
+    udϵ = UD (uE ed) IS.empty IS.empty IS.empty
+addCF (If _ p b0 b1:stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h0, b0') <- tieBranch i f b0
+    (h1, b1') <- tieBranch i f b1
+    pure $ If (ControlAnn i (f (h0 (h1 []))) udϵ) p b0' b1':stmts'
+  where
+    udϵ = UD (uB p) IS.empty IS.empty IS.empty
+addCF (Ifn't _ p b:stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h, b') <- tieBranch i f b
+    pure $ Ifn't (ControlAnn i (f (h [])) udϵ) p b':stmts'
+  where
+    udϵ = UD (uB p) IS.empty IS.empty IS.empty
 addCF (stmt:stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
@@ -189,7 +208,11 @@ uB :: PE -> IS.IntSet
 uB (PAt a)        = uA a
 uB BConst{}       = IS.empty
 uB (IRel _ e0 e1) = uE e0<>uE e1
-uB (FRel _ e0 e1) = uF e0 <> uF e1
+uB (FRel _ e0 e1) = uF e0<>uF e1
+uB (Boo _ e0 e1)  = uB e0<>uB e1
+uB (IUn _ e)      = uE e
+uB Is{}           = IS.empty
+uB (BU _ e)       = uB e
 
 defs :: CS a -> IS.IntSet
 defs (Ma _ a _ _ _ _) = singleton a
