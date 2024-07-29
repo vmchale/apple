@@ -678,8 +678,8 @@ aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
     (plX, (lX, xR)) <- plA xs
     plN <- eval n nR
     ix <- newITemp
-    let body=for res i 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) (Just a) 8) (AElem xR 1 0 lX 8) (Tmp szR) 8, ix+=Tmp szR]
-    pure (Just a, plX $ plN ++ szR =: EAt (ADim xR 0 lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[body])
+    let loop=for res i 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) (Just a) 8) (AElem xR 1 0 lX 8) (Tmp szR) 8, ix+=Tmp szR]
+    pure (Just a, plX $ plN ++ szR =: EAt (ADim xR 0 lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[loop])
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | Just (F, [m,n]) <- tIx$eAnn a, Just s <- cLog n = do
     i <- newITemp; j <- newITemp; mR <- newITemp; nR <- newITemp; z <- newFTemp
     (aL,aV) <- v8 t (Tmp mR)
