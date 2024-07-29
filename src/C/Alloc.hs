@@ -6,16 +6,16 @@ import           CF
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import           Data.Maybe  (mapMaybe)
-import           LI
+-- import           LI
 import           LR
 
-frees :: IM.IntMap Temp -> [CS ()] -> [CS Live]
+frees :: IM.IntMap Temp -> [CS ()] -> [CS Liveness]
 frees a = iF a.live
 
-live :: [CS ()] -> [CS Live]
-live = intervals . (\(is,isns,lm) -> reconstruct is lm isns) . cfC
+live :: [CS ()] -> [CS Liveness]
+live = fmap (fmap liveness) . (\(is,isns,lm) -> reconstruct is lm isns) . cfC
 
-iF :: IM.IntMap Temp -> [CS Live] -> [CS Live]
+iF :: IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
 iF a = concatMap g where
     g RA{}                  = []
     g s@(For l _ _ _ _ cs)  = s { body = concatMap g cs }:fs l
@@ -27,4 +27,4 @@ iF a = concatMap g where
     g s                     = s:fs (lann s)
 
     fs l = [ Free t | t <- ts l ]
-    ts l = mapMaybe (`IM.lookup` a) (IS.toList (done l))
+    ts l = mapMaybe (`IM.lookup` a) (IS.toList (ins l `IS.difference` out l))
