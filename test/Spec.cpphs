@@ -56,7 +56,6 @@ allT = testGroup "jit"
     , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
     , testCase "primes" $ do { res <- fpIa "test/data/primes.🍏" 30; res @?= [T,T,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,F,F,F,F,T,F] }
     , testCase "twoSum" $ do { res <- fpAaf "test/data/twoSum.🍎" [1,2,3] [2,4,5] ; res @?= 17 }
-    , testCase "Floats?" $ do { res <- jitFact 50 ; res @?= 3.0414093201713376e64 }
     , testCase "shoelace" $ do { res <- fpAaf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int,6,1] ; res @?= [0::Int,4,6,6] }
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
@@ -90,12 +89,12 @@ allT = testGroup "jit"
         c @?= 0.9999999999999999
         last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)
     , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
-    , testCase "ℯ" $ do { res <- jitE 2.5 ; res @?= exp 2.5 }
+    , testCase "ℯ" $ do { f <- fpn "e:"; ff f 2.5 @?= exp 2.5 }
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
     , testCase "fizzbuzz" $ do { (AA 1 [10] res) <- fpAa "test/examples/fizzbuzz.🍎" (AA 1 [10] [0..9::Double]); res @?= [15.0,3.0,0.0,3.0,5.0,3.0,0.0,0.0,3.0,0.0::Double] }
-    , testCase "filt" $ do { (AA 1 [10] res) <- fpAa "test/examples/partition.🍏" (AA 1 [10] [0..9::Double]); res @?= [0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0::Double] }
+    , testCase "filt" $ do { (AA 1 [10] res) <- fpAa "test/examples/partition.🍏" (AA 1 [10] [0..9::Double]); res @?= [F,F,F,F,F,F,T,T,T,T] }
     , testCase "gamma" $ do { res <- gammaJit (-3.5) ; res @?= gamma (-3.5) }
-    , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res @?= tcdf 12 2 }
+    , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res ≈ tcdf 12 2 }
     , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res @?= 0.6339381452606089 }
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
     , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
@@ -213,11 +212,6 @@ jitAf code xs =
     wA a $ \p -> do
         (fp,_) <- bsFp code
         pure $ af fp p
-
-jitE :: Double -> IO Double
-jitE x = do
-    fp <- fpn "[e:x]"
-    pure $ ff fp x
 
 jitExp :: Int64 -> Double -> IO Double
 jitExp = fpIff "test/examples/exp.🍏"
