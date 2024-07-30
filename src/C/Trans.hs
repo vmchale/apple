@@ -1044,6 +1044,9 @@ plA (Var _ x) = do {st <- gets avars; pure (id, getT st x)}
 plA e         = do {t <- newITemp; (lX,plX) <- aeval e t; pure ((plX++), (lX, t))}
 
 peval :: E (T ()) -> BTemp -> CM [CS ()]
+peval (LLet _ b e) t = do
+    ss <- llet b
+    (ss++) <$> peval e t
 peval (BLit _ b) t = pure [MB () t (BConst b)]
 peval (EApp _ (Builtin _ Odd) e0) t = do
     (pl,eR) <- plEV e0
@@ -1082,6 +1085,7 @@ peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     let loopBody=mt (AElem aP 1 (Tmp i) l szY) x:ss
         loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE $ plAcc++szR=:EAt (ADim aP 0 l):[loop]
+peval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS ()]
 eval (LLet _ b e) t = do
