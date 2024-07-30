@@ -1,0 +1,13 @@
+#!/usr/bin/env zsh
+
+for src in $(fd '\.🍏') ; do
+    local dest=$(echo "${src}" | sed 's/.🍏/.apple/')
+    mv "${src}" "${dest}"
+done;
+for src in $(fd '\.🍎') ; do
+    local dest=$(echo "${src}" | sed 's/.🍎/.apple/')
+    mv "${src}" "${dest}"
+done;
+
+sed -i '' 's/[🍎🍏]/apple/g' test/Spec.cpphs
+sed -i '' 's/[🍎🍏]/apple/g' apple.cabal
