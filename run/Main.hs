@@ -60,6 +60,8 @@ data Env = Env { _lex :: !AlexUserState, ee :: [(Nm AlexPosn, E AlexPosn)], mf :
 aEe :: Nm AlexPosn -> E AlexPosn -> Env -> Env
 aEe n e (Env l ees mm a) = Env l ((n,e):ees) mm a
 
+mE f (Env l ees mm a) = Env l (f ees) mm a
+
 setL :: AlexUserState -> Env -> Env
 setL lSt (Env _ ees mm a) = Env lSt ees mm a
 
@@ -107,7 +109,7 @@ appleCompletions ("y:", "")       = pure ("y:", cyclicSimple ["ank", ""])
 appleCompletions ("ay:", "")      = pure ("ay:", cyclicSimple ["nk"])
 appleCompletions ("nay:", "")     = pure ("nay:", cyclicSimple ["k"])
 appleCompletions ("knay:", "")    = pure ("knay:", cyclicSimple [""])
-appleCompletions ("d:", "")       = pure ("d:", [simpleCompletion "isasm"])
+appleCompletions ("d:", "")       = pure ("d:", [simpleCompletion "isasm", simpleCompletion "elete"])
 appleCompletions ("id:", "")      = pure ("id:", [simpleCompletion "sasm"])
 appleCompletions ("sid:", "")     = pure ("sid:", [simpleCompletion "asm"])
 appleCompletions ("asid:", "")    = pure ("asid:", [simpleCompletion "sm"])
@@ -131,6 +133,12 @@ appleCompletions ("h:", "")       = pure ("h:", cyclicSimple ["elp", ""])
 appleCompletions ("eh:", "")      = pure ("eh:", [simpleCompletion "lp"])
 appleCompletions ("leh:", "")     = pure ("leh:", [simpleCompletion "p"])
 appleCompletions ("pleh:", "")    = pure ("pleh:", [simpleCompletion ""])
+appleCompletions ("ed:", "")      = pure ("ed:", [simpleCompletion "lete"])
+appleCompletions ("led:", "")     = pure ("led:", [simpleCompletion "ete"])
+appleCompletions ("eled:", "")    = pure ("eled:", [simpleCompletion "te"])
+appleCompletions ("teled:", "")   = pure ("teled:", [simpleCompletion "e"])
+appleCompletions ("eteled:", "")  = pure ("eteled:", [simpleCompletion ""])
+appleCompletions (" eteled:", "") = do { ns <- namesStr ; pure (" eteled:", cyclicSimple ns) }
 appleCompletions (" yt:", "")     = do { ns <- namesStr ; pure (" yt:", cyclicSimple ns) }
 appleCompletions (" t:", "")      = do { ns <- namesStr ; pure (" t:", cyclicSimple ns) }
 appleCompletions ("", "")         = ("",) . cyclicSimple <$> namesStr
@@ -167,8 +175,12 @@ loop = do
         Just (":graph":e)      -> graph (unwords e) *> loop
         Just (":qc":e)         -> qc (unwords e) *> loop
         Just (":quickcheck":e) -> qc (unwords e) *> loop
+        Just (":delete":[n])   -> del n *> loop
         Just e                 -> printExpr (unwords e) *> loop
         Nothing                -> pure ()
+
+del :: String -> Repl AlexPosn ()
+del s = lift $ modify (mE (filter (\((Nm n _ _),_) -> n /= st))) where st=T.pack s
 
 listCtx :: Repl AlexPosn ()
 listCtx = do
@@ -190,6 +202,7 @@ showHelp = liftIO $ putStr $ concat
     , helpOption ":qc" "<proposition>" "Property test"
     , helpOption ":quit, :q" "" "Quit REPL"
     , helpOption ":yank, :y" "<fn> <file>" "Read file"
+    , helpOption ":delete" "<name>" "Delete from REPL environment"
     , helpOption "\\l" "" "Reference card"
     -- TODO: dump debug state
     ]
