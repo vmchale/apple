@@ -407,6 +407,13 @@ tyOrdBinRel l = do
     pushVarConstraint n l IsOrd
     pure (n' ~> n' ~> B, mempty)
 
+tyEqBinRel :: a -> TyM a (T (), Subst a)
+tyEqBinRel l = do
+    n <- freshN "e" l
+    let n'=TVar (void n)
+    pushVarConstraint n l IsEq
+    pure (n' ~> n' ~> B, mempty)
+
 sel :: [Int] -> Sh a -> Sh a
 sel axes sh = roll Nil (fmap snd (filter ((`elem` axes) . fst) (zip [1..] unrolled))) where
     (unrolled, _) = unroll sh
@@ -513,7 +520,7 @@ tyB _ IRange = do
 tyB l Plus = tyNumBinOp l; tyB l Minus = tyNumBinOp l
 tyB l Times = tyNumBinOp l
 tyB l Gte = tyOrdBinRel l; tyB l Gt = tyOrdBinRel l; tyB l Lt = tyOrdBinRel l
-tyB l Lte = tyOrdBinRel l; tyB l Eq = tyOrdBinRel l; tyB l Neq = tyOrdBinRel l
+tyB l Lte = tyOrdBinRel l; tyB l Eq = tyEqBinRel l; tyB l Neq = tyEqBinRel l
 tyB l And = tyBoo l; tyB l Or = tyBoo l; tyB l Xor = tyBoo l
 tyB l N = do
     n <- freshN "b" l
@@ -782,6 +789,8 @@ checkTy I (IsOrd, _)     = pure Nothing
 checkTy I (HasBits, _)   = pure Nothing
 checkTy B (HasBits, _)   = pure Nothing
 checkTy F (IsOrd, _)     = pure Nothing
+checkTy I (IsEq, _)      = pure Nothing
+checkTy F (IsEq, _)      = pure Nothing
 checkTy t (c@IsNum, l)   = Left$ Doesn'tSatisfy l t c
 checkTy t (c@HasBits, l) = Left$ Doesn'tSatisfy l t c
 

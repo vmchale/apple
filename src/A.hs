@@ -44,12 +44,16 @@ data I a = Ix { ia :: a, ii :: !Int }
 instance Show (I a) where
     show = show . pretty
 
-data C = IsNum | IsOrd -- implies eq
+data C = IsNum | IsOrd | IsEq
        | HasBits deriving (Generic, Eq, Ord)
 
 instance NFData C where
 
-instance Pretty C where pretty IsNum = "IsNum"; pretty IsOrd = "IsOrd"; pretty HasBits = "HasBits"
+instance Pretty C where
+    pretty IsNum   = "IsNum"
+    pretty IsOrd   = "IsOrd"
+    pretty IsEq    = "IsEq"
+    pretty HasBits = "HasBits"
 
 instance Show C where show=show.pretty
 
