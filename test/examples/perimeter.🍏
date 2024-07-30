@@ -1,5 +1,4 @@
 λxs.λys.
-  { sum ← [(+)/ 0 x]
-  ; succDiff ← ((-)\~)
-  ; sum ([√(x^2+y^2)]`(succDiff xs) (succDiff ys))
+  { succDiff ← ((-)\~)
+  ; (+)/([√(x^2+y^2)]`(succDiff xs) (succDiff ys))
   }
