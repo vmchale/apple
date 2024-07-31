@@ -380,6 +380,12 @@ aeval (Builtin ty Eye) t | (I, ixs@[i,_]) <- tRnd ty = do
     let rnk=fromIntegral$length ixs; n=product ixs
         loop = fors ty k 0 ILt (ConstI i) [Wr () (At td [ConstI i, 1] [Tmp k, Tmp k] (Just a) 8) (ConstI 1)]
     pure (Just a, Ma () a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[td=:DP t rnk, loop])
+aeval (Builtin ty Eye) t | (F, ixs@[i,_]) <- tRnd ty = do
+    a <- nextArr t
+    td <- newITemp; k <- newITemp
+    let rnk=fromIntegral$length ixs; n=product ixs
+        loop = fors ty k 0 ILt (ConstI i) [WrF () (At td [ConstI i, 1] [Tmp k, Tmp k] (Just a) 8) (ConstF 1)]
+    pure (Just a, Ma () a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[td=:DP t rnk, loop])
 aeval (EApp _ (Builtin _ AddDim) x) t | F <- eAnn x = do
     xR <- newFTemp
     plX <- feval x xR
