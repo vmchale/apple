@@ -223,7 +223,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "re:" "repeat" "}." "typesafe last"
     , lOption "⊲" "cons" "⊳" "snoc"
     , lOption "^:" "iterate" "%." "matmul"
-    , lOption "⊗" "outer product" "|:" "transpose"
+    , lOption "⊗" "outer product" "⍉, |:" "transpose"
     , lOption "{.?" "head" "{." "typesafe head"
     , lOption "}.?" "last" "}:" "typesafe init"
     , lOption "⟨z,w⟩" "array literal" "?p,.e1,.e2" "conditional"
