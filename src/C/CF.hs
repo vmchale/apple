@@ -90,7 +90,7 @@ tieBranch i f ss = do
                 (ss',l) = unsnoc preSs
                 l' = fmap (mC f) l
             in ((hi:),) $ case uncons ss' of
-                Nothing -> ss'++[l']
+                Nothing       -> ss'++[l']
                 Just (hh, bs) -> let h' = fmap (addH i) hh in h':bs++[l']
         Nothing -> (id, preSs)
 
@@ -155,7 +155,8 @@ addCF (If _ p b0 b1:stmts) = do
     (f, stmts') <- next stmts
     (h0, b0') <- tieBranch i f b0
     (h1, b1') <- tieBranch i f b1
-    pure $ If (ControlAnn i (h0 (h1 [])) udϵ) p b0' b1':stmts'
+    let fnext = if null b0 || null b1 then f else id
+    pure $ If (ControlAnn i (fnext (h0 (h1 []))) udϵ) p b0' b1':stmts'
   where
     udϵ = UD (uB p) IS.empty IS.empty IS.empty
 addCF (Ifn't _ p b:stmts) = do
