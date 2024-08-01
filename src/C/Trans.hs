@@ -434,6 +434,20 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, nind 
         plE$
         szR=:ev (eAnn e) (xR,l):aV
         ++sas pinches [loop])
+aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t | tXs@(Arr _ tX) <- eAnn xs, Just sz <- rSz tX = do
+    a <- nextArr t
+    szR <- newITemp; xR <- rtemp tX; nR <- newITemp; b <- nBT
+    (plX, (lX, xsR)) <- plA xs
+    ss <- writeRF p [xR] (PT b)
+    k <- newITemp
+    let step = mt (AElem xsR 1 (Tmp k) lX sz) xR:ss++[If () (Is b) [wt (AElem t 1 (Tmp nR) (Just a) sz) xR, nR+=1] []]
+        loop = for (eAnn xs) k 0 ILt (Tmp szR) step
+    pure (Just a,
+        plX$
+        szR =: ev tXs (xsR,lX)
+        :Ma () a t 1 (Tmp szR) sz
+        :loop
+        :[Wr () (ADim t 0 (Just a)) (Tmp nR)])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, Just szD <- bSz ta, Just sz <- bSz tC = do
     a <- nextArr t
     slopP <- newITemp; szR <- newITemp; slopSz <- newITemp
