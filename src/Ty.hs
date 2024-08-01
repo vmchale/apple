@@ -53,8 +53,8 @@ data TyE a = IllScoped a (Nm a)
            | OI a (I a) (I a)
            | ExistentialArg (T ())
            | MatchFailed (T ()) (T ())
-           | MatchShFailed (Sh ()) (Sh ())
-           | MatchIFailed a (I a) (I a)
+           | MatchShFailed (Sh a) (Sh a)
+           | MatchIFailed (I a) (I a)
            | Doesn'tSatisfy a (T a) C
            deriving (Generic)
 
@@ -78,7 +78,7 @@ instance Pretty a => Pretty (TyE a) where
     pretty (ExistentialArg ty)     = "Existential occurs as an argument in" <+> squotes (pretty ty)
     pretty (MatchFailed t t')      = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
     pretty (MatchShFailed sh sh')  = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
-    pretty (MatchIFailed l i i')   = pretty l <> ":" <+> "failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
+    pretty (MatchIFailed i i')     = "Failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
     pretty (Doesn'tSatisfy l ty c) = pretty l <+> squotes (pretty ty) <+> "is not a member of class" <+> pretty c
 
 instance (Pretty a) => Show (TyE a) where
@@ -100,12 +100,12 @@ instance Show (Subst a) where show = show . pretty
 type TyM a = StateT (TySt a) (Either (TyE a))
 
 mI :: I a -> I a -> Either (TyE a) (Subst a)
-mI i0@(Ix l i) i1@(Ix _ j) | i == j = Right mempty
-                           | otherwise = Left $ MatchIFailed l i0 i1
+mI i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
+                           | otherwise = Left $ MatchIFailed i0 i1
 mI (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
-mI i0@(IEVar l n) i1@(IEVar _ n') | n == n' = Right mempty
-                                  | otherwise = Left $ MatchIFailed l i0 i1
+mI i0@(IEVar _ n) i1@(IEVar _ n') | n == n' = Right mempty
+                                  | otherwise = Left $ MatchIFailed i0 i1
 mI (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI i (Ix l (j-iϵ))
 mI (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI i (Ix l (iϵ-j))
 mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
@@ -117,7 +117,7 @@ mSh Nil Nil                       = Right mempty
 mSh (Cons i sh) (Cons i' sh')     = (<>) <$> mI i i' <*> mSh sh sh'
 mSh (Cat sh0 sh1) (Cat sh0' sh1') = (<>) <$> mSh sh0 sh0' <*> mSh sh1 sh1'
 mSh (Rev sh) (Rev sh')            = mSh sh sh'
-mSh sh sh'                        = Left $ MatchShFailed (void sh) (void sh')
+mSh sh sh'                        = Left $ MatchShFailed sh sh'
 
 match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
 match t t' = either throw id (maM t t')
