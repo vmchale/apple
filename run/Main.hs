@@ -24,7 +24,7 @@ import           Data.Traversable          (forM)
 import           Data.Tuple.Extra          (first3)
 import           Data.Word                 (Word8)
 import           Dbg
-import           Foreign.LibFFI            (argPtr, callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
+import           Foreign.LibFFI            (callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc     (free)
 import           Foreign.Marshal.Array     (peekArray)
 import           Foreign.Ptr               (Ptr, castPtr, plusPtr)
