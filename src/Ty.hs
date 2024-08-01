@@ -104,7 +104,8 @@ mI i0@(Ix l i) i1@(Ix _ j) | i == j = Right mempty
                            | otherwise = Left $ MatchIFailed l i0 i1
 mI (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
-mI (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
+mI i0@(IEVar l n) i1@(IEVar _ n') | n == n' = Right mempty
+                                  | otherwise = Left $ MatchIFailed l i0 i1
 mI (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI i (Ix l (j-iϵ))
 mI (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI i (Ix l (iϵ-j))
 mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
