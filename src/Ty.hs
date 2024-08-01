@@ -222,6 +222,9 @@ ftv n = ft n ()
 fti :: T.Text -> TyM a (I ())
 fti n = IVar () <$> freshN n ()
 
+ftie :: TyM a (I ())
+ftie = IEVar () <$> freshN "n" ()
+
 mapTySubst f (Subst t i sh) = Subst (f t) i sh
 mapShSubst f (Subst t i sh) = Subst t i (f sh)
 
@@ -478,35 +481,34 @@ tyB _ Head = do
 tyB _ Init = do
     a <- ftv "a"; i <- fti "i"
     pure (Arr (StaPlus () i (Ix()1) `Cons` Nil) a ~> Arr (i `Cons` Nil) a, mempty)
+tyB _ InitM = do
+    a <- ftv "a"; i <- fti "i"; n <- ftie
+    pure (Arr (vx i) a ~> Arr (vx n) a, mempty)
 tyB _ Tail = do
     a <- ftv "a"; i <- fti "i"
     pure (Arr (StaPlus () i (Ix()1) `Cons` Nil) a ~> Arr (i `Cons` Nil) a, mempty)
+tyB _ TailM = do
+    a <- ftv "a"; i <- fti "i"; n <- ftie
+    pure (Arr (vx i) a ~> Arr (vx n) a, mempty)
 tyB _ Rot = do
     a <- ftv "a"; i <- fti "i"
     pure (I ~> Arr (i `Cons` Nil) a ~> Arr (i `Cons` Nil) a, mempty)
 tyB _ Cyc = do
-    sh <- fsh "sh"; a <- ftv "a"; i <- fti "i"
-    n <- IEVar () <$> freshN "n" ()
+    sh <- fsh "sh"; a <- ftv "a"; i <- fti "i"; n <- ftie
     pure (Arr (i `Cons` sh) a ~> I ~> Arr (n `Cons` sh) a, mempty)
 tyB _ HeadM = do
     a <- ftv "a"; i <- fti "i"
     pure (Arr (i `Cons` Nil) a ~> a, mempty)
 tyB _ Re = do
-    a <- ftv "a"
-    n <- IEVar () <$> freshN "n" ()
+    a <- ftv "a"; n <- ftie
     pure (I ~> a ~> Arr (n `Cons` Nil) a, mempty)
-tyB _ FRange = do
-    n <- IEVar () <$> freshN "n" ()
-    pure (F ~> F ~> I ~> Arr (n `Cons` Nil) F, mempty)
+tyB _ FRange = do {n <- ftie; pure (F ~> F ~> I ~> Arr (n `Cons` Nil) F, mempty)}
 tyB _ Fib = do
-    n <- IEVar () <$> freshN "n" ()
-    a <- freshN "a" ()
+    n <- ftie; a <- freshN "a" ()
     let a' = TVar a
         arrTy = Arr (n `Cons` Nil) a'
     pure (a' ~> a' ~> (a' ~> a' ~> a') ~> I ~> arrTy, mempty)
-tyB _ IRange = do
-    n <- IEVar () <$> freshN "n" ()
-    pure (I ~> I ~> I ~> Arr (n `Cons` Nil) I, mempty)
+tyB _ IRange = do {n <- ftie; pure (I ~> I ~> I ~> Arr (n `Cons` Nil) I, mempty)}
 tyB l Plus = tyNumBinOp l; tyB l Minus = tyNumBinOp l
 tyB l Times = tyNumBinOp l
 tyB l Gte = tyOrdBinRel l; tyB l Gt = tyOrdBinRel l; tyB l Lt = tyOrdBinRel l
@@ -652,8 +654,7 @@ tyB _ Size = do
     a <- ftv "a"
     pure (Arr shV a ~> I, mempty)
 tyB _ Gen = do
-    a <- ftv "a"
-    n <- IEVar () <$> freshN "n" ()
+    a <- ftv "a"; n <- ftie
     let arrTy = Arr (n `Cons` Nil) a
     pure (a ~> (a ~> a) ~> I ~> arrTy, mempty)
 tyB l Mul = do
@@ -677,12 +678,10 @@ tyB _ Sin = pure (F ~> F, mempty)
 tyB _ Cos = pure (F ~> F, mempty)
 tyB _ Tan = pure (F ~> F, mempty)
 tyB _ Ices = do
-    a <- ftv "a"; i <- fti "i"
-    n <- IEVar () <$> freshN "n" ()
+    a <- ftv "a"; i <- fti "i"; n <- ftie
     pure ((a ~> B) ~> Arr (vx i) a ~> Arr (vx n) I, mempty)
 tyB _ Filt = do
-    a <- ftv "a"; i <- fti "i"
-    n <- IEVar () <$> freshN "n" ()
+    a <- ftv "a"; i <- fti "i"; n <- ftie
     pure ((a ~> B) ~> Arr (vx i) a ~> Arr (vx n) I, mempty)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
