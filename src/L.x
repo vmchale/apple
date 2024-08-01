@@ -182,6 +182,7 @@ tokens :-
         "@."                     { mkSym AtDot }
         ℘                        { mkSym Weier }
         §                        { mkSym Para }
+        "#."                     { mkSym Para }
         👁️                        { mkSym Eye }
         "eye."                   { mkSym Eye }
         ♭                        { mkSym B }
