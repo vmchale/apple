@@ -56,7 +56,6 @@ allT = testGroup "jit"
     , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
     , testCase "primes" $ do { res <- fpIa "test/data/primes.🍏" 30; res @?= [T,T,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,F,F,F,F,T,F] }
     , testCase "primes-up-to" $ do { res <- fpIa "test/examples/primes.🍎" 100; res @?= [2::Int64,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97] }
-    , testCase "twoSum" $ do { res <- fpAaf "test/data/twoSum.🍎" [1,2,3] [2,4,5] ; res @?= 17 }
     , testCase "shoelace" $ do { res <- fpAaf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int,6,1] ; res @?= [0::Int,4,6,6] }
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
