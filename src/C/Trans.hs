@@ -451,6 +451,20 @@ aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t | tXs@(Arr _ tX) <- eAnn xs, Jus
   where
     w ty at tt      | isR ty = wt at tt
     w ty at (IT tt) | isΠ ty = CpyE () at (TupM tt Nothing) 1 (bT ty)
+aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t | tXs@(Arr _ tX) <- eAnn xs, Just sz <- bSz tX = do
+    a <- nextArr t
+    szR <- newITemp; nR <- newITemp; b <- nBT
+    (plX, (lX, xsR)) <- plA xs
+    k <- newITemp
+    (xR, rX, pinch) <- arg tX (AElem xsR 1 (Tmp k) lX sz)
+    ss <- writeRF p [xR] (PT b)
+    let step = rX:ss++[If () (Is b) [Wr () (AElem t 1 (Tmp nR) (Just a) 8) (Tmp k), nR+=1] []]
+        loop = for (eAnn xs) k 0 ILt (Tmp szR) step
+    pure (Just a,
+        plX$
+        szR=:ev tXs (xsR,lX)
+        :Ma () a t 1 (Tmp szR) 8
+        :m'p pinch [nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tD, Just szD <- bSz ta, Just sz <- bSz tC = do
     a <- nextArr t
     slopP <- newITemp; szR <- newITemp; slopSz <- newITemp

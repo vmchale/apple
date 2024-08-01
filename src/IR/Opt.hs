@@ -27,8 +27,9 @@ optE (IB IPlus e0 e1) =
         (e0', e1')             -> IB IPlus e0' e1'
 optE (IB IMinus e0 e1) =
     case (optE e0, optE e1) of
-        (e0', ConstI 0) -> e0'
-        (e0', e1')      -> IB IMinus e0' e1'
+        (ConstI i0, ConstI i1) -> ConstI$i0-i1
+        (e0', ConstI 0)        -> e0'
+        (e0', e1')             -> IB IMinus e0' e1'
 optE (IB IAsl e0 e1) =
     case (optE e0, optE e1) of
         (ConstI i0, ConstI i1) -> ConstI$i0 `shiftL` fromIntegral i1
