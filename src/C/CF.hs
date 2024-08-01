@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module C.CF ( cfC ) where
 
 import           C
@@ -48,6 +50,8 @@ b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is 
 mC :: ([N] -> [N]) -> ControlAnn -> ControlAnn
 mC f (ControlAnn l ds udϵ) = ControlAnn l (f ds) udϵ
 
+addH n = mC (n:)
+
 unsnoc :: [a] -> ([a], a)
 unsnoc [x]    = ([], x)
 unsnoc (x:xs) = first (x:) $ unsnoc xs
@@ -77,16 +81,17 @@ inspectOrder (Def ann _ ss:cs)        = node ann:inspectOrder ss++inspectOrder c
 inspectOrder (c:cs)                   = node (lann c):inspectOrder cs
 inspectOrder []                       = []
 
-tieBranch :: ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
-tieBranch f ss = do
+tieBranch :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
+tieBranch i f ss = do
     preSs <- addCF ss
     pure $ case uncons preSs of
         Just (i1, _) ->
             let hi=node (lann i1)
                 (ss',l) = unsnoc preSs
                 l' = fmap (mC f) l
-                ss'' = ss'++[l']
-            in ((hi:), ss'')
+            in ((hi:),) $ case uncons ss' of
+                Nothing -> ss'++[l']
+                Just (hh, bs) -> let h' = fmap (addH i) hh in h':bs++[l']
         Nothing -> (id, preSs)
 
 tieBody :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
@@ -148,15 +153,15 @@ addCF ((While _ t c ed ss):stmts) = do
 addCF (If _ p b0 b1:stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    (h0, b0') <- tieBranch f b0
-    (h1, b1') <- tieBranch f b1
-    pure $ If (ControlAnn i (f (h0 (h1 []))) udϵ) p b0' b1':stmts'
+    (h0, b0') <- tieBranch i f b0
+    (h1, b1') <- tieBranch i f b1
+    pure $ If (ControlAnn i (h0 (h1 [])) udϵ) p b0' b1':stmts'
   where
     udϵ = UD (uB p) IS.empty IS.empty IS.empty
 addCF (Ifn't _ p b:stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
-    (h, b') <- tieBranch f b
+    (h, b') <- tieBranch i f b
     pure $ Ifn't (ControlAnn i (f (h [])) udϵ) p b':stmts'
   where
     udϵ = UD (uB p) IS.empty IS.empty IS.empty
