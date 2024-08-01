@@ -404,6 +404,12 @@ eval (IR.IB Op.IRem e0 e1) t = do
 eval (IR.IB Op.IPlus (IR.IB Op.ITimes e0 e1) e2) t = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1; (plE2,r2) <- plI e2
     pure $ plE0 $ plE1 $ plE2 [Madd () (absReg t) r0 r1 r2]
+eval (IR.IB Op.IMin e0 e1) t = do
+    (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
+    pure $ plE0 $ plE1 [CmpRR () r0 r1, Csel () (absReg t) r0 r1 Leq]
+eval (IR.IB Op.IMax e0 e1) t = do
+    (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
+    pure $ plE0 $ plE1 [CmpRR () r0 r1, Csel () (absReg t) r0 r1 Geq]
 eval (IR.IB op e0 e1) t | Just isn <- mIop op = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [isn () (absReg t) r0 r1]
