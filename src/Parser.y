@@ -103,7 +103,8 @@ import Prettyprinter (Pretty (pretty), (<+>))
     iat { TokSym $$ L.A1 }
     mod { TokSym $$ L.Mod }
     atDot { TokSym $$ AtDot }
-    weier { TokSym $$ Weier }
+    -- weier { TokSym $$ Weier }
+    ice { TokSym $$ Ice }
     para { TokSym $$ Para }
     eye { TokSym $$ L.Eye }
 
@@ -249,7 +250,7 @@ BBin :: { E AlexPosn }
      | atDot { Builtin $1 IOf }
      | and { Builtin $1 A.And } | or { Builtin $1 A.Or }
      | xor { Builtin $1 A.Xor }
-     | weier { Builtin $1 Ices }
+     | ice { Builtin $1 Ices }
      | para { Builtin $1 Filt }
      | sr { Builtin $1 A.Sr } | sl { Builtin $1 A.Sl }
 
