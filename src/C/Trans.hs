@@ -836,7 +836,7 @@ aeval (EApp ty (EApp _ (Builtin _ Re) n) x) t | (Arr sh tO) <- eAnn x, sz <- bT 
         :plN
         ++Ma () a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr () (ADim t 0 (Just a)) (Tmp nR):CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
         :[loop])
-aeval (EApp oTy (Builtin _ Init) x) t | Just sz <- bSz oTy = do
+aeval (EApp (Arr _ oTy) (Builtin _ Init) x) t | Just sz <- bSz oTy = do
     nR <- newITemp
     (a,aV) <- vSz t (Tmp nR) sz
     (plX, (lX, xR)) <- plA x
@@ -849,7 +849,7 @@ aeval (EApp oTy (Builtin _ InitM) x) t | if1p oTy = do
         plX$
         nR =: (EAt (ADim xR 0 lX)-1)
         :aV++[CpyE () (AElem t 1 0 (Just a) 8) (AElem xR 1 0 lX 8) (Tmp nR) 8])
-aeval (EApp oTy (Builtin _ Tail) x) t | Just sz <- bSz oTy = do
+aeval (EApp (Arr _ oTy) (Builtin _ Tail) x) t | Just sz <- bSz oTy = do
     nR <- newITemp
     (a,aV) <- vSz t (Tmp nR) sz
     (plX, (lX, xR)) <- plA x
