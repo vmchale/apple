@@ -30,6 +30,7 @@ mB Op.XorB = Eor
 mIop Op.IPlus  = Just AddRR
 mIop Op.IMinus = Just SubRR
 mIop Op.ITimes = Just MulRR
+mIop Op.IDiv   = Just Sdiv
 mIop (Op.BI b) = Just$mB b
 mIop _         = Nothing
 
