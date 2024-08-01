@@ -57,6 +57,10 @@ instance Pretty FTemp where
     pretty FRet0     = "FRet0"
     pretty FRet1     = "FRet1"
 
+instance Show Temp where show=show.pretty
+instance Show FTemp where show=show.pretty
+instance Show BTemp where show=show.pretty
+
 data ArrAcc = AElem Temp CE CE (Maybe AL) Int64 -- pointer, rank, elem., label for tracking liveness, elem. size (bytes)
             -- TODO: more robust way to handle rank (often statically known)
             | ARnk Temp (Maybe AL)
