@@ -447,7 +447,7 @@ aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t | tXs@(Arr _ tX) <- eAnn xs, Jus
         plX$
         szR =: ev tXs (xsR,lX)
         :Ma () a t 1 (Tmp szR) sz
-        :m'p pinch [loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
+        :m'p pinch [nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
   where
     w ty at tt      | isR ty = wt at tt
     w ty at (IT tt) | isΠ ty = CpyE () at (TupM tt Nothing) 1 (bT ty)
