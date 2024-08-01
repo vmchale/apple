@@ -104,6 +104,7 @@ tokens :-
         "+"                      { mkSym Plus }
         "-"                      { mkSym Minus }
         "^"                      { mkSym Caret }
+        "/."                     { mkSym IDiv }
 
         "/"                      { mkSym Fold }
         "/ₒ"                     { mkSym FoldS }
@@ -149,7 +150,9 @@ tokens :-
         "}."                     { mkSym Last }
         "}.?"                    { mkSym LastM }
         "{:"                     { mkSym Tail }
+        "{:?"                    { mkSym TailM }
         "}:"                     { mkSym Init }
+        "}:?"                    { mkSym InitM }
         ⊲                        { mkSym Cons }
         "<|"                     { mkSym Cons }
         ⊳                        { mkSym Snoc }
@@ -300,17 +303,18 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | CondSplit | Cor | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ | Conv | Access { iat :: !Int }
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
-         | Last | LastM | Head | HeadM | Tail | Init
+         | Last | LastM | Head | HeadM | Tail | TailM | Init | InitM
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | FoldS | Tilde | Cyc | A1 | Mod
          | AtDot | Eye | Para | Weier | B | Sharp
-         | And | Or | Xor | Not | Sr | Sl
+         | And | Or | Xor | Not | Sr | Sl | IDiv
          deriving (Generic, NFData)
 
 instance Pretty Sym where
     pretty Plus         = "+"
     pretty Minus        = "-"
     pretty Percent      = "%"
+    pretty IDiv         = "/."
     pretty Fold         = "/"
     pretty FoldS        = "/ₒ"
     pretty Foldl        = "/l"
@@ -370,7 +374,9 @@ instance Pretty Sym where
     pretty Tilde        = "~"
     pretty PlusPlus     = "⧺"
     pretty Tail         = "{:"
+    pretty TailM        = "{:?"
     pretty Init         = "}:"
+    pretty InitM        = "}:?"
     pretty Rotate       = "⊖"
     pretty Cyc          = "⊙"
     pretty A1           = "˙"

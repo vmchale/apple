@@ -65,7 +65,9 @@ import Prettyprinter (Pretty (pretty), (<+>))
     head { TokSym $$ L.Head }
     headM { TokSym $$ L.HeadM }
     tail { TokSym $$ L.Tail }
+    tailM { TokSym $$ L.TailM }
     init { TokSym $$ L.Init }
+    initM { TokSym $$ L.InitM }
     do { TokSym $$ Do }
     tensor { TokSym $$ Tensor }
     geq { TokSym $$ Geq }
@@ -88,6 +90,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     minus { TokSym $$ L.Minus }
     times { TokSym $$ L.Times }
     percent { TokSym $$ Percent }
+    idiv { TokSym $$ L.IDiv }
     caret { TokSym $$ Caret }
     max { TokSym $$ MaxS }
     min { TokSym $$ MinS }
@@ -219,6 +222,7 @@ R :: { (Int, Maybe [Int]) }
 BBin :: { E AlexPosn }
      : plus { Builtin $1 A.Plus } | minus { Builtin $1 A.Minus }
      | times { Builtin $1 A.Times } | percent { Builtin $1 Div }
+     | idiv { Builtin $1 A.IDiv }
      | caret { Builtin $1 IntExp }
      | max { Builtin $1 Max } | min { Builtin $1 Min }
      | scan { Builtin $1 Scan }
@@ -290,8 +294,8 @@ E :: { E AlexPosn }
   | f { Builtin $1 Fib }
   | last { Builtin $1 A.Last } | lastM { Builtin $1 A.LastM }
   | head { Builtin $1 A.Head } | headM { Builtin $1 A.HeadM }
-  | tail { Builtin $1 A.Tail }
-  | init { Builtin $1 A.Init }
+  | tail { Builtin $1 A.Tail } | tailM { Builtin $1 A.TailM }
+  | init { Builtin $1 A.Init } | initM { Builtin $1 A.InitM }
   | re { Builtin $1 Re }
   | diag { Builtin $1 Di }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }

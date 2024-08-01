@@ -169,7 +169,9 @@ instance Pretty Builtin where
     pretty Head      = "{."
     pretty HeadM     = "{.?"
     pretty Tail      = "{:"
+    pretty TailM     = "{:?"
     pretty Init      = "}:"
+    pretty InitM     = "}:?"
     pretty ConsE     = "⊲"
     pretty Snoc      = "⊳"
     pretty Mul       = "%."
@@ -224,6 +226,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | DI !Int -- dyadic infix
              | Conv [Int] | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init | RevE
+             | TailM | InitM
              | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd | IOf | Abs
              | And | Or | Xor | N | Sr | Sl
              deriving (Generic)
