@@ -471,7 +471,7 @@ pR :: T a -> Ptr b -> IO (Doc ann)
 pR I p      = do {i <- peek (castPtr p :: Ptr Int64); pure (pretty i)}
 pR A.F p    = do {f <- peek (castPtr p :: Ptr Double); pure (pretty f)}
 pR A.B p    = do {b <- peek (castPtr p :: Ptr AB); pure (pretty b)}
-pR (P ts) p = tupledBy "*" <$> traverse (`pR` p) ts
+pR (P ts) p = tupledBy "*" <$> let pds = offs ts in zipWithM pR ts ((p `plusPtr`) <$> pds)
 
 peekInterpret :: T a -> Ptr b -> IO (Doc ann)
 peekInterpret (Arr _ t) p = do
