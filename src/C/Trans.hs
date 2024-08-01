@@ -836,16 +836,24 @@ aeval (EApp ty (EApp _ (Builtin _ Re) n) x) t | (Arr sh tO) <- eAnn x, sz <- bT 
         :plN
         ++Ma () a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr () (ADim t 0 (Just a)) (Tmp nR):CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
         :[loop])
-aeval (EApp oTy (Builtin _ Init) x) t | if1p oTy = do
+aeval (EApp oTy (Builtin _ Init) x) t | Just sz <- bSz oTy = do
     nR <- newITemp
-    (a,aV) <- v8 t (Tmp nR)
+    (a,aV) <- vSz t (Tmp nR) sz
     (plX, (lX, xR)) <- plA x
-    pure (Just a, plX$nR =: (EAt (ADim xR 0 lX)-1):aV++[CpyE () (AElem t 1 0 (Just a) 8) (AElem xR 1 0 lX 8) (Tmp nR) 8])
-aeval (EApp oTy (Builtin _ Tail) x) t | if1p oTy = do
+    pure (Just a, plX$nR =: (EAt (ADim xR 0 lX)-1):aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR 1 0 lX sz) (Tmp nR) sz])
+aeval (EApp oTy (Builtin _ InitM) x) t | if1p oTy = do
     nR <- newITemp
-    (a,aV) <- v8 t (Tmp nR)
+    (a,aV) <- v8 t (Bin IMax (Tmp nR) 0)
     (plX, (lX, xR)) <- plA x
-    pure (Just a, plX$nR =: (EAt (ADim xR 0 lX)-1):aV++[CpyE () (AElem t 1 0 (Just a) 8) (AElem xR 1 1 lX 8) (Tmp nR) 8])
+    pure (Just a,
+        plX$
+        nR =: (EAt (ADim xR 0 lX)-1)
+        :aV++[CpyE () (AElem t 1 0 (Just a) 8) (AElem xR 1 0 lX 8) (Tmp nR) 8])
+aeval (EApp oTy (Builtin _ Tail) x) t | Just sz <- bSz oTy = do
+    nR <- newITemp
+    (a,aV) <- vSz t (Tmp nR) sz
+    (plX, (lX, xR)) <- plA x
+    pure (Just a, plX$nR =: (EAt (ADim xR 0 lX)-1):aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR 1 1 lX sz) (Tmp nR) sz])
 aeval (EApp ty (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, nind tX && nind tY && nind tC = do
     nR <- newITemp; i <- newITemp
     let zSz=bT tC
@@ -1224,7 +1232,7 @@ mB :: Builtin -> Maybe BBin
 mB And=Just AndB;mB Or=Just OrB;mB Xor=Just XorB; mB _=Nothing
 
 mOp :: Builtin -> Maybe IBin
-mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem; mOp Sl=Just IAsl;mOp Sr=Just IAsr;mOp a=BI<$>mB a
+mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem; mOp Sl=Just IAsl;mOp Sr=Just IAsr;mOp A.IDiv=Just Op.IDiv;mOp a=BI<$>mB a
 
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
