@@ -472,7 +472,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
             :CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn
         :xd=:DP xR (ConstI xRnk):i=:0
         :m'p pinch
-            (For () k 0 ILt (Tmp szR) step:[Pop () slopE]))
+            (fors (eAnn xs) k 0 ILt (Tmp szR) step:[Pop () slopE]))
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (_, xRnk) <- tRnk (eAnn xs), Just (ta, rnk) <- tRnk tC, Just szO <- bSz ta, isIF tD = do
     a <- nextArr t
     x <- rtemp tD; y <- newITemp; y0 <- newITemp; szX <- newITemp; szY <- newITemp
@@ -495,7 +495,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, Just (
             :CpyD () (ADim t (ConstI xRnk) (Just a)) (ADim y0 0 lY0) (ConstI rnk)
         :td=:DP t (ConstI$xRnk+rnk)
         :j=:0
-          :[For () k 0 ILt (Tmp szX) step])
+          :[fors (eAnn xs) k 0 ILt (Tmp szX) step])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | Just (_, xRnk) <- tRnk (eAnn xs), Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), Just sz0 <- bSz ta0, Just sz1 <- bSz ta1 = do
     a <- nextArr t
     slopP <- newITemp; y <- newITemp; y0 <- newITemp
