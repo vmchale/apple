@@ -447,6 +447,11 @@ benchE s = do
                                 asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO $ callFFI fp retCDouble [])
                                 freeAsm asm
+                        A.B -> do
+                            liftIO $ do
+                                asm@(_, fp, _) <- efp eC
+                                benchmark (nfIO $ callFFI fp retCUChar [])
+                                freeAsm asm
                         P [A.F,A.F] -> error "Haskell support for float ABI is poor :("
                         (Arr _ _) -> do
                             liftIO $ do
