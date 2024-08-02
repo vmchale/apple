@@ -109,43 +109,45 @@ liftU a = do
     (b, j) <- liftEither$runStateT a i
     modify (setMaxU j) $> b
 
-mI :: I a -> I a -> Either (TyE a) (Subst a)
-mI i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
-                           | otherwise = Left $ MatchIFailed i0 i1
-mI (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
-mI ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
-mI i0@(IEVar _ n) i1@(IEVar _ n') | n == n' = Right mempty
-                                  | otherwise = Left $ MatchIFailed i0 i1
-mI (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI i (Ix l (j-iϵ))
-mI (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI i (Ix l (iϵ-j))
-mI (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
-mI (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI i i' <*> mI j j' -- FIXME: too stringent
+mI :: Focus -> I a -> I a -> Either (TyE a) (Subst a)
+mI _ i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
+                             | otherwise = Left $ MatchIFailed i0 i1
+mI _ (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
+mI _ ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
+mI _ (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
+mI RF IEVar{} IEVar{} = Right mempty
+-- TODO: Ix should match against ∃
+mI _ i0@IEVar{} i1@IEVar{} = Left $ MatchIFailed i0 i1
+mI f (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
+mI f (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI f i (Ix l (iϵ-j))
+mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: too stringent
+mI f (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: too stringent
 
-mSh :: Sh a -> Sh a -> Either (TyE a) (Subst a)
-mSh (SVar (Nm _ (U i) _)) sh      = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
-mSh Nil Nil                       = Right mempty
-mSh (Cons i sh) (Cons i' sh')     = (<>) <$> mI i i' <*> mSh sh sh'
-mSh (Cat sh0 sh1) (Cat sh0' sh1') = (<>) <$> mSh sh0 sh0' <*> mSh sh1 sh1'
-mSh (Rev sh) (Rev sh')            = mSh sh sh'
-mSh sh sh'                        = Left $ MatchShFailed sh sh'
+mSh :: Focus -> Sh a -> Sh a -> Either (TyE a) (Subst a)
+mSh _ (SVar (Nm _ (U i) _)) sh      = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
+mSh _ Nil Nil                       = Right mempty
+mSh f (Cons i sh) (Cons i' sh')     = (<>) <$> mI f i i' <*> mSh f sh sh'
+mSh f (Cat sh0 sh1) (Cat sh0' sh1') = (<>) <$> mSh f sh0 sh0' <*> mSh f sh1 sh1'
+mSh f (Rev sh) (Rev sh')            = mSh f sh sh'
+mSh _ sh sh'                        = Left $ MatchShFailed sh sh'
 
 match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
-match t t' = either throw id (maM t t')
+match t t' = either throw id (maM LF t t')
 
-maM :: T a -> T a -> Either (TyE a) (Subst a)
-maM I I                           = Right mempty
-maM F F                           = Right mempty
-maM B B                           = Right mempty
-maM (TVar n) (TVar n') | n == n'  = Right mempty
-maM (TVar (Nm _ (U i) _)) t     = Right $ Subst (IM.singleton i t) IM.empty IM.empty
-maM (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM t0 t0' <*> maM t1 t1' -- FIXME: use <\> over <>
-maM (Arr sh t) (Arr sh' t')       = (<>) <$> mSh sh sh' <*> maM t t'
-maM (Arr sh t) t'                 = (<>) <$> mSh sh Nil <*> maM t t'
-maM (P ts) (P ts')                = mconcat <$> zipWithM maM ts ts'
-maM (Ρ n _) (Ρ n' _) | n == n'    = Right mempty
-maM (Ρ n rs) t@(Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = mapTySubst (insert n t) . mconcat <$> traverse (uncurry maM) (IM.elems (IM.intersectionWith (,) rs rs'))
-maM (Ρ n rs) t@(P ts) | length ts >= fst (IM.findMax rs) = mapTySubst (IM.insert (unU$unique n) t) . mconcat <$> traverse (uncurry maM) [ (ts!!(i-1),tϵ) | (i,tϵ) <- IM.toList rs ]
-maM t t'                          = Left $ MatchFailed (void t) (void t')
+maM :: Focus -> T a -> T a -> Either (TyE a) (Subst a)
+maM _ I I                           = Right mempty
+maM _ F F                           = Right mempty
+maM _ B B                           = Right mempty
+maM _ (TVar n) (TVar n') | n == n'  = Right mempty
+maM _ (TVar (Nm _ (U i) _)) t     = Right $ Subst (IM.singleton i t) IM.empty IM.empty
+maM _ (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM LF t0 t0' <*> maM RF t1 t1' -- FIXME: use <\> over <>
+maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
+maM f (Arr sh t) t'                 = (<>) <$> mSh f sh Nil <*> maM f t t'
+maM f (P ts) (P ts')                = mconcat <$> zipWithM (maM f) ts ts'
+maM _ (Ρ n _) (Ρ n' _) | n == n'    = Right mempty
+maM f (Ρ n rs) t@(Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = mapTySubst (insert n t) . mconcat <$> traverse (uncurry (maM f)) (IM.elems (IM.intersectionWith (,) rs rs'))
+maM f (Ρ n rs) t@(P ts) | length ts >= fst (IM.findMax rs) = mapTySubst (IM.insert (unU$unique n) t) . mconcat <$> traverse (uncurry (maM f)) [ (ts!!(i-1),tϵ) | (i,tϵ) <- IM.toList rs ]
+maM _ t t'                          = Left $ MatchFailed (void t) (void t')
 
 shSubst :: Subst a -> Sh a -> Sh a
 shSubst _ Nil           = Nil
@@ -253,8 +255,9 @@ mguI :: Focus -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
 mguI _ inp i0@(Ix _ i) (Ix _ j) | i == j = pure (i0, inp)
 mguI RF inp (Ix l _) Ix{} = do {m <- nI l; pure (m, inp)}
 mguI _ _ i0@(Ix l _) i1@Ix{} = throwError $ UI l i0 i1
-mguI _ inp i0@(IEVar l i) i1@(IEVar _ j) | i == j = pure (i0, inp)
-                                         | otherwise = throwError $ UI l i0 i1
+mguI _ inp i0@(IEVar _ i) (IEVar _ j) | i == j = pure (i0, inp)
+mguI RF inp (IEVar l _) (IEVar _ _) = do {m <- nI l; pure (m, inp)}
+mguI _ _ i0@(IEVar l _) i1@IEVar{} = throwError $ UI l i0 i1
 mguI _ inp i0@(IVar _ i) (IVar _ j) | i == j = pure (i0, inp)
 mguI _ inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = throwError $ OI l iix ix
                                           | otherwise = pure (ix, IM.insert i ix inp)
@@ -265,6 +268,11 @@ mguI f inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep
 mguI f inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguIPrep f inp i (Ix lk (j-k))
                                                   | otherwise = throwError $ UI l i0 i1
 mguI f inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguIPrep f inp i1 i0
+mguI f inp (StaPlus l i0 i1) (StaPlus _ j0 j1) = do
+    -- FIXME: too stringent
+    (k, s) <- mguIPrep f inp i0 j0
+    (m, s') <- mguIPrep f s i1 j1
+    pure (StaPlus l k m, s')
 mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
     -- FIXME: too stringent
     (k, s) <- mguIPrep f inp i0 j0
@@ -272,7 +280,7 @@ mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
     pure (StaMul l k m, s')
 mguI _ _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l i0 i1
 mguI _ _ i0@(Ix l _) i1@IEVar{} = throwError $ UI l i0 i1
-mguI _ _ i0@(IEVar l _) i1@StaPlus{} = throwError $ UI l i0 i1
+mguI _ _ i0@(IEVar l _) i1@StaPlus{} = throwError $ UI l i0 i1 -- TODO: focus case
 mguI _ _ i0@(StaPlus l _ _) i1@IEVar{} = throwError $ UI l i0 i1
 mguI _ _ i0 i1 = error (show (i0,i1))
 
@@ -951,7 +959,7 @@ tyE s (Tup _ es) = do
     pure (Tup (P eTys) es', s')
 tyE s (Ann l e t) = do
     (e', s') <- tyE s e
-    s'' <- liftEither $ maM (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
+    s'' <- liftEither $ maM LF (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
     pure (e', s'<>s'')
 
 sSt :: Subst a -> [E a] -> TyM a ([E (T ())], Subst a)
