@@ -42,7 +42,7 @@ mapCoalN f ns = ns { coalN = f (coalN ns) }
 mapColN f ns = ns { colN = f (colN ns) }
 mapSpN f ns = ns { spN = f (spN ns) }
 
-data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, ɴs :: Ns, degs :: !(IM.IntMap Int), initial :: [Int], wkls :: Wk, stack :: [Int], alias :: IM.IntMap Int }
+data St = St { mvs :: Movs, aS :: GS, aL :: GL, mvS :: Mv, ɴs :: Ns, degs :: !(IM.IntMap Int), initial :: [Int], wkls :: Wk, stack :: [Int], alias :: !(IM.IntMap Int) }
 
 mapMv f st = st { mvS = f (mvS st) }; mapWk f st = st { wkls = f (wkls st) }; mapNs f st = st { ɴs = f (ɴs st) }
 
