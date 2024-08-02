@@ -284,7 +284,10 @@ test-suite apple-test
         tasty,
         tasty-hunit,
         bytestring,
-        hypergeometric >=0.1.4.0
+        hypergeometric >=0.1.4.0,
+        fast-arithmetic,
+        QuickCheck,
+        tasty-quickcheck
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages

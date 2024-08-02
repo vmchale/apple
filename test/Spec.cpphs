@@ -14,10 +14,13 @@ import           Hs.A
 import           Hs.FFI
 import           Math.Hypergeometric   (erf, hypergeometric, ncdf)
 import           Math.SpecialFunction  (agm, bessel1, chisqcdf, completeElliptic, gamma, tcdf)
+import           Numeric.NumberTheory  (isPrime)
 import           P
 import           System.Info           (arch)
+import           Test.QuickCheck       (property)
 import           Test.Tasty
 import           Test.Tasty.HUnit
+import           Test.Tasty.QuickCheck (testProperty)
 
 kl :: Floating a => [a] -> [a] -> a
 kl xs ys = sum [ x * log (x/y) | x <- xs, y <- ys ]
@@ -28,12 +31,20 @@ infixl 1 .?=
 x .?= y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-15&&(y-x)/y<1e-15)
 
 main :: IO ()
-main = defaultMain $ testGroup "All" $ rTy:tyT:allT:
+main = do
+    pjit <- fpn =<< BSL.readFile "test/examples/isPrime.🍏"
+    defaultMain $ testGroup "All" $ pTest pjit:rTy:tyT:allT:
 #ifdef x86_64_HOST_ARCH
-    [x64T]
+        [x64T]
 #else
-    []
+        []
 #endif
+
+pTest :: FunPtr (Int64 -> CUChar) -> TestTree
+pTest pfn = testGroup "property tests" $
+    [ testProperty "isPrime" $ property $ \n -> n < 2 || isPrime n == cb (ib pfn (fromIntegral n)) ]
+  where
+    cb 0=False; cb 1=True
 
 rTy :: TestTree
 rTy = testGroup "Regression tests"
@@ -267,6 +278,7 @@ wA x act =
 
 bytesE = either throw id . bytes
 
+foreign import ccall "dynamic" ib :: FunPtr (Int64 -> CUChar) -> Int64 -> CUChar
 foreign import ccall "dynamic" ia :: FunPtr (Int64 -> U a) -> Int64 -> U a
 foreign import ccall "dynamic" ai :: FunPtr (U a -> Int64) -> U a -> Int64
 foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
