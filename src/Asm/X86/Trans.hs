@@ -227,7 +227,7 @@ ir (IR.Cpy (IR.AP tD (Just (IR.IB Op.IPlus (IR.IB Op.IAsl eid (IR.ConstI 3)) (IR
     (plN,nR) <- plI n
     t <- nextR; i <- nextR
     l <- nextL; eL <- nextL
-    pure $ plN $ plD $ plS $ [IAddRR () diR (absReg tD), IAddRR () siR (absReg tS), MovRI () i 0, CmpRR () i nR, Jge () eL, Label () l, MovRA () t (RSD siR Eight i ds8), MovAR () (RSD diR Eight i sS8) t, IAddRI () i 1, CmpRR () i nR, Jl () l, Label () eL]
+    pure $ plN $ plD $ plS [IAddRR () diR (absReg tD), IAddRR () siR (absReg tS), MovRI () i 0, CmpRR () i nR, Jge () eL, Label () l, MovRA () t (RSD siR Eight i ds8), MovAR () (RSD diR Eight i sS8) t, IAddRI () i 1, CmpRR () i nR, Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just (IR.IB Op.IAsl eid (IR.ConstI 3))) _) (IR.AP tS (Just (IR.IB Op.IAsl eis (IR.ConstI 3))) _) (IR.ConstI n)) | n <= 4 = do
     (plD,diR) <- plI eid; (plS,siR) <- plI eis
     t <- nextR

@@ -1167,9 +1167,9 @@ eval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isI 
     i <- newITemp
     (plE, (l, aP)) <- plA e
     ss <- writeRF op [IT acc, IT x] (IT acc)
-    let loopBody=x=:(EAt (AElem aP 1 (Tmp i) l 8)):ss
+    let loopBody=x=:EAt (AElem aP 1 (Tmp i) l 8):ss
         loop=for1 (eAnn e) i 1 ILt (Tmp szR) loopBody
-    pure $ plE$szR =: ev (eAnn e) (aP,l):acc =: (EAt (AElem aP 1 0 l 8)):[loop]
+    pure $ plE$szR =: ev (eAnn e) (aP,l):acc =: EAt (AElem aP 1 0 l 8):[loop]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- rSz tX = do
     x <- rtemp tX
     szR <- newITemp
