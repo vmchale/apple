@@ -1021,13 +1021,13 @@ aeval (EApp oTy@(Arr (_ `Cons` Nil) xTy) (Builtin _ RevE) e) t | Just sz <- bSz 
     (plE, (lE, eR)) <- plA e
     let loop=for oTy i 0 ILt (Tmp n) [CpyE () (AElem t 1 (Tmp i) (Just a) sz) (AElem eR 1 (Tmp n-Tmp i-1) lE sz) 1 sz] --  mt (AElem eR 1 (Tmp n-Tmp i-1) lE 8) o, wt (AElem t 1 (Tmp i) (Just a) 8) o]
     pure (Just a, plE$n =: ev oTy (eR,lE):aV++[loop])
-aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | Just ty <- if1 oTy = do
+aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tyS <- eAnn seed, Just sz <- rSz tyS = do
     nR <- newITemp; plN <- eval n nR; i <- newITemp
-    acc <- rtemp ty
+    acc <- rtemp tyS
     plS <- eeval seed acc
-    (a,aV) <- v8 t (Tmp nR)
+    (a,aV) <- vSz t (Tmp nR) sz
     ss <- writeRF op [acc] acc
-    let loop=for oTy i 0 ILt (Tmp nR) (wt (AElem t 1 (Tmp i) (Just a) 8) acc:ss)
+    let loop=for oTy i 0 ILt (Tmp nR) (wt (AElem t 1 (Tmp i) (Just a) sz) acc:ss)
     pure (Just a, plS++plN++aV++[loop])
 aeval (EApp ty (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠR (eAnn seed) = do
     nR <- newITemp; plN <- eval n nR; i <- newITemp
