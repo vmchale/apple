@@ -935,17 +935,19 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just ot <- if1 oTy, if1p 
     let loopBody=CpyE () (AElem slopP 1 0 Nothing 8) (AElem aP 1 (Tmp i) lX 8) (fromIntegral n) 8:ss++[wt (AElem t 1 (Tmp i) (Just a) 8) fR]
         loop=for oTy i 0 ILt (Tmp sz'R) loopBody
     pure (Just a, plX$szR =: ev (eAnn xs) (aP,lX):sz'R =: sz':aV++Sa () slopP szSlop:Wr () (ARnk slopP Nothing) 1:Wr () (ADim slopP 0 Nothing) (fromIntegral n):loop:[Pop () szSlop])
-aeval (EApp _ (EApp _ (Builtin _ Rot) n) xs) t | tX <- eAnn xs, if1p tX = do
+    -- TODO: not just I,F
+aeval (EApp _ (EApp _ (Builtin _ Rot) n) xs) t | tXs@(Arr _ tX) <- eAnn xs, Just sz <- bSz tX = do
     nR <- newITemp; c <- newITemp; szR <- newITemp
     plN <- eval n nR
     (plX, (lX, xsR)) <- plA xs
-    (a, aV) <- v8 t (Tmp szR)
-    pure (Just a, plX$plN++szR =: ev tX (xsR,lX):aV++Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=Tmp szR]:c =: (Tmp szR-Tmp nR):[CpyE () (AElem t 1 0 (Just a) 8) (AElem xsR 1 (Tmp nR) lX 8) (Tmp c) 8, CpyE () (AElem t 1 (Tmp c) (Just a) 8) (AElem xsR 1 0 lX 8) (Tmp nR) 8])
+    (a, aV) <- vSz t (Tmp szR) sz
+    pure (Just a, plX$plN++szR =: ev tXs (xsR,lX):aV++Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=Tmp szR]:c =: (Tmp szR-Tmp nR):[CpyE () (AElem t 1 0 (Just a) sz) (AElem xsR 1 (Tmp nR) lX sz) (Tmp c) sz, CpyE () (AElem t 1 (Tmp c) (Just a) sz) (AElem xsR 1 0 lX sz) (Tmp nR) sz])
 aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
     let rnk=fromIntegral$length ns
     n <- nextAA
     modify (addAA n (rnk:fmap fromIntegral ns++ws))
     pure (Nothing, [t =: LA n])
+    -- TODO: boolean lits
 aeval (EApp _ (Builtin _ T) x) t | Just (ty, ixes) <- tIx (eAnn x), rnk <- fromIntegral$length ixes, any (isJust.cLog) ixes = do
     a <- nextArr t
     let sze=bT ty; rnkE=ConstI rnk
@@ -1013,11 +1015,11 @@ aeval (EApp ty (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tZ) <- eAn
     (step, pinches) <- aS op [(tX, AElem xR 1 (Tmp i+1) lX), (tX, AElem xR 1 (Tmp i) lX)] tZ (AElem t 1 (Tmp i) (Just a))
     let loop=for ty i 0 ILt (Tmp sz'R) step
     pure (Just a, plX$szR =: ev (eAnn xs) (xR,lX):sz'R =: (Tmp szR-1):aV++sas pinches [loop])
-aeval (EApp oTy (Builtin _ RevE) e) t | Just ty <- if1 oTy = do
-    n <- newITemp; i <- newITemp; o <- rtemp ty
-    (a,aV) <- v8 t (Tmp n)
+aeval (EApp oTy@(Arr (_ `Cons` Nil) xTy) (Builtin _ RevE) e) t | Just sz <- bSz xTy = do
+    n <- newITemp; i <- newITemp
+    (a,aV) <- vSz t (Tmp n) sz
     (plE, (lE, eR)) <- plA e
-    let loop=for oTy i 0 ILt (Tmp n) [mt (AElem eR 1 (Tmp n-Tmp i-1) lE 8) o, wt (AElem t 1 (Tmp i) (Just a) 8) o]
+    let loop=for oTy i 0 ILt (Tmp n) [CpyE () (AElem t 1 (Tmp i) (Just a) sz) (AElem eR 1 (Tmp n-Tmp i-1) lE sz) 1 sz] --  mt (AElem eR 1 (Tmp n-Tmp i-1) lE 8) o, wt (AElem t 1 (Tmp i) (Just a) 8) o]
     pure (Just a, plE$n =: ev oTy (eR,lE):aV++[loop])
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | Just ty <- if1 oTy = do
     nR <- newITemp; plN <- eval n nR; i <- newITemp
