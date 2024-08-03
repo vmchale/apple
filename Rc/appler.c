@@ -72,7 +72,7 @@ SEXP jit_R(SEXP a){
         R ret;
     };
     U fp;S f_sz;U s;
-    JC jc={(P)&malloc,(P)&free,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
+    JC jc={(P)&malloc,(P)&free,(P)&lrand48,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
     fp=apple_compile(&jc,inp,&f_sz,&s);
     AppleCache* rc=malloc(sizeof(AppleCache));
     ffi_cif* ffi=apple_ffi(ty);
