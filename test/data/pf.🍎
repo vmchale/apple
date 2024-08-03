@@ -3,6 +3,6 @@
   ; pns ← (⍳ 2 ni 1)
   ; isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
   ; pps ⟜  pf ((λk. ((n|k)=0)) #. pns)
-  -- prime factors of n except possibly n itself
+  -- prime factors of n
   ; (pf (n⊲(n/.)'pps))⧺pps
   }
