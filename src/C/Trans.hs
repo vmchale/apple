@@ -934,7 +934,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just ot <- if1 oTy, if1p 
         loop=for oTy i 0 ILt (Tmp sz'R) loopBody
     pure (Just a, plX$szR =: ev (eAnn xs) (aP,lX):sz'R =: sz':aV++Sa () slopP szSlop:Wr () (ARnk slopP Nothing) 1:Wr () (ADim slopP 0 Nothing) (fromIntegral n):loop:[Pop () szSlop])
     -- TODO: not just I,F
-aeval (EApp _ (EApp _ (Builtin _ Rot) n) xs) t | tXs <- eAnn xs, Just sz <- nSz tXs = do
+aeval (EApp _ (EApp _ (Builtin _ Rot) n) xs) t | tXs <- eAnn xs, Just sz <- aB tXs = do
     nR <- newITemp; c <- newITemp; szR <- newITemp
     plN <- eval n nR
     (plX, (lX, xsR)) <- plA xs
