@@ -468,9 +468,16 @@ benchE s = do
 
 rSz A.B=1; rSz I=8; rSz A.F=8; rSz (P ts) = sum (rSz<$>ts); rSz Arr{}=8
 
+pD :: [Int64] -> Doc ann
+pD [i] = "Vec" <+> pretty i
+pD is  = "Arr" <+> tupledBy "×" (pretty<$>is)
+
 pE :: [Int64] -> [Doc ann] -> Doc ann
-pE [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ", " <> y) (list<$>chunksOf (fromIntegral n) xs) <> space))
-pE _ xs      = list xs
+pE is es = pD is <+> pEs is es
+
+pEs :: [Int64] -> [Doc ann] -> Doc ann
+pEs [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ", " <> y) (list<$>chunksOf (fromIntegral n) xs) <> space))
+pEs _ xs      = list xs
 
 pR :: T a -> Ptr b -> IO (Doc ann)
 pR I p      = do {i <- peek (castPtr p :: Ptr Int64); pure (pretty i)}
