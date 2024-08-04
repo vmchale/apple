@@ -68,6 +68,8 @@ To generate an integer range use `irange` or `⍳` (APL iota).
 ```
  > ⍳ 0 9 1
 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ > irange 30 0 _3
+[30, 27, 24, 21, 18, 15, 12, 9, 6, 3, 0]
 ```
 
 ## Map
