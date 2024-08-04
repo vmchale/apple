@@ -1016,6 +1016,14 @@ aeval (EApp oTy (Builtin _ RevE) e) t | Just sz <- aB oTy = do
     (plE, (lE, eR)) <- plA e
     let loop=for oTy i 0 ILt (Tmp n) [CpyE () (AElem t 1 (Tmp i) (Just a) sz) (AElem eR 1 (Tmp n-Tmp i-1) lE sz) 1 sz]
     pure (Just a, plE$n =: ev oTy (eR,lE):aV++[loop])
+aeval (EApp _ (Builtin _ RevE) e) t | tys <- eAnn e, Just (ty, rnk) <- tRnk tys = do
+    a <- nextArr t
+    n <- newITemp; i <- newITemp; szA <- newITemp
+    (plE, (lE, eR)) <- plA e
+    let sz=bT ty; rnkE=ConstI rnk
+    (dts, plDs) <- plDim rnk (eR, lE)
+    let loop = for ty i 0 ILt (Tmp n) [CpyE () (AElem t rnkE (Tmp i*Tmp szA) (Just a) sz) (AElem eR rnkE ((Tmp n-Tmp i-1)*Tmp szA) lE sz) (Tmp szA) sz]
+    pure (Just a, plE$n=:ev ty (eR,lE):tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () a t rnkE (Tmp n*Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim eR 0 lE) rnkE:[loop])
 aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tyS <- eAnn seed, Just sz <- rSz tyS = do
     nR <- newITemp; plN <- eval n nR; i <- newITemp
     acc <- rtemp tyS
