@@ -12,7 +12,7 @@ The REPL and typechecker are available on the [release page](https://github.com/
 
 ### Libraries
 
-To install the libraries, you will can use [ghcup](https://www.haskell.org/ghcup/) to install cabal and GHC.
+To install the libraries, you can use [ghcup](https://www.haskell.org/ghcup/) to install cabal and GHC.
 
 Then:
 
@@ -141,6 +141,40 @@ Reverse applied to a higher-dimensional array reverses elements (sub-arrays) alo
 , [0, 1] ]
 ```
 
+## Outer Product
+
+The outer product `⊗` creates a table by applying some function.
+
+It has type
+
+```
+ > :ty \f.\x.\y. x f⊗ y
+(a → b → c) → Arr sh0 a → Arr sh1 b → Arr (sh0 ⧺ sh1) c
+```
+
+```
+ > (frange 0 9 10) (*)⊗ (frange 0 9 10)
+[ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+, [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]
+, [0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]
+, [0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 27.0]
+, [0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 24.0, 28.0, 32.0, 36.0]
+, [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0]
+, [0.0, 6.0, 12.0, 18.0, 24.0, 30.0, 36.0, 42.0, 48.0, 54.0]
+, [0.0, 7.0, 14.0, 21.0, 28.0, 35.0, 42.0, 49.0, 56.0, 63.0]
+, [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0]
+, [0.0, 9.0, 18.0, 27.0, 36.0, 45.0, 54.0, 63.0, 72.0, 81.0] ]
+```
+
+```
+ > (frange 0 4 5) [(x,y)]⊗ (frange 0 4 5)
+[ [(0.0*0.0), (0.0*1.0), (0.0*2.0), (0.0*3.0), (0.0*4.0)]
+, [(1.0*0.0), (1.0*1.0), (1.0*2.0), (1.0*3.0), (1.0*4.0)]
+, [(2.0*0.0), (2.0*1.0), (2.0*2.0), (2.0*3.0), (2.0*4.0)]
+, [(3.0*0.0), (3.0*1.0), (3.0*2.0), (3.0*3.0), (3.0*4.0)]
+, [(4.0*0.0), (4.0*1.0), (4.0*2.0), (4.0*3.0), (4.0*4.0)] ]
+```
+
 # Examples
 
 ## Dot Product
@@ -233,6 +267,69 @@ To drop the first 6 elements:
 \p.\xs. (xs˙)'p⩪xs
 ```
 
+## Numerics
+
+### Arithmetic-Geometric Mean
+
+```
+λx.λy.([{a⟜x->1;g⟜x->2;((a+g)%2,√(a*g))}]^:6 (x,y))->1
+```
+
+Thence the [complete elliptic integral of the first kind](https://en.wikipedia.org/wiki/Elliptic_integral#Complete_elliptic_integral_of_the_first_kind):
+
+```
+λk.
+{
+  agm ← λx.λy.([{a⟜x->1;g⟜x->2;((a+g)%2,√(a*g))}]^:6 (x,y))->1;
+  𝜋%(2*agm 1 (√(1-k^2)))
+}
+```
+
+Gauss' approximation of the logarithm:
+
+```
+λm.λx.
+{
+  amgm ← λx.λy.([{a⟜x->1;g⟜x->2;((a+g)%2,√(a*g))}]^:15 (x,y))->1;
+  -- m>2
+  𝜋%(2*amgm 1 (0.5^(m-2)%x))-ℝ m*0.6931471805599453
+}
+```
+
+### Hypergeometric Function
+
+$$ {}_pF_q(a_1,\ldots,a_p;b_1,\ldots,b_q;x) = \sum_{n=0}^\infty \frac{(a_1)_n\ldots (a_p)_n}{(b_1)_n\ldots (b_q)_n}\frac{x^n}{n!}$$
+
+where $(x)_n$ is the [rising factorial](#rising-factorial) above.
+
+```
+λa.λb.λz.
+{
+  rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
+  Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N 1)); Π ← [(*)/x];
+  Σ 30 (λn. {nn⟜ℝ n; (Π ((λa.rf a nn)'a)%Π((λb. rf b nn)'b))*(z^n%fact nn)})
+}
+```
+
+We can use the REPL to inspect the type:
+
+```
+ > :yank H math/hypergeometric.🍏
+ > :ty H
+Vec (i + 1) float → Vec (i + 1) float → float → float
+```
+
+## Geography
+
+### Mercator
+
+$$ x \mapsto \lambda - \lambda_0 $$
+$$ y \mapsto \frac{1}{2} \log{\left(\frac{1+\sin \phi}{1-\sin \phi}\right)} $$
+
+```
+\𝜆₀.\𝜑.\𝜆.{a⟜sin.𝜑;(𝜆-𝜆₀,(_.((1+a)%(1-a)))%2)}
+```
+
 ## Number Theory
 
 ### Primality Check
@@ -243,7 +340,7 @@ To drop the first 6 elements:
 
 ### Radical
 
-Compute the radical of an integer $n$, $\prod_{p|n} p$
+Compute the radical of an integer $n$, $\displaystyle \prod_{p|n} p$
 
 ```
 λn.
