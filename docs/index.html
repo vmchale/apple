@@ -404,7 +404,7 @@ factorial</a> is defined as:</p>
 <h2 id="numerics">Numerics</h2>
 <h3 id="arithmetic-geometric-mean">Arithmetic-Geometric Mean</h3>
 <pre><code>λx.λy.([{a⟜x-&gt;1;g⟜x-&gt;2;((a+g)%2,√(a*g))}]^:6 (x,y))-&gt;1</code></pre>
-<p>Thence the <a
+<p>Thence to <a
 href="https://en.wikipedia.org/wiki/Elliptic_integral#Complete_elliptic_integral_of_the_first_kind">complete
 elliptic integral of the first kind</a>:</p>
 <pre><code>λk.
@@ -412,7 +412,7 @@ elliptic integral of the first kind</a>:</p>
   agm ← λx.λy.([{a⟜x-&gt;1;g⟜x-&gt;2;((a+g)%2,√(a*g))}]^:6 (x,y))-&gt;1;
   𝜋%(2*agm 1 (√(1-k^2)))
 }</code></pre>
-<p>Gauss’ approximation of the logarithm:</p>
+<p>To compute the logarithm, turn to Gauss:</p>
 <pre><code>λm.λx.
 {
   amgm ← λx.λy.([{a⟜x-&gt;1;g⟜x-&gt;2;((a+g)%2,√(a*g))}]^:15 (x,y))-&gt;1;
@@ -467,7 +467,7 @@ class="math inline">\(\displaystyle \prod_{p|n} p\)</span></p>
 class="math inline">\(B_2\)</span> are uniformly distributed <span
 class="math inline">\(\in [0,1)\)</span>.</p>
 <p>Debugging randomness is fraught, so we turn to Python’s visualization
-libraries, viz.</p>
+libraries.</p>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -8099,7 +8099,7 @@ data-mime-type="text/plain" tabindex="0">
 <p><code>([((+)/* 0 (x::Arr (7 × 7) float))%ℝ(:x)] ⨳ {7,7})</code>
 applies a 7x7 mean filter to a 2-dimensional array.</p>
 <p>We can use <a href="https://python-pillow.org/">Pillow</a> to apply
-it to an image.</p>
+it to an image:</p>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }

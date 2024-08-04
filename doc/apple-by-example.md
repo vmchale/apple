@@ -275,7 +275,7 @@ To drop the first 6 elements:
 λx.λy.([{a⟜x->1;g⟜x->2;((a+g)%2,√(a*g))}]^:6 (x,y))->1
 ```
 
-Thence the [complete elliptic integral of the first kind](https://en.wikipedia.org/wiki/Elliptic_integral#Complete_elliptic_integral_of_the_first_kind):
+Thence to [complete elliptic integral of the first kind](https://en.wikipedia.org/wiki/Elliptic_integral#Complete_elliptic_integral_of_the_first_kind):
 
 ```
 λk.
@@ -285,7 +285,7 @@ Thence the [complete elliptic integral of the first kind](https://en.wikipedia.o
 }
 ```
 
-Gauss' approximation of the logarithm:
+To compute the logarithm, turn to Gauss:
 
 ```
 λm.λx.
@@ -365,7 +365,7 @@ $$ X = \sqrt{-2 \log B_1} \cos (2\pi B_2) $$
 where $B_1$, $B_2$ are uniformly distributed $\in [0,1)$.
 
 Debugging randomness is fraught, so we turn to Python's visualization
-libraries, viz.
+libraries.
 
 ```{.include}
 nb/hist.html
@@ -376,7 +376,7 @@ nb/hist.html
 `([((+)/* 0 (x::Arr (7 × 7) float))%ℝ(:x)] ⨳ {7,7})` applies a 7x7 mean filter to a
 2-dimensional array.
 
-We can use [Pillow](https://python-pillow.org/) to apply it to an image.
+We can use [Pillow](https://python-pillow.org/) to apply it to an image:
 
 ```{.include}
 nb/convolve.html
