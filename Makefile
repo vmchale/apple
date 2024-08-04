@@ -22,8 +22,10 @@ moddeps.svg: $(HS_SRC)
 install-lib: libapple$(EXT)
 	cp $^ /usr/local/lib
 
-docs/index.html: doc/apple-by-example.md
-	pandoc --mathjax -s $^ -o $@ --toc
+docs/index.html: doc/apple-by-example.md nb/hist.ipynb
+	jupyter nbconvert nb/hist.ipynb --to=html
+	sed -i '' '1,6d' nb/hist.html
+	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
 
 install-py:
 	make -C pyc install
@@ -41,6 +43,7 @@ clean:
 	make -C pyc clean
 	make -C vscode clean
 	make -C Rc clean
+	rm -f nb/hist.html
 	rm -rf dist-newstyle tags tags.mtime moddeps.svg *.hp *.o *.prof *.tix *.svg *.so *.dylib py/__pycache__
 
 fmt:

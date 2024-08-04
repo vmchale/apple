@@ -353,3 +353,9 @@ Compute the radical of an integer $n$, $\displaystyle \prod_{p|n} p$
     ,.((*)/ₒ 1 (pf (n ⊲ ((n/.)'pps))⧺pps))
   }
 ```
+
+## Jupyter
+
+```{.include}
+nb/hist.html
+```
