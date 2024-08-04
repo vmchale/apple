@@ -7,6 +7,13 @@ ifeq ($(UNAME),Linux)
 	LD_VER := $(shell ja '{%/^\s*lib-version-info:/}{`2}' -i apple.cabal | sed 's/:/./g')
 endif
 
+docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html
+	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
+
+nb/%.html: nb/%.ipynb
+	jupyter nbconvert $^ --to=html
+	sed -i '' '1,6d' $@
+
 libapple$(EXT): $(HS_SRC) include/apple.h
 	cabal build flib:apple -w $(HC)
 ifeq ($(UNAME),Linux)
@@ -21,13 +28,6 @@ moddeps.svg: $(HS_SRC)
 
 install-lib: libapple$(EXT)
 	cp $^ /usr/local/lib
-
-nb/hist.html: nb/hist.ipynb
-	jupyter nbconvert $^ --to=html
-	sed -i '' '1,6d' $@
-
-docs/index.html: doc/apple-by-example.md nb/hist.html
-	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
 
 install-py:
 	make -C pyc install
@@ -45,7 +45,7 @@ clean:
 	make -C pyc clean
 	make -C vscode clean
 	make -C Rc clean
-	rm -f nb/hist.html
+	rm -f nb/*.html
 	rm -rf dist-newstyle tags tags.mtime moddeps.svg *.hp *.o *.prof *.tix *.svg *.so *.dylib py/__pycache__
 
 fmt:

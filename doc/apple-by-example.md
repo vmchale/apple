@@ -354,8 +354,30 @@ Compute the radical of an integer $n$, $\displaystyle \prod_{p|n} p$
   }
 ```
 
-## Jupyter
+## Python Extension Module
+
+### Sample Normal Distribution
+
+To generate normally distributed random values, we can use
+
+$$ X = \sqrt{-2 \log B_1} \cos (2\pi B_2) $$
+
+where $B_1$, $B_2$ are uniformly distributed $\in [0,1)$.
+
+Debugging randomness is fraught, so we turn to Python's visualization
+libraries, viz.
 
 ```{.include}
 nb/hist.html
+```
+
+### Image Processing
+
+`([((+)/* 0 (x::Arr (7 × 7) float))%ℝ(:x)] ⨳ {7,7})` applies a 7x7 mean filter to a
+2-dimensional array.
+
+We can use [Pillow](https://python-pillow.org/) to apply it to an image.
+
+```{.include}
+nb/convolve.html
 ```
