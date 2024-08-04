@@ -228,6 +228,41 @@ It has type
 [8, 9, 0, 1, 2, 3, 4, 5, 6, 7]
 ```
 
+## Cycle
+
+`cyc.` or `⊙` (infix) concatenates an array with itself a specified number of times.
+
+```
+ > cyc. ⟨0::int,1⟩ 4
+Vec 8 [0, 1, 0, 1, 0, 1, 0, 1]
+```
+
+```
+ > ⟨0::int,1⟩⊙4
+Vec 8 [0, 1, 0, 1, 0, 1, 0, 1]
+```
+
+## Transpose
+
+⍉ or `|:`
+
+```
+ > ⍉ ⟨⟨1.0,3⟩,⟨4,4⟩,⟨2,_2⟩⟩
+[ [1.0, 4.0, 2.0]
+, [3.0, 4.0, -2.0] ]
+ > ⟨⟨1.0,3⟩,⟨4,4⟩,⟨2,_2⟩⟩
+[ [1.0, 3.0]
+, [4.0, 4.0]
+, [2.0, -2.0] ]
+```
+
+## Unfold
+
+```
+ > gen. (1::int) (*2) 10
+Vec 10 [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+```
+
 ## Dyadic Infix
 
 Moving average:
@@ -440,6 +475,16 @@ To drop the first 6 elements:
 
 ```
 \p.\xs. (∨)/ₒ #f (p'xs)
+```
+
+## [Luhn Check](https://en.wikipedia.org/wiki/Luhn_algorithm)
+
+```
+λxs.
+  { digitSum ← [?x>10,.x-9,.x]
+  ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
+  ; 10-(t|10)=}.xs
+  }
 ```
 
 ## Numerics
