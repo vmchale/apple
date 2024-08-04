@@ -39,6 +39,9 @@ array([3., 4., 5., 6.])
 [1] 3 4 5 6 7
 ```
 
+The JIT'ed Apple moving average happens to be faster than the rolling mean from
+the [zoo package](https://cran.r-project.org/web/packages/zoo/index.html).
+
 ## Dimension As a Functor
 
 This is based on J (and APL?). Looping is replaced by functoriality (rerank).
