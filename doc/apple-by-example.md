@@ -190,11 +190,6 @@ In apple this is
 
 `/ₒ` is a ternary operator, fold with seed.
 
-```
- > :ty ⍳
-int → int → int → Vec #n int
-```
-
 ## Kullback-Leibler Divergence
 
 ```
@@ -208,6 +203,14 @@ int → int → int → Vec #n int
     { sum ⇐ [(+)/x]
     ; 0.5*abs.(sum((*)`as (1⊖bs)) - sum((*)`(1⊖as) bs))
     }
+```
+
+## Polynomials
+
+### Evaluation
+
+```
+λp.λx. (+)/ ((*)`(~p) (gen. 1 (*x) (𝓉p)))
 ```
 
 ## Array
