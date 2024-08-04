@@ -1,5 +1,7 @@
 include mk/os.mk
 
+MAKEFLAGS += -j
+
 HC ?= ghc
 
 HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
@@ -7,7 +9,7 @@ ifeq ($(UNAME),Linux)
 	LD_VER := $(shell ja '{%/^\s*lib-version-info:/}{`2}' -i apple.cabal | sed 's/:/./g')
 endif
 
-docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html
+docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html
 	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
 
 nb/%.html: nb/%.ipynb
