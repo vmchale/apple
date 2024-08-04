@@ -83,6 +83,7 @@ optP (AP t me l) = AP t (fmap optE me) l
 
 opt :: Stmt -> Stmt
 opt (Cpy s d n)   = Cpy (optP s) (optP d) (optE n)
+opt (Cpy1 s d n)  = Cpy1 (optP s) (optP d) (optE n)
 opt (MT r e)      = MT r (optE e)
 opt (Ma l t e)    = Ma l t (optE e)
 opt (Wr p e)      = Wr (optP p) (optE e)

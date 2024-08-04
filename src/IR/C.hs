@@ -81,6 +81,7 @@ cToIRM (C.RA _ i) = pure [IR.RA i]
 cToIRM (CpyD _ a0 a1 e) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
 cToIRM (CpyE _ a0 a1 e 8) = pure [Cpy (irAt a0) (irAt a1) (irE e)]
 cToIRM (CpyE _ a0 a1 e sz) | (s,0) <- sz `quotRem` 8 = pure [Cpy (irAt a0) (irAt a1) (irE e*IR.ConstI s)]
+cToIRM (CpyE _ a0 a1 e sz) = pure [Cpy1 (irAt a0) (irAt a1) (irE e*IR.ConstI sz)]
 cToIRM (C.Sa _ t e) = pure [IR.Sa (ctemp t) (irE e)]
 cToIRM (C.Pop _ e) = pure [IR.Pop (irE e)]
 cToIRM (Ifn't _ p s) = do

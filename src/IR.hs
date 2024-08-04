@@ -72,6 +72,7 @@ data Stmt = L Label
           | Sa Temp Exp -- register, size
           | Pop Exp -- pop salloc
           | Cpy AE AE Exp
+          | Cpy1 AE AE Exp
           | C Label | R Label
           | IRnd Temp | FRnd FTemp
 
@@ -92,6 +93,7 @@ instance Pretty Stmt where
     pretty (Sa t e)      = parens ("salloc" <+> pretty t <+> ":" <+> pretty e)
     pretty (Pop e)       = parens ("spop" <+> pretty e)
     pretty (Cpy p p' e)  = parens ("cpy" <+> pretty p <> "," <+> pretty p' <+> pretty e)
+    pretty (Cpy1 p p' e) = parens ("cpy-byte" <+> pretty p <> "," <+> pretty p' <+> pretty e)
     pretty (C l)         = parens ("call" <+> prettyLabel l)
     pretty R{}           = parens "ret" <> hardline
     pretty (IRnd t)      = parens (pretty t <+> "<- rnd")

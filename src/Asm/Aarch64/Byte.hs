@@ -144,6 +144,7 @@ asm ix st (Ldp _ r0 r1 (RP rb u):asms) | (u', 0) <- u `quotRem` 8, u <= 504 = [0
 asm ix st (Str x r (R rb):asms) = asm ix st (Str x r (RP rb 0):asms)
 asm ix st (Str _ r (RP rb u):asms) | (uu, 0) <- u `quotRem` 8 = [0xf9, fromIntegral (uu `shiftR` 6), fromIntegral (0b111111 .&. uu) `shiftL` 2 .|. be rb `shiftR` 3, lb rb r]:asm (ix+4) st asms
 asm ix st (Str _ r (BI rb ri s):asms) = [0b11111000, 0x1 `shiftL` 5 .|. be ri, 0x3 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0x2 `shiftL` 2 .|. be rb `shiftR` 3, lb rb r]:asm (ix+4) st asms
+asm ix st (StrB _ r (RP rb u):asms) = [0b00111001, fromIntegral (u `shiftR` 6), fromIntegral (0b111111 .&. u) `shiftL` 2 .|. be rb `shiftR` 3, lb rb r]:asm (ix+4) st asms
 asm ix st (StrB _ r (BI rb ri s):asms) = [0b00111000, 0x1 `shiftL` 5 .|. be ri, 0x3 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0x2 `shiftL` 2 .|. be rb `shiftR` 3, lb rb r]:asm (ix+4) st asms
 asm ix st (StrD _ d (BI rb ri s):asms) = [0xfc, 0x1 `shiftL` 5 .|. be ri, 0x3 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0x2 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
 asm ix st (StrD _ d (R rb):asms) = [0b11111101, 0x0, be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
@@ -203,16 +204,16 @@ asm ix st@(_, (Just (m, _, _, _), _), _) (MovRCf _ r Malloc:asms) =
     asm ix st (m4 r m++asms)
 asm ix st@(_, (Just (_, f, _, _), _), _) (MovRCf _ r Free:asms) =
     asm ix st (m4 r f++asms)
-asm ix st@(_, (_, Just (_, l, _)),_) (MovRCf _ r Log:asms) =
-    asm ix st (m4 r l++asms)
-asm ix st@(_, (_, Just (e, _, _)),_) (MovRCf _ r Exp:asms) =
-    asm ix st (m4 r e++asms)
-asm ix st@(_, (_, Just (_, _, p)),_) (MovRCf _ r Pow:asms) =
-    asm ix st (m4 r p++asms)
 asm ix st@(_, (Just (_, _, d, _), _),_) (MovRCf _ r DR:asms) =
     asm ix st (m4 r d++asms)
 asm ix st@(_, (Just (_, _, _, j), _),_) (MovRCf _ r JR:asms) =
     asm ix st (m4 r j++asms)
+asm ix st@(_, (_, Just (e, _, _)),_) (MovRCf _ r Exp:asms) =
+    asm ix st (m4 r e++asms)
+asm ix st@(_, (_, Just (_, l, _)),_) (MovRCf _ r Log:asms) =
+    asm ix st (m4 r l++asms)
+asm ix st@(_, (_, Just (_, _, p)),_) (MovRCf _ r Pow:asms) =
+    asm ix st (m4 r p++asms)
 asm ix st (LdrRL _ r l:asms) =
     let p = pI$arr l st
         w0=p .&. 0xffff; w1=(p .&. 0xffff0000) `lsr` 16; w2=(p .&. 0xFFFF00000000) `lsr` 32; w3=(p .&. 0xFFFF000000000000) `lsr` 48
