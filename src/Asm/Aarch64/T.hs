@@ -234,14 +234,20 @@ ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) (IR.ConstI n)) | (n', 1
     let li=fromIntegral$(n-1)*8
     pure $ plED ++ plES ++ concat [ [Ldp () t0 t1 (RP (IReg rS) (i*16)), Stp () t0 t1 (RP (IReg rD) (i*16))] | i <- fromIntegral<$>[0..(n'-1)] ] ++ [Ldr () t0 (RP (IReg rS) li), Str () t0 (RP (IReg rD) li)]
 ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) eN) = do
-    rD <- nextI; rS <- nextI; rN <- nextI; i <- nextR
+    rD <- nextI; rS <- nextI; i <- nextR
     t0 <- nextR; t1 <- nextR
     plED <- eval (maybe id (+) eD$IR.Reg tD) (IR.ITemp rD)
     plES <- eval (maybe id (+) eS$IR.Reg tS) (IR.ITemp rS)
-    plEN <- eval eN (IR.ITemp rN)
-    let rDA=IReg rD; rSA=IReg rS; rNA=IReg rN
+    (plEN, rN) <- plI eN
+    let rDA=IReg rD; rSA=IReg rS
     l <- nextL; eL <- nextL
-    pure $ plED ++ plES ++ plEN ++ [MovRC () i 0, CmpRR () i rNA, Bc () Geq eL, Tbz () rNA 0 l, Ldr () t0 (R rSA), Str () t0 (R rDA), MovRC () i 1, AddRC () rSA rSA 8, AddRC () rDA rDA 8, Label () l, Ldp () t0 t1 (R rSA), Stp () t0 t1 (R rDA), AddRC () rSA rSA 16, AddRC () rDA rDA 16, AddRC () i i 2, CmpRR () i rNA, Bc () Lt l, Label () eL]
+    pure $ plED ++ plES ++ plEN [ZeroR () i, CmpRR () i rN, Bc () Geq eL, Tbz () rN 0 l, Ldr () t0 (R rSA), Str () t0 (R rDA), MovRC () i 1, AddRC () rSA rSA 8, AddRC () rDA rDA 8, Label () l, Ldp () t0 t1 (R rSA), Stp () t0 t1 (R rDA), AddRC () rSA rSA 16, AddRC () rDA rDA 16, AddRC () i i 2, CmpRR () i rN, Bc () Lt l, Label () eL]
+ir (IR.Cpy1 (IR.AP tD (Just (IR.ConstI di)) _) (IR.AP tS (Just (IR.ConstI si)) _) eN) | Just du <- mu16 di, Just su <- mu16 si = do
+    rD <- nextI; rS <- nextI; i <- nextR; t <- nextR
+    (plEN, rN) <- plI eN
+    l <- nextL; eL <- nextL
+    let rDA=IReg rD; rSA=IReg rS
+    pure $ plEN [MovRR () rDA (absReg tD), MovRR () rSA (absReg tS), ZeroR () i, CmpRR () i rN, Bc () Geq eL, Label () l, LdrB () t (RP rSA du), StrB () t (RP rDA su), AddRC () rSA rSA 1, AddRC () rDA rDA 1, AddRC () i i 1, CmpRR () i rN, Bc () Lt l, Label () eL]
 -- ir (IR.IRnd t) = pure [MrsR () (absReg t)]
 ir (IR.IRnd t) = do
     r <- nextR
