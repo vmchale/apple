@@ -820,13 +820,13 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
-aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isIF tX = do
+aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, Just sz <- rSz tX = do
     xR <- rtemp tX
     nR <- newITemp; nϵR <- newITemp
-    (a,aV) <- v8 t (Tmp nR)
+    (a,aV) <- vSz t (Tmp nR) sz
     plX <- eeval x xR
     (plXs, (l, xsR)) <- plA xs
-    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++wt (AElem t 1 0 (Just a) 8) xR:[CpyE () (AElem t 1 1 (Just a) 8) (AElem xsR 1 0 l 8) (Tmp nϵR) 8])
+    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++wt (AElem t 1 0 (Just a) sz) xR:[CpyE () (AElem t 1 1 (Just a) sz) (AElem xsR 1 0 l sz) (Tmp nϵR) sz])
 aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     xR <- newITemp
     nR <- newITemp; nϵR <- newITemp
@@ -834,13 +834,13 @@ aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isΠ tX, sz <- 
     (plXs, (lX, xsR)) <- plA xs
     (a,aV) <- vSz t (Tmp nR) sz
     pure (Just a, plXs$m'sa xR mSz++plX++nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):aV++[CpyE () (AElem t 1 0 (Just a) sz) (TupM xR Nothing) 1 sz, CpyE () (AElem t 1 1 (Just a) sz) (AElem xsR 1 0 lX sz) (Tmp nϵR) sz]++m'pop mSz)
-aeval (EApp _ (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isIF tX = do
+aeval (EApp _ (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, Just sz <- rSz tX = do
     xR <- rtemp tX
     nR <- newITemp; nϵR <- newITemp
-    (a,aV) <- v8 t (Tmp nR)
+    (a,aV) <- vSz t (Tmp nR) sz
     plX <- eeval x xR
     (plXs, (l, xsR)) <- plA xs
-    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++wt (AElem t 1 (Tmp nϵR) (Just a) 8) xR:[CpyE () (AElem t 1 0 (Just a) 8) (AElem xsR 1 0 l 8) (Tmp nϵR) 8])
+    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++wt (AElem t 1 (Tmp nϵR) (Just a) sz) xR:[CpyE () (AElem t 1 0 (Just a) sz) (AElem xsR 1 0 l sz) (Tmp nϵR) sz])
 aeval (EApp _ (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     xR <- newITemp
     nR <- newITemp; nϵR <- newITemp
