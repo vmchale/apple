@@ -128,6 +128,19 @@ Note that we can map over an array.
 , [0, 1] ]
 ```
 
+Reverse applied to a higher-dimensional array reverses the first dimension.
+
+```
+ > ⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩
+[ [0, 1]
+, [1, 0]
+, [2, 4] ]
+ > ~⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩
+[ [2, 4]
+, [1, 0]
+, [0, 1] ]
+```
+
 # Examples
 
 ## Dot Product

@@ -228,6 +228,7 @@ tokens :-
         M                        { mkBuiltin BuiltinM }
         float                    { mkBuiltin BuiltinFloat }
         int                      { mkBuiltin BuiltinInt }
+        bool                     { mkBuiltin BuiltinBool }
         𝔯                        { mkBuiltin BuiltinR }
         "rand."                  { mkBuiltin BuiltinR }
         "sin."                   { mkBuiltin BuiltinSin }
@@ -411,7 +412,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
-             | BuiltinD | BuiltinVec | BuiltinM
+             | BuiltinD | BuiltinVec | BuiltinM | BuiltinBool
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -438,6 +439,7 @@ instance Pretty Builtin where
     pretty BuiltinM      = "M"
     pretty BuiltinInt    = "int"
     pretty BuiltinFloat  = "float"
+    pretty BuiltinBool   = "bool"
     pretty BuiltinT      = "𝓉"
     pretty BuiltinR      = "𝔯"
     pretty BuiltinSin    = "sin."
