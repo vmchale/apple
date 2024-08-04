@@ -1,5 +1,7 @@
 # apple
 
+  * Display dimension information in REPL results
+
 ## 0.2.0.0
 
   * Add `:delete` to REPL
