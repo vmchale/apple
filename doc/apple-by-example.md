@@ -189,7 +189,21 @@ int → int → int → Vec #n int
     }
 ```
 
-## Filter
+## Array
+
+To take all but the last 6 elements:
+
+```
+[{.\`7 x]
+```
+
+To drop the first 6 elements:
+
+```
+[}.\`7 x]
+```
+
+### Filter
 
 ```
 \p.\xs. (xs˙)'p⩪xs
