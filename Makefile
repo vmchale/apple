@@ -9,13 +9,6 @@ ifeq ($(UNAME),Linux)
 	LD_VER := $(shell ja '{%/^\s*lib-version-info:/}{`2}' -i apple.cabal | sed 's/:/./g')
 endif
 
-docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html
-	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
-
-nb/%.html: nb/%.ipynb
-	jupyter nbconvert $^ --to=html
-	sed -i '' '1,6d' $@
-
 libapple$(EXT): $(HS_SRC) include/apple.h
 	cabal build flib:apple -w $(HC)
 ifeq ($(UNAME),Linux)
@@ -24,6 +17,13 @@ ifeq ($(UNAME),Linux)
 else
 	cp $$(cabal-plan list-bins apple:flib:apple | awk '{print $$2}') $@
 endif
+
+docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html
+	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
+
+nb/%.html: nb/%.ipynb
+	jupyter nbconvert $^ --to=html
+	sed -i '' '1,6d' $@
 
 moddeps.svg: $(HS_SRC)
 	graphmod -i src | dot -Tsvg -o $@
