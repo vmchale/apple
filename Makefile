@@ -22,6 +22,10 @@ moddeps.svg: $(HS_SRC)
 install-lib: libapple$(EXT)
 	cp $^ /usr/local/lib
 
+docs/index.html: doc/apple-by-example.html
+	make -C doc apple-by-example.html
+	cp $^ $@
+
 install-py:
 	make -C pyc install
 
