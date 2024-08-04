@@ -52,9 +52,16 @@ Use `:ty` for more:
 a → Vec i a → Vec (i + 1) a
 ```
 
+## Editor Plugins
+
+There is a [vim plugin](https://github.com/vmchale/apple/tree/canon/vim) and a
+[VSCode extension](https://marketplace.visualstudio.com/items?itemName=vmchale.apple).
+
+The file extension is `.🍎` or `.🍏`.
+
 # Capabilities
 
-## Integer range
+## Integer Range
 
 To generate an integer range use `irange` or `⍳` (APL iota).
 
@@ -70,6 +77,24 @@ To generate an integer range use `irange` or `⍳` (APL iota).
 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
  > irange 30 0 _3
 [30, 27, 24, 21, 18, 15, 12, 9, 6, 3, 0]
+```
+
+Note that `_` is used for negative literals.
+
+## Real Range
+
+For a range of real numbers, use `frange` or `𝒻`.
+
+```
+ > :ty frange
+float → float → int → Vec #n float
+```
+
+`frange` takes a start value, an end value, and the number of steps.
+
+```
+ > frange 0 9 10
+[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]
 ```
 
 ## Map
@@ -97,16 +122,16 @@ Functions can be [curried](https://wiki.haskell.org/Currying).
 Array literals are delineated by `⟨`...`⟩`.
 
 ```
- > ⟨1,0::int⟩
-[1, 0]
+ > ⟨_1,0::int⟩
+[-1, 0]
 ```
 
-For a higher-dimensional array:
+For higher-dimensional arrays:
 
 ```
- > ⟨⟨0,1⟩,⟨1,0::int⟩⟩
+ > ⟨⟨0,1⟩,⟨_1,0::int⟩⟩
 [ [0, 1]
-, [1, 0] ]
+, [-1, 0] ]
 ```
 
 ## Reverse
@@ -175,12 +200,138 @@ It has type
 , [(4.0*0.0), (4.0*1.0), (4.0*2.0), (4.0*3.0), (4.0*4.0)] ]
 ```
 
+## Successive Application
+
+```
+ > :ty (\~)
+(a → a → b) → Arr (i + 1 `Cons` sh) a → Arr (i `Cons` sh) b
+```
+
+`[(-)\~ x]` gives successive differences.
+
+```
+ > (-)\~ ((^2)'(frange 0 9 10))
+[1.0, 3.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0, 17.0]
+```
+
+## Rotate
+
+```
+ > (⊖)
+(⊖) : int → Vec i a → Vec i a
+```
+
+```
+ > 2 ⊖ irange 0 9 1
+[2, 3, 4, 5, 6, 7, 8, 9, 0, 1]
+ > _2 ⊖ irange 0 9 1
+[8, 9, 0, 1, 2, 3, 4, 5, 6, 7]
+```
+
+## Bind
+
+```
+ > {i←2::int;i*i}
+4
+```
+
+Bind, preventing inlining:
+
+```
+ > {i⟜2::int;i*i}
+4
+```
+
+One can see that `2` is stored in a register by inspecting the generated
+assembly:
+
+```
+ > :asm {i←2::int;i*i}
+
+    mov x0, #0x4
+    ret
+ > :asm {i⟜2::int;i*i}
+
+    mov x0, #0x2
+    mul x0, x0, x0
+    ret
+```
+
+### Polymorphic Bind
+
+```
+ > {sum ⇐ [(+)/x]; sum (irange 0 9 1)+⌊(sum(frange 0 9 10))}
+90
+```
+
+```
+ > {sum ← [(+)/x]; sum (irange 0 9 1)+⌊(sum(frange 0 9 10))}
+1:42: could not unify 'float' with 'int' in expression '𝒻 0 9 10'
+```
+
+## REPL Functionality
+
+### Benchmark
+
+```
+ > :bench frange 0 999 1000
+benchmarking...
+time                 1.423 μs   (1.417 μs .. 1.427 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.426 μs   (1.422 μs .. 1.429 μs)
+std dev              11.94 ns   (9.819 ns .. 14.22 ns)
+```
+
+### QuickCheck
+
+Apple can generate shape-correct test cases for property testing. For instance,
+
+```
+ > :qc \x. [(+)/(*)`x y] x x >= 0.0
+Passed, 100.
+```
+
+tests that the dot product of a vector with itself is nonnegative.
+
+## Exotic Syntax
+
+### Coronis
+
+Instead of
+
+```
+{x←y;z}
+```
+
+One can write
+
+```
+⸎x←y;z
+```
+
+Using the [typographical coronis](https://en.wikipedia.org/wiki/Coronis_(textual_symbol)).
+
+### Matrix Dimensions
+
+One can specify matrix dimensions in a type signature with unicode subscript
+digits separated by a comma.
+
+```
+(𝔯 0 1) :: M ₁₂,₁₂ float
+```
+
+is equivalent to
+
+```
+(𝔯 0 1) :: Arr (12 × 12) float
+```
+
 # Examples
 
 ## Dot Product
 
 ```
-[(+)/ ((*)`((x::Vec n float)) y)]
+[(+)/ ((*)`(x::Vec n float) y)]
 ```
 
 `/` is fold and ` is zip. Note that we must provide a type annotation
@@ -188,7 +339,7 @@ It has type
 We can inspect the assembly:
 
 ```
- > :asm [(+)/ ((*)`((x::Vec n float)) y)]
+ > :asm [(+)/ ((*)`(x::Vec n float) y)]
 
     ldr x4, [x0, #0x8]
     ldr d3, [x0, #0x10]
@@ -267,6 +418,14 @@ To drop the first 6 elements:
 \p.\xs. (xs˙)'p⩪xs
 ```
 
+## Functional Programming
+
+[any](https://hackage.haskell.org/package/base/docs/Prelude.html#v:any)
+
+```
+\p.\xs. (∨)/ₒ #f (p'xs)
+```
+
 ## Numerics
 
 ### Arithmetic-Geometric Mean
@@ -296,6 +455,14 @@ To compute the logarithm, turn to Gauss:
 }
 ```
 
+```
+ > :yank log math/log.🍏
+ > log 128 9
+2.1972245773362147
+ > _.9
+2.1972245773362196
+```
+
 ### Hypergeometric Function
 
 $$ {}_pF_q(a_1,\ldots,a_p;b_1,\ldots,b_q;x) = \sum_{n=0}^\infty \frac{(a_1)_n\ldots (a_p)_n}{(b_1)_n\ldots (b_q)_n}\frac{x^n}{n!}$$
@@ -306,7 +473,7 @@ where $(x)_n$ is the [rising factorial](#rising-factorial) above.
 λa.λb.λz.
 {
   rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-  Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N 1)); Π ← [(*)/x];
+  Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N 1)); Π ⇐ [(*)/x];
   Σ 30 (λn. {nn⟜ℝ n; (Π ((λa.rf a nn)'a)%Π((λb. rf b nn)'b))*(z^n%fact nn)})
 }
 ```
@@ -328,6 +495,26 @@ $$ y \mapsto \frac{1}{2} \log{\left(\frac{1+\sin \phi}{1-\sin \phi}\right)} $$
 
 ```
 \𝜆₀.\𝜑.\𝜆.{a⟜sin.𝜑;(𝜆-𝜆₀,(_.((1+a)%(1-a)))%2)}
+```
+
+### [Albers](https://mathworld.wolfram.com/AlbersEqual-AreaConicProjection.html)
+
+Let 𝜆₀, 𝜑₀ be the coördinates of the origin, 𝜑₁, 𝜑₂ standard parallels, `φs` and `lambdas` the longitudes and latitudes, respectively.
+
+```
+\𝜆₀.\𝜑₀.\𝜑₁.\𝜑₂.\φs.\lambdas.
+{
+  𝑛 ⟜ (sin. 𝜑₁+sin.𝜑₂)%2;
+  𝐶 ⟜ (cos. 𝜑₁)^2+2*𝑛*sin. 𝜑₁;
+  𝜌₀ ⟜ √(𝐶-2*𝑛*sin. 𝜑₀)%𝑛;
+  albers ← \𝜑.\𝜆.
+    {
+      𝜃 ⟜ 𝑛*(𝜆-𝜆₀);
+      𝜌 ⟜ √(𝐶-2*𝑛*sin. 𝜑)%𝑛;
+      (𝜌*sin. 𝜃, 𝜌₀-𝜌*cos. 𝜃)
+    };
+  albers`φs lambdas
+}
 ```
 
 ## Number Theory
