@@ -126,8 +126,6 @@ Array literals are delineated by `⟨`...`⟩`.
 [-1, 0]
 ```
 
-For higher-dimensional arrays:
-
 ```
  > ⟨⟨0,1⟩,⟨_1,0::int⟩⟩
 [ [0, 1]
@@ -141,16 +139,6 @@ For higher-dimensional arrays:
 ```
  > ~(irange 0 9 1)
 [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
- > irange 9 0 _1
-[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-```
-
-Note that we can map over an array.
-
-```
- > ~'⟨⟨0,1⟩,⟨1,0::int⟩⟩
-[ [1, 0]
-, [0, 1] ]
 ```
 
 Reverse applied to a higher-dimensional array reverses elements (sub-arrays) along the first dimension.
@@ -166,11 +154,16 @@ Reverse applied to a higher-dimensional array reverses elements (sub-arrays) alo
 , [0, 1] ]
 ```
 
+```
+ > ~'⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩
+[ [1, 0]
+, [0, 1]
+, [4, 2] ]
+```
+
 ## Outer Product
 
 The outer product `⊗` creates a table by applying some function.
-
-It has type
 
 ```
  > :ty \f.\x.\y. x f⊗ y
