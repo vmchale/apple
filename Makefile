@@ -22,9 +22,11 @@ moddeps.svg: $(HS_SRC)
 install-lib: libapple$(EXT)
 	cp $^ /usr/local/lib
 
-docs/index.html: doc/apple-by-example.md nb/hist.ipynb
-	jupyter nbconvert nb/hist.ipynb --to=html
-	sed -i '' '1,6d' nb/hist.html
+nb/hist.html: nb/hist.ipynb
+	jupyter nbconvert $^ --to=html
+	sed -i '' '1,6d' $@
+
+docs/index.html: doc/apple-by-example.md nb/hist.html
 	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
 
 install-py:
