@@ -1152,6 +1152,12 @@ peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     let loopBody=mt (AElem aP 1 (Tmp i) l szY) x:ss
         loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
     pure $ plE $ plAcc++szR=:ev (eAnn e) (aP,l):[loop]
+peval (EApp _ (Builtin _ Head) xs) t = do
+    (plX, (l, a)) <- plA xs
+    pure $ plX [MB () t (PAt (AElem a 1 0 l 1))]
+peval (EApp _ (Builtin _ Last) xs) t = do
+    (plX, (l, a)) <- plA xs
+    pure $ plX [MB () t (PAt (AElem a 1 (ev (eAnn xs) (a,l)-1) l 1))]
 peval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS ()]
