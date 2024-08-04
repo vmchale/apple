@@ -126,8 +126,7 @@ rSz F=Just 8; rSz I=Just 8; rSz B=Just 1; rSz _=Nothing
 nSz F=Just 8; nSz I=Just 8; nSz B=Just 1; nSz (P ts)=sum<$>traverse nSz ts; nSz _=Nothing
 
 aB :: Integral b => T a -> Maybe b
-aB (Arr (_ `Cons` Nil) t) = nSz t
-aB _                      = Nothing
+aB (Arr (_ `Cons` Nil) t) = nSz t; aB _ = Nothing
 
 szT = scanl' (\off ty -> off+bT ty::Int64) 0
 
@@ -718,13 +717,13 @@ aeval (EApp ty (EApp _ (EApp _ (Builtin _ FRange) start) end) steps) t = do
     putIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
     let loop=for ty i 0 ILt (Tmp n) [WrF () (AElem t 1 (Tmp i) (Just a) 8) (FTmp startR), MX () startR (FTmp startR+FTmp incrR)]
     pure (Just a, putStart++putIncr++putN++aV++[loop])
-aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | if1p res = do
+aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | Just sz <- aB res = do
     i <- newITemp; nR <- newITemp; nO <- newITemp; szR <- newITemp
-    (a,aV) <- v8 t (Tmp nO)
+    (a,aV) <- vSz t (Tmp nO) sz
     (plX, (lX, xR)) <- plA xs
     plN <- eval n nR
     ix <- newITemp
-    let loop=for res i 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) (Just a) 8) (AElem xR 1 0 lX 8) (Tmp szR) 8, ix+=Tmp szR]
+    let loop=for res i 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) (Just a) sz) (AElem xR 1 0 lX sz) (Tmp szR) sz, ix+=Tmp szR]
     pure (Just a, plX $ plN ++ szR =: ev (eAnn xs) (xR,lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[loop])
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | Just (F, [m,n]) <- tIx$eAnn a, Just s <- cLog n = do
     i <- newITemp; j <- newITemp; mR <- newITemp; nR <- newITemp; z <- newFTemp
