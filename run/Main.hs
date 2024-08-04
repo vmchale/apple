@@ -212,7 +212,7 @@ langHelp = liftIO $ putStr $ concat
     [ lOption "Λ" "scan" "√" "sqrt"
     , lOption "⋉"  "max" "⋊"  "min"
     , lOption "⍳" "integer range" "⌊" "floor"
-    , lOption "ℯ" "exp" "⨳ {m,n}" "convolve"
+    , lOption "e:" "exp" "⨳ {m,n}" "convolve"
     , lOption "\\~" "successive application" "\\`n" "dyadic infix"
     , lOption "_." "log" "'n" "map"
     , lOption "`" "zip" "`{i,j∘[k,l]}" "rank"
