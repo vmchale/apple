@@ -128,7 +128,7 @@ Note that we can map over an array.
 , [0, 1] ]
 ```
 
-Reverse applied to a higher-dimensional array reverses the first dimension.
+Reverse applied to a higher-dimensional array reverses elements (sub-arrays) along the first dimension.
 
 ```
  > ⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩
@@ -195,10 +195,16 @@ In apple this is
 int → int → int → Vec #n int
 ```
 
+## Kullback-Leibler Divergence
+
+```
+λp.λq. (+)/([x*_.(x%y)]`p q)
+```
+
 ## Shoelace Theorem
 
 ```
-λas.λbs. 
+λas.λbs.
     { sum ⇐ [(+)/x]
     ; 0.5*abs.(sum((*)`as (1⊖bs)) - sum((*)`(1⊖as) bs))
     }
