@@ -995,11 +995,27 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just ((_, 1), (tO, cRnk))
         :[pops])
     -- TODO: array case
 aeval (EApp _ (EApp _ (Builtin _ Rot) n) xs) t | tXs <- eAnn xs, Just sz <- aB tXs = do
-    nR <- newITemp; c <- newITemp; szR <- newITemp
-    plN <- eval n nR
+    c <- newITemp; szR <- newITemp
+    (plN, nR) <- plEV n
     (plX, (lX, xsR)) <- plA xs
     (a, aV) <- vSz t (Tmp szR) sz
-    pure (Just a, plX$plN++szR =: ev tXs (xsR,lX):aV++Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=Tmp szR]:c =: (Tmp szR-Tmp nR):[CpyE () (AElem t 1 0 (Just a) sz) (AElem xsR 1 (Tmp nR) lX sz) (Tmp c) sz, CpyE () (AElem t 1 (Tmp c) (Just a) sz) (AElem xsR 1 0 lX sz) (Tmp nR) sz])
+    pure (Just a, plX$plN$szR =: ev tXs (xsR,lX):aV++Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=Tmp szR]:c =: (Tmp szR-Tmp nR):[CpyE () (AElem t 1 0 (Just a) sz) (AElem xsR 1 (Tmp nR) lX sz) (Tmp c) sz, CpyE () (AElem t 1 (Tmp c) (Just a) sz) (AElem xsR 1 0 lX sz) (Tmp nR) sz])
+aeval (EApp _ (EApp _ (Builtin _ Rot) n) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
+    a <- nextArr t
+    c <- newITemp; szR <- newITemp
+    (plN, nR) <- plEV n
+    (plX, (lX, xR)) <- plA xs
+    (dts,dss) <- plDim xRnk (xR,lX)
+    let d1=head dts; ns=tail dts
+        rnkE=ConstI xRnk
+    pure (Just a,
+        plX$plN$dss
+        ++PlProd () szR (Tmp<$>ns)
+        :Ma () a t rnkE (Tmp d1*Tmp szR) sz
+        :CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) rnkE
+        :Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=Tmp d1]
+        :c=:(Tmp d1-Tmp nR)
+        :[CpyE () (AElem t rnkE 0 (Just a) sz) (AElem xR rnkE (Tmp nR*Tmp szR) lX sz) (Tmp c*Tmp szR) sz, CpyE () (AElem t rnkE (Tmp c*Tmp szR) (Just a) sz) (AElem xR rnkE 0 lX sz) (Tmp nR*Tmp szR) sz])
 aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
     let rnk=fromIntegral$length ns
     n <- nextAA

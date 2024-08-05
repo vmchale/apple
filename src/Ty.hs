@@ -530,8 +530,8 @@ tyB _ TailM = do
     a <- ftv "a"; i <- fti "i"; n <- ftie
     pure (vV i a ~> vV n a, mempty)
 tyB _ Rot = do
-    a <- ftv "a"; i <- fti "i"
-    pure (I ~> vV i a ~> vV i a, mempty)
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
+    pure (I ~> Arr (i `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
 tyB _ Cyc = do
     sh <- fsh "sh"; a <- ftv "a"; i <- fti "i"; n <- ftie
     pure (Arr (i `Cons` sh) a ~> I ~> Arr (n `Cons` sh) a, mempty)
