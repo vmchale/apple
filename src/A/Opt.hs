@@ -103,11 +103,9 @@ optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (B
     | Arrow dom fCod <- eAnn f
     , Arrow _ (Arrow _ cod) <- eAnn op = do
         x' <- optA x
-        x0 <- nextU "x" cod
-        x1 <- nextU "y" dom
+        x0 <- nextU "x" cod; x1 <- nextU "y" dom
         opA <- optA op
-        let vx0 = Var cod x0
-            vx1 = Var dom x1
+        let vx0 = Var cod x0; vx1 = Var dom x1
             opTy = cod ~> dom ~> cod
             op' = Lam opTy x0 (Lam (dom ~> cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f vx1)))
             arrTy = eAnn x'
@@ -182,13 +180,10 @@ optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map)
     | Arrow dom0 _ <- eAnn f
     , Arrow dom1 _ <- eAnn g
     , Arrow _ (Arrow _ cod) <- eAnn op = do
-        f' <- optA f
-        g' <- optA g
+        f' <- optA f; g' <- optA g
         opA <- optA op
-        xs' <- optA xs
-        ys' <- optA ys
-        x0 <- nextU "x" dom0
-        x1 <- nextU "y" dom1
+        xs' <- optA xs; ys' <- optA ys
+        x0 <- nextU "x" dom0; x1 <- nextU "y" dom1
         let vx0 = Var dom0 x0; vx1 = Var dom1 x1
             opTy = dom0 ~> dom1 ~> cod
             op' = Lam opTy x0 (Lam undefined x1 (EApp undefined (EApp undefined opA (EApp undefined f' vx0)) (EApp undefined g' vx1)))
@@ -218,8 +213,7 @@ optA (EApp t0 (EApp t1 (Builtin bt Fold) op) arr) = do
             | fTy@(Arrow dom0 (Arrow dom1 dom2)) <- eAnn f
             , Arrow _ (Arrow _ cod) <- eAnn op -> do
                 f' <- optA f; f'' <- rE f'
-                xs' <- optA xs
-                ys' <- optA ys
+                xs' <- optA xs; ys' <- optA ys
                 x0 <- nextU "x" cod; x1 <- nextU "y" dom0; x2 <- nextU "z" dom1
                 x0' <- nextU "x" dom0; x1' <- nextU "y" dom1
                 let vx0 = Var cod x0; vx1 = Var dom0 x1; vx2 = Var dom1 x2
