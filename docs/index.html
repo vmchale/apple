@@ -166,6 +166,70 @@
       margin: 0 0.8em 0.2em -1.6em;
       vertical-align: middle;
     }
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <script
   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"
@@ -204,11 +268,16 @@ Product</a></li>
 <li><a href="#successive-application"
 id="toc-successive-application">Successive Application</a></li>
 <li><a href="#rotate" id="toc-rotate">Rotate</a></li>
+<li><a href="#cycle" id="toc-cycle">Cycle</a></li>
+<li><a href="#transpose" id="toc-transpose">Transpose</a></li>
+<li><a href="#unfold" id="toc-unfold">Unfold</a></li>
+<li><a href="#dyadic-infix" id="toc-dyadic-infix">Dyadic Infix</a></li>
 <li><a href="#bind" id="toc-bind">Bind</a>
 <ul>
 <li><a href="#polymorphic-bind" id="toc-polymorphic-bind">Polymorphic
 Bind</a></li>
 </ul></li>
+<li><a href="#rank" id="toc-rank">Rank</a></li>
 <li><a href="#repl-functionality" id="toc-repl-functionality">REPL
 Functionality</a>
 <ul>
@@ -220,16 +289,17 @@ Functionality</a>
 <li><a href="#coronis" id="toc-coronis">Coronis</a></li>
 <li><a href="#matrix-dimensions" id="toc-matrix-dimensions">Matrix
 Dimensions</a></li>
+<li><a href="#identity-matrix" id="toc-identity-matrix">Identity
+Matrix</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#examples" id="toc-examples">Examples</a>
 <ul>
-<li><a href="#dot-product" id="toc-dot-product">Dot Product</a></li>
-<li><a href="#rising-factorial" id="toc-rising-factorial">Rising
-Factorial</a></li>
 <li><a href="#kullback-leibler-divergence"
 id="toc-kullback-leibler-divergence">Kullback-Leibler
 Divergence</a></li>
+<li><a href="#train-neural-network" id="toc-train-neural-network">Train
+Neural Network</a></li>
 <li><a href="#shoelace-theorem" id="toc-shoelace-theorem">Shoelace
 Theorem</a></li>
 <li><a href="#polynomials" id="toc-polynomials">Polynomials</a>
@@ -238,20 +308,14 @@ Theorem</a></li>
 </ul></li>
 <li><a href="#array" id="toc-array">Array</a>
 <ul>
+<li><a href="#matrix-vector-multiplication"
+id="toc-matrix-vector-multiplication">Matrix-Vector
+Multiplication</a></li>
 <li><a href="#filter" id="toc-filter">Filter</a></li>
 </ul></li>
-<li><a href="#functional-programming"
-id="toc-functional-programming">Functional Programming</a></li>
-<li><a href="#numerics" id="toc-numerics">Numerics</a>
-<ul>
-<li><a href="#arithmetic-geometric-mean"
-id="toc-arithmetic-geometric-mean">Arithmetic-Geometric Mean</a></li>
-<li><a href="#hypergeometric-function"
-id="toc-hypergeometric-function">Hypergeometric Function</a></li>
-</ul></li>
+<li><a href="#luhn-check" id="toc-luhn-check">Luhn Check</a></li>
 <li><a href="#geography" id="toc-geography">Geography</a>
 <ul>
-<li><a href="#mercator" id="toc-mercator">Mercator</a></li>
 <li><a href="#albers" id="toc-albers">Albers</a></li>
 </ul></li>
 <li><a href="#number-theory" id="toc-number-theory">Number Theory</a>
@@ -344,22 +408,15 @@ href="https://wiki.haskell.org/Currying">curried</a>.</p>
 5050</code></pre>
 <h2 id="array-literals">Array Literals</h2>
 <p>Array literals are delineated by <code>⟨</code>…<code>⟩</code>.</p>
-<pre><code> &gt; ⟨1,0::int⟩
-[1, 0]</code></pre>
-<p>For higher-dimensional arrays:</p>
-<pre><code> &gt; ⟨⟨0,1⟩,⟨1,0::int⟩⟩
+<pre><code> &gt; ⟨_1,0::int⟩
+[-1, 0]</code></pre>
+<pre><code> &gt; ⟨⟨0,1⟩,⟨_1,0::int⟩⟩
 [ [0, 1]
-, [1, 0] ]</code></pre>
+, [-1, 0] ]</code></pre>
 <h2 id="reverse">Reverse</h2>
 <p><code>~</code> reverses an array.</p>
 <pre><code> &gt; ~(irange 0 9 1)
-[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
- &gt; irange 9 0 _1
 [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]</code></pre>
-<p>Note that we can map over an array.</p>
-<pre><code> &gt; ~&#39;⟨⟨0,1⟩,⟨1,0::int⟩⟩
-[ [1, 0]
-, [0, 1] ]</code></pre>
 <p>Reverse applied to a higher-dimensional array reverses elements
 (sub-arrays) along the first dimension.</p>
 <pre><code> &gt; ⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩
@@ -370,10 +427,13 @@ href="https://wiki.haskell.org/Currying">curried</a>.</p>
 [ [2, 4]
 , [1, 0]
 , [0, 1] ]</code></pre>
+<pre><code> &gt; ~&#39;⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩
+[ [1, 0]
+, [0, 1]
+, [4, 2] ]</code></pre>
 <h2 id="outer-product">Outer Product</h2>
 <p>The outer product <code>⊗</code> creates a table by applying some
 function.</p>
-<p>It has type</p>
 <pre><code> &gt; :ty \f.\x.\y. x f⊗ y
 (a → b → c) → Arr sh0 a → Arr sh1 b → Arr (sh0 ⧺ sh1) c</code></pre>
 <pre><code> &gt; (frange 0 9 10) (*)⊗ (frange 0 9 10)
@@ -406,6 +466,33 @@ function.</p>
 [2, 3, 4, 5, 6, 7, 8, 9, 0, 1]
  &gt; _2 ⊖ irange 0 9 1
 [8, 9, 0, 1, 2, 3, 4, 5, 6, 7]</code></pre>
+<h2 id="cycle">Cycle</h2>
+<p><code>cyc.</code> or <code>⊙</code> (infix) concatenates an array
+with itself a specified number of times.</p>
+<pre><code> &gt; cyc. ⟨0::int,1⟩ 4
+Vec 8 [0, 1, 0, 1, 0, 1, 0, 1]</code></pre>
+<pre><code> &gt; ⟨0::int,1⟩⊙4
+Vec 8 [0, 1, 0, 1, 0, 1, 0, 1]</code></pre>
+<h2 id="transpose">Transpose</h2>
+<p>⍉ or <code>|:</code></p>
+<pre><code> &gt; ⍉ ⟨⟨1.0,3⟩,⟨4,4⟩,⟨2,_2⟩⟩
+[ [1.0, 4.0, 2.0]
+, [3.0, 4.0, -2.0] ]
+ &gt; ⟨⟨1.0,3⟩,⟨4,4⟩,⟨2,_2⟩⟩
+[ [1.0, 3.0]
+, [4.0, 4.0]
+, [2.0, -2.0] ]</code></pre>
+<h2 id="unfold">Unfold</h2>
+<pre><code> &gt; gen. (1::int) (*2) 10
+Vec 10 [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]</code></pre>
+<h2 id="dyadic-infix">Dyadic Infix</h2>
+<p>Moving average:</p>
+<pre><code> &gt; [((+)/x)%ℝ(:x)]\` 7 (frange 0 9 10)
+[3.0, 4.0, 5.0, 6.0]</code></pre>
+<pre><code> &gt; [x]\`4 (frange 0 5 6)
+[ [0.0, 1.0, 2.0, 3.0]
+, [1.0, 2.0, 3.0, 4.0]
+, [2.0, 3.0, 4.0, 5.0] ]</code></pre>
 <h2 id="bind">Bind</h2>
 <pre><code> &gt; {i←2::int;i*i}
 4</code></pre>
@@ -428,6 +515,30 @@ the generated assembly:</p>
 90</code></pre>
 <pre><code> &gt; {sum ← [(+)/x]; sum (irange 0 9 1)+⌊(sum(frange 0 9 10))}
 1:42: could not unify &#39;float&#39; with &#39;int&#39; in expression &#39;𝒻 0 9 10&#39;</code></pre>
+<h2 id="rank">Rank</h2>
+<p>Rank `<code>{i,j∘[k,l]}</code> lifts a function to operate on i,
+j-cells, optionally specifying axes k,l. Iteration is bottom-up; by
+contrast map <code>'</code> cuts across the leading dimension.</p>
+<p>To make a scalar function apply to arrays, re-rank</p>
+<pre><code> &gt; :ty ((*)`{0,0})
+(IsNum c) :=&gt; Arr sh c → Arr sh c → Arr sh c</code></pre>
+<p>Sigmoid on an arbitrary-dimension array:</p>
+<pre><code>([1%(1+ℯ(_x))]`{0})</code></pre>
+<pre><code> &gt; ⟨⟨0,1,2⟩,⟨3,4,5::int⟩⟩
+Arr (2×3) [ [0, 1, 2]
+          , [3, 4, 5] ]
+ &gt; {sum←[(+)/x]; sum`{1} ⟨⟨0,1,2⟩,⟨3,4,5::int⟩⟩}
+Vec 3 [3, 5, 7]
+ &gt; {sum←[(+)/x]; sum`{1∘[2]} ⟨⟨0,1,2⟩,⟨3,4,5::int⟩⟩}
+Vec 2 [3, 12]</code></pre>
+<p>This may be confusing; Apple’s rank feature was poorly designed.</p>
+<p>Take 0-cells (scalars) from the first array and 1-cells from the
+second.</p>
+<pre><code> &gt; (⊲)`{0,1∘[2]} ⟨0::int,1⟩ ⟨⟨2,3⟩,⟨4,5⟩⟩
+Arr (2×3) [ [0, 2, 3]
+          , [1, 4, 5] ]</code></pre>
+<pre><code> &gt; :ty [♭`{3∘[2,3,4]} (x :: Arr (60000 × 28 × 28 × 1) float)]
+Arr (60000 × 28 × 28 × 1) float → Arr (60000 × 784) float</code></pre>
 <h2 id="repl-functionality">REPL Functionality</h2>
 <h3 id="benchmark">Benchmark</h3>
 <pre><code> &gt; :bench frange 0 999 1000
@@ -458,43 +569,65 @@ subscript digits separated by a comma.</p>
 <pre><code>(𝔯 0 1) :: M ₁₂,₁₂ float</code></pre>
 <p>is equivalent to</p>
 <pre><code>(𝔯 0 1) :: Arr (12 × 12) float</code></pre>
+<h3 id="identity-matrix">Identity Matrix</h3>
+<p>👁️ can be used in place of <code>eye.</code> for the identity
+matrix.</p>
 <h1 id="examples">Examples</h1>
-<h2 id="dot-product">Dot Product</h2>
-<pre><code>[(+)/ ((*)`(x::Vec n float) y)]</code></pre>
-<p><code>/</code> is fold and ` is zip. Note that we must provide a type
-annotation</p>
-<p>We can inspect the assembly:</p>
-<pre><code> &gt; :asm [(+)/ ((*)`(x::Vec n float) y)]
-
-    ldr x4, [x0, #0x8]
-    ldr d3, [x0, #0x10]
-    ldr d2, [x1, #0x10]
-    fmul d0, d3, d2
-    mov x2, #0x1
-    cmp x2, x4
-    b.GE apple_1
-apple_0:
-    add x3, x2, #0x2
-    ldr d3, [x0, x3, LSL #3]
-    add x3, x2, #0x2
-    ldr d2, [x1, x3, LSL #3]
-    fmadd d0, d3, d2, d0
-    add x2, x2, #0x1
-    cmp x2, x4
-    b.LT apple_0
-apple_1:
-    ret</code></pre>
-<h2 id="rising-factorial">Rising Factorial</h2>
-<p>The <a
-href="https://mathworld.wolfram.com/RisingFactorial.html">rising
-factorial</a> is defined as:</p>
-<p><span class="math display">\[ x^{(n)} = x(x+1)\cdots
-(x+n-1)\]</span></p>
-<p>In apple this is</p>
-<pre><code>[(*)/ₒ 1 (⍳ x (x+y-1) 1)]</code></pre>
-<p><code>/ₒ</code> is a ternary operator, fold with seed.</p>
 <h2 id="kullback-leibler-divergence">Kullback-Leibler Divergence</h2>
 <pre><code>λp.λq. (+)/([x*_.(x%y)]`p q)</code></pre>
+<h2 id="train-neural-network">Train Neural Network</h2>
+<pre><code>λwh.λwo.λbh.λbo.
+{ X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
+  Y ⟜ ⟨0,1,1,0⟩;
+  sigmoid ← [1%(1+ℯ(_x))];
+  sDdx ← [x*(1-x)];
+  sum ⇐ [(+)/x];
+  ho ⟜ sigmoid`{0} ([(+)`bh x]&#39;(X%.wh));
+  prediction ⟜ sigmoid&#39;((+bo)&#39;(ho%:wo));
+  l1E ← (-)`Y prediction;
+  l1Δ ⟜ (*)`(sDdx&#39;prediction) l1E;
+  he ← l1Δ (*)⊗ wo;
+  hΔ ⟜ (*)`{0,0} (sDdx`{0} ho) he;
+  wha ← (+)`{0,0} wh ((|:X)%.hΔ);
+  woa ← (+)`wo ((|:ho)%:l1Δ);
+  bha ← [(+)/ₒ x y]`{0,1} bh hΔ;
+  boa ← bo + sum l1Δ;
+  (wha,woa,bha,boa)
+}</code></pre>
+<p>This is equivalent to the <a
+href="https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d">Python</a>:</p>
+<div class="sourceCode" id="cb47"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid (x):</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">1</span><span class="op">/</span>(<span class="dv">1</span> <span class="op">+</span> np.exp(<span class="op">-</span>x))</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid_derivative(x):</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> x)</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> np.array([[<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">1</span>,<span class="dv">1</span>]])</span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>expected_output <span class="op">=</span> np.array([[<span class="dv">0</span>],[<span class="dv">1</span>],[<span class="dv">1</span>],[<span class="dv">0</span>]])</span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">=</span> np.dot(inputs,hidden_weights)</span>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">+=</span> hidden_bias</span>
+<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a>hidden_layer_output <span class="op">=</span> sigmoid(hidden_layer_activation)</span>
+<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">=</span> np.dot(hidden_layer_output,output_weights)</span>
+<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">+=</span> output_bias</span>
+<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a>predicted_output <span class="op">=</span> sigmoid(output_layer_activation)</span>
+<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a><span class="co">#Backpropagation</span></span>
+<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a>error <span class="op">=</span> expected_output <span class="op">-</span> predicted_output</span>
+<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a>d_predicted_output <span class="op">=</span> error <span class="op">*</span> sigmoid_derivative(predicted_output)</span>
+<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a>error_hidden_layer <span class="op">=</span> d_predicted_output.dot(output_weights.T)</span>
+<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a>d_hidden_layer <span class="op">=</span> error_hidden_layer <span class="op">*</span> sigmoid_derivative(hidden_layer_output)</span>
+<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a><span class="co">#Updating Weights and Biases</span></span>
+<span id="cb47-28"><a href="#cb47-28" aria-hidden="true" tabindex="-1"></a>output_weights <span class="op">+=</span> hidden_layer_output.T.dot(d_predicted_output)</span>
+<span id="cb47-29"><a href="#cb47-29" aria-hidden="true" tabindex="-1"></a>output_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_predicted_output,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb47-30"><a href="#cb47-30" aria-hidden="true" tabindex="-1"></a>hidden_weights <span class="op">+=</span> inputs.T.dot(d_hidden_layer)</span>
+<span id="cb47-31"><a href="#cb47-31" aria-hidden="true" tabindex="-1"></a>hidden_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_hidden_layer,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
 <h2 id="shoelace-theorem">Shoelace Theorem</h2>
 <pre><code>λas.λbs.
     { sum ⇐ [(+)/x]
@@ -508,58 +641,24 @@ factorial</a> is defined as:</p>
 <pre><code>[{.\`7 x]</code></pre>
 <p>To drop the first 6 elements:</p>
 <pre><code>[}.\`7 x]</code></pre>
+<h3 id="matrix-vector-multiplication">Matrix-Vector Multiplication</h3>
+<pre><code>λA.λx.
+{
+  dot ⇐ [(+)/((*)`x y)];
+  (dot x)`{1∘[2]} (A::Arr (i × j) float)
+}</code></pre>
 <h3 id="filter">Filter</h3>
 <pre><code>\p.\xs. (xs˙)&#39;p⩪xs</code></pre>
-<h2 id="functional-programming">Functional Programming</h2>
-<p><a
-href="https://hackage.haskell.org/package/base/docs/Prelude.html#v:any">any</a></p>
-<pre><code>\p.\xs. (∨)/ₒ #f (p&#39;xs)</code></pre>
-<h2 id="numerics">Numerics</h2>
-<h3 id="arithmetic-geometric-mean">Arithmetic-Geometric Mean</h3>
-<pre><code>λx.λy.([{a⟜x-&gt;1;g⟜x-&gt;2;((a+g)%2,√(a*g))}]^:6 (x,y))-&gt;1</code></pre>
-<p>Thence to compute the <a
-href="https://en.wikipedia.org/wiki/Elliptic_integral#Complete_elliptic_integral_of_the_first_kind">complete
-elliptic integral of the first kind</a>:</p>
-<pre><code>λk.
-{
-  agm ← λx.λy.([{a⟜x-&gt;1;g⟜x-&gt;2;((a+g)%2,√(a*g))}]^:6 (x,y))-&gt;1;
-  𝜋%(2*agm 1 (√(1-k^2)))
-}</code></pre>
-<p>To compute the logarithm, turn to Gauss:</p>
-<pre><code>λm.λx.
-{
-  amgm ← λx.λy.([{a⟜x-&gt;1;g⟜x-&gt;2;((a+g)%2,√(a*g))}]^:15 (x,y))-&gt;1;
-  -- m&gt;2
-  𝜋%(2*amgm 1 (0.5^(m-2)%x))-ℝ m*0.6931471805599453
-}</code></pre>
-<pre><code> &gt; :yank log math/log.🍏
- &gt; log 128 9
-2.1972245773362147
- &gt; _.9
-2.1972245773362196</code></pre>
-<h3 id="hypergeometric-function">Hypergeometric Function</h3>
-<p><span class="math display">\[
-{}_pF_q(a_1,\ldots,a_p;b_1,\ldots,b_q;x) = \sum_{n=0}^\infty
-\frac{(a_1)_n\ldots (a_p)_n}{(b_1)_n\ldots
-(b_q)_n}\frac{x^n}{n!}\]</span></p>
-<p>where <span class="math inline">\((x)_n\)</span> is the <a
-href="#rising-factorial">rising factorial</a> above.</p>
-<pre><code>λa.λb.λz.
-{
-  rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-  Σ ← λN.λa. (+)/ₒ 0 (a&#39;(⍳ 0 N 1)); Π ← [(*)/x];
-  Σ 30 (λn. {nn⟜ℝ n; (Π ((λa.rf a nn)&#39;a)%Π((λb. rf b nn)&#39;b))*(z^n%fact nn)})
-}</code></pre>
-<p>We can use the REPL to inspect the type:</p>
-<pre><code> &gt; :yank H math/hypergeometric.🍏
- &gt; :ty H
-Vec (i + 1) float → Vec (i + 1) float → float → float</code></pre>
+<h2 id="luhn-check"><a
+href="https://en.wikipedia.org/wiki/Luhn_algorithm">Luhn Check</a></h2>
+<pre><code>λxs.
+  { digitSum ← [?x&gt;10,.x-9,.x]
+  ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
+  ; 10-(t|10)=}.xs
+  }</code></pre>
+<p>Note zipping with <code>cyc. ⟨2,1::int⟩ 8</code> to get alternating
+2, 1, … factors.</p>
 <h2 id="geography">Geography</h2>
-<h3 id="mercator">Mercator</h3>
-<p><span class="math display">\[ x \mapsto \lambda - \lambda_0 \]</span>
-<span class="math display">\[ y \mapsto \frac{1}{2}
-\log{\left(\frac{1+\sin \phi}{1-\sin \phi}\right)} \]</span></p>
-<pre><code>\𝜆₀.\𝜑.\𝜆.{a⟜sin.𝜑;(𝜆-𝜆₀,(_.((1+a)%(1-a)))%2)}</code></pre>
 <h3 id="albers"><a
 href="https://mathworld.wolfram.com/AlbersEqual-AreaConicProjection.html">Albers</a></h3>
 <p>Let 𝜆₀, 𝜑₀ be the coördinates of the origin, 𝜑₁, 𝜑₂ standard
