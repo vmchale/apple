@@ -313,6 +313,48 @@ assembly:
 1:42: could not unify 'float' with 'int' in expression '𝒻 0 9 10'
 ```
 
+## Rank
+
+Rank ```{i,j∘[k,l]}`` lifts a function to operate on i, j-cells, optionally
+specifying axes k,l. Iteration is bottom-up; by contrast map `'` cuts across the leading
+dimension.
+
+To make a scalar function apply to arrays, re-rank
+
+```
+ > :ty ((*)`{0,0})
+(IsNum c) :=> Arr sh c → Arr sh c → Arr sh c
+```
+
+Sigmoid on an arbitrary-dimension array:
+
+```
+([1%(1+ℯ(_x))]`{0})
+```
+
+```
+ > ⟨⟨0,1,2⟩,⟨3,4,5::int⟩⟩
+Arr (2×3) [ [0, 1, 2]
+          , [3, 4, 5] ]
+ > {sum←[(+)/x]; sum`{1} ⟨⟨0,1,2⟩,⟨3,4,5::int⟩⟩}
+Vec 3 [3, 5, 7]
+ > {sum←[(+)/x]; sum`{1∘[2]} ⟨⟨0,1,2⟩,⟨3,4,5::int⟩⟩}
+Vec 2 [3, 12]
+```
+
+Take 0-cells (scalars) from the first array and 1-cells from the second,
+
+```
+ > (⊲)`{0,1∘[2]} ⟨0::int,1⟩ ⟨⟨2,3⟩,⟨4,5⟩⟩
+Arr (2×3) [ [0, 2, 3]
+          , [1, 4, 5] ]
+```
+
+```
+ > :ty [♭`{3∘[2,3,4]} (x :: Arr (60000 × 28 × 28 × 1) float)]
+Arr (60000 × 28 × 28 × 1) float → Arr (60000 × 784) float
+```
+
 ## REPL Functionality
 
 ### Benchmark
@@ -369,6 +411,10 @@ is equivalent to
 ```
 (𝔯 0 1) :: Arr (12 × 12) float
 ```
+
+### Identity Matrix
+
+👁️ can be used in place of `eye.` for the identity matrix.
 
 # Examples
 
