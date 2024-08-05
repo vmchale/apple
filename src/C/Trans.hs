@@ -101,9 +101,6 @@ isΠ P{}=True; isΠ _=False
 rel :: Builtin -> Maybe IRel
 rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Just ILeq; rel Gte=Just IGeq; rel _=Nothing
 
-mIF :: T a -> Maybe (T a)
-mIF (Arr _ F)=Just F; mIF (Arr _ I)=Just I; mIF _=Nothing
-
 mAA :: T a -> Maybe ((T a, Int64), (T a, Int64))
 mAA (Arrow t0 t1) = (,) <$> tRnk t0 <*> tRnk t1
 mAA _             = Nothing
@@ -688,7 +685,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
         ++sss
         ++xRd =: DP xR (ConstI rnk):slopPd =: DP slopP (ConstI slopRnk):di =: 0:m'p pinch loop
         ++[popS])
-aeval (EApp tO (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, xRnk) <- tRnk (eAnn xs)
+aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, xRnk) <- tRnk (eAnn xs)
                                                                     , (Arrow _ tCod) <- eAnn f
                                                                     , Just (tC, opRnk) <- tRnk tCod
                                                                     , Just aSz <- nSz tA
