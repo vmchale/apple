@@ -2,5 +2,5 @@
 {
   dot ⇐ [(+)/((*)`x y)];
   -- "iterate over second axis" (i.e. columns)
-  (dot x)`{1∘[2]} (A::Arr (i`Cons`j`Cons`Nil) float)
+  (dot x)`{1∘[2]} (A::Arr (i × j) float)
 }
