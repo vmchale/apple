@@ -144,6 +144,18 @@ optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ Map) f) x)
             op' = Lam opT x0 (Lam (dom ~> cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f' vx1)))
             f''' = Lam fTy x0' (EApp fCod f'' vx0')
         pure $ Id l0 $ FoldOfZip f''' op' [x']
+optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) f) xs)) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) g) ys))
+    | Arrow dom0 _ <- eAnn f
+    , Arrow dom1 _ <- eAnn g
+    , Arrow _ (Arrow _ cod) <- eAnn op = do
+        f' <- optA f; g' <- optA g
+        opA <- optA op; ho' <- optA ho
+        xs' <- optA xs; ys' <- optA ys
+        x <- nextU "x" dom0; y <- nextU "y" dom1
+        let vx = Var dom0 x; vy = Var dom1 y
+            opTy = dom0 ~> dom1 ~> cod
+            op' = Lam opTy x (Lam undefined y (EApp undefined (EApp undefined opA (EApp undefined f' vx)) (EApp undefined g' vy)))
+        pure (EApp l0 (EApp undefined (EApp undefined ho' op') xs') ys')
 optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) xs) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) g) ys))
     | Arrow dom _ <- eAnn g
     , Arrow xT (Arrow _ cod) <- eAnn op = do
