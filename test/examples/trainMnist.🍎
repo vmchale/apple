@@ -3,7 +3,7 @@
   x ⟜  ♭`{3∘[2,3,4]} (trainImages :: Arr (60000 × 28 × 28 × 1) float);
   targets ⟜ (λn.[?x=n,.1::float,.0]'irange 0 9 1)'trainLabels;
   l1init ← (𝔯 0 1) :: M ₇₈₄,₁₂₈ float;
-  l2init ← (𝔯 0 1); -- :: M ₁₂₈,₁₀ float;
+  l2init ← (𝔯 0 1); -- 128×10
   train ←
     λl1.λl2.
       {
@@ -13,12 +13,7 @@
           ; n ⟜ sum`{1} (a::M float)
           ; ⍉(([(%x)'y]`{0,1} n a))
           };
-        dsoftmax ← λxs.
-            { m ⟜ (⋉)/* _1 xs; a ⟜ [e:(x-m)]`{0} xs
-            ; sum ← [(+)/x]
-            ; n ⟜ sum`{1} (a::M float)
-            ; [x*(1-x)]`{0} (⍉([(%x)'y]`{0,1} n a))
-            };
+        dsoftmax ← λxs. [x*(1-x)]`{0} (softmax xs);
         dsigmoid ← ((λx.⸎x⟜ℯ(_x);x%(1+x)^2)`{0});
         -- fw
         xl1p ⟜ x%.l1;

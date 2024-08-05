@@ -456,6 +456,16 @@ To drop the first 6 elements:
 [}.\`7 x]
 ```
 
+### Matrix-Vector Multiplication
+
+```
+λA.λx.
+{
+  dot ⇐ [(+)/((*)`x y)];
+  (dot x)`{1∘[2]} (A::Arr (i × j) float)
+}
+```
+
 ### Filter
 
 ```
