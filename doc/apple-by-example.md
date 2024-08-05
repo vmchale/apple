@@ -342,7 +342,9 @@ Vec 3 [3, 5, 7]
 Vec 2 [3, 12]
 ```
 
-Take 0-cells (scalars) from the first array and 1-cells from the second,
+This may be confusing; Apple's rank feature was poorly designed.
+
+Take 0-cells (scalars) from the first array and 1-cells from the second.
 
 ```
  > (⊲)`{0,1∘[2]} ⟨0::int,1⟩ ⟨⟨2,3⟩,⟨4,5⟩⟩
@@ -469,6 +471,65 @@ In apple this is
 
 ```
 λp.λq. (+)/([x*_.(x%y)]`p q)
+```
+
+## Train Neural Network
+
+```
+λwh.λwo.λbh.λbo.
+{ X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
+  Y ⟜ ⟨0,1,1,0⟩;
+  sigmoid ← [1%(1+ℯ(_x))];
+  sDdx ← [x*(1-x)];
+  sum ⇐ [(+)/x];
+  ho ⟜ sigmoid`{0} ([(+)`bh x]'(X%.wh));
+  prediction ⟜ sigmoid'((+bo)'(ho%:wo));
+  l1E ← (-)`Y prediction;
+  l1Δ ⟜ (*)`(sDdx'prediction) l1E;
+  he ← l1Δ (*)⊗ wo;
+  hΔ ⟜ (*)`{0,0} (sDdx`{0} ho) he;
+  wha ← (+)`{0,0} wh ((|:X)%.hΔ);
+  woa ← (+)`wo ((|:ho)%:l1Δ);
+  bha ← [(+)/ₒ x y]`{0,1} bh hΔ;
+  boa ← bo + sum l1Δ;
+  (wha,woa,bha,boa)
+}
+```
+
+This is equivalent to the [Python](https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d):
+
+```python
+import numpy as np
+
+def sigmoid (x):
+    return 1/(1 + np.exp(-x))
+
+def sigmoid_derivative(x):
+    return x * (1 - x)
+
+inputs = np.array([[0,0],[0,1],[1,0],[1,1]])
+expected_output = np.array([[0],[1],[1],[0]])
+
+hidden_layer_activation = np.dot(inputs,hidden_weights)
+hidden_layer_activation += hidden_bias
+hidden_layer_output = sigmoid(hidden_layer_activation)
+
+output_layer_activation = np.dot(hidden_layer_output,output_weights)
+output_layer_activation += output_bias
+predicted_output = sigmoid(output_layer_activation)
+
+#Backpropagation
+error = expected_output - predicted_output
+d_predicted_output = error * sigmoid_derivative(predicted_output)
+
+error_hidden_layer = d_predicted_output.dot(output_weights.T)
+d_hidden_layer = error_hidden_layer * sigmoid_derivative(hidden_layer_output)
+
+#Updating Weights and Biases
+output_weights += hidden_layer_output.T.dot(d_predicted_output)
+output_bias += np.sum(d_predicted_output,axis=0,keepdims=True)
+hidden_weights += inputs.T.dot(d_hidden_layer)
+hidden_bias += np.sum(d_hidden_layer,axis=0,keepdims=True)
 ```
 
 ## Shoelace Theorem
