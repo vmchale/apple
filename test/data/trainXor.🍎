@@ -16,7 +16,7 @@
   hΔ ⟜ (*)`{0,0} (sDdx`{0} ho) he; -- 4x2
   wha ← (+)`{0,0} wh ((|:X)%.hΔ);
   woa ← (+)`wo ((|:ho)%:l1Δ);
-  bha ← sum'((<|)`{0,1} bh hΔ);
+  bha ← [(+)/ₒ x y]`{0,1} bh hΔ;
   boa ← bo + sum l1Δ;
   (wha,woa,bha,boa)
 }
