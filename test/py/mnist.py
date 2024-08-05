@@ -44,7 +44,7 @@ errorjit=apple.jit('''
     { m ⟜ (⋉)/* _1 xs; a ⟜ [e:(x-m)]`{0} xs
     ; sum ← [(+)/x]
     ; n ⟜ sum`{1} (a::M float)
-    ; ⍉([x*(1-x)]`{0} ([(%x)'y]`{0,1} n a))
+    ; [x*(1-x)]`{0} (⍉([(%x)'y]`{0,1} n a))
     };
   (*)`{0,0} ({n⟜ℝ(𝓉out); [2*x%n]`{0} ((-)`{0,0} out targets)}) (dsoftmax xl2p)
 }
