@@ -46,7 +46,7 @@ errorjit=apple.jit('''
     ; n ⟜ sum`{1} (a::M float)
     ; [x*(1-x)]`{0} (⍉([(%x)'y]`{0,1} n a))
     };
-  (*)`{0,0} ({n⟜ℝ(𝓉out); [2*x%n]`{0} ((-)`{0,0} out targets)}) (dsoftmax xl2p)
+  (*)`{0,0} ({n⟜2%(ℝ(𝓉out)); [x*n]`{0} ((-)`{0,0} out targets)}) (dsoftmax xl2p)
 }
 ''')
 u_l2jit=apple.jit('[(|:(x::M float))%.y]')
