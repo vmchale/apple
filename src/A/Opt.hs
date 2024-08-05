@@ -144,6 +144,28 @@ optA (EApp l0 (EApp _ (Builtin _ Fold) op) (EApp _ (EApp _ (Builtin _ Map) f) x)
             op' = Lam opT x0 (Lam (dom ~> cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f' vx1)))
             f''' = Lam fTy x0' (EApp fCod f'' vx0')
         pure $ Id l0 $ FoldOfZip f''' op' [x']
+optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) xs) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) g) ys))
+    | Arrow dom _ <- eAnn g
+    , Arrow xT (Arrow _ cod) <- eAnn op = do
+        g' <- optA g
+        opA <- optA op; ho' <- optA ho
+        xs' <- optA xs; ys' <- optA ys
+        x <- nextU "x" xT; y <- nextU "y" dom
+        let vx = Var xT x; vy = Var dom y
+            opTy = xT ~> dom ~> cod
+            op' = Lam opTy x (Lam undefined y (EApp undefined (EApp undefined opA vx) (EApp undefined g' vy)))
+        pure (EApp l0 (EApp undefined (EApp undefined ho' op') xs') ys')
+optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) f) xs)) ys)
+    | Arrow dom _ <- eAnn f
+    , Arrow _ (Arrow yT cod) <- eAnn op = do
+        f' <- optA f
+        opA <- optA op; ho' <- optA ho
+        xs' <- optA xs; ys' <- optA ys
+        x <- nextU "x" dom; y <- nextU "y" yT
+        let vx = Var dom x; vy = Var yT y
+            opTy = dom ~> yT ~> cod
+            op' = Lam opTy x (Lam undefined y (EApp undefined (EApp undefined opA (EApp undefined f' vx)) vy))
+        pure (EApp l0 (EApp undefined (EApp undefined ho' op') xs') ys')
 optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map) f) xs)) (EApp _ (EApp _ (Builtin _ Map) g) ys))
     | Arrow dom0 _ <- eAnn f
     , Arrow dom1 _ <- eAnn g
@@ -153,10 +175,9 @@ optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map)
         opA <- optA op
         xs' <- optA xs
         ys' <- optA ys
-        x0 <- nextU "x" cod
-        x1 <- nextU "y" dom0
-        let vx0 = Var dom0 x0
-            vx1 = Var dom1 x1
+        x0 <- nextU "x" dom0
+        x1 <- nextU "y" dom1
+        let vx0 = Var dom0 x0; vx1 = Var dom1 x1
             opTy = dom0 ~> dom1 ~> cod
             op' = Lam opTy x0 (Lam undefined x1 (EApp undefined (EApp undefined opA (EApp undefined f' vx0)) (EApp undefined g' vx1)))
         pure (EApp undefined (EApp undefined (EApp undefined (Builtin undefined Zip) op') xs') ys')
