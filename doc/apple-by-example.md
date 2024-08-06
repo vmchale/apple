@@ -516,7 +516,7 @@ hidden_bias += np.sum(d_hidden_layer,axis=0,keepdims=True)
 
 If a polygon has vertices at $x_n$, $y_n$, then its area is given by
 
-$$A=\frac{1}{2}\Biggl|(x_1y_2+x_2y_3+\cdots+x_ny_1)-(y_1x_2+y_2x_3+\cdots+y_nx_1)\Biggr|$$.
+$$A=\frac{1}{2}\Biggl|(x_1y_2+x_2y_3+\cdots+x_ny_1)-(y_1x_2+y_2x_3+\cdots+y_nx_1)\Biggr|$$
 
 ```
 λxs.λys.
