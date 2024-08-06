@@ -218,14 +218,13 @@ langHelp = liftIO $ putStr $ concat
     , lOption "`" "zip" "`{i,j∘[k,l]}" "rank"
     , lOption "𝒻" "range (real)" "𝜋" "pi"
     , lOption "_" "negate" ":" "size"
-    , lOption "𝓉" "dimension" "}.?" "last"
+    , lOption "𝓉" "dimension" "{x⟜y;z}" "no inline"
     , lOption "->n" "select" "**" "power"
-    , lOption "re:" "repeat" "}." "typesafe last"
+    , lOption "re:" "repeat" "}." "last"
     , lOption "⊲" "cons" "⊳" "snoc"
     , lOption "^:" "iterate" "%." "matmul"
     , lOption "⊗" "outer product" "⍉, |:" "transpose"
-    , lOption "{.?" "head" "{." "typesafe head"
-    , lOption "}.?" "last" "}:" "typesafe init"
+    , lOption "{." "head" "}:" "typesafe init"
     , lOption "⟨z,w⟩" "array literal" "?p,.e1,.e2" "conditional"
     , lOption "/*" "fold all" "ℝ" "i->f conversion"
     , lOption "⧺" "cat" "{:" "typesafe tail"
@@ -240,7 +239,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "♭" "flatten" "♮" "add dimension"
     , lOption "⩪" "indices of" "§, #." "filter"
     , lOption "👁️" "identity m" "(i × j)" "dimensions"
-    , lOption "gen." "generate" "{x⟜y;z}" "no inline"
+    , lOption "gen." "generate" "}:?, {:?" "init, tail"
     ]
 
 lOption op0 desc0 op1 desc1 =
