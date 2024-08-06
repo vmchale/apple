@@ -22,6 +22,14 @@ extra-source-files:
     test/harness/*.c
     math/*.🍎
     math/*.🍏
+    Makefile
+    mk/os.mk
+    pyc/Makefile
+    pyc/*.c
+    Rc/Makefile
+    Rc/*.c
+    c/ffi.c
+    R/apple.R
 
 extra-doc-files:
     README.md
