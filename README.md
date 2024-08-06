@@ -2,6 +2,8 @@
 
 Many cases are not implemented. This is provided as an artefact.
 
+See [Apple by Example](https://vmchale.github.io/apple/) for a demonstration of capabilities.
+
 The compiler will bail out with arcane error messages rather than
 produce an incorrect result, except that the Python/R extension modules do not
 enforce type safety and thus may mysteriously segfault or produce unpredictable corrupt results.
