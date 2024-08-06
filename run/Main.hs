@@ -234,7 +234,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "/ₒ" "fold with seed" "Λₒ" "scan with seed"
     , lOption "{x←y;z}" "let...in" "⊙" "cycle"
     , lOption "˙" "at" "|" "rem"
-    , lOption "@." "index of" "di." "diagonal"
+    , lOption "@." "index of" "/." "idiv"
     , lOption "%:" "vector mul" "odd." "parity"
     , lOption "~" "reverse" "¬,⊻,∧,∨" "logical"
     , lOption "♭" "flatten" "♮" "add dimension"
