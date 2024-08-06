@@ -966,25 +966,25 @@ aeval (EApp ty (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX (Arrow 
     (step, pinches) <- aS op [(tX, AElem aPX 1 (Tmp i) lX), (tY, AElem aPY 1 (Tmp i) lY)] tC (AElem t 1 (Tmp i) (Just a))
     let loop=for ty i 0 ILt (Tmp nR) step
     pure (Just a, plEX$plEY$nR =: ev (eAnn xs) (aPX,lX):aV++sas pinches [loop])
-aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arrow tY _)) <- eAnn op, isIF tX && isIF tY = do
+aeval (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arrow tY _)) <- eAnn op, Just xSz <- rSz tX, Just ySz <- rSz tY = do
     acc <- rtemp tX; x <- rtemp tY
     i <- newITemp; n <- newITemp
     plS <- eeval seed acc
-    (a,aV) <- v8 t (Tmp n)
+    (a,aV) <- vSz t (Tmp n) xSz
     (plE, (l, aP)) <- plA e
     ss <- writeRF op [acc, x] acc
-    let loopBody=wt (AElem t 1 (Tmp i) (Just a) 8) acc:mt (AElem aP 1 (Tmp i) l 8) x:ss
+    let loopBody=wt (AElem t 1 (Tmp i) (Just a) xSz) acc:mt (AElem aP 1 (Tmp i) l ySz) x:ss
         loop=for (eAnn e) i 0 ILt (Tmp n) loopBody
     pure (Just a, plE$plS++n =: (ev (eAnn e) (aP,l)+1):aV++[loop])
-aeval (EApp _ (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- eAnn op, isIF tAcc && isIF tX = do
+aeval (EApp _ (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- eAnn op, Just accSz <- rSz tAcc, Just xSz <- rSz tX = do
     acc <- rtemp tAcc; x <- rtemp tX
     i <- newITemp; n <- newITemp
-    (a,aV) <- v8 t (Tmp n)
+    (a,aV) <- vSz t (Tmp n) accSz
     (plE, (l, aP)) <- plA xs
     ss <- writeRF op [acc, x] acc
-    let loopBody=wt (AElem t 1 (Tmp i-1) (Just a) 8) acc:mt (AElem aP 1 (Tmp i) l 8) x:ss
+    let loopBody=wt (AElem t 1 (Tmp i-1) (Just a) accSz) acc:mt (AElem aP 1 (Tmp i) l xSz) x:ss
         loop=for1 (eAnn xs) i 1 ILeq (Tmp n) loopBody
-    pure (Just a, plE$n =: ev (eAnn xs) (aP,l):aV++mt (AElem aP 1 0 l 8) acc:[loop])
+    pure (Just a, plE$n =: ev (eAnn xs) (aP,l):aV++mt (AElem aP 1 0 l xSz) acc:[loop])
     -- TODO: array case
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just (ot, oSz) <- aRr oTy, Just xSz <- aB (eAnn xs) = do
     szR <- newITemp; sz'R <- newITemp; i <- newITemp
