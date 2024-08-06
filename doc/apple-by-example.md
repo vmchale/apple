@@ -602,8 +602,8 @@ In Apple we can generate the first `N` coefficients alongside the offsets with:
   ; ppts ⟜ {: pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
-  ; A ← ((sum ((*)`((%)`dxs dts) dtss))%2 + (sum ((*)`𝜉 dts)))%T
-  ; C ← ((sum ((*)`((%)`dys dts) dtss))%2 + (sum ((*)`𝛿 dts)))%T
+  ; A ← (0.5*sum ((*)`((%)`dxs dts) dtss) + sum ((*)`𝜉 dts))%T
+  ; C ← (0.5*sum ((*)`((%)`dys dts) dtss) + sum ((*)`𝛿 dts))%T
   ; (coeffs'(irange 1 N 1),A,C)
   }
 ```

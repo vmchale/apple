@@ -6,10 +6,9 @@
   ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)
   ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λₒ 0 dts; T ⟜}. pts
   ; coeffs ← λn.
-    { n ⟜ ℝn; k ⟜ 2*n*𝜋
-    ; scaleRad ← [k*x%T]
-    ; cosDiffs ⟜ (-)\~([cos.(scaleRad x)]'pts)
-    ; sinDiffs ⟜ (-)\~([sin.(scaleRad x)]'pts)
+    { n ⟜ ℝn; k ⟜ 2*n*𝜋%T
+    ; cosDiffs ⟜ (-)\~([cos.(k*x)]'pts)
+    ; sinDiffs ⟜ (-)\~([sin.(k*x)]'pts)
     ; c ⟜ T%(2*n^2*𝜋^2)
     ; aₙ ← c*sum ((*)`dxss cosDiffs)
     ; bₙ ← c*sum ((*)`dxss sinDiffs)
@@ -21,7 +20,7 @@
   ; ppts ⟜ {: pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
-  ; A ← ((sum ((*)`((%)`dxs dts) dtss))%2 + (sum ((*)`𝜉 dts)))%T
-  ; C ← ((sum ((*)`((%)`dys dts) dtss))%2 + (sum ((*)`𝛿 dts)))%T
+  ; A ← (0.5*sum ((*)`((%)`dxs dts) dtss) + sum ((*)`𝜉 dts))%T
+  ; C ← (0.5*sum ((*)`((%)`dys dts) dtss) + sum ((*)`𝛿 dts))%T
   ; (coeffs'(irange 1 N 1),A,C)
   }
