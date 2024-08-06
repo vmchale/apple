@@ -353,6 +353,13 @@ Arr (2×3) [ [0, 2, 3]
 ```
 
 ```
+ > ⍉ ((2 ⊖)`{1} ⟨⟨1,2⟩,⟨3,4⟩,⟨5,6.0⟩⟩)
+Arr (3×2) [ [5.0, 6.0]
+          , [1.0, 2.0]
+          , [3.0, 4.0] ]
+```
+
+```
  > :ty [♭`{3∘[2,3,4]} (x :: Arr (60000 × 28 × 28 × 1) float)]
 Arr (60000 × 28 × 28 × 1) float → Arr (60000 × 784) float
 ```
@@ -419,53 +426,6 @@ is equivalent to
 👁️ can be used in place of `eye.` for the identity matrix.
 
 # Examples
-
-## Dot Product
-
-```
-[(+)/ ((*)`(x::Vec n float) y)]
-```
-
-`/` is fold and ` is zip. Note that we must provide a type annotation
-
-We can inspect the assembly:
-
-```
- > :asm [(+)/ ((*)`(x::Vec n float) y)]
-
-    ldr x4, [x0, #0x8]
-    ldr d3, [x0, #0x10]
-    ldr d2, [x1, #0x10]
-    fmul d0, d3, d2
-    mov x2, #0x1
-    cmp x2, x4
-    b.GE apple_1
-apple_0:
-    add x3, x2, #0x2
-    ldr d3, [x0, x3, LSL #3]
-    add x3, x2, #0x2
-    ldr d2, [x1, x3, LSL #3]
-    fmadd d0, d3, d2, d0
-    add x2, x2, #0x1
-    cmp x2, x4
-    b.LT apple_0
-apple_1:
-    ret
-```
-
-## Rising Factorial
-
-The [rising factorial](https://mathworld.wolfram.com/RisingFactorial.html) is defined as:
-
-$$ x^{(n)} = x(x+1)\cdots (x+n-1)$$
-
-In apple this is
-
-```
-[(*)/ₒ 1 (⍳ x (x+y-1) 1)]
-```
-
-`/ₒ` is a ternary operator, fold with seed.
 
 ## Kullback-Leibler Divergence
 
@@ -579,14 +539,6 @@ To drop the first 6 elements:
 \p.\xs. (xs˙)'p⩪xs
 ```
 
-## Functional Programming
-
-[any](https://hackage.haskell.org/package/base/docs/Prelude.html#v:any)
-
-```
-\p.\xs. (∨)/ₒ #f (p'xs)
-```
-
 ## [Luhn Check](https://en.wikipedia.org/wiki/Luhn_algorithm)
 
 ```
@@ -597,76 +549,69 @@ To drop the first 6 elements:
   }
 ```
 
-## Numerics
+Note zipping with `cyc. ⟨2,1::int⟩ 8` to get alternating 2, 1, ... factors.
 
-### Arithmetic-Geometric Mean
+## Elliptic Fourier Series
 
-```
-λx.λy.([{a⟜x->1;g⟜x->2;((a+g)%2,√(a*g))}]^:6 (x,y))->1
-```
+From [Kuhl and Giardnia](http://www.sci.utah.edu/~gerig/CS7960-S2010/handouts/Kuhl-Giardina-CGIP1982.pdf), the coefficients are given by:
 
-Thence to compute the [complete elliptic integral of the first kind](https://en.wikipedia.org/wiki/Elliptic_integral#Complete_elliptic_integral_of_the_first_kind):
+$$ a_n = \frac{T}{2n^2\pi^2}\sum_{p=1}^K \frac{\Delta x_p}{\Delta t_p}\left(\cos\frac{2n\pi t_p}{T} - \cos\frac{2n\pi t_{p-1}}{T}\right) $$
 
-```
-λk.
-{
-  agm ← λx.λy.([{a⟜x->1;g⟜x->2;((a+g)%2,√(a*g))}]^:6 (x,y))->1;
-  𝜋%(2*agm 1 (√(1-k^2)))
-}
-```
+$$ b_n = \frac{T}{2n^2\pi^2}\sum_{p=1}^K \frac{\Delta x_p}{\Delta t_p}\left(\sin\frac{2n\pi t_p}{T} - \sin\frac{2n\pi t_{p-1}}{T}\right) $$
 
-To compute the logarithm, turn to Gauss:
+$$ c_n = \frac{T}{2n^2\pi^2}\sum_{p=1}^K \frac{\Delta y_p}{\Delta t_p}\left(\cos\frac{2n\pi t_p}{T} - \cos\frac{2n\pi t_{p-1}}{T}\right) $$
 
-```
-λm.λx.
-{
-  amgm ← λx.λy.([{a⟜x->1;g⟜x->2;((a+g)%2,√(a*g))}]^:15 (x,y))->1;
-  -- m>2
-  𝜋%(2*amgm 1 (0.5^(m-2)%x))-ℝ m*0.6931471805599453
-}
-```
+$$ d_n = \frac{T}{2n^2\pi^2}\sum_{p=1}^K \frac{\Delta y_p}{\Delta t_p}\left(\sin\frac{2n\pi t_p}{T} - \sin\frac{2n\pi t_{p-1}}{T}\right) $$
 
-```
- > :yank log math/log.🍏
- > log 128 9
-2.1972245773362147
- > _.9
-2.1972245773362196
-```
+The offsets are given by:
 
-### Hypergeometric Function
+$$ A_0 = \frac{1}{T} \sum_{p=1}^K \left[\frac{\Delta x_p}{2\Delta t_p} (t_p^2-t_{p-1}^2) + \xi_p (t_p-t_{p-1}^2)\right]$$
 
-$$ {}_pF_q(a_1,\ldots,a_p;b_1,\ldots,b_q;x) = \sum_{n=0}^\infty \frac{(a_1)_n\ldots (a_p)_n}{(b_1)_n\ldots (b_q)_n}\frac{x^n}{n!}$$
+$$ C_0 = \frac{1}{T} \sum_{p=1}^K \left[\frac{\Delta y_p}{2\Delta t_p} (t_p^2-t_{p-1}^2) + \delta_p (t_p-t_{p-1}^2)\right]$$
 
-where $(x)_n$ is the [rising factorial](#rising-factorial) above.
+where
+
+$$ \xi_p = \sum_j^{p-1} \Delta x_j - \frac{\Delta x_p}{\Delta t_p} \sum_j^{p-1}\Delta t_j $$
+
+$$ \delta_p = \sum_j^{p-1} \Delta y_j - \frac{\Delta y_p}{\Delta t_p} \sum_j^{p-1}\Delta t_j $$
+
+$$ \xi_0,~\delta_0 = 0 $$
+
+In Apple we can generate the first `N` coefficients alongside the offsets with:
 
 ```
-λa.λb.λz.
-{
-  rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-  Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N 1)); Π ⇐ [(*)/x];
-  Σ 30 (λn. {nn⟜ℝ n; (Π ((λa.rf a nn)'a)%Π((λb. rf b nn)'b))*(z^n%fact nn)})
-}
+λxs.λys.λN.
+  { sum ← [(+)/x]
+  ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
+  ; dxs ⟜ Δ xs; dys ⟜ Δ ys
+  ; dts ⟜ [√(x^2+y^2)]`dxs dys
+  ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)
+  ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λₒ 0 dts; T ⟜}. pts
+  ; coeffs ← λn.
+    { n ⟜ ℝn; k ⟜ 2*n*𝜋%T
+    ; cosDiffs ⟜ (-)\~([cos.(k*x)]'pts)
+    ; sinDiffs ⟜ (-)\~([sin.(k*x)]'pts)
+    ; c ⟜ T%(2*n^2*𝜋^2)
+    ; aₙ ← c*sum ((*)`dxss cosDiffs)
+    ; bₙ ← c*sum ((*)`dxss sinDiffs)
+    ; cₙ ← c*sum ((*)`dyss cosDiffs)
+    ; dₙ ← c*sum ((*)`dyss sinDiffs)
+    ; (aₙ,bₙ,cₙ,dₙ)
+    }
+  ; dtss ⟜ (-)\~((^2)'pts)
+  ; ppts ⟜ {: pts
+  ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)
+  ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
+  ; A ← ((sum ((*)`((%)`dxs dts) dtss))%2 + (sum ((*)`𝜉 dts)))%T
+  ; C ← ((sum ((*)`((%)`dys dts) dtss))%2 + (sum ((*)`𝛿 dts)))%T
+  ; (coeffs'(irange 1 N 1),A,C)
+  }
 ```
 
-We can use the REPL to inspect the type:
-
-```
- > :yank H math/hypergeometric.🍏
- > :ty H
-Vec (i + 1) float → Vec (i + 1) float → float → float
-```
+Note the array style, e.g. `(-)\~` to define successive differences on an
+array rather than definining pointfully.
 
 ## Geography
-
-### Mercator
-
-$$ x \mapsto \lambda - \lambda_0 $$
-$$ y \mapsto \frac{1}{2} \log{\left(\frac{1+\sin \phi}{1-\sin \phi}\right)} $$
-
-```
-\𝜆₀.\𝜑.\𝜆.{a⟜sin.𝜑;(𝜆-𝜆₀,(_.((1+a)%(1-a)))%2)}
-```
 
 ### [Albers](https://mathworld.wolfram.com/AlbersEqual-AreaConicProjection.html)
 

@@ -314,6 +314,8 @@ Multiplication</a></li>
 <li><a href="#filter" id="toc-filter">Filter</a></li>
 </ul></li>
 <li><a href="#luhn-check" id="toc-luhn-check">Luhn Check</a></li>
+<li><a href="#elliptic-fourier-series"
+id="toc-elliptic-fourier-series">Elliptic Fourier Series</a></li>
 <li><a href="#geography" id="toc-geography">Geography</a>
 <ul>
 <li><a href="#albers" id="toc-albers">Albers</a></li>
@@ -662,6 +664,65 @@ href="https://en.wikipedia.org/wiki/Luhn_algorithm">Luhn Check</a></h2>
   }</code></pre>
 <p>Note zipping with <code>cyc. ⟨2,1::int⟩ 8</code> to get alternating
 2, 1, … factors.</p>
+<h2 id="elliptic-fourier-series">Elliptic Fourier Series</h2>
+<p>From <a
+href="http://www.sci.utah.edu/~gerig/CS7960-S2010/handouts/Kuhl-Giardina-CGIP1982.pdf">Kuhl
+and Giardnia</a>, the coefficients are given by:</p>
+<p><span class="math display">\[ a_n = \frac{T}{2n^2\pi^2}\sum_{p=1}^K
+\frac{\Delta x_p}{\Delta t_p}\left(\cos\frac{2n\pi t_p}{T} -
+\cos\frac{2n\pi t_{p-1}}{T}\right) \]</span></p>
+<p><span class="math display">\[ b_n = \frac{T}{2n^2\pi^2}\sum_{p=1}^K
+\frac{\Delta x_p}{\Delta t_p}\left(\sin\frac{2n\pi t_p}{T} -
+\sin\frac{2n\pi t_{p-1}}{T}\right) \]</span></p>
+<p><span class="math display">\[ c_n = \frac{T}{2n^2\pi^2}\sum_{p=1}^K
+\frac{\Delta y_p}{\Delta t_p}\left(\cos\frac{2n\pi t_p}{T} -
+\cos\frac{2n\pi t_{p-1}}{T}\right) \]</span></p>
+<p><span class="math display">\[ d_n = \frac{T}{2n^2\pi^2}\sum_{p=1}^K
+\frac{\Delta y_p}{\Delta t_p}\left(\sin\frac{2n\pi t_p}{T} -
+\sin\frac{2n\pi t_{p-1}}{T}\right) \]</span></p>
+<p>The offsets are given by:</p>
+<p><span class="math display">\[ A_0 = \frac{1}{T} \sum_{p=1}^K
+\left[\frac{\Delta x_p}{2\Delta t_p} (t_p^2-t_{p-1}^2) + \xi_p
+(t_p-t_{p-1}^2)\right]\]</span></p>
+<p><span class="math display">\[ C_0 = \frac{1}{T} \sum_{p=1}^K
+\left[\frac{\Delta y_p}{2\Delta t_p} (t_p^2-t_{p-1}^2) + \delta_p
+(t_p-t_{p-1}^2)\right]\]</span></p>
+<p>where</p>
+<p><span class="math display">\[ \xi_p = \sum_j^{p-1} \Delta x_j -
+\frac{\Delta x_p}{\Delta t_p} \sum_j^{p-1}\Delta t_j \]</span></p>
+<p><span class="math display">\[ \delta_p = \sum_j^{p-1} \Delta y_j -
+\frac{\Delta y_p}{\Delta t_p} \sum_j^{p-1}\Delta t_j \]</span></p>
+<p><span class="math display">\[ \xi_0,~\delta_0 = 0 \]</span></p>
+<p>In Apple we can generate the first <code>N</code> coefficients
+alongside the offsets with:</p>
+<pre><code>λxs.λys.λN.
+  { sum ← [(+)/x]
+  ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
+  ; dxs ⟜ Δ xs; dys ⟜ Δ ys
+  ; dts ⟜ [√(x^2+y^2)]`dxs dys
+  ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)
+  ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λₒ 0 dts; T ⟜}. pts
+  ; coeffs ← λn.
+    { n ⟜ ℝn; k ⟜ 2*n*𝜋%T
+    ; cosDiffs ⟜ (-)\~([cos.(k*x)]&#39;pts)
+    ; sinDiffs ⟜ (-)\~([sin.(k*x)]&#39;pts)
+    ; c ⟜ T%(2*n^2*𝜋^2)
+    ; aₙ ← c*sum ((*)`dxss cosDiffs)
+    ; bₙ ← c*sum ((*)`dxss sinDiffs)
+    ; cₙ ← c*sum ((*)`dyss cosDiffs)
+    ; dₙ ← c*sum ((*)`dyss sinDiffs)
+    ; (aₙ,bₙ,cₙ,dₙ)
+    }
+  ; dtss ⟜ (-)\~((^2)&#39;pts)
+  ; ppts ⟜ {: pts
+  ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)
+  ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
+  ; A ← ((sum ((*)`((%)`dxs dts) dtss))%2 + (sum ((*)`𝜉 dts)))%T
+  ; C ← ((sum ((*)`((%)`dys dts) dtss))%2 + (sum ((*)`𝛿 dts)))%T
+  ; (coeffs&#39;(irange 1 N 1),A,C)
+  }</code></pre>
+<p>Note the array style, e.g. <code>(-)\~</code> to define successive
+differences on an array rather than definining pointfully.</p>
 <h2 id="geography">Geography</h2>
 <h3 id="albers"><a
 href="https://mathworld.wolfram.com/AlbersEqual-AreaConicProjection.html">Albers</a></h3>
