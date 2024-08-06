@@ -1,6 +1,9 @@
 # apple
 
   * Display dimension information in REPL results
+  * Fix bugs
+  * Rotate (⊖), head, last more polymorphic (work on arrays).
+  * More cases in the mid-end
 
 ## 0.2.0.0
 
