@@ -52,12 +52,16 @@ Use `:ty` for more:
 a → Vec i a → Vec (i + 1) a
 ```
 
-## Editor Plugins
+## Editor Integration
 
 There is a [vim plugin](https://github.com/vmchale/apple/tree/canon/vim) and a
 [VSCode extension](https://marketplace.visualstudio.com/items?itemName=vmchale.apple).
 
 The file extension is `.🍎` or `.🍏`.
+
+## Source
+
+Source is archived on [Hackage](https://hackage.haskell.org/package/apple).
 
 # Capabilities
 
@@ -219,6 +223,13 @@ The outer product `⊗` creates a table by applying some function.
 [2, 3, 4, 5, 6, 7, 8, 9, 0, 1]
  > _2 ⊖ irange 0 9 1
 [8, 9, 0, 1, 2, 3, 4, 5, 6, 7]
+```
+
+```
+ > 2 ⊖ ⟨⟨1,2⟩,⟨3,4⟩,⟨5,6.0⟩⟩
+Arr (3×2) [ [5.0, 6.0]
+          , [1.0, 2.0]
+          , [3.0, 4.0] ]
 ```
 
 ## Cycle
