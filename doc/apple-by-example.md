@@ -246,6 +246,15 @@ Vec 8 [0, 1, 0, 1, 0, 1, 0, 1]
 Vec 8 [0, 1, 0, 1, 0, 1, 0, 1]
 ```
 
+## Repeat
+
+```
+ > re: 3 ⟨1.0,0⟩
+Arr (3×2) [ [1.0, 0.0]
+          , [1.0, 0.0]
+          , [1.0, 0.0] ]
+```
+
 ## Transpose
 
 ⍉ or `|:`
@@ -503,14 +512,20 @@ hidden_weights += inputs.T.dot(d_hidden_layer)
 hidden_bias += np.sum(d_hidden_layer,axis=0,keepdims=True)
 ```
 
-## Shoelace Theorem
+## [Shoelace Theorem](https://artofproblemsolving.com/wiki/index.php/Shoelace_Theorem)
+
+If a polygon has vertices at $x_n$, $y_n$, then its area is given by
+
+$$A=\frac{1}{2}\Biggl|(x_1y_2+x_2y_3+\cdots+x_ny_1)-(y_1x_2+y_2x_3+\cdots+y_nx_1)\Biggr|$$.
 
 ```
-λas.λbs.
+λxs.λys.
     { sum ⇐ [(+)/x]
-    ; 0.5*abs.(sum((*)`as (1⊖bs)) - sum((*)`(1⊖as) bs))
+    ; 0.5*abs.(sum((*)`xs (1⊖ys)) - sum((*)`(1⊖xs) ys))
     }
 ```
+
+Note the array style: `⊖`, ` (zip), and fold are enough to eschew pointful definitions.
 
 ## Polynomials
 
@@ -548,6 +563,12 @@ To drop the first 6 elements:
 
 ```
 \p.\xs. (xs˙)'p⩪xs
+```
+
+## [Argmax](https://numpy.org/doc/stable/reference/generated/numpy.argmax.html)
+
+```
+[{m⟜(⋉)/(x::Vec n float); (=m)@.x}]
 ```
 
 ## [Luhn Check](https://en.wikipedia.org/wiki/Luhn_algorithm)
