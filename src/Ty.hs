@@ -499,8 +499,7 @@ tyB _ ConsE = do
     pure (a ~> vV i a ~> vV (StaPlus () i (Ix()1)) a, mempty)
 tyB l Snoc = tyB l ConsE
 tyB _ A1 = do
-    a <- ftv "a"; i <- fti "i"
-    sh <- fsh "sh"
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
     pure (Arr (i `Cons` sh) a ~> I ~> Arr sh a, mempty)
 tyB _ IOf = do
     a <- ftv "a"; i <- fti "i"
@@ -509,26 +508,26 @@ tyB _ Di = do
     a <- ftv "a"; i <- fti "i"
     pure (Arr (i `Cons` i `Cons` Nil) a ~> vV i a, mempty)
 tyB _ LastM = do
-    a <- ftv "a"; i <- fti "i"
-    pure (vV i a ~> a, mempty)
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
+    pure (Arr (i `Cons` sh) a ~> Arr sh a, mempty)
 tyB _ Last = do
-    a <- ftv "a"; i <- fti "i"
-    pure (vV (StaPlus () i (Ix()1)) a ~> a, mempty)
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
+    pure (Arr (StaPlus () i (Ix()1) `Cons` sh) a ~> Arr sh a, mempty)
 tyB _ Head = do
-    a <- ftv "a"; i <- fti "i"
-    pure (vV (StaPlus () i (Ix()1)) a ~> a, mempty)
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
+    pure (Arr (StaPlus () i (Ix()1) `Cons` sh) a ~> Arr sh a, mempty)
 tyB _ Init = do
-    a <- ftv "a"; i <- fti "i"
-    pure (vV (StaPlus () i (Ix()1)) a ~> vV i a, mempty)
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
+    pure (Arr (StaPlus () i (Ix()1) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
 tyB _ InitM = do
-    a <- ftv "a"; i <- fti "i"; n <- ftie
-    pure (vV i a ~> vV n a, mempty)
+    a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
+    pure (Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
 tyB _ Tail = do
-    a <- ftv "a"; i <- fti "i"
-    pure (vV (StaPlus () i (Ix()1)) a ~> vV i a, mempty)
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
+    pure (Arr (StaPlus () i (Ix()1) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
 tyB _ TailM = do
-    a <- ftv "a"; i <- fti "i"; n <- ftie
-    pure (vV i a ~> vV n a, mempty)
+    a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
+    pure (Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
 tyB _ Rot = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
     pure (I ~> Arr (i `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
@@ -536,8 +535,8 @@ tyB _ Cyc = do
     sh <- fsh "sh"; a <- ftv "a"; i <- fti "i"; n <- ftie
     pure (Arr (i `Cons` sh) a ~> I ~> Arr (n `Cons` sh) a, mempty)
 tyB _ HeadM = do
-    a <- ftv "a"; i <- fti "i"
-    pure (vV i a ~> a, mempty)
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
+    pure (Arr (i `Cons` sh) a ~> Arr sh a, mempty)
 tyB _ Re = do
     a <- ftv "a"; n <- ftie
     pure (I ~> a ~> Arr (n `Cons` Nil) a, mempty)
