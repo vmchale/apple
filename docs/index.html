@@ -656,7 +656,7 @@ Theorem</a></h2>
 class="math inline">\(x_n\)</span>, <span
 class="math inline">\(y_n\)</span>, then its area is given by</p>
 <p><span
-class="math display">\[A=\frac{1}{2}\Biggl|(x_1y_2+x_2y_3+\cdots+x_ny_1)-(y_1x_2+y_2x_3+\cdots+y_nx_1)\Biggr|\]</span>.</p>
+class="math display">\[A=\frac{1}{2}\Biggl|(x_1y_2+x_2y_3+\cdots+x_ny_1)-(y_1x_2+y_2x_3+\cdots+y_nx_1)\Biggr|\]</span></p>
 <pre><code>λxs.λys.
     { sum ⇐ [(+)/x]
     ; 0.5*abs.(sum((*)`xs (1⊖ys)) - sum((*)`(1⊖xs) ys))
@@ -671,6 +671,12 @@ eschew pointful definitions.</p>
 <pre><code>[{.\`7 x]</code></pre>
 <p>To drop the first 6 elements:</p>
 <pre><code>[}.\`7 x]</code></pre>
+<p>Take the first 7 elements:</p>
+<pre><code> &gt; {. ([x] \`7 (irange 0 9 1))
+Vec 7 [0, 1, 2, 3, 4, 5, 6]</code></pre>
+<p>Take the last 7 elements:</p>
+<pre><code> &gt; }. ([x] \`7 (irange 0 9 1))
+Vec 7 [3, 4, 5, 6, 7, 8, 9]</code></pre>
 <h3 id="matrix-vector-multiplication">Matrix-Vector Multiplication</h3>
 <pre><code>λA.λx.
 {
