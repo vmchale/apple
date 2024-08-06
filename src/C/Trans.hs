@@ -435,6 +435,19 @@ aeval (EApp _ (Builtin _ AddDim) xs) t | (Arr sh ty) <- eAnn xs, Just sz <- nSz 
     pure (Just a,
             plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:rnk =: (Tmp xRnk+1):Ma () a t (Tmp rnk) (Tmp szR) sz:
            [Wr () (ADim t 0 (Just a)) 1, CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk), CpyE () (AElem t (Tmp rnk) 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
+aeval (EApp _ (Builtin _ Head) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
+    a <- nextArr t
+    (plX, (lX, xR)) <- plA xs
+    (dts, plDs) <- plDim xRnk (xR, lX)
+    szA <- newITemp
+    pure (Just a, plX$tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () a t 1 (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (ConstI$xRnk-1):[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR (ConstI xRnk) 0 lX sz) (Tmp szA) sz])
+aeval (EApp _ (Builtin _ Last) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
+    a <- nextArr t
+    (plX, (lX, xR)) <- plA xs
+    (dts, plDs) <- plDim xRnk (xR, lX)
+    let n=head dts
+    szA <- newITemp
+    pure (Just a, plX$plDs++PlProd () szA (Tmp<$>tail dts):Ma () a t 1 (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (ConstI$xRnk-1):[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR (ConstI xRnk) ((Tmp n-1)*Tmp szA) lX sz) (Tmp szA) sz])
 aeval (EApp _ (Builtin _ Flat) xs) t | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty = do
     (plX, (lX, xR)) <- plA xs
     xRnk <- newITemp; szR <- newITemp
