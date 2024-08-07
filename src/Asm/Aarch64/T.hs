@@ -244,7 +244,7 @@ ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) eN) = do
     (plEN, rN) <- plI eN
     let rDA=IReg rD; rSA=IReg rS
     l <- nextL; eL <- nextL
-    pure $ plED ++ plES ++ plEN [ZeroR () i, CmpRR () i rN, Bc () Geq eL, Tbz () rN 0 l, Ldr () t0 (R rSA), Str () t0 (R rDA), MovRC () i 1, AddRC () rSA rSA 8, AddRC () rDA rDA 8, Label () l, Ldp () t0 t1 (R rSA), Stp () t0 t1 (R rDA), AddRC () rSA rSA 16, AddRC () rDA rDA 16, AddRC () i i 2, CmpRR () i rN, Bc () Lt l, Label () eL]
+    pure $ plED ++ plES ++ plEN [ZeroR () i, CmpRR () i rN, Bc () Geq eL, Tbz () rN 0 l, Ldr () t0 (R rSA), Str () t0 (R rDA), MovRC () i 1, Bc () Geq eL, AddRC () rSA rSA 8, AddRC () rDA rDA 8, Label () l, Ldp () t0 t1 (R rSA), Stp () t0 t1 (R rDA), AddRC () rSA rSA 16, AddRC () rDA rDA 16, AddRC () i i 2, CmpRR () i rN, Bc () Lt l, Label () eL]
 ir (IR.Cpy1 (IR.AP tD (Just (IR.ConstI di)) _) (IR.AP tS (Just (IR.ConstI si)) _) eN) | Just du <- mu16 di, Just su <- mu16 si = do
     rD <- nextI; rS <- nextI; i <- nextR; t <- nextR
     (plEN, rN) <- plI eN
