@@ -30,6 +30,7 @@ data CSt = CSt { tempU       :: !Int
                , vars        :: IM.IntMap Temp -- track vars so that (Var x) can be replaced at the site
                , pvars       :: IM.IntMap BTemp
                , dvars       :: IM.IntMap FTemp
+               , d2vars      :: IM.IntMap F2Temp
                , avars       :: IM.IntMap (Maybe AL, Temp)
                , fvars       :: IM.IntMap (Label, [Arg], Either FTemp Temp)
                , _aa         :: AsmData
@@ -37,16 +38,16 @@ data CSt = CSt { tempU       :: !Int
                }
 
 nextI :: CM Int
-nextI = state (\(CSt tϵ ar as l v b d a f aas ts) -> (tϵ, CSt (tϵ+1) ar as l v b d a f aas ts))
+nextI = state (\(CSt tϵ ar as l v b d d2 a f aas ts) -> (tϵ, CSt (tϵ+1) ar as l v b d d2 a f aas ts))
 
 nextArr :: Temp -> CM AL
-nextArr r = state (\(CSt t a@(AL i) as l v b d aϵ f aas ts) -> (a, CSt t (AL$i+1) as l v b d aϵ f aas (AL.insert a r ts)))
+nextArr r = state (\(CSt t a@(AL i) as l v b d d2 aϵ f aas ts) -> (a, CSt t (AL$i+1) as l v b d d2 aϵ f aas (AL.insert a r ts)))
 
 nextAA :: CM Int
-nextAA = state (\(CSt t ar as l v b d a f aas ts) -> (as, CSt t ar (as+1) l v b d a f aas ts))
+nextAA = state (\(CSt t ar as l v b d d2 a f aas ts) -> (as, CSt t ar (as+1) l v b d d2 a f aas ts))
 
 neL :: CM Label
-neL = state (\(CSt t ar as l v b d a f aas ts) -> (l, CSt t ar as (l+1) v b d a f aas ts))
+neL = state (\(CSt t ar as l v b d d2 a f aas ts) -> (l, CSt t ar as (l+1) v b d d2 a f aas ts))
 
 nBT :: CM BTemp
 nBT = BTemp<$>nextI
@@ -57,23 +58,29 @@ newITemp = ITemp <$> nextI
 newFTemp :: CM FTemp
 newFTemp = FTemp <$> nextI
 
+newF2Temp :: CM F2Temp
+newF2Temp = F2Temp <$> nextI
+
 addAA :: Int -> [Word64] -> CSt -> CSt
-addAA i aa (CSt t ar as l v b d a f aas ts) = CSt t ar as l v b d a f (IM.insert i aa aas) ts
+addAA i aa (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts
 
 addVar :: Nm a -> Temp -> CSt -> CSt
-addVar n r (CSt t ar as l v b d a f aas ts) = CSt t ar as l (insert n r v) b d a f aas ts
+addVar n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l (insert n r v) b d d2 a f aas ts
 
 addD :: Nm a -> FTemp -> CSt -> CSt
-addD n r (CSt t ar as l v b d a f aas ts) = CSt t ar as l v b (insert n r d) a f aas ts
+addD n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b (insert n r d) d2 a f aas ts
+
+addD2 :: Nm a -> F2Temp -> CSt -> CSt
+addD2 n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d (insert n r d2) a f aas ts
 
 addB :: Nm a -> BTemp -> CSt -> CSt
-addB n r (CSt t ar as l v b d a f aas ts) = CSt t ar as l v (insert n r b) d a f aas ts
+addB n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v (insert n r b) d d2 a f aas ts
 
 addAVar :: Nm a -> (Maybe AL, Temp) -> CSt -> CSt
-addAVar n r (CSt t ar as l v b d a f aas ts) = CSt t ar as l v b d (insert n r a) f aas ts
+addAVar n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 (insert n r a) f aas ts
 
 addF :: Nm a -> (Label, [Arg], Either FTemp Temp) -> CSt -> CSt
-addF n f (CSt t ar as l v b d a fs aas ts) = CSt t ar as l v b d a (insert n f fs) aas ts
+addF n f (CSt t ar as l v b d d2 a fs aas ts) = CSt t ar as l v b d d2 a (insert n f fs) aas ts
 
 getT :: IM.IntMap b -> Nm a -> b
 getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " not assigned to a temp.")) n st
@@ -193,7 +200,7 @@ mIFs :: [E a] -> Maybe [Word64]
 mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
 
 writeC :: E (T ()) -> ([CS ()], LSt, AsmData, IM.IntMap Temp)
-writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
+writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
 
 writeCM :: E (T ()) -> CM [CS ()]
 writeCM eϵ = do
@@ -1182,6 +1189,10 @@ plC (ILit _ i) = pure (id, ConstI$fromIntegral i)
 plC (Var I x)  = do {st <- gets vars; pure (id, Tmp$getT st x)}
 plC e          = do {t <- newITemp; pl <- eval e t; pure ((pl++), Tmp t)}
 
+plD2 :: E (T ()) -> CM ([CS ()] -> [CS ()], F2Temp)
+plD2 (Var F x) = do {st <- gets d2vars; pure (id, getT st x)}
+plD2 e         = do {t <- newF2Temp; pl <- f2eval e t; pure ((pl++), t)}
+
 plD :: E (T ()) -> CM ([CS ()] -> [CS ()], F1E)
 plD (FLit _ x) = pure (id, ConstF x)
 plD (Var F x)  = do {st <- gets dvars; pure (id, FTmp$getT st x)}
@@ -1425,6 +1436,15 @@ cond p e0 e1 t | isIF (eAnn e0) = do
     pR <- nBT
     plPP <- peval p pR; plE0 <- eeval e0 t; plE1 <- eeval e1 t
     pure (Nothing, plPP ++ [If () (Is pR) plE0 plE1])
+
+f2eval :: E (T ()) -> F2Temp -> CM [CS ()]
+f2eval (LLet _ b e) t = do
+    ss <- llet b
+    (ss++) <$> f2eval e t
+f2eval (Var _ x) t = do {st <- gets d2vars; pure [MX2 () t (FTmp $ getT st x)]}
+f2eval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just fb <- mFop op = do
+    (pl0,e0R) <- plD2 e0; (pl1,e1R) <- plD2 e1
+    pure $ pl0 $ pl1 [MX2 () t (FBin fb (FTmp e0R) (FTmp e1R))]
 
 feval :: E (T ()) -> FTemp -> CM [CS ()]
 feval (LLet _ b e) t = do
