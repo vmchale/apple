@@ -1182,7 +1182,7 @@ plC (ILit _ i) = pure (id, ConstI$fromIntegral i)
 plC (Var I x)  = do {st <- gets vars; pure (id, Tmp$getT st x)}
 plC e          = do {t <- newITemp; pl <- eval e t; pure ((pl++), Tmp t)}
 
-plD :: E (T ()) -> CM ([CS ()] -> [CS ()], CFE)
+plD :: E (T ()) -> CM ([CS ()] -> [CS ()], F1E)
 plD (FLit _ x) = pure (id, ConstF x)
 plD (Var F x)  = do {st <- gets dvars; pure (id, FTmp$getT st x)}
 plD e          = do {t <- newFTemp; pl <- feval e t; pure ((pl++), FTmp t)}
@@ -1390,7 +1390,7 @@ mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IR
 mFun :: Builtin -> Maybe FUn
 mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
 
-mFEval :: E (T ()) -> Maybe (CM CFE)
+mFEval :: E (T ()) -> Maybe (CM F1E)
 mFEval (FLit _ d) = Just (pure $ ConstF d)
 mFEval (Var _ x) = Just $ do
     st <- gets dvars

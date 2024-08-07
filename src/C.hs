@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- first IR with for loops and array accesses, inspired by C
-module C ( Temp (..), FTemp (..), BTemp (..)
+module C ( Temp (..), FTemp (..), F2Temp (..), BTemp (..)
          , ArrAcc (..)
-         , CE (..), CFE (..)
+         , CE (..), CFE (..), F1E
          , PE (..)
          , CS (..)
          , (=:)
@@ -18,6 +19,7 @@ import           CF.AL
 import           Data.Copointed
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
+import           Data.Void         (Void)
 import           Data.Word         (Word64)
 import           Op
 import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, hardline, indent, lbrace, parens, rbrace, tupled, (<+>))
@@ -33,6 +35,8 @@ data BTemp = BTemp !Int | CBRet deriving Eq
 data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
 
+data F2Temp = F2Temp !Int
+
 instance Pretty BTemp where pretty (BTemp i) = "P" <> pretty i; pretty CBRet = "PRet"
 
 instance Pretty Temp where
@@ -45,6 +49,9 @@ instance Pretty Temp where
     pretty C4        = "CArg4"
     pretty C5        = "CArg5"
     pretty CRet      = "CRet"
+
+instance Pretty F2Temp where
+    pretty (F2Temp i) = "Y" <> pretty i
 
 instance Pretty FTemp where
     pretty (FTemp i) = "X" <> pretty i
@@ -84,7 +91,7 @@ bPrec AndB=3; bPrec OrB=2; bPrec XorB=6
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing; mPrec (BI p) = Just$bPrec p
 fprec FPlus=Just 6;fprec FMinus=Just 6;fprec FTimes=Just 7; fprec FDiv=Just 7; fprec FExp=Just 8; fprec FMax=Nothing; fprec FMin=Nothing
 
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor CFE
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor (CFE Double CE)
         | LA !Int -- assembler data
         | DP Temp CE -- pointer, rank
 
@@ -105,18 +112,20 @@ instance Show CE where show=show.pretty
 instance Num CE where
     (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
-data CFE = FAt ArrAcc | FBin FBin CFE CFE | FUn FUn CFE | FTmp FTemp | ConstF !Double | IE CE
+type F1E = CFE Double CE
 
-instance Num CFE where
+data CFE x e = FAt ArrAcc | FBin FBin (CFE x e) (CFE x e) | FUn FUn (CFE x e) | FTmp FTemp | ConstF !x | IE e
+
+instance Num (CFE Double e) where
     (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
 
-instance Fractional CFE where
+instance Fractional (CFE Double e) where
     (/) = FBin FDiv; fromRational=ConstF . fromRational
 
-instance Pretty CFE where pretty=ps 0
+instance (Pretty x, PS e, Pretty e) => Pretty (CFE x e) where pretty=ps 0
 
 data PE = IRel IRel CE CE
-        | FRel FRel CFE CFE
+        | FRel FRel (CFE Double CE) (CFE Double CE)
         | Boo BBin PE PE
         | BConst Bool
         | IUn IUn CE
@@ -135,7 +144,7 @@ instance Pretty PE where
     pretty (Boo op e0 e1)   = pretty e0 <+> pretty op <+> pretty e1
     pretty (BU op e)        = pretty op <> pretty e
 
-instance PS CFE where
+instance (Pretty x, Pretty e, PS e) => PS (CFE x e) where
     ps _ (FAt a)         = pretty a
     ps _ (FUn f e)       = parens (pretty f <+> pretty e)
     ps d (FBin op x0 x1) | Just d' <- fprec op = parensp (d>d') (ps (d'+1) x0 <+> pretty op <+> ps (d'+1) x1)
@@ -144,7 +153,7 @@ instance PS CFE where
     ps _ (ConstF x)      = pretty x
     ps d (IE e)          = parensp (d>10) ("itof" <+> ps 11 e)
 
-instance Show CFE where show=show.pretty
+instance (Pretty x, PS e, Pretty e) => Show (CFE x e) where show=show.pretty
 
 infix 9 =:
 
@@ -154,10 +163,12 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | For1 { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
           | While { lann :: a, iVar :: Temp, loopCond :: IRel, eDone :: CE, body :: [CS a] }
           | MT { lann :: a, tDest :: Temp, tSrc :: CE }
-          | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE }
+          | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE Double CE }
+          | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: CFE (Double, Double) Void }
           | MB { lann :: a, bDest :: BTemp, pSrc :: PE }
           | Wr { lann :: a, addr :: ArrAcc, wrE :: CE }
-          | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE }
+          | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE Double CE }
+          | Wr2F { lann :: a, addr :: ArrAcc, wrF2 :: CFE (Double, Double) Void }
           | WrP { lann :: a, addr :: ArrAcc , wrB :: PE }
           | Ma { lann :: a, label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
           | Free Temp
@@ -170,7 +181,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | Sa { lann :: a, temp :: Temp, allocBytes :: CE }
           | Pop { lann :: a, aBytes :: CE }
           | Cmov { lann :: a, scond :: PE, tdest :: Temp, src :: CE }
-          | Fcmov { lann :: a, scond :: PE, fdest :: FTemp, fsrc :: CFE }
+          | Fcmov { lann :: a, scond :: PE, fdest :: FTemp, fsrc :: CFE Double CE }
           -- TODO: Fcneg?
           | Cset { lann :: a, scond :: PE, bdest :: BTemp }
           | SZ { lann :: a, szDest :: Temp, arr :: Temp, rank :: CE, mLabel :: Maybe AL }

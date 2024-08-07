@@ -147,7 +147,7 @@ irp (C.BConst True)    = IR.ConstI 1
 irp (C.BConst False)   = IR.ConstI 0
 irp (C.Boo op e0 e1)   = IB (BI op) (irp e0) (irp e1)
 
-irX :: CFE -> FExp
+irX :: F1E -> FExp
 irX (C.ConstF x)    = IR.ConstF x
 irX (FTmp t)        = FReg (fx t)
 irX (C.FAt a)       = IR.FAt (irAt a)
