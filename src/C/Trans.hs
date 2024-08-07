@@ -503,10 +503,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, Just 
     (a,aV) <- vSz t (Tmp szR) sz
     (step, pinches) <- aS op [(tD, AElem xR 1 (Tmp iR) l)] tC (AElem t 1 (Tmp iR) (Just a))
     let loop=for (eAnn e) iR 0 ILt (Tmp szR) step
-    pure (Just a,
-        plE$
-        szR=:ev (eAnn e) (xR,l):aV
-        ++sas pinches [loop])
+    pure (Just a, plE$szR=:ev (eAnn e) (xR,l):aV++sas pinches [loop])
 aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t | tXs@(Arr (_ `Cons` Nil) tX) <- eAnn xs, Just sz <- nSz tX = do
     a <- nextArr t
     szR <- newITemp; nR <- newITemp; b <- nBT
