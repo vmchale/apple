@@ -152,11 +152,15 @@ asm ix st (StrD _ d (BI rb ri s):asms) = [0xfc, 0x1 `shiftL` 5 .|. be ri, 0x3 `s
 asm ix st (StrD _ d (R rb):asms) = [0b11111101, 0x0, be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
 asm ix st (Stp x r0 r1 (R rb):asms) = asm ix st (Stp x r0 r1 (RP rb 0):asms)
 asm ix st (Stp _ r0 r1 (RP rb u):asms) | (u', 0) <- u `quotRem` 8, u <= 504 = [0xa9, fromIntegral (u' `shiftR` 1), fromIntegral (0x1 .&. u') `shiftL` 7 .|. be r1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb r0]:asm (ix+4) st asms
+asm ix st (Stp2 _ q0 q1 (RP rb u):asms) | (u', 0) <- u `quotRem` 16, u <= 1008 = [0b10101101, fromIntegral (u' `shiftR` 1), fromIntegral (0x1 .&. u') `shiftL` 7 .|. be q1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q0]:asm (ix+4) st asms
+asm ix st (Stp2 x q0 q1 (R rb):asms) = asm ix st (Stp2 x q0 q1 (RP rb 0):asms)
 asm ix st (StpD _ d0 d1 (R rb):asms) = [0b01101101, 0, be d1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d0]:asm (ix+4) st asms
 asm ix st (LdrD x d (R rb):asms) = asm ix st (LdrD x d (RP rb 0):asms)
-asm ix st (LdrD _ d (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 8 = [0b11111101, 0x1 `shiftL` 6 .|. fromIntegral (uϵ `shiftR` 6), fromIntegral (0b111111 .&. uϵ) `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
+asm ix st (LdrD _ d (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 8, u < 32760 = [0b11111101, 0x1 `shiftL` 6 .|. fromIntegral (uϵ `shiftR` 6), fromIntegral (0b111111 .&. uϵ) `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
 asm ix st (LdrD _ d (BI rb ri s):asms) = [0b11111100, 0x3 `shiftL` 5 .|. be ri, 0x3 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0x2 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
 asm ix st (LdpD _ d0 d1 (R rb):asms) = [0x6d, 1 `shiftL` 6, be d1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d0]:asm (ix+4) st asms
+asm ix st (Ldp2 _ q0 q1 (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 16, u <= 1008 = [0b10101101, 0x1 `shiftL` 6 .|. fromIntegral (uϵ `shiftR` 1), fromIntegral (0x1 .&. uϵ) `shiftL` 7 .|. be q1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q0]:asm (ix+4) st asms
+asm ix st (Ldp2 x q0 q1 (R rb):asms) = asm ix st (Ldp2 x q0 q1 (RP rb 0):asms)
 asm ix st (CmpRR _ r0 r1:asms) = [0b11101011, be r1, be r0 `shiftR` 3, (0x7 .&. be r0) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
 asm ix st (CmpRC _ r u:asms) = [0b11110001, fromIntegral (u `shiftR` 6), (0b111111 .&. fromIntegral u) `shiftL` 2 .|. (be r `shiftR` 3), (0x7 .&. be r) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
 asm ix st (Scvtf _ d r:asms) = [0b10011110, 0b01100010, be r `shiftR` 3, lb r d]:asm (ix+4) st asms
