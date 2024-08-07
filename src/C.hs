@@ -91,7 +91,7 @@ bPrec AndB=3; bPrec OrB=2; bPrec XorB=6
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing; mPrec (BI p) = Just$bPrec p
 fprec FPlus=Just 6;fprec FMinus=Just 6;fprec FTimes=Just 7; fprec FDiv=Just 7; fprec FExp=Just 8; fprec FMax=Nothing; fprec FMin=Nothing
 
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor (CFE Double CE)
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor (CFE FTemp Double CE)
         | LA !Int -- assembler data
         | DP Temp CE -- pointer, rank
 
@@ -112,20 +112,20 @@ instance Show CE where show=show.pretty
 instance Num CE where
     (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
-type F1E = CFE Double CE
+type F1E = CFE FTemp Double CE
 
-data CFE x e = FAt ArrAcc | FBin FBin (CFE x e) (CFE x e) | FUn FUn (CFE x e) | FTmp FTemp | ConstF !x | IE e
+data CFE t x e = FAt ArrAcc | FBin FBin (CFE t x e) (CFE t x e) | FUn FUn (CFE t x e) | FTmp t | ConstF !x | IE e
 
-instance Num (CFE Double e) where
+instance Num (CFE t Double e) where
     (+) = FBin FPlus; (*) = FBin FTimes; (-) = FBin FMinus; fromInteger=ConstF . fromInteger
 
-instance Fractional (CFE Double e) where
+instance Fractional (CFE t Double e) where
     (/) = FBin FDiv; fromRational=ConstF . fromRational
 
-instance (Pretty x, PS e, Pretty e) => Pretty (CFE x e) where pretty=ps 0
+instance (Pretty x, PS e, Pretty t, Pretty e) => Pretty (CFE t x e) where pretty=ps 0
 
 data PE = IRel IRel CE CE
-        | FRel FRel (CFE Double CE) (CFE Double CE)
+        | FRel FRel (CFE FTemp Double CE) (CFE FTemp Double CE)
         | Boo BBin PE PE
         | BConst Bool
         | IUn IUn CE
@@ -144,7 +144,7 @@ instance Pretty PE where
     pretty (Boo op e0 e1)   = pretty e0 <+> pretty op <+> pretty e1
     pretty (BU op e)        = pretty op <> pretty e
 
-instance (Pretty x, Pretty e, PS e) => PS (CFE x e) where
+instance (Pretty x, Pretty e, Pretty t, PS e) => PS (CFE t x e) where
     ps _ (FAt a)         = pretty a
     ps _ (FUn f e)       = parens (pretty f <+> pretty e)
     ps d (FBin op x0 x1) | Just d' <- fprec op = parensp (d>d') (ps (d'+1) x0 <+> pretty op <+> ps (d'+1) x1)
@@ -153,7 +153,7 @@ instance (Pretty x, Pretty e, PS e) => PS (CFE x e) where
     ps _ (ConstF x)      = pretty x
     ps d (IE e)          = parensp (d>10) ("itof" <+> ps 11 e)
 
-instance (Pretty x, PS e, Pretty e) => Show (CFE x e) where show=show.pretty
+instance (Pretty x, PS e, Pretty t, Pretty e) => Show (CFE t x e) where show=show.pretty
 
 infix 9 =:
 
@@ -163,12 +163,12 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | For1 { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
           | While { lann :: a, iVar :: Temp, loopCond :: IRel, eDone :: CE, body :: [CS a] }
           | MT { lann :: a, tDest :: Temp, tSrc :: CE }
-          | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE Double CE }
-          | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: CFE (Double, Double) Void }
+          | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE FTemp Double CE }
+          | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: CFE F2Temp (Double, Double) Void }
           | MB { lann :: a, bDest :: BTemp, pSrc :: PE }
           | Wr { lann :: a, addr :: ArrAcc, wrE :: CE }
-          | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE Double CE }
-          | Wr2F { lann :: a, addr :: ArrAcc, wrF2 :: CFE (Double, Double) Void }
+          | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE FTemp Double CE }
+          | Wr2F { lann :: a, addr :: ArrAcc, wrF2 :: CFE F2Temp (Double, Double) Void }
           | WrP { lann :: a, addr :: ArrAcc , wrB :: PE }
           | Ma { lann :: a, label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
           | Free Temp
@@ -181,7 +181,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | Sa { lann :: a, temp :: Temp, allocBytes :: CE }
           | Pop { lann :: a, aBytes :: CE }
           | Cmov { lann :: a, scond :: PE, tdest :: Temp, src :: CE }
-          | Fcmov { lann :: a, scond :: PE, fdest :: FTemp, fsrc :: CFE Double CE }
+          | Fcmov { lann :: a, scond :: PE, fdest :: FTemp, fsrc :: CFE FTemp Double CE }
           -- TODO: Fcneg?
           | Cset { lann :: a, scond :: PE, bdest :: BTemp }
           | SZ { lann :: a, szDest :: Temp, arr :: Temp, rank :: CE, mLabel :: Maybe AL }

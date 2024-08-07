@@ -180,7 +180,7 @@ uE (Bin _ e0 e1) = uE e0<>uE e1
 uE (CFloor e0)   = uF e0
 uE (DP _ e)      = uE e
 
-uF :: CFE Double CE -> IS.IntSet
+uF :: CFE FTemp x CE -> IS.IntSet
 uF ConstF{}       = IS.empty
 uF FTmp{}         = IS.empty
 uF (FAt a)        = uA a
