@@ -61,6 +61,9 @@ iop Op.ILt  = Lt
 nextR :: WM AbsReg
 nextR = IReg <$> nextI
 
+nextV :: WM F2Abs
+nextV = F2Reg <$> nextI
+
 nextF :: WM FAbsReg
 nextF = FReg <$> nextI
 
