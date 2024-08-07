@@ -13,11 +13,11 @@ import           Foreign.Storable           (peek, poke)
 import qualified IR
 import qualified Op
 
-plF :: IR.FExp -> WM ([X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ()], FAbsReg)
+plF :: IR.FExp -> WM ([X86 AbsReg FAbsReg X2Abs ()] -> [X86 AbsReg FAbsReg X2Abs ()], FAbsReg)
 plF (IR.FReg t) = pure (id, fabsReg t)
 plF e           = do {i <- nextI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
 
-plI :: IR.Exp -> WM ([X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ()], AbsReg)
+plI :: IR.Exp -> WM ([X86 AbsReg FAbsReg X2Abs ()] -> [X86 AbsReg FAbsReg X2Abs ()], AbsReg)
 plI (IR.Reg t) = pure (id, absReg t)
 plI e          = do {i <- nextI; pl <- evalE e (IR.ITemp i); pure ((pl++), IReg i)}
 
@@ -43,7 +43,7 @@ fabsReg IR.F5        = FArg5
 fabsReg IR.FRet      = FRet0
 fabsReg IR.FRet1     = FRet1
 
-irToX86 :: IR.WSt -> [IR.Stmt] -> (Int, [X86 AbsReg FAbsReg ()])
+irToX86 :: IR.WSt -> [IR.Stmt] -> (Int, [X86 AbsReg FAbsReg X2Abs ()])
 irToX86 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
 nextR :: WM AbsReg
@@ -76,7 +76,7 @@ nopPred Op.FNeq = Eqoq
 nopPred Op.FLt  = Nltus
 nopPred Op.FLeq = Nleus
 
-ir :: IR.Stmt -> WM [X86 AbsReg FAbsReg ()]
+ir :: IR.Stmt -> WM [X86 AbsReg FAbsReg X2Abs ()]
 ir (IR.MT t (IR.EAt (IR.AP m (Just (IR.ConstI i)) _))) | Just i8 <- mi8 i = pure [MovRA () (absReg t) (RC (absReg m) i8)]
 ir (IR.MT t (IR.EAt (IR.AP m Nothing _)))               = pure [MovRA () (absReg t) (R$absReg m)]
 ir (IR.MX t (IR.FAt (IR.AP m Nothing _ )))              = pure [MovqXA () (fabsReg t) (R (absReg m))]
@@ -315,7 +315,7 @@ mSse Op.FMin   = Just Vminsd
 mSse Op.FTimes = Just Vmulsd
 mSse Op.FExp   = Nothing
 
-feval :: IR.FExp -> IR.FTemp -> WM [X86 AbsReg FAbsReg ()] -- TODO: feval 0 (xor?)
+feval :: IR.FExp -> IR.FTemp -> WM [X86 AbsReg FAbsReg X2Abs ()] -- TODO: feval 0 (xor?)
 feval (IR.FB Op.FDiv (IR.FReg r0) (IR.FReg r1)) t   | t == r0 = pure [Divsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FTimes (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Mulsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FMinus (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Subsd () (fabsReg t) (fabsReg r1)]
@@ -376,7 +376,7 @@ feval (IR.FAt (IR.AP m (Just (IR.IB Op.IAsl e (IR.ConstI 3))) _)) rD = do
     pure $ plE ++ [MovqXA () (fabsReg rD) (RS (absReg m) Eight (IReg i))]
 feval e _                                           = error (show e)
 
-evalE :: IR.Exp -> IR.Temp -> WM [X86 AbsReg FAbsReg ()]
+evalE :: IR.Exp -> IR.Temp -> WM [X86 AbsReg FAbsReg X2Abs ()]
 evalE (IR.Reg r) rD                                  = pure [MovRR () (absReg rD) (absReg r)]
 evalE (IR.ConstI 0) rD                               = pure [XorRR () (absReg rD) (absReg rD)]
 evalE (IR.ConstI i) rD                               = pure [MovRI () (absReg rD) i]

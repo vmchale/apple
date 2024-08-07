@@ -6,15 +6,11 @@ module Asm.Aarch64 ( AArch64 (..)
                    , Addr (..)
                    , Cond (..)
                    , Shift (..), BM (..)
-                   , AbsReg (..)
-                   , FAbsReg (..)
-                   , AReg (..)
-                   , FAReg (..)
+                   , AbsReg (..), FAbsReg (..), F2Abs (..)
+                   , AReg (..), FAReg (..), F2Reg (..)
                    , prettyDebug
-                   , mapR
-                   , mapFR
-                   , toInt
-                   , fToInt
+                   , mapR, mapFR, mapF2
+                   , toInt, fToInt, f2ToInt
                    , pus, pos
                    , puds, pods
                    , pSym
@@ -49,10 +45,21 @@ instance Pretty FAReg where
     pretty D16 = "d16"; pretty D17 = "d17"; pretty D18 = "d18"; pretty D19 = "d19"; pretty D20 = "d20"; pretty D21 = "d21"; pretty D22 = "d22"; pretty D23 = "d23"
     pretty D24 = "d24"; pretty D25 = "d25"; pretty D26 = "d26"; pretty D27 = "d27"; pretty D28 = "d28"; pretty D29 = "d29"; pretty D30 = "d30"; pretty D31 = "d31"
 
-instance Show FAReg where show = show.pretty
+instance Show FAReg where show=show.pretty
+
+data F2Reg = V0 | V1 | V2 | V3 | V4 | V5 | V6 | V7 | V8 | V9 | V10 | V11 | V12 | V13 | V14 | V15 | V16 | V17 | V18 | V19 | V20 | V21 | V22 | V23 | V24 | V25 | V26 | V27 | V28 | V29 | V30 | V31 deriving (Eq, Ord, Enum, Generic)
+
+instance Pretty F2Reg where
+    pretty V0 = "v0"; pretty V1 = "v1"; pretty V2 = "v2"; pretty V3 = "v3"; pretty V4 = "v4"; pretty V5 = "v5"; pretty V6 = "v6"; pretty V7 = "v7"
+    pretty V8 = "v8"; pretty V9 = "v9"; pretty V10 = "v10"; pretty V11 = "v11"; pretty V12 = "v12"; pretty V13 = "v13"; pretty V14 = "v14"; pretty V15 = "v15"
+    pretty V16 = "v16"; pretty V17 = "v17"; pretty V18 = "v18"; pretty V19 = "v19"; pretty V20 = "v20"; pretty V21 = "v21"; pretty V22 = "v22"; pretty V23 = "v23"
+    pretty V24 = "v24"; pretty V25 = "v25"; pretty V26 = "v26"; pretty V27 = "v27"; pretty V28 = "v28"; pretty V29 = "v29"; pretty V30 = "v30"; pretty V31 = "v31"
+
+instance Show F2Reg where show=show.pretty
 
 instance NFData AReg where
 instance NFData FAReg where
+instance NFData F2Reg where
 
 data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 | CArg7 | LR | FP | ASP
 -- r0-r7 used for return values as well
@@ -70,6 +77,10 @@ instance Pretty AbsReg where
     pretty CArg6    = "X6"
     pretty CArg7    = "X7"
     pretty FP       = "FP"
+
+data F2Abs = F2Reg !Int
+
+instance Pretty F2Abs where pretty (F2Reg i) = "Q" <> pretty i
 
 data FAbsReg = FReg !Int | FArg0 | FArg1 | FArg2 | FArg3 | FArg4 | FArg5 | FArg6 | FArg7
 
@@ -109,6 +120,9 @@ fToInt FArg6    = 16
 fToInt FArg7    = 17
 fToInt (FReg i) = 19+i
 
+f2ToInt :: F2Abs -> Int
+f2ToInt (F2Reg i) = 19+i
+
 data Shift = Zero | Three
 
 instance NFData Shift where rnf Zero = (); rnf Three = ()
@@ -145,83 +159,83 @@ pSym :: Pretty a => a -> Doc ann
 pSym = case os of {"linux" -> id; "darwin" -> ("_"<>)}.pretty
 
 -- https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions
-data AArch64 reg freg a = Label { ann :: a, label :: Label }
-                        | B { ann :: a, label :: Label }
-                        | Blr { ann :: a, rSrc :: reg }
-                        | C { ann :: a, label :: Label }
-                        | Bl { ann :: a, cfunc :: CFunc }
-                        | Bc { ann :: a, cond :: Cond, label :: Label }
-                        | Ret { ann :: a } | RetL { ann :: a, label :: Label }
-                        | FMovXX { ann :: a, dDest, dSrc :: freg }
-                        | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
-                        | MovRR { ann :: a, rDest, rSrc :: reg }
-                        | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
-                        | MovZ { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
-                        | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
-                        | LdrRL { ann :: a, rDest :: reg, lSrc :: Int }
-                        | MovK { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
-                        | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
-                        | LdrB { ann :: a, rDest :: reg, aSrc :: Addr reg }
-                        | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
-                        | StrB { ann :: a, rSrc :: reg, aDest :: Addr reg }
-                        | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
-                        | StrD { ann :: a, dSrc :: freg, aDest :: Addr reg }
-                        | SubRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
-                        | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
-                        | AddRRS { ann :: a, rDest, rSrc1, rSrc2 :: reg, sC :: Word8 }
-                        | ZeroR { ann :: a, rDest :: reg }
-                        | Mvn { ann :: a, rDest, rSrc :: reg }
-                        | AndRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
-                        | OrRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
-                        | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
-                        | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
-                        | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
-                        | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
-                        | Sdiv { ann :: a, rDest, rSrc1, rSrc2 :: reg }
-                        | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
-                        | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
-                        | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
-                        | Asr { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
-                        | CmpRC { ann :: a, rSrc :: reg, cSrc :: Word16 }
-                        | CmpRR { ann :: a, rSrc1, rSrc2 :: reg }
-                        | Neg { ann :: a, rDest, rSrc :: reg }
-                        | Fmul { ann :: a, dDest, dSrc1, dSrc2 :: freg }
-                        | Fadd { ann :: a, dDest, dSrc1, dSrc2 :: freg }
-                        | Fsub { ann :: a, dDest, dSrc1, dSrc2 :: freg }
-                        | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
-                        | FcmpZ { ann :: a, dSrc :: freg }
-                        | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
-                        | Fneg { ann :: a, dDest, dSrc :: freg }
-                        | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
-                        | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
-                        | Fcvtas { ann :: a, rDest :: reg, dSrc :: freg }
-                        | Stp { ann :: a, rSrc1, rSrc2 :: reg, aDest :: Addr reg }
-                        | Ldp { ann :: a, rDest1, rDest2 :: reg, aSrc :: Addr reg }
-                        | StpD { ann :: a, dSrc1, dSrc2 :: freg, aDest :: Addr reg }
-                        | LdpD { ann :: a, dDest1, dDest2 :: freg, aSrc :: Addr reg }
-                        | Fmadd { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
-                        | Fmsub { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
-                        | Fsqrt { ann :: a, dDest, dSrc :: freg }
-                        | Frintm { ann :: a, dDest, dSrc :: freg }
-                        | MrsR { ann :: a, rDest :: reg }
-                        | Fmax { ann :: a, dDest, dSrc1, dSrc2 :: freg }
-                        | Fmin { ann :: a, dDest, dSrc1, dSrc2 :: freg }
-                        | Fabs { ann :: a, dDest, dSrc :: freg }
-                        | Csel { ann :: a, rDest, rSrc1, rSrc2 :: reg, cond :: Cond }
-                        | Tbnz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
-                        | Tbz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
-                        | Cbnz { ann :: a, rSrc :: reg, label :: Label }
-                        | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
-                        | Cset { ann :: a, rDest :: reg, cond :: Cond }
-                        | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
-                        | EorI { ann :: a, rSrc, rDesg :: reg, imm :: BM }
-                        deriving (Functor, Generic)
+data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
+                         | B { ann :: a, label :: Label }
+                         | Blr { ann :: a, rSrc :: reg }
+                         | C { ann :: a, label :: Label }
+                         | Bl { ann :: a, cfunc :: CFunc }
+                         | Bc { ann :: a, cond :: Cond, label :: Label }
+                         | Ret { ann :: a }                                              | RetL { ann :: a, label :: Label }
+                         | FMovXX { ann :: a, dDest, dSrc :: freg }
+                         | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
+                         | MovRR { ann :: a, rDest, rSrc :: reg }
+                         | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
+                         | MovZ { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
+                         | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
+                         | LdrRL { ann :: a, rDest :: reg, lSrc :: Int }
+                         | MovK { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
+                         | Ldr { ann :: a, rDest :: reg, aSrc :: Addr reg }
+                         | LdrB { ann :: a, rDest :: reg, aSrc :: Addr reg }
+                         | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
+                         | StrB { ann :: a, rSrc :: reg, aDest :: Addr reg }
+                         | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
+                         | StrD { ann :: a, dSrc :: freg, aDest :: Addr reg }
+                         | SubRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | AddRRS { ann :: a, rDest, rSrc1, rSrc2 :: reg, sC :: Word8 }
+                         | ZeroR { ann :: a, rDest :: reg }
+                         | Mvn { ann :: a, rDest, rSrc :: reg }
+                         | AndRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | OrRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
+                         | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
+                         | Sdiv { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
+                         | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
+                         | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
+                         | Asr { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
+                         | CmpRC { ann :: a, rSrc :: reg, cSrc :: Word16 }
+                         | CmpRR { ann :: a, rSrc1, rSrc2 :: reg }
+                         | Neg { ann :: a, rDest, rSrc :: reg }
+                         | Fmul { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                         | Fadd { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                         | Fsub { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                         | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                         | FcmpZ { ann :: a, dSrc :: freg }
+                         | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
+                         | Fneg { ann :: a, dDest, dSrc :: freg }
+                         | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
+                         | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
+                         | Fcvtas { ann :: a, rDest :: reg, dSrc :: freg }
+                         | Stp { ann :: a, rSrc1, rSrc2 :: reg, aDest :: Addr reg }
+                         | Ldp { ann :: a, rDest1, rDest2 :: reg, aSrc :: Addr reg }
+                         | StpD { ann :: a, dSrc1, dSrc2 :: freg, aDest :: Addr reg }
+                         | LdpD { ann :: a, dDest1, dDest2 :: freg, aSrc :: Addr reg }
+                         | Fmadd { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
+                         | Fmsub { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
+                         | Fsqrt { ann :: a, dDest, dSrc :: freg }
+                         | Frintm { ann :: a, dDest, dSrc :: freg }
+                         | MrsR { ann :: a, rDest :: reg }
+                         | Fmax { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                         | Fmin { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                         | Fabs { ann :: a, dDest, dSrc :: freg }
+                         | Csel { ann :: a, rDest, rSrc1, rSrc2 :: reg, cond :: Cond }
+                         | Tbnz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
+                         | Tbz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
+                         | Cbnz { ann :: a, rSrc :: reg, label :: Label }
+                         | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
+                         | Cset { ann :: a, rDest :: reg, cond :: Cond }
+                         | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
+                         | EorI { ann :: a, rSrc, rDesg :: reg, imm :: BM }
+                         deriving (Functor, Generic)
 
-instance (NFData r, NFData d, NFData a) => NFData (AArch64 r d a) where
+instance (NFData r, NFData d, NFData x, NFData a) => NFData (AArch64 r d x a) where
 
-instance Copointed (AArch64 reg freg) where copoint = ann
+instance Copointed (AArch64 reg freg f2) where copoint = ann
 
-mapR :: (areg -> reg) -> AArch64 areg afreg a -> AArch64 reg afreg a
+mapR :: (areg -> reg) -> AArch64 areg afreg af2 a -> AArch64 reg afreg af2 a
 mapR _ (Label x l)           = Label x l
 mapR _ (B x l)               = B x l
 mapR _ (Bc x c l)            = Bc x c l
@@ -294,7 +308,10 @@ mapR f (TstI l r i)          = TstI l (f r) i
 mapR f (Cset l r c)          = Cset l (f r) c
 mapR f (EorI l r0 r1 i)      = EorI l (f r0) (f r1) i
 
-mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
+mapF2 :: (af2 -> f2) -> AArch64 areg afreg af2 a -> AArch64 areg afreg f2 a
+mapF2 _ (Label x l) = Label x l
+
+mapFR :: (afreg -> freg) -> AArch64 areg afreg af2 a -> AArch64 areg freg af2 a
 mapFR _ (Label x l)           = Label x l
 mapFR _ (B x l)               = B x l
 mapFR _ (Bc x c l)            = Bc x c l
@@ -372,18 +389,18 @@ s2 (r0:r1:rs) = (r0, Just r1):s2 rs
 s2 [r]        = [(r, Nothing)]
 s2 []         = []
 
-pus, pos :: [AReg] -> [AArch64 AReg freg ()]
+pus, pos :: [AReg] -> [AArch64 AReg freg f2reg ()]
 pus = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 16, Stp () r0 r1 (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, Str () r (R SP)]
 pos = concatMap go.reverse.s2 where go (r0, Just r1) = [Ldp () r0 r1 (R SP), AddRC () SP SP 16]; go (r, Nothing) = [Ldr () r (R SP), AddRC () SP SP 16]
 
-puds, pods :: [freg] -> [AArch64 AReg freg ()]
+puds, pods :: [freg] -> [AArch64 AReg freg f2reg ()]
 puds = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 16, StpD () r0 r1 (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, StrD () r (R SP)]
 pods = concatMap go.reverse.s2 where go (r0, Just r1) = [LdpD () r0 r1 (R SP), AddRC () SP SP 16]; go (r, Nothing) = [LdrD () r (R SP), AddRC () SP SP 16]
 
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
 
-instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
+instance (Pretty reg, Pretty freg, Pretty f2reg) => Pretty (AArch64 reg freg f2reg a) where
     pretty (Label _ l)            = prettyLabel l <> ":"
     pretty (B _ l)                = i4 ("b" <+> prettyLabel l)
     pretty (Blr _ r)              = i4 ("blr" <+> pretty r)
@@ -456,10 +473,10 @@ instance (Pretty reg, Pretty freg) => Pretty (AArch64 reg freg a) where
     pretty (TstI _ r i)           = i4 ("tst" <+> pretty r <> "," <+> pretty i)
     pretty (Cset _ r c)           = i4 ("cset" <+> pretty r <> "," <+> pretty c)
 
-instance (Pretty reg, Pretty freg) => Show (AArch64 reg freg a) where show=show.pretty
+instance (Pretty reg, Pretty freg, Pretty f2reg) => Show (AArch64 reg freg f2reg a) where show=show.pretty
 
-prettyLive :: (Pretty reg, Pretty freg, Pretty o) => AArch64 reg freg o -> Doc ann
+prettyLive :: (Pretty reg, Pretty freg, Pretty f2reg, Pretty o) => AArch64 reg freg f2reg o -> Doc ann
 prettyLive r = pretty r <+> pretty (ann r)
 
-prettyDebug :: (Pretty freg, Pretty reg, Pretty o) => [AArch64 reg freg o] -> Doc ann
+prettyDebug :: (Pretty freg, Pretty reg, Pretty f2reg, Pretty o) => [AArch64 reg freg f2reg o] -> Doc ann
 prettyDebug = prettyLines . fmap prettyLive

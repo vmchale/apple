@@ -64,24 +64,24 @@ nextR = IReg <$> nextI
 nextF :: WM FAbsReg
 nextF = FReg <$> nextI
 
-irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
+irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg F2Abs ()])
 irToAarch64 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
 -- only needs to be "quadword aligned" when it is the base register for load/store instructions
-aR :: AbsReg -> WM [AArch64 AbsReg FAbsReg ()]
+aR :: AbsReg -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 aR t = do
     l <- nextL
     pure [TstI () t (BM 1 3), Bc () Eq l, AddRC () t t 8, Label () l]
 
-plF :: IR.FExp -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()], FAbsReg)
+plF :: IR.FExp -> WM ([AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AbsReg FAbsReg F2Abs ()], FAbsReg)
 plF (IR.FReg t) = pure (id, fabsReg t)
 plF e           = do {i <- nextI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
 
-plI :: IR.Exp -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()], AbsReg)
+plI :: IR.Exp -> WM ([AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AbsReg FAbsReg F2Abs ()], AbsReg)
 plI (IR.Reg t) = pure (id, absReg t)
 plI e          = do {i <- nextI; pl <- eval e (IR.ITemp i); pure ((pl++), IReg i)}
 
-ir :: IR.Stmt -> WM [AArch64 AbsReg FAbsReg ()]
+ir :: IR.Stmt -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 ir (IR.R l)      = pure [RetL () l]
 ir (IR.L l)      = pure [Label () l]
 ir (IR.J l)      = pure [B () l]
@@ -265,19 +265,19 @@ ir (IR.FRnd t) = do
     pure $ puL ++ [AddRC () FP ASP 16, MovRCf () r DR, Blr () r, FMovXX () (fabsReg t) FArg0] ++ poL
 ir s             = error (show s)
 
-puL, poL :: [AArch64 AbsReg freg ()]
+puL, poL :: [AArch64 AbsReg freg f2reg ()]
 puL = [SubRC () ASP ASP 16, Stp () FP LR (R ASP)]
 poL = [Ldp () FP LR (R ASP), AddRC () ASP ASP 16]
 
 sai i | i `rem` 16 == 0 = i+16 | otherwise = i+24
 -- FIXME: only do +16 when necessary
 
-mw64 :: Word64 -> AbsReg -> [AArch64 AbsReg freg ()]
+mw64 :: Word64 -> AbsReg -> [AArch64 AbsReg freg f2reg ()]
 mw64 w r =
     let w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
     in MovRC () r (fromIntegral w0):[MovK () r (fromIntegral wi) s | (wi, s) <- [(w1, 16), (w2, 32), (w3, 48)], wi /= 0 ]
 
-ssin :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
+ssin :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 ssin t = do
     d1 <- nextF; d2 <- nextF; d3 <- nextF
     tsI <- nextI
@@ -287,7 +287,7 @@ ssin t = do
   where
     d0 = fabsReg t
 
-cosϵ :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
+cosϵ :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 cosϵ t = do
     d1 <- nextF; d2 <- nextF; d3 <- nextF
     tsI <- nextI
@@ -297,7 +297,7 @@ cosϵ t = do
   where
     d0 = fabsReg t
 
-feval :: IR.FExp -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
+feval :: IR.FExp -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
 feval (IR.ConstF d) t = do
     i <- nextI
@@ -384,7 +384,7 @@ feval (IR.FU Op.FSqrt e) t = do
     pure $ plE [Fsqrt () (fabsReg t) r]
 feval e _             = error (show e)
 
-eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
+eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 eval (IR.Reg tS) tD = pure [MovRR () (absReg tD) (absReg tS)]
 eval (IR.ConstI 0) tD = pure [ZeroR () (absReg tD)]
 eval (IR.ConstI i) tD | Just u <- mu16 i = pure [MovRC () (absReg tD) u]
