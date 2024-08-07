@@ -549,6 +549,20 @@ To drop the first 6 elements:
 [}.\`7 x]
 ```
 
+Take the first 7 elements:
+
+```
+ > {. ([x] \`7 (irange 0 9 1))
+Vec 7 [0, 1, 2, 3, 4, 5, 6]
+```
+
+Take the last 7 elements:
+
+```
+ > }. ([x] \`7 (irange 0 9 1))
+Vec 7 [3, 4, 5, 6, 7, 8, 9]
+```
+
 ### Matrix-Vector Multiplication
 
 ```
@@ -688,6 +702,8 @@ Compute the radical of an integer $n$, $\displaystyle \prod_{p|n} p$
     ,.((*)/ₒ 1 (pf (n ⊲ ((n/.)'pps))⧺pps))
   }
 ```
+
+This shows the awkwardness of an array style.
 
 ## Python Extension Module
 
