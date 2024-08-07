@@ -471,6 +471,8 @@ mapFR _ (Cbnz x r l)          = Cbnz x r l
 mapFR f (Fcsel l d0 d1 d2 p)  = Fcsel l (f d0) (f d1) (f d2) p
 mapFR _ (TstI l r i)          = TstI l r i
 mapFR _ (Cset l r c)          = Cset l r c
+mapFR _ (Ldp2 l q0 q1 a)      = Ldp2 l q0 q1 a
+mapFR _ (Stp2 l q0 q1 a)      = Stp2 l q0 q1 a
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
