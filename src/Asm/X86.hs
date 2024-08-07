@@ -16,7 +16,7 @@ module Asm.X86 ( X86 (..)
                , CFunc (..)
                , prettyDebugX86
                , toInt, fToInt, f2ToInt
-               , imm8
+               , imm8, simd2
                , roundMode
                , mapR, mapFR, mapF2
                , fR
@@ -43,6 +43,9 @@ data F2X86 = YMM1 | YMM2 | YMM3 | YMM4 | YMM5 | YMM6 | YMM7 | YMM8 | YMM9 | YMM1
 
 instance NFData X86Reg where
 instance NFData FX86Reg where
+
+simd2 :: FX86Reg -> F2X86
+simd2 = toEnum.fromEnum
 
 instance Pretty X86Reg where
     pretty Rax = "rax"

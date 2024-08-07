@@ -8,6 +8,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , Shift (..), BM (..)
                    , AbsReg (..), FAbsReg (..), F2Abs (..)
                    , AReg (..), FAReg (..), F2Reg (..)
+                   , SIMD (..), simd2
                    , prettyDebug
                    , mapR, mapFR, mapF2
                    , toInt, fToInt, f2ToInt
@@ -37,6 +38,9 @@ instance Pretty AReg where
 
 instance Show AReg where show = show.pretty
 
+simd2 :: FAReg -> F2Reg
+simd2 = toEnum.fromEnum
+
 data FAReg = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9 | D10 | D11 | D12 | D13 | D14 | D15 | D16 | D17 | D18 | D19 | D20 | D21 | D22 | D23 | D24 | D25 | D26 | D27 | D28 | D29 | D30 | D31 deriving (Eq, Ord, Enum, Generic)
 
 instance Pretty FAReg where
@@ -49,13 +53,21 @@ instance Show FAReg where show=show.pretty
 
 data F2Reg = V0 | V1 | V2 | V3 | V4 | V5 | V6 | V7 | V8 | V9 | V10 | V11 | V12 | V13 | V14 | V15 | V16 | V17 | V18 | V19 | V20 | V21 | V22 | V23 | V24 | V25 | V26 | V27 | V28 | V29 | V30 | V31 deriving (Eq, Ord, Enum, Generic)
 
-instance Pretty F2Reg where
-    pretty V0 = "v0"; pretty V1 = "v1"; pretty V2 = "v2"; pretty V3 = "v3"; pretty V4 = "v4"; pretty V5 = "v5"; pretty V6 = "v6"; pretty V7 = "v7"
-    pretty V8 = "v8"; pretty V9 = "v9"; pretty V10 = "v10"; pretty V11 = "v11"; pretty V12 = "v12"; pretty V13 = "v13"; pretty V14 = "v14"; pretty V15 = "v15"
-    pretty V16 = "v16"; pretty V17 = "v17"; pretty V18 = "v18"; pretty V19 = "v19"; pretty V20 = "v20"; pretty V21 = "v21"; pretty V22 = "v22"; pretty V23 = "v23"
-    pretty V24 = "v24"; pretty V25 = "v25"; pretty V26 = "v26"; pretty V27 = "v27"; pretty V28 = "v28"; pretty V29 = "v29"; pretty V30 = "v30"; pretty V31 = "v31"
+class SIMD a where
+    pv :: a -> Doc ann
+    pq :: a -> Doc ann
 
-instance Show F2Reg where show=show.pretty
+instance SIMD F2Reg where
+    pv V0 = "v0"; pv V1 = "v1"; pv V2 = "v2"; pv V3 = "v3"; pv V4 = "v4"; pv V5 = "v5"; pv V6 = "v6"; pv V7 = "v7"
+    pv V8 = "v8"; pv V9 = "v9"; pv V10 = "v10"; pv V11 = "v11"; pv V12 = "v12"; pv V13 = "v13"; pv V14 = "v14"; pv V15 = "v15"
+    pv V16 = "v16"; pv V17 = "v17"; pv V18 = "v18"; pv V19 = "v19"; pv V20 = "v20"; pv V21 = "v21"; pv V22 = "v22"; pv V23 = "v23"
+    pv V24 = "v24"; pv V25 = "v25"; pv V26 = "v26"; pv V27 = "v27"; pv V28 = "v28"; pv V29 = "v29"; pv V30 = "v30"; pv V31 = "v31"
+
+
+    pq V0 = "q0"; pq V1 = "q1"; pq V2 = "q2"; pq V3 = "q3"; pq V4 = "q4"; pq V5 = "q5"; pq V6 = "q6"; pq V7 = "q7"
+    pq V8 = "q8"; pq V9 = "q9"; pq V10 = "q10"; pq V11 = "q11"; pq V12 = "q12"; pq V13 = "q13"; pq V14 = "q14"; pq V15 = "q15"
+    pq V16 = "q16"; pq V17 = "q17"; pq V18 = "q18"; pq V19 = "q19"; pq V20 = "q20"; pq V21 = "q21"; pq V22 = "q22"; pq V23 = "q23"
+    pq V24 = "q24"; pq V25 = "q25"; pq V26 = "q26"; pq V27 = "q27"; pq V28 = "q28"; pq V29 = "q29"; pq V30 = "q30"; pq V31 = "q31"
 
 instance NFData AReg where
 instance NFData FAReg where
@@ -80,7 +92,7 @@ instance Pretty AbsReg where
 
 data F2Abs = F2Reg !Int
 
-instance Pretty F2Abs where pretty (F2Reg i) = "Q" <> pretty i
+instance SIMD F2Abs where pq (F2Reg i) = "~Q" <> pretty i; pv (F2Reg i) = "~V" <> pretty i
 
 data FAbsReg = FReg !Int | FArg0 | FArg1 | FArg2 | FArg3 | FArg4 | FArg5 | FArg6 | FArg7
 
@@ -211,6 +223,8 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | Fcvtas { ann :: a, rDest :: reg, dSrc :: freg }
                          | Stp { ann :: a, rSrc1, rSrc2 :: reg, aDest :: Addr reg }
                          | Ldp { ann :: a, rDest1, rDest2 :: reg, aSrc :: Addr reg }
+                         | Stp2 { ann :: a, r2Src1, r2Src2 :: f2, aDest :: Addr reg }
+                         | Ldp2 { ann :: a, r2Dest1, r2Dest2 :: f2, aRc :: Addr reg }
                          | StpD { ann :: a, dSrc1, dSrc2 :: freg, aDest :: Addr reg }
                          | LdpD { ann :: a, dDest1, dDest2 :: freg, aSrc :: Addr reg }
                          | Fmadd { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
@@ -307,6 +321,8 @@ mapR _ (Fcsel l d0 d1 d2 p)  = Fcsel l d0 d1 d2 p
 mapR f (TstI l r i)          = TstI l (f r) i
 mapR f (Cset l r c)          = Cset l (f r) c
 mapR f (EorI l r0 r1 i)      = EorI l (f r0) (f r1) i
+mapR f (Ldp2 l r0 r1 a)      = Ldp2 l r0 r1 (f<$>a)
+mapR f (Stp2 l r0 r1 a)      = Stp2 l r0 r1 (f<$>a)
 
 mapF2 :: (af2 -> f2) -> AArch64 areg afreg af2 a -> AArch64 areg afreg f2 a
 mapF2 _ (Label x l)           = Label x l
@@ -380,6 +396,8 @@ mapF2 _ (Cbnz x r l)          = Cbnz x r l
 mapF2 _ (Fcsel l d0 d1 d2 p)  = Fcsel l d0 d1 d2 p
 mapF2 _ (TstI l r i)          = TstI l r i
 mapF2 _ (Cset l r c)          = Cset l r c
+mapF2 f (Ldp2 l r0 r1 a)      = Ldp2 l (f r0) (f r1) a
+mapF2 f (Stp2 l r0 r1 a)      = Stp2 l (f r0) (f r1) a
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg af2 a -> AArch64 areg freg af2 a
 mapFR _ (Label x l)           = Label x l
@@ -470,7 +488,7 @@ pods = concatMap go.reverse.s2 where go (r0, Just r1) = [LdpD () r0 r1 (R SP), A
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
 
-instance (Pretty reg, Pretty freg, Pretty f2reg) => Pretty (AArch64 reg freg f2reg a) where
+instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg a) where
     pretty (Label _ l)            = prettyLabel l <> ":"
     pretty (B _ l)                = i4 ("b" <+> prettyLabel l)
     pretty (Blr _ r)              = i4 ("blr" <+> pretty r)
@@ -520,6 +538,8 @@ instance (Pretty reg, Pretty freg, Pretty f2reg) => Pretty (AArch64 reg freg f2r
     pretty (Fcmp _ d0 d1)         = i4 ("fcmp" <+> pretty d0 <> "," <+> pretty d1)
     pretty (Stp _ r0 r1 a)        = i4 ("stp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
     pretty (Ldp _ r0 r1 a)        = i4 ("ldp" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
+    pretty (Ldp2 _ q0 q1 a)       = i4 ("ldp" <+> pq q0 <+> pq q1 <> "," <+> pretty a)
+    pretty (Stp2 _ q0 q1 a)       = i4 ("stp" <+> pq q0 <+> pq q1 <> "," <+> pretty a)
     pretty (StpD _ d0 d1 a)       = i4 ("stp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
     pretty (LdpD _ d0 d1 a)       = i4 ("ldp" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty a)
     pretty (Fmadd _ d0 d1 d2 d3)  = i4 ("fmadd" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty d3)
@@ -543,10 +563,10 @@ instance (Pretty reg, Pretty freg, Pretty f2reg) => Pretty (AArch64 reg freg f2r
     pretty (TstI _ r i)           = i4 ("tst" <+> pretty r <> "," <+> pretty i)
     pretty (Cset _ r c)           = i4 ("cset" <+> pretty r <> "," <+> pretty c)
 
-instance (Pretty reg, Pretty freg, Pretty f2reg) => Show (AArch64 reg freg f2reg a) where show=show.pretty
+instance (Pretty reg, Pretty freg, SIMD f2reg) => Show (AArch64 reg freg f2reg a) where show=show.pretty
 
-prettyLive :: (Pretty reg, Pretty freg, Pretty f2reg, Pretty o) => AArch64 reg freg f2reg o -> Doc ann
+prettyLive :: (Pretty reg, Pretty freg, SIMD f2reg, Pretty o) => AArch64 reg freg f2reg o -> Doc ann
 prettyLive r = pretty r <+> pretty (ann r)
 
-prettyDebug :: (Pretty freg, Pretty reg, Pretty f2reg, Pretty o) => [AArch64 reg freg f2reg o] -> Doc ann
+prettyDebug :: (Pretty freg, Pretty reg, SIMD f2reg, Pretty o) => [AArch64 reg freg f2reg o] -> Doc ann
 prettyDebug = prettyLines . fmap prettyLive

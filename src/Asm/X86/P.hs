@@ -17,7 +17,7 @@ gallocFrame u = frameC . mkIntervals . galloc u
 
 {-# SCC galloc #-}
 galloc :: Int -> [X86 AbsReg FAbsReg X2Abs ()] -> [X86 X86Reg FX86Reg F2X86 ()]
-galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt).mapF2 ((undefined IM.!).f2ToInt)) isns')
+galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt).mapF2 (simd2.(fregs IM.!).f2ToInt)) isns')
     where (regs, fregs, isns') = gallocOn u (isns ++ [Ret()])
           clob'd = S.fromList $ IM.elems regs
 

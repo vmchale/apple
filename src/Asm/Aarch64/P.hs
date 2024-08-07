@@ -13,7 +13,7 @@ gallocFrame :: Int -- ^ int supply for spilling
 gallocFrame u = frameC . mkIntervals . galloc u
 
 galloc :: Int -> [AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AReg FAReg F2Reg ()]
-galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt).mapF2 ((undefined IM.!).f2ToInt)) isns')
+galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt).mapF2 (simd2.(fregs IM.!).f2ToInt)) isns')
     where (regs, fregs, isns') = gallocOn u (isns++[Ret ()])
           clob'd = S.fromList $ IM.elems regs
 
