@@ -184,15 +184,15 @@ asm ix st (Cbnz _ r l:asms) =
         offs=(lIx-ix) `quot` 4
         isn=[0b10110101, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
     in isn:asm (ix+4) st asms
-asm ix st (Tbz _ r 0 l:asms) =
+asm ix st (Tbz _ r b l:asms) | b <= 31 =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
-        isn=[0b00110110, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
+        isn=[0b00110110, b `shiftL` 3 .|. fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
     in isn:asm (ix+4) st asms
-asm ix st (Tbnz _ r 0 l:asms) =
+asm ix st (Tbnz _ r b l:asms) | b <= 31 =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
-        isn=[0b00110111, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
+        isn=[0b00110111, b `shiftL` 3 .|. fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
     in isn:asm (ix+4) st asms
 asm ix st (C _ l:asms) =
     let lIx=get l st

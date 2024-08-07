@@ -5,7 +5,7 @@
 -- first IR with for loops and array accesses, inspired by C
 module C ( Temp (..), FTemp (..), F2Temp (..), BTemp (..)
          , ArrAcc (..)
-         , CE (..), CFE (..), F1E
+         , CE (..), CFE (..), F1E, F2E
          , PE (..)
          , CS (..)
          , (=:)
@@ -112,7 +112,7 @@ instance Show CE where show=show.pretty
 instance Num CE where
     (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
 
-type F1E = CFE FTemp Double CE
+type F1E=CFE FTemp Double CE; type F2E=CFE F2Temp (Double, Double) Void
 
 data CFE t x e = FAt ArrAcc | FBin FBin (CFE t x e) (CFE t x e) | FUn FUn (CFE t x e) | FTmp t | ConstF !x | IE e
 

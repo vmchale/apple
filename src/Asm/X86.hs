@@ -43,6 +43,7 @@ data F2X86 = YMM1 | YMM2 | YMM3 | YMM4 | YMM5 | YMM6 | YMM7 | YMM8 | YMM9 | YMM1
 
 instance NFData X86Reg where
 instance NFData FX86Reg where
+instance NFData F2X86 where
 
 simd2 :: FX86Reg -> F2X86
 simd2 = toEnum.fromEnum
