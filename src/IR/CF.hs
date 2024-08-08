@@ -124,7 +124,7 @@ uFF Is{}           = IS.empty
 uFF (EAt e)        = uAF e
 uFF (BAt e)        = uAF e
 
-uF :: FExp -> IS.IntSet
+uF :: FE -> IS.IntSet
 uF ConstF{}     = IS.empty
 uF (FB _ e0 e1) = uF e0 <> uF e1
 uF (FConv e)    = uFF e
@@ -140,7 +140,7 @@ uA :: AE -> IS.IntSet
 uA (AP t Nothing _)  = singleton t
 uA (AP t (Just e) _) = IS.insert (rToInt t) (uE e)
 
-uFR :: FExp -> IS.IntSet
+uFR :: FE -> IS.IntSet
 uFR (FAt a)      = uA a
 uFR (FConv e)    = uE e
 uFR (FB _ e0 e1) = uFR e0<>uFR e1

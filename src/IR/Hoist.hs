@@ -41,7 +41,7 @@ mapFE f (BU op e)        = BU op (mapFE f e)
 mapFE f (IRel rel e0 e1) = IRel rel (mapFE f e0) (mapFE f e1)
 mapFE _ e@LA{}           = e
 
-mapFF :: (FTemp -> FTemp) -> FExp -> FExp
+mapFF :: (FTemp -> FTemp) -> FExp FTemp c Exp -> FExp FTemp c Exp
 mapFF _ x@ConstF{}    = x
 mapFF f (FAt a)       = FAt (mapFA f a)
 mapFF f (FB op e0 e1) = FB op (mapFF f e0) (mapFF f e1)
