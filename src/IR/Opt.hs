@@ -44,7 +44,7 @@ optE (EAt p)                 = EAt (optP p)
 optE (BAt p)                 = BAt (optP p)
 optE e                       = e
 
-optF :: FExp -> FExp
+optF :: FE -> FE
 optF (FAt p) = FAt (optP p)
 optF (FConv e) =
     case optE e of

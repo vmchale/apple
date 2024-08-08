@@ -80,7 +80,7 @@ aR t = do
     pure $ pl ++ [AddRR () t' t' (IReg tϵ)]
   where t'=absReg t
 
-plF :: IR.FExp -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()], FAbsReg)
+plF :: IR.FE -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()], FAbsReg)
 plF (IR.FReg t) = pure (id, fabsReg t)
 plF e           = do {i <- nextI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
 
@@ -371,7 +371,7 @@ cosϵ t = do
   where
     d0 = fabsReg t
 
-feval :: IR.FExp -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
+feval :: IR.FE -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
 feval (IR.ConstF d) t = do
     i <- nextI

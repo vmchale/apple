@@ -13,7 +13,7 @@ import           Foreign.Storable                 (peek, poke)
 import qualified IR
 import qualified Op
 
-plF :: IR.FExp -> WM ([X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ()], FAbsReg)
+plF :: IR.FE -> WM ([X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ()], FAbsReg)
 plF (IR.FReg t) = pure (id, fabsReg t)
 plF e           = do {i <- nextI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
 
@@ -315,7 +315,7 @@ mSse Op.FMin   = Just Vminsd
 mSse Op.FTimes = Just Vmulsd
 mSse Op.FExp   = Nothing
 
-feval :: IR.FExp -> IR.FTemp -> WM [X86 AbsReg FAbsReg ()] -- TODO: feval 0 (xor?)
+feval :: IR.FE -> IR.FTemp -> WM [X86 AbsReg FAbsReg ()] -- TODO: feval 0 (xor?)
 feval (IR.FB Op.FDiv (IR.FReg r0) (IR.FReg r1)) t   | t == r0 = pure [Divsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FTimes (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Mulsd () (fabsReg t) (fabsReg r1)]
 feval (IR.FB Op.FMinus (IR.FReg r0) (IR.FReg r1)) t | t == r0 = pure [Subsd () (fabsReg t) (fabsReg r1)]

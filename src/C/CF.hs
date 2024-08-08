@@ -3,15 +3,15 @@ module C.CF ( cfC ) where
 import           C
 import           CF
 import           CF.AL
--- seems to pretty clearly be faster
 import           Control.Monad.Trans.State.Strict (State, evalState, gets, modify, state)
-import           Data.Bifunctor                   (first)
-import           Data.Functor                     (($>))
-import qualified Data.IntMap                      as IM
-import qualified Data.IntSet                      as IS
-import           Data.List                        (uncons)
-import qualified Data.Map                         as M
-import           Data.Tuple.Extra                 (second3, snd3, thd3, third3)
+import           Data.Bifunctor             (first)
+import           Data.Functor               (($>))
+import qualified Data.IntMap                as IM
+import qualified Data.IntSet                as IS
+import           Data.List                  (uncons)
+import qualified Data.Map                   as M
+import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
+import           Data.Void                  (Void)
 import           Q
 
 type N=Int
@@ -149,7 +149,7 @@ addCF ((F2or _ t el c eu s1 ss):stmts) = do
     (h1, s1') <- tieBranch i f s1
     (h, ss') <- tieBody i f ss
     let ss'' = case uncons ss' of
-            Nothing -> []
+            Nothing        -> []
             Just (hb, ssϵ) -> fmap (mC h1) hb:ssϵ
     pure $ F2or (ControlAnn i (f (h (h1 []))) udϵ) t el c eu s1' ss'':stmts'
   where
@@ -227,6 +227,13 @@ uF (FUn _ e)      = uF e
 uF (FBin _ e0 e1) = uF e0<>uF e1
 uF (IE e)         = uE e
 
+uF2 :: CFE F2Temp x Void -> IS.IntSet
+uF2 FTmp{}         = IS.empty
+uF2 (FAt a)        = uA a
+uF2 ConstF{}       = IS.empty
+uF2 (FUn _ e)      = uF2 e
+uF2 (FBin _ e0 e1) = uF2 e0<>uF2 e1
+
 m'insert (Just l) a = sinsert l a
 m'insert Nothing a  = a
 
@@ -243,11 +250,13 @@ uses :: CS a -> IS.IntSet
 uses (Ma _ _ _ r n _)      = uE r<>uE n
 uses MaΠ{}                 = IS.empty
 uses (MX _ _ e)            = uF e
+uses (MX2 _ _ e)           = uF2 e
 uses (Wr _ a e)            = uA a <> uE e
 uses (RA _ l)              = singleton l
 uses (Cmov _ e0 _ e1)      = uB e0<>uE e1
 uses (Fcmov _ e0 _ e1)     = uB e0<>uF e1
 uses (WrF _ a e)           = uA a <> uF e
+uses (Wr2F _ a e)          = uA a <> uF2 e
 uses (Cset _ e _)          = uB e
 uses (MT _ _ e)            = uE e
 uses (MB _ _ e)            = uB e
