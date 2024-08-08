@@ -205,6 +205,8 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | OrRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eon { ann :: a, rDest, rSrc, rSrc2 :: reg }
+                         | ZeroS { ann :: a, qDest :: f2 }
+                         | EorS { ann :: a, qDest, qSrc1, qSrc2 :: f2 }
                          | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
                          | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
@@ -221,8 +223,9 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | Fadd { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fsub { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
-                         | Fadd2 { ann :: a, d2Dest, d2Src1, d2Src :: f2 }
-                         | Fmul2 { ann :: a, d2Dest, d2Src1, d2Src :: f2 }
+                         | Fadd2 { ann :: a, vDest, vSrc1, vSrc2 :: f2 }
+                         | Faddp { ann :: a, dDest :: freg, vSrc :: f2 }
+                         | Fmul2 { ann :: a, vDest, vSrc1, vSrc2 :: f2 }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                          | Fneg { ann :: a, dDest, dSrc :: freg }
@@ -290,6 +293,8 @@ mapR f (Asr l r0 r1 s)       = Asr l (f r0) (f r1) s
 mapR f (CmpRR l r0 r1)       = CmpRR l (f r0) (f r1)
 mapR f (CmpRC l r c)         = CmpRC l (f r) c
 mapR f (Neg l r0 r1)         = Neg l (f r0) (f r1)
+mapR _ (EorS l q0 q1 q2)     = EorS l q0 q1 q2
+mapR _ (ZeroS l q)           = ZeroS l q
 mapR _ (Fadd l xr0 xr1 xr2)  = Fadd l xr0 xr1 xr2
 mapR _ (Fsub l xr0 xr1 xr2)  = Fsub l xr0 xr1 xr2
 mapR _ (Fmul l xr0 xr1 xr2)  = Fmul l xr0 xr1 xr2
@@ -340,6 +345,7 @@ mapR f (Bfc x r l w)         = Bfc x (f r) l w
 mapR f (LdrS l q a)          = LdrS l q (f<$>a)
 mapR _ (Fadd2 l x0 x1 x2)    = Fadd2 l x0 x1 x2
 mapR _ (Fmul2 l x0 x1 x2)    = Fmul2 l x0 x1 x2
+mapR _ (Faddp l d v)         = Faddp l d v
 
 mapF2 :: (af2 -> f2) -> AArch64 areg afreg af2 a -> AArch64 areg afreg f2 a
 mapF2 _ (Label x l)           = Label x l
@@ -367,6 +373,7 @@ mapF2 _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
 mapF2 _ (OrRR l r0 r1 r2)     = OrRR l r0 r1 r2
 mapF2 _ (Eor l r0 r1 r2)      = Eor l r0 r1 r2
 mapF2 _ (Eon l r0 r1 r2)      = Eon l r0 r1 r2
+mapF2 f (EorS l q0 q1 q2)     = EorS l (f q0) (f q1) (f q2)
 mapF2 _ (EorI l r0 r1 i)      = EorI l r0 r1 i
 mapF2 _ (Lsl l r0 r1 s)       = Lsl l r0 r1 s
 mapF2 _ (Asr l r0 r1 s)       = Asr l r0 r1 s
@@ -422,6 +429,8 @@ mapF2 _ (Bfc x r l w)         = Bfc x r l w
 mapF2 f (LdrS l q a)          = LdrS l (f q) a
 mapF2 f (Fadd2 l x0 x1 x2)    = Fadd2 l (f x0) (f x1) (f x2)
 mapF2 f (Fmul2 l x0 x1 x2)    = Fmul2 l (f x0) (f x1) (f x2)
+mapF2 f (ZeroS l v)           = ZeroS l (f v)
+mapF2 f (Faddp l d v)         = Faddp l d (f v)
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg af2 a -> AArch64 areg freg af2 a
 mapFR _ (Label x l)           = Label x l
@@ -504,6 +513,9 @@ mapFR _ (Bfc x r l w)         = Bfc x r l w
 mapFR _ (LdrS l q a)          = LdrS l q a
 mapFR _ (Fadd2 l x0 x1 x2)    = Fadd2 l x0 x1 x2
 mapFR _ (Fmul2 l x0 x1 x2)    = Fmul2 l x0 x1 x2
+mapFR _ (EorS l v0 v1 v2)     = EorS l v0 v1 v2
+mapFR _ (ZeroS l v)           = ZeroS l v
+mapFR f (Faddp l d v)         = Faddp l (f d) v
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -532,6 +544,7 @@ hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
 
 pvd v = pv v <> ".2d"
+pvv v = pv v <> ".16b"
 
 instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg a) where
     pretty (Label _ l)            = prettyLabel l <> ":"
@@ -578,6 +591,9 @@ instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg
         p4 (Fdiv _ rD r0 r1)      = "fdiv" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1
         p4 (Fmul2 _ xD x0 x1)     = "fmul" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1
         p4 (Fadd2 _ xD x0 x1)     = "fadd" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1
+        p4 (Faddp _ dD v0)        = "faddp" <+> pretty dD <> "," <+> pvd v0
+        p4 (EorS _ vD v0 v1)      = "eor" <+> pvv vD <> "," <+> pvv v0 <> "," <+> pvv v1
+        p4 (ZeroS _ v)            = "eor" <+> pvv v <> "," <+> pvv v <> "," <+> pvv v
         p4 (FcmpZ _ xr)           = "fcmp" <+> pretty xr <> "," <+> "#0.0"
         p4 (Fneg _ d0 d1)         = "fneg" <+> pretty d0 <> "," <+> pretty d1
         p4 Ret{}                  = "ret"
