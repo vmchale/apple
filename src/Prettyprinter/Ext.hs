@@ -14,6 +14,7 @@ module Prettyprinter.Ext ( (<#>), (<?>)
 import           Data.Bits                 (Bits (..))
 import qualified Data.IntMap               as IM
 import qualified Data.Text                 as T
+import           Data.Void                 (Void, absurd)
 import           Data.Word                 (Word64)
 import           Numeric                   (showHex)
 import           Prettyprinter             (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
@@ -28,6 +29,9 @@ infixr 5 <?>
 (<?>) x y = x <> softline' <> y
 
 class PS a where ps :: Int -> a -> Doc ann
+
+instance PS Void where
+    ps _ = absurd
 
 parensp True=parens; parensp False=id
 
