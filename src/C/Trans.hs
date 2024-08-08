@@ -253,6 +253,31 @@ writeCM eϵ = do
 rtemp :: T a -> CM RT
 rtemp F=FT<$>nF; rtemp I=IT<$>nI; rtemp B=PT<$>nBT
 
+bS :: Builtin -> Bool
+bS Times = True
+bS Plus  = True
+bS Minus = True
+bS Div   = True
+bS Neg   = True
+bS Max   = True
+bS Min   = True
+bS Sqrt  = True
+bS _     = False
+
+hasS :: E a -> Bool
+hasS (Builtin _ b)  = bS b
+hasS (EApp _ e0 e1) = hasS e0&&hasS e1
+hasS (Lam _ _ e)    = hasS e
+hasS Var{}          = True
+hasS FLit{}         = True
+hasS Cond{}         = False
+
+write2 :: E (T ()) -> [F2Temp] -> F2Temp -> CM [CS ()]
+write2 (Lam _ x e) (v:vs) vret = do
+    modify (addD2 x v)
+    write2 e vs vret
+write2 e [] r = f2eval e r
+
 writeF :: E (T ())
        -> [Arg]
        -> RT
@@ -1529,6 +1554,8 @@ f2eval (Var _ x) t = do {st <- gets d2vars; pure [MX2 () t (FTmp $ getT st x)]}
 f2eval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just fb <- mFop op = do
     (pl0,e0R) <- plD2 e0; (pl1,e1R) <- plD2 e1
     pure $ pl0 $ pl1 [MX2 () t (FBin fb (FTmp e0R) (FTmp e1R))]
+f2eval (FLit _ x) t = pure [MX2 () t (ConstF (x,x))]
+f2eval e _ = error (show e)
 
 feval :: E (T ()) -> FTemp -> CM [CS ()]
 feval (LLet _ b e) t = do
