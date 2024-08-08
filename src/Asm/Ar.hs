@@ -18,7 +18,7 @@ class Arch arch reg freg f2reg where
 
     -- | result: src, dest
     mI :: arch reg freg f2reg a -> Maybe (reg, reg)
-    mf :: arch reg freg f2reg a -> Maybe (freg, freg)
+    mf :: arch reg freg f2reg a -> Maybe (Int, Int)
 
     bb :: [arch reg freg f2reg a] -> [BB arch reg freg f2reg a ()]
     expand :: BB arch reg freg f2reg () Liveness -> [arch reg freg f2reg Liveness]
@@ -30,7 +30,7 @@ instance (E reg, E freg) => Arch X86.X86 reg freg f2reg where
     mI (X86.MovRR _ r0 r1) = Just (r1, r0)
     mI _                   = Nothing
 
-    mf (X86.Movapd _ r0 r1) = Just (r1, r0)
+    mf (X86.Movapd _ r0 r1) = Just (toInt r1, toInt r0)
     mf _                    = Nothing
 
     bb = X86.bb
@@ -43,7 +43,8 @@ instance (E reg, E freg, E f2reg) => Arch AArch64.AArch64 reg freg f2reg where
     mI (AArch64.MovRR _ r0 r1) = Just (r0, r1)
     mI _                       = Nothing
 
-    mf (AArch64.FMovXX _ r0 r1) = Just (r0, r1)
+    mf (AArch64.FMovXX _ r0 r1) = Just (toInt r0, toInt r1)
+    mf (AArch64.MovQQ _ v0 v1)  = Just (toInt v0, toInt v1)
     mf _                        = Nothing
 
     bb = AArch64.bb
