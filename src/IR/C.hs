@@ -73,7 +73,13 @@ cToIRM (Rof1 _ t ec s)        = do
 cToIRM (For _ t el rel eu s) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE el):MJ (IR.IRel (nr rel) (Reg t') (irE eu)) eL:L l:irs++[tick t', MJ (IR.IRel rel (Reg t') (irE eu)) l, L eL]
+    pure $ IR.MT t' (irE el):MJ (IR.IRel (nr rel) (Reg t') (irE eu)) eL:IR.L l:irs++[tick t', MJ (IR.IRel rel (Reg t') (irE eu)) l, L eL]
+  where
+    t'=ctemp t
+cToIRM (F2or _ t el rel eu s s1) = do
+    l <- nextL; eL <- nextL
+    irs <- foldMapM cToIRM s; ir1 <- foldMapM cToIRM s1
+    pure $ IR.MT t' (irE el):MJ (IR.IRel (nr rel) (Reg t') (irE eu)) eL:MJ (IR.IU IEven (irE eu-irE el)) l:ir1++tick t':IR.L l:irs++[IR.MT t' (Reg t'+2), MJ (IR.IRel rel (Reg t') (irE eu)) l, L eL]
   where
     t'=ctemp t
 cToIRM (For1 _ t el rel eu s) = do
