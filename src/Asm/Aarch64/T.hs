@@ -23,6 +23,9 @@ fabsReg IR.F0 = FArg0; fabsReg IR.F1 = FArg1; fabsReg IR.F2 = FArg2
 fabsReg IR.F3 = FArg3; fabsReg IR.F4 = FArg4; fabsReg IR.F5 = FArg5
 fabsReg IR.FRet = FArg0; fabsReg IR.FRet1 = FArg1
 
+f2absReg :: IR.F2 -> F2Abs
+f2absReg (IR.F2Temp i) = F2Reg i
+
 mB Op.AndB = AndRR
 mB Op.OrB  = OrRR
 mB Op.XorB = Eor
@@ -80,6 +83,10 @@ plF :: IR.FE -> WM ([AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AbsReg FAbsReg
 plF (IR.FReg t) = pure (id, fabsReg t)
 plF e           = do {i <- nextI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
 
+plF2 :: IR.F2E -> WM ([AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AbsReg FAbsReg F2Abs ()], F2Abs)
+plF2 (IR.FReg t) = pure (id, f2absReg t)
+plF2 e           = do {i <- nextI; pl <- f2eval e (IR.F2Temp i); pure ((pl++), F2Reg i)}
+
 plI :: IR.Exp -> WM ([AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AbsReg FAbsReg F2Abs ()], AbsReg)
 plI (IR.Reg t) = pure (id, absReg t)
 plI e          = do {i <- nextI; pl <- eval e (IR.ITemp i); pure ((pl++), IReg i)}
@@ -90,6 +97,7 @@ ir (IR.L l)      = pure [Label () l]
 ir (IR.J l)      = pure [B () l]
 ir (IR.C l)      = pure [C () l]
 ir (IR.MX t e)   = feval e t
+ir (IR.MX2 t e)  = f2eval e t
 ir (IR.MT t e)   = eval e t
 ir (IR.Ma _ t e) = do {r <- nextR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}
 ir (IR.Free t) = do {r <- nextR; pure $ puL ++ [MovRR () CArg0 (absReg t), AddRC () FP ASP 16, MovRCf () r Free, Blr () r] ++ poL}
@@ -299,6 +307,18 @@ cosϵ t = do
     pure $ [Fmul () d1 d0 d0, Fmul () d2 d1 d1, Fmul () d3 d2 d1] ++ pl0 ++ FMovXX () d0 tsC : pl2 ++ Fmadd () d0 d1 tsC d0 : pl4 ++ Fmadd () d0 d2 tsC d0 : pl6 ++ [Fmadd () d0 d3 tsC d0]
   where
     d0 = fabsReg t
+
+f2eval :: IR.F2E -> IR.F2 -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
+f2eval (IR.FAt (IR.AP tB (Just e) _)) tD = do
+    i <- nextI; plE <- eval e (IR.ITemp i)
+    pure $ plE ++ [LdrS () (f2absReg tD) (BI (absReg tB) (IReg i) Zero)]
+f2eval (IR.FB Op.FPlus e0 e1) t = do
+    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
+    pure$plE0$plE1$[Fadd2 () (f2absReg t) x0 x1]
+f2eval (IR.FB Op.FTimes e0 e1) t = do
+    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
+    pure$plE0$plE1$[Fmul2 () (f2absReg t) x0 x1]
+f2eval e _ = error (show e)
 
 feval :: IR.FE -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
