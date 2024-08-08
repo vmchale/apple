@@ -161,6 +161,7 @@ infix 9 =:
 
 data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
           | For1 { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
+          | F2or { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a], body1 :: [CS a] }
           | While { lann :: a, iVar :: Temp, loopCond :: IRel, eDone :: CE, body :: [CS a] }
           | MT { lann :: a, tDest :: Temp, tSrc :: CE }
           | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE FTemp Double CE }
@@ -211,6 +212,7 @@ pL f (Ma l _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <>
 pL f (MaΠ l _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz) <> f l
 pL f (For l t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (For1 l t el rel eu ss) = "for-1" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (F2or l t el rel eu ss ss1) = "for" <> parens (pretty t <> comma <+> pretty t <> "=" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=2") <#> lbrace <#> indent 4 (pCS f ss) <#> rbrace <#> lbrace <#> indent 4 (pCS f ss1) <#> rbrace <> f l
 pL f (While l t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (Ifn't l p s)          = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s) <#> rbrace <> f l
 pL f (If l p s0 s1)         = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS f s1) <#> rbrace <> f l
