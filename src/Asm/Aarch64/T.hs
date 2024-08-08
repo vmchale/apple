@@ -134,6 +134,11 @@ ir (IR.Wr (IR.AP t (Just eI) _) e) = do
     r <- nextI; rI <- nextI
     plE <- eval e (IR.ITemp r); plEI <- eval eI (IR.ITemp rI)
     pure $ plE ++ plEI ++ [Str () (IReg r) (BI (absReg t) (IReg rI) Zero)]
+ir (IR.WrF2 (IR.AP t (Just eI) _) e) = do
+    rI <- nextI
+    (plE,v) <- plF2 e
+    plEI <- eval eI (IR.ITemp rI)
+    pure$plE$plEI++[StrS () v (BI (absReg t) (IReg rI) Zero)]
 ir (IR.WrB (IR.AP t (Just eI) _) (IR.Is i)) = do
     rI <- nextI
     plEI <- eval eI (IR.ITemp rI)
@@ -320,12 +325,20 @@ f2eval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
 f2eval (IR.FB Op.FPlus e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1$[Fadd2 () (f2absReg t) x0 x1]
+f2eval (IR.FB Op.FMinus e0 e1) t = do
+    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
+    pure$plE0$plE1$[Fsub2 () (f2absReg t) x0 x1]
 f2eval (IR.FB Op.FTimes e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1$[Fmul2 () (f2absReg t) x0 x1]
 f2eval (IR.ConstF (0,0)) t =
     let q=f2absReg t
     in pure [ZeroS () q]
+f2eval (IR.ConstF (x,y)) t | x==y = do
+    i <- nextI
+    let r=IReg i
+        w=castDoubleToWord64 x
+    pure $ mw64 w r ++ [Dup () (f2absReg t) r]
 f2eval e _ = error (show e)
 
 feval :: IR.FE -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
