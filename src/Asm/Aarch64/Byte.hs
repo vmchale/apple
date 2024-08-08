@@ -77,15 +77,13 @@ ip :: Cond -> Word8
 ip = bp.inv where inv Eq=Neq; inv Neq=Eq; inv Gt=Leq; inv Geq=Lt; inv Lt=Geq; inv Leq=Gt
 
 bs :: Shift -> Word8
-bs Zero=0b0; bs Three=0b1
+bs Zero=0b0; bs Three=0b1; bs Four=0b1
 
 lsr :: Int -> Int -> Int
 lsr (I# n) (I# k) = I# (iShiftRL# n k)
 
 lb r rD = (0x7 .&. be r) `shiftL` 5 .|. be rD
 
--- https://stackoverflow.com/a/57312875/11296354
--- .2D arrangement specifier two doubles in vector register
 asm :: Int -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> [AArch64 AReg FAReg F2Reg ()] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (MovZ _ r i s:asms) = [0b11010010, 0b1 `shiftL` 7 .|. fromIntegral (s `quot` 16) `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral (0xff .&. (i `shiftR` 3)), fromIntegral (0x7 .&. i) `shiftL` 5 .|. be r]:asm (ix+4) st asms
@@ -100,6 +98,10 @@ asm ix st (Fdiv _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b110 
 asm ix st (Fmax _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b10010 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fmin _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b10110 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fabs _ d0 d1:asms) = [0b00011110, 0x60, 0x3 `shiftL` 6 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
+-- https://stackoverflow.com/a/57312875/11296354
+-- .2D arrangement specifier = two doubles in vector register
+asm ix st (Fadd2 _ x0 x1 x2:asms) = [0b01001110, 0x3 `shiftL` 5 .|. be x2, 0b110101 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
+asm ix st (Fmul2 _ x0 x1 x2:asms) = [0b01101110, 0b11 `shiftL` 5 .|. be x2, 0b110111 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
 asm ix st (Fmadd _ d0 d1 d2 d3:asms) = [0b00011111, 0x2 `shiftL` 5 .|. be d2, be d3 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fmsub _ d0 d1 d2 d3:asms) = [0b00011111, 0x2 `shiftL` 5 .|. be d2, 0x1 `shiftL` 7 .|. be d3 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Label{}:asms) = asm ix st asms
@@ -165,6 +167,7 @@ asm ix st (LdrD _ d (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 8, u < 32760 = [0b
 asm ix st (LdrD _ d (BI rb ri s):asms) = [0b11111100, 0x3 `shiftL` 5 .|. be ri, 0x3 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0x2 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
 asm ix st (LdpD _ d0 d1 (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 8, uϵ <= 504 = [0x6d, 0x1 `shiftL` 6 .|. fromIntegral (uϵ `shiftR` 1), fromIntegral (uϵ .&. 0b1) `shiftL` 7 .|. be d1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d0]:asm (ix+4) st asms
 asm ix st (LdpD x d0 d1 (R rb):asms) = asm ix st (LdpD x d0 d1 (RP rb 0):asms)
+asm ix st (LdrS _ q (BI rb ri s):asms) = [0b00111100, 0b111 `shiftL` 5 .|. be ri, 0b11 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0b10 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (Ldp2 _ q0 q1 (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 16, u <= 1008 = [0b10101101, 0x1 `shiftL` 6 .|. fromIntegral (uϵ `shiftR` 1), fromIntegral (0x1 .&. uϵ) `shiftL` 7 .|. be q1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q0]:asm (ix+4) st asms
 asm ix st (Ldp2 x q0 q1 (R rb):asms) = asm ix st (Ldp2 x q0 q1 (RP rb 0):asms)
 asm ix st (CmpRR _ r0 r1:asms) = [0b11101011, be r1, be r0 `shiftR` 3, (0x7 .&. be r0) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
