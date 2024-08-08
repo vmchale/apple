@@ -147,6 +147,8 @@ uses EorS{}               = IS.empty
 uses Bl{}                 = IS.empty
 uses C{}                  = singleton ASP
 uses RetL{}               = singleton LR
+uses MovQQ{}              = IS.empty
+uses Fmla{}               = IS.empty
 
 defs FMovXX{}            = IS.empty
 defs (MovRC _ r _)       = singleton r
@@ -228,6 +230,8 @@ defs ZeroS{}             = IS.empty
 defs Bl{}                = singleton LR
 defs C{}                 = fromList [LR, FP]
 defs RetL{}              = IS.empty
+defs MovQQ{}             = IS.empty
+defs Fmla{}              = IS.empty
 
 defsF, usesF :: (E freg, E f2reg) => AArch64 reg freg f2reg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
@@ -312,6 +316,8 @@ defsF (EorS _ v _ _)     = singleton v
 defsF Cset{}             = IS.empty
 defsF Bl{}               = IS.empty
 defsF C{}                = IS.empty
+defsF (MovQQ _ v _)      = singleton v
+defsF (Fmla _ v _ _)     = singleton v
 
 usesF (FMovXX _ _ r)       = singleton r
 usesF MovRR{}              = IS.empty
@@ -394,6 +400,8 @@ usesF Bl{}                 = IS.empty
 usesF C{}                  = IS.empty
 usesF RetL{}               = IS.empty
 usesF ZeroS{}              = IS.empty
+usesF (Fmla _ v0 v1 v2)    = fromList [v0,v1,v2]
+usesF (MovQQ _ _ vS)       = singleton vS
 
 next :: (E reg, E freg, E f2reg) => [BB AArch64 reg freg f2reg () ()] -> FreshM ([N] -> [N], [BB AArch64 reg freg f2reg () ControlAnn])
 next bbs = do
