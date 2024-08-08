@@ -149,12 +149,12 @@ fToInt FArg6    = 16
 fToInt FArg7    = 17
 fToInt (FReg i) = 19+i
 
-data Shift = Zero | Three
+data Shift = Zero | Three | Four
 
-instance NFData Shift where rnf Zero = (); rnf Three = ()
+instance NFData Shift where rnf Zero = (); rnf Three = (); rnf Four = ()
 
 instance Pretty Shift where
-    pretty Zero = "#0"; pretty Three = "#3"
+    pretty Zero = "#0"; pretty Three = "#3"; pretty Four = "#4"
 
 -- left: shift left by this much
 data BM = BM { ims, left :: !Word8 } deriving Eq
@@ -455,7 +455,6 @@ hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")
        | otherwise = pretty ("#0x"++showHex n "")
 
 pvd v = pv v <> ".2d"
-pvv v = pv v <> ".16b"
 
 ar2 r0 r1 = pretty r0 <> "," <+> pretty r1; aw r a = pw r <> "," <+> pretty a
 ar3 r0 r1 r2 = pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2
