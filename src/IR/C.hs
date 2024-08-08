@@ -24,6 +24,9 @@ ctemp C.C0 = IR.C0; ctemp C.C1 = IR.C1; ctemp C.C2 = IR.C2
 ctemp C.C3 = IR.C3; ctemp C.C4 = IR.C4; ctemp C.C5 = IR.C5
 ctemp C.CRet = IR.CRet
 
+f2x :: C.F2Temp -> IR.F2
+f2x (C.F2Temp i) = IR.F2Temp i
+
 fx :: C.FTemp -> IR.FTemp
 fx (C.FTemp i) = IR.FTemp i
 fx FRet0 = FRet; fx C.FRet1 = IR.FRet1
@@ -46,10 +49,11 @@ cToIRM (Def _ l cs)          = do
     pure (J endL:L l:irs++[IR.R l, L endL])
 cToIRM (C.PlProd _ t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT t' (IR.Reg t'*irE eϵ) | eϵ <- es])
 cToIRM (C.MT _ t e)        = pure [IR.MT (ctemp t) (irE e)]
-cToIRM (C.MX _ t e)          = pure [IR.MX (fx t) (irX e)]
-cToIRM (C.MB _ t e)          = pure [IR.MT (cbtemp t) (irp e)]
-cToIRM (Rnd _ t)             = pure [IR.IRnd (ctemp t)]
-cToIRM (C.FRnd _ t)          = pure [IR.FRnd (fx t)]
+cToIRM (C.MX _ t e)        = pure [IR.MX (fx t) (irX e)]
+cToIRM (C.MX2 _ t e)       = pure [IR.MX2 (f2x t) (irX2 e)]
+cToIRM (C.MB _ t e)        = pure [IR.MT (cbtemp t) (irp e)]
+cToIRM (Rnd _ t)           = pure [IR.IRnd (ctemp t)]
+cToIRM (C.FRnd _ t)        = pure [IR.FRnd (fx t)]
 cToIRM (C.Ma _ l t (C.ConstI rnkI) n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) (IR.ConstI s)+IR.ConstI (8+8*rnkI)), IR.Wr (AP t' Nothing (Just l)) (IR.ConstI rnkI)]
 cToIRM (C.Ma _ l t rnk n sz) | Just s <- cLog sz = let t'=ctemp t in pure [IR.Ma l t' (IR.IB IAsl (irE n) (IR.ConstI s)+IR.IB IAsl (irE rnk) 3+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
 cToIRM (C.Ma _ l t rnk n sz) = let t'=ctemp t in pure [IR.Ma l t' (irE n*IR.ConstI sz+IR.IB IAsl (irE rnk) 3+8), IR.Wr (AP t' Nothing (Just l)) (irE rnk)]
@@ -169,6 +173,12 @@ irp (C.PAt a)          = IR.BAt (irAt a)
 irp (C.BConst True)    = IR.ConstI 1
 irp (C.BConst False)   = IR.ConstI 0
 irp (C.Boo op e0 e1)   = IB (BI op) (irp e0) (irp e1)
+
+irX2 :: C.F2E -> IR.F2E
+irX2 (C.ConstF x)    = IR.ConstF x
+irX2 (C.FAt a)       = IR.FAt (irAt a)
+irX2 (FTmp t)        = FReg (f2x t)
+irX2 (FBin op x0 x1) = FB op (irX2 x0) (irX2 x1)
 
 irX :: F1E -> FE
 irX (C.ConstF x)    = IR.ConstF x

@@ -34,7 +34,7 @@ data BTemp = BTemp !Int | CBRet deriving Eq
 data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
 
-data F2Temp = F2Temp !Int
+newtype F2Temp = F2Temp Int
 
 instance Pretty BTemp where pretty (BTemp i) = "P" <> pretty i; pretty CBRet = "PRet"
 

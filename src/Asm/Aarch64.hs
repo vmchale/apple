@@ -212,6 +212,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | StrB { ann :: a, rSrc :: reg, aDest :: Addr reg }
                          | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
                          | StrD { ann :: a, dSrc :: freg, aDest :: Addr reg }
+                         | LdrS { ann :: a, qDest :: V2Reg freg, aSrc :: Addr reg }
                          | SubRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | AddRRS { ann :: a, rDest, rSrc1, rSrc2 :: reg, sC :: Word8 }
@@ -236,6 +237,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fadd { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fsub { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
+                         | Fadd2 { ann :: a, d2Dest, d2Src1, d2Src :: V2Reg freg }
+                         | Fmul2 { ann :: a, d2Dest, d2Src1, d2Src :: V2Reg freg }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                          | Fneg { ann :: a, dDest, dSrc :: freg }
@@ -349,6 +352,9 @@ mapR f (EorI l r0 r1 i)      = EorI l (f r0) (f r1) i
 mapR f (Ldp2 l r0 r1 a)      = Ldp2 l r0 r1 (f<$>a)
 mapR f (Stp2 l r0 r1 a)      = Stp2 l r0 r1 (f<$>a)
 mapR f (Bfc x r l w)         = Bfc x (f r) l w
+mapR f (LdrS l q a)          = LdrS l q (f<$>a)
+mapR _ (Fadd2 l x0 x1 x2)    = Fadd2 l x0 x1 x2
+mapR _ (Fmul2 l x0 x1 x2)    = Fmul2 l x0 x1 x2
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -427,6 +433,9 @@ mapFR _ (Cset l r c)          = Cset l r c
 mapFR f (Ldp2 l q0 q1 a)      = Ldp2 l (f<$>q0) (f<$>q1) a
 mapFR f (Stp2 l q0 q1 a)      = Stp2 l (f<$>q0) (f<$>q1) a
 mapFR _ (Bfc x r l w)         = Bfc x r l w
+mapFR f (LdrS l q a)          = LdrS l (f<$>q) a
+mapFR f (Fadd2 l x0 x1 x2)    = Fadd2 l (f<$>x0) (f<$>x1) (f<$>x2)
+mapFR f (Fmul2 l x0 x1 x2)    = Fmul2 l (f<$>x0) (f<$>x1) (f<$>x2)
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -461,6 +470,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
     pretty (Label _ l)            = prettyLabel l <> ":"
     pretty isn = i4 (p4 isn)
       where
+        p4 Label{}                = error "shouldn't happen."
         p4 (B _ l)                = "b" <+> prettyLabel l
         p4 (Blr _ r)              = "blr" <+> pretty r
         p4 (Bl _ l)               = "bl" <+> pSym l
@@ -498,6 +508,8 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fadd _ rD r0 r1)      = "fadd" <+> ar3 rD r0 r1
         p4 (Fsub _ rD r0 r1)      = "fsub" <+> ar3 rD r0 r1
         p4 (Fdiv _ rD r0 r1)      = "fdiv" <+> ar3 rD r0 r1
+        p4 (Fmul2 _ xD x0 x1)     = "fmul" <+> pv xD <> "," <+> pv x0 <> "," <+> pv x1
+        p4 (Fadd2 _ xD x0 x1)     = "fadd" <+> pv xD <> "," <+> pv x0 <> "," <+> pv x1
         p4 (FcmpZ _ xr)           = "fcmp" <+> pretty xr <> "," <+> "#0.0"
         p4 (Fneg _ d0 d1)         = "fneg" <+> ar2 d0 d1
         p4 Ret{}                  = "ret"
@@ -521,6 +533,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Sdiv _ rD rS rS')     = "sdiv" <+> ar3 rD rS rS'
         p4 (Fsqrt _ d0 d1)        = "fsqrt" <+> ar2 d0 d1
         p4 (Frintm _ d0 d1)       = "frintm" <+> ar2 d0 d1
+        p4 (LdrS _ q a)           = "ldr" <+> pq q <> "," <+> pretty a
         p4 (MrsR _ r)             = "mrs" <+> pretty r <> "," <+> "rndr"
         p4 (MovRCf _ r cf)        = "mov" <+> ar2 r cf
         p4 (LdrRL _ r l)          = "ldr" <+> pretty r <> "," <+> "=arr_" <> pretty l
@@ -536,7 +549,6 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (TstI _ r i)           = "tst" <+> pretty r <> "," <+> pretty i
         p4 (Cset _ r c)           = "cset" <+> ar2 r c
         p4 (Bfc _ r l w)          = "bfc" <+> pretty r <> "," <+> pretty l <> "," <+> pretty w
-        p4 Label{}                = error "shouldn't happen."
 
 instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty
 

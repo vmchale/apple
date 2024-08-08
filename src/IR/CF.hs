@@ -96,6 +96,9 @@ singleton = IS.singleton . rToInt
 fsingleton :: FTemp -> IS.IntSet
 fsingleton = IS.singleton . fToInt
 
+f2is :: F2 -> IS.IntSet
+f2is = IS.singleton . f2ToInt
+
 uE :: Exp -> IS.IntSet
 uE (Reg r)        = singleton r
 uE ConstI{}       = IS.empty
@@ -124,6 +127,13 @@ uFF Is{}           = IS.empty
 uFF (EAt e)        = uAF e
 uFF (BAt e)        = uAF e
 
+uF2 :: F2E -> IS.IntSet
+uF2 ConstF{}     = IS.empty
+uF2 (FReg t)     = f2is t
+uF2 (FB _ e0 e1) = uF2 e0<>uF2 e1
+uF2 (FU _ e)     = uF2 e
+uF2 (FAt e)      = uAF e -- fexp doesn't ever come from f2exp (or vice versa); move in statements
+
 uF :: FE -> IS.IntSet
 uF ConstF{}     = IS.empty
 uF (FB _ e0 e1) = uF e0 <> uF e1
@@ -148,6 +158,13 @@ uFR FReg{}       = IS.empty
 uFR (FU _ e)     = uFR e
 uFR ConstF{}     = IS.empty
 
+uFR2 :: F2E -> IS.IntSet
+uFR2 (FAt a)      = uA a
+uFR2 FReg{}       = IS.empty
+uFR2 (FB _ e0 e1) = uFR2 e0<>uFR2 e1
+uFR2 ConstF{}     = IS.empty
+uFR2 (FU _ e)     = uFR2 e
+
 uses, defs :: Stmt -> IS.IntSet
 uses IRnd{}         = IS.empty
 uses FRnd{}         = IS.empty
@@ -156,6 +173,7 @@ uses J{}            = IS.empty
 uses (MJ e _)       = uE e
 uses (MT _ e)       = uE e
 uses (MX _ e)       = uFR e
+uses (MX2 _ e)      = uFR2 e
 uses (Ma _ _ e)     = uE e
 uses (Free t)       = singleton t
 uses RA{}           = IS.empty
@@ -186,6 +204,7 @@ usesF, defsF :: Stmt -> IS.IntSet
 usesF IRnd{}         = IS.empty
 usesF FRnd{}         = IS.empty
 usesF (MX _ e)       = uF e
+usesF (MX2 _ e)      = uF2 e
 usesF L{}            = IS.empty
 usesF J{}            = IS.empty
 usesF (MJ e _)       = uFF e

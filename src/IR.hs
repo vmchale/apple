@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module IR ( Exp (..), FExp (..), FE
+module IR ( Exp (..), FExp (..), FE, F2E
           , Stmt (..)
-          , Temp (..), FTemp (..)
+          , Temp (..), FTemp (..), F2 (..)
           , Label, AsmData
           , AE (..)
           , WSt (..)
@@ -12,6 +12,7 @@ module IR ( Exp (..), FExp (..), FE
 import           CF.AL
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
+import           Data.Void         (Void)
 import           Data.Word         (Word64)
 import           Op
 import           Prettyprinter     (Doc, Pretty (..), hardline, parens, (<+>))
@@ -30,12 +31,11 @@ data FTemp = FTemp !Int
            | FRet | FRet1
            deriving (Eq, Ord)
 
-data F2 = F2Temp !Int
+newtype F2 = F2Temp { f2ToInt :: Int }
 
 instance Pretty F2 where pretty (F2Temp i) = "f2_" <> pretty i
 
-data Temp = ITemp !Int
-          | ATemp !Int
+data Temp = ITemp !Int | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5
           | CRet
           deriving Eq
@@ -68,6 +68,7 @@ data Stmt = L Label
           | MJ Exp Label
           | J Label
           | MT Temp Exp | MX FTemp FE -- move targeting xmm0 &c.
+          | MX2 F2 F2E
           | Ma AL Temp Exp -- label, register, size
           | Free Temp | RA !AL -- "return array" no-op
           | Wr AE Exp | WrF AE FE | WrB AE Exp
@@ -86,6 +87,7 @@ instance Pretty Stmt where
     pretty (L l)         = hardline <> prettyLabel l <> ":"
     pretty (MT t e)      = parens ("movtemp" <+> pretty t <+> pretty e)
     pretty (MX t e)      = parens ("movf" <+> pretty t <+> pretty e)
+    pretty (MX2 t e)     = parens ("movf2" <+> pretty t <+> pretty e)
     pretty (MJ e l)      = parens ("mjump" <+> pretty e <+> prettyLabel l)
     pretty (J l)         = parens ("j" <+> prettyLabel l)
     pretty (Wr p e)      = parens ("write" <+> pretty p <+> pretty e)
@@ -116,14 +118,14 @@ instance Pretty AE where
     pretty (AP t Nothing _)  = parens ("ptr" <+> pretty t)
     pretty (AP t (Just e) _) = parens ("ptr" <+> pretty t <> "+" <> pretty e)
 
-data FExp t c e = ConstF Double
+data FExp t c e = ConstF c
                 | FB FBin (FExp t c e) (FExp t c e)
                 | FConv e
-                | FReg FTemp
+                | FReg t
                 | FU FUn (FExp t c e)
                 | FAt AE
 
-type FE=FExp FTemp Double Exp
+type FE=FExp FTemp Double Exp; type F2E=FExp F2 (Double, Double) Void
 
 instance Num Exp where
     (+) = IB IPlus; (*) = IB ITimes; (-) = IB IMinus; fromInteger = ConstI . fromInteger
