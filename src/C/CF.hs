@@ -4,14 +4,14 @@ import           C
 import           CF
 import           CF.AL
 import           Control.Monad.Trans.State.Strict (State, evalState, gets, modify, state)
-import           Data.Bifunctor             (first)
-import           Data.Functor               (($>))
-import qualified Data.IntMap                as IM
-import qualified Data.IntSet                as IS
-import           Data.List                  (uncons)
-import qualified Data.Map                   as M
-import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
-import           Data.Void                  (Void)
+import           Data.Bifunctor                   (first)
+import           Data.Functor                     (($>))
+import qualified Data.IntMap                      as IM
+import qualified Data.IntSet                      as IS
+import           Data.List                        (uncons)
+import qualified Data.Map                         as M
+import           Data.Tuple.Extra                 (second3, snd3, thd3, third3)
+import           Data.Void                        (Void, absurd)
 import           Q
 
 type N=Int
@@ -61,32 +61,36 @@ emptyL = Liveness IS.empty IS.empty IS.empty IS.empty
 
 initLiveness :: [CS ControlAnn] -> IM.IntMap (ControlAnn, Liveness)
 initLiveness = IM.fromList . go where
-    go []                          = []
-    go (For ann _ _ _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
-    go (F2or ann _ _ _ _ ss s1:cs) = (node ann, (ann, emptyL)):go s1++go ss++go cs
-    go (For1 ann _ _ _ _ ss:cs)    = (node ann, (ann, emptyL)):go ss++go cs
-    go (Rof ann _ _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
-    go (Rof1 ann _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
-    go (While ann _ _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
-    go (WT ann _ ss:cs)         = (node ann, (ann, emptyL)):go ss++go cs
-    go (If ann _ ss ss':cs)        = (node ann, (ann, emptyL)):go ss++go ss'++go cs
-    go (Ifn't ann _ ss:cs)         = (node ann, (ann, emptyL)):go ss++go cs
-    go (Def ann _ ss:cs)           = (node ann, (ann, emptyL)):go ss++go cs
-    go (c:cs)                      = let x=lann c in (node x, (x, emptyL)):go cs
+    go []                           = []
+    go (For ann _ _ _ _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
+    go (F2orE ann _ _ _ _ ss:cs)    = (node ann, (ann, emptyL)):go ss++go cs
+    go (F2or ann _ _ _ _ ss s1:cs)  = (node ann, (ann, emptyL)):go s1++go ss++go cs
+    go (F2orO ann _ _ _ _ ss s1:cs) = (node ann, (ann, emptyL)):go s1++go ss++go cs
+    go (For1 ann _ _ _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
+    go (Rof ann _ _ ss:cs)          = (node ann, (ann, emptyL)):go ss++go cs
+    go (Rof1 ann _ _ ss:cs)         = (node ann, (ann, emptyL)):go ss++go cs
+    go (While ann _ _ _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
+    go (WT ann _ ss:cs)             = (node ann, (ann, emptyL)):go ss++go cs
+    go (If ann _ ss ss':cs)         = (node ann, (ann, emptyL)):go ss++go ss'++go cs
+    go (Ifn't ann _ ss:cs)          = (node ann, (ann, emptyL)):go ss++go cs
+    go (Def ann _ ss:cs)            = (node ann, (ann, emptyL)):go ss++go cs
+    go (c:cs)                       = let x=lann c in (node x, (x, emptyL)):go cs
 
 inspectOrder :: [CS ControlAnn] -> [N]
-inspectOrder (For ann _ _ _ _ ss:cs)     = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (F2or ann _ _ _ _ ss s1:cs) = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
-inspectOrder (Rof ann _ _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (Rof1 ann _ _ ss:cs)     = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (For1 ann _ _ _ _ ss:cs)    = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (While ann _ _ _ ss:cs)     = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (WT ann _ ss:cs)         = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (If ann _ ss ss':cs)        = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
-inspectOrder (Ifn't ann _ ss:cs)         = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (Def ann _ ss:cs)           = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (c:cs)                      = node (lann c):inspectOrder cs
-inspectOrder []                          = []
+inspectOrder (For ann _ _ _ _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (F2orE ann _ _ _ _ ss:cs)    = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (F2or ann _ _ _ _ ss s1:cs)  = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
+inspectOrder (F2orO ann _ _ _ _ ss s1:cs) = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
+inspectOrder (For1 ann _ _ _ _ ss:cs)     = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (Rof ann _ _ ss:cs)          = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (Rof1 ann _ _ ss:cs)         = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (While ann _ _ _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (WT ann _ ss:cs)             = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (If ann _ ss ss':cs)         = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
+inspectOrder (Ifn't ann _ ss:cs)          = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (Def ann _ ss:cs)            = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (c:cs)                       = node (lann c):inspectOrder cs
+inspectOrder []                           = []
 
 tieBranch :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
 tieBranch i f ss = do
@@ -143,6 +147,13 @@ addCF ((For _ t el c eu ss):stmts) = do
     pure $ For (ControlAnn i (f (h [])) udϵ) t el c eu ss':stmts'
   where
     udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+addCF ((F2orE _ t el c eu ss):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h, ss') <- tieBody i f ss
+    pure $ F2orE (ControlAnn i (f (h [])) udϵ) t el c eu ss':stmts'
+  where
+    udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
 addCF ((F2or _ t el c eu s1 ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
@@ -152,6 +163,17 @@ addCF ((F2or _ t el c eu s1 ss):stmts) = do
             Nothing        -> []
             Just (hb, ssϵ) -> fmap (mC h1) hb:ssϵ
     pure $ F2or (ControlAnn i (f (h (h1 []))) udϵ) t el c eu s1' ss'':stmts'
+  where
+    udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+addCF ((F2orO _ t el c eu s1 ss):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h1, s1') <- tieBranch i f s1
+    (h, ss') <- tieBody i f ss
+    let ss'' = case uncons ss' of
+            Nothing        -> []
+            Just (hb, ssϵ) -> fmap (mC h1) hb:ssϵ
+    pure $ F2orO (ControlAnn i (f (h (h1 []))) udϵ) t el c eu s1' ss'':stmts'
   where
     udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
 addCF ((For1 _ t el c eu ss):stmts) = do
@@ -233,6 +255,7 @@ uF2 (FAt a)        = uA a
 uF2 ConstF{}       = IS.empty
 uF2 (FUn _ e)      = uF2 e
 uF2 (FBin _ e0 e1) = uF2 e0<>uF2 e1
+uF2 (IE x)         = absurd x
 
 m'insert (Just l) a = sinsert l a
 m'insert Nothing a  = a
@@ -298,16 +321,18 @@ next stmts = do
 
 -- | Construct map assigning labels to their node name.
 brs :: [CS ()] -> FreshM ()
-brs []                           = pure ()
-brs (G _ l retL:stmts)           = do {i <- fm retL; b3 i l; brs stmts}
-brs (Def _ f b:stmts)            = fm f *> brs b *> brs stmts
-brs (Rof _ _ _ ss:stmts)      = brs ss *> brs stmts
-brs (Rof1 _ _ _ ss:stmts)     = brs ss *> brs stmts
-brs (For _ _ _ _ _ ss:stmts)     = brs ss *> brs stmts
-brs (F2or _ _ _ _ _ ss s1:stmts) = brs ss *> brs s1 *> brs stmts
-brs (For1 _ _ _ _ _ ss:stmts)    = brs ss *> brs stmts
-brs (While _ _ _ _ ss:stmts)     = brs ss *> brs stmts
-brs (WT _ _ ss:stmts)         = brs ss *> brs stmts
-brs (If _ _ ss ss':stmts)        = brs ss *> brs ss' *> brs stmts
-brs (Ifn't _ _ ss:stmts)         = brs ss *> brs stmts
-brs (_:asms)                     = brs asms
+brs []                            = pure ()
+brs (G _ l retL:stmts)            = do {i <- fm retL; b3 i l; brs stmts}
+brs (Def _ f b:stmts)             = fm f *> brs b *> brs stmts
+brs (For _ _ _ _ _ ss:stmts)      = brs ss *> brs stmts
+brs (F2orE _ _ _ _ _ ss:stmts)    = brs ss *> brs stmts
+brs (F2or _ _ _ _ _ ss s1:stmts)  = brs ss *> brs s1 *> brs stmts
+brs (F2orO _ _ _ _ _ ss s1:stmts) = brs ss *> brs s1 *> brs stmts
+brs (For1 _ _ _ _ _ ss:stmts)     = brs ss *> brs stmts
+brs (Rof _ _ _ ss:stmts)          = brs ss *> brs stmts
+brs (Rof1 _ _ _ ss:stmts)         = brs ss *> brs stmts
+brs (While _ _ _ _ ss:stmts)      = brs ss *> brs stmts
+brs (WT _ _ ss:stmts)             = brs ss *> brs stmts
+brs (If _ _ ss ss':stmts)         = brs ss *> brs ss' *> brs stmts
+brs (Ifn't _ _ ss:stmts)          = brs ss *> brs stmts
+brs (_:asms)                      = brs asms

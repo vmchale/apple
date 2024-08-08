@@ -4,6 +4,7 @@ import           Bits
 import           C
 import           Control.Monad                    (foldM)
 import           Control.Monad.Trans.State.Strict (State, runState, state)
+import           Data.Void                        (absurd)
 import           IR
 import           Op
 
@@ -85,6 +86,18 @@ cToIRM (F2or _ t el rel eu s s1) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s; ir1 <- foldMapM cToIRM s1
     pure $ IR.MT t' (irE el):MJ (IR.IRel (nr rel) (Reg t') (irE eu)) eL:MJ (IR.IU IEven (irE eu-irE el)) l:ir1++tick t':IR.L l:irs++[IR.MT t' (Reg t'+2), MJ (IR.IRel rel (Reg t') (irE eu)) l, L eL]
+  where
+    t'=ctemp t
+cToIRM (F2orE _ t el rel eu s) = do
+    l <- nextL
+    irs <- foldMapM cToIRM s
+    pure $ IR.MT t' (irE el):L l:irs++[IR.MT t' (Reg t'+2), MJ (IR.IRel rel (Reg t') (irE eu)) l]
+  where
+    t'=ctemp t
+cToIRM (F2orO _ t el rel eu s s1) = do
+    l <- nextL
+    irs <- foldMapM cToIRM s; ir1 <- foldMapM cToIRM s1
+    pure $ IR.MT t' (irE el):ir1++tick t':L l:irs++[IR.MT t' (Reg t'+2), MJ (IR.IRel rel (Reg t') (irE eu)) l]
   where
     t'=ctemp t
 cToIRM (For1 _ t el rel eu s) = do
@@ -180,6 +193,7 @@ irX2 (C.ConstF x)    = IR.ConstF x
 irX2 (C.FAt a)       = IR.FAt (irAt a)
 irX2 (FTmp t)        = FReg (f2x t)
 irX2 (FBin op x0 x1) = FB op (irX2 x0) (irX2 x1)
+irX2 (IE x)          = absurd x
 
 irX :: F1E -> FE
 irX (C.ConstF x)    = IR.ConstF x
