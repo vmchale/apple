@@ -201,6 +201,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | FMovXX { ann :: a, dDest, dSrc :: freg }
                          | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                          | MovRR { ann :: a, rDest, rSrc :: reg }
+                         | MovQQ { ann :: a, qDest, qSrc :: V2Reg freg }
                          | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
                          | MovZ { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                          | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
@@ -257,6 +258,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fmadd { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
                          | Fmsub { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
                          | Fsqrt { ann :: a, dDest, dSrc :: freg }
+                         | Fmla { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Frintm { ann :: a, dDest, dSrc :: freg }
                          | MrsR { ann :: a, rDest :: reg }
                          | Fmax { ann :: a, dDest, dSrc1, dSrc2 :: freg }
@@ -361,6 +363,8 @@ mapR f (LdrS l q a)          = LdrS l q (f<$>a)
 mapR _ (Fadd2 l x0 x1 x2)    = Fadd2 l x0 x1 x2
 mapR _ (Fmul2 l x0 x1 x2)    = Fmul2 l x0 x1 x2
 mapR _ (Faddp l d v)         = Faddp l d v
+mapR _ (MovQQ l v0 v1)       = MovQQ l v0 v1
+mapR _ (Fmla l v0 v1 v2)     = Fmla l v0 v1 v2
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -445,6 +449,8 @@ mapFR f (Fmul2 l x0 x1 x2)    = Fmul2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (EorS l v0 v1 v2)     = EorS l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (ZeroS l v)           = ZeroS l (f<$>v)
 mapFR f (Faddp l d v)         = Faddp l (f d) (f<$>v)
+mapFR f (MovQQ l v0 v1)       = MovQQ l (f<$>v0) (f<$>v1)
+mapFR f (Fmla l v0 v1 v2)     = Fmla l (f<$>v0) (f<$>v1) (f<$>v2)
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -510,6 +516,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (AddRC _ rD rS u)      = "add" <+> r2i rD rS u
         p4 (Lsl _ rD rS u)        = "lsl" <+> r2i rD rS u
         p4 (Asr _ rD rS u)        = "asr" <+> r2i rD rS u
+        p4 (MovQQ _ v0 v1)        = "mov" <+> pvv v0 <> "," <+> pvv v1
         p4 (CmpRC _ r u)          = "cmp" <+> pretty r <> "," <+> hexd u
         p4 (CmpRR _ r0 r1)        = "cmp" <+> ar2 r0 r1
         p4 (Neg _ rD rS)          = "neg" <+> ar2 rD rS
@@ -540,6 +547,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (LdpD _ d0 d1 a)       = "ldp" <+> ar3 d0 d1 a
         p4 (Fmadd _ d0 d1 d2 d3)  = "fmadd" <+> ar4 d0 d1 d2 d3
         p4 (Fmsub _ d0 d1 d2 d3)  = "fmsub" <+> ar4 d0 d1 d2 d3
+        p4 (Fmla _ v0 v1 v2)      = "fmla" <+> v3 v0 v1 v2
         p4 (Madd _ r0 r1 r2 r3)   = "madd" <+> ar4 r0 r1 r2 r3
         p4 (Msub _ r0 r1 r2 r3)   = "msub" <+> ar4 r0 r1 r2 r3
         p4 (Sdiv _ rD rS rS')     = "sdiv" <+> ar3 rD rS rS'

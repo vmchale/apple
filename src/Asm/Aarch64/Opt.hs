@@ -14,6 +14,7 @@ opt (SubRC _ r r1 w:CmpRC _ r' 0:asms) | r==r' = SubsRC () r r1 w:opt asms
 opt ((MovRC _ r 0):asms) = opt (ZeroR () r:asms)
 opt ((ZeroR _ r0):(MovK _ r1 u s):asms) | r0 == r1 = opt (MovZ () r1 u s:asms)
 opt ((MovRR _ r0 r1):asms) | r0 == r1 = opt asms
+opt ((MovQQ _ v0 v1):asms) | v0 == v1 = opt asms
 opt ((FMovXX _ r0 r1):asms) | r0 == r1 = opt asms
 opt (asm:asms) = asm : opt asms
 opt [] = []

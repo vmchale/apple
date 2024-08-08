@@ -384,6 +384,10 @@ f2eval :: IR.F2E -> IR.F2 -> WM [AArch64 AbsReg FAbsReg ()]
 f2eval (IR.FAt (IR.AP tB (Just e) _)) tD = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [LdrS () (f2absReg tD) (BI (absReg tB) (IReg i) Zero)]
+f2eval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
+    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1; (plE2,x2) <- plF2 e2
+    x <- nextV
+    pure$plE0$plE1$plE2$[MovQQ () x x0, Fmla () x x1 x2, MovQQ () (f2absReg t) x]
 f2eval (IR.FB Op.FPlus e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1$[Fadd2 () (f2absReg t) x0 x1]

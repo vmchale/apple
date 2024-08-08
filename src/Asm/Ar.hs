@@ -44,6 +44,7 @@ instance (E reg, E freg) => Arch AArch64.AArch64 reg freg where
     mI _                       = Nothing
 
     mf (AArch64.FMovXX _ r0 r1) = Just (toInt r0, toInt r1)
+    mf (AArch64.MovQQ _ v0 v1)  = Just (toInt v0, toInt v1)
     mf _                        = Nothing
 
     bb = AArch64.bb
