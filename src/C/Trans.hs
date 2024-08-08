@@ -61,9 +61,6 @@ nF = FTemp <$> nextI
 newF2Temp :: CM F2Temp
 newF2Temp = F2Temp <$> nextI
 
-zl :: F2Temp -> FTemp
-zl (F2Temp i) = FTemp i
-
 addAA :: Int -> [Word64] -> CSt -> CSt
 addAA i aa (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts
 
@@ -180,6 +177,18 @@ nz (StaPlus _ i0 i1) = nz i0 || nz i1 -- no negative dims
 nz (StaMul _ i0 i1) = nz i0 && nz i1
 nz _ = False
 
+ipe :: I a -> Bool
+ipe (Ix _ i)          = i > 0 && even i
+ipe (StaPlus _ i0 i1) = ipe i0&&ipe i1||ipo i0&&ipo i1
+ipe (StaMul _ i0 i1)  = ipe i0 || ipe i1
+ipe _                 = False
+
+ipo :: I a -> Bool
+ipo (Ix _ i)          = odd i
+ipo (StaPlus _ i0 i1) = ipe i0&&ipo i1||ipo i0&&ipe i1
+ipo (StaMul _ i0 i1)  = ipo i0 && ipo i1
+ipo _                 = False
+
 nzSh :: Sh a -> Bool
 nzSh (i `Cons` Nil) = nz i
 nzSh (i `Cons` sh)  = nz i && nzSh sh
@@ -195,6 +204,13 @@ ne (Arr (i `Cons` _) _) = nz i; ne _=False
 n1 (Arr (i `Cons` _) _) = ni1 i; n1 _=False
 nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
 
+te, to :: T a -> Bool
+te (Arr (i `Cons` _) _) = ipe i
+te _                    = False
+
+to (Arr (i `Cons` _) _) = ipo i
+to _                    = False
+
 nee :: T a -> Bool
 nee (Arr sh _) = nzSh sh; nee _=False
 
@@ -202,6 +218,8 @@ rof t = if ne t then Rof1 () else Rof ()
 for t = if ne t then For1 () else For (); for1 t = if n1 t then For1 () else For ()
 forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
+
+f2or ty = if to ty then F2orO () else if te ty then (\tϵ el c eu ss _ -> F2orE () tϵ el c eu ss) else F2or ()
 
 staR :: Sh a -> [Int64]
 staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s
@@ -867,11 +885,12 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     aRd <- nI; xRd <- nI; td <- nI
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    z0 <- newFTemp; zs <- newFTemp; z <- newF2Temp
+    z0 <- nF; zs <- nF; z <- newF2Temp
     let loop = for tA i 0 ILt (Tmp m)
                   [ MX () zs 0, MX2 () z (ConstF (0,0)),
                     -- TODO: maybe f2or should index+1, then use lsl #4 for addressing?
-                    F2or () j 0 ILt (Tmp n)
+                    -- (would have to put 1-step at end...)
+                    f2or tX j 0 ILt (Tmp n)
                         [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (AElem xR 1 (Tmp j) lX 8)))) ]
                         [ MX () zs (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
                   , S2 () z0 z
