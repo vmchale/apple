@@ -1,6 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module IR ( Exp (..), FExp (..)
+module IR ( Exp (..), FExp (..), FE
           , Stmt (..)
           , Temp (..), FTemp (..)
           , Label, AsmData
@@ -29,6 +30,10 @@ data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5
            | FRet | FRet1
            deriving (Eq, Ord)
+
+data F2 = F2Temp !Int
+
+instance Pretty F2 where pretty (F2Temp i) = "f2_" <> pretty i
 
 data Temp = ITemp !Int
           | ATemp !Int
@@ -63,11 +68,11 @@ instance Show Temp where show=show.pretty
 data Stmt = L Label
           | MJ Exp Label
           | J Label
-          | MT Temp Exp | MX FTemp FExp -- move targeting xmm0 &c.
+          | MT Temp Exp | MX FTemp FE -- move targeting xmm0 &c.
           | Ma AL Temp Exp -- label, register, size
           | Free Temp | RA !AL -- "return array" no-op
-          | Wr AE Exp | WrF AE FExp | WrB AE Exp
-          | Cmov Exp Temp Exp | Fcmov Exp FTemp FExp
+          | Wr AE Exp | WrF AE FE | WrB AE Exp
+          | Cmov Exp Temp Exp | Fcmov Exp FTemp FE
           | Cset Temp Exp
           | Sa Temp Exp -- register, size
           | Pop Exp -- pop salloc
@@ -108,34 +113,36 @@ instance Pretty AE where
     pretty (AP t Nothing _)  = parens ("ptr" <+> pretty t)
     pretty (AP t (Just e) _) = parens ("ptr" <+> pretty t <> "+" <> pretty e)
 
-data FExp = ConstF Double
-          | FB FBin FExp FExp
-          | FConv Exp
-          | FReg FTemp
-          | FU FUn FExp
-          | FAt AE
+data FExp t c e = ConstF Double
+                | FB FBin (FExp t c e) (FExp t c e)
+                | FConv e
+                | FReg FTemp
+                | FU FUn (FExp t c e)
+                | FAt AE
+
+type FE=FExp FTemp Double Exp
 
 instance Num Exp where
     (+) = IB IPlus; (*) = IB ITimes; (-) = IB IMinus; fromInteger = ConstI . fromInteger
 
-instance Num FExp where
+instance Num (FExp FTemp Double Exp) where
     (+) = FB FPlus; (*) = FB FTimes; (-) = FB FMinus; fromInteger = ConstF . fromInteger
 
-instance Fractional FExp where
+instance Fractional (FExp FTemp Double Exp) where
     (/) = FB FDiv; fromRational = ConstF . fromRational
 
 data Exp = ConstI Int64
          | Reg Temp
          | IB IBin Exp Exp
-         | FRel FRel FExp FExp
+         | FRel FRel FE FE
          | IRel IRel Exp Exp | Is Temp
          | IU IUn Exp
          | BU BUn Exp
-         | IRFloor FExp
+         | IRFloor FE
          | EAt AE | BAt AE
          | LA !Int -- assembler data
 
-instance Pretty FExp where
+instance (Pretty t, Pretty c, Pretty e) => Pretty (FExp t c e) where
     pretty (ConstF x)   = parens ("double" <+> pretty x)
     pretty (FConv e)    = parens ("itof" <+> pretty e)
     pretty (FReg t)     = parens ("freg" <+> pretty t)
@@ -143,7 +150,7 @@ instance Pretty FExp where
     pretty (FU op e)    = parens (pretty op <+> pretty e)
     pretty (FAt p)      = "f@" <> pretty p
 
-instance Show FExp where show=show.pretty
+instance (Pretty t, Pretty c, Pretty e) => Show (FExp t c e) where show=show.pretty
 
 instance Pretty Exp where
     pretty (ConstI i)     = parens ("int" <+> pretty i)
