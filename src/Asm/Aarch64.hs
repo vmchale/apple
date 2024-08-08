@@ -134,12 +134,12 @@ fToInt (FReg i) = 19+i
 f2ToInt :: F2Abs -> Int
 f2ToInt (F2Reg i) = 19+i
 
-data Shift = Zero | Three
+data Shift = Zero | Three | Four
 
-instance NFData Shift where rnf Zero = (); rnf Three = ()
+instance NFData Shift where rnf Zero = (); rnf Three = (); rnf Four = ()
 
 instance Pretty Shift where
-    pretty Zero = "#0"; pretty Three = "#3"
+    pretty Zero = "#0"; pretty Three = "#3"; pretty Four = "#4"
 
 -- left: shift left by this much
 data BM = BM { ims, left :: !Word8 } deriving Eq
@@ -502,6 +502,8 @@ pods = concatMap go.reverse.s2 where go (r0, Just r1) = [LdpD () r0 r1 (R SP), A
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
 
+pvd v = pv v <> ".2d"
+
 instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg a) where
     pretty (Label _ l)            = prettyLabel l <> ":"
     pretty (B _ l)                = i4 ("b" <+> prettyLabel l)
@@ -540,8 +542,8 @@ instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg
     pretty (Fadd _ rD r0 r1)      = i4 ("fadd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fsub _ rD r0 r1)      = i4 ("fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Fdiv _ rD r0 r1)      = i4 ("fdiv" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Fmul2 _ xD x0 x1)     = i4 ("fmul" <+> pv xD <> "," <+> pv x0 <> "," <+> pv x1)
-    pretty (Fadd2 _ xD x0 x1)     = i4 ("fadd" <+> pv xD <> "," <+> pv x0 <> "," <+> pv x1)
+    pretty (Fmul2 _ xD x0 x1)     = i4 ("fmul" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1)
+    pretty (Fadd2 _ xD x0 x1)     = i4 ("fadd" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1)
     pretty (FcmpZ _ xr)           = i4 ("fcmp" <+> pretty xr <> "," <+> "#0.0")
     pretty (Fneg _ d0 d1)         = i4 ("fneg" <+> pretty d0 <> "," <+> pretty d1)
     pretty Ret{}                  = i4 "ret"
