@@ -864,12 +864,13 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     aRd <- nI; xRd <- nI; td <- nI
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
+    z0 <- newFTemp; zs <- newFTemp; z <- newF2Temp
     let loop = for tA i 0 ILt (Tmp m)
                   [ MX () zs 0, MX2 () z (ConstF (0,0)),
                     -- TODO: maybe f2or should index+1, then use lsl #4 for addressing?
                     F2or () j 0 ILt (Tmp n)
                         [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (AElem xR 1 (Tmp j) lX 8)))) ]
-                        [ MX () zs (FTmp zs+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
+                        [ MX () zs (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
                   , S2 () z0 z
                   , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp zs+FTmp z0)
                   ]
