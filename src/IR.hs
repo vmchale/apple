@@ -73,7 +73,7 @@ data Stmt = L Label
           | S2 FTemp F2
           | Ma AL Temp Exp -- label, register, size
           | Free Temp | RA !AL -- "return array" no-op
-          | Wr AE Exp | WrF AE FE | WrB AE Exp
+          | Wr AE Exp | WrF AE FE | WrF2 AE F2E | WrB AE Exp
           | Cmov Exp Temp Exp | Fcmov Exp FTemp FE
           | Cset Temp Exp
           | Sa8 Temp Exp
@@ -95,6 +95,7 @@ instance Pretty Stmt where
     pretty (Wr p e)      = parens ("write" <+> pretty p <+> pretty e)
     pretty (WrF p e)     = parens ("write" <+> pretty p <+> pretty e)
     pretty (WrB p e)     = parens ("write-1" <+> pretty p <+> pretty e)
+    pretty (WrF2 p e)    = parens ("write2" <+> pretty p <+> pretty e)
     pretty (Ma _ t e)    = parens ("malloc" <+> pretty t <+> ":" <+> pretty e)
     pretty (Free t)      = parens ("free" <+> pretty t)
     pretty (Cmov p t e)  = parens ("cmov" <+> pretty p <+> pretty t <+> pretty e)

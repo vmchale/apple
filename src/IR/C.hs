@@ -63,6 +63,7 @@ cToIRM (C.MaΠ _ l t sz)      = pure [IR.Ma l (ctemp t) (IR.ConstI sz)]
 cToIRM (C.Free t)            = pure [IR.Free (ctemp t)]
 cToIRM (C.Wr _ a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF _ a x)         = pure [IR.WrF (irAt a) (irX x)]
+cToIRM (C.Wr2F _ a v)        = pure [IR.WrF2 (irAt a) (irX2 v)]
 cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]
 cToIRM (Rof _ t ec s)        = do
     l <- nextL; eL <- nextL

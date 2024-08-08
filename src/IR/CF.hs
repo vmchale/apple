@@ -5,11 +5,12 @@ module IR.CF ( rToInt, fToInt
 import           CF
 -- seems to pretty clearly be faster
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
-import           Data.Bifunctor                   (second)
-import           Data.Functor                     (($>))
-import qualified Data.IntSet                      as IS
-import qualified Data.Map                         as M
-import           Data.Tuple.Extra                 (fst3, second3, snd3, thd3, third3)
+import           Data.Bifunctor             (second)
+import           Data.Functor               (($>))
+import qualified Data.IntSet                as IS
+import qualified Data.Map                   as M
+import           Data.Tuple.Extra           (fst3, second3, snd3, thd3, third3)
+import           Data.Void                  (absurd)
 import           IR
 
 type N=Int
@@ -133,6 +134,7 @@ uF2 (FReg t)     = f2is t
 uF2 (FB _ e0 e1) = uF2 e0<>uF2 e1
 uF2 (FU _ e)     = uF2 e
 uF2 (FAt e)      = uAF e -- fexp doesn't ever come from f2exp (or vice versa); move in statements
+uF2 (FConv x)    = absurd x
 
 uF :: FE -> IS.IntSet
 uF ConstF{}     = IS.empty
@@ -164,6 +166,7 @@ uFR2 FReg{}       = IS.empty
 uFR2 (FB _ e0 e1) = uFR2 e0<>uFR2 e1
 uFR2 ConstF{}     = IS.empty
 uFR2 (FU _ e)     = uFR2 e
+uFR2 (FConv x)    = absurd x
 
 uses, defs :: Stmt -> IS.IntSet
 uses IRnd{}         = IS.empty
@@ -179,6 +182,7 @@ uses (Free t)       = singleton t
 uses RA{}           = IS.empty
 uses (Wr a e)       = uA a<>uE e
 uses (WrF a e)      = uA a<>uFR e
+uses (WrF2 a e)     = uA a<>uFR2 e
 uses (WrB a e)      = uA a<>uE e
 uses (Sa _ e)       = uE e
 uses (Pop e)        = uE e
@@ -206,6 +210,7 @@ usesF IRnd{}         = IS.empty
 usesF FRnd{}         = IS.empty
 usesF (MX _ e)       = uF e
 usesF (MX2 _ e)      = uF2 e
+usesF (WrF2 a e)     = uAF a<>uF2 e
 usesF L{}            = IS.empty
 usesF J{}            = IS.empty
 usesF (MJ e _)       = uFF e
@@ -230,6 +235,7 @@ usesF (Cpy1 a0 a1 e) = uAF a0<>uAF a1<>uFF e
 usesF (S2 _ r)       = f2is r
 
 defsF (MX t _)      = fsingleton t
+defsF (MX2 t _)     = f2is t
 defsF (Fcmov _ x _) = fsingleton x
 defsF (FRnd t)      = fsingleton t
 defsF (S2 t _)      = fsingleton t
