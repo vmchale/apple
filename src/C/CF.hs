@@ -260,6 +260,7 @@ uses (Wr2F _ a e)          = uA a <> uF2 e
 uses (Cset _ e _)          = uB e
 uses (MT _ _ e)            = uE e
 uses (MB _ _ e)            = uB e
+uses S2{}                  = IS.empty
 uses (WrP _ a e)           = uA a<>uB e
 uses Rnd{}                 = IS.empty
 uses FRnd{}                = IS.empty

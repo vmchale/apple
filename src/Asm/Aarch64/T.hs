@@ -103,6 +103,7 @@ ir (IR.C l)      = pure [C () l]
 ir (IR.MX t e)   = feval e t
 ir (IR.MX2 t e)  = f2eval e t
 ir (IR.MT t e)   = eval e t
+ir (IR.S2 t r)   = pure [Faddp () (fabsReg t) (f2absReg r)]
 ir (IR.Ma _ t e) = do {r <- nR; plE <- eval e IR.C0; pure $ plE ++ puL ++ [AddRC () FP ASP 16, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0] ++ poL}
 ir (IR.Free t) = do {r <- nR; pure $ puL ++ [MovRR () CArg0 (absReg t), AddRC () FP ASP 16, MovRCf () r Free, Blr () r] ++ poL}
 ir (IR.Sa8 t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u, MovRR () (absReg t) ASP]
@@ -389,10 +390,14 @@ f2eval (IR.FB Op.FPlus e0 e1) t = do
 f2eval (IR.FB Op.FTimes e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1$[Fmul2 () (f2absReg t) x0 x1]
+f2eval (IR.ConstF (0,0)) t =
+    let q=f2absReg t
+    in pure [ZeroS () q]
 f2eval e _ = error (show e)
 
 feval :: IR.FE -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
+-- TODO: for ConstF 0 use eor (vector) with .8b
 feval (IR.ConstF d) t = do
     i <- nextI
     let r=IReg i

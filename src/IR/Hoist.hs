@@ -59,6 +59,7 @@ mapFF f (FConv e)     = FConv (mapFE f e)
 mapF :: (FTemp -> FTemp) -> Stmt -> Stmt
 mapF f (MX t e)       = MX (f t) (mapFF f e)
 mapF f (MX2 t e)      = MX2 t (mapFF2 f e)
+mapF f (S2 t r)       = S2 (f t) r
 mapF _ s@L{}          = s
 mapF _ s@C{}          = s
 mapF _ s@R{}          = s

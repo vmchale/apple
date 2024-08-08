@@ -60,6 +60,9 @@ nF = FTemp <$> nextI
 newF2Temp :: CM F2Temp
 newF2Temp = F2Temp <$> nextI
 
+zl :: F2Temp -> FTemp
+zl (F2Temp i) = FTemp i
+
 addAA :: Int -> [Word64] -> CSt -> CSt
 addAA i aa (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts
 
@@ -857,17 +860,18 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
   where
     tA=eAnn a; tX=eAnn x
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
-    i <- nI; j <- nI; m <- nI; n <- nI; zZ <- newF2Temp; z <- nF
+    i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; zs <- nF; z <- newF2Temp
     aRd <- nI; xRd <- nI; td <- nI
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
     let loop = for tA i 0 ILt (Tmp m)
-                  [ MX () z 0,
+                  [ MX () zs 0, MX2 () z (ConstF (0,0)),
                     -- TODO: maybe f2or should index+1, then use lsl #4 for addressing?
                     F2or () j 0 ILt (Tmp n)
-                        [ MX2 () zZ (FBin FPlus (FTmp zZ) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (AElem xR 1 (Tmp j) lX 8)))) ]
-                        [ MX () z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
-                  , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
+                        [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (AElem xR 1 (Tmp j) lX 8)))) ]
+                        [ MX () zs (FTmp zs+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
+                  , S2 () z0 z
+                  , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp zs+FTmp z0)
                   ]
     pure (Just aL,
         plAA$

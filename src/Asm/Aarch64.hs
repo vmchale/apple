@@ -221,6 +221,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | OrRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eon { ann :: a, rDest, rSrc, rSrc2 :: reg }
+                         | ZeroS { ann :: a, qDest :: V2Reg freg }
+                         | EorS { ann :: a, qDest, qSrc1, qSrc2 :: V2Reg freg }
                          | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
                          | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
@@ -239,6 +241,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fadd2 { ann :: a, d2Dest, d2Src1, d2Src :: V2Reg freg }
                          | Fmul2 { ann :: a, d2Dest, d2Src1, d2Src :: V2Reg freg }
+                         | Faddp { ann :: a, dDest :: freg, vSrc :: V2Reg freg }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                          | Fneg { ann :: a, dDest, dSrc :: freg }
@@ -305,6 +308,8 @@ mapR f (Asr l r0 r1 s)       = Asr l (f r0) (f r1) s
 mapR f (CmpRR l r0 r1)       = CmpRR l (f r0) (f r1)
 mapR f (CmpRC l r c)         = CmpRC l (f r) c
 mapR f (Neg l r0 r1)         = Neg l (f r0) (f r1)
+mapR _ (EorS l q0 q1 q2)     = EorS l q0 q1 q2
+mapR _ (ZeroS l q)           = ZeroS l q
 mapR _ (Fadd l xr0 xr1 xr2)  = Fadd l xr0 xr1 xr2
 mapR _ (Fsub l xr0 xr1 xr2)  = Fsub l xr0 xr1 xr2
 mapR _ (Fmul l xr0 xr1 xr2)  = Fmul l xr0 xr1 xr2
@@ -355,6 +360,7 @@ mapR f (Bfc x r l w)         = Bfc x (f r) l w
 mapR f (LdrS l q a)          = LdrS l q (f<$>a)
 mapR _ (Fadd2 l x0 x1 x2)    = Fadd2 l x0 x1 x2
 mapR _ (Fmul2 l x0 x1 x2)    = Fmul2 l x0 x1 x2
+mapR _ (Faddp l d v)         = Faddp l d v
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -436,6 +442,9 @@ mapFR _ (Bfc x r l w)         = Bfc x r l w
 mapFR f (LdrS l q a)          = LdrS l (f<$>q) a
 mapFR f (Fadd2 l x0 x1 x2)    = Fadd2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fmul2 l x0 x1 x2)    = Fmul2 l (f<$>x0) (f<$>x1) (f<$>x2)
+mapFR f (EorS l v0 v1 v2)     = EorS l (f<$>v0) (f<$>v1) (f<$>v2)
+mapFR f (ZeroS l v)           = ZeroS l (f<$>v)
+mapFR f (Faddp l d v)         = Faddp l (f d) (f<$>v)
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -455,6 +464,7 @@ hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")
        | otherwise = pretty ("#0x"++showHex n "")
 
 pvd v = pv v <> ".2d"
+pvv v = pv v <> ".16b"
 
 ar2 r0 r1 = pretty r0 <> "," <+> pretty r1; aw r a = pw r <> "," <+> pretty a
 ar3 r0 r1 r2 = pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2
@@ -509,6 +519,9 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fdiv _ rD r0 r1)      = "fdiv" <+> ar3 rD r0 r1
         p4 (Fmul2 _ xD x0 x1)     = "fmul" <+> pv xD <> "," <+> pv x0 <> "," <+> pv x1
         p4 (Fadd2 _ xD x0 x1)     = "fadd" <+> pv xD <> "," <+> pv x0 <> "," <+> pv x1
+        p4 (Faddp _ dD v0)        = "faddp" <+> pretty dD <> "," <+> pvd v0
+        p4 (EorS _ vD v0 v1)      = "eor" <+> pvv vD <> "," <+> pvv v0 <> "," <+> pvv v1
+        p4 (ZeroS _ v)            = "eor" <+> pvv v <> "," <+> pvv v <> "," <+> pvv v
         p4 (FcmpZ _ xr)           = "fcmp" <+> pretty xr <> "," <+> "#0.0"
         p4 (Fneg _ d0 d1)         = "fneg" <+> ar2 d0 d1
         p4 Ret{}                  = "ret"
