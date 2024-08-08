@@ -70,6 +70,8 @@ data Stmt = L Label
           | J Label
           | MT Temp Exp | MX FTemp FE -- move targeting xmm0 &c.
           | MX2 F2 F2E
+          -- happd on x86
+          | S2 FTemp F2
           | Ma AL Temp Exp -- label, register, size
           | Free Temp | RA !AL -- "return array" no-op
           | Wr AE Exp | WrF AE FE | WrB AE Exp
@@ -106,6 +108,7 @@ instance Pretty Stmt where
     pretty (IRnd t)      = parens (pretty t <+> "<- rnd")
     pretty (FRnd t)      = parens (pretty t <+> "<- xrnd")
     pretty (Cset t e)    = parens ("cset" <+> pretty t <+> "<-" <+> pretty e)
+    pretty (S2 t r)      = parens ("s2" <+> pretty t <+> pretty r)
 
 instance Show Stmt where show = show . pretty
 
