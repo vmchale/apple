@@ -156,11 +156,11 @@ instance NFData a => NFData (Addr a) where
 
 instance Pretty reg => Pretty (Addr reg) where
     pretty = brackets.pa where
-        pa (R r)      = pretty r
-        pa (RP r 0)   = pretty r
-        pa (RP r u)   = pretty r <> "," <+> hexd u
+        pa (R r)         = pretty r
+        pa (RP r 0)      = pretty r
+        pa (RP r u)      = pretty r <> "," <+> hexd u
         pa (BI b i Zero) = pretty b <> "," <+> pretty i
-        pa (BI b i s) = pretty b <> "," <+> pretty i <> "," <+> "LSL" <+> pretty s
+        pa (BI b i s)    = pretty b <> "," <+> pretty i <> "," <+> "LSL" <+> pretty s
 
 data Cond = Eq | Neq | Geq | Lt | Gt | Leq
 
