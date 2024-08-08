@@ -863,9 +863,12 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
     let loop = for tA i 0 ILt (Tmp m)
                   [ MX () z 0,
-                    for tX j 0 ILt (Tmp n)
-                        [ MX () z (FTmp z+FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
-                  , WrF () (Raw td (Tmp i) (Just aL) 8) (FTmp z)
+                    F2or () j 0 ILt (Tmp n)
+                        [ MX () z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8))
+                        , MX () z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j+1) lA 8)*FAt (AElem xR 1 (Tmp j+1) lX 8))
+                        ]
+                        [ MX () z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
+                  , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
                   ]
     pure (Just aL,
         plAA$
