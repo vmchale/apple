@@ -872,6 +872,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
                         [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (AElem xR 1 (Tmp j) lX 8)))) ]
                         [ MX () zs (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
                   , S2 () z0 z
+                  -- TODO: don't need zs if even
                   , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp zs+FTmp z0)
                   ]
     pure (Just aL,
@@ -897,11 +898,33 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, 
                     , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
                 ]
     pure (Just aL,
-        plAA$
-        plB$
+        plAA$plB$
         m=:ec tA (aR,lA):o=:ec tB (bR,lB)
         :Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
         ++n=:ev tA (aR,lA):aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
+        :[loop])
+  where
+    tA=eAnn a; tB=eAnn b
+aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, _) <- tRnk tA = do
+    aL <- nextArr t
+    i <- newITemp; j <- newITemp; k <- newITemp; m <- newITemp; n <- newITemp; o <- newITemp
+    (plAA, (lA, aR)) <- plA a
+    (plB, (lB, bR)) <- plA b
+    z0 <- newFTemp; zs <- newFTemp; z <- newF2Temp
+    let loop=for tA i 0 ILt (Tmp m)
+                [forc tB j 0 ILt (Tmp o)
+                    [ MX () zs 0, MX2 () z (ConstF (0,0)),
+                        f2or tB k 0 ILt (Tmp n)
+                              [MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)) (FAt (AElem bR 2 (Tmp n*Tmp j+Tmp k) lB 8))))]
+                              [MX () zs (FTmp zs+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)*FAt (AElem bR 2 (Tmp n*Tmp j+Tmp k) lB 8))]
+                    , S2 () z0 z
+                    , WrF () (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp zs+FTmp z0)]
+                    ]
+    pure (Just aL,
+        plAA$plB$
+        m=:ev tA (aR,lA):o=:ev tB (bR,lB)
+        :Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
+        ++n=:ec tA (aR,lA)
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
