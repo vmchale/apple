@@ -46,7 +46,7 @@ mapFF2 _ x@ConstF{}    = x
 mapFF2 f (FAt a)       = FAt (mapFA f a)
 mapFF2 _ r@FReg{}      = r
 mapFF2 f (FB op e0 e1) = FB op (mapFF2 f e0) (mapFF2 f e1)
-mapFFS f (FU op e) = FU op (mapFF2 f e)
+mapFF2 f (FU op e)     = FU op (mapFF2 f e)
 
 mapFF :: (FTemp -> FTemp) -> FExp FTemp c Exp -> FExp FTemp c Exp
 mapFF _ x@ConstF{}    = x
@@ -71,6 +71,7 @@ mapF _ s@Free{}       = s
 mapF f (MT t e)       = MT t (mapFE f e)
 mapF f (Wr a e)       = Wr (mapFA f a) (mapFE f e)
 mapF f (WrF a x)      = WrF (mapFA f a) (mapFF f x)
+mapF f (WrF2 a v)     = WrF2 (mapFA f a) (mapFF2 f v)
 mapF f (WrB a e)      = WrB (mapFA f a) (mapFE f e)
 mapF f (Fcmov e t x)  = Fcmov (mapFE f e) (f t) (mapFF f x)
 mapF f (MJ e l)       = MJ (mapFE f e) l
