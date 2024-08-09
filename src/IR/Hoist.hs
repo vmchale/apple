@@ -7,11 +7,13 @@ import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (gets, modify, runState)
 import qualified Data.Array                 as A
 import           Data.Bifunctor             (bimap, first, second)
+import           Data.Function              (on)
 import           Data.Functor               (($>))
 import           Data.Graph                 (Tree (Node))
 import           Data.Graph.Dom             (Graph, Node, domTree)
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
+import           Data.List                  (sortBy)
 import qualified Data.Map.Strict            as M
 import           Data.Maybe                 (catMaybes, fromJust, fromMaybe)
 import           Data.Tuple.Extra           (first3, snd3)
@@ -160,4 +162,4 @@ mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, A.Array Int (Stmt, Control
 mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa, IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
-    sa = A.listArray (0,m-1) ns
+    sa = A.listArray (0,m-1) (sortBy (compare `on` (node.snd)) ns)
