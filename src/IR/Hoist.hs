@@ -7,6 +7,7 @@ import           Control.Composition        (thread)
 import           Control.Monad.State.Strict (gets, modify, runState)
 import qualified Data.Array                 as A
 import           Data.Bifunctor             (bimap, first, second)
+import           Data.Foldable              (toList)
 import           Data.Function              (on)
 import           Data.Functor               (($>))
 import           Data.Graph                 (Tree (Node))
@@ -133,24 +134,23 @@ hoist ss = (\ssϵ -> (\(x,y,z,_) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlow s
 
 {-# SCC ols #-}
 ols :: [Loop] -> [Loop]
-ols ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isSubsetOf` ns') ls) ls
+ols ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
 
 et :: Graph -> A.Array Int Stmt -> [N] -> Tree N -> [(N, [N])]
-et g ss seen t = expandLoop t <$> tLoops g ss seen t
+et g ss seen t = expandLoop t <$> loopHeads g ss seen t
 
-{-# SCC expandLoop #-}
-expandLoop :: Tree N -> (N,N) -> (N,[N])
--- wir müssen wissen, wir werden wissen
-expandLoop t se = fromJust (go [] se t)
+-- everything the start node dominates
+expandLoop :: Tree N -> N -> (N,[N])
+--- wir müssen wissen, wir werden wissen
+expandLoop t s = (s, fromJust (go t))
   where
-    go seen (s,e) (Node n _) | e == n = Just (s, dropWhile (/=s) (reverse seen))
-    go _ _ (Node _ [])       = Nothing
-    go seen seϵ (Node n ns)  = mh (go (n:seen) seϵ <$> ns) where mh xs=case catMaybes xs of {[] -> Nothing; (nϵ:_) -> Just nϵ}
+    go (Node n tϵ) | n==s = Just$concatMap toList tϵ
+    go (Node _ ns) = mh (go<$>ns) where mh xs=case catMaybes xs of {[] -> Nothing; (nϵ:_) -> Just nϵ}
 
-tLoops :: Graph -> A.Array Int Stmt -> [N] -> Tree N -> [(N, N)]
-tLoops g ss seen (Node n cs) =
+loopHeads :: Graph -> A.Array Int Stmt -> [N] -> Tree N -> [N]
+loopHeads g ss seen (Node n cs) =
     let bes=filter (hasEdge g n) seen
-    in (if isMJ n then (fmap (,n) bes++) else id) $ concatMap (tLoops g ss (n:seen)) cs
+    in (if isMJ n then (bes++) else id) $ concatMap (loopHeads g ss (n:seen)) cs
   where
     isMJ nϵ = p (ss A.! nϵ)
     p MJ{}=True; p _=False
