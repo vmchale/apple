@@ -18,10 +18,10 @@ occ :: E reg => reg -> Addr reg -> Bool
 occ r a = toInt r `IS.member` foldMap (IS.singleton.toInt) a
 
 -- remove noops
-optX86 :: (E reg, E freg, Eq reg, Eq freg) => [X86 reg freg f2 ()] -> [X86 reg freg f2 ()]
+optX86 :: (E reg, E freg, Eq reg, Eq freg) => [X86 reg freg ()] -> [X86 reg freg ()]
 optX86 = opt.mkLive
 
-opt :: (E reg, E freg, Eq reg, Eq freg) => [X86 reg freg f2 Liveness] -> [X86 reg freg f2 ()]
+opt :: (E reg, E freg, Eq reg, Eq freg) => [X86 reg freg Liveness] -> [X86 reg freg ()]
 opt [] = []
 opt (ISubRI _ _ 0:asms) = opt asms
 opt (MovqXA _ xrϵ a:Vfmadd231sd l xr0 xr1 xr2:asms) | xr2 == xrϵ && (toInt xr2 `IS.notMember` fout l) = Vfmadd231sdA () xr0 xr1 (optAddr a):opt asms

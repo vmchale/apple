@@ -21,20 +21,20 @@ import           GHC.Base         (Int (I#), iShiftRL#)
 import           Hs.FFI
 import           Sys.DL
 
-hasMa :: [AArch64 reg freg f2reg a] -> Bool
+hasMa :: [AArch64 reg freg a] -> Bool
 hasMa = any g where g (MovRCf _ _ Malloc)=True; g (MovRCf _ _ Free)=True; g (MovRCf _ _ DR)=True; g _=False
 
-hasMath :: [AArch64 reg freg f2reg a] -> Bool
+hasMath :: [AArch64 reg freg a] -> Bool
 hasMath = any g where g (MovRCf _ _ Exp)=True; g (MovRCf _ _ Log)=True; g (MovRCf _ _ Pow)=True; g _=False
 
-prepAddrs :: [AArch64 reg freg f2reg a] -> IO (Maybe CCtx, Maybe MCtx)
+prepAddrs :: [AArch64 reg freg a] -> IO (Maybe CCtx, Maybe MCtx)
 prepAddrs ss = case (hasMa ss, hasMath ss) of
     (True, False)  -> do {m <- mem'; pure (Just m, Nothing)}
     (False, False) -> pure (Nothing, Nothing)
     (False, True)  -> do {m <- math'; pure (Nothing, Just m)}
     (True, True)   -> do {c <- mem'; m <- math'; pure (Just c, Just m)}
 
-assembleCtx :: (CCtx, MCtx) -> (IM.IntMap [Word64], [AArch64 AReg FAReg F2Reg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
+assembleCtx :: (CCtx, MCtx) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst4 (fst ctx)) (fromIntegral sz) else allocExec (fromIntegral sz)
@@ -46,7 +46,7 @@ assembleCtx ctx (ds, isns) = do
 dbgFp asmϵ = do
     (bss,_,ps) <- allFp asmϵ
     mFree ps $> bss
-allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg F2Reg ()]) -> IO ([BS.ByteString], FunPtr b, Maybe (Ptr Word64))
+allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], FunPtr b, Maybe (Ptr Word64))
 allFp (ds, instrs) = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
@@ -58,7 +58,7 @@ allFp (ds, instrs) = do
     let is = asm 0 (ps, fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bsϵ = BS.pack.reverse<$>is
     (bsϵ,,snd<$>IM.lookupMin ps)<$>finish b p
 
-mkIx :: Int -> [AArch64 AReg FAReg F2Reg a] -> (Int, M.Map Label Int)
+mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
 mkIx ix (Label _ l:asms) = second (M.insert l ix) $ mkIx ix asms
 mkIx ix (C{}:asms)       = mkIx (ix+20) asms
 mkIx ix (MovRCf{}:asms)  = mkIx (ix+16) asms
@@ -84,7 +84,7 @@ lsr (I# n) (I# k) = I# (iShiftRL# n k)
 
 lb r rD = (0x7 .&. be r) `shiftL` 5 .|. be rD
 
-asm :: Int -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> [AArch64 AReg FAReg F2Reg ()] -> [[Word8]]
+asm :: Int -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (MovZ _ r i s:asms) = [0b11010010, 0b1 `shiftL` 7 .|. fromIntegral (s `quot` 16) `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral (0xff .&. (i `shiftR` 3)), fromIntegral (0x7 .&. i) `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (MovRC _ r i:asms) = asm ix st (MovZ () r i 0:asms)
@@ -253,7 +253,7 @@ asm ix st (LdrRL _ r l:asms) =
     in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
 asm _ _ (isn:_) = error (show isn)
 
-m4 :: AReg -> Int -> [AArch64 AReg FAReg F2Reg ()]
+m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
 m4 r a = let w0=a .&. 0xffff; w1=(a .&. 0xffff0000) `lsr` 16; w2=(a .&. 0xFFFF00000000) `lsr` 32; w3=(a .&. 0xFFFF000000000000) `lsr` 48
          in [MovRC () r (fromIntegral w0), MovK () r (fromIntegral w1) 16, MovK () r (fromIntegral w2) 32, MovK () r (fromIntegral w3) 48]
 

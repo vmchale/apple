@@ -18,8 +18,8 @@ next = state (\i -> (i, i+1))
 spill :: Int -- ^ Unique state
       -> Int
       -> IS.IntSet
-      -> [X86 AbsReg FAbsReg X2Abs a]
-      -> (Int, Int, [X86 AbsReg FAbsReg X2Abs ()])
+      -> [X86 AbsReg FAbsReg a]
+      -> (Int, Int, [X86 AbsReg FAbsReg ()])
 spill u offs m isns =
     let (o', ᴍ) = spillM offs m isns
         (nisns, u') = runState ᴍ u
@@ -27,8 +27,8 @@ spill u offs m isns =
 
 spillM :: Int -- ^ Offset (from already spilled)
        -> IS.IntSet
-       -> [X86 AbsReg FAbsReg X2Abs a]
-       -> (Int, SpM [X86 AbsReg FAbsReg X2Abs ()]) -- ^ offset, rewritten
+       -> [X86 AbsReg FAbsReg a]
+       -> (Int, SpM [X86 AbsReg FAbsReg ()]) -- ^ offset, rewritten
 spillM offs m isns = (foffs, concatMapM g isns)
     where g isn = do
             let is = [ toInt r | r <- fR pure isn, toInt r `IS.member` m ]

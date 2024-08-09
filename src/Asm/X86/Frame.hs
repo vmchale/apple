@@ -7,7 +7,7 @@ import           Data.Functor   (void)
 import qualified Data.IntSet    as IS
 import           Data.Maybe     (mapMaybe)
 
-frameC :: [X86 X86Reg FX86Reg F2X86 Live] -> [X86 X86Reg FX86Reg F2X86 ()]
+frameC :: [X86 X86Reg FX86Reg Live] -> [X86 X86Reg FX86Reg ()]
 frameC = concat . go IS.empty IS.empty
     where go _ _ [] = []
           go s fs (isn:isns) =
