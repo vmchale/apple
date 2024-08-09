@@ -210,7 +210,7 @@ forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
 
 f2or ty | to ty = F2orO ()
-        | te ty = (\tϵ el c eu ss _ -> F2orE () tϵ el c eu ss) 
+        | te ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
         | otherwise = F2or ()
 
 staR :: Sh a -> [Int64]
@@ -899,6 +899,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     i <- nI; j <- nI; m <- nI; n <- nI
     aRd <- nI; xRd <- nI; td <- nI
+    z <- newF2Temp; z0 <- nF; zs <- nF
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
     let loop = for tA i 0 ILt (Tmp m)
