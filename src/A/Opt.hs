@@ -198,6 +198,28 @@ optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map)
             opTy = dom0 ~> dom1 ~> cod
             op' = Lam opTy x0 (Lam undefined x1 (EApp undefined (EApp undefined opA (EApp undefined f' vx0)) (EApp undefined g' vx1)))
         pure (EApp undefined (EApp undefined (EApp undefined (Builtin undefined Zip) op') xs') ys')
+optA (EApp l (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map) f) xs)) ys)
+    | Arrow dom0 _ <- eAnn f
+    , Arrow _ (Arrow dom1 cod) <- eAnn op = do
+        f' <- optA f
+        opA <- optA op
+        xs' <- optA xs; ys' <- optA ys
+        x0 <- nextU "x" dom0; x1 <- nextU "y" dom1
+        let vx0 = Var dom0 x0; vx1 = Var dom1 x1
+            opTy = dom0 ~> dom1 ~> cod
+            op' = Lam opTy x0 (Lam undefined x1 (EApp undefined (EApp undefined opA (EApp undefined f' vx0)) vx1))
+        pure (EApp l (EApp undefined (EApp undefined (Builtin undefined Zip) op') xs') ys')
+optA (EApp l (EApp _ (EApp _ (Builtin _ Zip) op) xs) (EApp _ (EApp _ (Builtin _ Map) g) ys))
+    | Arrow dom1 _ <- eAnn g
+    , Arrow dom0 (Arrow _ cod) <- eAnn op = do
+        g' <- optA g
+        opA <- optA op
+        xs' <- optA xs; ys' <- optA ys
+        x0 <- nextU "x" dom0; x1 <- nextU "y" dom1
+        let vx0 = Var dom0 x0; vx1 = Var dom1 x1
+            opTy = dom0 ~> dom1 ~> cod
+            op' = Lam opTy x0 (Lam undefined x1 (EApp undefined (EApp undefined opA vx0) (EApp undefined g' vx1)))
+        pure (EApp l (EApp undefined (EApp undefined (Builtin undefined Zip) op') xs') ys')
 optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
     arr' <- optA arr
     seed' <- optA seed
