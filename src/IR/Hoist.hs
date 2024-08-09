@@ -1,21 +1,22 @@
 module IR.Hoist ( loop, graphParts, pall ) where
 
 import           CF
-import           Control.Composition              (thread)
+import           Control.Composition        (thread)
 import           Control.Monad.Trans.State.Strict (gets, modify, runState)
-import qualified Data.Array                       as A
-import           Data.Bifunctor                   (bimap, first, second)
-import           Data.Foldable                    (toList)
-import           Data.Function                    (on)
-import           Data.Functor                     (($>))
-import           Data.Graph                       (Tree (Node))
-import           Data.Graph.Dom                   (Graph, Node, domTree)
-import qualified Data.IntMap                      as IM
-import qualified Data.IntSet                      as IS
-import           Data.List                        (sortBy)
-import qualified Data.Map.Strict                  as M
-import           Data.Maybe                       (catMaybes, fromJust, fromMaybe)
-import           Data.Tuple.Extra                 (first3, snd3)
+import qualified Data.Array                 as A
+import           Data.Bifunctor             (bimap, first, second)
+import           Data.Foldable              (toList)
+import           Data.Function              (on)
+import           Data.Functor               (($>))
+import           Data.Graph                 (Tree (Node))
+import           Data.Graph.Dom             (Graph, Node, domTree)
+import qualified Data.IntMap                as IM
+import qualified Data.IntSet                as IS
+import           Data.List                  (sortBy)
+import qualified Data.Map.Strict            as M
+import           Data.Maybe                 (catMaybes, fromJust, fromMaybe)
+import           Data.Tuple.Extra           (first3, snd3)
+import           Data.Void                  (Void, absurd)
 import           IR
 import           IR.CF
 import           LR
@@ -41,12 +42,13 @@ mapFE f (BU op e)        = BU op (mapFE f e)
 mapFE f (IRel rel e0 e1) = IRel rel (mapFE f e0) (mapFE f e1)
 mapFE _ e@LA{}           = e
 
-mapFF2 :: (FTemp -> FTemp) -> FExp F2 c e -> FExp F2 c e
+mapFF2 :: (FTemp -> FTemp) -> FExp F2 c Void -> FExp F2 c Void
 mapFF2 _ x@ConstF{}    = x
 mapFF2 f (FAt a)       = FAt (mapFA f a)
 mapFF2 _ r@FReg{}      = r
 mapFF2 f (FB op e0 e1) = FB op (mapFF2 f e0) (mapFF2 f e1)
 mapFF2 f (FU op e)     = FU op (mapFF2 f e)
+mapFF2 _ (FConv x)     = absurd x
 
 mapFF :: (FTemp -> FTemp) -> FExp FTemp c Exp -> FExp FTemp c Exp
 mapFF _ x@ConstF{}    = x
