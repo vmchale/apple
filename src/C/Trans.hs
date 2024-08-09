@@ -552,9 +552,9 @@ aeval (EApp _ (Builtin _ Flat) xs) t | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty
     pure (Just a, plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs <- eAnn e, hasS f = do
     (plE, (l, xR)) <- plA e
-    i <- newITemp; szR <- newITemp
+    i <- nI; szR <- nI
     (a,aV) <- v8 t (Tmp szR)
-    x0 <- newFTemp; y0 <- newFTemp
+    x0 <- nF; y0 <- nF
     x <- newF2Temp; y <- newF2Temp
     ss <- write2 f [x] y
     s1 <- writeRF f [FT x0] (FT y0)
@@ -1075,10 +1075,10 @@ aeval (EApp ty (EApp _ (Builtin _ Re) n) x) t | (Arr sh tO) <- eAnn x, sz <- bT 
         :xRd=:DP xR (Tmp xRnk)
         :[loop])
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | Arrow F (Arrow F F) <- eAnn op, tXs <- eAnn xs, hasS op = do
-    nR <- newITemp; i <- newITemp
+    nR <- nI; i <- nI
     (a,aV) <- v8 t (Tmp nR)
     (plEX, (lX, xR)) <- plA xs; (plEY, (lY, yR)) <- plA ys
-    x0 <- newFTemp; y0 <- newFTemp; z0 <- newFTemp
+    x0 <- nF; y0 <- nF; z0 <- nF
     x <- newF2Temp; y <- newF2Temp; z <- newF2Temp
     ss <- write2 op [x,y] z
     s1 <- writeRF op (FT<$>[x0,y0]) (FT z0)
