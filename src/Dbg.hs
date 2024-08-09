@@ -165,10 +165,10 @@ dumpX86Liveness = fmap (X86.prettyDebugX86 . mkLive . (\(x,_,st) -> snd (irToX86
 dumpALiveness :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpALiveness = fmap (Aarch64.prettyDebug . mkLive . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
-x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg X86.X2Abs Live]
+x86Iv :: BSL.ByteString -> Either (Err AlexPosn) [X86.X86 X86.AbsReg X86.FAbsReg Live]
 x86Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToX86 st x))) . ir
 
-aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Aarch64.F2Abs Live]
+aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Live]
 aarch64Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
 printParsed :: BSL.ByteString -> Doc ann
