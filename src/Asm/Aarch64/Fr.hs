@@ -21,7 +21,7 @@ frameC = concat.go IS.empty IS.empty
                 cs = handleX0 cf $ mapMaybe fromInt (IS.toList s)
                 ds = handleD0 cf $ mapMaybe fInt (IS.toList fs)
                 save = pus cs; restore = pos cs
-                saved = puxs ds; restored = poxs ds
+                saved = puds ds; restored = pods ds
             in (save ++ saved ++ void isn0:void isn1:restored ++ restore) : go s'' fs'' isns
           go s fs (isn:isns) =
             let i = copoint isn
@@ -53,6 +53,18 @@ fromInt (-9)  = Just X16
 fromInt (-10) = Just X17
 fromInt (-11) = Just X18
 fromInt _     = Nothing
+
+f2Int :: Int -> V2Reg FAReg
+f2Int = V2Reg . fi
+
+fi 10 = D0; fi 11 = D1; fi 12 = D2; fi 13 = D3
+fi 14 = D4; fi 15 = D5; fi 16 = D6; fi 17 = D7
+fi (-23) = D8; fi (-24) = D9; fi (-25) = D10; fi (-26) = D11
+fi (-27) = D12; fi (-28) = D13; fi (-29) = D14; fi (-30) = D15
+fi (-31) = D16; fi (-32) = D17; fi (-33) = D18; fi (-34) = D19
+fi (-35) = D20; fi (-36) = D21; fi (-37) = D22; fi (-38) = D23
+fi (-39) = D24; fi (-40) = D25; fi (-41) = D26; fi (-42) = D27
+fi (-43) = D28; fi (-44) = D29; fi (-45) = D30; fi (-46) = D31
 
 -- https://learn.microsoft.com/en-us/cpp/build/arm64-windows-abi-conventions?view=msvc-170#floating-pointsimd-registers
 fInt :: Int -> Maybe FAReg
