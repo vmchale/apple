@@ -474,8 +474,8 @@ pods rs = let (pps, ixs, r) = rsOffs rs in concat (zipWith go pps ixs)++[AddRC (
   where go (r0, Just r1) ix = [LdpD () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [LdrD () r (RP SP ix)]
 
 puxs, poxs :: [freg] -> [AArch64 AReg freg ()]
-puxs = concatMap go where go q = [SubRC () SP SP 16, StrS () (V2Reg q) (R SP)]
-poxs = concatMap go.reverse where  go q = [LdrS () (V2Reg q) (R SP), AddRC () SP SP 16]
+puxs = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 32, Stp2 () (V2Reg r0) (V2Reg r1) (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, StrS () (V2Reg r) (R SP)]
+poxs = concatMap go.reverse.s2 where go (r0, Just r1) = [Ldp2 () (V2Reg r0) (V2Reg r1) (R SP), AddRC () SP SP 32]; go (r, Nothing) = [LdrS () (V2Reg r) (R SP), AddRC () SP SP 16]
 
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
