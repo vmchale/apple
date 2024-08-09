@@ -17,6 +17,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , toInt, fToInt
                    , pus, pos
                    , puds, pods
+                   , puxs, poxs
                    , pSym
                    ) where
 
@@ -471,6 +472,10 @@ puds rs = let (pps, ixs, r) = rsOffs rs in SubRC () SP SP r:concat (zipWith go p
   where go (r0, Just r1) ix = [StpD () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [StrD () r (RP SP ix)]
 pods rs = let (pps, ixs, r) = rsOffs rs in concat (zipWith go pps ixs)++[AddRC () SP SP r]
   where go (r0, Just r1) ix = [LdpD () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [LdrD () r (RP SP ix)]
+
+puxs, poxs :: [freg] -> [AArch64 AReg freg ()]
+puxs = concatMap go where go q = [SubRC () SP SP 16, StrS () (V2Reg q) (R SP)]
+poxs = concatMap go.reverse where  go q = [LdrS () (V2Reg q) (R SP), AddRC () SP SP 16]
 
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
