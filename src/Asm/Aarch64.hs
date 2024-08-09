@@ -244,10 +244,10 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fadd2 { ann :: a, d2Dest, d2Src1, d2Src :: V2Reg freg }
                          | Fsub2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
+                         | Faddp { ann :: a, dDest :: freg, vSrc :: V2Reg freg }
                          | Fmul2 { ann :: a, d2Dest, d2Src1, d2Src :: V2Reg freg }
                          | Fdiv2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fsqrt2 { ann :: a, vDest, vSrc :: V2Reg freg }
-                         | Faddp { ann :: a, dDest :: freg, vSrc :: V2Reg freg }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                          | Fneg { ann :: a, dDest, dSrc :: freg }
@@ -454,6 +454,7 @@ mapFR f (Ldp2 l q0 q1 a)      = Ldp2 l (f<$>q0) (f<$>q1) a
 mapFR f (Stp2 l q0 q1 a)      = Stp2 l (f<$>q0) (f<$>q1) a
 mapFR _ (Bfc x r l w)         = Bfc x r l w
 mapFR f (LdrS l q a)          = LdrS l (f<$>q) a
+mapFR f (StrS l q a)          = StrS l (f<$>q) a
 mapFR f (Fadd2 l x0 x1 x2)    = Fadd2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fsub2 l x0 x1 x2)    = Fsub2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fmul2 l x0 x1 x2)    = Fmul2 l (f<$>x0) (f<$>x1) (f<$>x2)
@@ -465,7 +466,6 @@ mapFR f (Faddp l d v)         = Faddp l (f d) (f<$>v)
 mapFR f (MovQQ l v0 v1)       = MovQQ l (f<$>v0) (f<$>v1)
 mapFR f (Fmla l v0 v1 v2)     = Fmla l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (Dup l v r)           = Dup l (f<$>v) r
-mapFR f (StrS l q a)          = StrS l (f<$>q) a
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
