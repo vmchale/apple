@@ -220,7 +220,7 @@ forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
 
 f2or ty | to ty = F2orO ()
-        | te ty = (\tϵ el c eu ss _ -> F2orE () tϵ el c eu ss) 
+        | te ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
         | otherwise = F2or ()
 
 staR :: Sh a -> [Int64]
