@@ -63,7 +63,6 @@ instance SIMD F2Reg where
     pv V16 = "v16"; pv V17 = "v17"; pv V18 = "v18"; pv V19 = "v19"; pv V20 = "v20"; pv V21 = "v21"; pv V22 = "v22"; pv V23 = "v23"
     pv V24 = "v24"; pv V25 = "v25"; pv V26 = "v26"; pv V27 = "v27"; pv V28 = "v28"; pv V29 = "v29"; pv V30 = "v30"; pv V31 = "v31"
 
-
     pq V0 = "q0"; pq V1 = "q1"; pq V2 = "q2"; pq V3 = "q3"; pq V4 = "q4"; pq V5 = "q5"; pq V6 = "q6"; pq V7 = "q7"
     pq V8 = "q8"; pq V9 = "q9"; pq V10 = "q10"; pq V11 = "q11"; pq V12 = "q12"; pq V13 = "q13"; pq V14 = "q14"; pq V15 = "q15"
     pq V16 = "q16"; pq V17 = "q17"; pq V18 = "q18"; pq V19 = "q19"; pq V20 = "q20"; pq V21 = "q21"; pq V22 = "q22"; pq V23 = "q23"
