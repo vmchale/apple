@@ -42,24 +42,6 @@ instance E X86.FX86Reg where
     toInt X86.XMM14 = -11
     toInt X86.XMM15 = -12
 
-instance E X86.F2X86 where
-    toInt X86.YMM0  = 8
-    toInt X86.YMM1  = 9
-    toInt X86.YMM2  = 10
-    toInt X86.YMM3  = 11
-    toInt X86.YMM4  = 12
-    toInt X86.YMM5  = 13
-    toInt X86.YMM6  = 14
-    toInt X86.YMM7  = 15
-    toInt X86.YMM8  = -5
-    toInt X86.YMM9  = -6
-    toInt X86.YMM10 = -7
-    toInt X86.YMM11 = -8
-    toInt X86.YMM12 = -9
-    toInt X86.YMM13 = -10
-    toInt X86.YMM14 = -11
-    toInt X86.YMM15 = -12
-
 instance E X86.AbsReg where
     toInt = X86.toInt
 
@@ -134,45 +116,11 @@ instance E AArch64.FAReg where
     toInt AArch64.D30 = -45
     toInt AArch64.D31 = -46
 
-instance E AArch64.F2Reg where
-    toInt AArch64.V0  = 10
-    toInt AArch64.V1  = 11
-    toInt AArch64.V2  = 12
-    toInt AArch64.V3  = 13
-    toInt AArch64.V4  = 14
-    toInt AArch64.V5  = 15
-    toInt AArch64.V6  = 16
-    toInt AArch64.V7  = 17
-    toInt AArch64.V8  = -23
-    toInt AArch64.V9  = -24
-    toInt AArch64.V10 = -25
-    toInt AArch64.V11 = -26
-    toInt AArch64.V12 = -27
-    toInt AArch64.V13 = -28
-    toInt AArch64.V14 = -29
-    toInt AArch64.V15 = -30
-    toInt AArch64.V16 = -31
-    toInt AArch64.V17 = -32
-    toInt AArch64.V18 = -33
-    toInt AArch64.V19 = -34
-    toInt AArch64.V20 = -35
-    toInt AArch64.V21 = -36
-    toInt AArch64.V22 = -37
-    toInt AArch64.V23 = -38
-    toInt AArch64.V24 = -39
-    toInt AArch64.V25 = -40
-    toInt AArch64.V26 = -41
-    toInt AArch64.V27 = -42
-    toInt AArch64.V28 = -43
-    toInt AArch64.V29 = -44
-    toInt AArch64.V30 = -45
-    toInt AArch64.V31 = -46
-
 instance E AArch64.AbsReg where
     toInt = AArch64.toInt
 
 instance E AArch64.FAbsReg where
     toInt = AArch64.fToInt
 
-instance E AArch64.F2Abs where
-    toInt = AArch64.f2ToInt
+instance E freg => E (AArch64.V2Reg freg) where
+    toInt = toInt . AArch64.simd2

@@ -25,14 +25,14 @@ import           Sys.DL
 pI :: Ptr a -> Int
 pI = (\(IntPtr i) -> i) . ptrToIntPtr
 
-prepAddrs :: [X86 reg freg f2reg a] -> IO (Maybe CCtx)
+prepAddrs :: [X86 reg freg a] -> IO (Maybe CCtx)
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
 dbgFp asmϵ = do
     (bs, _, ps) <- allFp asmϵ
     mFree ps $> bs
 
-assembleCtx :: CCtx -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg F2X86 a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
+assembleCtx :: CCtx -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst4 ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
@@ -41,7 +41,7 @@ assembleCtx ctx (ds, isns) = do
         mP = snd<$>IM.lookupMin arrs
     (b,,mP)<$>finish b p
 
-allFp :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg F2X86 a]) -> IO ([BS.ByteString], FunPtr b, Maybe (Ptr Word64))
+allFp :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], FunPtr b, Maybe (Ptr Word64))
 allFp (ds, instrs) = do
     let (sz, lbls) = mkIx 0 instrs
     (fn, p) <- do
@@ -54,7 +54,7 @@ allFp (ds, instrs) = do
         mP = snd<$>IM.lookupMin arrs
     (bs,,mP)<$>finish b p
 
-assemble :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg F2X86 a]) -> BS.ByteString
+assemble :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> BS.ByteString
 assemble (_, instrs) =
     let (_, lbls) = mkIx 0 instrs in
     BS.pack.concat$asm 0 (error "Internal error: no self", error "Arrays not allowed :(", Nothing, lbls) instrs
@@ -169,7 +169,7 @@ mkVexA opc pp mm xr0 xr1 (RC b@Rsp i) =
           modRMB = 0x1 `shiftL` 6 .|. b0 `shiftL` 3 .|. 0x4
           sib = bb `shiftL` 3 .|. bb
 
-mkIx :: Int -> [X86 X86Reg FX86Reg F2X86 a] -> (Int, M.Map Label Int)
+mkIx :: Int -> [X86 X86Reg FX86Reg a] -> (Int, M.Map Label Int)
 mkIx ix (Pop _ r:asms) | fits r               = mkIx (ix+1) asms
                        | otherwise            = mkIx (ix+2) asms
 mkIx ix (Push _ r:asms) | fits r              = mkIx (ix+1) asms
@@ -327,7 +327,7 @@ mkIx _ (instr:_) = error (show instr)
 fits :: RMB reg => reg -> Bool
 fits r = let (e, _) = modRM r in e == 0
 
-asm :: Int -> (Int, IM.IntMap (Ptr Word64), Maybe CCtx, M.Map Label Int) -> [X86 X86Reg FX86Reg F2X86 a] -> [[Word8]]
+asm :: Int -> (Int, IM.IntMap (Ptr Word64), Maybe CCtx, M.Map Label Int) -> [X86 X86Reg FX86Reg a] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (Push _ r:asms) | fits r =
     let (_, b0) = modRM r

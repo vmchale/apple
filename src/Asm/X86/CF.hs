@@ -15,10 +15,10 @@ import           Class.E      as E
 import           Data.Functor (void, ($>))
 import qualified Data.IntSet  as IS
 
-mkControlFlow :: (E reg, E freg) => [BB X86 reg freg f2reg () ()] -> [BB X86 reg freg f2reg () ControlAnn]
+mkControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> [BB X86 reg freg () ControlAnn]
 mkControlFlow isns = runFreshM (broadcasts isns *> addControlFlow isns)
 
-expand :: (E reg, E freg) => BB X86 reg freg f2reg () Liveness -> [X86 reg freg f2reg Liveness]
+expand :: (E reg, E freg) => BB X86 reg freg () Liveness -> [X86 reg freg Liveness]
 expand (BB asms@(_:_) li) = scanr (\n p -> lN n (ann p)) lS iasms
     where lN a s =
             let ai=uses a <> (ao IS.\\ defs a)
@@ -35,7 +35,7 @@ expand _ = []
 {-# SCC addControlFlow #-}
 -- | Annotate instructions with a unique node name and a list of all possible
 -- destinations.
-addControlFlow :: (E reg, E freg) => [BB X86 reg freg f2reg () ()] -> FreshM [BB X86 reg freg f2reg () ControlAnn]
+addControlFlow :: (E reg, E freg) => [BB X86 reg freg () ()] -> FreshM [BB X86 reg freg () ControlAnn]
 addControlFlow [] = pure []
 addControlFlow (BB asms _:bbs) = do
     { i <- case asms of
@@ -59,11 +59,11 @@ addControlFlow (BB asms _:bbs) = do
 ubb asm = UD (uBB asm) (uBBF asm) (dBB asm) (dBBF asm)
 udd asm = UD (uses asm) (usesF asm) (defs asm) (defsF asm)
 
-uBB, dBB :: E reg => [X86 reg freg f2reg a] -> IS.IntSet
+uBB, dBB :: E reg => [X86 reg freg a] -> IS.IntSet
 uBB = foldr (\p n -> uses p `IS.union` (n IS.\\ defs p)) IS.empty
 dBB = foldMap defs
 
-uBBF, dBBF :: E freg => [X86 reg freg f2reg a] -> IS.IntSet
+uBBF, dBBF :: E freg => [X86 reg freg a] -> IS.IntSet
 uBBF = foldr (\p n -> usesF p `IS.union` (n IS.\\ defsF p)) IS.empty
 dBBF = foldMap defsF
 
@@ -74,7 +74,7 @@ uA (RC r _)      = singleton r
 uA (RS b _ i)    = fromList [b,i]
 uA (RSD b _ i _) = fromList [b,i]
 
-usesF :: E freg => X86 reg freg f2reg ann -> IS.IntSet
+usesF :: E freg => X86 reg freg ann -> IS.IntSet
 usesF (Movapd _ _ r)            = singleton r
 usesF (Vmulsd _ _ r0 r1)        = fromList [r0, r1]
 usesF (Vaddsd _ _ r0 r1)        = fromList [r0, r1]
@@ -161,7 +161,7 @@ usesF C{}                       = IS.empty
 usesF RetL{}                    = IS.empty
 usesF Ret{}                     = fromList [FRet0, FRet1]
 
-uses :: E reg => X86 reg freg f2reg ann -> IS.IntSet
+uses :: E reg => X86 reg freg ann -> IS.IntSet
 uses (MovRR _ _ r)          = singleton r
 uses MovRL{}                = IS.empty
 uses (And _ r0 r1)          = fromList [r0, r1]
@@ -250,7 +250,7 @@ uses C{}                    = IS.empty
 uses RetL{}                 = IS.empty
 uses Ret{}                  = singleton CRet
 
-defsF :: E freg => X86 reg freg f2reg ann -> IS.IntSet
+defsF :: E freg => X86 reg freg ann -> IS.IntSet
 defsF (Movapd _ r _)         = singleton r
 defsF (Vmulsd _ r _ _)       = singleton r
 defsF (Vaddsd _ r _ _)       = singleton r
@@ -338,7 +338,7 @@ defsF C{}                    = IS.empty
 defsF RetL{}                 = IS.empty
 defsF Ret{}                  = IS.empty
 
-defs :: (E reg) => X86 reg freg f2reg ann -> IS.IntSet
+defs :: (E reg) => X86 reg freg ann -> IS.IntSet
 defs (MovRR _ r _)     = singleton r
 defs (MovRL _ r _)     = singleton r
 defs MovqXR{}          = IS.empty
@@ -427,7 +427,7 @@ defs C{}               = IS.empty
 defs RetL{}            = IS.empty
 defs Ret{}             = IS.empty
 
-next :: (E reg, E freg) => [BB X86 reg freg f2reg () ()] -> FreshM ([Int] -> [Int], [BB X86 reg freg f2reg () ControlAnn])
+next :: (E reg, E freg) => [BB X86 reg freg () ()] -> FreshM ([Int] -> [Int], [BB X86 reg freg () ControlAnn])
 next asms = do
     nextAsms <- addControlFlow asms
     case nextAsms of
@@ -435,7 +435,7 @@ next asms = do
         (asm:_) -> pure ((node (caBB asm) :), nextAsms)
 
 -- | Construct map assigning labels to their node name.
-broadcasts :: [BB X86 reg freg f2reg a ()] -> FreshM ()
+broadcasts :: [BB X86 reg freg a ()] -> FreshM ()
 broadcasts [] = pure ()
 broadcasts ((BB asms@(asm:_) _):bbs@((BB (Label _ retL:_) _):_)) | C _ l <- last asms = do
     { i <- fm retL; b3 i l

@@ -5,8 +5,8 @@ import           Asm.BB
 import           CF
 import           LR
 
-mkLive :: (Arch arch reg freg f2) => [arch reg freg f2 ()] -> [arch reg freg f2 Liveness]
+mkLive :: (Arch arch reg freg) => [arch reg freg ()] -> [arch reg freg Liveness]
 mkLive = concatMap expand. liveBB
 
-liveBB :: (Arch arch reg freg f2) => [arch reg freg f2 ()] -> [BB arch reg freg f2 () Liveness]
+liveBB :: (Arch arch reg freg) => [arch reg freg ()] -> [BB arch reg freg () Liveness]
 liveBB = fmap (fmap liveness) . reconstructFlat . cf . bb

@@ -9,22 +9,22 @@ import qualified Data.IntMap    as IM
 import qualified Data.Set       as S
 
 gallocFrame :: Int -- ^ int supply for spilling
-            -> [AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AReg FAReg F2Reg ()]
+            -> [AArch64 AbsReg FAbsReg ()] -> [AArch64 AReg FAReg ()]
 gallocFrame u = frameC . mkIntervals . galloc u
 
-galloc :: Int -> [AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AReg FAReg F2Reg ()]
-galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt).mapF2 (simd2.(fregs IM.!).f2ToInt)) isns')
+galloc :: Int -> [AArch64 AbsReg FAbsReg ()] -> [AArch64 AReg FAReg ()]
+galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt)) isns')
     where (regs, fregs, isns') = gallocOn u (isns++[Ret ()])
           clob'd = S.fromList $ IM.elems regs
 
 {-# SCC frame #-}
-frame :: S.Set AReg -> [AArch64 AReg FAReg F2Reg ()] -> [AArch64 AReg FAReg F2Reg ()]
+frame :: S.Set AReg -> [AArch64 AReg FAReg ()] -> [AArch64 AReg FAReg ()]
 frame clob asms = pre++asms++post++[Ret ()] where
     pre=pus clobs; post=pos clobs
     -- https://developer.arm.com/documentation/102374/0101/Procedure-Call-Standard
     clobs = S.toList (clob `S.intersection` S.fromList [X18 .. X28])
 
-gallocOn :: Int -> [AArch64 AbsReg FAbsReg F2Abs ()] -> (IM.IntMap AReg, IM.IntMap FAReg, [AArch64 AbsReg FAbsReg F2Abs ()])
+gallocOn :: Int -> [AArch64 AbsReg FAbsReg ()] -> (IM.IntMap AReg, IM.IntMap FAReg, [AArch64 AbsReg FAbsReg ()])
 gallocOn u = go u 0 pres
     where go uϵ offs pres' isns = rmaps
               where rmaps = case (regsM, fregsM) of

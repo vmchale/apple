@@ -2,7 +2,7 @@ module Asm.Aarch64.Opt ( opt ) where
 
 import           Asm.Aarch64
 
-opt :: (Eq reg, Eq freg, Eq f2reg) => [AArch64 reg freg f2reg ()] -> [AArch64 reg freg f2reg ()]
+opt :: (Eq reg, Eq freg) => [AArch64 reg freg ()] -> [AArch64 reg freg ()]
 opt (AddRC _ r0 r0' 0:asms) | r0==r0' = opt asms
 opt (SubRC _ r0 r0' 0:asms) | r0==r0' = opt asms
 opt (Str _ r0 (R ar0):Str _ r1 (RP ar1 8):asms) | ar0 == ar1 = Stp () r0 r1 (R ar0):opt asms

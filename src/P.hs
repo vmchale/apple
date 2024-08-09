@@ -149,16 +149,16 @@ as f = prolegomena.either throw (second aso).aarch64
 aso (MovRCf () r0 f:Blr () r1:asms) | r0 == r1 = Bl () f:aso asms
 aso (asm:asms) = asm:aso asms; aso [] = []
 
-aarch64 :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [AArch64 AReg FAReg F2Reg ()])
+aarch64 :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [AArch64 AReg FAReg ()])
 aarch64 = fmap (second (Aarch64.opt . Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . ir
 
-x86G :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [X86 X86Reg FX86Reg F2X86 ()])
+x86G :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [X86 X86Reg FX86Reg ()])
 x86G = walloc (uncurry X86.gallocFrame)
 
-eAarch64 :: Int -> E a -> Either (Err a) (IR.AsmData, [AArch64 AReg FAReg F2Reg ()])
+eAarch64 :: Int -> E a -> Either (Err a) (IR.AsmData, [AArch64 AReg FAReg ()])
 eAarch64 i = fmap (second (Aarch64.opt . Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . eir i
 
-ex86G :: Int -> E a -> Either (Err a) (IR.AsmData, [X86 X86Reg FX86Reg F2X86 ()])
+ex86G :: Int -> E a -> Either (Err a) (IR.AsmData, [X86 X86Reg FX86Reg ()])
 ex86G i = wallocE i (uncurry X86.gallocFrame)
 
 eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
