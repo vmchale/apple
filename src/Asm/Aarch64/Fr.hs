@@ -1,33 +1,60 @@
 module Asm.Aarch64.Fr ( frameC ) where
 
-import           Asm.Aarch64
+import           Asm.Aarch64    hiding (toInt)
 import           Asm.M
 import           CF
+import           Class.E
 import           Data.Copointed
 import           Data.Functor   (void)
 import qualified Data.IntSet    as IS
+import           Data.List      (partition)
 import           Data.Maybe     (mapMaybe)
 
+singleton :: V2Reg FAReg -> IS.IntSet
+singleton = IS.singleton . toInt
+
+fromList = IS.fromList . fmap toInt
+
+collectV :: AArch64 areg FAReg a -> IS.IntSet
+collectV (Dup _ q _)      = singleton q
+collectV (MovQQ _ q _)    = singleton q
+collectV (LdrS _ q _)     = singleton q
+collectV (ZeroS _ v)      = singleton v
+collectV (EorS _ v _ _)   = singleton v
+collectV (Fadd2 _ v _ _)  = singleton v
+collectV (Fsub2 _ v _ _)  = singleton v
+collectV (Fmul2 _ v _ _)  = singleton v
+collectV (Fdiv2 _ v _ _)  = singleton v
+collectV (Fsqrt2 _ v _)   = singleton v
+collectV (Ldp2 _ q0 q1 _) = fromList [q0,q1]
+collectV (Fmla _ v _ _)   = singleton v
+collectV _                = IS.empty
+
 frameC :: [AArch64 AReg FAReg Live] -> [AArch64 AReg FAReg ()]
-frameC = concat.go IS.empty IS.empty
-    where go _ _ [] = []
-          go _ _ [isn] = [[void isn]]
-          go s fs (isn0@(MovRCf _ _ cf):isn1@Blr{}:isns) =
+frameC = concat.go IS.empty IS.empty IS.empty
+    where go _ _ _ [] = []
+          go _ _ _ [isn] = [[void isn]]
+          go s fs vs (isn0@(MovRCf _ _ cf):isn1@Blr{}:isns) =
             let i0 = copoint isn0; i1=copoint isn1
+                vs' = collectV isn0<>vs
                 s' = s `IS.union` new i0 `IS.difference` done i0
                 s'' = s' `IS.union` new i1 `IS.difference` done i1
                 fs' = fs `IS.union` fnew i0 `IS.difference` fdone i0
                 fs'' = fs' `IS.union` fnew i1 `IS.difference` fdone i1
+                (f2s, f1s) = partition (`IS.member` vs) (IS.toList fs)
                 cs = handleX0 cf $ mapMaybe fromInt (IS.toList s)
-                ds = handleD0 cf $ mapMaybe fInt (IS.toList fs)
+                ds = handleD0 cf $ mapMaybe fInt f1s
+                qs = handleD0 cf $ fmap fi f2s
                 save = pus cs; restore = pos cs
                 saved = puds ds; restored = pods ds
-            in (save ++ saved ++ void isn0:void isn1:restored ++ restore) : go s'' fs'' isns
-          go s fs (isn:isns) =
+                saveq = puxs (ds++qs); restorex = poxs (ds++qs)
+            in (save ++ saved ++ saveq ++ void isn0:void isn1:restorex ++ restored ++ restore) : go s'' fs'' vs' isns
+          go s fs vs (isn:isns) =
             let i = copoint isn
                 s' = s `IS.union` new i `IS.difference` done i
                 fs' = fs `IS.union` fnew i `IS.difference` fdone i
-            in [void isn] : go s' fs' isns
+                vs' = collectV isn <> vs
+            in [void isn] : go s' fs' vs' isns
           handleX0 Malloc=filter (/=X0); handleX0 Free=id; handleX0 Exp=id; handleX0 Log=id; handleX0 Pow=id; handleX0 DR=id; handleX0 JR=filter (/=X0)
           handleD0 Exp=filter (/=D0); handleD0 Log=filter (/=D0);handleD0 Malloc=id;handleD0 Free=id; handleD0 Pow=filter (/=D0); handleD0 DR=filter (/=D0); handleD0 JR=id
 
@@ -54,9 +81,7 @@ fromInt (-10) = Just X17
 fromInt (-11) = Just X18
 fromInt _     = Nothing
 
-f2Int :: Int -> V2Reg FAReg
-f2Int = V2Reg . fi
-
+-- https://learn.microsoft.com/en-us/cpp/build/arm64-windows-abi-conventions?view=msvc-170#floating-pointsimd-registers
 fi 10 = D0; fi 11 = D1; fi 12 = D2; fi 13 = D3
 fi 14 = D4; fi 15 = D5; fi 16 = D6; fi 17 = D7
 fi (-23) = D8; fi (-24) = D9; fi (-25) = D10; fi (-26) = D11
@@ -66,7 +91,6 @@ fi (-35) = D20; fi (-36) = D21; fi (-37) = D22; fi (-38) = D23
 fi (-39) = D24; fi (-40) = D25; fi (-41) = D26; fi (-42) = D27
 fi (-43) = D28; fi (-44) = D29; fi (-45) = D30; fi (-46) = D31
 
--- https://learn.microsoft.com/en-us/cpp/build/arm64-windows-abi-conventions?view=msvc-170#floating-pointsimd-registers
 fInt :: Int -> Maybe FAReg
 fInt 10    = Just D0
 fInt 11    = Just D1
