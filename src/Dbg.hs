@@ -145,7 +145,7 @@ prettyCI :: [CS Liveness] -> Doc ann
 prettyCI = prettyLines.fmap (pL ((space<>).pretty))
 
 dumpLoop :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss,_) = pS ss<#>pretty (fmap (IS.toList . snd) t); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
+dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss,_) = pS ss<#>pretty (fmap (\(nϵ,ns) -> nϵ:IS.toList ns) t); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
 
 dumpDomTree :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpDomTree = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (_,t,asϵ,_) = pS asϵ<#>pretty (drawTree (show<$>t)); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
