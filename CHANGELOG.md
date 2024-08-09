@@ -4,6 +4,7 @@
   * Fix bugs
   * Rotate (⊖), head, last more polymorphic (work on arrays).
   * More cases in the mid-end
+  * Lifting constants out of loops works again whoops
 
 ## 0.2.0.0
 
