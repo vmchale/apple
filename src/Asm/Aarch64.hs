@@ -245,6 +245,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fadd2 { ann :: a, d2Dest, d2Src1, d2Src :: V2Reg freg }
                          | Fsub2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fmul2 { ann :: a, d2Dest, d2Src1, d2Src :: V2Reg freg }
+                         | Fdiv2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
+                         | Fsqrt2 { ann :: a, vDest, vSrc :: V2Reg freg }
                          | Faddp { ann :: a, dDest :: freg, vSrc :: V2Reg freg }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
@@ -367,6 +369,8 @@ mapR f (LdrS l q a)          = LdrS l q (f<$>a)
 mapR _ (Fadd2 l x0 x1 x2)    = Fadd2 l x0 x1 x2
 mapR _ (Fsub2 l x0 x1 x2)    = Fsub2 l x0 x1 x2
 mapR _ (Fmul2 l x0 x1 x2)    = Fmul2 l x0 x1 x2
+mapR _ (Fdiv2 l x0 x1 x2)    = Fdiv2 l x0 x1 x2
+mapR _ (Fsqrt2 l v0 v1)      = Fsqrt2 l v0 v1
 mapR _ (Faddp l d v)         = Faddp l d v
 mapR _ (MovQQ l v0 v1)       = MovQQ l v0 v1
 mapR _ (Fmla l v0 v1 v2)     = Fmla l v0 v1 v2
@@ -453,6 +457,8 @@ mapFR f (LdrS l q a)          = LdrS l (f<$>q) a
 mapFR f (Fadd2 l x0 x1 x2)    = Fadd2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fsub2 l x0 x1 x2)    = Fsub2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fmul2 l x0 x1 x2)    = Fmul2 l (f<$>x0) (f<$>x1) (f<$>x2)
+mapFR f (Fdiv2 l x0 x1 x2)    = Fdiv2 l (f<$>x0) (f<$>x1) (f<$>x2)
+mapFR f (Fsqrt2 l v0 v1)      = Fsqrt2 l (f<$>v0) (f<$>v1)
 mapFR f (EorS l v0 v1 v2)     = EorS l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (ZeroS l v)           = ZeroS l (f<$>v)
 mapFR f (Faddp l d v)         = Faddp l (f d) (f<$>v)
@@ -533,9 +539,11 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fadd _ rD r0 r1)      = "fadd" <+> ar3 rD r0 r1
         p4 (Fsub _ rD r0 r1)      = "fsub" <+> ar3 rD r0 r1
         p4 (Fdiv _ rD r0 r1)      = "fdiv" <+> ar3 rD r0 r1
-        p4 (Fmul2 _ xD x0 x1)     = "fmul" <+> pv xD <> "," <+> pv x0 <> "," <+> pv x1
-        p4 (Fadd2 _ xD x0 x1)     = "fadd" <+> pv xD <> "," <+> pv x0 <> "," <+> pv x1
-        p4 (Fsub2 _ xD x0 x1)     = "fsub" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1
+        p4 (Fmul2 _ xD x0 x1)     = "fmul" <+> v3 xD x0 x1
+        p4 (Fdiv2 _ xD x0 x1)     = "fdiv" <+> v3 xD x0 x1
+        p4 (Fsqrt2 _ xD xS)       = "fsqrt" <+> av2 xD xS
+        p4 (Fadd2 _ xD x0 x1)     = "fadd" <+> v3 xD x0 x1
+        p4 (Fsub2 _ xD x0 x1)     = "fsub" <+> v3 xD x0 x1
         p4 (Faddp _ dD v0)        = "faddp" <+> pretty dD <> "," <+> pvd v0
         p4 (EorS _ vD v0 v1)      = "eor" <+> pvv vD <> "," <+> pvv v0 <> "," <+> pvv v1
         p4 (ZeroS _ v)            = "eor" <+> pvv v <> "," <+> pvv v <> "," <+> pvv v

@@ -195,6 +195,7 @@ irX2 (C.FAt a)       = IR.FAt (irAt a)
 irX2 (FTmp t)        = FReg (f2x t)
 irX2 (FBin op x0 x1) = FB op (irX2 x0) (irX2 x1)
 irX2 (IE x)          = absurd x
+irX2 (FUn op x)      = FU op (irX2 x)
 
 irX :: F1E -> FE
 irX (C.ConstF x)    = IR.ConstF x
