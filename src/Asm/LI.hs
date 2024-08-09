@@ -6,6 +6,6 @@ import           CF
 import           Data.Copointed
 import           LI
 
-mkIntervals :: (Arch arch reg freg f2, Copointed (arch reg freg f2)) => [arch reg freg f2 ()] -> [arch reg freg f2 Live]
+mkIntervals :: (Arch arch reg freg, Copointed (arch reg freg)) => [arch reg freg ()] -> [arch reg freg Live]
 mkIntervals = intervals . enliven . mkLive
     where enliven = zipWith (\n a -> fmap (NLiveness n) a) [0..]
