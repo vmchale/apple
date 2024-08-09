@@ -180,9 +180,9 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Ret { ann :: a }                                              | RetL { ann :: a, label :: Label }
                          | FMovXX { ann :: a, dDest, dSrc :: freg }
                          | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
-                         | Dup { ann :: a, vDest :: (V2Reg freg), rSrc :: reg }
+                         | Dup { ann :: a, vDest :: V2Reg freg, rSrc :: reg }
                          | MovRR { ann :: a, rDest, rSrc :: reg }
-                         | MovQQ { ann :: a, qDest, qSrc :: (V2Reg freg) }
+                         | MovQQ { ann :: a, qDest, qSrc :: V2Reg freg }
                          | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
                          | MovZ { ann :: a, rDest :: reg, cSrc :: Word16, lsl :: Int }
                          | MovRCf { ann :: a, rDest :: reg, cfunc :: CFunc }
@@ -192,10 +192,10 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | LdrB { ann :: a, rDest :: reg, aSrc :: Addr reg }
                          | Str { ann :: a, rSrc :: reg, aDest :: Addr reg }
                          | StrB { ann :: a, rSrc :: reg, aDest :: Addr reg }
-                         | StrS { ann :: a, qDest :: (V2Reg freg), aSrc :: Addr reg }
+                         | StrS { ann :: a, qDest :: V2Reg freg, aSrc :: Addr reg }
                          | LdrD { ann :: a, dDest :: freg, aSrc :: Addr reg }
                          | StrD { ann :: a, dSrc :: freg, aDest :: Addr reg }
-                         | LdrS { ann :: a, qDest :: (V2Reg freg), aSrc :: Addr reg }
+                         | LdrS { ann :: a, qDest :: V2Reg freg, aSrc :: Addr reg }
                          | SubRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | AddRRS { ann :: a, rDest, rSrc1, rSrc2 :: reg, sC :: Word8 }
@@ -205,8 +205,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | OrRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eon { ann :: a, rDest, rSrc, rSrc2 :: reg }
-                         | ZeroS { ann :: a, qDest :: (V2Reg freg) }
-                         | EorS { ann :: a, qDest, qSrc1, qSrc2 :: (V2Reg freg) }
+                         | ZeroS { ann :: a, qDest :: V2Reg freg }
+                         | EorS { ann :: a, qDest, qSrc1, qSrc2 :: V2Reg freg }
                          | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
                          | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
@@ -223,12 +223,12 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fadd { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fsub { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fdiv { ann :: a, dDest, dSrc1, dSrc2 :: freg }
-                         | Fadd2 { ann :: a, vDest, vSrc1, vSrc2 :: (V2Reg freg) }
-                         | Fsub2 { ann :: a, vDest, vSrc1, vSrc2 :: (V2Reg freg) }
-                         | Faddp { ann :: a, dDest :: freg, vSrc :: (V2Reg freg) }
-                         | Fmul2 { ann :: a, vDest, vSrc1, vSrc2 :: (V2Reg freg) }
-                         | Fdiv2 { ann :: a, vDest, vSrc1, vSrc2 :: (V2Reg freg) }
-                         | Fsqrt2 { ann :: a, vDest, vSrc :: (V2Reg freg) }
+                         | Fadd2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
+                         | Fsub2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
+                         | Faddp { ann :: a, dDest :: freg, vSrc :: V2Reg freg }
+                         | Fmul2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
+                         | Fdiv2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
+                         | Fsqrt2 { ann :: a, vDest, vSrc :: V2Reg freg }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                          | Fneg { ann :: a, dDest, dSrc :: freg }
@@ -237,14 +237,14 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fcvtas { ann :: a, rDest :: reg, dSrc :: freg }
                          | Stp { ann :: a, rSrc1, rSrc2 :: reg, aDest :: Addr reg }
                          | Ldp { ann :: a, rDest1, rDest2 :: reg, aSrc :: Addr reg }
-                         | Stp2 { ann :: a, r2Src1, r2Src2 :: (V2Reg freg), aDest :: Addr reg }
-                         | Ldp2 { ann :: a, r2Dest1, r2Dest2 :: (V2Reg freg), aRc :: Addr reg }
+                         | Stp2 { ann :: a, r2Src1, r2Src2 :: V2Reg freg, aDest :: Addr reg }
+                         | Ldp2 { ann :: a, r2Dest1, r2Dest2 :: V2Reg freg, aRc :: Addr reg }
                          | StpD { ann :: a, dSrc1, dSrc2 :: freg, aDest :: Addr reg }
                          | LdpD { ann :: a, dDest1, dDest2 :: freg, aSrc :: Addr reg }
                          | Fmadd { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
                          | Fmsub { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
                          | Fsqrt { ann :: a, dDest, dSrc :: freg }
-                         | Fmla { ann :: a, vDest, vSrc1, vSrc2 :: (V2Reg freg) }
+                         | Fmla { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Frintm { ann :: a, dDest, dSrc :: freg }
                          | MrsR { ann :: a, rDest :: reg }
                          | Fmax { ann :: a, dDest, dSrc1, dSrc2 :: freg }
