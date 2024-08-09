@@ -549,8 +549,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs <- eAnn
     (plE, (l, xR)) <- plA e
     i <- nI; szR <- nI
     (a,aV) <- v8 t (Tmp szR)
-    x0 <- nF; y0 <- nF
-    x <- newF2Temp; y <- newF2Temp
+    x0 <- nF; y0 <- nF; x <- newF2Temp; y <- newF2Temp
     ss <- write2 f [x] y
     s1 <- writeRF f [FT x0] (FT y0)
     let step=MX2 () x (FAt (AElem xR 1 (Tmp i) l 8)):ss++[Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp y)]
@@ -896,7 +895,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
   where
     tA=eAnn a; tX=eAnn x
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
-    i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; zs <- nF; z <- newF2Temp
+    i <- nI; j <- nI; m <- nI; n <- nI
     aRd <- nI; xRd <- nI; td <- nI
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x

@@ -15,7 +15,7 @@ import qualified Data.IntSet                as IS
 import           Data.List                  (sortBy)
 import qualified Data.Map.Strict            as M
 import           Data.Maybe                 (catMaybes, fromJust, fromMaybe)
-import           Data.Tuple.Extra           (first3, snd3)
+import           Data.Tuple.Extra           (first3, second3, fst3, snd3, thd3,third3)
 import           Data.Void                  (Void, absurd)
 import           IR
 import           IR.CF
@@ -93,15 +93,18 @@ type Loop = (N, IS.IntSet)
 lm :: [(Stmt, NLiveness)] -> IM.IntMap NLiveness
 lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 
-hl :: (Loop, CfTbl, IM.IntMap NLiveness) -> [(N, N, (FTemp, Double))]
+data CM = FM !FTemp !Double | F2M !F2 !(Double, Double)
+
+hl :: (Loop, CfTbl, IM.IntMap NLiveness) -> [(N, N, CM)]
 hl ((n,ns), info, linfo) = go ss
   where
     fliveInH=fins lH; lH=liveness (gN n linfo)
-    go ((MX x (ConstF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef x (node a) = (n, node a, (x,i)):go ssϵ
+    go ((MX x (ConstF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef (fToInt x) (node a) = (n, node a, FM x i):go ssϵ
+    go ((MX2 x (ConstF i), a):ssϵ) | f2ToInt x `IS.notMember` fliveInH && notFDef (f2ToInt x) (node a) = (n, node a, F2M x i):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
     otherDefFs nL = defsFNode.ud.snd.(info A.!)<$>IS.toList(IS.delete nL ns)
-    notFDef r nL = not $ any (fToInt r `IS.member`) (otherDefFs nL)
+    notFDef r nL = not $ any (r `IS.member`) (otherDefFs nL)
     ss = (info A.!)<$>IS.toList ns
     gN = IM.findWithDefault (error "internal error: node not in map.")
 
@@ -112,18 +115,23 @@ pall ss =
     in {-# SCC "applySubst" #-} applySubst s ss''
   where
     go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
-    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (_, subst)) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
+    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (_, subst, _)) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
     go ((s,_):ssϵ) = second (s:)$go ssϵ
     go [] = (M.empty, [])
     (cf, is, dels) = indels ss
     applySubst s = fmap (mapF (\t -> fromMaybe t (M.lookup t s)))
-    consolidate = first catMaybes . flip runState (M.empty, M.empty) . traverse (\(t,x) -> do
-        seen <- gets fst
+    consolidate = first catMaybes . flip runState (M.empty, M.empty, M.empty) . traverse gg
+    gg (FM t x) = do
+        seen <- gets fst3
         case M.lookup x seen of
-            Nothing -> modify (first (M.insert x t)) $> Just (MX t (ConstF x))
-            Just r  -> modify (second (M.insert t r)) $> Nothing)
+            Nothing -> modify (first3 (M.insert x t)) $> Just (MX t (ConstF x))
+            Just r  -> modify (second3 (M.insert t r)) $> Nothing
+    gg (F2M t x) = do
+        seen <- gets thd3
+        case M.lookup x seen of
+            Nothing -> modify (third3 (M.insert x t)) $> Just (MX2 t (ConstF x))
 
-indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [(FTemp, Double)], IS.IntSet)
+indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [CM], IS.IntSet)
 indels ss = (c, is IM.empty, ds)
   where
     (c,h) = hs ss
@@ -131,7 +139,7 @@ indels ss = (c, is IM.empty, ds)
     go n s = IM.alter (\d -> case d of {Nothing -> Just [s]; Just ssϵ -> Just$s:ssϵ}) n
     is = thread ((\(n,_,s) -> go n s)<$>h)
 
-hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, (FTemp, Double))])
+hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, CM)])
 hs ss = let (ls, cf, dm) = loop ss
             mm = lm (reconstructFlat cf)
      in (cf, concatMap (\l -> hl (l,dm,mm)) (ols ls))

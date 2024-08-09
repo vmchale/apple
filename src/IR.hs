@@ -31,7 +31,7 @@ data FTemp = FTemp !Int
            | FRet | FRet1
            deriving (Eq, Ord)
 
-newtype F2 = F2Temp { f2ToInt :: Int }
+newtype F2 = F2Temp { f2ToInt :: Int } deriving (Eq, Ord)
 
 instance Pretty F2 where pretty (F2Temp i) = "f2_" <> pretty i
 
