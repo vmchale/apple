@@ -15,6 +15,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , toInt, fToInt
                    , pus, pos
                    , puds, pods
+                   , puxs, poxs
                    , pSym
                    ) where
 
@@ -479,6 +480,10 @@ pos = map go.reverse.s2 where go (r0, Just r1) = Ldp () r0 r1 (Po SP 16); go (r,
 puds, pods :: [freg] -> [AArch64 AReg freg ()]
 puds = map go.s2 where go (r0, Just r1) = StpD () r0 r1 (Pr SP (-16)); go (r, Nothing) = StrD () r (Pr SP (-16))
 pods = map go.reverse.s2 where go (r0, Just r1) = LdpD () r0 r1 (Po SP 16); go (r, Nothing) = LdrD () r (Po SP 16)
+
+puxs, poxs :: [freg] -> [AArch64 AReg freg ()]
+puxs = concatMap go where go q = [SubRC () SP SP 16, StrS () (V2Reg q) (R SP)]
+poxs = concatMap go.reverse where  go q = [LdrS () (V2Reg q) (R SP), AddRC () SP SP 16]
 
 hexd :: Integral a => a -> Doc ann
 hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")

@@ -192,6 +192,10 @@ asm ix st (LdpD _ d0 d1 (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 8, u <= 504 = 
 asm ix st (LdpD _ d0 d1 (Po rb i):asms) | (i', 0) <- i `quotRem` 8, i >= -512 && i <= 504 = let (ub,lub)=i7 i' in [0b01101100, 0x3 `shiftL` 6 .|. ub, lub `shiftL` 7 .|. be d1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d0]:asm (ix+4) st asms
 asm ix st (LdpD x d0 d1 (R rb):asms) = asm ix st (LdpD x d0 d1 (RP rb 0):asms)
 asm ix st (LdrS _ q (BI rb ri s):asms) = [0b00111100, 0b111 `shiftL` 5 .|. be ri, 0b11 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0b10 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
+asm ix st (StrS x q (R rb):asms) = asm ix st (StrS x q (RP rb 0):asms)
+asm ix st (StrS _ q (RP rb u):asms) | (u',0) <- u `quotRem` 16, u <= 65520 = [0b00111101, 0x2 `shiftL` 6 .|. fromIntegral (u' `shiftR` 6), fromIntegral (0b111111 .&. u') `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
+asm ix st (LdrS x q (R rb):asms) = asm ix st (LdrS x q (RP rb 0):asms)
+asm ix st (LdrS _ q (RP rb u):asms) | (u',0) <- u `quotRem` 16, u <= 65520 = [0b00111101, 0b11 `shiftL` 6 .|. fromIntegral (u' `shiftR` 6), fromIntegral (0b11111 .&. u') `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (StrS _ q (BI rb ri s):asms) = [0b00111100, 0b101 `shiftL` 5 .|. be ri, 0b011 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0b10 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (Dup _ q r:asms) = [0b01001110, 0b01000, 0x3 `shiftL` 2 .|. be r `shiftR` 3, lb r q]:asm (ix+4) st asms
 asm ix st (LdpD _ d0 d1 (R rb):asms) = [0x6d, 1 `shiftL` 6, be d1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d0]:asm (ix+4) st asms

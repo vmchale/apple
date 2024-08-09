@@ -21,7 +21,7 @@ frameC = concat.go IS.empty IS.empty
                 cs = handleX0 cf $ mapMaybe fromInt (IS.toList s)
                 ds = handleD0 cf $ mapMaybe fInt (IS.toList fs)
                 save = pus cs; restore = pos cs
-                saved = puds ds; restored = pods ds
+                saved = puxs ds; restored = poxs ds
             in (save ++ saved ++ void isn0:void isn1:restored ++ restore) : go s'' fs'' isns
           go s fs (isn:isns) =
             let i = copoint isn
