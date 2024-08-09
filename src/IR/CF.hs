@@ -133,7 +133,7 @@ uF2 ConstF{}     = IS.empty
 uF2 (FReg t)     = f2is t
 uF2 (FB _ e0 e1) = uF2 e0<>uF2 e1
 uF2 (FU _ e)     = uF2 e
-uF2 (FAt e)      = uAF e -- fexp doesn't ever come from f2exp (or vice versa); move in statements
+uF2 (FAt e)      = uAF e
 uF2 (FConv x)    = absurd x
 
 uF :: FE -> IS.IntSet
