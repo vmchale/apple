@@ -209,7 +209,9 @@ for t = if ne t then For1 () else For (); for1 t = if n1 t then For1 () else For
 forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
 
-f2or ty = if to ty then F2orO () else if te ty then (\tϵ el c eu ss _ -> F2orE () tϵ el c eu ss) else F2or ()
+f2or ty | to ty = F2orO ()
+        | te ty = (\tϵ el c eu ss _ -> F2orE () tϵ el c eu ss) 
+        | otherwise = F2or ()
 
 staR :: Sh a -> [Int64]
 staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s

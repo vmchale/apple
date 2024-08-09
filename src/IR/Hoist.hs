@@ -15,7 +15,7 @@ import qualified Data.IntSet                as IS
 import           Data.List                  (sortBy)
 import qualified Data.Map.Strict            as M
 import           Data.Maybe                 (catMaybes, fromJust, fromMaybe)
-import           Data.Tuple.Extra           (first3, second3, fst3, snd3, thd3,third3)
+import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
 import           Data.Void                  (Void, absurd)
 import           IR
 import           IR.CF
