@@ -28,7 +28,7 @@ mB Op.OrB  = Just OrRR
 mB Op.XorB = Just Eor
 mB Op.BEq  = Nothing
 
-f2absReg :: IR.F2 -> V2Reg (FAbsReg)
+f2absReg :: IR.F2 -> V2Reg FAbsReg
 f2absReg (IR.F2Temp i) = V2Reg (FReg i)
 
 mIop Op.IPlus  = Just AddRR
@@ -83,7 +83,7 @@ plF :: IR.FE -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()], 
 plF (IR.FReg t) = pure (id, fabsReg t)
 plF e           = do {i <- nextI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
 
-plF2 :: IR.F2E -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()], V2Reg (FAbsReg))
+plF2 :: IR.F2E -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()], V2Reg FAbsReg)
 plF2 (IR.FReg t) = pure (id, f2absReg t)
 plF2 e           = do {i <- nextI; pl <- f2eval e (IR.F2Temp i); pure ((pl++), V2Reg (FReg i))}
 
@@ -374,19 +374,19 @@ f2eval (IR.FAt (IR.AP tB (Just e) _)) tD = do
 f2eval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1; (plE2,x2) <- plF2 e2
     let va=f2absReg t
-    pure$plE0$plE1$plE2$[MovQQ () va x0, Fmla () va x1 x2]
+    pure$plE0$plE1$plE2 [MovQQ () va x0, Fmla () va x1 x2]
 f2eval (IR.FB Op.FPlus e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1$[Fadd2 () (f2absReg t) x0 x1]
+    pure$plE0$plE1 [Fadd2 () (f2absReg t) x0 x1]
 f2eval (IR.FB Op.FMinus e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1$[Fsub2 () (f2absReg t) x0 x1]
+    pure$plE0$plE1 [Fsub2 () (f2absReg t) x0 x1]
 f2eval (IR.FB Op.FTimes e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1$[Fmul2 () (f2absReg t) x0 x1]
+    pure$plE0$plE1 [Fmul2 () (f2absReg t) x0 x1]
 f2eval (IR.FB Op.FDiv e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1$[Fdiv2 () (f2absReg t) x0 x1]
+    pure$plE0$plE1 [Fdiv2 () (f2absReg t) x0 x1]
 f2eval (IR.FU Op.FSqrt e) t = do
     (plE,x) <- plF2 e
     pure$plE[Fsqrt2 () (f2absReg t) x]
