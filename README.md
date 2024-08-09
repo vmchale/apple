@@ -1,6 +1,6 @@
 # Apple Array System
 
-Many cases are not implemented. This is provided as an artefact.
+Some cases are not implemented. This is provided as an artefact.
 
 See [Apple by Example](https://vmchale.github.io/apple/) for a demonstration of capabilities.
 
