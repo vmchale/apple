@@ -230,6 +230,8 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | Fsub2 { ann :: a, vDest, vSrc1, vSrc2 :: f2 }
                          | Faddp { ann :: a, dDest :: freg, vSrc :: f2 }
                          | Fmul2 { ann :: a, vDest, vSrc1, vSrc2 :: f2 }
+                         | Fdiv2 { ann :: a, vDest, vSrc1, vSrc2 :: f2 }
+                         | Fsqrt2 { ann :: a, vDest, vSrc :: f2 }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                          | Fneg { ann :: a, dDest, dSrc :: freg }
@@ -352,6 +354,8 @@ mapR f (LdrS l q a)          = LdrS l q (f<$>a)
 mapR _ (Fadd2 l x0 x1 x2)    = Fadd2 l x0 x1 x2
 mapR _ (Fsub2 l x0 x1 x2)    = Fsub2 l x0 x1 x2
 mapR _ (Fmul2 l x0 x1 x2)    = Fmul2 l x0 x1 x2
+mapR _ (Fdiv2 l x0 x1 x2)    = Fdiv2 l x0 x1 x2
+mapR _ (Fsqrt2 l v0 v1)      = Fsqrt2 l v0 v1
 mapR _ (Faddp l d v)         = Faddp l d v
 mapR _ (MovQQ l v0 v1)       = MovQQ l v0 v1
 mapR _ (Fmla l v0 v1 v2)     = Fmla l v0 v1 v2
@@ -440,6 +444,8 @@ mapF2 f (LdrS l q a)          = LdrS l (f q) a
 mapF2 f (Fadd2 l x0 x1 x2)    = Fadd2 l (f x0) (f x1) (f x2)
 mapF2 f (Fsub2 l x0 x1 x2)    = Fsub2 l (f x0) (f x1) (f x2)
 mapF2 f (Fmul2 l x0 x1 x2)    = Fmul2 l (f x0) (f x1) (f x2)
+mapF2 f (Fdiv2 l x0 x1 x2)    = Fdiv2 l (f x0) (f x1) (f x2)
+mapF2 f (Fsqrt2 l v0 v1)      = Fsqrt2 l (f v0) (f v1)
 mapF2 f (ZeroS l v)           = ZeroS l (f v)
 mapF2 f (Faddp l d v)         = Faddp l d (f v)
 mapF2 f (MovQQ l v0 v1)       = MovQQ l (f v0) (f v1)
@@ -530,6 +536,8 @@ mapFR _ (StrS l q a)          = StrS l q a
 mapFR _ (Fadd2 l x0 x1 x2)    = Fadd2 l x0 x1 x2
 mapFR _ (Fsub2 l x0 x1 x2)    = Fsub2 l x0 x1 x2
 mapFR _ (Fmul2 l x0 x1 x2)    = Fmul2 l x0 x1 x2
+mapFR _ (Fdiv2 l x0 x1 x2)    = Fdiv2 l x0 x1 x2
+mapFR _ (Fsqrt2 l v0 v1)      = Fsqrt2 l v0 v1
 mapFR _ (EorS l v0 v1 v2)     = EorS l v0 v1 v2
 mapFR _ (ZeroS l v)           = ZeroS l v
 mapFR f (Faddp l d v)         = Faddp l (f d) v
@@ -611,6 +619,8 @@ instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg
         p4 (Fsub _ rD r0 r1)      = "fsub" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1
         p4 (Fdiv _ rD r0 r1)      = "fdiv" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1
         p4 (Fmul2 _ xD x0 x1)     = "fmul" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1
+        p4 (Fdiv2 _ xD x0 x1)     = "fdiv" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1
+        p4 (Fsqrt2 _ xD xS)       = "fsqrt" <+> pvd xD <> "," <+> pvd xS
         p4 (Fadd2 _ xD x0 x1)     = "fadd" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1
         p4 (Fsub2 _ xD x0 x1)     = "fsub" <+> pvd xD <> "," <+> pvd x0 <> "," <+> pvd x1
         p4 (Faddp _ dD v0)        = "faddp" <+> pretty dD <> "," <+> pvd v0
