@@ -232,13 +232,13 @@ usesF C{}            = IS.empty
 usesF R{}            = IS.empty
 usesF (Cpy a0 a1 e)  = uAF a0<>uAF a1<>uFF e
 usesF (Cpy1 a0 a1 e) = uAF a0<>uAF a1<>uFF e
-usesF (S2 _ r)       = f2is r
+usesF (S2 _ _ r)     = f2is r
 
 defsF (MX t _)      = fsingleton t
 defsF (MX2 t _)     = f2is t
 defsF (Fcmov _ x _) = fsingleton x
 defsF (FRnd t)      = fsingleton t
-defsF (S2 t _)      = fsingleton t
+defsF (S2 _ t _)    = fsingleton t
 defsF _             = IS.empty
 
 next :: [Stmt] -> FreshM ([N] -> [N], [(Stmt, ControlAnn)])
