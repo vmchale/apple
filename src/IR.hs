@@ -113,7 +113,7 @@ instance Pretty Stmt where
     pretty (IRnd t)      = parens (pretty t <+> "<- rnd")
     pretty (FRnd t)      = parens (pretty t <+> "<- xrnd")
     pretty (Cset t e)    = parens ("cset" <+> pretty t <+> "<-" <+> pretty e)
-    pretty (S2 o t r)    = parens ("split" <> pretty o <+> pretty t <+> pretty r)
+    pretty (S2 o t r)    = parens ("comb" <> pretty o <+> pretty t <+> pretty r)
     pretty (Fill2 r t)   = parens ("fill" <+> pretty r <> "," <+> pretty t)
 
 instance Show Stmt where show = show . pretty
