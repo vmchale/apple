@@ -209,9 +209,10 @@ for t = if ne t then For1 () else For (); for1 t = if n1 t then For1 () else For
 forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
 
-f2or1 ty | to ty && n1 ty = F2orO ()
-         | te ty && n1 ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
-         | otherwise = F2or ()
+f21o (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
+                                 | even i = F2orO ()
+f21o _                           = F2or ()
+
 
 f2or ty | to ty = F2orO ()
         | te ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
@@ -249,7 +250,11 @@ writeCM eϵ = do
 rtemp :: T a -> CM RT
 rtemp F=FT<$>nF; rtemp I=IT<$>nI; rtemp B=PT<$>nBT
 
-bS :: Builtin -> Bool
+bS, fS :: Builtin -> Bool
+fS Times = True; fS Plus = True
+fS Max = True; fS Min = True
+fS _ = False
+
 bS Times = True
 bS Plus  = True
 bS Minus = True
@@ -906,6 +911,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     z <- newF2Temp; z0 <- nF; zs <- nF
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
+    z0 <- nF; zs <- nF; z <- newF2Temp
     let loop = for tA i 0 ILt (Tmp m)
                   [ MX () zs 0, MX2 () z (ConstF (0,0)),
                     -- TODO: maybe f2or should index+1, then use lsl #4 for addressing?
@@ -913,7 +919,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
                     f2or tX j 0 ILt (Tmp n)
                         [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (AElem xR 1 (Tmp j) lX 8)))) ]
                         [ MX () zs (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
-                  , Pair () Op.FPlus z0 z
+                  , Comb () Op.FPlus z0 z
                   -- TODO: don't need zs if even
                   , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp zs+FTmp z0)
                   ]
@@ -959,7 +965,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
                         f2or tB k 0 ILt (Tmp n)
                               [MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)) (FAt (AElem bR 2 (Tmp n*Tmp j+Tmp k) lB 8))))]
                               [MX () zs (FTmp zs+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)*FAt (AElem bR 2 (Tmp n*Tmp j+Tmp k) lB 8))]
-                    , Pair () Op.FPlus z0 z
+                    , Comb () Op.FPlus z0 z
                     , WrF () (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp zs+FTmp z0)]
                     ]
     pure (Just aL,
@@ -1675,13 +1681,25 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tPs <- eAnn p, Just (tP, pSz) <- aR
         loop = for1 tP i 1 ILt (Tmp szR) step
     seed <- writeRF zop [x,y] (FT acc)
     pure $ plPP$plQ$szR =: ev tPs (pR,lP):mt (AElem pR 1 0 lP pSz) x:mt (AElem qR 1 0 lQ qSz) y:seed++[loop]
-feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc = do
+feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca op = do
+    x0 <- nF; acc0 <- nF; acc2 <- newF2Temp; x <- newF2Temp
+    i <- nI; szR <- nI
+    (plX, (lX, xR)) <- plA e
+    ss1 <- writeRF op [FT acc, FT x0] (FT acc)
+    ss <- write2 op [acc2, x] acc2
+    let seedO = case c of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> Fill () acc2 acc; FMin -> Fill () acc2 acc}
+    -- TODO: use shape information (F2orE etc.)
+    let loop = f21o tXs i 1 (ILt) (Tmp szR) (MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):ss) (MX () x0 (FAt (AElem xR 1 (Tmp i) lX 8)):ss1)
+    pure $ plX$szR=:ev tXs (xR,lX):MX () acc (FAt (AElem xR 1 0 lX 8)):seedO:[loop, Comb () c acc0 acc2, MX () acc (FTmp acc+FTmp acc0)]
+  where
+    fca (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b) _) _))) | fS b = mFop b; fca _=Nothing
+feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e = do
     x <- nF; i <- nI; szR <- nI
     (plE, (l, aP)) <- plA e
     ss <- writeRF op [FT acc, FT x] (FT acc)
     let loopBody=MX () x (FAt (AElem aP 1 (Tmp i) l 8)):ss
-        loop=for1 (eAnn e) i 1 ILt (Tmp szR) loopBody
-    pure $ plE$szR =: ev (eAnn e) (aP,l):MX () acc (FAt (AElem aP 1 0 l 8)):[loop]
+        loop=for1 tXs i 1 ILt (Tmp szR) loopBody
+    pure $ plE$szR =: ev tXs (aP,l):MX () acc (FAt (AElem aP 1 0 l 8)):[loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
     x <- rtemp tX
     i <- nI

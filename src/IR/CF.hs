@@ -184,11 +184,12 @@ uses (Wr a e)       = uA a<>uE e
 uses (WrF a e)      = uA a<>uFR e
 uses (WrF2 a e)     = uA a<>uFR2 e
 uses (WrB a e)      = uA a<>uE e
-uses (Sa _ e)       = uE e
-uses (Pop e)        = uE e
+uses S2{}           = IS.empty
+uses Fill2{}        = IS.empty
 uses (Sa8 _ e)      = uE e
 uses (Pop8 e)       = uE e
-uses S2{}           = IS.empty
+uses (Sa _ e)       = uE e
+uses (Pop e)        = uE e
 uses (Cmov e0 _ e1) = uE e0<>uE e1
 uses (Fcmov e _ x)  = uE e<>uFR x
 uses R{}            = IS.empty
@@ -233,12 +234,14 @@ usesF R{}            = IS.empty
 usesF (Cpy a0 a1 e)  = uAF a0<>uAF a1<>uFF e
 usesF (Cpy1 a0 a1 e) = uAF a0<>uAF a1<>uFF e
 usesF (S2 _ _ r)     = f2is r
+usesF (Fill2 _ r)    = fsingleton r
 
 defsF (MX t _)      = fsingleton t
 defsF (MX2 t _)     = f2is t
 defsF (Fcmov _ x _) = fsingleton x
 defsF (FRnd t)      = fsingleton t
 defsF (S2 _ t _)    = fsingleton t
+defsF (Fill2 t _)   = f2is t
 defsF _             = IS.empty
 
 next :: [Stmt] -> FreshM ([N] -> [N], [(Stmt, ControlAnn)])

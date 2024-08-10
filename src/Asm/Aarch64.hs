@@ -246,6 +246,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fadd2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fsub2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Faddp { ann :: a, dDest :: freg, vSrc :: V2Reg freg }
+                         | Fmaxp { ann :: a, dDest :: freg, vSrc :: V2Reg freg }
+                         | Fminp { ann :: a, dDest :: freg, vSrc :: V2Reg freg }
                          | Fmul2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fdiv2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fmax2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
@@ -380,6 +382,8 @@ mapR _ (Fmin2 l x0 x1 x2)    = Fmin2 l x0 x1 x2
 mapR _ (Fsqrt2 l v0 v1)      = Fsqrt2 l v0 v1
 mapR _ (Fneg2 l v0 v1)       = Fneg2 l v0 v1
 mapR _ (Faddp l d v)         = Faddp l d v
+mapR _ (Fmaxp l d v)         = Fmaxp l d v
+mapR _ (Fminp l d v)         = Fminp l d v
 mapR _ (MovQQ l v0 v1)       = MovQQ l v0 v1
 mapR _ (Fmla l v0 v1 v2)     = Fmla l v0 v1 v2
 mapR _ (Fmls l v0 v1 v2)     = Fmls l v0 v1 v2
@@ -475,6 +479,8 @@ mapFR f (Fneg2 l v0 v1)       = Fneg2 l (f<$>v0) (f<$>v1)
 mapFR f (EorS l v0 v1 v2)     = EorS l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (ZeroS l v)           = ZeroS l (f<$>v)
 mapFR f (Faddp l d v)         = Faddp l (f d) (f<$>v)
+mapFR f (Fmaxp l d v)         = Fmaxp l (f d) (f<$>v)
+mapFR f (Fminp l d v)         = Fminp l (f d) (f<$>v)
 mapFR f (MovQQ l v0 v1)       = MovQQ l (f<$>v0) (f<$>v1)
 mapFR f (Fmla l v0 v1 v2)     = Fmla l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (Fmls l v0 v1 v2)     = Fmls l (f<$>v0) (f<$>v1) (f<$>v2)
@@ -565,6 +571,8 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fmin2 _ xD x0 x1)     = "fmin" <+> v3 xD x0 x1
         p4 (Fneg2 _ xD xS)        = "fneg" <+> av2 xD xS
         p4 (Faddp _ dD v0)        = "faddp" <+> pretty dD <> "," <+> pvd v0
+        p4 (Fmaxp _ dD v0)        = "fmaxp" <+> pretty dD <> "," <+> pvd v0
+        p4 (Fminp _ dD v0)        = "fminp" <+> pretty dD <> "," <+> pvd v0
         p4 (EorS _ vD v0 v1)      = "eor" <+> pvv vD <> "," <+> pvv v0 <> "," <+> pvv v1
         p4 (ZeroS _ v)            = "eor" <+> pvv v <> "," <+> pvv v <> "," <+> pvv v
         p4 (FcmpZ _ xr)           = "fcmp" <+> pretty xr <> "," <+> "#0.0"
