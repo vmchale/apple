@@ -12,7 +12,7 @@ module Op ( FUn (..)
 
 import           Prettyprinter (Pretty (..))
 
-data FUn = FSqrt | FLog | FSin | FCos | FAbs
+data FUn = FSqrt | FLog | FSin | FCos | FAbs | FNeg
 
 data IUn = IEven | IOdd
 
@@ -65,6 +65,7 @@ instance Pretty FUn where
     pretty FLog  = "log"
     pretty FSin  = "sin"; pretty FCos  = "cos"
     pretty FAbs  = "abs"
+    pretty FNeg = "¬"
 
 instance Pretty IUn where
     pretty IEven = "even"; pretty IOdd = "odd"
