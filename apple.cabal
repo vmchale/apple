@@ -120,6 +120,7 @@ library
         Asm.Aarch64.B
         Asm.Aarch64.Byte
         Asm.Aarch64.CF
+        Asm.Aarch64.Guess
         Asm.Aarch64.Fr
         Asm.Aarch64.P
         Asm.Aarch64.Opt
