@@ -1317,16 +1317,14 @@ eval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isI 
     let loopBody=x=:EAt (AElem aP 1 (Tmp i) l 8):ss
         loop=for1 (eAnn e) i 1 ILt (Tmp szR) loopBody
     pure $ plE$szR =: ev (eAnn e) (aP,l):acc =: EAt (AElem aP 1 0 l 8):[loop]
-eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX = do
-    szR <- newITemp
-    i <- newITemp
+eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX, tArr <- eAnn e = do
+    i <- newITemp; szR <- newITemp
     (plE, (l, eR)) <- plA e
     plAcc <- eval seed acc
     (x, wX, pinch) <- arg tX (AElem eR 1 (Tmp i) l xSz)
     ss <- writeRF op [IT acc, x] (IT acc)
-    let loopBody=wX:ss
-        loop=for (eAnn e) i 0 ILt (Tmp szR) loopBody
-    pure $ plE$plAcc++szR =: ev (eAnn e) (eR,l):m'p pinch [loop]
+    let loop=for tArr i 0 ILt (Tmp szR) (wX:ss)
+    pure $ plE$plAcc++szR =: ev tArr (eR,l):m'p pinch [loop]
 eval (EApp I (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
     (pl0,e0e) <- plC e0; (pl1,e1e) <- plC e1
     pure $ pl0 $ pl1 [t =: Bin cop e0e e1e]
@@ -1575,6 +1573,14 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isF
     let loopBody=MX () x (FAt (AElem aP 1 (Tmp i) l 8)):ss
         loop=for1 (eAnn e) i 1 ILt (Tmp szR) loopBody
     pure $ plE$szR =: ev (eAnn e) (aP,l):MX () acc (FAt (AElem aP 1 0 l 8)):[loop]
+feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX, tArr <- eAnn e = do
+    i <- newITemp; szR <- newITemp
+    plAcc <- feval seed acc
+    (plX, (lX, xR)) <- plA e
+    (x, wX, pinch) <- arg tX (AElem xR 1 (Tmp i) lX xSz)
+    ss <- writeRF op [FT acc, x] (FT acc)
+    let loop=for tArr i 0 ILt (Tmp szR) (wX:ss)
+    pure $ plX$plAcc++szR=:ev tArr (xR,lX):m'p pinch [loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
     x <- rtemp tX
     i <- newITemp
