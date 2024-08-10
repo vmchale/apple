@@ -32,7 +32,7 @@ data CSt = CSt { tempU       :: !Int
                , dvars       :: IM.IntMap FTemp
                , d2vars      :: IM.IntMap F2Temp
                , avars       :: IM.IntMap (Maybe AL, Temp)
-               , fvars       :: IM.IntMap (Label, [Arg], Either FTemp Temp)
+               , fvars       :: IM.IntMap (Label, [Arg], RT)
                , _aa         :: AsmData
                , mts         :: IM.IntMap Temp
                }
@@ -79,7 +79,7 @@ addB n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v (insert n r b) d 
 addAVar :: Nm a -> (Maybe AL, Temp) -> CSt -> CSt
 addAVar n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 (insert n r a) f aas ts
 
-addF :: Nm a -> (Label, [Arg], Either FTemp Temp) -> CSt -> CSt
+addF :: Nm a -> (Label, [Arg], RT) -> CSt -> CSt
 addF n f (CSt t ar as l v b d d2 a fs aas ts) = CSt t ar as l v b d d2 a (insert n f fs) aas ts
 
 getT :: IM.IntMap b -> Nm a -> b
@@ -285,7 +285,7 @@ writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
 data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe AL) | BA !BTemp
-data RT = IT Temp | FT FTemp | PT BTemp
+data RT = IT !Temp | FT !FTemp | PT !BTemp
 
 mt :: ArrAcc -> RT -> CS ()
 mt p (IT t) = t =: EAt p
@@ -388,11 +388,11 @@ llet (n,e') | isF (eAnn e') = do
     eR <- newFTemp
     ss <- feval e' eR
     modify (addD n eR) $> ss
-llet (n,e') | Arrow F F <- eAnn e' = do
+llet (n,e') | Arrow tD tC <- eAnn e', isR tD && isR tC = do
     l <- neL
-    x <- newFTemp; y <- newFTemp
-    (_, ss) <- writeF e' [FA x] (FT y)
-    modify (addF n (l, [FA x], Left y))
+    x <- rtemp tD; y <- rtemp tC
+    (_, ss) <- writeF e' [ra x] y
+    modify (addF n (l, [ra x], y))
     pure [C.Def () l ss]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
@@ -1608,7 +1608,7 @@ feval (EApp _ (Builtin _ (TAt i)) e) t = do
     pure $ m'sa k a++plT ++ MX () t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
 feval (EApp _ (Var _ f) x) t | isF (eAnn x) = do
     st <- gets fvars
-    let (l, [FA a], Left r) = getT st f
+    let (l, [FA a], FT r) = getT st f
     plX <- feval x a
     retL <- neL
     pure $ plX ++ [G () l retL, MX () t (FTmp r)]
