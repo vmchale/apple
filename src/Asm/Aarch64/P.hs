@@ -13,16 +13,19 @@ gallocFrame :: Int -- ^ int supply for spilling
 gallocFrame u = frameC . mkIntervals . galloc u
 
 galloc :: Int -> [AArch64 AbsReg FAbsReg ()] -> [AArch64 AReg FAReg ()]
-galloc u isns = frame clob'd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt)) isns')
+galloc u isns = frame clob'd clob'dd (fmap (mapR ((regs IM.!).toInt).mapFR ((fregs IM.!).fToInt)) isns')
     where (regs, fregs, isns') = gallocOn u (isns++[Ret ()])
           clob'd = S.fromList $ IM.elems regs
+          clob'dd = S.fromList $ IM.elems fregs
 
 {-# SCC frame #-}
-frame :: S.Set AReg -> [AArch64 AReg FAReg ()] -> [AArch64 AReg FAReg ()]
-frame clob asms = pre++asms++post++[Ret ()] where
+frame :: S.Set AReg -> S.Set FAReg -> [AArch64 AReg FAReg ()] -> [AArch64 AReg FAReg ()]
+frame clob clobd asms = pre++asms++post++[Ret ()] where
     pre=pus clobs; post=pos clobs
     -- https://developer.arm.com/documentation/102374/0101/Procedure-Call-Standard
     clobs = S.toList (clob `S.intersection` S.fromList [X18 .. X28])
+    clobsd = S.toList (clobd `S.intersection` S.fromList [D8 .. D15])
+    -- FIXME: vector registers
 
 gallocOn :: Int -> [AArch64 AbsReg FAbsReg ()] -> (IM.IntMap AReg, IM.IntMap FAReg, [AArch64 AbsReg FAbsReg ()])
 gallocOn u = go u 0 pres
