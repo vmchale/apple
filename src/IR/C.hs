@@ -52,7 +52,7 @@ cToIRM (C.PlProd _ t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT
 cToIRM (C.MT _ t e)        = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX _ t e)        = pure [IR.MX (fx t) (irX e)]
 cToIRM (C.MX2 _ t e)       = pure [IR.MX2 (f2x t) (irX2 e)]
-cToIRM (C.Pair _ o t r)        = pure [IR.S2 o (fx t) (f2x r)]
+cToIRM (C.Comb _ o t r)        = pure [IR.S2 o (fx t) (f2x r)]
 cToIRM (C.MB _ t e)        = pure [IR.MT (cbtemp t) (irp e)]
 cToIRM (Rnd _ t)           = pure [IR.IRnd (ctemp t)]
 cToIRM (C.FRnd _ t)        = pure [IR.FRnd (fx t)]
