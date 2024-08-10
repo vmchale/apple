@@ -400,6 +400,15 @@ f2eval (IR.FB Op.FMinus e0 (IR.FB Op.FTimes e1 e2)) t = do
 f2eval (IR.FB Op.FPlus e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1 [Fadd2 () (f2absReg t) x0 x1]
+f2eval (IR.FB Op.FMinus (IR.ConstF (0,0)) e1) t = do
+    (plE1,x1) <- plF2 e1
+    pure$plE1 [Fneg2 () (f2absReg t) x1]
+f2eval (IR.FB Op.FTimes (IR.ConstF (-1,-1)) e1) t = do
+    (plE1,x1) <- plF2 e1
+    pure$plE1 [Fneg2 () (f2absReg t) x1]
+f2eval (IR.FB Op.FTimes e0 (IR.ConstF (-1,-1))) t = do
+    (plE,x) <- plF2 e0
+    pure$plE [Fneg2 () (f2absReg t) x]
 f2eval (IR.FB Op.FMinus e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1 [Fsub2 () (f2absReg t) x0 x1]
@@ -409,9 +418,18 @@ f2eval (IR.FB Op.FTimes e0 e1) t = do
 f2eval (IR.FB Op.FDiv e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1 [Fdiv2 () (f2absReg t) x0 x1]
+f2eval (IR.FB Op.FMax e0 e1) t = do
+    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
+    pure$plE0$plE1 [Fmax2 () (f2absReg t) x0 x1]
+f2eval (IR.FB Op.FMin e0 e1) t = do
+    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
+    pure$plE0$plE1 [Fmin2 () (f2absReg t) x0 x1]
 f2eval (IR.FU Op.FSqrt e) t = do
     (plE,x) <- plF2 e
     pure$plE[Fsqrt2 () (f2absReg t) x]
+f2eval (IR.FU Op.FNeg e) t = do
+    (plE,x) <- plF2 e
+    pure$plE[Fneg2 () (f2absReg t) x]
 f2eval (IR.ConstF (0,0)) t =
     let q=f2absReg t
     in pure [ZeroS () q]
@@ -508,6 +526,9 @@ feval (IR.FConv e) tD = do
 feval (IR.FU Op.FSqrt e) t = do
     (plE,r) <- plF e
     pure $ plE [Fsqrt () (fabsReg t) r]
+feval (IR.FU Op.FNeg e) t = do
+    (plE,r) <- plF e
+    pure $ plE [Fneg () (fabsReg t) r]
 feval e _             = error (show e)
 
 eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]

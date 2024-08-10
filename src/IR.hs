@@ -134,10 +134,10 @@ type FE=FExp FTemp Double Exp; type F2E=FExp F2 (Double, Double) Void
 instance Num Exp where
     (+) = IB IPlus; (*) = IB ITimes; (-) = IB IMinus; fromInteger = ConstI . fromInteger
 
-instance Num (FExp FTemp Double Exp) where
+instance Num (FExp ftemp Double e) where
     (+) = FB FPlus; (*) = FB FTimes; (-) = FB FMinus; fromInteger = ConstF . fromInteger
 
-instance Fractional (FExp FTemp Double Exp) where
+instance Fractional (FExp ftemp Double e) where
     (/) = FB FDiv; fromRational = ConstF . fromRational
 
 data Exp = ConstI Int64

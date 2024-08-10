@@ -1517,7 +1517,7 @@ mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IR
 mOp Sl=Just IAsl;mOp Sr=Just IAsr;mOp A.IDiv=Just Op.IDiv;mOp a=BI<$>mB a
 
 mFun :: Builtin -> Maybe FUn
-mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun _=Nothing
+mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun Neg=Just FNeg; mFun _=Nothing
 
 mFEval :: E (T ()) -> Maybe (CM F1E)
 mFEval (FLit _ d) = Just (pure $ ConstF d)
