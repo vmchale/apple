@@ -298,6 +298,7 @@ wt p (FT t) = WrF () p (FTmp t)
 wt p (PT t) = WrP () p (Is t)
 
 ra (FT f)=FA f; ra (IT r)=IPA r; ra (PT r)=BA r
+art (IPA r)=IT r;art (FA r)=FT r; art (BA r)=PT r
 
 eeval :: E (T ()) -> RT -> CM [CS ()]
 eeval e (IT t) = eval e t
@@ -1629,10 +1630,10 @@ feval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
     pure $ m'sa k a++plT ++ MX () t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
-feval (EApp _ (Var _ f) x) t | isF (eAnn x) = do
+feval (EApp _ (Var _ f) x) t | Just ~(tX, _) <- rr (eAnn x) = do
     st <- gets fvars
-    let (l, [FA a], FT r) = getT st f
-    plX <- feval x a
+    let (l, [a], FT r) = getT st f
+    plX <- eeval x (art a)
     retL <- neL
     pure $ plX ++ [G () l retL, MX () t (FTmp r)]
 feval (Id _ (FoldGen seed g f n)) t = do
