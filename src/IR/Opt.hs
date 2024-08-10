@@ -44,20 +44,60 @@ optE (EAt p)                 = EAt (optP p)
 optE (BAt p)                 = BAt (optP p)
 optE e                       = e
 
+optF2 :: F2E -> F2E
+optF2 (FAt p) = FAt (optP p)
+optF2 (FU f e) =
+    case optF2 e of
+        ConstF (x,y) -> let hs=f1c f in ConstF (hs x, hs y)
+        e'           -> FU f e'
+optF2 (FB FMinus e0 e1) =
+    case (optF2 e0, optF2 e1) of
+        (e0', ConstF (0,0))              -> e0'
+        (ConstF (x0,y0), ConstF (x1,y1)) -> ConstF (x0-x1,y0-y1)
+        (e0', e1')                       -> FB FMinus e0' e1'
+optF2 (FB FPlus e0 e1) =
+    case (optF2 e0, optF2 e1) of
+        (e0', ConstF (0,0))              -> e0'
+        (ConstF (0,0), e1')              -> e1'
+        (ConstF (x0,y0), ConstF (x1,y1)) -> ConstF (x0+x1,y0+y1)
+        (e0',e1')                        -> FB FPlus e0' e1'
+optF2 (FB FTimes e0 e1) =
+    case (optF2 e0, optF2 e1) of
+        (ConstF (1,1), e1')              -> e1'
+        (e0', ConstF (1,1))              -> e0'
+        (ConstF (x0,y0), ConstF (x1,y1)) -> ConstF (x0+x1,y0+y1)
+        (e0',e1')                        -> FB FTimes e0' e1'
+optF2 (FB FDiv e0 e1) =
+    case (optF2 e0, optF2 e1) of
+        (e0', ConstF (1,1))              -> e0'
+        (ConstF (x0,y0), ConstF (x1,y1)) -> ConstF (x0/x1,y0/y1)
+        (e0',ConstF (x,y))               -> FB FTimes e0' (ConstF (1/x,1/y))
+        (e0',e1')                        -> FB FDiv e0' e1'
+optF2 e = e
+
+f1c :: FUn -> Double -> Double
+f1c FLog  = log
+f1c FSqrt = sqrt
+f1c FCos  = cos
+f1c FSin  = sin
+f1c FAbs  = abs
+f1c FNeg  = negate
+
 optF :: FE -> FE
 optF (FAt p) = FAt (optP p)
 optF (FConv e) =
     case optE e of
         ConstI i -> ConstF$fromIntegral i
         e'       -> FConv e'
-optF (FU FLog e) =
+optF (FU f e) =
     case optF e of
-        ConstF d -> ConstF$log d
-        e'       -> FU FLog e'
+        ConstF d -> ConstF (f1c f d)
+        e'       -> FU f e'
 optF (FB FMinus e0 e1) =
     case (optF e0, optF e1) of
-        (e0', ConstF 0) -> e0'
-        (e0', e1')      -> FB FMinus e0' e1'
+        (ConstF x0, ConstF x1) -> ConstF$x0-x1
+        (e0', ConstF 0)        -> e0'
+        (e0', e1')             -> FB FMinus e0' e1'
 optF (FB FPlus e0 e1) =
     case (optF e0, optF e1) of
         (ConstF 0, e1')        -> e1'
@@ -88,6 +128,8 @@ opt (MT r e)      = MT r (optE e)
 opt (Ma l t e)    = Ma l t (optE e)
 opt (Wr p e)      = Wr (optP p) (optE e)
 opt (WrF p e)     = WrF (optP p) (optF e)
+opt (MX2 xr e)    = MX2 xr (optF2 e)
+opt (WrF2 p e)    = WrF2 (optP p) (optF2 e)
 opt (WrB p e)     = WrB (optP p) (optE e)
 opt (MX xr e)     = MX xr (optF e)
 opt (Cmov e t e') = Cmov (optE e) t (optE e')
