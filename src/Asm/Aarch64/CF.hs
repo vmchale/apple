@@ -165,6 +165,7 @@ uses RetL{}               = singleton LR
 uses (Bfc _ r _ _)        = singleton r
 uses MovQQ{}              = IS.empty
 uses Fmla{}               = IS.empty
+uses Fmls{}               = IS.empty
 uses (Dup _ _ r)          = singleton r
 
 defs FMovXX{}            = IS.empty
@@ -257,6 +258,7 @@ defs RetL{}              = IS.empty
 defs (Bfc _ r _ _)       = singleton r
 defs MovQQ{}             = IS.empty
 defs Fmla{}              = IS.empty
+defs Fmls{}              = IS.empty
 defs Dup{}               = IS.empty
 
 defsF, usesF :: (E freg) => AArch64 reg freg ann -> IS.IntSet
@@ -351,6 +353,7 @@ defsF C{}                = IS.empty
 defsF Bfc{}              = IS.empty
 defsF (MovQQ _ v _)      = singleton v
 defsF (Fmla _ v _ _)     = singleton v
+defsF (Fmls _ v _ _)     = singleton v
 defsF (Dup _ v _)        = singleton v
 defsF StrS{}             = IS.empty
 
@@ -442,6 +445,7 @@ usesF RetL{}               = IS.empty
 usesF Bfc{}                = IS.empty
 usesF ZeroS{}              = IS.empty
 usesF (Fmla _ v0 v1 v2)    = fromList [v0,v1,v2]
+usesF (Fmls _ v0 v1 v2)    = fromList [v0,v1,v2]
 usesF (MovQQ _ _ vS)       = singleton vS
 usesF (StrS _ v _)         = singleton v
 usesF Dup{}                = IS.empty

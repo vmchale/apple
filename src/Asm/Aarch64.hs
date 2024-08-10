@@ -265,6 +265,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fmsub { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
                          | Fsqrt { ann :: a, dDest, dSrc :: freg }
                          | Fmla { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
+                         | Fmls { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Frintm { ann :: a, dDest, dSrc :: freg }
                          | MrsR { ann :: a, rDest :: reg }
                          | Fmax { ann :: a, dDest, dSrc1, dSrc2 :: freg }
@@ -375,6 +376,7 @@ mapR _ (Fsqrt2 l v0 v1)      = Fsqrt2 l v0 v1
 mapR _ (Faddp l d v)         = Faddp l d v
 mapR _ (MovQQ l v0 v1)       = MovQQ l v0 v1
 mapR _ (Fmla l v0 v1 v2)     = Fmla l v0 v1 v2
+mapR _ (Fmls l v0 v1 v2)     = Fmls l v0 v1 v2
 mapR f (Dup l v r)           = Dup l v (f r)
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
@@ -466,6 +468,7 @@ mapFR f (ZeroS l v)           = ZeroS l (f<$>v)
 mapFR f (Faddp l d v)         = Faddp l (f d) (f<$>v)
 mapFR f (MovQQ l v0 v1)       = MovQQ l (f<$>v0) (f<$>v1)
 mapFR f (Fmla l v0 v1 v2)     = Fmla l (f<$>v0) (f<$>v1) (f<$>v2)
+mapFR f (Fmls l v0 v1 v2)     = Fmls l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (Dup l v r)           = Dup l (f<$>v) r
 
 s2 :: [a] -> [(a, Maybe a)]
@@ -571,6 +574,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fmadd _ d0 d1 d2 d3)  = "fmadd" <+> ar4 d0 d1 d2 d3
         p4 (Fmsub _ d0 d1 d2 d3)  = "fmsub" <+> ar4 d0 d1 d2 d3
         p4 (Fmla _ v0 v1 v2)      = "fmla" <+> v3 v0 v1 v2
+        p4 (Fmls _ v0 v1 v2)      = "fmls" <+> v3 v0 v1 v2
         p4 (Madd _ r0 r1 r2 r3)   = "madd" <+> ar4 r0 r1 r2 r3
         p4 (Msub _ r0 r1 r2 r3)   = "msub" <+> ar4 r0 r1 r2 r3
         p4 (Sdiv _ rD rS rS')     = "sdiv" <+> ar3 rD rS rS'

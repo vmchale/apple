@@ -393,6 +393,10 @@ f2eval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1; (plE2,x2) <- plF2 e2
     let va=f2absReg t
     pure$plE0$plE1$plE2 [MovQQ () va x0, Fmla () va x1 x2]
+f2eval (IR.FB Op.FMinus e0 (IR.FB Op.FTimes e1 e2)) t = do
+    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1; (plE2,x2) <- plF2 e2
+    let va=f2absReg t
+    pure$plE0$plE1$plE2 [MovQQ () va x0, Fmls () va x1 x2]
 f2eval (IR.FB Op.FPlus e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1 [Fadd2 () (f2absReg t) x0 x1]
