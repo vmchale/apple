@@ -45,7 +45,7 @@ mapFE _ e@LA{}           = e
 mapFF2 :: (FTemp -> FTemp) -> FExp F2 c Void -> FExp F2 c Void
 mapFF2 _ x@ConstF{}    = x
 mapFF2 f (FAt a)       = FAt (mapFA f a)
-mapFF2 _ r@FReg{}      = r
+mapFF2 f (FReg r)      = FReg (view f r)
 mapFF2 f (FB op e0 e1) = FB op (mapFF2 f e0) (mapFF2 f e1)
 mapFF2 f (FU op e)     = FU op (mapFF2 f e)
 mapFF2 _ (FConv x)     = absurd x
@@ -58,10 +58,14 @@ mapFF f (FU op e)     = FU op (mapFF f e)
 mapFF f (FReg r)      = FReg (f r)
 mapFF f (FConv e)     = FConv (mapFE f e)
 
+view :: (FTemp -> FTemp) -> F2 -> F2
+view f (F2Temp i) = case f (FTemp i) of (FTemp j) -> F2Temp j
+
 mapF :: (FTemp -> FTemp) -> Stmt -> Stmt
 mapF f (MX t e)       = MX (f t) (mapFF f e)
-mapF f (MX2 t e)      = MX2 t (mapFF2 f e)
-mapF f (S2 o t r)     = S2 o (f t) r
+mapF f (MX2 t e)      = MX2 (view f t) (mapFF2 f e)
+mapF f (S2 o t r)     = S2 o (f t) (view f r)
+mapF f (Fill2 r t)    = Fill2 (view f r) (f t)
 mapF _ s@L{}          = s
 mapF _ s@C{}          = s
 mapF _ s@R{}          = s
