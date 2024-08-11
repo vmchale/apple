@@ -4,4 +4,5 @@
 - [½] properly preserve volatile parts of registers across calls...
 - [ ] make calls more efficient (all at once + give offsets)
 - [ ] successive difference simd
+- [ ] frange SIMD
 - [½] constant lift-out-of-loop (SIMD)
