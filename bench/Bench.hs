@@ -55,6 +55,7 @@ main = do
     ncdfFp <- fmap ff . leakFp =<< BSL.readFile "math/ncdf.🍎"
     scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
     scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
+    wMax <- fmap aa . leakFp =<< BSL.readFile "bench/apple/maxWindow.🍎"
     ᴀFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/offset.🍏"
     gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
     tcdfFp <- fmap fff . leakFp =<< BSL.readFile "math/tcdf.🍎"
@@ -113,6 +114,7 @@ main = do
                 , bgroup "scanmax"
                       [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
                       , bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
+                      , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
                       ]
                 , bgroup "elliptic"
                       [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
