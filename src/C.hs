@@ -34,7 +34,7 @@ data BTemp = BTemp !Int | CBRet deriving Eq
 data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
 
-newtype F2Temp = F2Temp Int
+newtype F2Temp = F2Temp Int deriving Eq
 
 instance Pretty BTemp where pretty (BTemp i) = "P" <> pretty i; pretty CBRet = "PRet"
 
@@ -208,6 +208,7 @@ instance Pretty (CS a) where
 pL f (MT l t (Bin IPlus (Tmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e <> f l
 pL f (MT l t e)             = pretty t <+> "=" <+> pretty e <> f l
 pL f (MX l t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e <> f l
+pL f (MX2 l t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e <> f l
 pL f (MX l t e)             = pretty t <+> "=" <+> pretty e <> f l
 pL f (MX2 l t e)            = pretty t <+> "=" <+> pretty e <> f l
 pL f (MB l t e)             = pretty t <+> "=" <+> pretty e <> f l
