@@ -37,7 +37,7 @@ instance (E reg, E freg) => Arch X86.X86 reg freg where
     expand = X86.expand
     udd = X86.udd
 
-instance (E reg, E freg) => Arch AArch64.AArch64 reg freg where
+instance (E reg, E freg, Eq freg) => Arch AArch64.AArch64 reg freg where
     cf = AArch64.mkControlFlow
 
     mI (AArch64.MovRR _ r0 r1) = Just (r0, r1)
