@@ -587,7 +587,8 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fminp _ dD v0)        = "fminp" <+> pretty dD <> "," <+> pvd v0
         p4 (EorS _ vD v0 v1)      = "eor" <+> pvv vD <> "," <+> pvv v0 <> "," <+> pvv v1
         p4 (ZeroS _ v)            = "eor" <+> pvv v <> "," <+> pvv v <> "," <+> pvv v
-        p4 (ZeroD _ d)            = let q=V2Reg d in ("eor" <+> pvs q <> "," <> pvs q <> "," <+> pvs q)
+        p4 (ZeroD _ d)            = let q=V2Reg d in "eor" <+> pvs q <> "," <> pvs q <> "," <+> pvs q
+        p4 (EorD _ d0 d1 d2)      = "eor" <+> pvs (V2Reg d0) <> "," <+> pvs (V2Reg d1) <> "," <+> pvs (V2Reg d2)
         p4 (FcmpZ _ xr)           = "fcmp" <+> pretty xr <> "," <+> "#0.0"
         p4 (Fneg _ d0 d1)         = "fneg" <+> ar2 d0 d1
         p4 Ret{}                  = "ret"
