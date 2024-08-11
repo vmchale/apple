@@ -11,6 +11,7 @@ fromList = IS.fromList . fmap toInt
 
 collectV :: AArch64 areg FAReg a -> IS.IntSet
 collectV (Dup _ q _)      = singleton q
+collectV (DupD _ q _)     = singleton q
 collectV (MovQQ _ q _)    = singleton q
 collectV (LdrS _ q _)     = singleton q
 collectV (ZeroS _ v)      = singleton v

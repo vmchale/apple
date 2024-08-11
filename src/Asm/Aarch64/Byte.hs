@@ -118,6 +118,8 @@ asm ix st (Fneg2 _ x0 x1:asms) = [0b01101110, 0x7 `shiftL` 5, 0b111110 `shiftL` 
 asm ix st (Fmla _ d0 d1 d2:asms) = [0b01001110, 0b11 `shiftL` 5 .|. be d2, 0b110011 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fmls _ d0 d1 d2:asms) = [0b01001110, 0x7 `shiftL` 5 .|. be d2, 0b110011 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Faddp _ d v:asms) = [0b01111110, 0b1110000, 0b110110 `shiftL` 2 .|. be v `shiftR` 3, lb v d]:asm (ix+4) st asms
+asm ix st (Fmaxp _ d v:asms) = [0b01111110, 0b1110000, 0b111110 `shiftL` 2 .|. be v `shiftR` 3, lb v d]:asm (ix+4) st asms
+asm ix st (Fminp _ d v:asms) = [0b01111110, 0b11110000, 0b111110 `shiftL` 2 .|. be v `shiftR` 3, lb v d]:asm (ix+4) st asms
 asm ix st (EorS _ v0 v1 v2:asms) = [0b01101110, 0x1 `shiftL` 5 .|. be v2, 0x7 `shiftL` 2 .|. be v1 `shiftR` 3, lb v1 v0]:asm (ix+4) st asms
 asm ix st (ZeroS x v:asms) = asm ix st (EorS x v v v:asms)
 asm ix st (Label{}:asms) = asm ix st asms
@@ -202,6 +204,7 @@ asm ix st (LdrS x q (R rb):asms) = asm ix st (LdrS x q (RP rb 0):asms)
 asm ix st (LdrS _ q (RP rb u):asms) | (u',0) <- u `quotRem` 16, u <= 65520 = [0b00111101, 0b11 `shiftL` 6 .|. fromIntegral (u' `shiftR` 6), fromIntegral (0b11111 .&. u') `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (StrS _ q (BI rb ri s):asms) = [0b00111100, 0b101 `shiftL` 5 .|. be ri, 0b011 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0b10 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (Dup _ q r:asms) = [0b01001110, 0b01000, 0x3 `shiftL` 2 .|. be r `shiftR` 3, lb r q]:asm (ix+4) st asms
+asm ix st (DupD _ q r:asms) = [0b1001110, 0b01000, 0x1 `shiftL` 2 .|. be r `shiftR` 3, lb r q]:asm (ix+4) st asms
 asm ix st (LdpD _ d0 d1 (R rb):asms) = [0x6d, 1 `shiftL` 6, be d1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d0]:asm (ix+4) st asms
 asm ix st (Ldp2 _ q0 q1 (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 16, u <= 1008 = [0b10101101, 0x1 `shiftL` 6 .|. fromIntegral (uϵ `shiftR` 1), fromIntegral (0x1 .&. uϵ) `shiftL` 7 .|. be q1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q0]:asm (ix+4) st asms
 asm ix st (Ldp2 _ q0 q1 (Po rb i):asms) | (i',0) <- i `quotRem` 16, i >= -1024 && i <= 1004 = let (ub,lub)=i7 i' in [0b10101100, 0x3 `shiftL` 6 .|. ub, lub `shiftL` 7 .|. be q1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q0]:asm (ix+4) st asms
