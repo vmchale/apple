@@ -441,11 +441,16 @@ f2eval (IR.ConstF (x,y)) t | x==y = do
     let r=IReg i
         w=castDoubleToWord64 x
     pure $ mw64 w r ++ [Dup () (f2absReg t) r]
+f2eval (IR.ConstF (0,y)) t = do
+    i <- nextI
+    let q=f2absReg t; r=IReg i
+        w=castDoubleToWord64 y
+    pure $ ZeroS () q:mw64 w r++[Ins () q 1 r]
 f2eval (IR.ConstF (x,y)) t = do
     i0 <- nextI; i1 <- nextI
     let r0=IReg i0; r1=IReg i1
         w0=castDoubleToWord64 x; w1=castDoubleToWord64 y
-    pure $ mw64 w0 r0 ++ [Ins () (f2absReg t) 0 r0]++mw64 w1 r1++[Ins () (f2absReg t) 1 r1]
+    pure $ mw64 w0 r0 ++ Ins () (f2absReg t) 0 r0:mw64 w1 r1++[Ins () (f2absReg t) 1 r1]
 f2eval e _ = error (show e)
 
 feval :: IR.FE -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
