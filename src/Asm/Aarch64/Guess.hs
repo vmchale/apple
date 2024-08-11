@@ -11,6 +11,8 @@ fromList = IS.fromList . fmap toInt
 
 collectV :: AArch64 areg FAReg a -> IS.IntSet
 collectV (Dup _ q _)      = singleton q
+-- TODO: only index 1? (only high bits are volatile lol)
+collectV (Ins _ v _ _)    = singleton v
 collectV (DupD _ q _)     = singleton q
 collectV (MovQQ _ q _)    = singleton q
 collectV (LdrS _ q _)     = singleton q
