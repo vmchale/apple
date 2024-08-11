@@ -112,6 +112,15 @@ float → float → int → Vec #n float
 
 Functions can be [curried](https://wiki.haskell.org/Currying).
 
+## Zip
+
+Pick the greater value among two vectors:
+
+```
+ > (⋉)`⟨0,_1,3.0⟩ ⟨_3,1,3⟩
+Vec 3 [0.0, 1.0, 3.0]
+```
+
 ## Fold
 
 `/` folds over an array.
@@ -447,6 +456,25 @@ is equivalent to
 
 # Examples
 
+## Linear Regression
+
+```
+λxs.λys.
+{
+  Σ ← [(+)/x];
+  n ⟜ ℝ(:xs);
+  xbar ⟜ (Σ xs) % n; ybar ⟜ (Σ ys) % n;
+  xy ⟜ Σ ((*)`xs ys);
+  x2 ⟜ Σ ((^2)'xs);
+  denom ⟜ (x2-n*(xbar^2));
+  a ← ((ybar*x2)-(xbar*xy))%denom;
+  b ← (xy-(n*xbar*ybar))%denom;
+  (a,b)
+}
+```
+
+Note the `⟜` to prevent expressions from being inlined.
+
 ## Kullback-Leibler Divergence
 
 ```
@@ -744,3 +772,67 @@ Cliff Reiter points out that we can simulate a random walk by simply scanning an
 ```{.include}
 nb/randomWalk.html
 ```
+
+## Statistics
+
+Apple is capable of statistical computing, via the program suggested by [Ewart Shaw](https://www.jsoftware.com/papers/jhyper.pdf).
+
+### CDF for Normal Distribution
+
+```
+λz.
+{
+  erf ← λz.
+    {
+      ffact ← [(*)/ₒ 1 (𝒻 1 x (⌊x))];
+      Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N 1));
+      (2%√𝜋)*Σ 30 (λn. {nf⟜ℝn; ((_1^n)*z^(2*n+1))%((ffact nf)*(2*nf+1))})
+    };
+  zz ⟜ z%(√2);
+  0.5*(1+erf(zz))
+}
+```
+
+### CDF for Student's t-distribution
+
+```
+λx.λν.
+{
+  gammaln ← λz. {
+    zz ⟜ z-1;
+    c0 ← 0.999999999999997092;
+    𝛾 ← 607%128;
+    coeffs ← ⟨ 57.1562356658629235
+             , _59.5979603554754912
+             , 14.1360979747417471
+             , _0.491913816097620199
+             , 0.339946499848118887e-4
+             , 0.465236289270485756e-4
+             , _0.983744753048795646e-4
+             , 0.158088703224912494e-3
+             , _0.210264441724104883e-3
+             , 0.217439618115212643e-3
+             , _0.164318106536763890e-3
+             , 0.844182239838527433e-4
+             , _0.261908384015814087e-4
+             , 0.368991826595316234e-5
+             ⟩;
+    ss ← (+)/ ([y%(zz+itof x)]`(⍳ 1 14 1) coeffs);
+    (((zz+0.5)*_.(zz+𝛾+0.5))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
+  };
+  Γ ⟜ [ℯ(gammaln x)];
+  f21 ← λa0.λa1.λb.λz. {
+    rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
+    Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N 1));
+    term ← λn. {nn⟜ℝ n; rf a0 nn*(rf a1 nn%rf b nn)*(z^n%fact nn)};
+    Σ 50 term
+  };
+  0.5+x*Γ(0.5*(ν+1))%((√(𝜋*ν))*Γ(ν*0.5))*f21 0.5 ((ν+1)%2) 1.5 (_(x^2%ν))
+}
+```
+
+This uses the [Lanczos approximation](https://mathworld.wolfram.com/LanczosApproximation.html) to
+compute the gamma function; it is not built-in to Apple.
+
+Note the `Γ ⟜ [ℯ(gammaln x)]`; this prevents the function from being inlined and
+thence speeds compilation.
