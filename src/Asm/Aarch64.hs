@@ -181,6 +181,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | FMovXX { ann :: a, dDest, dSrc :: freg }
                          | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                          | Dup { ann :: a, vDest :: V2Reg freg, rSrc :: reg }
+                         | DupD { ann :: a, vDest :: V2Reg freg, dSrc :: freg }
                          | MovRR { ann :: a, rDest, rSrc :: reg }
                          | MovQQ { ann :: a, qDest, qSrc :: V2Reg freg }
                          | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
@@ -369,6 +370,7 @@ mapR _ (MovQQ l v0 v1)       = MovQQ l v0 v1
 mapR _ (Fmla l v0 v1 v2)     = Fmla l v0 v1 v2
 mapR _ (Fmls l v0 v1 v2)     = Fmls l v0 v1 v2
 mapR f (Dup l v r)           = Dup l v (f r)
+mapR _ (DupD l v r)          = DupD l v r
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -467,6 +469,7 @@ mapFR f (MovQQ l v0 v1)       = MovQQ l (f<$>v0) (f<$>v1)
 mapFR f (Fmla l v0 v1 v2)     = Fmla l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (Fmls l v0 v1 v2)     = Fmls l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (Dup l v r)           = Dup l (f<$>v) r
+mapFR f (DupD l v r)          = DupD l (f<$>v) (f r)
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -601,6 +604,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg)) => Pretty (AArch64 reg fre
         p4 (Cset _ r c)           = "cset" <+> pretty r <> "," <+> pretty c
         p4 (Bfc _ r l w)          = "bfc" <+> pretty r <> "," <+> pretty l <> "," <+> pretty w
         p4 (Dup _ v r)            = "dup" <+> pvd v <> "," <+> pretty r
+        p4 (DupD _ v r)           = "dup" <+> pvd v <> "," <+> pvd (V2Reg r) <> "[0]"
 
 instance (Pretty reg, Pretty freg, SIMD (V2Reg freg)) => Show (AArch64 reg freg a) where show=show.pretty
 
