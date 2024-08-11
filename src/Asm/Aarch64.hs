@@ -112,7 +112,7 @@ type F2Abs = V2Reg FAbsReg
 
 instance SIMD F2Abs where pq (V2Reg (FReg i)) = "~Q" <> pretty i; pv (V2Reg (FReg i)) = "~V" <> pretty i
 
-data FAbsReg = FReg !Int | FArg0 | FArg1 | FArg2 | FArg3 | FArg4 | FArg5 | FArg6 | FArg7
+data FAbsReg = FReg !Int | FArg0 | FArg1 | FArg2 | FArg3 | FArg4 | FArg5 | FArg6 | FArg7 deriving Eq
 
 instance Pretty FAbsReg where
     pretty (FReg i) = "F" <> pretty i
@@ -228,7 +228,9 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eon { ann :: a, rDest, rSrc, rSrc2 :: reg }
                          | ZeroS { ann :: a, qDest :: V2Reg freg }
+                         | ZeroD { ann :: a, dDest :: freg }
                          | EorS { ann :: a, qDest, qSrc1, qSrc2 :: V2Reg freg }
+                         | EorD { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
                          | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
@@ -392,6 +394,8 @@ mapR _ (Fmls l v0 v1 v2)     = Fmls l v0 v1 v2
 mapR f (Dup l v r)           = Dup l v (f r)
 mapR f (Ins l v i r)         = Ins l v i (f r)
 mapR _ (DupD l v r)          = DupD l v r
+mapR _ (ZeroD l q)           = ZeroD l q
+mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -491,6 +495,8 @@ mapFR f (Fmls l v0 v1 v2)     = Fmls l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (Dup l v r)           = Dup l (f<$>v) r
 mapFR f (Ins l v i r)         = Ins l (f<$>v) i r
 mapFR f (DupD l v r)          = DupD l (f<$>v) (f r)
+mapFR f (ZeroD l d)           = ZeroD l (f d)
+mapFR f (EorD l d0 d1 d2)     = EorD l (f d0) (f d1) (f d2)
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -514,7 +520,7 @@ hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")
        | otherwise = pretty ("#0x"++showHex n "")
 
 pvd v = pv v <> ".2d"
-pvv v = pv v <> ".16b"
+pvv v = pv v <> ".16b"; pvs v = pv v <> ".8b"
 
 ar2 r0 r1 = pretty r0 <> "," <+> pretty r1; aw r a = pw r <> "," <+> pretty a
 ar3 r0 r1 r2 = pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2
@@ -581,6 +587,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fminp _ dD v0)        = "fminp" <+> pretty dD <> "," <+> pvd v0
         p4 (EorS _ vD v0 v1)      = "eor" <+> pvv vD <> "," <+> pvv v0 <> "," <+> pvv v1
         p4 (ZeroS _ v)            = "eor" <+> pvv v <> "," <+> pvv v <> "," <+> pvv v
+        p4 (ZeroD _ d)            = let q=V2Reg d in ("eor" <+> pvs q <> "," <> pvs q <> "," <+> pvs q)
         p4 (FcmpZ _ xr)           = "fcmp" <+> pretty xr <> "," <+> "#0.0"
         p4 (Fneg _ d0 d1)         = "fneg" <+> ar2 d0 d1
         p4 Ret{}                  = "ret"

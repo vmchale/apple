@@ -12,10 +12,10 @@ import           Class.E      as E
 import           Data.Functor (void, ($>))
 import qualified Data.IntSet  as IS
 
-mkControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> [BB AArch64 reg freg () ControlAnn]
+mkControlFlow :: (E reg, E freg, Eq freg) => [BB AArch64 reg freg () ()] -> [BB AArch64 reg freg () ControlAnn]
 mkControlFlow instrs = runFreshM (broadcasts instrs *> addControlFlow instrs)
 
-expand :: (E reg, E freg) => BB AArch64 reg freg () Liveness -> [AArch64 reg freg Liveness]
+expand :: (E reg, E freg, Eq freg) => BB AArch64 reg freg () Liveness -> [AArch64 reg freg Liveness]
 expand (BB asms@(_:_) li) = scanr (\n p -> lN n (ann p)) lS iasms
     where lN a s =
             let ai=uses a <> (ao IS.\\ defs a)
@@ -29,7 +29,7 @@ expand (BB asms@(_:_) li) = scanr (\n p -> lN n (ann p)) lS iasms
           (iasms, asm) = (init asms, last asms)
 expand _ = []
 
-addControlFlow :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM [BB AArch64 reg freg () ControlAnn]
+addControlFlow :: (E reg, E freg, Eq freg) => [BB AArch64 reg freg () ()] -> FreshM [BB AArch64 reg freg () ControlAnn]
 addControlFlow [] = pure []
 addControlFlow (BB [] _:bbs) = addControlFlow bbs
 addControlFlow (BB asms _:bbs) = do
@@ -70,8 +70,9 @@ uBB, dBB :: E reg => [AArch64 reg freg a] -> IS.IntSet
 uBB = foldr (\p n -> uses p `IS.union` (n IS.\\ defs p)) IS.empty
 dBB = foldMap defs
 
-uBBF, dBBF :: (E freg) => [AArch64 reg freg a] -> IS.IntSet
+uBBF :: (E freg, Eq freg) => [AArch64 reg freg a] -> IS.IntSet
 uBBF = foldr (\p n -> usesF p `IS.union` (n IS.\\ defsF p)) IS.empty
+dBBF :: (E freg) => [AArch64 reg freg a] -> IS.IntSet
 dBBF = foldMap defsF
 
 defs, uses :: E reg => AArch64 reg freg a -> IS.IntSet
@@ -174,6 +175,8 @@ uses Fmls{}               = IS.empty
 uses (Dup _ _ r)          = singleton r
 uses (Ins _ _ _ r)        = singleton r
 uses DupD{}               = IS.empty
+uses ZeroD{}              = IS.empty
+uses EorD{}               = IS.empty
 
 defs FMovXX{}            = IS.empty
 defs (MovRC _ r _)       = singleton r
@@ -274,8 +277,10 @@ defs Fmls{}              = IS.empty
 defs Dup{}               = IS.empty
 defs DupD{}              = IS.empty
 defs Ins{}               = IS.empty
+defs ZeroD{}             = IS.empty
+defs EorD{}              = IS.empty
 
-defsF, usesF :: (E freg) => AArch64 reg freg ann -> IS.IntSet
+defsF :: (E freg) => AArch64 reg freg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
 defsF MovRR{}            = IS.empty
 defsF MovRC{}            = IS.empty
@@ -377,8 +382,15 @@ defsF (Dup _ v _)        = singleton v
 defsF StrS{}             = IS.empty
 defsF (DupD _ v _)       = singleton v
 defsF (Ins _ v _ _)      = singleton v
+defsF (ZeroD _ v)        = singleton v
+defsF (EorD _ v _ _)     = singleton v
 
+usesF :: (E freg, Eq freg) => AArch64 reg freg ann -> IS.IntSet
 usesF (FMovXX _ _ r)       = singleton r
+usesF (EorS _ q0 q1 q2)    | q0==q1&&q1==q2 = IS.empty
+usesF (EorS _ _ q1 q2)     = fromList [q1,q2]
+usesF (EorD _ d0 d1 d2)    | d0==d1&&d1==d2 = IS.empty
+usesF (EorD _ _ d1 d2)     = fromList [d1,d2]
 usesF MovRR{}              = IS.empty
 usesF MovRC{}              = IS.empty
 usesF Ldr{}                = IS.empty
@@ -477,8 +489,9 @@ usesF (StrS _ v _)         = singleton v
 usesF Dup{}                = IS.empty
 usesF (Ins _ v _ _)        = singleton v
 usesF (DupD _ _ r)         = singleton r
+usesF (ZeroD _ d)          = singleton d
 
-next :: (E reg, E freg) => [BB AArch64 reg freg () ()] -> FreshM ([N] -> [N], [BB AArch64 reg freg () ControlAnn])
+next :: (E reg, E freg, Eq freg) => [BB AArch64 reg freg () ()] -> FreshM ([N] -> [N], [BB AArch64 reg freg () ControlAnn])
 next bbs = do
     nextBs <- addControlFlow bbs
     case nextBs of

@@ -455,7 +455,7 @@ f2eval e _ = error (show e)
 
 feval :: IR.FE -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
--- TODO: for ConstF 0 use eor (vector) with .8b
+feval (IR.ConstF 0) t = pure [ZeroD () (fabsReg t)]
 feval (IR.ConstF d) t = do
     i <- nextI
     let r=IReg i
