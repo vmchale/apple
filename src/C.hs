@@ -247,7 +247,7 @@ pL f (FRnd l x)            = pretty x <+> "=" <+> "(frnd)" <> f l
 pL f (Def la l cs)         = hardline <> pS l <> ":" <#> indent 4 (pCS f cs) <> f la
 pL f (G la l _)            = "GOTO" <+> pS l <> f la
 pL f (Comb l s t r)        = parens ("combine" <> pretty s <+> pretty t <> "," <+> pretty r) <> f l
-pL f (Fill l r t)          = parens ("fill" <+> pretty r <+> brackets (pretty t))
+pL f (Fill l r t)          = parens ("fill" <+> pretty r <+> brackets (pretty t)) <> f l
 
 pS :: Label -> Doc ann
 pS l = "fun_" <> pretty l
