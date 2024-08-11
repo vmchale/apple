@@ -1,0 +1,11 @@
+- [ ] fold-of-array
+- [ ] scan-of-array
+- [ ] rank for scalars...
+- [ ] scan tup
+- [ ] fold tup?
+- [x] snoc array, cons array
+- [ ] fold, producing tuple
+# Types
+- [ ] scan-with-seed accept differently typed seed
+- [ ] fold-with-seed generalize type
+- [ ] also the folds ^ are backwards lol
