@@ -57,8 +57,8 @@ nI = ITemp <$> nextI
 nF :: CM FTemp
 nF = FTemp <$> nextI
 
-newF2Temp :: CM F2Temp
-newF2Temp = F2Temp <$> nextI
+nF2 :: CM F2Temp
+nF2 = F2Temp <$> nextI
 
 addAA :: Int -> [Word64] -> CSt -> CSt
 addAA i aa (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts
@@ -560,7 +560,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs <- eAnn
     (plE, (l, xR)) <- plA e
     i <- nI; szR <- nI
     (a,aV) <- v8 t (Tmp szR)
-    x0 <- nF; y0 <- nF; x <- newF2Temp; y <- newF2Temp
+    x0 <- nF; y0 <- nF; x <- nF2; y <- nF2
     ss <- write2 f [x] y
     s1 <- writeRF f [FT x0] (FT y0)
     let step=MX2 () x (FAt (AElem xR 1 (Tmp i) l 8)):ss++[Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp y)]
@@ -865,9 +865,12 @@ aeval (EApp ty (EApp _ (EApp _ (Builtin _ FRange) (FLit _ s)) (FLit _ e)) (ILit 
     i <- nI
     let nE=ConstI$fromIntegral n
     (a,aV) <- v8 t nE
-    accR <- nF; incR <- nF
-    let loop=for ty i 0 ILt nE [WrF () (AElem t 1 (Tmp i) (Just a) 8) (FTmp accR), MX () accR (FTmp accR+FTmp incR)]
-    pure (Just a, aV++MX () accR (ConstF s):MX () incR (ConstF$(e-s)/(realToFrac n-1)):[loop])
+    acc2 <- nF2
+    incr2 <- nF2
+    let incF=(e-s)/(realToFrac n-1)
+        loop=f2or ty i 0 ILt nE [Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp acc2), MX2 () acc2 (FBin FPlus (FTmp acc2) (FTmp incr2))] [WrF () (AElem t 1 (Tmp i) (Just a) 8) (ConstF s), MX2 () acc2 (ConstF (s+incF,s+2*incF))]
+        -- if odd: s+incF,s+2*incF
+    pure (Just a, aV++MX2 () acc2 (ConstF (s,s+incF)):MX2 () incr2 (ConstF (2*incF,2*incF)):[loop])
 aeval (EApp ty (EApp _ (EApp _ (Builtin _ FRange) start) end) steps) t = do
     i <- nI
     startR <- nF; incrR <- nF; n <- nI
@@ -906,12 +909,11 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
   where
     tA=eAnn a; tX=eAnn x
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
-    i <- nI; j <- nI; m <- nI; n <- nI
+    i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; zs <- nF; z <- nF2
     aRd <- nI; xRd <- nI; td <- nI
     z <- newF2Temp; z0 <- nF; zs <- nF
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    z0 <- nF; zs <- nF; z <- newF2Temp
     let loop = for tA i 0 ILt (Tmp m)
                   [ MX () zs 0, MX2 () z (ConstF (0,0)),
                     -- TODO: maybe f2or should index+1, then use lsl #4 for addressing?
@@ -958,7 +960,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
-    z0 <- nF; zs <- nF; z <- newF2Temp
+    z0 <- nF; zs <- nF; z <- nF2
     let loop=for tA i 0 ILt (Tmp m)
                 [forc tB j 0 ILt (Tmp o)
                     [ MX () zs 0, MX2 () z (ConstF (0,0)),
@@ -1068,7 +1070,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | Arrow F (Arrow F F
     (a,aV) <- v8 t (Tmp nR)
     (plEX, (lX, xR)) <- plA xs; (plEY, (lY, yR)) <- plA ys
     x0 <- nF; y0 <- nF; z0 <- nF
-    x <- newF2Temp; y <- newF2Temp; z <- newF2Temp
+    x <- nF2; y <- nF2; z <- nF2
     ss <- write2 op [x,y] z
     s1 <- writeRF op (FT<$>[x0,y0]) (FT z0)
     let step=MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):MX2 () y (FAt (AElem yR 1 (Tmp i) lY 8)):ss++[Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp z)]
@@ -1291,7 +1293,7 @@ plC e          = do {t <- nI; pl <- eval e t; pure ((pl++), Tmp t)}
 
 plD2 :: E (T ()) -> CM ([CS ()] -> [CS ()], F2Temp)
 plD2 (Var F x) = do {st <- gets d2vars; pure (id, getT st x)}
-plD2 e         = do {t <- newF2Temp; pl <- f2eval e t; pure ((pl++), t)}
+plD2 e         = do {t <- nF2; pl <- f2eval e t; pure ((pl++), t)}
 
 plD :: E (T ()) -> CM ([CS ()] -> [CS ()], F1E)
 plD (FLit _ x) = pure (id, ConstF x)
@@ -1682,7 +1684,7 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tPs <- eAnn p, Just (tP, pSz) <- aR
     seed <- writeRF zop [x,y] (FT acc)
     pure $ plPP$plQ$szR =: ev tPs (pR,lP):mt (AElem pR 1 0 lP pSz) x:mt (AElem qR 1 0 lQ qSz) y:seed++[loop]
 feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca op = do
-    x0 <- nF; acc0 <- nF; acc2 <- newF2Temp; x <- newF2Temp
+    x0 <- nF; acc0 <- nF; acc2 <- nF2; x <- nF2
     i <- nI; szR <- nI
     (plX, (lX, xR)) <- plA e
     ss1 <- writeRF op [FT acc, FT x0] (FT acc)
