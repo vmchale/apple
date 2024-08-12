@@ -2,11 +2,12 @@ module Asm.Aarch64.P ( gallocFrame, gallocOn ) where
 
 import           Asm.Aarch64
 import           Asm.Aarch64.Fr
+import           Asm.Aarch64.Guess
 import           Asm.Ar.P
 import           Asm.G
 import           Asm.LI
-import qualified Data.IntMap    as IM
-import qualified Data.Set       as S
+import qualified Data.IntMap       as IM
+import qualified Data.Set          as S
 
 gallocFrame :: Int -- ^ int supply for spilling
             -> [AArch64 AbsReg FAbsReg ()] -> [AArch64 AReg FAReg ()]
@@ -21,10 +22,11 @@ galloc u isns = frame clob'd clob'dd (fmap (mapR ((regs IM.!).toInt).mapFR ((fre
 {-# SCC frame #-}
 frame :: S.Set AReg -> S.Set FAReg -> [AArch64 AReg FAReg ()] -> [AArch64 AReg FAReg ()]
 frame clob clobd asms = pre++asms++post++[Ret ()] where
-    pre=pus clobs; post=pos clobs
+    pre=pus clobs++puxs clobsd; post=pos clobs++poxs clobsd
     -- https://developer.arm.com/documentation/102374/0101/Procedure-Call-Standard
     clobs = S.toList (clob `S.intersection` S.fromList [X18 .. X28])
-    clobsd = S.toList (clobd `S.intersection` S.fromList [D8 .. D15])
+    dg = foldMap collectS asms
+    clobsd = S.toList (clobd `S.intersection` dg `S.intersection` S.fromList [D8 .. D15])
     -- FIXME: vector registers
 
 gallocOn :: Int -> [AArch64 AbsReg FAbsReg ()] -> (IM.IntMap AReg, IM.IntMap FAReg, [AArch64 AbsReg FAbsReg ()])
