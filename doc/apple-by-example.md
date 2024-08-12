@@ -59,10 +59,6 @@ There is a [vim plugin](https://github.com/vmchale/apple/tree/canon/vim) and a
 
 The file extension is `.🍎` or `.🍏`.
 
-## Source
-
-Source is archived on [Hackage](https://hackage.haskell.org/package/apple).
-
 # Capabilities
 
 ## Integer Range
