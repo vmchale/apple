@@ -391,6 +391,7 @@ eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 eval (IR.Reg tS) tD = pure [MovRR () (absReg tD) (absReg tS)]
 eval (IR.ConstI 0) tD = pure [ZeroR () (absReg tD)]
 eval (IR.ConstI i) tD | Just u <- mu16 i = pure [MovRC () (absReg tD) u]
+eval (IR.ConstI i) tD | Just u <- mu16 (-i) = let t=absReg tD in pure [MovRC () t u, Neg () t t]
 eval (IR.ConstI i) tD = pure $ mw64 (fromIntegral i) (absReg tD)
 eval (IR.Is p) tD = pure [MovRR () (absReg tD) (absReg p)]
 eval (IR.IB Op.IPlus (IR.IB Op.IAsl e0 (IR.ConstI i)) e1) t | Just u <- ms i = do
