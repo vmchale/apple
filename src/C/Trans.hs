@@ -565,8 +565,7 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs <- eAnn
     (plE, (l, xR)) <- plA e
     i <- nI; szR <- nI
     (a,aV) <- v8 t (Tmp szR)
-    x0 <- nF; y0 <- nF
-    x <- nF2; y <- nF2
+    x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     ss <- write2 f [x] y
     s1 <- writeRF f [FT x0] (FT y0)
     let step=MX2 () x (FAt (AElem xR 1 (Tmp i) l 8)):ss++[Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp y)]
@@ -871,8 +870,7 @@ aeval (EApp ty (EApp _ (EApp _ (Builtin _ FRange) (FLit _ s)) (FLit _ e)) (ILit 
     i <- nI
     let nE=ConstI$fromIntegral n
     (a,aV) <- v8 t nE
-    acc2 <- nF2
-    incr2 <- nF2
+    incr2 <- nF2; acc2 <- nF2
     let incF=(e-s)/(realToFrac n-1)
         loop=f2or ty i 0 ILt nE [Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp acc2), MX2 () acc2 (FBin FPlus (FTmp acc2) (FTmp incr2))] [WrF () (AElem t 1 (Tmp i) (Just a) 8) (ConstF s), MX2 () acc2 (ConstF (s+incF,s+2*incF))]
         -- if odd: s+incF,s+2*incF
@@ -936,17 +934,16 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     aRd <- nI; xRd <- nI; td <- nI
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    z0 <- nF; zs <- nF; z <- nF2
-    let loop = for tA i 0 ILt (Tmp m)
-                  [ MX () zs 0, MX2 () z (ConstF (0,0)),
-                    -- TODO: maybe f2or should index+1, then use lsl #4 for addressing?
-                    -- (would have to put 1-step at end...)
+    z0 <- nF; z <- nF2
+    (prologue, et, ~(Just zs)) <- if te tX then pure (id, (FTmp z0), Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    let loop = for tA i 0 ILt (Tmp m) $ prologue
+                  [ MX2 () z (ConstF (0,0)),
                     f2or tX j 0 ILt (Tmp n)
                         [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (AElem xR 1 (Tmp j) lX 8)))) ]
                         [ MX () zs (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
                   , Comb () Op.FPlus z0 z
                   -- TODO: don't need zs if even
-                  , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp zs+FTmp z0)
+                  , WrF () (AElem t 1 (Tmp i) (Just aL) 8) et
                   ]
     pure (Just aL,
         plAA$
@@ -983,15 +980,16 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
-    z0 <- nF; zs <- nF; z <- nF2
+    z0 <- nF; z <- nF2
+    (prologue, et, ~(Just zs)) <- if te tB then pure (id, (FTmp z0), Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop=for tA i 0 ILt (Tmp m)
-                [forc tB j 0 ILt (Tmp o)
-                    [ MX () zs 0, MX2 () z (ConstF (0,0)),
+                [forc tB j 0 ILt (Tmp o) $ prologue
+                    [ MX2 () z (ConstF (0,0)),
                         f2or tB k 0 ILt (Tmp n)
                               [MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)) (FAt (AElem bR 2 (Tmp n*Tmp j+Tmp k) lB 8))))]
                               [MX () zs (FTmp zs+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)*FAt (AElem bR 2 (Tmp n*Tmp j+Tmp k) lB 8))]
                     , Comb () Op.FPlus z0 z
-                    , WrF () (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp zs+FTmp z0)]
+                    , WrF () (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) et]
                     ]
     pure (Just aL,
         plAA$plB$
@@ -1092,8 +1090,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | Arrow F (Arrow F F
     nR <- nI; i <- nI
     (a,aV) <- v8 t (Tmp nR)
     (plEX, (lX, xR)) <- plA xs; (plEY, (lY, yR)) <- plA ys
-    x0 <- nF; y0 <- nF; z0 <- nF
-    x <- nF2; y <- nF2; z <- nF2
+    x <- nF2; y <- nF2; z <- nF2; x0 <- nF; y0 <- nF; z0 <- nF
     ss <- write2 op [x,y] z
     s1 <- writeRF op (FT<$>[x0,y0]) (FT z0)
     let step=MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):MX2 () y (FAt (AElem yR 1 (Tmp i) lY 8)):ss++[Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp z)]
@@ -1695,11 +1692,8 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) 
     ss <- writeRF op [FT acc, IT x, y] (FT acc)
     pure $ plYs $ plY ++ plX ++ seed ++ plI (szR =: ev (eAnn ys) (yR,lY):[for1 (eAnn ys) i 1 ILt (Tmp szR) (mt (AElem yR 1 (Tmp i) lY qSz) y:x+=iE:ss)])
 feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS zop = do
-    x0 <- newFTemp; y0 <- newFTemp
-    x <- newF2Temp; y <- newF2Temp
-    acc0 <- newFTemp
-    acc2 <- newF2Temp
-    i <- newITemp; szR <- newITemp
+    x0 <- nF; y0 <- nF; x <- nF2; y <- nF2; acc0 <- nF; acc2 <- nF2
+    i <- nI; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
     ss1 <- writeRF op (FT<$>[acc0,x0,y0]) (FT acc0)
     ss <- write2 op [acc2, x, y] acc2
