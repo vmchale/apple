@@ -252,7 +252,6 @@
 Card</a></li>
 <li><a href="#editor-integration" id="toc-editor-integration">Editor
 Integration</a></li>
-<li><a href="#source" id="toc-source">Source</a></li>
 </ul></li>
 <li><a href="#capabilities" id="toc-capabilities">Capabilities</a>
 <ul>
@@ -294,6 +293,7 @@ Functionality</a>
 Dimensions</a></li>
 <li><a href="#identity-matrix" id="toc-identity-matrix">Identity
 Matrix</a></li>
+<li><a href="#identifiers" id="toc-identifiers">Identifiers</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#examples" id="toc-examples">Examples</a>
@@ -391,9 +391,6 @@ and a <a
 href="https://marketplace.visualstudio.com/items?itemName=vmchale.apple">VSCode
 extension</a>.</p>
 <p>The file extension is <code>.🍎</code> or <code>.🍏</code>.</p>
-<h2 id="source">Source</h2>
-<p>Source is archived on <a
-href="https://hackage.haskell.org/package/apple">Hackage</a>.</p>
 <h1 id="capabilities">Capabilities</h1>
 <h2 id="integer-range">Integer Range</h2>
 <p>To generate an integer range use <code>irange</code> or
@@ -609,6 +606,16 @@ subscript digits separated by a comma.</p>
 <h3 id="identity-matrix">Identity Matrix</h3>
 <p>👁️ can be used in place of <code>eye.</code> for the identity
 matrix.</p>
+<h3 id="identifiers">Identifiers</h3>
+<p>Identifiers may be latin or greek characters, or a single character
+from the mathematical greek or mathematical latin unicode block,
+optionally followed by some subscript alphanumeric characters. The
+single-character lambda <code>λ</code> is reserved. <code>∫</code>,
+<code>𝛻</code>, and <code>∇</code> are also identifiers but may not be
+followed by a subscript.</p>
+<p>Thus <code>pxs</code>, <code>aₙ</code>, <code>sn₁</code>,
+<code>𝐶</code>, <code>φs</code>, <code>𝜉</code>, and <code>𝜌₀</code> are
+valid identifiers but <code>𝜉s</code> is not.</p>
 <h1 id="examples">Examples</h1>
 <h2 id="linear-regression">Linear Regression</h2>
 <pre><code>λxs.λys.
