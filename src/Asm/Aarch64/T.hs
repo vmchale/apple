@@ -155,10 +155,9 @@ ir (IR.Wr (IR.AP t (Just eI) _) e) = do
     (plE,r) <- plI e; (plEI,rI) <- plI eI
     pure $ plE $ plEI [Str () r (BI (absReg t) rI Zero)]
 ir (IR.WrF2 (IR.AP t (Just eI) _) e) = do
-    rI <- nextI
+    (plEI, rI) <- plI eI
     (plE,v) <- plF2 e
-    plEI <- eval eI (IR.ITemp rI)
-    pure$plE$plEI++[StrS () v (BI (absReg t) (IReg rI) Zero)]
+    pure$plE$plEI [StrS () v (BI (absReg t) rI Zero)]
 ir (IR.WrB (IR.AP t (Just (IR.ConstI i)) _) (IR.ConstI n)) | Just iu <- mu16 i, Just u <- mu16 n = do
     r <- nR
     pure [MovRC () r u, StrB () r (RP (absReg t) iu)]
