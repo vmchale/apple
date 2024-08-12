@@ -82,6 +82,7 @@ rw (EApp l0 (EApp l1 e0@(Builtin _ op0) e1) e2) | isBinOp op0 =
 rw (EApp l e0 e') =
     case rw e' of
         (EApp lϵ (EApp lϵϵ e3@(Builtin _ op) e4) e2) | isBinOp op -> EApp l (EApp lϵϵ e3 (rw $ EApp lϵ e0 e4)) e2
+        (Ann lϵ e1 t)                                             -> Ann lϵ (rw $ EApp l e0 e1) t
         (EApp lϵ e1@EApp{} e2)                                    -> EApp l (rw $ EApp lϵ e0 e1) e2
         (EApp lϵ e1 e2)                                           -> EApp l (EApp lϵ (rw e0) e1) e2
         eRw                                                       -> EApp l (rw e0) eRw
