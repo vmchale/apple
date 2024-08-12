@@ -454,6 +454,15 @@ is equivalent to
 
 👁️ can be used in place of `eye.` for the identity matrix.
 
+### Identifiers
+
+Identifiers may be latin or greek characters, or a single character from the
+mathematical greek or mathematical latin unicode block, optionally followed by
+some subscript alphanumeric characters. The single-character lambda `λ` is reserved. `∫`, `𝛻`,
+and `∇` are also identifiers but may not be followed by a subscript.
+
+Thus `pxs`, `aₙ`, `sn₁`, `𝐶`, `φs`, `𝜉`, and `𝜌₀` are valid identifiers but `𝜉s` is not.
+
 # Examples
 
 ## Linear Regression
