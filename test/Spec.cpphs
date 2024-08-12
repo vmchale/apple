@@ -108,6 +108,7 @@ allT = testGroup "jit"
     , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res ≈ tcdf 12 2 }
     , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res @?= 0.6339381452606089 }
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
+    , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 10 28 ; res @?= chisqcdf 10 28 }
     , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
     ,  rfTest
     ]
