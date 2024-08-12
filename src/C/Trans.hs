@@ -273,9 +273,6 @@ hasS Var{}          = True
 hasS FLit{}         = True
 hasS Cond{}         = False
 
-fca (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b) _) _))) | fS b = mFop b
-fca _                                                       = Nothing
-
 write2 :: E (T ()) -> [F2Temp] -> F2Temp -> CM [CS ()]
 write2 (Lam _ x e) (v:vs) vret = do
     modify (addD2 x v)
@@ -1698,6 +1695,8 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca
     let seedO = case c of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> Fill () acc2 acc; FMin -> Fill () acc2 acc}
     let loop = f21o tXs i 1 (ILt) (Tmp szR) (MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):ss) (MX () x0 (FAt (AElem xR 1 (Tmp i) lX 8)):ss1)
     pure $ plX$szR=:ev tXs (xR,lX):MX () acc (FAt (AElem xR 1 0 lX 8)):seedO:[loop, Comb () c acc0 acc2, MX () acc (FBin c (FTmp acc) (FTmp acc0))]
+  where
+    fca (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b) _) _))) | fS b = mFop b; fca _ = Nothing
 feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e = do
     x <- nF; i <- nI; szR <- nI
     (plE, (l, aP)) <- plA e
