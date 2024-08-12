@@ -559,8 +559,24 @@ printExpr s = do
 
 parseE st bs = fst . either (error "Internal error?") id $ rwP st bs
 
+mentions :: E a -> Nm a -> Bool
+mentions (EApp _ e0 e1) n     = e0 `mentions` n || e1 `mentions` n
+mentions (Var _ n1) n         = n==n1
+mentions ILit{} _             = False
+mentions FLit{} _             = False
+mentions BLit{} _             = False
+mentions (Cond _ p e0 e1) n   = p `mentions` n || e0 `mentions` n || e1 `mentions` n
+mentions Builtin{} _          = False
+mentions (Let _ (_, eϵ) e) n  =  e `mentions` n || eϵ `mentions` n
+mentions (Def _ (_, eϵ) e) n  =  e `mentions` n || eϵ `mentions` n
+mentions (LLet _ (_, eϵ) e) n = e `mentions` n || eϵ `mentions` n
+mentions (ALit _ es) n        = any (`mentions` n) es
+mentions (A.Lam _ _ e) n      = e `mentions` n
+mentions (Ann _ e _) n        = e `mentions` n
+mentions (Tup _ es) n         = any (`mentions` n) es
+
 eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
 eRepl e = do { ees <- lift $ gets ee; pure $ foldLet ees e }
-    where foldLet = thread . fmap (\b@(_,eϵ) -> Let (eAnn eϵ) b) where thread = foldr (.) id
+    where foldLet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 
 pErr err = liftIO $ putDoc (pretty err <> hardline)
