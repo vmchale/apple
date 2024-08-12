@@ -862,11 +862,9 @@ aeval (EApp ty (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
         loop=for ty i 0 ILt (Tmp n) [Wr () (AElem t 1 (Tmp i) (Just a) 8) (Tmp startR), startR+=Tmp incrR]
     pure (Just a, pStart++pEnd++pIncr++pN:aV++[loop])
 aeval (EApp ty (EApp _ (EApp _ (Builtin _ FRange) (FLit _ s)) (FLit _ e)) (ILit _ n)) t = do
-    i <- nI
+    incr2 <- nF2; acc2 <- nF2; i <- nI
     let nE=ConstI$fromIntegral n
     (a,aV) <- v8 t nE
-    acc2 <- nF2
-    incr2 <- nF2
     let incF=(e-s)/(realToFrac n-1)
         loop=f2or ty i 0 ILt nE [Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp acc2), MX2 () acc2 (FBin FPlus (FTmp acc2) (FTmp incr2))] [WrF () (AElem t 1 (Tmp i) (Just a) 8) (ConstF s), MX2 () acc2 (ConstF (s+incF,s+2*incF))]
         -- if odd: s+incF,s+2*incF
@@ -1069,8 +1067,7 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | Arrow F (Arrow F F
     nR <- nI; i <- nI
     (a,aV) <- v8 t (Tmp nR)
     (plEX, (lX, xR)) <- plA xs; (plEY, (lY, yR)) <- plA ys
-    x0 <- nF; y0 <- nF; z0 <- nF
-    x <- nF2; y <- nF2; z <- nF2
+    x <- nF2; y <- nF2; z <- nF2; x0 <- nF; y0 <- nF; z0 <- nF
     ss <- write2 op [x,y] z
     s1 <- writeRF op (FT<$>[x0,y0]) (FT z0)
     let step=MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):MX2 () y (FAt (AElem yR 1 (Tmp i) lY 8)):ss++[Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp z)]
@@ -1678,11 +1675,8 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) 
     ss <- writeRF op [FT acc, IT x, y] (FT acc)
     pure $ plYs $ plY ++ plX ++ seed ++ plI (szR =: ev (eAnn ys) (yR,lY):[for1 (eAnn ys) i 1 ILt (Tmp szR) (mt (AElem yR 1 (Tmp i) lY qSz) y:x+=iE:ss)])
 feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS zop = do
-    x0 <- newFTemp; y0 <- newFTemp
-    x <- newF2Temp; y <- newF2Temp
-    acc0 <- newFTemp
-    acc2 <- newF2Temp
-    i <- newITemp; szR <- newITemp
+    acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
+    i <- nI; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
     ss1 <- writeRF op (FT<$>[acc0,x0,y0]) (FT acc0)
     ss <- write2 op [acc2, x, y] acc2
