@@ -2,8 +2,8 @@
 {
   x ⟜  ♭`{3∘[2,3,4]} (trainImages :: Arr (60000 × 28 × 28 × 1) float);
   targets ⟜ (λn.[?x=n,.1::float,.0]'irange 0 9 1)'trainLabels;
-  l1init ← (𝔯 0 1) :: M ₇₈₄,₁₂₈ float;
-  l2init ← (𝔯 0 1); -- 128×10
+  l1init ← 𝔯 0 1 :: M ₇₈₄,₁₂₈ float;
+  l2init ← 𝔯 0 1; -- 128×10
   train ←
     λl1.λl2.
       {
