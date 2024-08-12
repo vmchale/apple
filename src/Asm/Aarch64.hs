@@ -20,6 +20,7 @@ module Asm.Aarch64 ( AArch64 (..)
 import           Asm.M
 import           Control.DeepSeq   (NFData (..))
 import           Data.Copointed
+import           Data.List         (scanl')
 import           Data.Word         (Word16, Word8)
 import           GHC.Generics      (Generic)
 import           Numeric           (showHex)
@@ -478,9 +479,17 @@ s2 (r0:r1:rs) = (r0, Just r1):s2 rs
 s2 [r]        = [(r, Nothing)]
 s2 []         = []
 
+offs :: [a] -> [Word16]
+offs rs = scanl' (\i _ -> i+16) 0 rs
+
+rsOffs :: [a] -> ([(a, Maybe a)], [Word16], Word16)
+rsOffs rs = let ixs=offs rs in (s2 rs, ixs, last ixs)
+
 pus, pos :: [AReg] -> [AArch64 AReg freg f2reg ()]
-pus = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 16, Stp () r0 r1 (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, Str () r (R SP)]
-pos = concatMap go.reverse.s2 where go (r0, Just r1) = [Ldp () r0 r1 (R SP), AddRC () SP SP 16]; go (r, Nothing) = [Ldr () r (R SP), AddRC () SP SP 16]
+pus rs = let (pps, ixs, r) = rsOffs rs in SubRC () SP SP r:concat (zipWith go pps ixs)
+  where go (r0, Just r1) ix = [Stp () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [Str () r (RP SP ix)]
+pos rs = let (pps, ixs, r) = rsOffs rs in concat (zipWith go pps ixs)++[AddRC () SP SP r]
+  where go (r0, Just r1) ix = [Ldp () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [Ldr () r (RP SP ix)]
 
 puds, pods :: [freg] -> [AArch64 AReg freg f2reg ()]
 puds = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 16, StpD () r0 r1 (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, StrD () r (R SP)]
