@@ -1487,6 +1487,9 @@ feval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
 feval (EApp _ (EApp _ (Builtin _ Plus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
     (pl0,t0) <- plF e0; (pl1,t1) <- plF e1; (pl2,t2) <- plF e2
     pure $ pl0 $ pl1 $ pl2 [MX () t (FTmp t0+FTmp t1*FTmp t2)]
+feval (EApp _ (EApp _ (Builtin _ Minus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
+    (pl0,t0) <- plF e0; (pl1,t1) <- plF e1; (pl2,t2) <- plF e2
+    pure $ pl0 $ pl1 $ pl2 [MX () t (FTmp t0-FTmp t1*FTmp t2)]
 feval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just fb <- mFop op = do
     (pl0,e0e) <- plD e0; (pl1,e1R) <- plF e1
     pure $ pl0 $ pl1 [MX () t (FBin fb e0e (FTmp e1R))]
