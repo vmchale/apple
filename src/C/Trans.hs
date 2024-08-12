@@ -1677,6 +1677,24 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) 
     seed <- writeRF zop [IT x, y] (FT acc)
     ss <- writeRF op [FT acc, IT x, y] (FT acc)
     pure $ plYs $ plY ++ plX ++ seed ++ plI (szR =: ev (eAnn ys) (yR,lY):[for1 (eAnn ys) i 1 ILt (Tmp szR) (mt (AElem yR 1 (Tmp i) lY qSz) y:x+=iE:ss)])
+feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS zop = do
+    x0 <- newFTemp; y0 <- newFTemp
+    x <- newF2Temp; y <- newF2Temp
+    acc0 <- newFTemp
+    acc2 <- newF2Temp
+    i <- newITemp; szR <- newITemp
+    (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
+    ss1 <- writeRF op (FT<$>[acc0,x0,y0]) (FT acc0)
+    ss <- write2 op [acc2, x, y] acc2
+    seed <- writeRF zop (FT<$>[x0,y0]) (FT acc0)
+    let seed2 = case c0 of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> Fill () acc2 acc; FMin -> Fill () acc2 acc}
+        step1 = MX () x0 (FAt (AElem pR 1 (Tmp i) lP 8)):MX () y0 (FAt (AElem qR 1 (Tmp i) lQ 8)):ss1
+        step = MX2 () x (FAt (AElem pR 1 (Tmp i) lP 8)):MX2 () y (FAt (AElem qR 1 (Tmp i) lQ 8)):ss
+        loop = f21o tyP i 1 ILt (Tmp szR) step step1
+    pure $ plPP$plQ$szR=:ev tyP (pR,lP):MX () x0 (FAt (AElem pR 1 0 lP 8)):MX () y0 (FAt (AElem qR 1 0 lQ 8)):seed++[seed2, loop, Comb () c0 acc acc2, MX () acc (FTmp acc+FTmp acc0)]
+  where
+    fz (Lam _ _ (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b0) _) (EApp _ (EApp _ (Builtin _ b1) _) _))))) | fS b0, fS b1 = (,) <$> mFop b0 <*> mFop b1
+    fz _ = Nothing
 feval (Id _ (FoldOfZip zop op [p, q])) acc | tPs <- eAnn p, Just (tP, pSz) <- aRr tPs, Just (tQ, qSz) <- aRr (eAnn q) = do
     x <- rtemp tP; y <- rtemp tQ
     i <- nI; szR <- nI
