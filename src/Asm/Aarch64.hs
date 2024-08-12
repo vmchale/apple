@@ -492,8 +492,10 @@ pos rs = let (pps, ixs, r) = rsOffs rs in concat (zipWith go pps ixs)++[AddRC ()
   where go (r0, Just r1) ix = [Ldp () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [Ldr () r (RP SP ix)]
 
 puds, pods :: [freg] -> [AArch64 AReg freg f2reg ()]
-puds = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 16, StpD () r0 r1 (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, StrD () r (R SP)]
-pods = concatMap go.reverse.s2 where go (r0, Just r1) = [LdpD () r0 r1 (R SP), AddRC () SP SP 16]; go (r, Nothing) = [LdrD () r (R SP), AddRC () SP SP 16]
+puds rs = let (pps, ixs, r) = rsOffs rs in SubRC () SP SP r:concat (zipWith go pps ixs)
+  where go (r0, Just r1) ix = [StpD () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [StrD () r (RP SP ix)]
+pods rs = let (pps, ixs, r) = rsOffs rs in concat (zipWith go pps ixs)++[AddRC () SP SP r]
+  where go (r0, Just r1) ix = [LdpD () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [LdrD () r (RP SP ix)]
 
 hexd :: Integral a => a -> Doc ann
 hexd = pretty.($"").(("#0x"++).).showHex
