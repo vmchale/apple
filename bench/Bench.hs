@@ -61,6 +61,7 @@ main = do
     tcdfFp <- fmap fff . leakFp =<< BSL.readFile "math/tcdf.🍎"
     xorFp <- fmap aaafp4 . leakFp =<< BSL.readFile "test/data/trainXor.🍎"
     v'izeFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/vize.🍏"
+    dp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/dotprod.🍏"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
@@ -116,6 +117,8 @@ main = do
                       , bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
                       , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
                       ]
+                , bgroup "simd"
+                      [ bench "dotprod" $ nf (dp fPtr) fPtr ]
                 , bgroup "elliptic"
                       [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
                 , bgroup "xor"
