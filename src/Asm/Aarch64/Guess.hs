@@ -1,30 +1,31 @@
-module Asm.Aarch64.Guess ( collectV ) where
+module Asm.Aarch64.Guess ( collectV, collectS ) where
 
 import           Asm.Aarch64 hiding (toInt)
 import           Class.E
 import qualified Data.IntSet as IS
+import qualified Data.Set    as S
 
-singleton :: V2Reg FAReg -> IS.IntSet
-singleton = IS.singleton . toInt
+ss=S.singleton . simd2
 
-fromList = IS.fromList . fmap toInt
+collectV :: (Ord freg, E freg) => AArch64 areg freg a -> IS.IntSet
+collectV = IS.fromList . fmap toInt . S.toList . collectS
 
-collectV :: AArch64 areg FAReg a -> IS.IntSet
-collectV (Dup _ q _)      = singleton q
-collectV (Ins _ v 1 _)    = singleton v
-collectV (DupD _ q _)     = singleton q
-collectV (MovQQ _ q _)    = singleton q
-collectV (LdrS _ q _)     = singleton q
-collectV (ZeroS _ v)      = singleton v
-collectV (EorS _ v _ _)   = singleton v
-collectV (Fadd2 _ v _ _)  = singleton v
-collectV (Fsub2 _ v _ _)  = singleton v
-collectV (Fmul2 _ v _ _)  = singleton v
-collectV (Fdiv2 _ v _ _)  = singleton v
-collectV (Fmax2 _ v _ _)  = singleton v
-collectV (Fmin2 _ v _ _)  = singleton v
-collectV (Fsqrt2 _ v _)   = singleton v
-collectV (Fneg2 _ v _)    = singleton v
-collectV (Ldp2 _ q0 q1 _) = fromList [q0,q1]
-collectV (Fmla _ v _ _)   = singleton v
-collectV _                = IS.empty
+collectS :: Ord freg => AArch64 areg freg a -> S.Set freg
+collectS (Dup _ q _)      = ss q
+collectS (Ins _ v 1 _)    = ss v
+collectS (DupD _ q _)     = ss q
+collectS (MovQQ _ q _)    = ss q
+collectS (LdrS _ q _)     = ss q
+collectS (ZeroS _ v)      = ss v
+collectS (EorS _ v _ _)   = ss v
+collectS (Fadd2 _ v _ _)  = ss v
+collectS (Fsub2 _ v _ _)  = ss v
+collectS (Fmul2 _ v _ _)  = ss v
+collectS (Fdiv2 _ v _ _)  = ss v
+collectS (Fmax2 _ v _ _)  = ss v
+collectS (Fmin2 _ v _ _)  = ss v
+collectS (Fsqrt2 _ v _)   = ss v
+collectS (Fneg2 _ v _)    = ss v
+collectS (Ldp2 _ q0 q1 _) = S.fromList (simd2<$>[q0,q1])
+collectS (Fmla _ v _ _)   = ss v
+collectS _                = S.empty
