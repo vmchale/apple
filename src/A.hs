@@ -386,7 +386,7 @@ instance Pretty ResVar where
     pretty X = "x"; pretty Y = "y"
 
 data Idiom = FoldSOfZip { seedI, opI :: E (T ()), esI :: [E (T ())] }
-           | FoldOfZip { zopI, opI :: E (T ()), esI :: [E (T ())] }
+           | FoldOfZip { zopI, opI :: E (T ()), esI :: [E (T ())] } -- zip op, comb op
            | FoldGen { seedG, ufG, fG, nG :: E (T ()) }
            | AShLit { litSh :: [Int], esLit :: [E (T ())] }
            deriving (Generic)
