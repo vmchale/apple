@@ -1690,7 +1690,6 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca
     ss1 <- writeRF op [FT acc, FT x0] (FT acc)
     ss <- write2 op [acc2, x] acc2
     let seedO = case c of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> Fill () acc2 acc; FMin -> Fill () acc2 acc}
-    -- TODO: use shape information (F2orE etc.)
     let loop = f21o tXs i 1 (ILt) (Tmp szR) (MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):ss) (MX () x0 (FAt (AElem xR 1 (Tmp i) lX 8)):ss1)
     pure $ plX$szR=:ev tXs (xR,lX):MX () acc (FAt (AElem xR 1 0 lX 8)):seedO:[loop, Comb () c acc0 acc2, MX () acc (FBin c (FTmp acc) (FTmp acc0))]
   where
