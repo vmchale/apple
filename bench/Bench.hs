@@ -63,6 +63,7 @@ main = do
     xorFp <- fmap aaafp4 . leakFp =<< BSL.readFile "test/data/trainXor.🍎"
     v'izeFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/vize.🍏"
     dp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/dotprod.🍏"
+    catFp <- fmap aaa . leakFp =<< BSL.readFile "bench/apple/cat.🍏"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (tcdf)" $ nf tyParse t
@@ -126,6 +127,8 @@ main = do
                       [ bench "train" $ nfIO (xorFp whPtr woPtr bhPtr 0.57823076) ]
                 , bgroup "mnist"
                       [ bench "vize" $ nfIO (v'izeFp iSmallPtr) ]
+                , bgroup "copy"
+                      [ bench "++" $ nfIO (do {p <- catFp iSmallPtr iSmallPtr; free p}) ]
                 ]
     where erfSrc = BSL.readFile "math/erf.🍏"
           gamma = BSL.readFile "math/gamma.🍏"
