@@ -1,7 +1,7 @@
 HC ?= ghc
 
 GHC_VER := $(shell ${HC} --numeric-version)
-PY_VER := $(shell python3 --version | ja '.?{|`2 ~* 1 /(\d+\.\d+)\.\d+/}')
+PY_VER := $(shell python3 --version | rg '(\d+\.\d+)\.\d+' -o -r '$$1')
 
 UNAME := $(shell uname)
 
@@ -13,11 +13,11 @@ else
 
 endif
 
-HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | ja '{ix=1}{`2}')
+HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | awk 'NR==1 {print $$2}')
 ifeq ($(UNAME),Darwin)
-	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=2}{`1}')
+	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | awk 'NR==2 {print $$1}')
 else
-	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
+	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | awk 'NR==1 {print $$2}')
 endif
 
 all: apple.so
