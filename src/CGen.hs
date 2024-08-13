@@ -6,7 +6,7 @@ import           A
 import           Control.Exception (Exception)
 import           Data.Bifunctor    (first)
 import qualified Data.Text         as T
-import           Prettyprinter     (Doc, Pretty (..), braces, parens, tupled, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), braces, parens, softline', tupled, (<+>))
 import           Prettyprinter.Ext
 
 data CType = CR | CI | CB | Af | Ai | Ab
@@ -21,7 +21,7 @@ instance Pretty CF where
         let args = zip ins ['a'..] in
         "extern" <+> pretty out <+> pretty n <+> tupled (px<$>ins) <> ";"
             <#> px out <+> pretty n <> "_wrapper" <+> tupled (fmap (\(t,var) -> pretty t <+> pretty var) args)
-            <> braces
+            <> softline' <> braces
                 (foldMap d args
                 <> pretty out <+> "res" <> "=" <> ax out (pretty n<>tupled (l.snd<$>args))<>";"
                 <> foldMap f args
