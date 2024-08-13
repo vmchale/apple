@@ -156,6 +156,7 @@ instance NFData a => NFData (Addr a) where
 
 instance Pretty reg => Pretty (Addr reg) where
     pretty (R r)      = brackets (pretty r)
+    pretty (RP r 0)   = brackets (pretty r)
     pretty (RP r u)   = brackets (pretty r <> "," <+> hexd u)
     pretty (BI b i s) = brackets (pretty b <> "," <+> pretty i <> "," <+> "LSL" <+> pretty s)
 
