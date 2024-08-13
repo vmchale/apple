@@ -10,23 +10,6 @@ typed frontend.
 
 The REPL and typechecker are available on the [release page](https://github.com/vmchale/apple/releases).
 
-### Libraries
-
-To install the libraries, you can use [ghcup](https://www.haskell.org/ghcup/) to install cabal and GHC.
-
-Then:
-
-```
-make
-sudo make install-lib
-```
-
-To install the Python extension module:
-
-```
-make install-py
-```
-
 ## Reference Card
 
 In the REPL, type `\l`.
@@ -50,6 +33,18 @@ Use `:ty` for more:
 ```
  > :ty (⊲)
 a → Vec i a → Vec (i + 1) a
+```
+
+`:help` inside the REPL:
+
+```
+ > :help
+:help, :h                    Show this help
+:ty            <expression>  Display the type of an expression
+:ann           <expression>  Annotate with types
+:bench, :b     <expression>  Benchmark an expression
+:list                        List all names that are in scope
+⋮
 ```
 
 ## Editor Integration
