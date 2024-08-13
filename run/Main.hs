@@ -375,7 +375,6 @@ iCtx f fp = do
 
 benchC :: String -> Repl AlexPosn ()
 benchC s = case tyParse bs of
-    -- st <- gets _lex
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right _ -> do
         c <- lg mf; a <- lg _arch
