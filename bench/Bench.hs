@@ -117,18 +117,18 @@ main = do
                 , bgroup "scanmax"
                       [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
                       , bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
-                      , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
                       ]
                 , bgroup "simd"
-                      [ bench "dotprod" $ nf (dp fPtr) fPtr ]
+                      [ bench "dotprod" $ nf (dp fPtr) fPtr
+                      , bench "++" $ nfIO (do {p <- catFp iSmallPtr iSmallPtr; free p})
+                      , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
+                      ]
                 , bgroup "elliptic"
                       [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
                 , bgroup "xor"
                       [ bench "train" $ nfIO (xorFp whPtr woPtr bhPtr 0.57823076) ]
                 , bgroup "mnist"
                       [ bench "vize" $ nfIO (v'izeFp iSmallPtr) ]
-                , bgroup "copy"
-                      [ bench "++" $ nfIO (do {p <- catFp iSmallPtr iSmallPtr; free p}) ]
                 ]
     where erfSrc = BSL.readFile "math/erf.🍏"
           gamma = BSL.readFile "math/gamma.🍏"
