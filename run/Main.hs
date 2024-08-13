@@ -476,7 +476,7 @@ pE is es = pD is <+> pEs is es
 
 pEs :: [Int64] -> [Doc ann] -> Doc ann
 pEs [_, n] xs = align (brackets (space <> concatWith (\x y -> x <> hardline <> ", " <> y) (list<$>chunksOf (fromIntegral n) xs) <> space))
-pEs _ xs      = list xs
+pEs _ xs      = align (list xs)
 
 pR :: T a -> Ptr b -> IO (Doc ann)
 pR I p      = do {i <- peek (castPtr p :: Ptr Int64); pure (pretty i)}
