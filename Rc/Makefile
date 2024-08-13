@@ -3,15 +3,15 @@ HC ?= ghc
 include ../mk/os.mk
 
 GHC_VER := $(shell ${HC} --numeric-version)
-R_VER := $(shell R --version | ja '.?{ix=1}{`0 ~* 1 /(\d+\.\d+)/}')
-HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | ja '{ix=1}{`2}')
+R_VER := $(shell R --version | awk 'NR==1 {print $$0}' | rg '(\d+\.\d+)' -o)
+HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | awk 'NR==1 {print $$2}')
 
 ifeq ($(UNAME),Darwin)
-	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=2}{`1}')
+	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | awk 'NR==2 {print $$1}')
 	CFLAGS := -I /Library/Frameworks/R.framework/Versions/$(R_VER)-arm64/Headers
 	LDFLAGS := -L /usr/local/lib -rpath /usr/local/lib -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR) -rpath $(HS_LIBDIR) /Library/Frameworks/R.framework/Versions/$(R_VER)-arm64/R
 else
-	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | ja '{ix=1}{`2}')
+	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | awk 'NR==1 {print $$2}')
 endif
 
 all: libappler$(EXT)
