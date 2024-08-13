@@ -6,7 +6,7 @@ HC ?= ghc
 
 HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
 ifeq ($(UNAME),Linux)
-	LD_VER := $(shell ja '{%/^\s*lib-version-info:/}{`2}' -i apple.cabal | sed 's/:/./g')
+	LD_VER := $(shell awk '/^[ \t]*lib-version-info:/{print $$2}' apple.cabal | sed 's/:/./g')
 endif
 
 libapple$(EXT): $(HS_SRC) include/apple.h
