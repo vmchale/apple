@@ -38,7 +38,7 @@ leakFp = fmap fst.case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
 
 main :: IO ()
 main = do
-    -- this sucks but using env segfaults?
+    -- this messes with benchmarks but using env segfaults
     xsPtr <- aA (AA 1 [500] xs)
     ysPtr <- aA (AA 1 [500] ys)
     iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int64)))
@@ -49,6 +49,8 @@ main = do
     whPtr <- aA (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double])
     woPtr <- aA (AA 1 [2] [0.14801747,0.37182892::Double])
     bhPtr <- aA (AA 1 [2] [0.79726405,0.67601843::Double])
+    mPtr <- aA (AA 2 [500,500] (replicate 250000 (0.002::Double)))
+    vPtr <- aA (AA 1 [500] (replicate 500 (3::Double)))
     fp <- fmap iii . leakFp =<< BSL.readFile "test/examples/risingFactorial.🍎"
     entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
@@ -63,6 +65,7 @@ main = do
     xorFp <- fmap aaafp4 . leakFp =<< BSL.readFile "test/data/trainXor.🍎"
     v'izeFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/vize.🍏"
     dp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/dotprod.🍏"
+    v <- fmap aaa . leakFp =<< BSL.readFile "test/data/vb.🍏"
     catFp <- fmap aaa . leakFp =<< BSL.readFile "bench/apple/cat.🍏"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
@@ -122,6 +125,7 @@ main = do
                       [ bench "dotprod" $ nf (dp fPtr) fPtr
                       , bench "++" $ nfIO (do {p <- catFp iSmallPtr iSmallPtr; free p})
                       , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
+                      , bench "vmul" $ nfIO (do {p <- v mPtr vPtr; free p})
                       ]
                 , bgroup "elliptic"
                       [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
