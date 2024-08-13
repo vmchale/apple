@@ -57,6 +57,8 @@ data Arch = X64 | AArch64 !MCtx
 
 data Env = Env { _lex :: !AlexUserState, ee :: [(Nm AlexPosn, E AlexPosn)], mf :: CCtx, _arch :: Arch }
 
+lg=lift . gets
+
 aEe :: Nm AlexPosn -> E AlexPosn -> Env -> Env
 aEe n e (Env l ees mm a) = Env l ((n,e):ees) mm a
 
@@ -183,9 +185,7 @@ del :: String -> Repl AlexPosn ()
 del s = lift $ modify (mE (filter (\((Nm n _ _),_) -> n /= st))) where st=T.pack s
 
 listCtx :: Repl AlexPosn ()
-listCtx = do
-    bs <- lift $ gets ee
-    liftIO $ putDoc (prettyLines (pretty.fst<$>bs)<>hardline)
+listCtx = do {bs <- lg ee; liftIO $ putDoc (prettyLines (pretty.fst<$>bs)<>hardline)}
 
 graph :: String -> Repl AlexPosn ()
 graph s = liftIO $ case dumpX86Ass (ubs s) of
@@ -257,13 +257,13 @@ ubs = encodeUtf8 . TL.pack
 
 disasm :: String -> Repl AlexPosn ()
 disasm s = do
-    st <- lift $ gets _lex
-    a <- lift $ gets _arch
-    let d=case a of {X64 -> eDtxt; AArch64{} -> edAtxt}
+    st <- lg _lex
     case rwP st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
+            a <- lg _arch
+            let d=case a of {X64 -> eDtxt; AArch64{} -> edAtxt}
             res <- liftIO $ d i eC
             liftIO $ case res of
                 Left err -> putDoc (pretty err <> hardline)
@@ -271,7 +271,7 @@ disasm s = do
 
 cR :: String -> Repl AlexPosn ()
 cR s = do
-    st <- lift $ gets _lex
+    st <- lg _lex
     case rwP st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
@@ -282,7 +282,7 @@ cR s = do
 
 irR :: String -> Repl AlexPosn ()
 irR s = do
-    st <- lift $ gets _lex
+    st <- lg _lex
     case rwP st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
@@ -293,19 +293,20 @@ irR s = do
 
 dumpAsm :: String -> Repl AlexPosn ()
 dumpAsm s = do
-    st <- lift $ gets _lex; a <- lift $ gets _arch
-    let dump = case a of {X64 -> eDumpX86; AArch64{} -> eDumpAarch64}
+    st <- lg _lex
     case rwP st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
+            a <- lg _arch
+            let dump = case a of {X64 -> eDumpX86; AArch64{} -> eDumpAarch64}
             liftIO $ case dump i eC of
                 Left err -> putDoc (pretty err <> hardline)
                 Right d  -> putDoc (d <> hardline)
 
 tyExprR :: String -> Repl AlexPosn ()
 tyExprR s = do
-    st <- lift $ gets _lex
+    st <- lg _lex
     case rwP st (ubs s) of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
@@ -316,7 +317,7 @@ tyExprR s = do
 
 annR :: String -> Repl AlexPosn ()
 annR s = do
-    st <- lift $ gets _lex
+    st <- lg _lex
     case rwP st (ubs s) of
         Left err    -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
@@ -339,8 +340,7 @@ hextext = T.unwords . fmap (T.pack.($"").showHex)
 
 inspect :: String -> Repl AlexPosn ()
 inspect s = do
-    st <- lift $ gets _lex
-    a <- lift $ gets _arch
+    st <- lg _lex
     case rwP st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
@@ -348,7 +348,7 @@ inspect s = do
             case tyC i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
-                    c <- lift $ gets mf
+                    a <- lg _arch; c <- lg mf
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     liftIO $ do
                         asm@(_, fp, _) <- efp eC
@@ -363,7 +363,7 @@ iCtx f fp = do
     if not p
         then liftIO $ putStrLn "file does not exist."
         else do
-            st <- lift $ gets _lex
+            st <- lg _lex
             bs <- liftIO $ BSL.readFile fp
             case tyParseCtx st bs of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
@@ -375,10 +375,10 @@ iCtx f fp = do
 
 benchC :: String -> Repl AlexPosn ()
 benchC s = case tyParse bs of
+    -- st <- gets _lex
     Left err -> liftIO $ putDoc (pretty err <> hardline)
     Right _ -> do
-        c <- lift $ gets mf
-        a <- lift $ gets _arch
+        c <- lg mf; a <- lg _arch
         let cfp=case a of {X64 -> ctxFunP c; AArch64 m -> actxFunP (c,m)}
         liftIO $ benchmark (nfIO (do{asm <- cfp bs; freeAsm asm}))
     where bs = ubs s
@@ -390,8 +390,7 @@ up _                         = Nothing
 
 qc :: String -> Repl AlexPosn ()
 qc s = do
-    st <- lift $ gets _lex
-    a <- lift $ gets _arch
+    st <- lg _lex
     case rwP st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
@@ -399,7 +398,7 @@ qc s = do
             case tyC i eC of
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
-                    c <- lift$gets mf
+                    c <- lg mf; a <- lg _arch
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     case up (eAnn e) of
                         Nothing -> pErr ("must be a proposition." :: T.Text)
@@ -424,8 +423,7 @@ qc s = do
 
 benchE :: String -> Repl AlexPosn ()
 benchE s = do
-    st <- lift $ gets _lex
-    a <- lift $ gets _arch
+    st <- lg _lex
     case rwP st bs of
         Left err -> pErr err
         Right (eP, i) -> do
@@ -433,7 +431,7 @@ benchE s = do
             case tyC i eC of
                 Left err -> pErr err
                 Right (e, _, i') -> do
-                    c <- lift $ gets mf
+                    c <- lg mf; a <- lg _arch
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     case eAnn e of
                         I -> do
@@ -515,8 +513,7 @@ freeByT _ _      = pure ()
 
 printExpr :: String -> Repl AlexPosn ()
 printExpr s = do
-    st <- lift $ gets _lex
-    a <- lift $ gets _arch
+    st <- lg _lex
     case rwP st bs of
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
@@ -528,7 +525,7 @@ printExpr s = do
                         let t=eAnn e in putDoc (pretty e <+> ":" <+> pretty t <> hardline)
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (e, _, i') -> do
-                    c <- lift $ gets mf
+                    c <- lg mf; a <- lg _arch
                     let efp=case a of {X64 -> eFunP i' c; AArch64 ma -> eAFunP i' (c,ma)}
                     case eAnn e of
                         I ->
@@ -576,7 +573,7 @@ mentions (Ann _ e _) n        = e `mentions` n
 mentions (Tup _ es) n         = any (`mentions` n) es
 
 eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
-eRepl e = do { ees <- lift $ gets ee; pure $ foldLet ees e }
+eRepl e = do { ees <- lg ee; pure $ foldLet ees e }
     where foldLet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 
 pErr err = liftIO $ putDoc (pretty err <> hardline)
