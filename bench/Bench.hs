@@ -41,7 +41,8 @@ main = do
     -- this sucks but using env segfaults?
     xsPtr <- aA (AA 1 [500] xs)
     ysPtr <- aA (AA 1 [500] ys)
-    iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int)))
+    iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int64)))
+    iSmallPtr <- aA (AA 1 [100000] (replicate 100000 (1::Int64)))
     fPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Double)))
     p0Ptr <- aA (AA 1 [3] [0.0::Double,4,4])
     p1Ptr <- aA (AA 1 [3] [0.0::Double,0.3])
@@ -68,7 +69,7 @@ main = do
                       , bench "tyParse (xor)" $ nf tyParse x
                       , bench "x86asm (gamma)" $ nf x86G 𝛾
                       , bench "x86asm (fcdf)" $ nf x86G ꜰ
-                      , bench "x86asm (A)" $ nf x86G ᴀ
+                      -- , bench "x86asm (A)" $ nf x86G ᴀ
                       , bench "arm (fcdf)" $ nf aarch64 ꜰ
                       , bench "arm (tcdf)" $ nf aarch64 t
                       , bench "arm (A)" $ nf aarch64 ᴀ
@@ -124,7 +125,7 @@ main = do
                 , bgroup "xor"
                       [ bench "train" $ nfIO (xorFp whPtr woPtr bhPtr 0.57823076) ]
                 , bgroup "mnist"
-                      [ bench "vize" $ nfIO (v'izeFp iPtr) ]
+                      [ bench "vize" $ nfIO (v'izeFp iSmallPtr) ]
                 ]
     where erfSrc = BSL.readFile "math/erf.🍏"
           gamma = BSL.readFile "math/gamma.🍏"
@@ -143,7 +144,8 @@ main = do
 foreign import ccall "dynamic" iii :: FunPtr (Int -> Int -> Int) -> Int -> Int -> Int
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
 foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
-foreign import ccall "dynamic" aaf :: FunPtr (U a -> U a -> Double) -> U a -> U a -> Double
+foreign import ccall "dynamic" aaf :: FunPtr (U a -> U b -> Double) -> U a -> U b -> Double
 foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
 foreign import ccall "dynamic" aa :: FunPtr (U a -> IO (U a)) -> U a -> IO (U a)
+foreign import ccall "dynamic" aaa :: FunPtr (U a -> U b -> IO (U c)) -> U a -> U b -> IO (U c)
 foreign import ccall "dynamic" aaafp4 :: FunPtr (U a -> U b -> U c -> Double -> IO (Ptr (P4 (U d) (U e) (U f) g))) -> U a -> U b -> U c -> Double -> IO (Ptr (P4 (U d) (U e) (U f) g))
