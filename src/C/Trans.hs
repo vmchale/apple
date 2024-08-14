@@ -1305,6 +1305,10 @@ peval (EApp _ (Builtin _ Head) xs) t = do
 peval (EApp _ (Builtin _ Last) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [MB () t (PAt (AElem a 1 (ev (eAnn xs) (a,l)-1) l 1))]
+peval (EApp _ (Builtin _ (TAt i)) e) t = do
+    k <- newITemp
+    (offs, a, _, plT) <- πe e k
+    pure $ m'sa k a++plT ++ MB () t (PAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
 peval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS ()]
@@ -1379,7 +1383,7 @@ eval (EApp _ (Builtin _ Floor) x) t = do
 eval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- newITemp
     (offs, a, _, plT) <- πe e k
-    pure $ m'sa t a++plT ++ t =: EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1):m'pop a
+    pure $ m'sa k a++plT ++ t =: EAt (Raw k (ConstI$offs!!(i-1)) Nothing 1):m'pop a
 eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX <- nSz tD = do
     pR <- nBT
     szR <- newITemp; i <- newITemp; done <- newITemp
