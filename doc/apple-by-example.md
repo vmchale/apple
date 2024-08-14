@@ -399,6 +399,17 @@ Arr (3×3) [ [0.9827522631010304, 0.30678513061418045, 0.6008551364891055]
 
 ## REPL Functionality
 
+### Load
+
+```
+ > :yank chisqcdf math/chisqcdf.🍎
+ > chisqcdf 10 28
+0.9982004955179669
+```
+
+`math/chisqcdf.🍎` is a file that contains an expression of type `float → float→ float`.
+
+
 ### Benchmark
 
 ```
