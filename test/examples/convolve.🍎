@@ -1,2 +1,2 @@
 -- mean filter
-([((+)/* 0 (x::Arr (7`Cons`7`Cons`Nil) float))%ℝ(:x)] ⨳ {7,7})
+([((+)/* 0 (x::Arr (7 × 7) float))%ℝ(:x)] ⨳ {7,7})
