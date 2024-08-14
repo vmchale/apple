@@ -21,6 +21,7 @@ import           Nm
 import           Nm.IntMap
 import           Op
 import           Sh
+import           U
 
 data CSt = CSt { tempU       :: !Int
                , arrU        :: !AL
@@ -89,6 +90,10 @@ addAVar n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b 
 
 addF :: Nm a -> (Label, [Arg], RT) -> CSt -> CSt
 addF n f (CSt t ar as l v b d d2 a fs aas ts) = CSt t ar as l v b d d2 a (insert n f fs) aas ts
+
+{-# SCC getT2 #-}
+getT2 :: Nm a -> CSt -> Either FTemp F2Temp
+getT2 n@(Nm _ (U u) _) (CSt _ _ _ _ _ _ d d2 _ _ _ _) = case IM.lookup u d2 of {Just f2 -> Right f2; Nothing -> Left$getT d n}
 
 getT :: IM.IntMap b -> Nm a -> b
 getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " not assigned to a temp.")) n st
@@ -556,8 +561,6 @@ aeval (EApp _ (Builtin _ Flat) xs) t | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty
     xRnk <- nI; szR <- nI
     (a,aV) <- vSz t (Tmp szR) sz
     pure (Just a, plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
-    -- FIXME: ⍉([(%x)'y]`{0,1∘[1]} n a)
-    -- the x has width 1...
 aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs <- eAnn e, hasS f = do
     (plE, (l, xR)) <- plA e
     i <- nI; szR <- nI
@@ -1291,7 +1294,7 @@ plC (Var I x)  = do {st <- gets vars; pure (id, Tmp$getT st x)}
 plC e          = do {t <- nI; pl <- eval e t; pure ((pl++), Tmp t)}
 
 plD2 :: E (T ()) -> CM ([CS ()] -> [CS ()], F2Temp)
-plD2 (Var F x) = do {st <- gets d2vars; pure (id, getT st x)}
+plD2 (Var F x) = do {tϵ <- gets (getT2 x); case tϵ of {Right t2 -> pure (id, t2); Left t1 -> do {t <- nF2; pure ((Fill () t t1:), t)}}}
 plD2 e         = do {t <- nF2; pl <- f2eval e t; pure ((pl++), t)}
 
 plD :: E (T ()) -> CM ([CS ()] -> [CS ()], F1E)
@@ -1570,7 +1573,7 @@ f2eval :: E (T ()) -> F2Temp -> CM [CS ()]
 f2eval (LLet _ b e) t = do
     ss <- llet b
     (ss++) <$> f2eval e t
-f2eval (Var _ x) t = do {st <- gets d2vars; pure [MX2 () t (FTmp $ getT st x)]}
+f2eval (Var _ x) t = do {tϵ <- gets (getT2 x); pure $ case tϵ of Right t2 -> [MX2 () t (FTmp t2)]; Left t1 -> [Fill () t t1]}
 f2eval (EApp _ (EApp _ (Builtin _ Plus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
     (pl0,t0) <- plD2 e0; (pl1,t1) <- plD2 e1; (pl2,t2) <- plD2 e2
     pure $ pl0 $ pl1 $ pl2 [MX2 () t (FBin FPlus (FTmp t0) (FBin FTimes (FTmp t1) (FTmp t2)))]
