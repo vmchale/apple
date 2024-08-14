@@ -634,7 +634,7 @@ Vec 7 [3, 4, 5, 6, 7, 8, 9]
 ## [Argmax](https://numpy.org/doc/stable/reference/generated/numpy.argmax.html)
 
 ```
-[{m⟜(⋉)/(x::Vec n float); (=m)@.x}]
+[{m⟜(⋉)/x::Vec n float; (=m)@.x}]
 ```
 
 ## [Luhn Check](https://en.wikipedia.org/wiki/Luhn_algorithm)
