@@ -74,6 +74,8 @@ irToAarch64 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 aR :: AbsReg -> WM [AArch64 AbsReg FAbsReg F2Abs ()]
 aR t = do
     l <- nextL
+    -- FIXME: bool-tuples are size 9 &c.
+    -- (this would crash on stack-allocated arrays of bools...)
     pure [TstI () t (BM 1 3), Bc () Eq l, AddRC () t t 8, Label () l]
 
 plF :: IR.FExp -> WM ([AArch64 AbsReg FAbsReg F2Abs ()] -> [AArch64 AbsReg FAbsReg F2Abs ()], FAbsReg)
