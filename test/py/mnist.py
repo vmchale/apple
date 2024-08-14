@@ -20,7 +20,7 @@ ssoftmax=apple.jit('''
   { m ⟜ (⋉)/* _1 xs; a ⟜ [e:(x-m)]`{0} xs
   ; sum ← [(+)/x]
   ; n ⟜ sum`{1} (a::M float)
-  ; ⍉(([(%x)'y]`{0,1} n a))
+  ; ⍉([(%x)'y]`{0,1} n a)
   }
 ''')
 
