@@ -348,6 +348,8 @@ Distribution</a></li>
 <li><a href="#cdf-for-students-t-distribution"
 id="toc-cdf-for-students-t-distribution">CDF for Student’s
 t-distribution</a></li>
+<li><a href="#cdf-for-f-distribution"
+id="toc-cdf-for-f-distribution">CDF for F-distribution</a></li>
 </ul></li>
 </ul></li>
 </ul>
@@ -23909,5 +23911,50 @@ approximation</a> to compute the gamma function; it is not built-in to
 Apple.</p>
 <p>Note the <code>Γ ⟜ [ℯ(gammaln x)]</code>; this prevents the function
 from being inlined and thence speeds compilation.</p>
+<h3 id="cdf-for-f-distribution">CDF for F-distribution</h3>
+<pre><code>λn.λm.λx.
+{
+  incΒ ← λz.λa.λb.
+    {
+      f21 ← λa0.λa1.λb.λz.
+        {
+          rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
+          Σ ← λN.λa. (+)/ₒ 0 (a&#39;(⍳ 0 N 1));
+          term ← λn. {nn⟜ℝ n; ((rf a0 nn)*(rf a1 nn)%(rf b nn))*((z^n)%(fact nn))};
+          Σ 30 term
+        };
+      ((z**a)%a)*f21 a (1-b) (a+1) z
+    };
+  Β ← λx.λy.
+    {
+      gammaln ⟜ λz.
+        {
+          zz ⟜ z-1;
+          c0 ← 0.999999999999997092;
+          𝛾 ← 607%128;
+          coeffs ← ⟨ 57.1562356658629235
+                   , _59.5979603554754912
+                   , 14.1360979747417471
+                   , _0.491913816097620199
+                   , 0.339946499848118887e-4
+                   , 0.465236289270485756e-4
+                   , _0.983744753048795646e-4
+                   , 0.158088703224912494e-3
+                   , _0.210264441724104883e-3
+                   , 0.217439618115212643e-3
+                   , _0.164318106536763890e-3
+                   , 0.844182239838527433e-4
+                   , _0.261908384015814087e-4
+                   , 0.368991826595316234e-5
+                   ⟩;
+          ss ← (+)/ ([y%(zz+ℝ x)]`(⍳ 1 14 1) coeffs);
+          (((zz+0.5)*_.(zz+𝛾+0.5))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
+        };
+      e:(gammaln x+gammaln y-gammaln (x+y))
+    };
+  I ← λz.λa.λb. incΒ z a b%Β a b;
+  I ((n*x)%(m+n*x)) (n%2) (m%2)
+}</code></pre>
+<p>Note that Apple does not have imports.</p>
 </body>
 </html>
