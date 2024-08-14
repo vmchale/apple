@@ -8,3 +8,4 @@ dist-newstyle
 .Rhistory
 tags
 tags.mtime
+.ipynb_checkpoints
