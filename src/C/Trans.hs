@@ -70,6 +70,15 @@ addVar n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l (insert n r v) b 
 addD :: Nm a -> FTemp -> CSt -> CSt
 addD n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b (insert n r d) d2 a f aas ts
 
+bI :: Nm a -> CM Temp
+bI n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=ITemp t in (r, CSt (t+1) ar as l (insert n r v) b d d2 a f aas ts))
+
+bD :: Nm a -> CM FTemp
+bD n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=FTemp t in (r, CSt (t+1) ar as l v b (insert n r d) d2 a f aas ts))
+
+bB :: Nm a -> CM BTemp
+bB n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=BTemp t in (r, CSt (t+1) ar as l v (insert n r b) d d2 a f aas ts))
+
 addD2 :: Nm a -> F2Temp -> CSt -> CSt
 addD2 n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d (insert n r d2) a f aas ts
 
@@ -382,13 +391,14 @@ llet (n,e') | isArr (eAnn e') = do
     (l, ss) <- aeval e' eR
     modify (addAVar n (l,eR)) $> ss
 llet (n,e') | isI (eAnn e') = do
-    eR <- newITemp
-    ss <- eval e' eR
-    modify (addVar n eR) $> ss
+    eR <- bI n
+    eval e' eR
 llet (n,e') | isF (eAnn e') = do
-    eR <- newFTemp
-    ss <- feval e' eR
-    modify (addD n eR) $> ss
+    eR <- bD n
+    feval e' eR
+llet (n,e') | isB (eAnn e') = do
+    eR <- bB n
+    peval e' eR
 llet (n,e') | Arrow tD tC <- eAnn e', isR tD && isR tC = do
     l <- neL
     x <- rtemp tD; y <- rtemp tC
