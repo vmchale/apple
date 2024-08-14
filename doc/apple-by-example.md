@@ -790,7 +790,7 @@ nb/convolve.html
 Cliff Reiter points out that we can simulate a random walk by simply scanning an array of random values, viz.
 
 ```
-(+)Λ ((𝔯 _1 1) :: Vec 200 int)
+(+)Λ (𝔯 _1 1 :: Vec 200 int)
 ```
 
 ```{.include}
