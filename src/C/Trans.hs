@@ -556,6 +556,8 @@ aeval (EApp _ (Builtin _ Flat) xs) t | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty
     xRnk <- nI; szR <- nI
     (a,aV) <- vSz t (Tmp szR) sz
     pure (Just a, plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
+    -- FIXME: ⍉([(%x)'y]`{0,1∘[1]} n a)
+    -- the x has width 1...
 aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs <- eAnn e, hasS f = do
     (plE, (l, xR)) <- plA e
     i <- nI; szR <- nI
