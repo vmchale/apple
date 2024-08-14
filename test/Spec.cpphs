@@ -105,6 +105,7 @@ allT = testGroup "jit"
     , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
     , testCase "fizzbuzz" $ do { (AA 1 [10] res) <- fpAa "test/examples/fizzbuzz.🍎" (AA 1 [10] [0..9::Double]); res @?= [15.0,3.0,0.0,3.0,5.0,3.0,0.0,0.0,3.0,0.0::Double] }
     , testCase "filt" $ do { (AA 1 [10] res) <- fpAa "test/examples/partition.🍏" (AA 1 [10] [0..9::Double]); res @?= [F,F,F,F,F,F,T,T,T,T] }
+    , testCase "softmax" $ do { (AA 2 [2,2] res) <- fpAa "test/data/softmax.🍎" (AA 2 [2,2] [0.25,0.75,0.3,0.5::Double]); res @?= [0.4875026035157896,0.5621765008857981,0.5124973964842103,0.4378234991142019::Double] }
     , testCase "gamma" $ do { res <- gammaJit (-3.5) ; res @?= gamma (-3.5) }
     , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res ≈ tcdf 12 2 }
     , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res @?= 0.6339381452606089 }
