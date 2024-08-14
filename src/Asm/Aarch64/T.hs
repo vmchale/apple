@@ -124,10 +124,15 @@ ir (IR.Wr (IR.AP t (Just (IR.IB Op.IPlus (IR.IB Op.IAsl eI (IR.ConstI 3)) (IR.Co
 ir (IR.Wr (IR.AP t (Just eI) _) e) = do
     (plE,r) <- plI e; (plEI,rI) <- plI eI
     pure $ plE $ plEI [Str () r (BI (absReg t) rI Zero)]
+ir (IR.WrB (IR.AP t (Just (IR.ConstI i)) _) (IR.ConstI n)) | Just iu <- mu16 i, Just u <- mu16 n = do
+    r <- nextR
+    pure [MovRC () r u, StrB () r (RP (absReg t) iu)]
 ir (IR.WrB (IR.AP t (Just eI) _) (IR.ConstI n)) | Just u <- mu16 n = do
     i <- nextR
     (plEI,rI) <- plI eI
     pure $ plEI [MovRC () i u, StrB () i (BI (absReg t) rI Zero)]
+ir (IR.WrB (IR.AP t (Just (IR.ConstI ix)) _) (IR.Is i)) | Just iu <- mu16 ix = do
+    pure [StrB () (absReg i) (RP (absReg t) iu)]
 ir (IR.WrB (IR.AP t (Just eI) _) (IR.Is i)) = do
     (plEI,rI) <- plI eI
     pure $ plEI [StrB () (absReg i) (BI (absReg t) rI Zero)]
@@ -468,7 +473,7 @@ eval (IR.IRFloor e) t = do
     (plE,r) <- plF e
     pure $ plE [Fcvtms () (absReg t) r]
 eval (IR.EAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [Ldr () (absReg tD) (RP (absReg tB) p)]
-eval (IR.BAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just p <- mp i = pure [LdrB () (absReg tD) (RP (absReg tB) p)]
+eval (IR.BAt (IR.AP tB (Just (IR.ConstI i)) _)) tD | Just u <- mu16 i = pure [LdrB () (absReg tD) (RP (absReg tB) u)]
 eval (IR.EAt (IR.AP rB (Just (IR.IB Op.IAsl eI (IR.ConstI 3))) _)) t = do
     (plE,i) <- plI eI
     pure $ plE [Ldr () (absReg t) (BI (absReg rB) i Three)]

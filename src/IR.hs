@@ -84,7 +84,7 @@ instance Pretty Stmt where
     pretty (J l)         = parens ("j" <+> prettyLabel l)
     pretty (Wr p e)      = parens ("write" <+> pretty p <+> pretty e)
     pretty (WrF p e)     = parens ("write" <+> pretty p <+> pretty e)
-    pretty (WrB p e)     = parens ("write" <+> pretty p <+> pretty e)
+    pretty (WrB p e)     = parens ("write-1" <+> pretty p <+> pretty e)
     pretty (Ma _ t e)    = parens ("malloc" <+> pretty t <+> ":" <+> pretty e)
     pretty (Free t)      = parens ("free" <+> pretty t)
     pretty (Cmov p t e)  = parens ("cmov" <+> pretty p <+> pretty t <+> pretty e)
