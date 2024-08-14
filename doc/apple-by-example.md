@@ -456,13 +456,13 @@ One can specify matrix dimensions in a type signature with unicode subscript
 digits separated by a comma.
 
 ```
-(𝔯 0 1) :: M ₁₂,₁₂ float
+𝔯 0 1 :: M ₁₂,₁₂ float
 ```
 
 is equivalent to
 
 ```
-(𝔯 0 1) :: Arr (12 × 12) float
+𝔯 0 1 :: Arr (12 × 12) float
 ```
 
 ### Identity Matrix
