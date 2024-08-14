@@ -66,6 +66,8 @@ main = do
     v'izeFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/vize.🍏"
     dp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/dotprod.🍏"
     v <- fmap aaa . leakFp =<< BSL.readFile "test/data/vb.🍏"
+    mul <- fmap aaa.leakFp =<< BSL.readFile "test/data/mul.🍏"
+    mulT <- fmap aaa.leakFp =<< BSL.readFile "test/data/mulT.🍏"
     catFp <- fmap aaa . leakFp =<< BSL.readFile "bench/apple/cat.🍏"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
@@ -126,6 +128,8 @@ main = do
                       , bench "++" $ nfIO (do {p <- catFp iSmallPtr iSmallPtr; free p})
                       , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
                       , bench "vmul" $ nfIO (do {p <- v mPtr vPtr; free p})
+                      , bench "mul" $ nfIO (do {p <- mul mPtr mPtr; free p})
+                      , bench "mul-of-transp" $ nfIO (do {p <- mulT mPtr mPtr; free p})
                       ]
                 , bgroup "elliptic"
                       [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
