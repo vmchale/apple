@@ -124,6 +124,10 @@ ir (IR.Wr (IR.AP t (Just (IR.IB Op.IPlus (IR.IB Op.IAsl eI (IR.ConstI 3)) (IR.Co
 ir (IR.Wr (IR.AP t (Just eI) _) e) = do
     (plE,r) <- plI e; (plEI,rI) <- plI eI
     pure $ plE $ plEI [Str () r (BI (absReg t) rI Zero)]
+ir (IR.WrB (IR.AP t (Just eI) _) (IR.ConstI n)) | Just u <- mu16 n = do
+    i <- nextR
+    (plEI,rI) <- plI eI
+    pure $ plEI [MovRC () i u, StrB () i (BI (absReg t) rI Zero)]
 ir (IR.WrB (IR.AP t (Just eI) _) (IR.Is i)) = do
     (plEI,rI) <- plI eI
     pure $ plEI [StrB () (absReg i) (BI (absReg t) rI Zero)]
@@ -301,8 +305,7 @@ puL, poL :: [AArch64 AbsReg freg f2reg ()]
 puL = [SubRC () ASP ASP 16, Stp () FP LR (R ASP)]
 poL = [Ldp () FP LR (R ASP), AddRC () ASP ASP 16]
 
-sai i | i `rem` 16 == 0 = i+16 | otherwise = i+24
--- FIXME: only do +16 when necessary
+sai i | i `rem` 16 == 0 = i+16 | otherwise = i+16+(16-r) where r = i `rem` 16
 
 mw64 :: Word64 -> AbsReg -> [AArch64 AbsReg freg f2reg ()]
 mw64 w r =
