@@ -5,7 +5,6 @@
 - [ ] accept path to BLAS as argument
 - [ ] SIMD in IR rather than too functional
   - [x] start with 128-bit pairs for copy?
-<<<<<<< HEAD
 # `C.Trans`
 - [ ] "return tuple as two registers"
 - [ ] return array as stack-allocated
