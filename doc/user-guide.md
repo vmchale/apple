@@ -39,6 +39,37 @@ Then:
 source("R/apple.R")
 ```
 
+## Python Extension Module
+
+To JIT compile a function:
+
+```python
+>>> import apple
+>>> moving_average=apple.jit('([((+)/x)%(ℝ(:x))]\\`7)')
+```
+
+Apple accepts and returns NumPy arrays:
+
+```python
+>>> import numpy as np
+>>> apple.f(sliding_mean,np.arange(0,10,dtype=np.float64))
+array([3., 4., 5., 6.])
+```
+
+`apple.f` applies a JIT-compiled function to arguments.
+
+```
+>>> moving_average
+<Cache object at 0x10289da70>
+```
+
+### Debug Facilities
+
+```
+>>> apple.typeof('([((+)/x)%(ℝ(:x))]\\`7)')
+'Vec (i + 7) float → Vec i float'
+```
+
 ## Type System
 
 Apple has shape types, like
