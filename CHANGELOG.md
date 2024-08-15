@@ -8,6 +8,7 @@
   * REPL no longer fails when being unable to monomorphize unused binds
   * Type signatures behave like an infix operator; more sensible
   * Building library no longer requires jacinda; prefer ripgrep/awk
+  * Add function composition, `∴`
 
 ## 0.2.0.0
 

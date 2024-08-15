@@ -56,6 +56,30 @@ Vec i int → Vec #n int
 
 Here `Vec #n int` denotes `∃m. Vec m int`.
 
+### Row Types
+
+Apple uses [row types](http://blog.vmchale.com/article/row-types) for accessing
+tuples. This allows us to write:
+
+```
+ > (1.0,2::int)->2
+2
+ > (2.0,1::int,#f)->2
+1
+```
+
+in a way that is still type-safe. Consider:
+
+```
+ > [(x,y)->3]
+1:2: could not unify '{ρ | 3: b}' with '(a * a)' in expression '(x, y)'
+```
+
+```
+ > :ty (->2)
+{ρ | 2: a} → a
+```
+
 ## Compilation
 
 One can compile an Apple function to an object file with `writeo`, viz.
