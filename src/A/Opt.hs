@@ -29,9 +29,9 @@ optA e@FLit{}              = pure e
 optA e@BLit{}              = pure e
 optA e@Var{}               = pure e
 optA (Builtin t (Rank rs)) = pure (Builtin t (Rank (g<$>rs))) where g r@(_,Just{})=r; g (cr,Nothing)=(cr, Just [1..cr])
-optA (Builtin ty C)        | Arrow fTy (Arrow gTy (Arrow tC tD)) <- ty = do
+optA (Builtin ty C)        | Arrow fTy (Arrow gTy xTy@(Arrow tC tD)) <- ty = do
     f <- nextU "f" fTy; g <- nextU "g" gTy; x <- nextU "x" tC
-    pure $ Lam undefined f (Lam undefined g (Lam undefined x (EApp tD (Var fTy f) (EApp undefined (Var gTy g) (Var tC x)))))
+    pure $ Lam ty f (Lam (gTy ~> xTy) g (Lam (tC ~> tD) x (EApp tD (Var fTy f) (EApp undefined (Var gTy g) (Var tC x)))))
 optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
