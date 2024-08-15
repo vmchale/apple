@@ -113,11 +113,11 @@ optA (EApp l0 (EApp _ (EApp _ (Builtin _ ho0@FoldS) op) seed) (EApp _ (EApp _ (B
 optA (EApp l0 (EApp _ (Builtin _ Succ) f) (EApp _ (EApp _ (Builtin _ Map) g) xs))
     | (Arrow _ (Arrow _ fCod)) <- eAnn f
     , (Arrow gDom _) <- eAnn g = do
-        f' <- optA f; g' <- optA g
+        f' <- optA f; g' <- optA g; g'' <- rE g
         xs' <- optA xs
         x <- nextU "w" gDom; y <- nextU "v" gDom
         let vx=Var gDom x; vy=Var gDom y
-            f2g=Lam (gDom ~> gDom ~> fCod) x (Lam (gDom ~> fCod) y (EApp undefined (EApp undefined f' (EApp undefined g' vx)) (EApp undefined g' vy)))
+            f2g=Lam (gDom ~> gDom ~> fCod) x (Lam (gDom ~> fCod) y (EApp undefined (EApp undefined f' (EApp undefined g' vx)) (EApp undefined g'' vy)))
         pure (EApp l0 (EApp undefined (Builtin undefined Succ) f2g) xs')
 optA (EApp l0 (EApp _ (Builtin _ Map) f) (EApp _ (EApp _ (Builtin _ Map) g) xs))
     | (Arrow _ fCod) <- eAnn f
