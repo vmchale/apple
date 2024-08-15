@@ -70,6 +70,28 @@ array([3., 4., 5., 6.])
 'Vec (i + 7) float → Vec i float'
 ```
 
+We can inspect generated assembly with:
+
+```
+>>> print(apple.asm('[(+)/((*)`((x::Vec n float)) y)]'))
+
+    mov rdx, [rdi+8]
+    movq xmm3, [rdi+16]
+    movq xmm2, [rsi+16]
+    vmulsd xmm0, xmm3, xmm2
+    mov rcx, 1
+    cmp rcx, rdx
+    jge apple_1
+apple_0:
+    movq xmm3, [rdi+8*rcx+16]
+    vfmadd231sd xmm0, xmm3, [rsi+8*rcx+16]
+    add rcx, 1
+    cmp rcx, rdx
+    jl apple_0
+apple_1:
+    ret
+```
+
 ## Type System
 
 Apple has shape types, like
