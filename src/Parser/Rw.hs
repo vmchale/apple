@@ -36,9 +36,11 @@ isBinOp Eye    = False
 isBinOp Flat   = False
 isBinOp AddDim = False
 isBinOp RevE   = False
+isBinOp C      = True
 isBinOp _      = True
 
 fi :: Builtin -> Int
+fi C = 9
 fi Succ = 9; fi Fold = 9
 fi IntExp = 8; fi Exp = 8
 fi Times = 7; fi Div = 7; fi Mod = 7

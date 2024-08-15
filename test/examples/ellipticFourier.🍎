@@ -1,14 +1,14 @@
 λxs.λys.λN.
   { sum ← [(+)/x]
-  ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
+  ; tieSelf ← [({.x)⊳x]; Δ ← ((-)\~) ∴ tieSelf
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys
   ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)
   ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λₒ 0 dts; T ⟜}. pts
   ; coeffs ← λn.
     { n ⟜ ℝn; k ⟜ 2*n*𝜋%T
-    ; cosDiffs ⟜ (-)\~([cos.(k*x)]'pts)
-    ; sinDiffs ⟜ (-)\~([sin.(k*x)]'pts)
+    ; cosDiffs ⟜ (-)\~((cos. ∴ (k*))'pts)
+    ; sinDiffs ⟜ (-)\~((sin. ∴ (k*))'pts)
     ; c ⟜ T%(2*n^2*𝜋^2)
     ; aₙ ← c*sum ((*)`dxss cosDiffs)
     ; bₙ ← c*sum ((*)`dxss sinDiffs)

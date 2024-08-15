@@ -687,6 +687,9 @@ tyB _ Ices = do
 tyB _ Filt = do
     a <- ftv "a"; i <- fti "i"; n <- ftie
     pure ((a ~> B) ~> vV i a ~> vV n a, mempty)
+tyB _ C = do
+    a <- ftv "a"; b <- ftv "b"; c <- ftv "c"
+    pure ((b ~> c) ~> (a ~> b) ~> a ~> c, mempty)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do

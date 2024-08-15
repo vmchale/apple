@@ -213,6 +213,7 @@ instance Pretty Builtin where
     pretty Eye       = "👁️"
     pretty Sr        = ">>"
     pretty Sl        = "<<"
+    pretty C         = "∴"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -228,9 +229,9 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init | RevE
              | TailM | InitM
              | Sin | Cos | Rot | Tan | Cyc | A1 | Even | Odd | IOf | Abs
-             | And | Or | Xor | N | Sr | Sl
+             | And | Or | Xor | N | Sr | Sl | C
              deriving (Generic)
-             -- TODO: window (feuilleter, stagger, ...) functions, reshape...?
+             -- TODO: (feuilleter, stagger, ...) reshape...?
 
 ptName :: Nm (T a) -> Doc ann
 ptName n@(Nm _ _ t) = parens (pretty n <+> ":" <+> pretty t)
@@ -273,6 +274,7 @@ mPrec IntExp = Just 8
 mPrec Mod    = Just 7
 mPrec Succ   = Just 9
 mPrec Fold   = Just 9
+mPrec C      = Just 9
 mPrec Ices   = Just 6
 mPrec Filt   = Just 6
 mPrec Map    = Just 5

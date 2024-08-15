@@ -8,7 +8,7 @@
     -- ho: 4x2
     { ho ← sigmoid`{0} ([(+)`bh x]'(X%.wh))
     -- prediction: 4
-    ; prediction ← sigmoid'((+bo)'(ho%:wo))
+    ; prediction ← (sigmoid ∴ (+bo))'(ho%:wo)
     ; (ho,prediction)
     };
   -- wh: 2x2 wo: 2 bh: 2 bo: (scalar)

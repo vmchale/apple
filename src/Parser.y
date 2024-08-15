@@ -45,6 +45,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     polybind { TokSym $$ PolyBind }
     semicolon { TokSym $$ Semicolon }
     comma { TokSym $$ Comma }
+    therefore { TokSym $$ Therefore }
     underscore { TokSym $$ Underscore }
     question { TokSym $$ QuestionMark }
     condSplit { TokSym $$ CondSplit }
@@ -253,6 +254,7 @@ BBin :: { E AlexPosn }
      | ice { Builtin $1 Ices }
      | para { Builtin $1 Filt }
      | sr { Builtin $1 A.Sr } | sl { Builtin $1 A.Sl }
+     | therefore { Builtin $1 C }
 
 B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
