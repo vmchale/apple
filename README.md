@@ -31,7 +31,6 @@ Arr (4) [4.0, 5.0, 6.0, 7.0]
 >>> sliding_mean=apple.jit('([((+)/x)%(ℝ(:x))]\`7)')
 >>> apple.f(sliding_mean,np.arange(0,10,dtype=np.float64))
 array([3., 4., 5., 6.])
->>>
 ```
 
 ```R
