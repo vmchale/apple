@@ -73,14 +73,19 @@ ata (P t) = foldMapAlternative ata t
 ata _ = Nothing
 
 dynI :: I a -> Bool
-dynI Ix{}    = False
-dynI IVar{}  = True
-dynI IEVar{} = True
+dynI Ix{}      = False
+dynI IVar{}    = True
+dynI IEVar{}   = True
+dynI StaPlus{} = True
+dynI StaMul{}  = True
 
 dynSh :: Sh a -> Bool
 dynSh SVar{}      = True
 dynSh Nil         = False
 dynSh (Cons i sh) = dynI i || dynSh sh
+dynSh Rev{}       = True
+dynSh Cat{}       = True
+dynSh Π{}         = True
 
 foldMapAlternative :: (Traversable t, Alternative f) => (a -> f b) -> t a -> f b
 foldMapAlternative f xs = asum (f <$> xs)
