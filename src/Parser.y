@@ -86,6 +86,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
     rot { TokSym $$ Rotate }
     sr { TokSym $$ L.Sr }
     sl { TokSym $$ L.Sl }
+    inv { TokSym $$ Inv }
 
     plus { TokSym $$ L.Plus }
     minus { TokSym $$ L.Minus }
@@ -268,6 +269,8 @@ E :: { E AlexPosn }
   | pi { FLit $1 pi }
   | tt { BLit $1 True }
   | ff { BLit $1 False }
+  | inv E { EApp $1 (EApp $1 (Builtin $1 Div) (FLit $1 1)) $2 }
+  | parens(inv) { EApp $1 (Builtin $1 Div) (FLit $1 1) }
   | parens(BBin) { $1 }
   | lparen E BBin rparen { Parens $1 (EApp $1 $3 $2) }
   | lparen BBin E rparen {% do { n <- lift $ freshName "x" ; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Nm.loc n) n)) $3)) } }

@@ -193,6 +193,7 @@ tokens :-
         ∧                        { mkSym And }
         ∨                        { mkSym Or }
         ¬                        { mkSym Not }
+        ⅟                        { mkSym Inv }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -244,6 +245,27 @@ tokens :-
         _"0x"$hexit+             { tok (\p s -> alex $ TokInt p (negate $ hexP $ BSL.drop 3 s)) }
         $digitsubscript+         { tok (\p s -> alex $ TokIx p (parseSubscript $ mkText s)) }
 
+        ¼                        { mkFloat 0.25 }
+        ½                        { mkFloat 0.5 }
+        ¾                        { mkFloat 0.75 }
+
+        ⅓                        { mkFloat (1/3) }
+        ⅕                        { mkFloat 0.2 }
+        ⅙                        { mkFloat (1/6) }
+        ⅐                        { mkFloat (1/7) }
+        ⅛                        { mkFloat 0.125 }
+        ⅑                        { mkFloat (1/9) }
+        ⅒                        { mkFloat (1/10) }
+        ⅔                        { mkFloat (2/3) }
+        ⅖                        { mkFloat 0.4 }
+        ¾                        { mkFloat 0.75 }
+        ⅗                        { mkFloat 0.6 }
+        ⅘                        { mkFloat 0.8 }
+        ⅚                        { mkFloat (5/6) }
+        ⅜                        { mkFloat 0.375 }
+        ⅝                        { mkFloat 0.625 }
+        ⅞                        { mkFloat 0.875 }
+
         @float                   { tok (\p s -> alex $ TokFloat p (read $ ASCII.unpack s)) }
         _@float                  { tok (\p s -> alex $ TokFloat p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
 
@@ -265,6 +287,8 @@ mkRes = constructor TokResVar
 mkSym = constructor TokSym
 
 mkBuiltin = constructor TokB
+
+mkFloat = constructor TokFloat
 
 mkText :: BSL.ByteString -> T.Text
 mkText = decodeUtf8 . BSL.toStrict
@@ -311,7 +335,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | FoldS | Tilde | Cyc | A1 | Mod
          | AtDot | Eye | Para | Weier | Ice | B | Sharp
-         | And | Or | Xor | Not | Sr | Sl | IDiv
+         | And | Or | Xor | Not | Sr | Sl | IDiv | Inv
          | Therefore
          deriving (Generic, NFData)
 
@@ -401,6 +425,7 @@ instance Pretty Sym where
     pretty Sr           = ">>"
     pretty Sl           = "<<"
     pretty Therefore    = "∴"
+    pretty Inv          = "⅟"
 
 -- | Reserved/special variables
 data Var = VarX | VarY deriving (Generic, NFData)

@@ -22,6 +22,7 @@ digraphs <- 8592
     \ O- 8854
     \ << 10216
     \ >> 10217
+    \ 1% 8543
 
 setlocal makeprg=atc\ %
 setlocal errorformat=%Eatc:\ %l:%c:%m
