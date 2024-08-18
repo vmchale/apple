@@ -8,7 +8,6 @@ setl foldmethod=indent
 normal zR
 
 digraphs <- 8592
-    \ ll 955
     \ o- 10204
     \ ee 8495
     \ oo 8728
