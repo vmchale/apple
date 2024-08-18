@@ -17,3 +17,4 @@ The Vim plugin for Apple provides the following |digraphs|:
 ℝ   rr
 ⟨   <<
 ⟩   >>
+⅟   1%
