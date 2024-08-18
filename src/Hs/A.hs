@@ -26,7 +26,7 @@ instance Pretty AB where pretty T="#t"; pretty F="#f"
 
 instance Show AB where show=show.pretty
 
-data Apple a = AA !Int64 [Int64] [a] deriving (Functor)
+data Apple a = AA !Int64 [Int64] [a] deriving (Eq, Functor)
 
 data P2 a b = P2 a b; hs2 (P2 a b) = (a,b)
 data P3 a b c = P3 a b c; hs3 (P3 a b c) = (a,b,c)
@@ -56,6 +56,8 @@ pE _ xs      = pretty xs
 
 instance Pretty a => Pretty (Apple a) where
     pretty (AA _ dims xs) = "Arr" <+> tupledBy "×" (pretty <$> dims) <+> pE dims xs
+
+instance Pretty a => Show (Apple a) where show=show.pretty
 
 instance (Pretty a, Pretty b) => Pretty (P2 a b) where
     pretty (P2 x y) = tupledBy "*" [pretty x, pretty y]

@@ -59,6 +59,7 @@ main = do
     scanFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmax.🍏"
     scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
     wMax <- fmap aa . leakFp =<< BSL.readFile "bench/apple/maxWindow.🍎"
+    cMax <- fmap aa.leakFp =<< BSL.readFile "bench/apple/convMax.🍏"
     ᴀFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/offset.🍏"
     gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
     tcdfFp <- fmap fff . leakFp =<< BSL.readFile "math/tcdf.🍎"
@@ -128,6 +129,7 @@ main = do
                       [ bench "dotprod" $ nf (dp fPtr) fPtr
                       , bench "++" $ nfIO (do {p <- catFp iSmallPtr iSmallPtr; free p})
                       , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
+                      , bench "conv (1-d)" $ nfIO (do {p <- cMax fPtr; free p})
                       , bench "vmul" $ nfIO (do {p <- v mPtr vPtr; free p})
                       , bench "mul" $ nfIO (do {p <- mul mPtr mPtr; free p})
                       , bench "mul-of-transp" $ nfIO (do {p <- mulT mPtr mPtr; free p})

@@ -112,6 +112,9 @@ allT = testGroup "jit"
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 10 28 ; res @?= chisqcdf 10 28 }
     , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
+    , testCase "conv (1-d)" $ 
+        let v = AA 1 [10] [1..10::Double] 
+        in do { res0 <- fpAa "bench/apple/maxWindow.🍎" v; res1 <- fpAa "bench/apple/convMax.🍏" v; (res0 :: Apple Double) @?= res1 }
     ,  rfTest
     ]
 
