@@ -46,11 +46,8 @@ instance NFData (ForeignPtr a) where
 
 main :: IO ()
 main = do
-    -- this messes with benchmarks but using env segfaults
     xsPtr <- aA (AA 1 [500] xs)
     ysPtr <- aA (AA 1 [500] ys)
-    iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int64)))
-    fPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Double)))
     fp <- fmap iii . leakFp =<< BSL.readFile "test/examples/risingFactorial.🍎"
     entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
@@ -121,21 +118,24 @@ main = do
                       [ bench "hs" $ nf Math.gamma (1.5 :: Double)
                       , bench "jit" $ nf gammaFp 1.5
                       ]
-                , bgroup "scanmax"
-                      [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
-                      , bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
+                , env big $ \ ~(i,f) ->
+                  bgroup "scanmax"
+                      [ bench "apple" $ nfIO (do {p<- withForeignPtr i scanFp;free p})
+                      , bench "applef" $ nfIO (do {p<- withForeignPtr f scanfFp;free p})
                       ]
                 , env simdEnv $ \ ~(isp, m, va) ->
+                  env big $ \ ~(_,f) ->
                   bgroup "simd"
-                      [ bench "dotprod" $ nf (dp fPtr) fPtr
-                      , bench "++" $ nfIO (do {p <- withForeignPtr isp $ \iSmallPtr -> catFp iSmallPtr iSmallPtr; free p})
-                      , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
+                      -- [ bench "dotprod" $ nf (dp fPtr) fPtr
+                      [ bench "++" $ nfIO (do {p <- withForeignPtr isp $ \iSmallPtr -> catFp iSmallPtr iSmallPtr; free p})
+                      , bench "window" $ nfIO (do {p <- withForeignPtr f wMax; free p})
                       , bench "vmul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> withForeignPtr va $ \vPtr -> v mPtr vPtr; free p})
                       , bench "mul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> mul mPtr mPtr; free p})
                       , bench "mul-of-transp" $ nfIO (do {p <- withForeignPtr m $ \mPtr ->mulT mPtr mPtr; free p})
                       ]
-                , bgroup "idioms"
-                      [ bench "conv (1-d)" $ nfIO (do {p <- cMax fPtr; free p}) ]
+                , env big $ \ ~(_, f) ->
+                  bgroup "idioms"
+                      [ bench "conv (1-d)" $ nfIO (do {p <- withForeignPtr f cMax; free p}) ]
                 , env eEnv $ \ ~(p0,p1) ->
                   bgroup "elliptic"
                       [ bench "A" $ nfIO (withForeignPtr p0 $ \p0Ptr -> withForeignPtr p1 $ \p1Ptr -> pure $ ᴀFp p0Ptr p1Ptr) ]
@@ -166,6 +166,10 @@ main = do
           yeet = either throw id
           xs = replicate 500 (0.002 :: Double)
           ys = replicate 500 (0.002 :: Double)
+          big = do
+              iPtr <- aAF (AA 1 [10000000] (replicate 10000000 (1::Int64)))
+              fPtr <- aAF (AA 1 [10000000] (replicate 10000000 (1::Double)))
+              pure (iPtr,fPtr)
           simdEnv = do
               isp <- aAF (AA 1 [100000] (replicate 100000 (1::Int64)))
               mPtr <- aAF (AA 2 [500,500] (replicate 250000 (0.002::Double)))
