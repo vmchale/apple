@@ -39,6 +39,13 @@ Then:
 source("R/apple.R")
 ```
 
+### Editor Integration
+
+There is a [vim plugin](https://github.com/vmchale/apple/tree/canon/vim) and a
+[VSCode extension](https://marketplace.visualstudio.com/items?itemName=vmchale.apple). The Vim plugin has digraphs which may be helpful, `:h apple`.
+
+The file extension is `.🍎` or `.🍏`.
+
 ## Python Extension Module
 
 To JIT compile a function:
