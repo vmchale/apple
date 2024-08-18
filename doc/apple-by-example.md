@@ -566,7 +566,7 @@ Note the `⟜` to prevent expressions from being inlined.
   sDdx ← [x*(1-x)];
   sum ⇐ [(+)/x];
   ho ⟜ sigmoid`{0} ([(+)`bh x]'(X%.wh));
-  prediction ⟜ sigmoid'((+bo)'(ho%:wo));
+  prediction ⟜ (sigmoid ∴ (+bo))'(ho%:wo);
   l1E ← (-)`Y prediction;
   l1Δ ⟜ (*)`(sDdx'prediction) l1E;
   he ← l1Δ (*)⊗ wo;
