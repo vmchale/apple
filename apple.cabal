@@ -342,7 +342,8 @@ benchmark apple-bench
         statistics,
         bytestring,
         erf,
-        hypergeometric >=0.1.2.0
+        hypergeometric >=0.1.2.0,
+        deepseq
 
     if impl(ghc >=8.10)
         ghc-options: -Wunused-packages
