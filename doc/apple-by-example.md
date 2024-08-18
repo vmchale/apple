@@ -513,6 +513,22 @@ and `∇` are also identifiers but may not be followed by a subscript.
 
 Thus `pxs`, `aₙ`, `sn₁`, `𝐶`, `φs`, `𝜉`, and `𝜌₀` are valid identifiers but `𝜉s` is not.
 
+### Vulgar Fractions
+
+Unicode vulgar fractions are considered float literals:
+
+```
+ > ⅚
+0.8333333333333334
+```
+
+One can use `⅟` for the reciprocal, viz.
+
+```
+ > [⅟(1+ℯ(_x))]
+λx. 1.0 % (1 + 2.718281828459045 ** _ x) : float → float
+```
+
 # Examples
 
 ## Linear Regression
