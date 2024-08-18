@@ -2,4 +2,18 @@
 
 The Vim plugin for Apple provides the following |digraphs|:
 
+←   <-
 ⟜   o-
+ℯ   ee
+∘   oo
+Λ   /\
+𝒻   ff
+⊲   <\
+⊳   \>
+⊗   o*
+𝔯   rr
+⊖   O-
+⍳   ii
+ℝ   rr
+⟨   <<
+⟩   >>
