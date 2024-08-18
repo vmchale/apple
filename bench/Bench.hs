@@ -1,11 +1,13 @@
 module Main (main) where
 
+import           Control.DeepSeq                  (NFData (..), rwhnf)
 import           Control.Exception                (Exception, throw)
 import           Criterion.Main
 import qualified Data.ByteString.Lazy             as BSL
 import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import           Data.Number.Erf                  (erf, normcdf)
+import           Foreign.ForeignPtr               (ForeignPtr, mallocForeignPtrBytes, withForeignPtr)
 import           Foreign.Marshal.Alloc            (free, mallocBytes)
 import           Foreign.Ptr                      (FunPtr, Ptr)
 import           Foreign.Storable                 (Storable (..))
@@ -36,21 +38,19 @@ aA x = do
 
 leakFp = fmap fst.case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
 
+aAF :: Storable a => Apple a -> IO (ForeignPtr (Apple a))
+aAF x = do {p <- mallocForeignPtrBytes (sizeOf x); withForeignPtr p (`poke` x) $> p}
+
+instance NFData (ForeignPtr a) where
+    rnf = rwhnf
+
 main :: IO ()
 main = do
     -- this messes with benchmarks but using env segfaults
     xsPtr <- aA (AA 1 [500] xs)
     ysPtr <- aA (AA 1 [500] ys)
     iPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Int64)))
-    iSmallPtr <- aA (AA 1 [100000] (replicate 100000 (1::Int64)))
     fPtr <- aA (AA 1 [10000000] (replicate 10000000 (1::Double)))
-    p0Ptr <- aA (AA 1 [3] [0.0::Double,4,4])
-    p1Ptr <- aA (AA 1 [3] [0.0::Double,0.3])
-    whPtr <- aA (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double])
-    woPtr <- aA (AA 1 [2] [0.14801747,0.37182892::Double])
-    bhPtr <- aA (AA 1 [2] [0.79726405,0.67601843::Double])
-    mPtr <- aA (AA 2 [500,500] (replicate 250000 (0.002::Double)))
-    vPtr <- aA (AA 1 [500] (replicate 500 (3::Double)))
     fp <- fmap iii . leakFp =<< BSL.readFile "test/examples/risingFactorial.🍎"
     entropyFp <- fmap af . leakFp =<< BSL.readFile "test/examples/entropy.🍏"
     klFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/kl.🍎"
@@ -125,22 +125,32 @@ main = do
                       [ bench "apple" $ nfIO (do {p<- scanFp iPtr;free p})
                       , bench "applef" $ nfIO (do {p<- scanfFp fPtr;free p})
                       ]
-                , bgroup "simd"
+                , env simdEnv $ \ ~(isp, m, va) ->
+                  bgroup "simd"
                       [ bench "dotprod" $ nf (dp fPtr) fPtr
-                      , bench "++" $ nfIO (do {p <- catFp iSmallPtr iSmallPtr; free p})
+                      , bench "++" $ nfIO (do {p <- withForeignPtr isp $ \iSmallPtr -> catFp iSmallPtr iSmallPtr; free p})
                       , bench "window" $ nfIO (do {p <- wMax fPtr; free p})
-                      , bench "conv (1-d)" $ nfIO (do {p <- cMax fPtr; free p})
-                      , bench "vmul" $ nfIO (do {p <- v mPtr vPtr; free p})
-                      , bench "mul" $ nfIO (do {p <- mul mPtr mPtr; free p})
-                      , bench "mul-of-transp" $ nfIO (do {p <- mulT mPtr mPtr; free p})
+                      , bench "vmul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> withForeignPtr va $ \vPtr -> v mPtr vPtr; free p})
+                      , bench "mul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> mul mPtr mPtr; free p})
+                      , bench "mul-of-transp" $ nfIO (do {p <- withForeignPtr m $ \mPtr ->mulT mPtr mPtr; free p})
                       ]
-                , bgroup "elliptic"
-                      [ bench "A" $ nfIO (pure $ ᴀFp p0Ptr p1Ptr) ]
-                , bgroup "xor"
-                      [ bench "train" $ nfIO (xorFp whPtr woPtr bhPtr 0.57823076) ]
-                , bgroup "mnist"
-                      [ bench "vize" $ nfIO (do {p <- v'izeFp iSmallPtr; free p})
-                      , bench "softmax" $ nfIO (do {p <- softmax mPtr; free p})
+                , bgroup "idioms"
+                      [ bench "conv (1-d)" $ nfIO (do {p <- cMax fPtr; free p}) ]
+                , env eEnv $ \ ~(p0,p1) ->
+                  bgroup "elliptic"
+                      [ bench "A" $ nfIO (withForeignPtr p0 $ \p0Ptr -> withForeignPtr p1 $ \p1Ptr -> pure $ ᴀFp p0Ptr p1Ptr) ]
+                , env xorEnv $ \ ~(wh, wo, bh) ->
+                  bgroup "xor" $
+                      [ bench "train" $ nfIO $
+                          withForeignPtr wh $ \whPtr ->
+                          withForeignPtr wo $ \woPtr ->
+                          withForeignPtr bh $ \bhPtr ->
+                          xorFp whPtr woPtr bhPtr 0.57823076
+                      ]
+                , env simdEnv $ \ ~(isp, m, _) ->
+                  bgroup "mnist"
+                      [ bench "vize" $ nfIO (do {p <- withForeignPtr isp $ \iSmallPtr -> v'izeFp iSmallPtr; free p})
+                      , bench "softmax" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> softmax mPtr; free p})
                       ]
                 ]
     where erfSrc = BSL.readFile "math/erf.🍏"
@@ -156,6 +166,20 @@ main = do
           yeet = either throw id
           xs = replicate 500 (0.002 :: Double)
           ys = replicate 500 (0.002 :: Double)
+          simdEnv = do
+              isp <- aAF (AA 1 [100000] (replicate 100000 (1::Int64)))
+              mPtr <- aAF (AA 2 [500,500] (replicate 250000 (0.002::Double)))
+              vPtr <- aAF (AA 1 [500] (replicate 500 (3::Double)))
+              pure (isp, mPtr, vPtr)
+          xorEnv = do
+              whPtr <- aAF (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double])
+              woPtr <- aAF (AA 1 [2] [0.14801747,0.37182892::Double])
+              bhPtr <- aAF (AA 1 [2] [0.79726405,0.67601843::Double])
+              pure (whPtr, woPtr, bhPtr)
+          eEnv = do
+              p0 <- aAF (AA 1 [3] [0.0::Double,4,4])
+              p1 <- aAF (AA 1 [3] [0.0::Double,0.3])
+              pure (p0,p1)
 
 foreign import ccall "dynamic" iii :: FunPtr (Int -> Int -> Int) -> Int -> Int -> Int
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
