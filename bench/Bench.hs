@@ -68,6 +68,8 @@ main = do
     v <- fmap aaa . leakFp =<< BSL.readFile "test/data/vb.🍏"
     mul <- fmap aaa.leakFp =<< BSL.readFile "test/data/mul.🍏"
     mulT <- fmap aaa.leakFp =<< BSL.readFile "test/data/mulT.🍏"
+    vr <- fmap aaa . leakFp =<< BSL.readFile "test/data/vmul.🍏"
+    mulrank <- fmap aaa . leakFp =<< BSL.readFile "test/examples/mul.🍏"
     catFp <- fmap aaa . leakFp =<< BSL.readFile "bench/apple/cat.🍏"
     softmax <- fmap aa . leakFp =<< BSL.readFile "test/data/softmax.🍎"
     defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
@@ -133,6 +135,8 @@ main = do
                       , bench "window" $ nfIO (do {p <- withForeignPtr f wMax; free p})
                       , bench "vmul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> withForeignPtr va $ \vPtr -> v mPtr vPtr; free p})
                       , bench "mul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> mul mPtr mPtr; free p})
+                      , bench "vmul (rank)" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> withForeignPtr va $ \vPtr -> vr mPtr vPtr; free p})
+                      , bench "mul (rank)" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> mulrank mPtr mPtr; free p})
                       , bench "mul-of-transp" $ nfIO (do {p <- withForeignPtr m $ \mPtr ->mulT mPtr mPtr; free p})
                       ]
                 , env big $ \ ~(i, f) ->
