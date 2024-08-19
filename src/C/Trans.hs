@@ -686,17 +686,21 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | tX <- eAnn xs, Just (_, xRnk) <
         :PlProd () kL xDims:i =: 0:j =: 0
             :fors tX k 0 ILt (Tmp kL) step
         :[pops])
-aeval e t | Just (f, xss) <- r00 e, all isF (unroll$eAnn f), tXs@(Arr sh _) <- eAnn (head xss) = do
+aeval e t | Just (f, xss) <- r00 e, all isF (unroll$eAnn f), tXs@(Arr sh _) <- eAnn (head xss), hasS f = do
     a <- nextArr t
     xRds <- traverse (\_ -> newITemp) xss; tD <- newITemp
     rnkR <- newITemp; szR <- newITemp; i <- newITemp
     (plXs, (lXs, xRs)) <- second unzip.unzip <$> traverse plA xss
     let xR=head xRs; lX=head lXs
-    args <- traverse (\_ -> newFTemp) xss; ret <- newFTemp
-    ss <- writeRF f [FT arg | arg <- reverse args] (FT ret)
-    let ms = zipWith3 (\arg xRd lX -> MX () arg (FAt (Raw xRd (Tmp i) lX 8))) args xRds lXs; wr = WrF () (Raw tD (Tmp i) (Just a) 8) (FTmp ret)
+    arg1s <- traverse (\_ -> newFTemp) xss; ret1 <- newFTemp
+    args <- traverse (\_ -> newF2Temp) xss; ret <- newF2Temp
+    ss1 <- writeRF f [FT arg | arg <- reverse arg1s] (FT ret1)
+    ss <- write2 f (reverse args) ret
+    let m1s = zipWith3 (\arg1 xRd lX -> MX () arg1 (FAt (Raw xRd (Tmp i) lX 8))) arg1s xRds lXs; wr1 = WrF () (Raw tD (Tmp i) (Just a) 8) (FTmp ret1)
+        ms = zipWith3 (\arg xRd lX -> MX2 () arg (FAt (Raw xRd (Tmp i) lX 8))) args xRds lXs; wr = Wr2F () (Raw tD (Tmp i) (Just a) 8) (FTmp ret)
+        step1=m1s++ss1++[wr1]
         step=ms++ss++[wr]
-        loop=for tXs i 0 ILt (Tmp szR) step
+        loop=f2or tXs i 0 ILt (Tmp szR) step step1
     pure (Just a, thread plXs$rnkR=:eRnk sh (xR,lX):SZ () szR xR (Tmp rnkR) lX:Ma () a t (Tmp rnkR) (Tmp szR) 8:CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):zipWith (\xRϵ xRd -> xRd=:DP xRϵ (Tmp rnkR)) xRs xRds++tD=:DP t (Tmp rnkR):[loop])
 aeval e t | Just (f, xss) <- r00 e, Just xsTys <- traverse (aN.eAnn) xss, tXs@(Arr sh _) <- eAnn (head xss), tC <- codT (eAnn f), Just szC <- nSz tC = do
     a <- nextArr t
