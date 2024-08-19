@@ -61,6 +61,9 @@ mapFF f (FConv e)     = FConv (mapFE f e)
 view :: (FTemp -> FTemp) -> F2 -> F2
 view f (F2Temp i) = case f (FTemp i) of (FTemp j) -> F2Temp j
 
+vv :: F2 -> FTemp
+vv (F2Temp i) = FTemp i
+
 mapF :: (FTemp -> FTemp) -> Stmt -> Stmt
 mapF f (MX t e)       = MX (f t) (mapFF f e)
 mapF f (MX2 t e)      = MX2 (view f t) (mapFF2 f e)
@@ -134,6 +137,7 @@ pall ss =
         seen <- gets thd3
         case M.lookup x seen of
             Nothing -> modify (third3 (M.insert x t)) $> Just (MX2 t (ConstF x))
+            Just r  -> modify (second3 (M.insert (vv t) (vv r))) $> Nothing
 
 indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [CM], IS.IntSet)
 indels ss = (c, is IM.empty, ds)
