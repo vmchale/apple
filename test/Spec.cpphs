@@ -115,6 +115,9 @@ allT = testGroup "jit"
     , testCase "conv (1-d)" $
         let v = AA 1 [10] [1..10::Double]
         in do { res0 <- fpAa "bench/apple/maxWindow.🍎" v; res1 <- fpAa "bench/apple/convMax.🍏" v; (res0 :: Apple Double) @?= res1 }
+    , testCase "ix" $
+        let v = AA 1 [20] [1..20::Int64]
+        in do { res0 <- fpAa "bench/apple/evens.🍎" v; res1 <- fpAa "bench/apple/evenIx.🍎" v; (res0 :: Apple Int64) @?= res1 }
     ,  rfTest
     ]
 
