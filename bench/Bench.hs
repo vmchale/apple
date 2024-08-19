@@ -57,6 +57,8 @@ main = do
     scanfFp <- fmap aa . leakFp =<< BSL.readFile "bench/apple/scanmaxf.🍏"
     wMax <- fmap aa . leakFp =<< BSL.readFile "bench/apple/maxWindow.🍎"
     cMax <- fmap aa.leakFp =<< BSL.readFile "bench/apple/convMax.🍏"
+    filt <- fmap aa.leakFp =<< BSL.readFile "bench/apple/evens.🍎"
+    ixfilt <- fmap aa.leakFp =<< BSL.readFile "bench/apple/evenIx.🍎"
     ᴀFp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/offset.🍏"
     gammaFp <- fmap ff . leakFp =<< BSL.readFile "math/gamma.🍏"
     tcdfFp <- fmap fff . leakFp =<< BSL.readFile "math/tcdf.🍎"
@@ -133,9 +135,12 @@ main = do
                       , bench "mul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> mul mPtr mPtr; free p})
                       , bench "mul-of-transp" $ nfIO (do {p <- withForeignPtr m $ \mPtr ->mulT mPtr mPtr; free p})
                       ]
-                , env big $ \ ~(_, f) ->
+                , env big $ \ ~(i, f) ->
                   bgroup "idioms"
-                      [ bench "conv (1-d)" $ nfIO (do {p <- withForeignPtr f cMax; free p}) ]
+                      [ bench "conv (1-d)" $ nfIO (do {p <- withForeignPtr f cMax; free p})
+                      , bench "even (filt)" $ nfIO (do {p <- withForeignPtr i filt; free p})
+                      , bench "even (map-ix)" $ nfIO (do {p <- withForeignPtr i ixfilt; free p})
+                      ]
                 , env eEnv $ \ ~(p0,p1) ->
                   bgroup "elliptic"
                       [ bench "A" $ nfIO (withForeignPtr p0 $ \p0Ptr -> withForeignPtr p1 $ \p1Ptr -> pure $ ᴀFp p0Ptr p1Ptr) ]
