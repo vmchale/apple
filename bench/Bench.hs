@@ -126,8 +126,8 @@ main = do
                 , env simdEnv $ \ ~(isp, m, va) ->
                   env big $ \ ~(_,f) ->
                   bgroup "simd"
-                      -- [ bench "dotprod" $ nf (dp fPtr) fPtr
-                      [ bench "++" $ nfIO (do {p <- withForeignPtr isp $ \iSmallPtr -> catFp iSmallPtr iSmallPtr; free p})
+                      [ bench "dotprod" $ nfIO (withForeignPtr f $ \fPtr -> pure $ dp fPtr fPtr)
+                      , bench "++" $ nfIO (do {p <- withForeignPtr isp $ \iSmallPtr -> catFp iSmallPtr iSmallPtr; free p})
                       , bench "window" $ nfIO (do {p <- withForeignPtr f wMax; free p})
                       , bench "vmul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> withForeignPtr va $ \vPtr -> v mPtr vPtr; free p})
                       , bench "mul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> mul mPtr mPtr; free p})
