@@ -158,8 +158,6 @@ ir (IR.MJ (IR.IRel Op.INeq e (IR.ConstI 0)) l) = do
     pure $ plE [Cbnz () r l]
 ir (IR.MJ (IR.Is r) l) =
     pure [Cbnz () (absReg r) l]
-ir (IR.MJ (IR.BU Op.BNeg (IR.Is r)) l) =
-    pure [Cbz () (absReg r) l]
 ir (IR.MJ (IR.IU Op.IEven e) l) = do
     (plE,r) <- plI e
     pure $ plE [Tbz () r 0 l]
@@ -175,6 +173,12 @@ ir (IR.MJ (IR.FRel op e (IR.ConstF 0)) l) | c <- frel op = do
 ir (IR.MJ (IR.FRel op e0 e1) l) | c <- frel op = do
     (plE0,r0) <- plF e0; (plE1,r1) <- plF e1
     pure $ plE0 $ plE1 [Fcmp () r0 r1, Bc () c l]
+ir (IR.MJ (IR.BU Op.BNeg p) l) = do
+    (plE,r) <- plI p
+    pure $ plE [Cbz () r l]
+ir (IR.MJ p l) = do
+    (plE,r) <- plI p
+    pure $ plE [Cbnz () r l]
 ir (IR.Cmov (IR.IRel op e0 e1) t e) | c <- iop op = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     (plE,r) <- plI e
@@ -473,6 +477,9 @@ eval (IR.IB Op.IMax e0 e1) t = do
 eval (IR.IB op e0 e1) t | Just isn <- mIop op = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [isn () (absReg t) r0 r1]
+eval (IR.IRel rel e0 e1) t | c <- iop rel = do
+    (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
+    pure $ plE0 $ plE1 [CmpRR () r0 r1, Cset () (absReg t) c]
 eval (IR.IRFloor e) t = do
     (plE,r) <- plF e
     pure $ plE [Fcvtms () (absReg t) r]
