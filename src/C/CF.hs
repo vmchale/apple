@@ -66,6 +66,7 @@ initLiveness = IM.fromList . go where
     go (For ann _ _ _ _ ss:cs)  = (node ann, (ann, emptyL)):go ss++go cs
     go (For1 ann _ _ _ _ ss:cs) = (node ann, (ann, emptyL)):go ss++go cs
     go (While ann _ _ _ ss:cs)  = (node ann, (ann, emptyL)):go ss++go cs
+    go (WT ann _ ss:cs)         = (node ann, (ann, emptyL)):go ss++go cs
     go (If ann _ ss ss':cs)     = (node ann, (ann, emptyL)):go ss++go ss'++go cs
     go (Ifn't ann _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
     go (Def ann _ ss:cs)        = (node ann, (ann, emptyL)):go ss++go cs
@@ -75,6 +76,7 @@ inspectOrder :: [CS ControlAnn] -> [N]
 inspectOrder (For ann _ _ _ _ ss:cs)  = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (For1 ann _ _ _ _ ss:cs) = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (While ann _ _ _ ss:cs)  = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (WT ann _ ss:cs)         = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (If ann _ ss ss':cs)     = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
 inspectOrder (Ifn't ann _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (Def ann _ ss:cs)        = node ann:inspectOrder ss++inspectOrder cs
@@ -150,6 +152,13 @@ addCF ((While _ t c ed ss):stmts) = do
     pure $ While (ControlAnn i (f (h [])) udϵ) t c ed ss':stmts'
   where
     udϵ = UD (uE ed) IS.empty IS.empty IS.empty
+addCF ((WT _ t ss):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h, ss') <- tieBody i f ss
+    pure $ WT (ControlAnn i (f (h [])) udϵ) t ss':stmts'
+  where
+    udϵ = UD IS.empty IS.empty IS.empty IS.empty
 addCF (If _ p b0 b1:stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
@@ -253,6 +262,7 @@ brs (Def _ f b:stmts)         = fm f *> brs b *> brs stmts
 brs (For _ _ _ _ _ ss:stmts)  = brs ss *> brs stmts
 brs (For1 _ _ _ _ _ ss:stmts) = brs ss *> brs stmts
 brs (While _ _ _ _ ss:stmts)  = brs ss *> brs stmts
+brs (WT _ _ ss:stmts)         = brs ss *> brs stmts
 brs (If _ _ ss ss':stmts)     = brs ss *> brs ss' *> brs stmts
 brs (Ifn't _ _ ss:stmts)      = brs ss *> brs stmts
 brs (_:asms)                  = brs asms
