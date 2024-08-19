@@ -44,7 +44,7 @@ fi C = 9
 fi Succ = 9; fi Fold = 9
 fi IntExp = 8; fi Exp = 8
 fi Times = 7; fi Div = 7; fi Mod = 7
-fi Mul =7
+fi Mul = 7; fi VMul = 7
 fi Plus = 6; fi Minus = 6
 fi And = 3; fi Or = 2; fi Xor = 6
 fi Ices = 6; fi Filt=6
