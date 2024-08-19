@@ -158,6 +158,8 @@ ir (IR.MJ (IR.IRel Op.INeq e (IR.ConstI 0)) l) = do
     pure $ plE [Cbnz () r l]
 ir (IR.MJ (IR.Is r) l) =
     pure [Cbnz () (absReg r) l]
+ir (IR.MJ (IR.BU Op.BNeg (IR.Is r)) l) =
+    pure [Cbz () (absReg r) l]
 ir (IR.MJ (IR.IU Op.IEven e) l) = do
     (plE,r) <- plI e
     pure $ plE [Tbz () r 0 l]

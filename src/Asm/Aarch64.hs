@@ -240,6 +240,7 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | Tbnz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                          | Tbz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                          | Cbnz { ann :: a, rSrc :: reg, label :: Label }
+                         | Cbz { ann :: a, rSrc :: reg, label :: Label }
                          | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
                          | Cset { ann :: a, rDest :: reg, cond :: Cond }
                          | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
@@ -318,6 +319,7 @@ mapR f (Csel l r0 r1 r2 p)   = Csel l (f r0) (f r1) (f r2) p
 mapR f (Tbnz l r n p)        = Tbnz l (f r) n p
 mapR f (Tbz l r n p)         = Tbz l (f r) n p
 mapR f (Cbnz x r l)          = Cbnz x (f r) l
+mapR f (Cbz x r l)           = Cbz x (f r) l
 mapR _ (Fcsel l d0 d1 d2 p)  = Fcsel l d0 d1 d2 p
 mapR f (TstI l r i)          = TstI l (f r) i
 mapR f (Cset l r c)          = Cset l (f r) c
@@ -394,6 +396,7 @@ mapF2 _ (Csel l r0 r1 r2 p)   = Csel l r0 r1 r2 p
 mapF2 _ (Tbnz l r n p)        = Tbnz l r n p
 mapF2 _ (Tbz l r n p)         = Tbz l r n p
 mapF2 _ (Cbnz x r l)          = Cbnz x r l
+mapF2 _ (Cbz x r l)           = Cbz x r l
 mapF2 _ (Fcsel l d0 d1 d2 p)  = Fcsel l d0 d1 d2 p
 mapF2 _ (TstI l r i)          = TstI l r i
 mapF2 _ (Cset l r c)          = Cset l r c
@@ -469,6 +472,7 @@ mapFR _ (Csel l r0 r1 r2 p)   = Csel l r0 r1 r2 p
 mapFR _ (Tbnz l r n p)        = Tbnz l r n p
 mapFR _ (Tbz l r n p)         = Tbz l r n p
 mapFR _ (Cbnz x r l)          = Cbnz x r l
+mapFR _ (Cbz x r l)           = Cbz x r l
 mapFR f (Fcsel l d0 d1 d2 p)  = Fcsel l (f d0) (f d1) (f d2) p
 mapFR _ (TstI l r i)          = TstI l r i
 mapFR _ (Cset l r c)          = Cset l r c
@@ -572,6 +576,7 @@ instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg
     pretty (Tbnz _ r n l)         = i4 ("tbnz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l)
     pretty (Tbz _ r n l)          = i4 ("tbz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l)
     pretty (Cbnz _ r l)           = i4 ("cbnz" <+> pretty r <> "," <+> prettyLabel l)
+    pretty (Cbz _ r l)            = i4 ("cbz" <+> pretty r <> "," <+> prettyLabel l)
     pretty (Fcsel _ d0 d1 d2 p)   = i4 ("fcsel" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty p)
     pretty (TstI _ r i)           = i4 ("tst" <+> pretty r <> "," <+> pretty i)
     pretty (Cset _ r c)           = i4 ("cset" <+> pretty r <> "," <+> pretty c)
