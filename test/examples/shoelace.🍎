@@ -1,1 +1,1 @@
-λas.λbs. {sum ⇐ [(+)/x]; 0.5*abs.(sum((*)`as (1⊖bs)) - sum((*)`(1⊖as) bs))}
+λas.λbs. {sum ⇐ [(+)/x]; ½*abs.(sum((*)`as (1⊖bs)) - sum((*)`(1⊖as) bs))}
