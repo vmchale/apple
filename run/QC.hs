@@ -1,4 +1,4 @@
-module QC ( gas, Val (..) ) where
+module QC ( gas, Val (..), freeP ) where
 
 import           A
 import           Control.Monad.State.Strict (StateT, evalStateT, get, gets, modify, put, runStateT)
@@ -9,7 +9,7 @@ import           Data.Int                   (Int64)
 import qualified Data.IntMap                as IM
 import           Foreign.C.Types            (CDouble (..))
 import           Foreign.LibFFI             (Arg, argCDouble, argInt64, argPtr)
-import           Foreign.Marshal.Alloc      (mallocBytes)
+import           Foreign.Marshal.Alloc      (free, mallocBytes)
 import           Foreign.Ptr                (Ptr)
 import           Foreign.Storable           (poke, sizeOf)
 import           Hs.A
@@ -50,31 +50,49 @@ gg (SVar (Nm _ (U n) _)) = do
         Nothing -> do {r <- lift rnk; ds <- lift$vectorOf (fromIntegral r) dim; modify (mapS (IM.insert n (r,ds))) $> (r,ds)}
         Just s  -> pure s
 
-data ValP = ArrDp (Ptr (Apple Double))
+data ValP = ArrDp !(Ptr (Apple Double)) | ArrIp !(Ptr (Apple Int64))
 
-gas :: [T a] -> IO [(Arg, Val, Maybe (Ptr (Apple Double)))]
+freeP :: ValP -> IO ()
+freeP (ArrDp a) = free a
+freeP (ArrIp a) = free a
+
+gas :: [T a] -> IO [(Arg, Val, Maybe ValP)]
 gas = flip evalStateT (RSubst IM.empty IM.empty).traverse ga
 
-data Val = ArrD !(Apple Double) | II !Int64 | D !Double
+data Val = ArrD !(Apple Double) | AI !(Apple Int64) | II !Int64 | D !Double
 
 instance Pretty Val where
     pretty (ArrD a) = pretty a
+    pretty (AI a)   = pretty a
     pretty (II i)   = pretty i
     pretty (D d)    = pretty d
 
-ga :: T a -> StateT RSubst IO (Arg, Val, Maybe (Ptr (Apple Double)))
+ga :: T a -> StateT RSubst IO (Arg, Val, Maybe ValP)
 ga (Arr sh A.F) = do
     st <- get
     (a, st') <- lift $ generate $ runStateT (gD sh) st
     put st'
     p <- lift $ mallocBytes (sizeOf a)
-    lift (poke p a $> (argPtr p, ArrD a, Just p))
+    lift (poke p a $> (argPtr p, ArrD a, Just (ArrDp p)))
+ga (Arr sh A.I) = do
+    st <- get
+    (a, st') <- lift $ generate $ runStateT (gI sh) st
+    put st'
+    p <- lift $ mallocBytes (sizeOf a)
+    lift (poke p a $> (argPtr p, AI a, Just (ArrIp p)))
 ga I = do
     i <- lift $ generate chooseAny
     pure (argInt64 i, II i, Nothing)
 ga A.F = do
     x <- lift $ generate chooseAny
     pure (argCDouble (CDouble x), D x, Nothing)
+
+gI :: Sh a -> ShM (Apple Int64)
+gI sh = do
+    (r, ds) <- gg sh
+    let n=fromIntegral$product ds
+    es <- lift$vectorOf n chooseAny
+    pure (AA r ds es)
 
 gD :: Sh a -> ShM (Apple Double)
 gD sh = do

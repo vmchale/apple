@@ -409,8 +409,8 @@ qc s = do
                                     (args, es, mps) <- unzip3 <$> gas ty
                                     b <- callFFI fp retCUChar args
                                     (if cb b
-                                        then traverse free (catMaybes mps) *> loopϵ (n-1)
-                                        else Just es <$ traverse_ free (catMaybes mps))
+                                        then traverse freeP (catMaybes mps) *> loopϵ (n-1)
+                                        else Just es <$ traverse_ freeP (catMaybes mps))
                             res <- loopϵ (100::Int)
                             case res of
                                 Nothing -> putDoc ("Passed, 100." <> hardline)
