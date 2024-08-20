@@ -1,0 +1,5 @@
+- [ ] https://github.com/mlochbaum/bqn-libs/blob/master/matrix.bqn
+- [ ] https://en.wikipedia.org/wiki/QR_decomposition
+- [ ] https://en.wikipedia.org/wiki/Singular_value_decomposition#Calculating_the_SVD
+- [ ] https://en.wikipedia.org/wiki/Principal_component_analysis
+- [ ] https://en.wikipedia.org/wiki/Ordered_dithering

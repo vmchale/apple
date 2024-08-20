@@ -5,6 +5,8 @@
 
 Apple is an experimental compiler structured as a library.
 
+Everything is an expression; there are no imports.
+
 ## Installation
 
 The REPL and typechecker are available on the [release page](https://github.com/vmchale/apple/releases).

@@ -688,7 +688,7 @@ inlined.</p>
   sDdx ← [x*(1-x)];
   sum ⇐ [(+)/x];
   ho ⟜ sigmoid`{0} ([(+)`bh x]&#39;(X%.wh));
-  prediction ⟜ sigmoid&#39;((+bo)&#39;(ho%:wo));
+  prediction ⟜ (sigmoid ∴ (+bo))&#39;(ho%:wo);
   l1E ← (-)`Y prediction;
   l1Δ ⟜ (*)`(sDdx&#39;prediction) l1E;
   he ← l1Δ (*)⊗ wo;
