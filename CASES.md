@@ -6,6 +6,8 @@
 - [x] snoc array, cons array
 - [ ] fold, producing tuple
 - [ ] don't crash when stack-allocated tuples, arrays containing bools
+- [x] equality on arrays
+  - [ ] equality on tup
 # Types
 - [ ] scan-with-seed accept differently typed seed
 - [ ] fold-with-seed generalize type

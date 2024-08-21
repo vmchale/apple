@@ -40,7 +40,7 @@ array([3., 4., 5., 6.])
 [1] 3 4 5 6 7
 ```
 
-The JIT'ed Apple moving average happens to be faster than the rolling mean from
+The JIT'ed moving average in Apple happens to be faster than the rolling mean from
 the [zoo package](https://cran.r-project.org/web/packages/zoo/index.html).
 
 ## Dimension As a Functor
