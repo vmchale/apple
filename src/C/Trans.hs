@@ -1280,11 +1280,12 @@ peval (EApp _ (EApp _ (Builtin (Arrow (Arr _ ty) _) Eq) e0) e1) t | Arr sh _ <- 
     (plX0, (lX0, x0R)) <- plA e0; (plX1, (lX1, x1R)) <- plA e1
     rnkR <- newITemp; szR <- newITemp
     i <- newITemp; j <- newITemp
+    x0Rd <- newITemp; x1Rd <- newITemp
     let eqDim = Cset () (IRel IEq (EAt (ADim x0R (Tmp i) lX0)) (EAt (ADim x1R (Tmp i) lX1))) t
         eCond = case ty of
-            F -> FRel FEq (FAt (AElem x0R (Tmp rnkR) (Tmp j) lX0 8)) (FAt (AElem x1R (Tmp rnkR) (Tmp j) lX1 8))
-            I -> IRel IEq (EAt (AElem x0R (Tmp rnkR) (Tmp j) lX0 8)) (EAt (AElem x1R (Tmp rnkR) (Tmp j) lX1 8))
-    pure $ plX0 $ plX1 $ rnkR=:eRnk sh (x0R,lX0):MB () t (BConst True):i=:0:WT () (Boo AndB (Is t) (IRel ILt (Tmp i) (Tmp rnkR))) [eqDim, i+=1]:SZ () szR x0R (Tmp rnkR) lX0:j=:0:[WT () (Boo AndB (Is t) (IRel ILt (Tmp j) (Tmp szR))) [Cset () eCond t, j+=1]]
+            F -> FRel FEq (FAt (Raw x0Rd (Tmp j) lX0 8)) (FAt (Raw x1Rd (Tmp j) lX1 8))
+            I -> IRel IEq (EAt (Raw x0Rd (Tmp j) lX0 8)) (EAt (Raw x1Rd (Tmp j) lX1 8))
+    pure $ plX0 $ plX1 $ rnkR=:eRnk sh (x0R,lX0):MB () t (BConst True):i=:0:WT () (Boo AndB (Is t) (IRel ILt (Tmp i) (Tmp rnkR))) [eqDim, i+=1]:SZ () szR x0R (Tmp rnkR) lX0:x0Rd=:DP x0R (Tmp rnkR):x1Rd=:DP x1R (Tmp rnkR):j=:0:[WT () (Boo AndB (Is t) (IRel ILt (Tmp j) (Tmp szR))) [Cset () eCond t, j+=1]]
 peval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just boo <- mB op = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
     pure $ pl0 $ pl1 [MB () t (Boo boo e0R e1R)]
