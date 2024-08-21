@@ -855,11 +855,12 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
     i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
+    aRd <- newITemp; xRd <- newITemp; td <- newITemp
     let loop = forc (eAnn a) i 0 ILt (Tmp m)
                 [ MX () z 0,
                   for tX j 0 ILt (Tmp n)
-                      [ MX () z (FTmp z+FAt (AElem aR 2 (Tmp m*Tmp j+Tmp i) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
-                , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
+                      [ MX () z (FTmp z+FAt (Raw aRd (Tmp m*Tmp j+Tmp i) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
+                , WrF () (Raw td (Tmp i) (Just aL) 8) (FTmp z)
                 ]
     pure (Just aL,
         plAA$
@@ -867,18 +868,20 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
         m=:ec tA (aR,lA)
         :aV
         ++n=:ev tX (xR,lX)
+        :aRd=:DP aR 2:xRd=:DP xR 1:td=:DP t 1
         :[loop])
   where
     tA=eAnn a; tX=eAnn x
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     i <- newITemp; j <- newITemp; m <- newITemp; n <- newITemp; z <- newFTemp
+    aRd <- newITemp; xRd <- newITemp; td <- newITemp
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
     let loop = for tA i 0 ILt (Tmp m)
                   [ MX () z 0,
                     for tX j 0 ILt (Tmp n)
-                        [ MX () z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
-                  , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
+                        [ MX () z (FTmp z+FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
+                  , WrF () (Raw td (Tmp i) (Just aL) 8) (FTmp z)
                   ]
     pure (Just aL,
         plAA$
@@ -886,46 +889,49 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
         m=:ev tA (aR,lA)
         :aV
         ++n=:ev tX (xR,lX)
+        :aRd=:DP aR 2:xRd=:DP xR 1:td=:DP t 1
         :[loop])
   where
     tA=eAnn a; tX=eAnn x
 aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- newITemp; j <- newITemp; k <- newITemp; m <- newITemp; n <- newITemp; o <- newITemp; z <- newFTemp
+    aRd <- newITemp; bRd <- newITemp; td <- newITemp
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
     let loop=forc tA i 0 ILt (Tmp m)
                 [forc (eAnn b) j 0 ILt (Tmp o)
                     [ MX () z 0, for tA k 0 ILt (Tmp n)
-                        [MX () z (FTmp z+FAt (AElem aR 2 (Tmp k*Tmp m+Tmp i) lA 8)*FAt (AElem bR 2 (Tmp k*Tmp o+Tmp j) lB 8))]
-                    , WrF () (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
+                        [MX () z (FTmp z+FAt (Raw aRd (Tmp k*Tmp m+Tmp i) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))]
+                    , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
                 ]
     pure (Just aL,
         plAA$
         plB$
         m=:ec tA (aR,lA):o=:ec tB (bR,lB)
         :Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
-        ++n=:ev tA (aR,lA)
+        ++n=:ev tA (aR,lA):aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- newITemp; j <- newITemp; k <- newITemp; m <- newITemp; n <- newITemp; o <- newITemp; z <- newFTemp
+    aRd <- newITemp; bRd <- newITemp; td <- newITemp
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
     let loop=for tA i 0 ILt (Tmp m)
                 [forc tB j 0 ILt (Tmp o)
                     [ MX () z 0, for tB k 0 ILt (Tmp n)
-                              [MX () z (FTmp z+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)*FAt (AElem bR 2 (Tmp k*Tmp o+Tmp j) lB 8))]
-                    , WrF () (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
+                              [MX () z (FTmp z+FAt (Raw aRd (Tmp n*Tmp i+Tmp k) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))]
+                    , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
                     ]
     pure (Just aL,
         plAA$
         plB$
         m=:ev tA (aR,lA):o=:ec tB (bR,lB)
         :Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
-        ++n=:ev tB (bR,lB)
+        ++n=:ev tB (bR,lB):aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
