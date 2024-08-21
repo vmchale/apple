@@ -74,6 +74,7 @@ allT = testGroup "jit"
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "amgm" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
     , testCase "transpose" $ do { (AA 2 [2, 3] res) <- fpAa "test/data/T.🍏" (AA 2 [3,2] [1,2,3,4,5,6::Double]); res @?= [1,3,5,2,4,6::Double] }
+    , testCase "whiten" $ do { (AA 2 [3,3] res) <- fpAa "math/stats/whiten.🍏" (AA 2 [3,3] [1.9,2.3,1.7,1.5,2.5,2.2,0.8,0.6,1.7::Double]); res @?= [4.179442778108569,2.698113510169924,7.212489168102781,3.299560087980449,2.9327320762716567,9.333809511662423,1.7597653802562396,0.7038556983051976,7.212489168102781::Double] }
     , testCase "vmul builtin" $ do { (AA 1 [3] res) <- fpAaa "test/data/vb.🍏" (AA 2 [3,2] [1,2,3,4,5,6::Double]) (AA 1 [2] [1,1::Double]); res @?= [3,7,11::Double] }
     , testCase "vmul builtin" $ do { (AA 1 [2] res) <- fpAaa "test/data/vb.🍏" (AA 2 [2,3] [1,2,3,4,5,6::Double]) (AA 1 [3] [1,1,1::Double]); res @?= [6,15::Double] }
     , testCase "vmul" $ do { (AA 1 [3] res) <- fpAaa "test/data/vmul.🍏" (AA 2 [3,2] [1,2,3,4,5,6::Double]) (AA 1 [2] [1,1::Double]); res @?= [3,7,11::Double] }
