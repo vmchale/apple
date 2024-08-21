@@ -462,9 +462,10 @@ aeval (EApp _ (Builtin _ AddDim) xs) t | (Arr sh ty) <- eAnn xs, Just sz <- nSz 
     (plX, (lX, xR)) <- plA xs
     xRnk <- newITemp; szR <- newITemp; rnk <- newITemp
     a <- nextArr t
+    td <- newITemp; xRd <- newITemp
     pure (Just a,
             plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:rnk =: (Tmp xRnk+1):Ma () a t (Tmp rnk) (Tmp szR) sz:
-           [Wr () (ADim t 0 (Just a)) 1, CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk), CpyE () (AElem t (Tmp rnk) 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
+           [Wr () (ADim t 0 (Just a)) 1, CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk), td=:DP t (Tmp rnk), xRd=:DP xR (Tmp xRnk), CpyE () (Raw td 0 (Just a) sz) (Raw xRd 0 lX sz) (Tmp szR) sz])
 aeval (EApp oTy (Builtin _ Init) x) t | Just sz <- aB oTy = do
     nR <- newITemp
     (a,aV) <- vSz t (Tmp nR) sz
@@ -1612,16 +1613,17 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arr
     let loopBody=mt (AElem eR 1 (Tmp i) l 8) x:ss++[i =: (Tmp i-1)]
         loop=While () i IGeq 0 loopBody
     pure $ plE $ plAcc++i =: (ev (eAnn e) (eR,l)-1):[loop]
-feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | Arr sh _ <- eAnn xs, (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
+feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | tXs@(Arr sh _) <- eAnn xs, (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
     x <- rtemp tX
     rnkR <- newITemp; szR <- newITemp; k <- newITemp
     (plE, (lX, xsR)) <- plA xs
     plAcc <- feval seed acc
     ss <- writeRF op [x, FT acc] (FT acc)
-    let step=mt (AElem xsR (Tmp rnkR) (Tmp k) lX 8) x:ss
-        loop=for (eAnn xs) k 0 ILt (Tmp szR) step
-        plSz = case tIx (eAnn xs) of {Just (_, is) -> szR=:ConstI (product is); Nothing -> SZ () szR xsR (Tmp rnkR) lX}
-    pure $ plE $ plAcc ++ [rnkR =: eRnk sh (xsR, lX), plSz, loop]
+    xsRd <- newITemp
+    let step=mt (Raw xsRd (Tmp k) lX 8) x:ss
+        loop=for tXs k 0 ILt (Tmp szR) step
+        plSz = case tIx tXs of {Just (_, is) -> szR=:ConstI (product is); Nothing -> SZ () szR xsR (Tmp rnkR) lX}
+    pure $ plE $ plAcc ++ [rnkR =: eRnk sh (xsR, lX), plSz, xsRd=:DP xsR (Tmp rnkR), loop]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr)) acc = do
     i <- newITemp
     endR <- newITemp
