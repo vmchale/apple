@@ -992,13 +992,16 @@ aeval (EApp ty (EApp _ (Builtin _ Re) n) x) t | (Arr sh tO) <- eAnn x, sz <- bT 
     (plX, (lX, xR)) <- plA x
     plN <- eval n nR
     xRnk <- newITemp; oRnk <- newITemp
+    td <- newITemp; xRd <- newITemp
     szX <- newITemp
-    let loop = for ty k 0 ILt (Tmp nR) [CpyE () (AElem t (Tmp oRnk) (Tmp k*Tmp szX) (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szX) sz]
+    let loop = for ty k 0 ILt (Tmp nR) [CpyE () (Raw td (Tmp k*Tmp szX) (Just a) sz) (Raw xRd 0 lX sz) (Tmp szX) sz]
     pure (Just a,
         plX$
         xRnk=:eRnk sh (xR,lX):oRnk=:(Tmp xRnk+1):SZ () szX xR (Tmp xRnk) lX
         :plN
         ++Ma () a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr () (ADim t 0 (Just a)) (Tmp nR):CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
+        :td=:DP t (Tmp oRnk)
+        :xRd=:DP xR (Tmp xRnk)
         :[loop])
 aeval (EApp ty (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
     nR <- newITemp; i <- newITemp
