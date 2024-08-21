@@ -688,12 +688,12 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | tX <- eAnn xs, Just (_, xRnk) <
         :[pops])
 aeval e t | Just (f, xss) <- r00 e, all isF (unroll$eAnn f), tXs@(Arr sh _) <- eAnn (head xss), hasS f = do
     a <- nextArr t
-    xRds <- traverse (\_ -> newITemp) xss; tD <- newITemp
-    rnkR <- newITemp; szR <- newITemp; i <- newITemp
+    xRds <- traverse (\_ -> nI) xss; tD <- nI
+    rnkR <- nI; szR <- nI; i <- nI
     (plXs, (lXs, xRs)) <- second unzip.unzip <$> traverse plA xss
     let xR=head xRs; lX=head lXs
-    arg1s <- traverse (\_ -> newFTemp) xss; ret1 <- newFTemp
-    args <- traverse (\_ -> newF2Temp) xss; ret <- newF2Temp
+    arg1s <- traverse (\_ -> nF) xss; ret1 <- nF
+    args <- traverse (\_ -> nF2) xss; ret <- nF2
     ss1 <- writeRF f [FT arg | arg <- reverse arg1s] (FT ret1)
     ss <- write2 f (reverse args) ret
     let m1s = zipWith3 (\arg1 xRd lX -> MX () arg1 (FAt (Raw xRd (Tmp i) lX 8))) arg1s xRds lXs; wr1 = WrF () (Raw tD (Tmp i) (Just a) 8) (FTmp ret1)
@@ -941,11 +941,11 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     let loop = for tA i 0 ILt (Tmp m) $ prologue
                   [ MX2 () z (ConstF (0,0)),
                     f2or tX j 0 ILt (Tmp n)
-                        [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (AElem xR 1 (Tmp j) lX 8)))) ]
-                        [ MX () zs (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
+                        [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (Raw xRd (Tmp j) lX 8)))) ]
+                        [ MX () zs (FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
                   , Comb () Op.FPlus z0 z
                   -- TODO: don't need zs if even
-                  , WrF () (AElem t 1 (Tmp i) (Just aL) 8) et
+                  , WrF () (Raw td (Tmp i) (Just aL) 8) et
                   ]
     pure (Just aL,
         plAA$
@@ -980,6 +980,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, 
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
+    aRd <- nI; bRd <- nI; td <- nI
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
     z0 <- nF; z <- nF2
@@ -988,16 +989,16 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
                 [forc tB j 0 ILt (Tmp o) $ prologue
                     [ MX2 () z (ConstF (0,0)),
                         f2or tB k 0 ILt (Tmp n)
-                              [MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)) (FAt (AElem bR 2 (Tmp n*Tmp j+Tmp k) lB 8))))]
-                              [MX () zs (FTmp zs+FAt (AElem aR 2 (Tmp n*Tmp i+Tmp k) lA 8)*FAt (AElem bR 2 (Tmp n*Tmp j+Tmp k) lB 8))]
+                              [MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (Raw aRd (Tmp n*Tmp i+Tmp k) lA 8)) (FAt (Raw bRd (Tmp n*Tmp j+Tmp k) lB 8))))]
+                              [MX () zs (FTmp zs+FAt (Raw aRd (Tmp n*Tmp i+Tmp k) lA 8)*FAt (Raw bRd (Tmp n*Tmp j+Tmp k) lB 8))]
                     , Comb () Op.FPlus z0 z
-                    , WrF () (AElem t 2 (Tmp i*Tmp o+Tmp j) (Just aL) 8) et]
+                    , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) et]
                     ]
     pure (Just aL,
         plAA$plB$
         m=:ev tA (aR,lA):o=:ev tB (bR,lB)
         :Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
-        ++n=:ec tA (aR,lA)
+        ++n=:ec tA (aR,lA):aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
