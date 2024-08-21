@@ -767,12 +767,12 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, x
     (slopP, _, aSlop, popS) <- plSlop aSz slopRnk (Tmp<$>complDims)
     (lY, ss) <- writeF f [AA slopP Nothing] (IT yR)
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
-    xRd <- newITemp; slopPd <- newITemp; td <- newITemp; yRd <- newITemp
+    xRd <- newITemp; slopPd <- newITemp
     oSz <- newITemp
     (complts, place) <- extrCell aSz ecArg sstrides (xRd, lX) slopPd
     it <- newITemp
     let loop=forAll complts (Tmp<$>oDims)
-                $ place ++ ss ++ [CpyE () (Raw td (Tmp it) (Just a) cSz) (Raw yRd 0 lY undefined) (Tmp ySz) cSz, it+=Tmp ySz]
+                $ place ++ ss ++ [CpyE () (AElem t (ConstI oRnk) (Tmp it) (Just a) cSz) (AElem yR (ConstI opRnk) 0 lY undefined) (Tmp ySz) cSz, it+=Tmp ySz]
     (dots, doss) <- plDim opRnk (yR, lY)
     pure (Just a,
         plX $ dss
@@ -787,7 +787,7 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, x
         :PlProd () oSz (Tmp<$>(ySz:oDims))
             :Ma () a t (ConstI oRnk) (Tmp oSz) cSz
             :diml (t, Just a) (Tmp<$>(oDims++dots))
-        ++td=:DP t (ConstI oRnk):yRd=:DP yR (ConstI opRnk):it=:0:loop++[popS]
+        ++it=:0:loop++[popS]
         )
 aeval (EApp _ (EApp _ (Builtin _ CatE) x) y) t | tX <- eAnn x, Just (ty, 1) <- tRnk tX = do
     xnR <- newITemp; ynR <- newITemp; tn <- newITemp
