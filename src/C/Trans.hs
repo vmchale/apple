@@ -1181,14 +1181,14 @@ aeval (EApp oTy (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tyS <- eAnn see
     let loop=for oTy i 0 ILt (Tmp nR) (wt (AElem t 1 (Tmp i) (Just a) sz) acc:ss)
     pure (Just a, plS++plN++aV++[loop])
 aeval (EApp ty (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠR (eAnn seed) = do
-    nR <- newITemp; plN <- eval n nR; i <- newITemp
+    nR <- newITemp; plN <- eval n nR; i <- newITemp; td <- newITemp
     acc <- newITemp
     (szs,mP,_,plS) <- πe seed acc
     let πsz=last szs
     (a,aV) <- vSz t (Tmp nR) πsz
     (_, ss) <- writeF op [IPA acc] (IT acc)
-    let loop=for ty i 0 ILt (Tmp nR) (CpyE () (AElem t 1 (Tmp i) (Just a) πsz) (TupM acc Nothing) 1 πsz:ss)
-    pure (Just a, m'sa acc mP++plS++plN++aV++loop:m'pop mP)
+    let loop=for ty i 0 ILt (Tmp nR) (CpyE () (Raw td (Tmp i) (Just a) πsz) (TupM acc Nothing) 1 πsz:ss)
+    pure (Just a, m'sa acc mP++plS++plN++aV++td=:DP t 1:loop:m'pop mP)
 aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     | (Arrow _ tC) <- eAnn f
     , Just (tX, xRnk) <- tRnk (eAnn x)
