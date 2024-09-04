@@ -1,0 +1,2 @@
+-- Itakura-Saito distance
+λps.λqs. (+)/[x%y-_.(x%y)-1]`ps qs
