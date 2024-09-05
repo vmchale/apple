@@ -14,7 +14,6 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as ASCII
 import Data.Functor (void)
 import qualified Data.Text as T
-import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
 import qualified Nm
 import Nm hiding (loc)
@@ -26,7 +25,7 @@ import Prettyprinter (Pretty (pretty), (<+>))
 
 %name parseE E
 %name parseBind B
-%tokentype { Token AlexPosn }
+%tokentype { Tok }
 %error { parseError }
 %monad { Parse } { (>>=) } { pure }
 %lexer { lift alexMonadScan >>= } { EOF _ }
@@ -328,7 +327,7 @@ E :: { E AlexPosn }
 
 {
 
-parseError :: Token AlexPosn -> Parse a
+parseError :: Tok -> Parse a
 parseError = throwError . Unexpected
 
 data Bnd = L | LL | D
@@ -339,33 +338,33 @@ mkLet l ((L, b):bs) e   = Let l b (mkLet l bs e)
 mkLet l ((LL, b):bs) e  = LLet l b (mkLet l bs e)
 mkLet l ((D, b):bs) e   = Def l b (mkLet l bs e)
 
-data ParseE a = Unexpected (Token a)
-              | LexErr String
-              deriving (Generic)
+data ParseE = Unexpected Tok
+            | LexErr String
+            deriving (Generic)
 
-instance Pretty a => Pretty (ParseE a) where
+instance Pretty ParseE where
     pretty (Unexpected tok)  = pretty (loc tok) <+> "Unexpected" <+> pretty tok
     pretty (LexErr str)      = pretty (T.pack str)
 
-instance Pretty a => Show (ParseE a) where
+instance Show ParseE where
     show = show . pretty
 
-instance (Pretty a, Typeable a) => Exception (ParseE a)
+instance Exception ParseE
 
-instance NFData a => NFData (ParseE a) where
+instance NFData ParseE where
 
-type Parse = ExceptT (ParseE AlexPosn) Alex
+type Parse = ExceptT ParseE Alex
 
-parseAll :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (AlexUserState, E AlexPosn)
+parseAll :: AlexUserState -> BSL.ByteString -> Either ParseE (AlexUserState, E AlexPosn)
 parseAll = runParseSt parseE
 
-parseWithMaxCtx :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (Int, E AlexPosn)
+parseWithMaxCtx :: AlexUserState -> BSL.ByteString -> Either ParseE (Int, E AlexPosn)
 parseWithMaxCtx st b = fmap (first fst3) (parseAll st b) where fst3 (x, _, _) = x
 
-runParseSt :: Parse a -> AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (AlexUserState, a)
+runParseSt :: Parse a -> AlexUserState -> BSL.ByteString -> Either ParseE (AlexUserState, a)
 runParseSt parser u bs = liftErr $ withAlexSt bs u (runExceptT parser)
 
-liftErr :: Either String (b, Either (ParseE a) c) -> Either (ParseE a) (b, c)
+liftErr :: Either String (b, Either ParseE c) -> Either ParseE (b, c)
 liftErr (Left err)            = Left (LexErr err)
 liftErr (Right (_, Left err)) = Left err
 liftErr (Right (i, Right x))  = Right (i, x)

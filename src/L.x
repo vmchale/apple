@@ -12,7 +12,7 @@
              , newIdent
              , AlexPosn (..)
              , Alex (..)
-             , Token (..)
+             , Tok (..)
              , Sym (..)
              , Builtin (..)
              , Var (..)
@@ -479,17 +479,17 @@ instance Pretty Builtin where
     pretty BuiltinAbs    = "abs."
     pretty BuiltinD      = "di."
 
-data Token a = EOF { loc :: a }
-             | TokSym { loc :: a, sym :: Sym }
-             | TokName { loc :: a, _name :: Nm a }
-             | TokIx { loc :: a, six :: Int }
-             | TokB { loc :: a, _builtin :: Builtin }
-             | TokResVar { loc :: a, _var :: Var }
-             | TokInt { loc :: a, int :: Integer }
-             | TokFloat { loc :: a, float :: Double }
-             deriving (Generic, NFData)
+data Tok = EOF { loc :: AlexPosn }
+         | TokSym { loc :: AlexPosn, sym :: Sym }
+         | TokName { loc :: AlexPosn, _name :: Nm AlexPosn }
+         | TokIx { loc :: AlexPosn, six :: Int }
+         | TokB { loc :: AlexPosn, _builtin :: Builtin }
+         | TokResVar { loc :: AlexPosn, _var :: Var }
+         | TokInt { loc :: AlexPosn, int :: Integer }
+         | TokFloat { loc :: AlexPosn, float :: Double }
+         deriving (Generic, NFData)
 
-instance Pretty (Token a) where
+instance Pretty Tok where
     pretty EOF{}           = "(eof)"
     pretty (TokSym _ s)    = "symbol" <+> squotes (pretty s)
     pretty (TokName _ n)   = "identifier" <+> squotes (pretty n)

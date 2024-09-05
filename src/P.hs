@@ -78,7 +78,7 @@ import           Sys.DL
 import           Ty
 import           Ty.M
 
-data Err a = PErr (ParseE a) | TyErr (TyE a) | RErr RE deriving (Generic)
+data Err a = PErr ParseE | TyErr (TyE a) | RErr RE deriving (Generic)
 
 instance Pretty a => Show (Err a) where
     show = show . pretty
@@ -94,13 +94,13 @@ instance Pretty a => Pretty (Err a) where
 
 rwP st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
 
-parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
+parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either ParseE (E AlexPosn, Int)
 parseRenameCtx st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
 
 renameECtx :: Int -> E a -> (E a, Int)
 renameECtx i ast = let (e, m) = dedfn i ast in rG m e
 
-parseRename :: BSL.ByteString -> Either (ParseE AlexPosn) (E AlexPosn, Int)
+parseRename :: BSL.ByteString -> Either ParseE (E AlexPosn, Int)
 parseRename = parseRenameCtx alexInitUserState
 
 tyC :: Int -> E a -> Either (Err a) (E (T ()), [(Nm a, C)], Int)
