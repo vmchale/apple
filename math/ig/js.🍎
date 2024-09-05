@@ -1,0 +1,2 @@
+-- Jensen-Shannon (symmetric) divergence
+λp.λq. ½*((+)/[⸎denom ⟜ _.(x+y);x*(_.(2*x)-denom)+y*(_.(2*y)-denom)]`p q)
