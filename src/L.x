@@ -480,11 +480,11 @@ instance Pretty Builtin where
     pretty BuiltinD      = "di."
 
 data Tok = EOF { loc :: AlexPosn }
-         | TokSym { loc :: AlexPosn, sym :: Sym }
+         | TokSym { loc :: AlexPosn, sym :: !Sym }
          | TokName { loc :: AlexPosn, _name :: Nm AlexPosn }
          | TokIx { loc :: AlexPosn, six :: Int }
-         | TokB { loc :: AlexPosn, _builtin :: Builtin }
-         | TokResVar { loc :: AlexPosn, _var :: Var }
+         | TokB { loc :: AlexPosn, _builtin :: !Builtin }
+         | TokResVar { loc :: AlexPosn, _var :: !Var }
          | TokInt { loc :: AlexPosn, int :: Integer }
          | TokFloat { loc :: AlexPosn, float :: Double }
          deriving (Generic, NFData)
@@ -518,7 +518,7 @@ newIdentAlex :: AlexPosn -> T.Text -> Alex (Nm AlexPosn)
 newIdentAlex pos t = do
     st <- alexGetUserState
     let (st', n) = newIdent pos t st
-    alexSetUserState st' $> (n $> pos)
+    alexSetUserState st' $> n
 
 freshIdent :: AlexPosn -> T.Text -> Int -> (Int, Nm AlexPosn)
 freshIdent pos t max' =
