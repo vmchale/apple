@@ -24,7 +24,6 @@ import Prettyprinter (Pretty (pretty), (<+>))
 }
 
 %name parseE E
-%name parseBind B
 %tokentype { Tok }
 %error { parseError }
 %monad { Parse } { (>>=) } { pure }
