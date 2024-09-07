@@ -481,12 +481,12 @@ instance Pretty Builtin where
 
 data Tok = EOF { loc :: AlexPosn }
          | TokSym { loc :: AlexPosn, sym :: !Sym }
-         | TokName { loc :: AlexPosn, _name :: Nm AlexPosn }
-         | TokIx { loc :: AlexPosn, six :: Int }
+         | TokName { loc :: AlexPosn, _name :: !(Nm AlexPosn) }
+         | TokIx { loc :: AlexPosn, six :: !Int }
          | TokB { loc :: AlexPosn, _builtin :: !Builtin }
          | TokResVar { loc :: AlexPosn, _var :: !Var }
-         | TokInt { loc :: AlexPosn, int :: Integer }
-         | TokFloat { loc :: AlexPosn, float :: Double }
+         | TokInt { loc :: AlexPosn, int :: !Integer }
+         | TokFloat { loc :: AlexPosn, float :: !Double }
          deriving (Generic, NFData)
 
 instance Pretty Tok where
