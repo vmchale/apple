@@ -5,8 +5,6 @@
     {-# LANGUAGE StandaloneDeriving #-}
     module L ( alexMonadScan
              , alexInitUserState
-             , runAlex
-             , runAlexSt
              , withAlexSt
              , freshName
              , newIdent
@@ -531,9 +529,6 @@ newIdent pos t pre@(max', ns, us) =
         Just i  -> (pre, Nm t (U i) pos)
         Nothing -> let i = max'+1; nNm = Nm t (U i) pos
                    in ((i, M.insert t i ns, IM.insert i nNm us), nNm)
-
-runAlexSt :: BSL.ByteString -> Alex a -> Either String (AlexUserState, a)
-runAlexSt inp = withAlexSt inp alexInitUserState
 
 withAlexSt :: BSL.ByteString -> AlexUserState -> Alex a -> Either String (AlexUserState, a)
 withAlexSt inp ust (Alex f) = first alex_ust <$> f
