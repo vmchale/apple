@@ -22,6 +22,8 @@ extra-source-files:
     test/harness/*.c
     math/*.🍎
     math/*.🍏
+    math/numbertheory/*.🍎
+    math/numbertheory/*.🍏
     Makefile
     mk/os.mk
     pyc/Makefile

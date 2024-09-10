@@ -10,4 +10,5 @@ for src in $(fd '\.🍎') ; do
 done;
 
 sed -i '' 's/[🍎🍏]/apple/g' test/Spec.cpphs
+sed -i '' 's/[🍎🍏]/apple/g' of/Test.hs
 sed -i '' 's/[🍎🍏]/apple/g' apple.cabal
