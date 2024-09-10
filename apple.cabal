@@ -24,6 +24,8 @@ extra-source-files:
     math/*.🍏
     math/numbertheory/*.🍎
     math/numbertheory/*.🍏
+    math/stats/*.🍎
+    math/stats/*.🍏
     Makefile
     mk/os.mk
     pyc/Makefile
