@@ -8,3 +8,5 @@ Vec 8 [4.0, 4.0, 4.0, 3.0, 3.0, 3.0, 1.0, 1.0]
 Vec 8 [4.0, 4.0, 4.0, 3.0, 3.0, 3.0, 1.0, 1.0]
 - [ ] :qc \xs. (xs˙)'even.⩪xs = even. § xs
 - [ ] \xs.\ys. (∧)/((=)`xs ys)
+- [ ] Jensen-Shannon: H(p+q/2)-(H(p)+H(q))/2
+  - [ ] gte 0 (Hellinger as well)

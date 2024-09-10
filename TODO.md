@@ -64,6 +64,7 @@ T16 = T13.dim[0]
   eor x5, x5, x5                           a5 00 05 ca
   ```
 - [ ] think of a better way to handle functions of tuples (internally)
+  - [ ] `πe` which places in registers?
 - [ ] map-of-gen. idiom
 - [ ] bitmask immediates for `and` on aarch64
 - [ ] Use `Word64` for sets of registers
@@ -156,5 +157,9 @@ o → o → o
 - [ ] https://github.com/profConradi?tab=repositories
 - [ ] `isPrime`
 - [ ] factors : int -> [(int, int)]
+- [ ] https://x.com/cneuralnetwork/status/1831994612426387833
+- [ ] cellular automata
+  - [ ] https://en.wikipedia.org/wiki/Rule_110
+  - [ ] https://en.wikipedia.org/wiki/Rule_30
 # Debug
 - [ ] sanity check negative dims
