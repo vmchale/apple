@@ -22,13 +22,9 @@ type CM = State TR
 maxTLens :: Lens' TR Int
 maxTLens f s = fmap (\x -> s { maxT = x }) (f (maxT s))
 
-boundTVLens :: Lens' TR (IM.IntMap Int)
+boundTVLens, boundShLens, boundIxLens :: Lens' TR (IM.IntMap Int)
 boundTVLens f s = fmap (\x -> s { boundTV = x }) (f (boundTV s))
-
-boundShLens :: Lens' TR (IM.IntMap Int)
 boundShLens f s = fmap (\x -> s { boundSh = x }) (f (boundSh s))
-
-boundIxLens :: Lens' TR (IM.IntMap Int)
 boundIxLens f s = fmap (\x -> s { boundIx = x }) (f (boundIx s))
 
 -- for clone
