@@ -937,7 +937,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     z <- newF2Temp; z0 <- nF; zs <- nF
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    (prologue, et, ~(Just zs)) <- if te tX then pure (id, (FTmp z0), Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    (prologue, et, ~(Just zs)) <- if te tX then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop = for tA i 0 ILt (Tmp m) $ prologue
                   [ MX2 () z (ConstF (0,0)),
                     f2or tX j 0 ILt (Tmp n)
@@ -983,8 +983,8 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     aRd <- nI; bRd <- nI; td <- nI
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
-    z0 <- nF; z <- nF2
-    (prologue, et, ~(Just zs)) <- if te tB then pure (id, (FTmp z0), Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    z <- nF2; z0 <- nF
+    (prologue, et, ~(Just zs)) <- if te tB then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop=for tA i 0 ILt (Tmp m)
                 [forc tB j 0 ILt (Tmp o) $ prologue
                     [ MX2 () z (ConstF (0,0)),
@@ -1731,7 +1731,7 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca
     ss1 <- writeRF op [FT acc, FT x0] (FT acc)
     ss <- write2 op [acc2, x] acc2
     let seedO = case c of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> Fill () acc2 acc; FMin -> Fill () acc2 acc}
-    let loop = f21o tXs i 1 (ILt) (Tmp szR) (MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):ss) (MX () x0 (FAt (AElem xR 1 (Tmp i) lX 8)):ss1)
+    let loop = f21o tXs i 1 ILt (Tmp szR) (MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):ss) (MX () x0 (FAt (AElem xR 1 (Tmp i) lX 8)):ss1)
     pure $ plX$szR=:ev tXs (xR,lX):MX () acc (FAt (AElem xR 1 0 lX 8)):seedO:[loop, Comb () c acc0 acc2, MX () acc (FBin c (FTmp acc) (FTmp acc0))]
   where
     fca (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b) _) _))) | fS b = mFop b; fca _ = Nothing
