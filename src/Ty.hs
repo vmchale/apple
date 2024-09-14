@@ -33,11 +33,7 @@ import           Prettyprinter.Ext
 import           Ty.Clone
 import           U
 
-data TySt a = TySt { maxU      :: !Int
-                   , staEnv    :: IM.IntMap (T ())
-                   , polyEnv   :: IM.IntMap (T ())
-                   , varConstr :: IM.IntMap (C, a)
-                   }
+data TySt a = TySt { maxU :: !Int, staEnv, polyEnv :: IM.IntMap (T ()), varConstr :: IM.IntMap (C, a) }
 
 data Subst a = Subst { tySubst :: IM.IntMap (T a)
                      , iSubst  :: IM.IntMap (I a) -- ^ Index variables
@@ -231,8 +227,8 @@ fsh n = SVar <$> freshN n ()
 
 fc :: T.Text -> a -> C -> TyM a (T ())
 fc n l c = do
-    n <- freshN n l
-    pushVarConstraint n l c $> TVar (void n)
+    nϵ <- freshN n l
+    pushVarConstraint nϵ l c $> TVar (void nϵ)
 
 ftv :: T.Text -> TyM a (T ())
 ftv n = ft n ()
@@ -390,7 +386,7 @@ mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f 
 mgu f l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (mapTySubst (insert n t')) <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
                                        | otherwise = throwError $ UF lϵ e t t'
 mgu f l s t@P{} t'@Ρ{} = mgu f l s t' t
-mgu f l s (Ρ n rs) (Ρ n' rs') = do
+mgu _ l s (Ρ n rs) (Ρ n' rs') = do
     (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep LF l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     let t=Ρ n' (rs<>rs') in pure (t, mapTySubst (insert n t) rss)
 mgu _ (l, e) _ F t@Arr{} = throwError $ UF l e F t
@@ -775,7 +771,7 @@ checkTy I (IsEq, _)           = pure Nothing
 checkTy F (IsEq, _)           = pure Nothing
 checkTy t (c@IsNum, l)        = Left$ Doesn'tSatisfy l t c
 checkTy t (c@HasBits, l)      = Left$ Doesn'tSatisfy l t c
-checkTy (Arr _ t) c@(IsEq, l) = checkTy t c
+checkTy (Arr _ t) c@(IsEq, _) = checkTy t c
 
 substI :: Subst a -> Int -> Maybe (T a)
 substI s@(Subst ts is sh) i =

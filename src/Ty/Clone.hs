@@ -11,11 +11,7 @@ import           Lens.Micro.Mtl             (modifying, use)
 import           Nm
 import           U
 
-data TR = TR { maxT    :: Int
-             , boundTV :: IM.IntMap Int
-             , boundSh :: IM.IntMap Int
-             , boundIx :: IM.IntMap Int
-             }
+data TR = TR { maxT :: Int, boundTV, boundSh, boundIx :: IM.IntMap Int }
 
 type CM = State TR
 
