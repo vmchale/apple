@@ -6,8 +6,7 @@ module R.M ( RM
            , nextU
            ) where
 
-import           Control.Monad.State.Strict (State, get, modify, runState)
-import           Data.Functor               (($>))
+import           Control.Monad.State.Strict (State, runState, state)
 import qualified Data.Text                  as T
 import           Nm
 import           U
@@ -15,7 +14,7 @@ import           U
 type RM = State Int
 
 nextU :: T.Text -> a -> RM (Nm a)
-nextU n l = do {i <- get; modify (+1) $> Nm n (U$i+1) l}
+nextU n l = state (\i -> let j=i+1 in (Nm n (U j) l, j))
 
 nextN :: a -> RM (Nm a)
 nextN = nextU "x"

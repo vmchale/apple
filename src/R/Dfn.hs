@@ -3,16 +3,14 @@
 module R.Dfn ( dedfn ) where
 
 import           A
-import           Control.Monad.State.Strict (get, modify)
+import           Control.Monad.State.Strict (state)
 import qualified Data.Text                  as T
 import           Nm
 import           R.M
 import           U
 
 dummyName :: T.Text -> RM (a -> Nm a)
-dummyName n = do
-    st <- get
-    Nm n (U$st+1) <$ modify (+1)
+dummyName n = state (\i -> let j=i+1 in (Nm n (U j), j))
 
 dedfn :: Int -> E a -> (E a, Int)
 dedfn i = runR i . dedfnM

@@ -21,7 +21,7 @@ data Rs = Rs { max_ :: Int, bound :: IM.IntMap Int }
 class HasRs a where
     rename :: Lens' a Rs
 
-instance HasRs Rs where rename = id
+instance HasRs Rs where rename=id
 
 maxLens :: Lens' Rs Int
 maxLens f s = fmap (\x -> s { max_ = x }) (f (max_ s))
@@ -82,10 +82,8 @@ rE (LLet l (n, eϵ) e) = do
     eϵ' <- rE eϵ
     n' <- freshen n
     LLet l (n', eϵ') <$> rE e
-rE e@Builtin{} = pure e
-rE e@FLit{} = pure e
-rE e@ILit{} = pure e
-rE e@BLit{} = pure e
+rE e@Builtin{} = pure e; rE e@BLit{} = pure e
+rE e@FLit{} = pure e; rE e@ILit{} = pure e
 rE (ALit l es) = ALit l <$> traverse rE es
 rE (Tup l es) = Tup l <$> traverse rE es
 rE (EApp l e e') = EApp l <$> rE e <*> rE e'
