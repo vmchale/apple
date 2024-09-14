@@ -485,7 +485,7 @@ s2 [r]        = [(r, Nothing)]
 s2 []         = []
 
 offs :: [a] -> [Word16]
-offs rs = scanl' (\i _ -> i+16) 0 rs
+offs = scanl' (\i _ -> i+16) 0
 
 rsOffs :: [a] -> ([(a, Maybe a)], [Word16], Word16)
 rsOffs rs = let ixs=offs rs in (s2 rs, ixs, last ixs)
