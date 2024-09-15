@@ -4,6 +4,8 @@
 - ignore: {name: Use const}
 - ignore: {name: Use foldr, within: [C.Trans]}
 
+- fixity: infixr 8 `Cons`
+- fixity: infixr 4 !>
 - fixity: infixr 0 ~>
 - fixity: infixl 4 $>
 - fixity: infix 9 +=
