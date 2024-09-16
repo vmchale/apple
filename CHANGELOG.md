@@ -1,5 +1,8 @@
 # apple
 
+  * Proper type of `frange`
+  * Display integer types with index in REPL
+
 # 0.3.0.0
 
   * Display dimension information in REPL results

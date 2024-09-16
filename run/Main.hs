@@ -140,11 +140,11 @@ appleCompletions ("led:", "")     = pure ("led:", [simpleCompletion "ete"])
 appleCompletions ("eled:", "")    = pure ("eled:", [simpleCompletion "te"])
 appleCompletions ("teled:", "")   = pure ("teled:", [simpleCompletion "e"])
 appleCompletions ("eteled:", "")  = pure ("eteled:", [simpleCompletion ""])
-appleCompletions (" eteled:", "") = do { ns <- namesStr ; pure (" eteled:", cyclicSimple ns) }
-appleCompletions (" yt:", "")     = do { ns <- namesStr ; pure (" yt:", cyclicSimple ns) }
-appleCompletions (" t:", "")      = do { ns <- namesStr ; pure (" t:", cyclicSimple ns) }
+appleCompletions (" eteled:", "") = do {ns <- namesStr; pure (" eteled:", cyclicSimple ns)}
+appleCompletions (" yt:", "")     = do {ns <- namesStr; pure (" yt:", cyclicSimple ns)}
+appleCompletions (" t:", "")      = do {ns <- namesStr; pure (" t:", cyclicSimple ns)}
 appleCompletions ("", "")         = ("",) . cyclicSimple <$> namesStr
-appleCompletions (rp, "")         = do { ns <- namesStr ; pure (unwords ("" : tail (words rp)), cyclicSimple (namePrefix ns rp)) }
+appleCompletions (rp, "")         = do {ns <- namesStr; pure (unwords ("" : tail (words rp)), cyclicSimple (namePrefix ns rp))}
 appleCompletions _                = pure (undefined, [])
 
 namePrefix :: [String] -> String -> [String]
@@ -518,16 +518,16 @@ printExpr s = do
         Left err -> liftIO $ putDoc (pretty err <> hardline)
         Right (eP, i) -> do
             eC <- eRepl eP
-            case first3 (fmap rLi) <$> tyC i eC of
+            case tyC i eC of
                 Left (RErr MR{}) -> liftIO $ case tyClosed i eC of
                     Left e -> putDoc (pretty e <> hardline)
                     Right (e, _, _) ->
                         let t=eAnn e in putDoc (pretty e <+> ":" <+> pretty t <> hardline)
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
-                Right (e, _, i') -> do
+                Right (eLi, _, i') -> do
                     c <- lg mf; a <- lg _arch
                     let efp=case a of {X64 -> eFunP i' c; AArch64 ma -> eAFunP i' (c,ma)}
-                    case eAnn e of
+                    case eAnn (fmap rLi eLi) of
                         I ->
                           liftIO $ do
                               asm@(_, fp, _) <- efp eC -- TODO: i after tyClosed gets discarded?
@@ -545,7 +545,7 @@ printExpr s = do
                                 putStrLn (sB cb)
                                 freeAsm asm
                             where sB 1 = "#t"; sB 0 = "#f"
-                        t@A.Arrow{} -> liftIO $ putDoc (pretty e <+> ":" <+> pretty t <> hardline)
+                        A.Arrow{} -> liftIO $ putDoc (pretty eLi <+> ":" <+> pretty (eAnn eLi) <> hardline)
                         t ->
                             liftIO $ do
                                 asm@(_, fp, _) <- efp eC
