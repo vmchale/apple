@@ -529,7 +529,7 @@ tyB _ HeadM = do
 tyB _ Re = do
     a <- ftv "a"; n <- ftie
     pure (I ~> a ~> Arr (n `Cons` Nil) a, mempty)
-tyB _ FRange = do {n <- ftie; pure (F ~> F ~> I ~> Arr (n `Cons` Nil) F, mempty)}
+tyB _ FRange = do {n <- fti "n"; pure (F ~> F ~> Li n ~> Arr (n `Cons` Nil) F, mempty)}
 tyB _ Fib = do
     n <- ftie; a <- ftv "a"
     let arrTy = Arr (n `Cons` Nil) a
