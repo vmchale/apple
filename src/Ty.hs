@@ -131,6 +131,7 @@ match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
 match t t' = either throw id (maM LF t t')
 
 maM :: Focus -> T a -> T a -> Either (TyE a) (Subst a)
+maM f (Li n) (Li m)                 = mI f m n
 maM _ I I                           = Right mempty
 maM _ F F                           = Right mempty
 maM _ B B                           = Right mempty
@@ -761,10 +762,12 @@ chkE _         = Right ()
 
 checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
 checkTy (TVar n) (c, _)       = pure $ Just(n, c)
+checkTy Li{} (IsNum, _)       = pure Nothing
 checkTy I (IsNum, _)          = pure Nothing
 checkTy F (IsNum, _)          = pure Nothing
 checkTy I (IsOrd, _)          = pure Nothing
 checkTy I (HasBits, _)        = pure Nothing
+checkTy Li{} (HasBits, _)     = pure Nothing
 checkTy B (HasBits, _)        = pure Nothing
 checkTy F (IsOrd, _)          = pure Nothing
 checkTy I (IsEq, _)           = pure Nothing
