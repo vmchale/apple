@@ -1,4 +1,4 @@
-λf.λa.λb.λN. {
+λf.λx₀.λx₁.λN. {
   R ← λa.λb.(a-b)%6*(f a+4*f ((a+b)%2)+f b);
-  (+)/(R\~(frange a b N))
+  (+)/(R\~(frange x₀ x₁ N))
 }
