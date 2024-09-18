@@ -1,0 +1,5 @@
+-- convert rgb image->hsi
+⸎ h ← λr.λg.λb. {h ← acos.((r-g)+(r-b)%(2*√((r-g)^2+(r-b)*(r-g)))); ?b>g,.2*𝜋*h,.h};
+  pix ← (λrgb. {r ⟜rgb->1; g ⟜ rgb->2; b ⟜ rgb->3;(r+g+b%3, 1-3%(r+g+b)*(r⋊g⋊b), 1.0)});
+  λimg. pix`{0} (img :: Arr (i × j) (float * float * float))
+  -- https://en.wikipedia.org/wiki/RGB_color_model#Numeric_representations
