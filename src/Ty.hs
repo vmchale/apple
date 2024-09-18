@@ -410,6 +410,8 @@ mgu _ (l, e) _ I B= throwError $ UF l e I B
 mgu _ (l, e) _ B I = throwError $ UF l e B I
 mgu _ (l, e) _ t@Li{} B = throwError $ UF l e t B
 mgu _ (l, e) _ B t@Li{} = throwError $ UF l e B t
+mgu _ (l, e) _ t@Ρ{} t'@Arr{} = throwError $ UF l e t t'
+mgu _ (l, e) _ t@Arr{} t'@Ρ{} = throwError $ UF l e t t'
 
 zSt _ s [] _           = pure ([], s)
 zSt _ s _ []           = pure ([], s)
