@@ -214,6 +214,7 @@ T :: { T AlexPosn }
   | int { I } | bool { A.B } | float { F }
   | parens(T) { $1 }
   | T arrow T { A.Arrow $1 $3 }
+  | parens(sepBy(T,times)) { P (reverse $1) }
 
 R :: { (Int, Maybe [Int]) }
   : intLit compose lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (fmap (fromInteger.int) $4))) }
