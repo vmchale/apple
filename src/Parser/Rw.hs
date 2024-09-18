@@ -46,6 +46,7 @@ fi IntExp = 8; fi Exp = 8
 fi Times = 7; fi Div = 7; fi Mod = 7
 fi Mul = 7; fi VMul = 7
 fi Plus = 6; fi Minus = 6
+fi Max = 6; fi Min = 6
 fi And = 3; fi Or = 2; fi Xor = 6
 fi Ices = 6; fi Filt=6
 fi Map{} = 5
@@ -60,6 +61,8 @@ lassoc Exp    = False
 lassoc Div    = True
 lassoc Mod    = True
 lassoc Times  = True
+lassoc Max    = True
+lassoc Min    = True
 lassoc Mul    = True
 lassoc Plus   = True
 lassoc Minus  = True
