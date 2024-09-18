@@ -42,6 +42,8 @@ cM ILit{} = Nothing
 cM FLit{} = Nothing
 cM BLit{} = Nothing
 cM Var{} = Nothing
+cM Dfn{} = desugar; cM ResVar{} = desugar; cM Parens{} = desugar
+cM Id{} = error "Internal error."; cM Ann{} = error "Internal error."
 
 mrT :: T a -> Maybe (T a)
 mrT t@TVar{}     = Just t
@@ -89,3 +91,6 @@ dynSh Π{}         = True
 
 foldMapAlternative :: (Traversable t, Alternative f) => (a -> f b) -> t a -> f b
 foldMapAlternative f xs = asum (f <$> xs)
+
+desugar :: a
+desugar = error ("Internal error. Should have been desugared.")
