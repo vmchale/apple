@@ -353,6 +353,7 @@ inspect s = do
                     liftIO $ do
                         asm@(_, fp, _) <- efp eC
                         p <- callFFI fp (retPtr undefined) []
+                        -- TODO: warn when user tries to inspect non-arr
                         TIO.putStrLn =<< dbgAB (eAnn e) p
                         free p *> freeAsm asm
         where bs = ubs s
@@ -570,6 +571,12 @@ mentions (ALit _ es) n        = any (`mentions` n) es
 mentions (A.Lam _ _ e) n      = e `mentions` n
 mentions (Ann _ e _) n        = e `mentions` n
 mentions (Tup _ es) n         = any (`mentions` n) es
+mentions Dfn{} _              = desugar
+mentions ResVar{} _           = desugar
+mentions Parens{} _           = desugar
+mentions Id{} _               = error "Internal error."
+
+desugar = error "Internal error. Should have been desugared."
 
 eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
 eRepl e = do { ees <- lg ee; pure $ foldLet ees e }
