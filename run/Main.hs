@@ -21,7 +21,6 @@ import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
 import           Data.Traversable          (forM)
-import           Data.Tuple.Extra          (first3)
 import           Data.Word                 (Word8)
 import           Dbg
 import           Foreign.LibFFI            (callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
