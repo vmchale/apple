@@ -2,6 +2,8 @@
 
   * Proper type of `frange`
   * Display integer types with index in REPL
+  * Don't crash on some type errors
+  * Allow tuple types in annotations
 
 # 0.3.0.0
 
