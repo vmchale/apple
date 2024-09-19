@@ -19,13 +19,14 @@ import qualified Nm
 import Nm hiding (loc)
 import A
 import L
-import Prettyprinter (Pretty (pretty), (<+>))
+import Prettyprinter (Pretty (pretty), (<+>), concatWith, squotes)
 
 }
 
 %name parseE E
 %tokentype { Tok }
 %error { parseErr }
+%errorhandlertype explist
 %monad { Parse } { (>>=) } { pure }
 %lexer { lift alexMonadScan >>= } { EOF _ }
 
@@ -327,8 +328,8 @@ E :: { E AlexPosn }
 
 {
 
-parseErr :: Tok -> Parse a
-parseErr = throwError . Unexpected
+parseErr :: (Tok, [String]) -> Parse a
+parseErr = throwError . uncurry Unexpected
 
 data Bnd = L | LL | D
 
@@ -338,13 +339,11 @@ mkLet l ((L, b):bs) e   = Let l b (mkLet l bs e)
 mkLet l ((LL, b):bs) e  = LLet l b (mkLet l bs e)
 mkLet l ((D, b):bs) e   = Def l b (mkLet l bs e)
 
-data ParseE = Unexpected Tok
-            | LexErr String
-            deriving (Generic)
+data ParseE = Unexpected Tok [String] | LexErr String deriving (Generic)
 
 instance Pretty ParseE where
-    pretty (Unexpected tok)  = pretty (loc tok) <+> "Unexpected" <+> pretty tok
-    pretty (LexErr str)      = pretty (T.pack str)
+    pretty (Unexpected tok valid) = pretty (loc tok) <+> "Unexpected" <+> pretty tok <> "." <+> "Expected one of" <+> concatWith (\x y -> x <> "," <+> y) (squotes.pretty<$>valid)
+    pretty (LexErr str)           = pretty (T.pack str)
 
 instance Show ParseE where
     show = show . pretty
