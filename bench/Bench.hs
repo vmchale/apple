@@ -105,7 +105,7 @@ main = do
                       ]
                 , bgroup "entropy"
                       [ bench "hs" $ nf hsEntropy xs
-                      , bench "jit" $ nfIO $ (pure $ entropyFp xsPtr)
+                      , bench "jit" $ nfIO (pure $ entropyFp xsPtr)
                       ]
                 , bgroup "k-l"
                       [ bench "hs" $ nf (kl xs) ys
@@ -153,7 +153,7 @@ main = do
                   bgroup "elliptic"
                       [ bench "A" $ nfIO (withForeignPtr p0 $ \p0Ptr -> withForeignPtr p1 $ \p1Ptr -> pure $ ᴀFp p0Ptr p1Ptr) ]
                 , env xorEnv $ \ ~(wh, wo, bh) ->
-                  bgroup "xor" $
+                  bgroup "xor"
                       [ bench "train" $ nfIO $
                           withForeignPtr wh $ \whPtr ->
                           withForeignPtr wo $ \woPtr ->

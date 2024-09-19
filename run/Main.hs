@@ -181,7 +181,7 @@ loop = do
         Nothing                -> pure ()
 
 del :: String -> Repl AlexPosn ()
-del s = lift $ modify (mE (filter (\((Nm n _ _),_) -> n /= st))) where st=T.pack s
+del s = lift $ modify (mE (filter (\(Nm n _ _, _) -> n /= st))) where st=T.pack s
 
 listCtx :: Repl AlexPosn ()
 listCtx = do {bs <- lg ee; liftIO $ putDoc (prettyLines (pretty.fst<$>bs)<>hardline)}

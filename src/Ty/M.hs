@@ -93,4 +93,4 @@ foldMapAlternative :: (Traversable t, Alternative f) => (a -> f b) -> t a -> f b
 foldMapAlternative f xs = asum (f <$> xs)
 
 desugar :: a
-desugar = error ("Internal error. Should have been desugared.")
+desugar = error "Internal error. Should have been desugared."
