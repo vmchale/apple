@@ -5,6 +5,7 @@
                   , ParseE (..)
                   ) where
 
+import Control.Composition (thread)
 import Control.Exception (Exception)
 import Control.Monad.Except (ExceptT, runExceptT, throwError)
 import Control.Monad.Trans.Class (lift)
@@ -166,7 +167,7 @@ import Prettyprinter (Pretty (pretty), (<+>), concatWith, squotes)
     odd { TokB $$ BuiltinOdd }
     abs { TokB $$ BuiltinAbs }
 
-%left paren
+%right semicolon
 %nonassoc leq geq gt lt neq eq
 
 %%
@@ -179,9 +180,15 @@ sepBy(p,q)
     : sepBy(p,q) q p { $3 : $1 }
     | p { [$1] }
 
-tupled(p,q)
-    : tupled(p,q) q p { $3 : $1 }
+tupBody(p,q)
+    : tupBody(p,q) q p { $3 : $1 }
     | p q p { $3 : [$1] }
+
+tupBy(p,q)
+    : lparen tupBody(p,q) rparen { ($1, $2) }
+
+tupled(p)
+    : tupBy(p,comma) { $1 }
 
 braces(p)
     : lbrace p rbrace { $2 }
@@ -205,7 +212,7 @@ Sh :: { Sh AlexPosn }
    | I cons Sh { A.Cons $1 $3 }
    | name { SVar $1 }
    | parens(Sh) { $1 }
-   | parens(sepBy(I, ixTimes)) { foldl (flip A.Cons) Nil $1 }
+   | tupBy(I,ixTimes) { foldl (flip A.Cons) Nil (snd $1) }
 
 T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }
@@ -215,7 +222,7 @@ T :: { T AlexPosn }
   | int { I } | bool { A.B } | float { F }
   | parens(T) { $1 }
   | T arrow T { A.Arrow $1 $3 }
-  | parens(sepBy(T,times)) { P (reverse $1) }
+  | tupled(T) { P (reverse (snd $1)) }
 
 R :: { (Int, Maybe [Int]) }
   : intLit compose lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (fmap (fromInteger.int) $4))) }
@@ -273,12 +280,13 @@ E :: { E AlexPosn }
   | parens(inv) { EApp $1 (Builtin $1 Div) (FLit $1 1) }
   | parens(BBin) { $1 }
   | lparen E BBin rparen { Parens $1 (EApp $1 $3 $2) }
-  | lparen BBin E rparen {% do { n <- lift $ freshName "x" ; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Nm.loc n) n)) $3)) } }
+  | lparen BBin E rparen {% do { n <- lift $ freshName "x"; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Nm.loc n) n)) $3)) } }
   | E BBin E { EApp (eAnn $1) (EApp (eAnn $3) $2 $1) $3 }
   | parens(E) { Parens (eAnn $1) $1 }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
-  | lparen tupled(E,comma) rparen { Tup $1 (reverse $2) }
   | lam name dot E { A.Lam $1 $2 $4 }
+  | lam tupled(name) dot E {% bindΠ $1 (reverse (snd $2)) $4 }
+  | tupled(E) { Tup (fst $1) (reverse (snd $1)) }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
   | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
   | lsqbracket E rsqbracket { Dfn $1 $2 }
@@ -332,6 +340,17 @@ parseErr :: (Tok, [String]) -> Parse a
 parseErr = throwError . uncurry Unexpected
 
 data Bnd = L | LL | D
+
+infixl 8 ~>
+
+(~>) :: E a -> Int -> E a
+(~>) e i = let l=eAnn e in EApp l e (Builtin l (TAt i))
+
+bindΠ :: AlexPosn -> [(Nm AlexPosn)] -> E AlexPosn -> Parse (E AlexPosn)
+bindΠ l ns e = do
+    ρ <- lift $ freshName "ρ"
+    let bΡs = thread (zipWith (\n i -> let lϵϵ=Nm.loc n in (LLet lϵϵ (n, EApp lϵϵ (Builtin lϵϵ (TAt i)) (Var lϵϵ ρ)))) ns [1..])
+    pure $ A.Lam l ρ (bΡs e)
 
 mkLet :: a -> [(Bnd, (Nm a, E a))] -> E a -> E a
 mkLet _ [] e            = e

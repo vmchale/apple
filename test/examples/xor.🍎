@@ -12,9 +12,8 @@
     ; (ho,prediction)
     };
   -- wh: 2x2 wo: 2 bh: 2 bo: (scalar)
-  train ← λinp.
-    { wh ← inp->1; wo ← inp->2; bh ← inp->3; bo ← inp->4
-    ; o ← forward wh wo bh bo
+  train ← λ(wh,wo,bh,bo).
+    { o ← forward wh wo bh bo
     ; ho ⟜ o->1; prediction ⟜ o->2
     ; l1E ← (-)`prediction Y
     ; l1Δ ← (*)`(sDdx'prediction) l1E -- 4
