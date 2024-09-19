@@ -4,7 +4,7 @@ haddock-internal: True
 
 program-options
   alex-options: -g
-  happy-options: -gcsa
+  happy-options: -cs
 
 package apple
   ghc-options: -j +RTS -A32m
