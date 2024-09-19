@@ -1,6 +1,7 @@
 include mk/os.mk
 
 MAKEFLAGS += -j
+.DELETE_ON_ERROR:
 
 HC ?= ghc
 
@@ -55,3 +56,8 @@ fmt:
 
 fix:
 	fd '\.(cpphs|hs|x|y|hsc)$$' $$(ja -F'\s*:\s*' '{%/hs-source-dirs/}{`2}' -i apple.cabal) -x ja "{%/^\s*infix(r|l)?\s+\d+/}{sprintf '- fixity: %s' \`0}}" -i | ja '~.$$0'
+
+tags: $(HS_SRC)
+	rm -f tags
+	ghc-tags --ctags
+	ctags --append=yes --languages=ALEX,HAPPY -R src
