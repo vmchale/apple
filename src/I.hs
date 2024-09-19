@@ -33,7 +33,7 @@ inline i = runI i.iM
 β i = runI i.bM
 
 hRi :: Idiom -> Bool
-hRi (AShLit _ es) = any hR es
+hRi (AShLit _ es) = any hR es; hRi _ = error "Internal error."
 
 hR :: E a -> Bool
 hR (EApp _ (EApp _ (Builtin _ R) _) _) = True
@@ -51,6 +51,10 @@ hR (Def _ (_, e') e)                   = hR e'||hR e
 hR (LLet _ (_, e') e)                  = hR e'||hR e
 hR Var{}                               = False
 hR (Id _ i)                            = hRi i
+hR Dfn{}                               = desugar
+hR ResVar{}                            = desugar
+hR Parens{}                            = desugar
+hR Ann{}                               = error "Internal error."
 
 -- assumes globally renamed already
 -- | Inlining is easy because we don't have recursion
@@ -80,6 +84,7 @@ iM e@(Var t (Nm _ (U i) _)) = do
     case IM.lookup i st of
         Just e' -> do {er <- rE e'; pure $ fmap (rwArr.aT (match (eAnn er) t)) er}
         Nothing -> pure e
+iM Dfn{}=desugar; iM ResVar{}=desugar; iM Parens{}=desugar; iM Ann{}=error "Internal error."
 
 -- beta reduction
 bM :: E (T ()) -> M (T ()) (E (T ()))
@@ -114,9 +119,13 @@ bM (LLet l (n, e') e) = do
     eB <- bM e
     pure $ LLet l (n, e'B) eB
 bM (Id l idm) = Id l <$> bid idm
+bM Dfn{}=desugar; bM ResVar{}=desugar; bM Parens{}=desugar; bM Ann{} = error "Internal error."
 
 bid :: Idiom -> M (T ()) Idiom
 bid (FoldSOfZip seed op es) = FoldSOfZip <$> bM seed <*> bM op <*> traverse bM es
 bid (FoldOfZip zop op es)   = FoldOfZip <$> bM zop <*> bM op <*> traverse bM es
 bid (AShLit ds es)          = AShLit ds <$> traverse bM es
 bid (FoldGen seed f g n)    = FoldGen <$> bM seed <*> bM f <*> bM g <*> bM n
+
+desugar :: a
+desugar = error "Internal error. Should have been desugared."
