@@ -63,19 +63,21 @@ instance Monoid (Subst a) where
 
 instance NFData a => NFData (TyE a) where
 
+located l p = pretty l <> ":" <+> p
+
 instance Pretty a => Pretty (TyE a) where
-    pretty (IllScoped l n)         = pretty l <> ":" <+> squotes (pretty n) <+> "is not in scope."
-    pretty (UF l e ty ty')         = pretty l <> ":" <+> "could not unify" <+> squotes (pretty ty) <+> "with" <+> squotes (pretty ty') <+> "in expression" <+> squotes (pretty e)
-    pretty (USh l sh sh')          = pretty l <> ":" <+> "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
-    pretty (UI l ix ix')           = pretty l <> ":" <+> "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
-    pretty (OT l ty ty')           = pretty l <> ":" <+> "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
-    pretty (OI l i j)              = pretty l <> ":" <+> "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
-    pretty (OSh l s0 s1)           = pretty l <> ":" <+> "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
+    pretty (IllScoped l n)         = located l$ squotes (pretty n) <+> "is not in scope."
+    pretty (UF l e ty ty')         = located l$ "could not unify" <+> squotes (pretty ty) <+> "with" <+> squotes (pretty ty') <+> "in expression" <+> squotes (pretty e)
+    pretty (USh l sh sh')          = located l$ "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
+    pretty (UI l ix ix')           = located l$ "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
+    pretty (OT l ty ty')           = located l$ "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
+    pretty (OI l i j)              = located l$ "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
+    pretty (OSh l s0 s1)           = located l$ "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
     pretty (ExistentialArg ty)     = "Existential occurs as an argument in" <+> squotes (pretty ty)
     pretty (MatchFailed t t')      = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
     pretty (MatchShFailed sh sh')  = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
     pretty (MatchIFailed i i')     = "Failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
-    pretty (Doesn'tSatisfy l ty c) = pretty l <+> squotes (pretty ty) <+> "is not a member of class" <+> pretty c
+    pretty (Doesn'tSatisfy l ty c) = located l$ squotes (pretty ty) <+> "is not a member of class" <+> pretty c
 
 instance (Pretty a) => Show (TyE a) where
     show = show . pretty
