@@ -13,7 +13,6 @@
   - [ ] https://en.wikipedia.org/wiki/Guillemet#Encoding
   - [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
   - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
-  - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
   - [x] dfns like k, APL (J)
 - [ ] mapMaybe hm
 - [ ] numpy einstein summation
@@ -158,6 +157,8 @@ o → o → o
 - [ ] `isPrime`
 - [ ] factors : int -> [(int, int)]
 - [ ] https://x.com/cneuralnetwork/status/1831994612426387833
+- [ ] https://www.infinitepartitions.com/art001.html
+- [ ] multivariate adaptive regression spline
 - [ ] cellular automata
   - [ ] https://en.wikipedia.org/wiki/Rule_110
   - [ ] https://en.wikipedia.org/wiki/Rule_30
