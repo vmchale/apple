@@ -19,6 +19,7 @@ import           Control.Monad.State.Strict (StateT (runStateT), gets, modify, s
 import           Data.Bifunctor             (first, second)
 import           Data.Containers.ListUtils  (nubOrd)
 import           Data.Foldable              (traverse_)
+import           Data.Function              (on)
 import           Data.Functor               (void, ($>))
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
@@ -250,10 +251,7 @@ data Focus = LF | RF
 instance Pretty Focus where pretty LF="⦠"; pretty RF="∢"
 
 mguIPrep :: Focus -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
-mguIPrep f is i0 i1 =
-    let i0' = is !> i0
-        i1' = is !> i1
-    in mguI f is (rwI i0') (rwI i1')
+mguIPrep f is = mguI f is `on` rwI.(is!>)
 
 mguI :: Focus -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
 mguI _ inp i0@(Ix _ i) (Ix _ j) | i == j = pure (i0, inp)
@@ -289,10 +287,7 @@ mguI _ _ i0@(StaPlus l _ _) i1@IEVar{} = throwError $ UI l i0 i1
 mguI _ _ i0 i1 = error (show (i0,i1))
 
 mgShPrep :: Focus -> a -> Subst a -> Sh a -> Sh a -> UM a (Sh a, Subst a)
-mgShPrep f l s sh0 sh1 =
-    let sh0' = shSubst s sh0
-        sh1' = shSubst s sh1
-    in mgSh f l s (rwSh sh0') (rwSh sh1')
+mgShPrep f l s = mgSh f l s `on` shSubst s.rwSh
 
 mgSh :: Focus -> a -> Subst a -> Sh a -> Sh a -> UM a (Sh a, Subst a)
 mgSh _ _ inp Nil Nil = pure (Nil, inp)
