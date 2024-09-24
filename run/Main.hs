@@ -521,8 +521,8 @@ printExpr s = do
             case tyC i eC of
                 Left (RErr MR{}) -> liftIO $ case tyClosed i eC of
                     Left e -> putDoc (pretty e <> hardline)
-                    Right (e, _, _) ->
-                        let t=eAnn e in putDoc (pretty e <+> ":" <+> pretty t <> hardline)
+                    Right (e, c, _) ->
+                        let t=eAnn e in putDoc (pretty e <+> ":" <+> prettyC (t, c) <> hardline)
                 Left err -> liftIO $ putDoc (pretty err <> hardline)
                 Right (eLi, _, i') -> do
                     c <- lg mf; a <- lg _arch
