@@ -5,6 +5,7 @@
   * Don't crash on some type errors
   * Allow tuple types in annotations
   * Parsing infix expressions of min/max will no longer crash
+  * REPL shows constraints in types
 
 # 0.3.0.0
 
