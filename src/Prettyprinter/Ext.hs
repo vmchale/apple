@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Prettyprinter.Ext ( (<#>), (<?>), (<^>)
+module Prettyprinter.Ext ( (<#>), (<?>)
                          , PS (..)
                          , parensp
                          , prettyLines
@@ -22,12 +22,10 @@ import           Prettyprinter.Render.Text (renderStrict)
 
 infixr 6 <#>
 infixr 5 <?>
-infixr 5 <^>
 
-(<#>), (<?>), (<^>) :: Doc a -> Doc a -> Doc a
+(<#>), (<?>) :: Doc a -> Doc a -> Doc a
 (<#>) x y = x <> hardline <> y
 (<?>) x y = x <> softline' <> y
-(<^>) x y = x <> softline <> y
 
 class PS a where ps :: Int -> a -> Doc ann
 
