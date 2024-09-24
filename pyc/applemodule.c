@@ -191,7 +191,7 @@ static PyMethodDef AppleMethods[] = {
     {"f", apple_f, METH_VARARGS, "Run a JIT-compiled function"},
     {"jit", apple_jit, METH_VARARGS, "JIT a function"},
     {"typeof", apple_typeof, METH_VARARGS, "Display type of expression"},
-    {"asm", apple_asm, METH_VARARGS, "Dump x86 assembly"},
+    {"asm", apple_asm, METH_VARARGS, "Dump assembly"},
     {"ir", apple_ir, METH_VARARGS, "Dump IR (debug)"},
     {NULL,NULL,0,NULL}
 };
