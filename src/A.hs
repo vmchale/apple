@@ -18,11 +18,12 @@ module A ( T (..)
          ) where
 
 import           Control.DeepSeq   (NFData)
+import           Data.Bifunctor    (first)
 import qualified Data.IntMap       as IM
 import           GHC.Generics      (Generic)
 import           Nm
-import           Prettyprinter     (Doc, Pretty (..), braces, brackets, colon, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace, rbracket,
-                                    tupled, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, encloseSep, flatAlt, group, hsep, indent, lbrace, lbracket, parens, pipe, punctuate,
+                                    rbrace, rbracket, tupled, (<+>))
 import           Prettyprinter.Ext
 
 instance Pretty (I a) where pretty=ps 0
@@ -325,6 +326,20 @@ isBinOp Sr     = True
 isBinOp Sl     = True
 isBinOp _      = False
 
+data B = L | D | Λ
+
+unbind :: E a -> ([(B, Nm a, E a)], E a)
+unbind (Let _ (n,e) e')  = first ((L,n,e):) $ unbind e'
+unbind (LLet _ (n,e) e') = first ((Λ,n,e):) $ unbind e'
+unbind (Def _ (n,e) e')  = first ((D,n,e):) $ unbind e'
+unbind e                 = ([], e)
+
+pBs :: [(B, Nm a, E a)] -> E a -> Doc ann
+pBs [] e            = pretty e
+pBs ((b,n,e):bs) e' = pretty n <+> pArr b <+> pretty e <?> ";" <+> pBs bs e' where pArr L="←"; pArr D="⟜"; pArr Λ="⟜"
+
+pB=align.braces.uncurry pBs.unbind
+
 instance Pretty (E a) where pretty=ps 0
 
 instance PS (E a) where
@@ -355,9 +370,9 @@ instance PS (E a) where
     ps _ (Dfn _ e)                                                = brackets (pretty e)
     ps _ (ResVar _ x)                                             = pretty x
     ps _ (Parens _ e)                                             = parens (pretty e)
-    ps _ (Let _ (n, e) e')                                        = braces (pretty n <+> "←" <+> pretty e <> ";" <+> pretty e')
-    ps _ (Def _ (n, e) e')                                        = braces (pretty n <+> "⇐" <+> pretty e <> ";" <+> pretty e')
-    ps _ (LLet _ (n, e) e')                                       = braces (pretty n <+> "⟜" <+> pretty e <> ";" <+> pretty e')
+    ps _ e@Let{}                                                  = pB e
+    ps _ e@Def{}                                                  = pB e
+    ps _ e@LLet{}                                                 = pB e
     ps _ (Id _ idm)                                               = pretty idm
     ps _ (Tup _ es)                                               = tupled (pretty <$> es)
     ps _ (ALit _ es)                                              = tupledArr (pretty <$> es)

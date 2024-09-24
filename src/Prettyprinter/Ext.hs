@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Prettyprinter.Ext ( (<#>)
+module Prettyprinter.Ext ( (<#>), (<?>), (<^>)
                          , PS (..)
                          , parensp
                          , prettyLines
@@ -17,15 +17,19 @@ import qualified Data.Text                 as T
 import           Data.Word                 (Word64)
 import           Numeric                   (showHex)
 import           Prettyprinter             (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
-                                            layoutSmart, parens, vsep, (<+>))
+                                            layoutSmart, parens, softline, softline', vsep, (<+>))
 import           Prettyprinter.Render.Text (renderStrict)
 
 infixr 6 <#>
-(<#>) :: Doc a -> Doc a -> Doc a
-(<#>) x y = x <> hardline <> y
+infixr 5 <?>
+infixr 5 <^>
 
-class PS a where
-    ps :: Int -> a -> Doc ann
+(<#>), (<?>), (<^>) :: Doc a -> Doc a -> Doc a
+(<#>) x y = x <> hardline <> y
+(<?>) x y = x <> softline' <> y
+(<^>) x y = x <> softline <> y
+
+class PS a where ps :: Int -> a -> Doc ann
 
 parensp True=parens; parensp False=id
 
