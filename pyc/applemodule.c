@@ -182,6 +182,7 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
         C FA: r=npy_f(*(U*)ret);BR
         C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
         C I_t: r=PyLong_FromLongLong(*(J*)ret);BR
+        C B_t: r=PyBool_FromLong(*(long*)ret);BR
     }
     R r;
 };
