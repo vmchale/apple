@@ -17,7 +17,7 @@ import qualified Data.Text                 as T
 import           Data.Word                 (Word64)
 import           Numeric                   (showHex)
 import           Prettyprinter             (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
-                                            layoutSmart, parens, softline, softline', vsep, (<+>))
+                                            layoutSmart, parens, softline', vsep, (<+>))
 import           Prettyprinter.Render.Text (renderStrict)
 
 infixr 6 <#>

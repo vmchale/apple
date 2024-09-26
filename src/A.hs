@@ -22,8 +22,8 @@ import           Data.Bifunctor    (first)
 import qualified Data.IntMap       as IM
 import           GHC.Generics      (Generic)
 import           Nm
-import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, encloseSep, flatAlt, group, hsep, indent, lbrace, lbracket, parens, pipe, punctuate,
-                                    rbrace, rbracket, tupled, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace,
+                                    rbracket, tupled, (<+>))
 import           Prettyprinter.Ext
 
 instance Pretty (I a) where pretty=ps 0
