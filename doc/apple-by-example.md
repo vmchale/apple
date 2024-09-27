@@ -556,6 +556,14 @@ Note the `⟜` to prevent expressions from being inlined.
 λp.λq. (+)/([x*_.(x%y)]`p q)
 ```
 
+## Numerically Stable Geometric Mean
+
+```
+λxs. 
+  ⸎ avg ← [{n ⟜ ℝ(:xs); ((+)/xs)%n}]
+  ; e:(avg (_.'xs))
+```
+
 ## Train Neural Network
 
 ```
