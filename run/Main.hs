@@ -13,7 +13,7 @@ import qualified Data.ByteString.Lazy      as BSL
 import           Data.Foldable             (traverse_)
 import           Data.Functor              ((<&>))
 import           Data.Int                  (Int64)
-import           Data.List
+import           Data.List                 (isPrefixOf, scanl')
 import           Data.List.Split           (chunksOf)
 import           Data.Maybe                (catMaybes)
 import qualified Data.Text                 as T
