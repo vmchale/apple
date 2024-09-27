@@ -146,3 +146,30 @@ Enter `:help` in REPL:
 :ty            <expression>  Display the type of an expression
 ...
 ```
+
+### Python Module
+
+To display module documentation:
+
+```python
+>>> import apple
+>>> help(apple)
+```
+
+```
+FUNCTIONS
+    asm(...)
+        Dump assembly
+
+    f(...)
+        Run a JIT-compiled function
+
+    ir(...)
+        Dump IR (debug)
+
+    jit(...)
+        JIT a function
+
+    typeof(...)
+        Display type of expression
+```
