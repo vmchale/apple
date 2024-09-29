@@ -696,8 +696,8 @@ aeval e t | Just (f, xss) <- r00 e, all isF (unroll$eAnn f), tXs@(Arr sh _) <- e
     args <- traverse (\_ -> nF2) xss; ret <- nF2
     ss1 <- writeRF f [FT arg | arg <- reverse arg1s] (FT ret1)
     ss <- write2 f (reverse args) ret
-    let m1s = zipWith3 (\arg1 xRd lX -> MX () arg1 (FAt (Raw xRd (Tmp i) lX 8))) arg1s xRds lXs; wr1 = WrF () (Raw tD (Tmp i) (Just a) 8) (FTmp ret1)
-        ms = zipWith3 (\arg xRd lX -> MX2 () arg (FAt (Raw xRd (Tmp i) lX 8))) args xRds lXs; wr = Wr2F () (Raw tD (Tmp i) (Just a) 8) (FTmp ret)
+    let m1s = zipWith3 (\arg1 xRd lXϵ -> MX () arg1 (FAt (Raw xRd (Tmp i) lXϵ 8))) arg1s xRds lXs; wr1 = WrF () (Raw tD (Tmp i) (Just a) 8) (FTmp ret1)
+        ms = zipWith3 (\argϵ xRd lXϵ -> MX2 () argϵ (FAt (Raw xRd (Tmp i) lXϵ 8))) args xRds lXs; wr = Wr2F () (Raw tD (Tmp i) (Just a) 8) (FTmp ret)
         step1=m1s++ss1++[wr1]
         step=ms++ss++[wr]
         loop=f2or tXs i 0 ILt (Tmp szR) step step1
