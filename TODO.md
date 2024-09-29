@@ -21,6 +21,7 @@
   - [ ] quickcheck!
   - [ ] automatic differentiation (pytorch eh)
 # Features
+- [ ] https://hackage.haskell.org/package/containers-0.7/docs/Data-Sequence.html#v:cycleTaking (cycle til')
 - [ ] Use `arc4random_buf` and also `arc4random_uniform`, `random`, `drand48`
 - [ ] special case for `𝔯 0 1 :: float` etc.
 - [ ] `𝔯 0 1 :: Arr sh int` special case, apply bitmask over array?
@@ -38,12 +39,13 @@
 - [ ] fold-along-diagonal for poly mult. https://code.jsoftware.com/wiki/Vocabulary/slashdot
 ## Syntax
 - [ ] https://en.wiktionary.org/wiki/Appendix:APL
-- [ ] `Mᵢⱼ` should parse as `Arr (i `Cons` j `Cons` Nil)` maybe? (subscript
+- [x] `Mᵢⱼ` should parse as `Arr (i `Cons` j `Cons` Nil)` maybe? (subscript
   unicode block)
 - [x] more laconic syntax for type signatures (no Arr... Cons) (`Vec`) (`M` for matrix)
 - [x] `zipWith` builtin (2-ary)
   - [x] rename ` because it's only used as `2 1 anyway
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
+- [ ] https://en.wikipedia.org/wiki/Arabic_script_in_Unicode#Punctuation_and_ornaments
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
 - [ ] https://www.compart.com/en/unicode/U+1D66
   - [ ] Ϟ (koppa), Ϡ (sampi)
@@ -159,6 +161,7 @@ o → o → o
 - [ ] https://x.com/cneuralnetwork/status/1831994612426387833
 - [ ] https://www.infinitepartitions.com/art001.html
 - [ ] multivariate adaptive regression spline
+- [ ] https://github.com/rougier/scientific-visualization-book
 - [ ] cellular automata
   - [ ] https://en.wikipedia.org/wiki/Rule_110
   - [ ] https://en.wikipedia.org/wiki/Rule_30
