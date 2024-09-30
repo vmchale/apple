@@ -559,7 +559,7 @@ Note the `⟜` to prevent expressions from being inlined.
 ## Numerically Stable Geometric Mean
 
 ```
-λxs. 
+λxs.
   ⸎ avg ← [{n ⟜ ℝ(:xs); ((+)/xs)%n}]
   ; e:(avg (_.'xs))
 ```
