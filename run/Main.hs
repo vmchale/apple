@@ -330,7 +330,7 @@ freeAsm (sz, fp, mp) = freeFunPtr sz fp -- *> traverse_ free mp
 
 
 dbgAB :: T b -> U a -> IO T.Text
-dbgAB (Arr _ t) p = do
+dbgAB t p = do
     rnk <- peek (castPtr p :: Ptr Int64)
     dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)
     let sz = fromIntegral (8+8*rnk+rSz t*product dims)
@@ -353,9 +353,10 @@ inspect s = do
                     liftIO $ do
                         asm@(_, fp, _) <- efp eC
                         p <- callFFI fp (retPtr undefined) []
-                        -- TODO: warn when user tries to inspect non-arr
-                        TIO.putStrLn =<< dbgAB (eAnn e) p
-                        free p *> freeAsm asm
+                        case eAnn e of
+                            (Arr _ t) -> do TIO.putStrLn =<< dbgAB t p
+                                            free p *> freeAsm asm
+                            _ -> pErr ("only arrays can be inspected." :: T.Text)
         where bs = ubs s
 
 iCtx :: String -> String -> Repl AlexPosn ()

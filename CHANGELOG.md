@@ -6,6 +6,7 @@
   * Allow tuple types in annotations
   * Parsing infix expressions of min/max will no longer crash
   * REPL shows constraints in types
+  * Don't crash when on `:inspect`ing a scalar
 
 # 0.3.0.0
 
