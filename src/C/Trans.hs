@@ -932,7 +932,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
   where
     tA=eAnn a; tX=eAnn x
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
-    i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; z <- nF2
+    i <- nI; j <- nI; m <- nI; n <- nI
     aRd <- nI; xRd <- nI; td <- nI
     z <- newF2Temp; z0 <- nF; zs <- nF
     (aL,aV) <- v8 t (Tmp m)
