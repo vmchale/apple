@@ -419,7 +419,6 @@ qc s = do
 
   where bs = ubs s
         cb 0=False; cb 1=True
-        catArrs (ArrD p:vs) = p:catArrs vs; catArrs [] = []; catArrs (_:vs) = catArrs vs
 
 benchE :: String -> Repl AlexPosn ()
 benchE s = do
