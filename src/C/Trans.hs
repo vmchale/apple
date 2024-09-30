@@ -1696,6 +1696,7 @@ m'pop = maybe [] ((:[]).Pop ())
 m'sa :: Temp -> Maybe CE -> [CS ()]
 m'sa t = maybe []  ((:[]).Sa () t)
 
+-- TODO: allow this to target multiple registers
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe CE, [AL], [CS ()]) -- element offsets, size to be popped off the stack, array labels kept live
 πe (EApp (P tys) (Builtin _ Head) xs) t | offs <- szT tys, sz <- last offs, szE <- ConstI sz = do
     xR <- newITemp
