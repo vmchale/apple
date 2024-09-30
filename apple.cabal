@@ -189,6 +189,7 @@ foreign-library apple
     ghc-options:
         -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
         -Wredundant-constraints -Wmissing-export-lists
+        -Wno-missing-signatures
 
     build-depends:
         base,
