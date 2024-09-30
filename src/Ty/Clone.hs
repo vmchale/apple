@@ -56,11 +56,13 @@ cloneT u = (\(t, TR uϵ tvs _ _) -> (uϵ,t,tvs)).flip runState (TR u IM.empty IM
     cloneSh (SVar n)      = SVar <$> tryReplaceInT boundShLens n
     cloneSh (Rev sh)      = Rev <$> cloneSh sh
     cloneSh (Cat sh0 sh1) = Cat <$> cloneSh sh0 <*> cloneSh sh1
+    cloneSh (Π sh)        = Π <$> cloneSh sh
 
     cT :: T a -> CM (T a)
     cT F            = pure F
     cT I            = pure I
     cT B            = pure B
+    cT (Li ix)      = Li <$> cloneIx ix
     cT (Arrow t t') = Arrow <$> cT t <*> cT t'
     cT (Arr sh t)   = Arr <$> cloneSh sh <*> cT t
     cT (TVar n)     = TVar <$> tryReplaceInT boundTVLens n
