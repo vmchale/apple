@@ -12,6 +12,7 @@ typedef void* U;typedef PyObject* PO;typedef PyArrayObject* NPA;typedef size_t S
 #define C case
 #define BR break;
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
+#define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError, msg);free(msg);R NULL;};}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
 U f_npy(const NPA o) {
@@ -80,10 +81,7 @@ static PyObject* apple_typeof(PyObject* self, PyObject *args) {
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p = &err;
     char* res = apple_printty(inp,err_p);
-    if (res == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, err);
-        free(err);R NULL;
-    }
+    ERR(res,err);
     PyObject* pyres = PyUnicode_FromString(res);
     free(res); R pyres;
 }
@@ -93,10 +91,7 @@ static PyObject* apple_asm(PyObject* self, PyObject *args) {
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p = &err;
     char* res = apple_dumpasm(inp,err_p);
-    if (res == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, err);
-        free(err);R NULL;
-    }
+    ERR(res,err);
     PyObject* pyres = PyUnicode_FromString(res);
     free(res); R pyres;
 }
@@ -106,10 +101,7 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p = &err;
     char* res = apple_dumpir(inp,err_p);
-    if (res == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, err);
-        free(err);R NULL;
-    }
+    ERR(res,err);
     PyObject* pyres = PyUnicode_FromString(res);
     free(res); R pyres;
 }
@@ -140,10 +132,7 @@ static PyObject* apple_jit(PyObject *self, PyObject *args) {
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p=&err;
     FnTy* ty=apple_ty(inp,err_p);
-    if(ty == NULL){
-        PyErr_SetString(PyExc_RuntimeError, err);
-        free(err);R NULL;
-    };
+    ERR(ty,err);
     U fp;S f_sz;U s;
     fp=apple_compile(&sys,inp,&f_sz,&s);
     Cache* cc=PyObject_New(Cache, &CacheType);
