@@ -13,7 +13,6 @@
 // For getting and setting values in the array, use array->data[index] directly.
 //
 // JanetArray *janet_getarray(const Janet *argv, int32_t n);
-// const char *janet_getcstring(const Janet *argv, int32_t n);
 // int janet_getboolean(const Janet *argv, int32_t n);
 
 typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;
@@ -86,6 +85,8 @@ static Janet tyof_j(int32_t argc, Janet *argv) {
     R janet_cstringv(o);
 }
 
+static const JC jc={(P)&malloc,(P)&free,(P)&lrand48,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
+
 static Janet jit(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
@@ -97,8 +98,7 @@ static Janet jit(int32_t argc, Janet *argv) {
         free(err);R NIL;
     };
     U fp;S f_sz;U s;
-    JC jc={(P)&malloc,(P)&free,(P)&lrand48,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
-    fp=apple_compile(&jc,inp,&f_sz,&s);
+    fp=apple_compile(&sys,inp,&f_sz,&s);
     Cache* j=galloc_jit();
     ffi_cif* ffi=apple_ffi(ty);
     j->bc=fp;j->c_sz=f_sz;j->ty=ty;j->sa=s;j->ffi=ffi;
