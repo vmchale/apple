@@ -3,7 +3,6 @@ typedef intptr_t P;
 
 // exp, log, pow can be NULL on X86
 typedef struct JC {P ma; P free;P r;P xr;P e;P log;P pow;} JC;
-static const JC sys={(P)&malloc,(P)&free,(P)&lrand48,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
 
 void* apple_compile(const JC*,const char*,size_t*,void**);
 
