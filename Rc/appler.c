@@ -21,6 +21,8 @@ typedef size_t S;
 
 // http://adv-r.had.co.nz/C-interface.html
 
+#define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
+
 typedef struct AppleCache {
     U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;
 } AppleCache;
@@ -55,25 +57,18 @@ SEXP hs_init_R(void) {
 SEXP ty_R(SEXP a) {
     char* err;char** err_p=&err;
     const char* inp=CHAR(asChar(a));
-    char* ret=apple_printty(inp,err_p);
-    if(ret==NULL) {
-        SEXP ret=mkString(err);free(err);
-        R ret;
-    }
-    R mkString(ret);
+    char* typ=apple_printty(inp,err_p);
+    ERR(typ,err);
+    R mkString(typ);
 }
 
 SEXP jit_R(SEXP a){
     char* err; char** err_p=&err;
     const char* inp=CHAR(asChar(a));
     FnTy* ty=apple_ty(inp,err_p);
-    if(ty == NULL){
-        SEXP ret=mkString(err);free(err);
-        R ret;
-    };
+    ERR(ty,err);
     U fp;S f_sz;U s;
-    JC jc={(P)&malloc,(P)&free,(P)&lrand48,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
-    fp=apple_compile(&jc,inp,&f_sz,&s);
+    fp=apple_compile(&sys,inp,&f_sz,&s);
     AppleCache* rc=malloc(sizeof(AppleCache));
     ffi_cif* ffi=apple_ffi(ty);
     rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;rc->sa=s;rc->ffi=ffi;
@@ -87,10 +82,7 @@ SEXP asm_R(SEXP a) {
     char* err; char** err_p=&err;
     const char* inp=CHAR(asChar(a));
     char* ret=apple_dumpasm(inp,err_p);
-    if(ret==NULL) {
-        SEXP ret=mkString(err);free(err);
-        R ret;
-    }
+    ERR(ret,err);
     R mkString(ret);
 }
 
@@ -101,8 +93,7 @@ SEXP run_R(SEXP args){
     FnTy* ty=c->ty;U fp=c->code;ffi_cif* cif=c->ffi;
     SEXP r;
     int argc=ty->argc;
-    U* vals=alloca(sizeof(U)*argc);
-    U ret=alloca(8);
+    U* vals=alloca(sizeof(U)*argc);U ret=alloca(8);
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
