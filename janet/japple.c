@@ -4,15 +4,10 @@
 #include<sys/mman.h>
 #include"../c/ffi.c"
 
-// Janet janet_wrap_array(JanetArray *x);
-// Janet janet_wrap_boolean(int x);
-// JanetArray *janet_unwrap_array(Janet x);
 // int janet_unwrap_boolean(Janet x);
-// JanetArray *janet_getarray(const Janet *argv, int32_t n);
 // int janet_getboolean(const Janet *argv, int32_t n);
 //
-// JANET_API JanetArray *janet_array_n(const Janet *elements, int32_t n);
-// For getting and setting values in the array, use array->data[index] directly.
+// "For getting and setting values in the array, use array->data[index] directly."
 
 typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;
 
@@ -67,6 +62,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
     Sw(ty->res){
         C F_t: r=janet_wrap_number(*(F*)ret);BR
         C I_t: r=janet_wrap_integer((int32_t)*(J*)ret);BR
+        C B_t: r=janet_wrap_boolean(*(int*)ret);BR
         C FA: r=janet_wrap_array(f_vj(*(U*)ret));BR
     }
     janet_sfree(vals);janet_sfree(ret);
