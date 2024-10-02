@@ -17,4 +17,4 @@
   :name "apple"
   :source ["japple.c"]
   :cflags ["-I" include-dir]
-  :ldflags ["-lapple" "-L" "/usr/local/lib" "-rpath" "/usr/local/lib"])
+  :ldflags ["-lapple" "-rpath" "/usr/local/lib"])
