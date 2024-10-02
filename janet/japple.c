@@ -38,6 +38,16 @@ U f_jv(JanetArray* x) {
     R y;
 }
 
+JanetArray* f_vj(U x) {
+    J* i_p=x; F* f_p=x;
+    J n=i_p[1];
+    JanetArray* arr=janet_array((int32_t)n);
+    arr->count=n;
+    Janet* xs=arr->data;
+    DO(j,n,xs[j]=janet_wrap_number(f_p[j+2]));
+    R arr;
+}
+
 static Janet apple_call(void *x, int32_t argc, Janet *argv) {
     JF *jit = (JF *)x;
     FnTy* ty=jit->ty;
@@ -57,6 +67,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
     Sw(ty->res){
         C F_t: r=janet_wrap_number(*(F*)ret);BR
         C I_t: r=janet_wrap_integer((int32_t)*(J*)ret);BR
+        C FA: r=janet_wrap_array(f_vj(*(U*)ret));BR
     }
     janet_sfree(vals);janet_sfree(ret);
     R r;
