@@ -114,12 +114,12 @@ static PyObject* apple_ir(PyObject* self, PyObject *args) {
     free(res); R pyres;
 }
 
-typedef struct PyCacheObject {
+typedef struct Cache {
     PyObject_HEAD
     U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;
-} PyCacheObject;
+} Cache;
 
-static void cache_dealloc(PyCacheObject* self) {
+static void cache_dealloc(Cache* self) {
     munmap(self->bc,self->c_sz);
     free(self->sa);freety(self->ty);free(self->ffi);
 }
@@ -128,7 +128,7 @@ static PyTypeObject CacheType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "Cache",
     .tp_doc = PyDoc_STR("Cached JIT function"),
-    .tp_basicsize = sizeof(PyCacheObject),
+    .tp_basicsize = sizeof(Cache),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyType_GenericNew,
@@ -147,7 +147,7 @@ static PyObject* apple_jit(PyObject *self, PyObject *args) {
     U fp;S f_sz;U s;
     JC jc={(P)&malloc,(P)&free,(P)&lrand48,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
     fp=apple_compile(&jc,inp,&f_sz,&s);
-    PyCacheObject* cc=PyObject_New(PyCacheObject, &CacheType);
+    Cache* cc=PyObject_New(Cache, &CacheType);
     ffi_cif* ffi=apple_ffi(ty);
     cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;
     Py_INCREF(cc);
@@ -156,7 +156,7 @@ static PyObject* apple_jit(PyObject *self, PyObject *args) {
 
 // file:///usr/share/doc/libffi8/html/The-Basics.html
 static PyObject* apple_f(PyObject* self, PyObject* args) {
-    PyCacheObject* c;PO arg0=NULL;PO arg1=NULL;PO arg2=NULL;PO arg3=NULL;PO arg4=NULL;PO arg5=NULL;
+    Cache* c;PO arg0=NULL;PO arg1=NULL;PO arg2=NULL;PO arg3=NULL;PO arg4=NULL;PO arg5=NULL;
     PyArg_ParseTuple(args, "O|OOOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     FnTy* ty=c->ty;U fp=c->bc;
     PO r;
