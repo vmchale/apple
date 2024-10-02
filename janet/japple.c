@@ -8,40 +8,47 @@
 // Janet janet_wrap_boolean(int x);
 // JanetArray *janet_unwrap_array(Janet x);
 // int janet_unwrap_boolean(Janet x);
+// JanetArray *janet_getarray(const Janet *argv, int32_t n);
+// int janet_getboolean(const Janet *argv, int32_t n);
 //
 // JANET_API JanetArray *janet_array_n(const Janet *elements, int32_t n);
 // For getting and setting values in the array, use array->data[index] directly.
-//
-// JanetArray *janet_getarray(const Janet *argv, int32_t n);
-// int janet_getboolean(const Janet *argv, int32_t n);
 
 typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;
 
 #define NIL janet_wrap_nil()
 
-typedef struct Cache {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi;} Cache;
+typedef struct JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi;} JF;
 
 void freety(FnTy* x){free(x->args);free(x);}
 static int jit_gc(void *data, size_t len) {
-    Cache* j=(Cache*)data;
+    JF* j=(JF*)data;
     munmap(j->bc,j->c_sz);
     free(j->sa);freety(j->ty);free(j->ffi);
     R 0;
 }
 
+U f_jv(JanetArray* x) {
+    J n=(J)x->count;
+    J sz_i=n+2;S sz=sz_i*8;
+    U y=malloc(sz);J* x_i=y; F* x_f=y;
+    x_i[0]=1;x_i[1]=n;
+    Janet* js=x->data;
+    DO(i,n,x_f[i+2]=janet_unwrap_number(js[i]));
+    R y;
+}
+
 static Janet apple_call(void *x, int32_t argc, Janet *argv) {
-    Cache *jit = (Cache *)x;
+    JF *jit = (JF *)x;
     FnTy* ty=jit->ty;
     int aarg=ty->argc;
     janet_fixarity(argc, aarg);
-    U* vals=janet_smalloc(sizeof(U)*argc);
-    U ret=janet_smalloc(8);
-    Janet jarg;
+    U* vals=janet_smalloc(sizeof(U)*argc);U ret=janet_smalloc(8);
     for(int k=0;k<aarg;k++){
-        jarg=argv[k];
         Sw(ty->args[k]){
-            C F_t: {F* xf=alloca(sizeof(F));xf[0]=janet_unwrap_number(jarg);vals[k]=xf;};BR
-            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)janet_unwrap_integer(jarg);vals[k]=xi;};BR
+            C F_t: {F* xf=alloca(sizeof(F));xf[0]=janet_getnumber(argv,k);vals[k]=xf;};BR
+            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)janet_getinteger(argv,k);vals[k]=xi;};BR
+            C FA: {U* a=alloca(sizeof(U));a[0]=f_jv(janet_getarray(argv,k));vals[k]=a;}BR
         }
     }
     U fp=jit->bc;ffi_cif* cif=jit->ffi;
@@ -72,8 +79,8 @@ static const JanetAbstractType jit_t = {
     .bytes = NULL,
 };
 
-static Cache *galloc_jit() {
-  R (Cache*)janet_abstract(&jit_t, sizeof(Cache));
+static JF *galloc_jit() {
+  R (JF*)janet_abstract(&jit_t, sizeof(JF));
 }
 
 static Janet tyof_j(int32_t argc, Janet *argv) {
@@ -99,7 +106,7 @@ static Janet jit(int32_t argc, Janet *argv) {
     };
     U fp;S f_sz;U s;
     fp=apple_compile(&sys,inp,&f_sz,&s);
-    Cache* j=galloc_jit();
+    JF* j=galloc_jit();
     ffi_cif* ffi=apple_ffi(ty);
     j->bc=fp;j->c_sz=f_sz;j->ty=ty;j->sa=s;j->ffi=ffi;
     R janet_wrap_abstract(j);
