@@ -16,5 +16,5 @@
 (declare-native
   :name "apple"
   :source ["japple.c"]
-  :cflags ["-lapple" "-I" include-dir "-rpath" "/usr/local/lib"]
-  :ldflags ["-L" "/usr/local/lib"])
+  :cflags ["-I" include-dir]
+  :ldflags ["-lapple" "-L" "/usr/local/lib" "-rpath" "/usr/local/lib"])
