@@ -161,8 +161,7 @@ static PyObject* apple_f(PyObject* self, PyObject* args) {
     PO r;
     ffi_cif* cif=c->ffi;
     int argc=ty->argc;
-    U* vals=alloca(sizeof(U)*argc);
-    U ret=alloca(8);
+    U* vals=alloca(sizeof(U)*argc);U ret=alloca(8);
     PO pyarg;PO pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
     for(int k=0;k<argc;k++){
         pyarg=pyargs[k];

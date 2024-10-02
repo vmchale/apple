@@ -93,8 +93,7 @@ SEXP run_R(SEXP args){
     FnTy* ty=c->ty;U fp=c->code;ffi_cif* cif=c->ffi;
     SEXP r;
     int argc=ty->argc;
-    U* vals=alloca(sizeof(U)*argc);
-    U ret=alloca(8);
+    U* vals=alloca(sizeof(U)*argc);U ret=alloca(8);
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
