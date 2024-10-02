@@ -5,13 +5,11 @@
 #include"../c/ffi.c"
 
 // Janet janet_wrap_array(JanetArray *x);
-// Janet janet_wrap_number(double x);
 // Janet janet_wrap_boolean(int x);
 // Janet janet_wrap_integer(int32_t x);
 // JanetArray *janet_unwrap_array(Janet x);
 // int32_t janet_unwrap_integer(Janet x);
 // int janet_unwrap_boolean(Janet x);
-// double janet_unwrap_number(Janet x);
 //
 // JANET_API JanetArray *janet_array_n(const Janet *elements, int32_t n);
 // For getting and setting values in the array, use array->data[index] directly.
@@ -40,8 +38,6 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
     FnTy* ty=jit->ty;
     int aarg=ty->argc;
     janet_fixarity(argc, aarg);
-    // void *janet_smalloc(size_t size);
-    // void janet_sfree(void *p)
     U* vals=janet_smalloc(sizeof(U)*argc);
     U ret=janet_smalloc(8);
     Janet jarg;
@@ -49,6 +45,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
         jarg=argv[k];
         Sw(ty->args[k]){
             C F_t: {F* xf=alloca(sizeof(F));xf[0]=janet_unwrap_number(jarg);vals[k]=xf;};BR
+            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)janet_unwrap_integer(jarg);vals[k]=xi;};BR
         }
     }
     U fp=jit->bc;ffi_cif* cif=jit->ffi;
@@ -56,6 +53,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
     Janet r;
     Sw(ty->res){
         C F_t: r=janet_wrap_number(*(F*)ret);BR
+        C I_t: r=janet_wrap_integer((int32_t)*(J*)ret);BR
     }
     janet_sfree(vals);janet_sfree(ret);
     R r;
@@ -108,7 +106,6 @@ static Janet jit(int32_t argc, Janet *argv) {
     ffi_cif* ffi=apple_ffi(ty);
     j->bc=fp;j->c_sz=f_sz;j->ty=ty;j->sa=s;j->ffi=ffi;
     R janet_wrap_abstract(j);
-    // janet_getabstract(argv, arg_ix, &jit_t);
 }
 
 static JanetReg cfuns[] = {
