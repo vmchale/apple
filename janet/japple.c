@@ -6,15 +6,12 @@
 
 // Janet janet_wrap_array(JanetArray *x);
 // Janet janet_wrap_boolean(int x);
-// Janet janet_wrap_integer(int32_t x);
 // JanetArray *janet_unwrap_array(Janet x);
-// int32_t janet_unwrap_integer(Janet x);
 // int janet_unwrap_boolean(Janet x);
 //
 // JANET_API JanetArray *janet_array_n(const Janet *elements, int32_t n);
 // For getting and setting values in the array, use array->data[index] directly.
 //
-// double janet_getnumber(const Janet *argv, int32_t n);
 // JanetArray *janet_getarray(const Janet *argv, int32_t n);
 // const char *janet_getcstring(const Janet *argv, int32_t n);
 // int janet_getboolean(const Janet *argv, int32_t n);
