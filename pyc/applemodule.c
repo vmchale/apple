@@ -110,36 +110,10 @@ static void cache_dealloc(JO* self) {
     free(self->sa);freety(self->ty);free(self->ffi);
 }
 
-static PyTypeObject JOT = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "Jit Object",
-    .tp_doc = PyDoc_STR("JIT-compiled function in-memory"),
-    .tp_basicsize = sizeof(JO),
-    .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = PyType_GenericNew,
-    .tp_dealloc = (destructor)cache_dealloc,
-};
-
-static PY apple_jit(PY self, PY args) {
-    const char* inp;
-    PyArg_ParseTuple(args, "s", &inp);
-    char* err;char** err_p=&err;
-    FnTy* ty=apple_ty(inp,err_p);
-    ERR(ty,err);
-    U fp;S f_sz;U s;
-    fp=apple_compile(&sys,inp,&f_sz,&s);
-    JO* cc=PyObject_New(JO, &JOT);
-    ffi_cif* ffi=apple_ffi(ty);
-    cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;
-    Py_INCREF(cc);
-    R (PY)cc;
-}
-
 // file:///usr/share/doc/libffi8/html/The-Basics.html
-static PY apple_f(PY self, PY args) {
-    JO* c;PY arg0=NULL;PY arg1=NULL;PY arg2=NULL;PY arg3=NULL;PY arg4=NULL;PY arg5=NULL;
-    PyArg_ParseTuple(args, "O|OOOOOO", &c, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
+static PY apple_call(PY self, PY args, PY kwargs) {
+    JO* c=self;PY arg0=NULL;PY arg1=NULL;PY arg2=NULL;PY arg3=NULL;PY arg4=NULL;PY arg5=NULL;
+    PyArg_ParseTuple(args, "|OOOOOO", &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     FnTy* ty=c->ty;U fp=c->bc;
     PY r;
     ffi_cif* cif=c->ffi;
@@ -169,9 +143,35 @@ static PY apple_f(PY self, PY args) {
     R r;
 };
 
+static PyTypeObject JOT = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "Jit Object",
+    .tp_doc = PyDoc_STR("JIT-compiled function in-memory"),
+    .tp_basicsize = sizeof(JO),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyType_GenericNew,
+    .tp_call = apple_call,
+    .tp_dealloc = (destructor)cache_dealloc,
+};
+
+static PY apple_jit(PY self, PY args) {
+    const char* inp;
+    PyArg_ParseTuple(args, "s", &inp);
+    char* err;char** err_p=&err;
+    FnTy* ty=apple_ty(inp,err_p);
+    ERR(ty,err);
+    U fp;S f_sz;U s;
+    fp=apple_compile(&sys,inp,&f_sz,&s);
+    JO* cc=PyObject_New(JO, &JOT);
+    ffi_cif* ffi=apple_ffi(ty);
+    cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;
+    Py_INCREF(cc);
+    R (PY)cc;
+}
+
 static PyMethodDef AppleMethods[] = {
-    {"f", apple_f, METH_VARARGS, "Run a JIT-compiled function"},
-    {"jit", apple_jit, METH_VARARGS, "JIT a function"},
+    {"jit", apple_jit, METH_VARARGS, "Compile an expressoin into a callable object"},
     {"typeof", apple_typeof, METH_VARARGS, "Display type of expression"},
     {"asm", apple_asm, METH_VARARGS, "Dump assembly"},
     {"ir", apple_ir, METH_VARARGS, "Dump IR (debug)"},

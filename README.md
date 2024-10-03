@@ -29,7 +29,7 @@ Arr (4) [4.0, 5.0, 6.0, 7.0]
 >>> import apple
 >>> import numpy as np
 >>> sliding_mean=apple.jit('([((+)/x)%(ℝ(:x))]\`7)')
->>> apple.f(sliding_mean,np.arange(0,10,dtype=np.float64))
+>>> sliding_mean(np.arange(0,10,dtype=np.float64))
 array([3., 4., 5., 6.])
 ```
 
@@ -184,14 +184,11 @@ FUNCTIONS
     asm(...)
         Dump assembly
 
-    f(...)
-        Run a JIT-compiled function
-
     ir(...)
         Dump IR (debug)
 
     jit(...)
-        JIT a function
+        Compile an expressoin into a callable object
 
     typeof(...)
         Display type of expression

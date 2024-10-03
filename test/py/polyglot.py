@@ -18,7 +18,7 @@ h=apple.jit('''
   sigmoid`{0} ([(+)`bh x]'(X%.wh))
 }
 ''')
-hidden_layer_output=apple.f(h,inputs,hidden_weights,hidden_bias)
+hidden_layer_output=h(inputs,hidden_weights,hidden_bias)
 
 o=apple.jit('''
 λho.λwo.λbo.
@@ -27,7 +27,7 @@ o=apple.jit('''
   sigmoid'((+bo)'(ho%:wo))
 }
 ''')
-predicted_output=apple.f(o,hidden_layer_output,output_weights,output_bias)
+predicted_output=o(hidden_layer_output,output_weights,output_bias)
 
 dpo=apple.jit('''
 λprediction.
@@ -38,7 +38,7 @@ dpo=apple.jit('''
   (*)`(sDdx'prediction) l1E
 }
 ''')
-d_predicted_output = apple.f(dpo,predicted_output)
+d_predicted_output = dpo(predicted_output)
 
 dhe=apple.jit('''
 λl1Δ.λwo.λho.
@@ -48,7 +48,7 @@ dhe=apple.jit('''
   (*)`{0,0} (sDdx`{0} ho) he
 }
 ''')
-d_hidden_layer=apple.f(dhe,d_predicted_output,output_weights,hidden_layer_output)
+d_hidden_layer=dhe(d_predicted_output,output_weights,hidden_layer_output)
 
 hw=apple.jit('''
 λwh.λhΔ.
@@ -57,13 +57,13 @@ hw=apple.jit('''
   (+)`{0,0} wh ((|:X)%.hΔ)
 }
 ''')
-hidden_weights=apple.f(hw,hidden_weights,d_hidden_layer)
+hidden_weights=hw(hidden_weights,d_hidden_layer)
 print('hidden_weights\n',hidden_weights)
 
 hb=apple.jit("λbh.λhΔ. [(+)/ₒ x y]`{0,1} bh (hΔ::M float)")
-hidden_bias=apple.f(hb,hidden_bias,d_hidden_layer)
+hidden_bias=hb(hidden_bias,d_hidden_layer)
 print('hidden_bias\n',hidden_bias)
 
 bo=apple.jit("λbo.λl1Δ. {sum ← [(+)/x]; bo + sum (l1Δ::Vec 4 float)}")
-output_bias=apple.f(bo,output_bias,d_predicted_output)
+output_bias=bo(output_bias,d_predicted_output)
 print('output_bias\n',output_bias)

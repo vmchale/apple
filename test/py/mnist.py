@@ -4,8 +4,7 @@ import numpy as np
 train_images=np.load('nb/data/train-images.npy')
 train_labels=np.load('nb/data/train-labels.npy')
 
-reshape=apple.jit("[♭`{3∘[2,3,4]} (x::Arr (60000 × 28 × 28 × 1) float)]")
-train_images_v=apple.f(reshape,train_images)
+train_images_v=apple.jit("[♭`{3∘[2,3,4]} (x::Arr (60000 × 28 × 28 × 1) float)]")(train_images)
 
 def init(x,y):
     return np.random.uniform(-1.,1.,(x,y))/np.sqrt(x*y)
@@ -25,16 +24,15 @@ ssoftmax=apple.jit('''
 ''')
 
 vsigmoid=apple.jit("([1%(1+ℯ(_x))]`{0})")
-vmap=apple.jit("((λn.[?x=n,.1::float,.0]'irange 0 9 1)')")
 mmul=apple.jit("[x%.(y::M float)]")
 
-train_labels_v=apple.f(vmap,train_labels)
+train_labels_v=apple.jit("((λn.[?x=n,.1::float,.0]'irange 0 9 1)')")(train_labels)
 
 def fw(l1,l2,x):
-    x_l1p=apple.f(mmul,x,l1)
-    x_sigmoid=apple.f(vsigmoid,x_l1p)
-    x_l2p=apple.f(mmul,x_sigmoid,l2)
-    out=apple.f(ssoftmax,x_l2p)
+    x_l1p=mmul(x,l1)
+    x_sigmoid=vsigmoid(x_l1p)
+    x_l2p=mmul(x_sigmoid,l2)
+    out=ssoftmax(x_l2p)
     return x_l1p,x_sigmoid,x_l2p,out
 
 errorjit=apple.jit('''
@@ -63,10 +61,10 @@ def fw_bw(x,targets):
     x_l1p,x_sigmoid,x_l2p,out=fw(l1,l2,x)
 
 
-    error=apple.f(errorjit,out,targets,x_l2p)
+    error=errorjit(out,targets,x_l2p)
 
-    update_l2=apple.f(u_l2jit,x_sigmoid,error)
-    update_l1=apple.f(u_l1jit,x,l2,error,x_l1p)
+    update_l2=u_l2jit(x_sigmoid,error)
+    update_l1=u_l1jit(x,l2,error,x_l1p)
 
     return out,update_l1,update_l2
 

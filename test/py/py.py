@@ -1,13 +1,13 @@
 import apple
 
 p=apple.jit("λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1)))")
-assert not(apple.f(p,8))
-assert apple.f(p,7)
+assert not(p(8))
+assert p(7)
 
 import numpy as np
 
 d=apple.jit("λxs. ⸎n ⟜ 𝓉 xs; }:((*)`(𝒻 (ℝn-1) 0 n) xs)")
-assert (apple.f(d,np.array([1.,2,1]))==np.array([2.,2])).all()
+assert (d(np.array([1.,2,1]))==np.array([2.,2])).all()
 
 xs=np.array([[0.,4,2],[0,1,3]])
 
@@ -23,7 +23,7 @@ ssoftmax=apple.jit('''
   ; |:(([(%x)'y]`{0,1} n a))
   }
 ''')
-assert (apple.f(ssoftmax,xs)==softmax(xs)).all()
+assert (ssoftmax(xs)==softmax(xs)).all()
 
 luhn=apple.jit('''
 λxs.
@@ -32,4 +32,4 @@ luhn=apple.jit('''
   ; 10-(t|10)=}.xs
   }
 ''')
-assert apple.f(luhn,np.array([4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]))
+assert luhn(np.array([4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]))
