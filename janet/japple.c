@@ -86,9 +86,7 @@ static const JanetAbstractType jit_t = {
     .bytes = NULL,
 };
 
-static JF *galloc_jit() {
-  R (JF*)janet_abstract(&jit_t, sizeof(JF));
-}
+static JF *galloc_jit() {R (JF*)janet_abstract(&jit_t, sizeof(JF));}
 
 static Janet tyof_j(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
@@ -98,8 +96,6 @@ static Janet tyof_j(int32_t argc, Janet *argv) {
     char* o=apple_printty(inp, e);
     R janet_cstringv(o);
 }
-
-static const JC jc={(P)&malloc,(P)&free,(P)&lrand48,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
 
 static Janet jit(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
