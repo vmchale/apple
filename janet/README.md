@@ -10,3 +10,28 @@ repl:3:> (moving-average @[1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0])
 (doc apple/jit)
 ```
 
+# Documentation
+
+```janet
+repl:2:> (import apple)
+@{_ @{:value <cycle 0>} apple/jit @{:private true} apple/tyof @{:private true}}
+repl:3:> (doc apple)
+
+
+    module (native)
+    /Users/vanessa/dev/haskell/apple/janet/jpm_tree/lib/apple.so
+
+    no documentation found.
+
+
+nil
+repl:4:> (doc apple/tyof)
+
+
+    cfunction
+
+    type of expression
+
+
+nil
+```
