@@ -160,8 +160,11 @@ o → o → o
 - [ ] factors : int -> [(int, int)]
 - [ ] https://x.com/cneuralnetwork/status/1831994612426387833
 - [ ] https://www.infinitepartitions.com/art001.html
+- [ ] https://en.wikipedia.org/wiki/Bhattacharyya_distance
 - [ ] multivariate adaptive regression spline
 - [ ] https://github.com/rougier/scientific-visualization-book
+- [ ] covariance: https://code.jsoftware.com/wiki/User:Devon_McCormick/myStats
+- [ ] https://en.wikipedia.org/wiki/Mahalanobis_distance
 - [ ] cellular automata
   - [ ] https://en.wikipedia.org/wiki/Rule_110
   - [ ] https://en.wikipedia.org/wiki/Rule_30
