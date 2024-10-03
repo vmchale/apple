@@ -61,7 +61,7 @@ Apple accepts and returns NumPy arrays:
 
 ```python
 >>> import numpy as np
->>> apple.f(sliding_mean,np.arange(0,10,dtype=np.float64))
+>>> apple.f(moving_average,np.arange(0,10,dtype=np.float64))
 array([3., 4., 5., 6.])
 ```
 
