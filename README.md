@@ -75,6 +75,20 @@ to get vector-matrix multiplication:
 
 The `2` means "iterate over the second axis" i.e. columns.
 
+## Array QuickCheck
+
+```
+ > :qc \x. [(+)/(*)`x y] x x >= 0.0
+Passed, 100.
+ > :qc \x. [(+)/(*)`x y] x x > 2.0
+Proposition failed!
+[ Arr (5) [ 0.6213045301664751
+          , 0.6599381241699802
+          , 0.762478867048601
+          , 6.026206825450409e-3
+          , 0.5633419282435523 ] ]
+```
+
 ## Installation
 
 Use [ghcup](https://www.haskell.org/ghcup/) to install [cabal](https://www.haskell.org/cabal/) and GHC. Then:
