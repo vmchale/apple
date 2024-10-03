@@ -97,6 +97,7 @@ SEXP run_R(SEXP args){
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
+            // FIXME: fr leaks memory
             C FA: {U* x=alloca(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
             C F_t: {F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
             C I_t: {J* xi=alloca(sizeof(J));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
