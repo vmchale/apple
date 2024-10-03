@@ -11,8 +11,8 @@
 typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;typedef uint8_t B;
 
 #define NIL janet_wrap_nil()
-
 #define ERR(p,msg){if(p==NULL){printf("%s\n",msg);free(msg);R NIL;};}
+#define JA(n,xs) JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
 
 typedef struct JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi;} JF;
 
@@ -24,6 +24,7 @@ static int jit_gc(void *data, size_t len) {
     R 0;
 }
 
+// FIXME: malloc leaks memory
 U fv_j(JanetArray* x) {
     J n=(J)x->count;
     J sz_i=n+2;S sz=sz_i*8;
@@ -34,24 +35,36 @@ U fv_j(JanetArray* x) {
     R y;
 }
 
+U fv_i(JanetArray* x) {
+    J n=(J)x->count;
+    J sz_i=n+2;S sz=sz_i*8;
+    U y=malloc(sz);J* x_i=y;
+    x_i[0]=1;x_i[1]=n;
+    Janet* js=x->data;
+    DO(i,n,x_i[i+2]=(J)janet_unwrap_integer(js[i]));
+    R y;
+}
+
 JanetArray* j_vb(U x) {
     J* i_p=x; B* b_p=x+16;
     J n=i_p[1];
-    JanetArray* arr=janet_array((int32_t)n);
-    arr->count=n;
-    Janet* xs=arr->data;
+    JA(n,xs)
     DO(j,n,xs[j]=janet_wrap_boolean((int32_t)b_p[j]));
-    R arr;
+    free(x);R arr;
 }
 
 JanetArray* j_vf(U x) {
-    J* i_p=x; F* f_p=x;
-    J n=i_p[1];
-    JanetArray* arr=janet_array((int32_t)n);
-    arr->count=n;
-    Janet* xs=arr->data;
+    J* i_p=x;J n=i_p[1];F* f_p=x;
+    JA(n,xs)
     DO(j,n,xs[j]=janet_wrap_number(f_p[j+2]));
-    R arr;
+    free(x);R arr;
+}
+
+JanetArray* j_vi(U x) {
+    J* i_p=x;J n=i_p[1];
+    JA(n,xs)
+    DO(j,n,xs[j]=janet_wrap_integer((int32_t)i_p[j+2]));
+    free(x);R arr;
 }
 
 static Janet apple_call(void *x, int32_t argc, Janet *argv) {
@@ -65,6 +78,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
             C F_t: {F* xf=alloca(sizeof(F));xf[0]=janet_getnumber(argv,k);vals[k]=xf;};BR
             C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)janet_getinteger(argv,k);vals[k]=xi;};BR
             C FA: {U* a=alloca(sizeof(U));a[0]=fv_j(janet_getarray(argv,k));vals[k]=a;}BR
+            C IA: {U* a=alloca(sizeof(U));a[0]=fv_i(janet_getarray(argv,k));vals[k]=a;}BR
         }
     }
     U fp=jit->bc;ffi_cif* cif=jit->ffi;
@@ -75,6 +89,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
         C I_t: r=janet_wrap_integer((int32_t)*(J*)ret);BR
         C B_t: r=janet_wrap_boolean(*(int*)ret);BR
         C FA: r=janet_wrap_array(j_vf(*(U*)ret));BR
+        C IA: r=janet_wrap_array(j_vi(*(U*)ret));BR
         C BA: r=janet_wrap_array(j_vb(*(U*)ret));BR
     }
     janet_sfree(vals);janet_sfree(ret);
@@ -125,7 +140,7 @@ static Janet jit(int32_t argc, Janet *argv) {
 
 static JanetReg cfuns[] = {
     {"tyof", tyof_j, "type of expression"},
-    {"jit", jit, "JIT-compile source string"},
+    {"jit", jit, "Compile source string into Janet callable"},
     {NULL, NULL, NULL}
 };
 
