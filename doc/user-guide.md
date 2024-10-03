@@ -61,15 +61,8 @@ Apple accepts and returns NumPy arrays:
 
 ```python
 >>> import numpy as np
->>> apple.f(moving_average,np.arange(0,10,dtype=np.float64))
+>>> moving_average(np.arange(0,10,dtype=np.float64))
 array([3., 4., 5., 6.])
-```
-
-`apple.f` applies a JIT-compiled function to arguments.
-
-```
->>> moving_average
-<Cache object at 0x10289da70>
 ```
 
 ### Debug Facilities
