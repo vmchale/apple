@@ -13,6 +13,8 @@ typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;
 
 #define NIL janet_wrap_nil()
 
+#define ERR(p,msg){if(p==NULL){printf("%s\n",msg);free(msg);R NIL;};}
+
 typedef struct JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi;} JF;
 
 void freety(FnTy* x){free(x->args);free(x);}
@@ -73,10 +75,8 @@ static const JanetAbstractType jit_t = {
     .name = "jit",
     .gc = jit_gc,
     .gcmark = NULL,
-    .get = NULL,
-    .put = NULL,
-    .marshal = NULL,
-    .unmarshal = NULL,
+    .get = NULL, .put = NULL,
+    .marshal = NULL, .unmarshal = NULL,
     .tostring = NULL,
     .compare = NULL,
     .hash = NULL,
@@ -92,8 +92,9 @@ static Janet tyof_j(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
     const char* inp=janet_getcstring(argv,0);
-    char** e;
-    char* o=apple_printty(inp, e);
+    char* e;char** e_p=&e;
+    char* o=apple_printty(inp, e_p);
+    ERR(o,e)
     R janet_cstringv(o);
 }
 
@@ -103,10 +104,7 @@ static Janet jit(int32_t argc, Janet *argv) {
     const char* inp=janet_getcstring(argv,0);
     char*err; char** err_p=&err;
     FnTy* ty=apple_ty(inp,err_p);
-    if(ty == NULL){
-        printf("%s",err);
-        free(err);R NIL;
-    };
+    ERR(ty,err)
     U fp;S f_sz;U s;
     fp=apple_compile(&sys,inp,&f_sz,&s);
     JF* j=galloc_jit();
