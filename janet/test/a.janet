@@ -13,3 +13,6 @@
 
 (def prime-mask (apple/jit ``λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))))'(irange 2 N 1)``))
 (assert (deep= (prime-mask 9) @[true true false true false true false false]))
+
+(def cat (apple/jit ``[(x::Vec n int)++y]``))
+(assert (deep= (cat @[1 2] @[4 3]) @[1 2 4 3]))
