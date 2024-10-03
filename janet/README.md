@@ -1,3 +1,5 @@
+Only works on vectors, may crash ingloriously on higher-rank inputs.
+
 ```
 jpm install --local
 jpm -l janet -e '(import apple)' -r
