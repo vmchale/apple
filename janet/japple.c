@@ -28,7 +28,8 @@ static int jit_gc(void *data, size_t len) {
 U fv_j(JanetArray* x) {
     J n=(J)x->count;
     J sz_i=n+2;S sz=sz_i*8;
-    U y=malloc(sz);J* x_i=y; F* x_f=y;
+    U y=malloc(sz);J* x_i=y;
+    F* x_f=y;
     x_i[0]=1;x_i[1]=n;
     Janet* js=x->data;
     DO(i,n,x_f[i+2]=janet_unwrap_number(js[i]));
@@ -42,6 +43,16 @@ U fv_i(JanetArray* x) {
     x_i[0]=1;x_i[1]=n;
     Janet* js=x->data;
     DO(i,n,x_i[i+2]=(J)janet_unwrap_integer(js[i]));
+    R y;
+}
+
+U fv_b(JanetArray* x) {
+    J n=(J)x->count;
+    S sz=n+16;
+    U y=malloc(sz);J* x_i=y; B* x_b=y+16;
+    x_i[0]=1;x_i[1]=n;
+    Janet* js=x->data;
+    DO(i,n,x_b[i]=janet_unwrap_boolean(js[i]));
     R y;
 }
 
@@ -79,6 +90,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
             C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)janet_getinteger(argv,k);vals[k]=xi;};BR
             C FA: {U* a=alloca(sizeof(U));a[0]=fv_j(janet_getarray(argv,k));vals[k]=a;}BR
             C IA: {U* a=alloca(sizeof(U));a[0]=fv_i(janet_getarray(argv,k));vals[k]=a;}BR
+            C BA: {U* a=alloca(sizeof(U));a[0]=fv_b(janet_getarray(argv,k));vals[k]=a;}BR
         }
     }
     U fp=jit->bc;ffi_cif* cif=jit->ffi;

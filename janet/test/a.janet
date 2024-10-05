@@ -16,3 +16,6 @@
 
 (def cat (apple/jit ``[(x::Vec n int)++y]``))
 (assert (deep= (cat @[1 2] @[4 3]) @[1 2 4 3]))
+
+(def any (apple/jit ``λbs. (∨)/ₒ #f bs :: bool``))
+(assert (= (any @[false false true]) true))
