@@ -210,7 +210,7 @@ instance Pretty Builtin where
     pretty And       = "∧"
     pretty Or        = "∨"
     pretty N         = "¬"
-    pretty Ices      = "℘"
+    pretty Ices      = "⩪"
     pretty Eye       = "👁️"
     pretty Sr        = ">>"
     pretty Sl        = "<<"
