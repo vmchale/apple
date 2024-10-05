@@ -1274,6 +1274,10 @@ peval (LLet _ b e) t = do
     ss <- llet b
     (ss++) <$> peval e t
 peval (BLit _ b) t = pure [MB () t (BConst b)]
+peval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
+    (plE, (lE, eR)) <- plA e
+    (plI,iE) <- plC i
+    pure $ plE $ plI [MB () t (PAt (AElem eR 1 iE lE 8))]
 peval (EApp _ (Builtin _ Odd) e0) t = do
     (pl,eR) <- plEV e0
     pure $ pl [Cset () (IUn IOdd (Tmp eR)) t]
