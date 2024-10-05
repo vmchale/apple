@@ -26,4 +26,4 @@ libappler$(EXT): appler.o
 	$(CC) -shared $^ -o $@ -lapple -lffi $(LDFLAGS)
 
 clean:
-	rm -rf *.o *.so *.dylib
+	rm -rf *.o *.so *.dylib tags

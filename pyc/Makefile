@@ -34,4 +34,4 @@ apple.so: apple.o
 	$(CC) -shared $^ -o $@ -lapple -lffi $(LDFLAGS)
 
 clean:
-	rm -rf *.o *.so
+	rm -rf *.o *.so tags
