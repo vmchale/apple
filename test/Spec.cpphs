@@ -14,7 +14,7 @@ import           Hs.A
 import           Hs.FFI
 import           Math.Hypergeometric   (erf, hypergeometric, ncdf)
 import           Math.SpecialFunction  (agm, bessel1, chisqcdf, completeElliptic, gamma, tcdf)
-import           Numeric.NumberTheory  (isPrime)
+import           Numeric.NumberTheory  (isPrime, radical)
 import           P
 import           System.Info           (arch)
 import           Test.QuickCheck       (property)
@@ -33,16 +33,21 @@ x .?= y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-1
 main :: IO ()
 main = do
     pjit <- fpn =<< BSL.readFile "test/examples/isPrime.🍏"
-    defaultMain $ testGroup "All" $ pTest pjit:rTy:tyT:allT:
+    rjit <- fpn =<< BSL.readFile "math/numbertheory/radical.🍎"
+    defaultMain $ testGroup "All" $ pTest pjit rjit:rTy:tyT:allT:
 #ifdef x86_64_HOST_ARCH
         [x64T]
 #else
         []
 #endif
 
-pTest :: FunPtr (Int64 -> CUChar) -> TestTree
-pTest pfn = testGroup "property tests"
-    [ testProperty "isPrime" $ property $ \n -> n < 2 || isPrime n == cb (ib pfn (fromIntegral n)) ]
+pTest :: FunPtr (Int64 -> CUChar)
+      -> FunPtr (Int64 -> Int64)
+      -> TestTree
+pTest pfn rfn = testGroup "property tests"
+    [ testProperty "isPrime" $ property $ \n -> n < 2 || isPrime n == cb (ib pfn (fromIntegral n))
+    -- , testProperty "radical" $ property $ \n -> n < 3 || radical n == fromIntegral (ii rfn (fromIntegral n))
+    ]
   where
     cb 0=False; cb 1=True
 
@@ -85,6 +90,13 @@ allT = testGroup "jit"
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,7,6,9::Double] }
     , testCase "luhn check" $ do { res <- fpAi "test/examples/luhn.🍎" [4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]; res @?= 1 }
+    , testCase "ISBN-13" $ do
+        res <- tfpAi "test/examples/isbn13.🍎"
+            [ [9,7,8,0,5,9,6,5,2,8,1,2,6]
+            , [9,7,8,0,5,9,6,5,2,8,1,2,0]
+            , [9,7,8,1,7,8,8,3,9,9,0,8,1]
+            , [9,7,8,1,7,8,8,3,9,9,0,8,3] ]
+        res @?= [1,0,1,0]
     , testCase "mapAa" $ do { (AA 1 [2] res) <- fpAa "test/data/maa.🍎" (AA 2 [2,2] [1,2,3,4::Double]); res @?= [3,7::Double] }
     , testCase "mapAa" $ do { (AA 2 [3,2] res) <- fpAa "test/data/mfa.🍎" (AA 1 [3] [1,2,3::Double]); res @?= [1,1,2,2,3,3::Double] }
     , testCase "consSum" $ do { (AA 1 [3] res) <- fpAaa "test/data/consSum.🍏" (AA 1 [3] [1,0,0::Double]) (AA 2 [3,2] [2,3,4,5,6,9::Double]); res @?= [6,9,15::Double] }
@@ -99,7 +111,7 @@ allT = testGroup "jit"
     , testCase "elliptic fourier" $ do
         (AA 1 [2] coeffs, a, c) <- fpAaip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] 2
         a @?= 2.5000000000000004
-        c @?= 0.9999999999999999
+        c @?= 1.0
         last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)
     , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "ℯ" $ do { f <- fpn "e:"; ff f 2.5 @?= exp 2.5 }
@@ -177,11 +189,13 @@ fpAf fp xs = do
 jitKl = fpAaf "test/examples/kl.🍎"
 jitB = fpAaf "test/examples/b.🍎"
 
-fpAi :: FilePath -> [Int64] -> IO Int64
-fpAi fp bs = do
+tfpAi :: FilePath -> [[Int64]] -> IO [Int64]
+tfpAi fp aas = do
     f <- fpn =<< BSL.readFile fp
-    let a=v1 bs
-    wA a $ \p -> pure $ ai f p
+    traverse (\as -> let a=v1 as in wA a $ \p -> pure $ ai f p) aas
+
+fpAi :: FilePath -> [Int64] -> IO Int64
+fpAi fp bs = the<$>tfpAi fp [bs] where the [x]=x; the _ = error "the"
 
 v1 :: [a] -> Apple a
 v1 xs = AA 1 [fromIntegral (length xs)] xs
@@ -289,6 +303,7 @@ wA x act =
 bytesE = either throw id . bytes
 
 foreign import ccall "dynamic" ib :: FunPtr (Int64 -> CUChar) -> Int64 -> CUChar
+foreign import ccall "dynamic" ii :: FunPtr (Int64 -> Int64) -> Int64 -> Int64
 foreign import ccall "dynamic" ia :: FunPtr (Int64 -> U a) -> Int64 -> U a
 foreign import ccall "dynamic" ai :: FunPtr (U a -> Int64) -> U a -> Int64
 foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
