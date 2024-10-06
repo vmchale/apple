@@ -7,6 +7,7 @@ test:
 	jpm test
 
 install:
+	jpm build
 	sudo jpm install
 
 repl:
