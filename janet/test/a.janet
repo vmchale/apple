@@ -19,3 +19,7 @@
 
 (def any (apple/jit ``λbs. (∨)/ₒ #f bs :: bool``))
 (assert (= (any @[false false true]) true))
+
+(def isbn-13 (apple/jit ``λxs. ((+)/ (*)`xs (}:(cyc. ⟨1,3::int⟩ 7)))|10=0``))
+(assert (isbn-13 @[9 7 8 0 5 9 6 5 2 8 1 2 6]))
+(assert (not (isbn-13 @[9 7 8 1 7 8 8 3 9 9 0 8 3])))
