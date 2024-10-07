@@ -22,5 +22,6 @@ stopifnot(all(run(cat,as.integer(c(1,1)),as.integer(c(0,2,3)))==c(1,1,0,2,3)))
 any<-jit("λbs. (∨)/ₒ #f bs :: bool")
 stopifnot(run(any,c(FALSE,FALSE,FALSE,TRUE)))
 
-# isbn<-jit('λxs. ((+)/ (*)\\`xs (}:(cyc. ⟨1,3::int⟩ 7)))')
-# run(isbn,as.integer(c(9,7,8,0,5,9,6,5,2,8,1,2,6)))
+isbn<-jit('λxs. ((+)/ (*)`xs (}:(cyc. ⟨1,3::int⟩ 7)))|10=0')
+stopifnot(run(isbn,as.integer(c(9,7,8,0,5,9,6,5,2,8,1,2,6))))
+stopifnot(!run(isbn,as.integer(c(9,7,8,1,7,8,8,3,9,9,0,8,3))))
