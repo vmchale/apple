@@ -145,7 +145,7 @@ static PY apple_call(PY self, PY args, PY kwargs) {
 
 static PyTypeObject JOT = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "Jit Object",
+    .tp_name = "JIT-compiled callable",
     .tp_doc = PyDoc_STR("JIT-compiled function in-memory"),
     .tp_basicsize = sizeof(JO),
     .tp_itemsize = 0,

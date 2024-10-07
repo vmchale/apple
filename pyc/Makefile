@@ -27,7 +27,7 @@ install: apple.so
 
 # cdeps applemodule.c | ja "[x+' '+y]|> \$0"
 
-apple.o: applemodule.c
+%.o: %.c
 	$(CC) -fPIC -O2 -c $< $(CFLAGS) -I ../include -I $(HS_INCLUDE_DIR) -o $@
 
 apple.so: apple.o
