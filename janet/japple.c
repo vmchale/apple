@@ -82,13 +82,14 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
     int aarg=ty->argc;
     janet_fixarity(argc, aarg);
     U* vals=janet_smalloc(sizeof(U)*argc);U ret=janet_smalloc(8);
+    B* fs=janet_smalloc(argc);
     for(int k=0;k<aarg;k++){
         Sw(ty->args[k]){
-            C F_t: {F* xf=alloca(sizeof(F));xf[0]=janet_getnumber(argv,k);vals[k]=xf;};BR
-            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)janet_getinteger(argv,k);vals[k]=xi;};BR
-            C FA: {U* a=alloca(sizeof(U));a[0]=fv_j(janet_getarray(argv,k));vals[k]=a;}BR
-            C IA: {U* a=alloca(sizeof(U));a[0]=fv_i(janet_getarray(argv,k));vals[k]=a;}BR
-            C BA: {U* a=alloca(sizeof(U));a[0]=fv_b(janet_getarray(argv,k));vals[k]=a;}BR
+            C F_t: {F* xf=alloca(sizeof(F));xf[0]=janet_getnumber(argv,k);fs[k]=0;vals[k]=xf;};BR
+            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)janet_getinteger(argv,k);fs[k]=0;vals[k]=xi;};BR
+            C FA: {U* a=alloca(sizeof(U));a[0]=fv_j(janet_getarray(argv,k));fs[k]=1;vals[k]=a;}BR
+            C IA: {U* a=alloca(sizeof(U));a[0]=fv_i(janet_getarray(argv,k));fs[k]=1;vals[k]=a;}BR
+            C BA: {U* a=alloca(sizeof(U));a[0]=fv_b(janet_getarray(argv,k));fs[k]=1;vals[k]=a;}BR
         }
     }
     U fp=jit->bc;ffi_cif* cif=jit->ffi;
@@ -102,7 +103,8 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
         C IA: r=janet_wrap_array(j_vi(*(U*)ret));BR
         C BA: r=janet_wrap_array(j_vb(*(U*)ret));BR
     }
-    janet_sfree(vals);janet_sfree(ret);
+    DO(i,argc,if(fs[i]){free(*(U*)vals[i]);})
+    janet_sfree(fs);janet_sfree(vals);janet_sfree(ret);
     R r;
 }
 
