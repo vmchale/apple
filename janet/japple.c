@@ -5,8 +5,6 @@
 #include"../c/ffi.c"
 
 // int janet_getboolean(const Janet *argv, int32_t n);
-//
-// "For getting and setting values in the array, use array->data[index] directly."
 
 typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;typedef uint8_t B;
 
