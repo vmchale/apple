@@ -25,3 +25,6 @@ stopifnot(run(any,c(FALSE,FALSE,FALSE,TRUE)))
 isbn<-jit('λxs. ((+)/ (*)`xs (}:(cyc. ⟨1,3::int⟩ 7)))|10=0')
 stopifnot(run(isbn,as.integer(c(9,7,8,0,5,9,6,5,2,8,1,2,6))))
 stopifnot(!run(isbn,as.integer(c(9,7,8,1,7,8,8,3,9,9,0,8,3))))
+
+prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))))'(irange 2 N 1)")
+stopifnot(all(run(prime_mask,9)==c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE)))

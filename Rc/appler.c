@@ -22,6 +22,7 @@ typedef size_t S;
 // http://adv-r.had.co.nz/C-interface.html
 
 #define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
+#define DA(dims,rnk) SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
 
 typedef struct AppleCache {
     U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;
@@ -31,7 +32,7 @@ SEXP rf(U x) {
     J* i_p=x;
     J t=1;
     J rnk=i_p[0];
-    SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
+    DA(dims,rnk)
     DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
     SEXP ret=PROTECT(allocArray(REALSXP,dims));
     S sz=8*t;
@@ -44,13 +45,26 @@ SEXP ri(U x) {
     J* i_p=x;
     J t=1;
     J rnk=i_p[0];
-    SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
+    DA(dims,rnk)
     DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
     SEXP ret=PROTECT(allocArray(INTSXP,dims));
-    DO(k,t,INTEGER(ret)[k]=(int)i_p[k+rnk+1]);
+    DO(i,t,INTEGER(ret)[i]=(int)i_p[i+rnk+1]);
     UNPROTECT(2);
     R ret;
 }
+
+SEXP rb(U x) {
+    J* i_p=x;
+    J t=1;
+    J rnk=i_p[0];B* b_p=x+8*rnk+8;
+    DA(dims,rnk)
+    DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
+    SEXP ret=PROTECT(allocArray(LGLSXP,dims));
+    DO(i,t,LOGICAL(ret)[i]=(int)b_p[i]);
+    UNPROTECT(2);
+    R ret;
+}
+
 // vector only
 U fr(SEXP x) {
     U ret;
@@ -62,14 +76,14 @@ U fi(SEXP x) {
     J rnk=1;J dim=length(x);
     J* ret=malloc(8*dim+16);
     ret[0]=rnk;ret[1]=dim;
-    DO(i,dim,ret[i+2]=(J)INTEGER(x)[i]);
+    DO(i,dim,ret[i+2]=(J)(INTEGER(x)[i]));
     R ret;
 }
 
 U fb(SEXP x) {
     J rnk=1;J dim=length(x);
-    B* ret=malloc(8*dim+16);
-    J* i_p = ret;
+    B* ret=malloc(dim+16);
+    J* i_p=ret;
     i_p[0]=rnk;i_p[1]=dim;
     DO(i,dim,ret[i+16]=(B)(LOGICAL(x)[i]));
     R ret;
@@ -135,6 +149,7 @@ SEXP run_R(SEXP args){
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR
         C IA: r=ri(*(U*)ret);BR
+        C BA: r=rb(*(U*)ret);BR
         C F_t: r=ScalarReal(*(F*)ret);BR
         C I_t: r=ScalarInteger((int)(*(J*)ret));BR
         C B_t: r=ScalarLogical(*(int*)ret);BR
