@@ -40,12 +40,38 @@ SEXP rf(U x) {
     R ret;
 }
 
+SEXP ri(U x) {
+    J* i_p=x;
+    J t=1;
+    J rnk=i_p[0];
+    SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
+    DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
+    SEXP ret=PROTECT(allocArray(INTSXP,dims));
+    DO(k,t,INTEGER(ret)[k]=(int)i_p[k+rnk+1]);
+    UNPROTECT(2);
+    R ret;
+}
 // vector only
 U fr(SEXP x) {
+    U ret;
+    J dim=length(x);
+    V(dim,REAL(x),ret);R ret;
+}
+
+U fi(SEXP x) {
     J rnk=1;J dim=length(x);
-    J* ret=malloc(8*(2+dim));
+    J* ret=malloc(8*dim+16);
     ret[0]=rnk;ret[1]=dim;
-    memcpy(ret+2,REAL(x),dim*8);
+    DO(i,dim,ret[i+2]=(J)INTEGER(x)[i]);
+    R ret;
+}
+
+U fb(SEXP x) {
+    J rnk=1;J dim=length(x);
+    B* ret=malloc(8*dim+16);
+    J* i_p = ret;
+    i_p[0]=rnk;i_p[1]=dim;
+    DO(i,dim,ret[i+16]=(B)(LOGICAL(x)[i]));
     R ret;
 }
 
@@ -99,15 +125,19 @@ SEXP run_R(SEXP args){
         Sw(ty->args[k]){
             // FIXME: fr leaks memory
             C FA: {U* x=alloca(sizeof(U));x[0]=fr(arg);vals[k]=x;};BR
+            C IA: {U* x=alloca(sizeof(U));x[0]=fi(arg);vals[k]=x;};BR
+            C BA: {U* x=alloca(sizeof(U));x[0]=fb(arg);vals[k]=x;};BR
             C F_t: {F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
-            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(int64_t)asInteger(arg);vals[k]=xi;};BR
+            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)asInteger(arg);vals[k]=xi;};BR
         }
     }
     ffi_call(cif,fp,ret,vals);
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR
+        C IA: r=ri(*(U*)ret);BR
         C F_t: r=ScalarReal(*(F*)ret);BR
         C I_t: r=ScalarInteger((int)(*(J*)ret));BR
+        C B_t: r=ScalarLogical(*(int*)ret);BR
     }
     R r;
 }

@@ -6,7 +6,7 @@
 
 #undef I
 
-typedef double F;typedef int64_t J; typedef void* U; typedef bool B;
+typedef double F;typedef int64_t J; typedef void* U; typedef uint8_t B;
 
 #define DO(i,n,a) {J i;for(i=0;i<n;i++){a;}}
 #define V(n,xs,p) {p=malloc(16+8*n);J* i_p=p;*i_p=1;i_p[1]=n;memcpy(p+16,xs,8*n);}
