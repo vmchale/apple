@@ -22,7 +22,6 @@ static int jit_gc(void *data, size_t len) {
     R 0;
 }
 
-// FIXME: malloc leaks memory
 U fv_j(JanetArray* x) {
     J n=(J)x->count;
     J sz_i=n+2;S sz=sz_i*8;

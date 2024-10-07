@@ -147,20 +147,22 @@ static PY apple_call(PY self, PY args, PY kwargs) {
     int argc=ty->argc;
     U* vals=alloca(sizeof(U)*argc);U ret=alloca(8);
     PY pyarg;PY pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
+    B* fs=alloca(argc);
     for(int k=0;k<argc;k++){
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             Sw(ty->args[k]){
                 // FIXME: i_npy &c. leak memory
-                C IA: {U* x=alloca(sizeof(U));x[0]=i_npy((NPA)pyarg);vals[k]=x;};BR
-                C BA: {U* x=alloca(sizeof(U));x[0]=b_npy((NPA)pyarg);vals[k]=x;};BR
-                C FA: {U* x=alloca(sizeof(U));x[0]=f_npy((NPA)pyarg);vals[k]=x;};BR
-                C I_t: {J* xi=alloca(sizeof(J));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
-                C F_t: {F* xf=alloca(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
+                C IA: {U* x=alloca(sizeof(U));x[0]=i_npy((NPA)pyarg);fs[k]=1;vals[k]=x;};BR
+                C BA: {U* x=alloca(sizeof(U));x[0]=b_npy((NPA)pyarg);fs[k]=1;vals[k]=x;};BR
+                C FA: {U* x=alloca(sizeof(U));x[0]=f_npy((NPA)pyarg);fs[k]=1;vals[k]=x;};BR
+                C I_t: {J* xi=alloca(sizeof(J));xi[0]=PyLong_AsLong(pyarg);fs[k]=0;vals[k]=xi;};BR
+                C F_t: {F* xf=alloca(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);fs[k]=0;vals[k]=xf;};BR
             }
         }
     }
     ffi_call(cif,fp,ret,vals);
+    DO(i,argc,if(fs[i]){free(*(U*)vals[i]);})
     Sw(ty->res){
         C IA: r=npy_i(*(U*)ret);BR
         C FA: r=npy_f(*(U*)ret);BR
