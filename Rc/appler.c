@@ -24,9 +24,9 @@ typedef size_t S;
 #define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
 #define DA(dims,rnk) SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
 
-typedef struct AppleCache {
+typedef struct AppleC {
     U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;
-} AppleCache;
+} AppleC;
 
 SEXP rf(U x) {
     J* i_p=x;
@@ -109,7 +109,7 @@ SEXP jit_R(SEXP a){
     ERR(ty,err);
     U fp;S f_sz;U s;
     fp=apple_compile(&sys,inp,&f_sz,&s);
-    AppleCache* rc=malloc(sizeof(AppleCache));
+    AppleC* rc=malloc(sizeof(AppleC));
     ffi_cif* ffi=apple_ffi(ty);
     rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;rc->sa=s;rc->ffi=ffi;
     // http://homepage.divms.uiowa.edu/~luke/R/simpleref.html
@@ -129,7 +129,7 @@ SEXP asm_R(SEXP a) {
 SEXP run_R(SEXP args){
     args=CDR(args);
     SEXP rc=CAR(args);
-    AppleCache* c=(AppleCache*)(R_ExternalPtrAddr(rc));
+    AppleC* c=(AppleC*)(R_ExternalPtrAddr(rc));
     FnTy* ty=c->ty;U fp=c->code;ffi_cif* cif=c->ffi;
     SEXP r;
     int argc=ty->argc;
