@@ -145,7 +145,7 @@ static PY apple_call(PY self, PY args, PY kwargs) {
 
 static PyTypeObject JOT = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "JIT-compiled callable",
+    .tp_name = "apple.AppleJIT",
     .tp_doc = PyDoc_STR("JIT-compiled function in-memory"),
     .tp_basicsize = sizeof(JO),
     .tp_itemsize = 0,
@@ -170,7 +170,7 @@ static PY apple_jit(PY self, PY args) {
     R (PY)cc;
 }
 
-static PyMethodDef AppleMethods[] = {
+static PyMethodDef AFn[] = {
     {"jit", apple_jit, METH_VARARGS, "Compile an expressoin into a callable object"},
     {"typeof", apple_typeof, METH_VARARGS, "Display type of expression"},
     {"asm", apple_asm, METH_VARARGS, "Dump assembly"},
@@ -178,6 +178,6 @@ static PyMethodDef AppleMethods[] = {
     {NULL,NULL,0,NULL}
 };
 
-static struct PyModuleDef applemodule = { PyModuleDef_HEAD_INIT, "apple", NULL, -1, AppleMethods };
+static struct PyModuleDef applemodule = { PyModuleDef_HEAD_INIT, "apple", NULL, -1, AFn };
 
-PyMODINIT_FUNC PyInit_apple(void) { hs_init(0,0); import_array(); R PyModule_Create(&applemodule); }
+PyMODINIT_FUNC PyInit_apple(void) { hs_init(0,0); import_array(); PY m=PyModule_Create(&applemodule); PyModule_AddType(m,&JOT); R m; }
