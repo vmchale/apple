@@ -29,6 +29,20 @@ U f_npy(const NPA o) {
     R x;
 }
 
+U b_npy(NPA o) {
+    CT(o,'?',"Error: expected an array of booleans")
+    J rnk=PyArray_NDIM(o);
+    npy_intp* dims=PyArray_DIMS(o);
+    J n=PyArray_SIZE(o);
+    J sz_i=1+rnk+n;S sz=sz_i*8;
+    U x=malloc(sz);J* x_i=x;x_i[0]=rnk;
+    DO(i,rnk,x_i[i+1]=(J)dims[i]);
+    B* x_p=x;
+    U data=PyArray_DATA(o);
+    memcpy(x_p+8*rnk+8,data,n*8);
+    R x;
+}
+
 U i_npy(NPA o) {
     CT(o,'l',"Error: expected an array of 64-bit integers")
     J rnk=PyArray_NDIM(o);
@@ -65,6 +79,19 @@ PY npy_f(U x) {
     memcpy(data,i_p+rnk+1,sz);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);
     PyArray_ENABLEFLAGS((NPA*)res,NPY_ARRAY_OWNDATA);
+    free(x);R res;
+}
+
+PY npy_b(U x) {
+    J* i_p=x;J rnk=i_p[0];
+    J t=1;
+    B* x_p=x;
+    npy_intp* dims=malloc(sizeof(npy_intp)*rnk);
+    DO(i,rnk,t*=i_p[i+1];dims[i]=(npy_intp)i_p[i+1]);
+    S sz=8*t;
+    U data=malloc(sz);
+    memcpy(data,x_p+rnk*8+8,sz);
+    PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);
     free(x);R res;
 }
 
@@ -124,8 +151,9 @@ static PY apple_call(PY self, PY args, PY kwargs) {
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             Sw(ty->args[k]){
-                // FIXME: i_npy leaks memory
+                // FIXME: i_npy &c. leak memory
                 C IA: {U* x=alloca(sizeof(U));x[0]=i_npy((NPA)pyarg);vals[k]=x;};BR
+                C BA: {U* x=alloca(sizeof(U));x[0]=b_npy((NPA)pyarg);vals[k]=x;};BR
                 C FA: {U* x=alloca(sizeof(U));x[0]=f_npy((NPA)pyarg);vals[k]=x;};BR
                 C I_t: {J* xi=alloca(sizeof(J));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
                 C F_t: {F* xf=alloca(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
@@ -136,6 +164,7 @@ static PY apple_call(PY self, PY args, PY kwargs) {
     Sw(ty->res){
         C IA: r=npy_i(*(U*)ret);BR
         C FA: r=npy_f(*(U*)ret);BR
+        C BA: r=npy_b(*(U*)ret);BR
         C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
         C I_t: r=PyLong_FromLongLong(*(J*)ret);BR
         C B_t: r=PyBool_FromLong(*(long*)ret);BR
