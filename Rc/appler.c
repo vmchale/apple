@@ -134,19 +134,19 @@ SEXP run_R(SEXP args){
     SEXP r;
     int argc=ty->argc;
     U* vals=alloca(sizeof(U)*argc);U ret=alloca(8);
-    B* fs=alloca(argc);
+    uint8_t fs=0;
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
-            C FA: {U* x=alloca(sizeof(U));x[0]=fr(arg);fs[k]=1;vals[k]=x;};BR
-            C IA: {U* x=alloca(sizeof(U));x[0]=fi(arg);fs[k]=1;vals[k]=x;};BR
-            C BA: {U* x=alloca(sizeof(U));x[0]=fb(arg);fs[k]=1;vals[k]=x;};BR
-            C F_t: {F* xf=alloca(sizeof(F));xf[0]=asReal(arg);fs[k]=0;vals[k]=xf;};BR
-            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)asInteger(arg);fs[k]=0;vals[k]=xi;};BR
+            C FA: {U* x=alloca(sizeof(U));x[0]=fr(arg);fs|=1<<k;vals[k]=x;};BR
+            C IA: {U* x=alloca(sizeof(U));x[0]=fi(arg);fs|=1<<k;vals[k]=x;};BR
+            C BA: {U* x=alloca(sizeof(U));x[0]=fb(arg);fs|=1<<k;vals[k]=x;};BR
+            C F_t: {F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
+            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)asInteger(arg);vals[k]=xi;};BR
         }
     }
     ffi_call(cif,fp,ret,vals);
-    DO(i,argc,if(fs[i]){free(*(U*)vals[i]);})
+    DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
     Sw(ty->res){
         C FA: r=rf(*(U*)ret);BR
         C IA: r=ri(*(U*)ret);BR
