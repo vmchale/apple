@@ -1,5 +1,4 @@
 #include<janet.h>
-#include<math.h>
 #include<HsFFI.h>
 #include<sys/mman.h>
 #include"../c/ffi.c"

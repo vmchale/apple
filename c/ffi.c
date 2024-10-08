@@ -1,4 +1,5 @@
 #include<stdlib.h>
+#include<math.h>
 #include<ffi.h>
 #include"../include/apple.h"
 
