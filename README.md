@@ -133,6 +133,14 @@ source("R/apple.R")
 
 to access the functions.
 
+### Janet
+
+Uses [jpm](https://janet-lang.org/docs/jpm.html).
+
+```
+make -C janet install
+```
+
 ## Documentation
 
 Type `\l` in the REPL to show the reference card:
@@ -180,6 +188,20 @@ To display module documentation:
 ```
 
 ```
+CLASSES
+    builtins.object
+        AppleJIT
+
+    class AppleJIT(builtins.object)
+     |  JIT-compiled function in-memory
+     |
+     |  Methods defined here:
+     |
+     |  __call__(self, /, *args, **kwargs)
+     |      Call self as a function.
+     |
+     |  ----------------------------------------------------------------------
+
 FUNCTIONS
     asm(...)
         Dump assembly
@@ -192,4 +214,29 @@ FUNCTIONS
 
     typeof(...)
         Display type of expression
+```
+
+### Janet
+
+```janet
+repl:2:> (import apple)
+@{_ @{:value <cycle 0>} apple/jit @{:private true} apple/tyof @{:private true}}
+repl:4:> (doc apple/jit)
+
+
+    cfunction
+
+    Compile source string into Janet callable
+
+
+nil
+repl:5:> (doc apple/tyof)
+
+
+    cfunction
+
+    type of expression
+
+
+nil
 ```
