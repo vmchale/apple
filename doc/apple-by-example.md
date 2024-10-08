@@ -121,6 +121,13 @@ Vec 3 [0.0, 1.0, 3.0]
 5050
 ```
 
+## Scan
+
+```
+ > (+)Λ (irange 1 3 1)
+Vec 3 [1, 3, 6]
+```
+
 ## Array Literals
 
 Array literals are delineated by `⟨`...`⟩`.
@@ -563,6 +570,14 @@ Note the `⟜` to prevent expressions from being inlined.
   ⸎ avg ← [{n ⟜ ℝ(:xs); ((+)/xs)%n}]
   ; e:(avg (_.'xs))
 ```
+
+## Array Strides
+
+```
+λds. }:((*)Λₒ 1::int ds)
+```
+
+(Column-major order)
 
 ## Train Neural Network
 
