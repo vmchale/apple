@@ -84,13 +84,12 @@ PY npy_f(U x) {
 
 PY npy_b(U x) {
     J* i_p=x;J rnk=i_p[0];
-    J t=1;
+    S t=1;
     B* x_p=x;
     npy_intp* dims=malloc(sizeof(npy_intp)*rnk);
     DO(i,rnk,t*=i_p[i+1];dims[i]=(npy_intp)i_p[i+1]);
-    S sz=8*t;
-    U data=malloc(sz);
-    memcpy(data,x_p+rnk*8+8,sz);
+    U data=malloc(t);
+    memcpy(data,x_p+rnk*8+8,t);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);
     free(x);R res;
 }
