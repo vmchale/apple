@@ -79,7 +79,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
     U* vals=janet_smalloc(sizeof(U)*argc);U ret=janet_smalloc(8);
     uint8_t fs=0;
     for(int k=0;k<aarg;k++){
-        Sw(ty->args[k]){
+        switch(ty->args[k]){
             C(F_t, F* xf=alloca(sizeof(F));xf[0]=janet_getnumber(argv,k);vals[k]=xf;)
             C(I_t, J* xi=alloca(sizeof(J));xi[0]=(J)janet_getinteger(argv,k);vals[k]=xi;)
             C(FA, U* a=alloca(sizeof(U));a[0]=fv_j(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;)
@@ -90,7 +90,7 @@ static Janet apple_call(void *x, int32_t argc, Janet *argv) {
     U fp=jit->bc;ffi_cif* cif=jit->ffi;
     ffi_call(cif,fp,ret,vals);
     Janet r;
-    Sw(ty->res){
+    switch(ty->res){
         C(F_t, r=janet_wrap_number(*(F*)ret))
         C(I_t, r=janet_wrap_integer((int32_t)*(J*)ret))
         C(B_t, r=janet_wrap_boolean(*(int*)ret))

@@ -122,7 +122,7 @@ static PY apple_call(PY self, PY args, PY kwargs) {
     for(int k=0;k<argc;k++){
         pyarg=pyargs[k];
         if(pyarg!=NULL){
-            Sw(ty->args[k]){
+            switch(ty->args[k]){
                 C(IA,U* x=alloca(sizeof(U));x[0]=i_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
                 C(BA,U* x=alloca(sizeof(U));x[0]=b_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
                 C(FA,U* x=alloca(sizeof(U));x[0]=f_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
@@ -133,7 +133,7 @@ static PY apple_call(PY self, PY args, PY kwargs) {
     }
     ffi_call(cif,fp,ret,vals);
     DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
-    Sw(ty->res){
+    switch(ty->res){
         C(IA,r=npy_i(*(U*)ret))
         C(FA,r=npy_f(*(U*)ret))
         C(BA,r=npy_b(*(U*)ret))

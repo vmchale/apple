@@ -119,7 +119,7 @@ SEXP run_R(SEXP args){
     uint8_t fs=0;
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
-        Sw(ty->args[k]){
+        switch(ty->args[k]){
             C(FA, U* x=alloca(sizeof(U));x[0]=fr(arg);fs|=1<<k;vals[k]=x;)
             C(IA, U* x=alloca(sizeof(U));x[0]=fi(arg);fs|=1<<k;vals[k]=x;)
             C(BA, U* x=alloca(sizeof(U));x[0]=fb(arg);fs|=1<<k;vals[k]=x;)
@@ -129,7 +129,7 @@ SEXP run_R(SEXP args){
     }
     ffi_call(cif,fp,ret,vals);
     DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
-    Sw(ty->res){
+    switch(ty->res){
         C(FA,r=rf(*(U*)ret))
         C(IA,r=ri(*(U*)ret))
         C(BA,r=rb(*(U*)ret))
