@@ -9,6 +9,7 @@ typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NPA;typedef size_t S
 
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
 #define CD(t,rnk,x,dims) J* i_p=x;J rnk=i_p[0];npy_intp* dims=malloc(sizeof(npy_intp)*rnk);DO(i,rnk,t*=i_p[i+1];dims[i]=(npy_intp)i_p[i+1]);
+#define A(r,sz,x,py) U x=malloc(sz);{J* x_i=x;x_i[0]=rnk;DO(i,rnk,x_i[i+1]=(J)py[i]);}
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError, msg);free(msg);R NULL;};}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
@@ -17,10 +18,8 @@ U f_npy(const NPA o) {
     J rnk=PyArray_NDIM(o);
     npy_intp* dims=PyArray_DIMS(o);
     J n=PyArray_SIZE(o);
-    J sz_i=1+rnk+n;S sz=sz_i*8;
-    U x=malloc(sz);J* x_i=x;x_i[0]=rnk;
+    A(rnk,(1+rnk+n)*8,x,dims);
     F* x_f=x;
-    DO(i,rnk,x_i[i+1]=(J)dims[i]);
     U data=PyArray_DATA(o);
     memcpy(x_f+rnk+1,data,n*8);
     R x;
@@ -31,9 +30,7 @@ U b_npy(NPA o) {
     J rnk=PyArray_NDIM(o);
     npy_intp* dims=PyArray_DIMS(o);
     J n=PyArray_SIZE(o);
-    J sz_i=1+rnk+n;S sz=sz_i*8;
-    U x=malloc(sz);J* x_i=x;x_i[0]=rnk;
-    DO(i,rnk,x_i[i+1]=(J)dims[i]);
+    A(rnk,(1+rnk)*8+n,x,dims);
     B* x_p=x;
     U data=PyArray_DATA(o);
     memcpy(x_p+8*rnk+8,data,n*8);
@@ -45,9 +42,8 @@ U i_npy(NPA o) {
     J rnk=PyArray_NDIM(o);
     npy_intp* dims=PyArray_DIMS(o);
     J n=PyArray_SIZE(o);
-    J sz_i=1+rnk+n;S sz=sz_i*8;
-    U x=malloc(sz);J* x_i=x;x_i[0]=rnk;
-    DO(i,rnk,x_i[i+1]=(J)dims[i]);
+    A(rnk,(1+rnk+n)*8,x,dims);
+    J* x_i=x;
     U data=PyArray_DATA(o);
     memcpy(x_i+rnk+1,data,n*8);
     R x;
