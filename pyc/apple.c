@@ -10,14 +10,17 @@ typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
 #define CD(rnk,x,t,ds) J* i_p=x;J rnk=i_p[0];npy_intp* ds=malloc(sizeof(npy_intp)*rnk);J t=1;DO(i,rnk,t*=i_p[i+1];ds[i]=(npy_intp)i_p[i+1]);
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ds=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ds[i]);}
-#define A(r,n,sz,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(sz);AD(r,x,py);
+#define PYW(x,n,w,pyd) S sz=w*n;U pyd=malloc(sz);memcpy(data,x+rnk*8+8,sz);free(x);
+#define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
+// {npy_intp* dims=PyArray_DIMS(py);J* x_i=x;x_i[0]=r;DO(i,r,x_i[i+1]=(J)dims[i]);}
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;};}
 #define O(pya) PyArray_ENABLEFLAGS((NP*)pya,NPY_ARRAY_OWNDATA)
+#define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError, msg);free(msg);R NULL;};}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
 U f_npy(const NP o) {
     CT(o,'d',"Error: expected an array of floats")
-    A(rnk,n,(1+rnk+n)*8,x,o);
+    A(rnk,n,8,x,o);
     F* x_f=x;
     U data=PyArray_DATA(o);
     memcpy(x_f+rnk+1,data,n*8);
@@ -26,7 +29,7 @@ U f_npy(const NP o) {
 
 U b_npy(NP o) {
     CT(o,'?',"Error: expected an array of booleans")
-    A(rnk,n,(1+rnk)*8+n,x,o);
+    A(rnk,n,1,x,o);
     B* x_p=x;
     U data=PyArray_DATA(o);
     memcpy(x_p+8*rnk+8,data,n*8);
@@ -35,7 +38,7 @@ U b_npy(NP o) {
 
 U i_npy(NP o) {
     CT(o,'l',"Error: expected an array of 64-bit integers")
-    A(rnk,n,(1+rnk+n)*8,x,o);
+    A(rnk,n,8,x,o);
     J* x_i=x;
     U data=PyArray_DATA(o);
     memcpy(x_i+rnk+1,data,n*8);
@@ -44,29 +47,21 @@ U i_npy(NP o) {
 
 PY npy_i(U x) {
     CD(rnk,x,t,dims);
-    S sz=8*t;
-    U data=malloc(sz);
-    memcpy(data,i_p+rnk+1,sz);
+    PYW(x,t,8,data);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);O(res);
-    free(x);R res;
+    R res;
 }
 
 PY npy_f(U x) {
     CD(rnk,x,t,dims);
-    S sz=8*t;
-    U data=malloc(sz);
-    memcpy(data,i_p+rnk+1,sz);
-    free(x);
+    PYW(x,t,8,data);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);O(res);
     R res;
 }
 
 PY npy_b(U x) {
     CD(rnk,x,t,dims);
-    U data=malloc(t);
-    B* x_p=x;
-    memcpy(data,x_p+rnk*8+8,t);
-    free(x);
+    PYW(x,t,1,data);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);O(res);
     R res;
 }
