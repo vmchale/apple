@@ -91,6 +91,7 @@ PY npy_b(U x) {
     U data=malloc(t);
     memcpy(data,x_p+rnk*8+8,t);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);
+    PyArray_ENABLEFLAGS((NPA*)res,NPY_ARRAY_OWNDATA);
     free(x);R res;
 }
 
