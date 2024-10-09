@@ -7,10 +7,6 @@
 
 typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NPA;typedef size_t S;
 
-#define R return
-#define Sw switch
-#define C case
-#define BR break;
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
 #define CD(t,rnk,x,dims) J* i_p=x;J rnk=i_p[0];npy_intp* dims=malloc(sizeof(npy_intp)*rnk);DO(i,rnk,t*=i_p[i+1];dims[i]=(npy_intp)i_p[i+1]);
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError, msg);free(msg);R NULL;};}
@@ -147,24 +143,23 @@ static PY apple_call(PY self, PY args, PY kwargs) {
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             Sw(ty->args[k]){
-                // FIXME: i_npy &c. leak memory
-                C IA: {U* x=alloca(sizeof(U));x[0]=i_npy((NPA)pyarg);fs|=1<<k;vals[k]=x;};BR
-                C BA: {U* x=alloca(sizeof(U));x[0]=b_npy((NPA)pyarg);fs|=1<<k;vals[k]=x;};BR
-                C FA: {U* x=alloca(sizeof(U));x[0]=f_npy((NPA)pyarg);fs|=1<<k;vals[k]=x;};BR
-                C I_t: {J* xi=alloca(sizeof(J));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;};BR
-                C F_t: {F* xf=alloca(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;};BR
+                C(IA,U* x=alloca(sizeof(U));x[0]=i_npy((NPA)pyarg);fs|=1<<k;vals[k]=x;)
+                C(BA,U* x=alloca(sizeof(U));x[0]=b_npy((NPA)pyarg);fs|=1<<k;vals[k]=x;)
+                C(FA,U* x=alloca(sizeof(U));x[0]=f_npy((NPA)pyarg);fs|=1<<k;vals[k]=x;)
+                C(I_t,J* xi=alloca(sizeof(J));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;)
+                C(F_t,F* xf=alloca(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;)
             }
         }
     }
     ffi_call(cif,fp,ret,vals);
     DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
     Sw(ty->res){
-        C IA: r=npy_i(*(U*)ret);BR
-        C FA: r=npy_f(*(U*)ret);BR
-        C BA: r=npy_b(*(U*)ret);BR
-        C F_t: r=PyFloat_FromDouble(*(F*)ret);BR
-        C I_t: r=PyLong_FromLongLong(*(J*)ret);BR
-        C B_t: r=PyBool_FromLong(*(long*)ret);BR
+        C(IA,r=npy_i(*(U*)ret))
+        C(FA,r=npy_f(*(U*)ret))
+        C(BA,r=npy_b(*(U*)ret))
+        C(F_t,r=PyFloat_FromDouble(*(F*)ret))
+        C(I_t,r=PyLong_FromLongLong(*(J*)ret))
+        C(B_t,r=PyBool_FromLong(*(long*)ret))
     }
     R r;
 };

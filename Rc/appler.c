@@ -8,10 +8,6 @@
 
 typedef size_t S;
 
-#define Sw switch
-#define C case
-#define BR break;
-
 // asReal : SEXP -> double
 // asInteger : SEXP -> int
 // ScalarReal : double -> SEXP
@@ -138,22 +134,22 @@ SEXP run_R(SEXP args){
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         Sw(ty->args[k]){
-            C FA: {U* x=alloca(sizeof(U));x[0]=fr(arg);fs|=1<<k;vals[k]=x;};BR
-            C IA: {U* x=alloca(sizeof(U));x[0]=fi(arg);fs|=1<<k;vals[k]=x;};BR
-            C BA: {U* x=alloca(sizeof(U));x[0]=fb(arg);fs|=1<<k;vals[k]=x;};BR
-            C F_t: {F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;};BR
-            C I_t: {J* xi=alloca(sizeof(J));xi[0]=(J)asInteger(arg);vals[k]=xi;};BR
+            C(FA, U* x=alloca(sizeof(U));x[0]=fr(arg);fs|=1<<k;vals[k]=x;)
+            C(IA, U* x=alloca(sizeof(U));x[0]=fi(arg);fs|=1<<k;vals[k]=x;)
+            C(BA, U* x=alloca(sizeof(U));x[0]=fb(arg);fs|=1<<k;vals[k]=x;)
+            C(F_t, F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;)
+            C(I_t, J* xi=alloca(sizeof(J));xi[0]=(J)asInteger(arg);vals[k]=xi;)
         }
     }
     ffi_call(cif,fp,ret,vals);
     DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
     Sw(ty->res){
-        C FA: r=rf(*(U*)ret);BR
-        C IA: r=ri(*(U*)ret);BR
-        C BA: r=rb(*(U*)ret);BR
-        C F_t: r=ScalarReal(*(F*)ret);BR
-        C I_t: r=ScalarInteger((int)(*(J*)ret));BR
-        C B_t: r=ScalarLogical(*(int*)ret);BR
+        C(FA,r=rf(*(U*)ret))
+        C(IA,r=ri(*(U*)ret))
+        C(BA,r=rb(*(U*)ret))
+        C(F_t,r=ScalarReal(*(F*)ret))
+        C(I_t,r=ScalarInteger((int)(*(J*)ret)))
+        C(B_t,r=ScalarLogical(*(int*)ret))
     }
     R r;
 }
