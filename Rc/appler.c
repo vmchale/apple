@@ -18,31 +18,23 @@ typedef size_t S;
 // http://adv-r.had.co.nz/C-interface.html
 
 #define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
-#define DA(dims,rnk) SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));
+#define DA(t,x,rnk,dims) J t=1;J* i_p=x;J rnk=i_p[0];SEXP dims=PROTECT(allocVector(INTSXP,(int)rnk));DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
 
 typedef struct AppleC {
     U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;
 } AppleC;
 
 SEXP rf(U x) {
-    J* i_p=x;
-    J t=1;
-    J rnk=i_p[0];
-    DA(dims,rnk)
-    DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
+    DA(t,x,rnk,dims)
     SEXP ret=PROTECT(allocArray(REALSXP,dims));
-    S sz=8*t;
-    memcpy(REAL(ret),i_p+rnk+1,sz);
+    S sz=8*t;F* x_f=x;
+    memcpy(REAL(ret),x_f+rnk+1,sz);
     UNPROTECT(2);
     R ret;
 }
 
 SEXP ri(U x) {
-    J* i_p=x;
-    J t=1;
-    J rnk=i_p[0];
-    DA(dims,rnk)
-    DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
+    DA(t,x,rnk,dims)
     SEXP ret=PROTECT(allocArray(INTSXP,dims));
     DO(i,t,INTEGER(ret)[i]=(int)i_p[i+rnk+1]);
     UNPROTECT(2);
@@ -50,11 +42,8 @@ SEXP ri(U x) {
 }
 
 SEXP rb(U x) {
-    J* i_p=x;
-    J t=1;
-    J rnk=i_p[0];B* b_p=x+8*rnk+8;
-    DA(dims,rnk)
-    DO(i,rnk,t*=i_p[i+1];INTEGER(dims)[i]=(int)i_p[i+1]);
+    DA(t,x,rnk,dims)
+    B* b_p=x+8*rnk+8;
     SEXP ret=PROTECT(allocArray(LGLSXP,dims));
     DO(i,t,LOGICAL(ret)[i]=(int)b_p[i]);
     UNPROTECT(2);
