@@ -9,7 +9,8 @@ typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;typedef uint
 
 #define NIL janet_wrap_nil()
 #define ERR(p,msg){if(p==NULL){printf("%s\n",msg);free(msg);R NIL;};}
-#define JA(n,xs) JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
+#define JA(x,n,xs) J n=((J*)x)[1];JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
+#define VA(sz,y) U y=malloc(sz);{J* x_i=y;x_i[0]=1;x_i[1]=n;}
 
 typedef struct JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi;} JF;
 
@@ -23,10 +24,8 @@ static int jit_gc(void *data, size_t len) {
 
 U fv_j(JanetArray* x) {
     J n=(J)x->count;
-    J sz_i=n+2;S sz=sz_i*8;
-    U y=malloc(sz);J* x_i=y;
+    VA(n*8+16,y);
     F* x_f=y;
-    x_i[0]=1;x_i[1]=n;
     Janet* js=x->data;
     DO(i,n,x_f[i+2]=janet_unwrap_number(js[i]));
     R y;
@@ -34,9 +33,8 @@ U fv_j(JanetArray* x) {
 
 U fv_i(JanetArray* x) {
     J n=(J)x->count;
-    J sz_i=n+2;S sz=sz_i*8;
-    U y=malloc(sz);J* x_i=y;
-    x_i[0]=1;x_i[1]=n;
+    VA(n+8+16,y);
+    J* x_i=y;
     Janet* js=x->data;
     DO(i,n,x_i[i+2]=(J)janet_unwrap_integer(js[i]));
     R y;
@@ -44,32 +42,30 @@ U fv_i(JanetArray* x) {
 
 U fv_b(JanetArray* x) {
     J n=(J)x->count;
-    S sz=n+16;
-    U y=malloc(sz);J* x_i=y; B* x_b=y+16;
-    x_i[0]=1;x_i[1]=n;
+    VA(n+16,y);
+    B* x_b=y+16;
     Janet* js=x->data;
     DO(i,n,x_b[i]=janet_unwrap_boolean(js[i]));
     R y;
 }
 
 JanetArray* j_vb(U x) {
-    J* i_p=x; B* b_p=x+16;
-    J n=i_p[1];
-    JA(n,xs)
+    JA(x,n,xs)
+    B* b_p=x+16;
     DO(j,n,xs[j]=janet_wrap_boolean((int32_t)b_p[j]));
     free(x);R arr;
 }
 
 JanetArray* j_vf(U x) {
-    J* i_p=x;J n=i_p[1];F* f_p=x;
-    JA(n,xs)
+    JA(x,n,xs)
+    F* f_p=x;
     DO(j,n,xs[j]=janet_wrap_number(f_p[j+2]));
     free(x);R arr;
 }
 
 JanetArray* j_vi(U x) {
-    J* i_p=x;J n=i_p[1];
-    JA(n,xs)
+    JA(x,n,xs)
+    J* i_p=x;
     DO(j,n,xs[j]=janet_wrap_integer((int32_t)i_p[j+2]));
     free(x);R arr;
 }
