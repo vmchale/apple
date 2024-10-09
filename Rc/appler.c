@@ -27,8 +27,8 @@ typedef struct AppleC {
 SEXP rf(U x) {
     DA(t,x,rnk,dims)
     SEXP ret=PROTECT(allocArray(REALSXP,dims));
-    S sz=8*t;F* x_f=x;
-    memcpy(REAL(ret),x_f+rnk+1,sz);
+    F* x_f=x;
+    memcpy(REAL(ret),x_f+rnk+1,t*8);
     UNPROTECT(2);
     R ret;
 }
