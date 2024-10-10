@@ -20,11 +20,14 @@ typedef size_t S;
 #define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
 #define DA(n,x,rnk,t,ra) J* i_p=x;J rnk=i_p[0];SEXP ds=PROTECT(allocVector(INTSXP,(int)rnk));J n=1;DO(i,rnk,n*=i_p[i+1];INTEGER(ds)[i]=(int)i_p[i+1]);SEXP ra=PROTECT(allocArray(t,ds));
 
+#define ZU static U
+#define ZR static SEXP
+
 typedef struct AppleC {
     U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;
 } AppleC;
 
-SEXP rf(U x) {
+ZR rf(U x) {
     DA(n,x,rnk,REALSXP,r)
     F* x_f=x;
     memcpy(REAL(r),x_f+rnk+1,n*8);
@@ -32,14 +35,14 @@ SEXP rf(U x) {
     R r;
 }
 
-SEXP ri(U x) {
+ZR ri(U x) {
     DA(n,x,rnk,INTSXP,r)
     DO(i,n,INTEGER(r)[i]=(int)i_p[i+rnk+1]);
     UNPROTECT(2);
     R r;
 }
 
-SEXP rb(U x) {
+ZR rb(U x) {
     DA(n,x,rnk,LGLSXP,r)
     B* b_p=x+8*rnk+8;
     DO(i,n,LOGICAL(r)[i]=(int)b_p[i]);
@@ -48,13 +51,13 @@ SEXP rb(U x) {
 }
 
 // vector only
-U fr(SEXP x) {
+ZU fr(SEXP x) {
     U ret;
     J dim=length(x);
     V(dim,REAL(x),ret);R ret;
 }
 
-U fi(SEXP x) {
+ZU fi(SEXP x) {
     J rnk=1;J dim=length(x);
     J* ret=malloc(8*dim+16);
     ret[0]=rnk;ret[1]=dim;
@@ -62,7 +65,7 @@ U fi(SEXP x) {
     R ret;
 }
 
-U fb(SEXP x) {
+ZU fb(SEXP x) {
     J rnk=1;J dim=length(x);
     B* ret=malloc(dim+16);
     J* i_p=ret;

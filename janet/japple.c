@@ -7,6 +7,9 @@
 
 typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;typedef uint8_t B;
 
+#define ZU static U
+#define Z static
+
 #define NIL janet_wrap_nil()
 #define ERR(p,msg){if(p==NULL){printf("%s\n",msg);free(msg);R NIL;};}
 #define JA(x,n,xs) J n=((J*)x)[1];JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
@@ -23,7 +26,7 @@ static int jit_gc(void *data, size_t len) {
     R 0;
 }
 
-U fv_j(JanetArray* x) {
+ZU fv_j(JanetArray* x) {
     J n=L(x);
     VA(n*8+16,y);
     F* x_f=y;
@@ -32,7 +35,7 @@ U fv_j(JanetArray* x) {
     R y;
 }
 
-U fv_i(JanetArray* x) {
+ZU fv_i(JanetArray* x) {
     J n=L(x);
     VA(n+8+16,y);
     J* x_i=y;
@@ -41,7 +44,7 @@ U fv_i(JanetArray* x) {
     R y;
 }
 
-U fv_b(JanetArray* x) {
+ZU fv_b(JanetArray* x) {
     J n=L(x);
     VA(n+16,y);
     B* x_b=y+16;
@@ -50,28 +53,28 @@ U fv_b(JanetArray* x) {
     R y;
 }
 
-JanetArray* j_vb(U x) {
+Z JanetArray* j_vb(U x) {
     JA(x,n,xs)
     B* b_p=x+16;
     DO(j,n,xs[j]=janet_wrap_boolean((int32_t)b_p[j]));
     free(x);R arr;
 }
 
-JanetArray* j_vf(U x) {
+Z JanetArray* j_vf(U x) {
     JA(x,n,xs)
     F* f_p=x;
     DO(j,n,xs[j]=janet_wrap_number(f_p[j+2]));
     free(x);R arr;
 }
 
-JanetArray* j_vi(U x) {
+Z JanetArray* j_vi(U x) {
     JA(x,n,xs)
     J* i_p=x;
     DO(j,n,xs[j]=janet_wrap_integer((int32_t)i_p[j+2]));
     free(x);R arr;
 }
 
-static Janet apple_call(void *x, int32_t argc, Janet *argv) {
+Z Janet apple_call(void *x, int32_t argc, Janet *argv) {
     JF *jit = (JF *)x;
     FnTy* ty=jit->ty;
     int aarg=ty->argc;
@@ -120,7 +123,7 @@ static const JanetAbstractType jit_t = {
 
 static JF *galloc_jit() {R (JF*)janet_abstract(&jit_t, sizeof(JF));}
 
-static Janet tyof_j(int32_t argc, Janet *argv) {
+Z Janet tyof_j(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
     const char* inp=janet_getcstring(argv,0);
@@ -130,7 +133,7 @@ static Janet tyof_j(int32_t argc, Janet *argv) {
     R janet_cstringv(o);
 }
 
-static Janet jit(int32_t argc, Janet *argv) {
+Z Janet jit(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
     const char* inp=janet_getcstring(argv,0);
