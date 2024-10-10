@@ -12,13 +12,15 @@ typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ds=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ds[i]);}
 #define PYW(x,n,w,pyd) S sz=w*n;U pyd=malloc(sz);memcpy(data,x+rnk*8+8,sz);free(x);
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
-// {npy_intp* dims=PyArray_DIMS(py);J* x_i=x;x_i[0]=r;DO(i,r,x_i[i+1]=(J)dims[i]);}
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;};}
 #define O(pya) PyArray_ENABLEFLAGS((NP*)pya,NPY_ARRAY_OWNDATA)
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError, msg);free(msg);R NULL;};}
 
+#define Z static
+#define ZU static U
+
 // https://numpy.org/doc/stable/reference/c-api/array.html
-U f_npy(const NP o) {
+ZU f_npy(const NP o) {
     CT(o,'d',"Error: expected an array of floats")
     A(rnk,n,8,x,o);
     F* x_f=x;
@@ -27,7 +29,7 @@ U f_npy(const NP o) {
     R x;
 }
 
-U b_npy(NP o) {
+ZU b_npy(NP o) {
     CT(o,'?',"Error: expected an array of booleans")
     A(rnk,n,1,x,o);
     B* x_p=x;
@@ -36,7 +38,7 @@ U b_npy(NP o) {
     R x;
 }
 
-U i_npy(NP o) {
+ZU i_npy(NP o) {
     CT(o,'l',"Error: expected an array of 64-bit integers")
     A(rnk,n,8,x,o);
     J* x_i=x;
@@ -45,30 +47,30 @@ U i_npy(NP o) {
     R x;
 }
 
-PY npy_i(U x) {
+Z PY npy_i(U x) {
     CD(rnk,x,t,dims);
     PYW(x,t,8,data);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);O(res);
     R res;
 }
 
-PY npy_f(U x) {
+Z PY npy_f(U x) {
     CD(rnk,x,t,dims);
     PYW(x,t,8,data);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);O(res);
     R res;
 }
 
-PY npy_b(U x) {
+Z PY npy_b(U x) {
     CD(rnk,x,t,dims);
     PYW(x,t,1,data);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);O(res);
     R res;
 }
 
-void freety(FnTy* x){free(x->args);free(x);}
+Z void freety(FnTy* x){free(x->args);free(x);}
 
-static PY apple_typeof(PY self, PY args) {
+Z PY apple_typeof(PY self, PY args) {
     const char* inp;
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p = &err;
@@ -78,7 +80,7 @@ static PY apple_typeof(PY self, PY args) {
     free(res);R py;
 }
 
-static PY apple_asm(PY self, PY args) {
+Z PY apple_asm(PY self, PY args) {
     const char* inp;
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p = &err;
@@ -88,7 +90,7 @@ static PY apple_asm(PY self, PY args) {
     free(res);R py;
 }
 
-static PY apple_ir(PY self, PY args) {
+Z PY apple_ir(PY self, PY args) {
     const char* inp;
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p = &err;
@@ -103,13 +105,13 @@ typedef struct JO {
     U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;
 } JO;
 
-static void cache_dealloc(JO* self) {
+Z void cache_dealloc(JO* self) {
     munmap(self->bc,self->c_sz);
     free(self->sa);freety(self->ty);free(self->ffi);
 }
 
 // file:///usr/share/doc/libffi8/html/The-Basics.html
-static PY apple_call(PY self, PY args, PY kwargs) {
+Z PY apple_call(PY self, PY args, PY kwargs) {
     JO* c=self;PY arg0=NULL;PY arg1=NULL;PY arg2=NULL;PY arg3=NULL;PY arg4=NULL;PY arg5=NULL;
     PyArg_ParseTuple(args, "|OOOOOO", &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     FnTy* ty=c->ty;U fp=c->bc;
@@ -156,7 +158,7 @@ static PyTypeObject JOT = {
     .tp_dealloc = (destructor)cache_dealloc,
 };
 
-static PY apple_jit(PY self, PY args) {
+Z PY apple_jit(PY self, PY args) {
     const char* inp;
     PyArg_ParseTuple(args, "s", &inp);
     char* err;char** err_p=&err;
