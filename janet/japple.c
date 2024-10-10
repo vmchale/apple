@@ -11,6 +11,7 @@ typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;typedef uint
 #define ERR(p,msg){if(p==NULL){printf("%s\n",msg);free(msg);R NIL;};}
 #define JA(x,n,xs) J n=((J*)x)[1];JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
 #define VA(sz,y) U y=malloc(sz);{J* x_i=y;x_i[0]=1;x_i[1]=n;}
+#define L(a) (J)a->count
 
 typedef struct JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi;} JF;
 
@@ -23,7 +24,7 @@ static int jit_gc(void *data, size_t len) {
 }
 
 U fv_j(JanetArray* x) {
-    J n=(J)x->count;
+    J n=L(x);
     VA(n*8+16,y);
     F* x_f=y;
     Janet* js=x->data;
@@ -32,7 +33,7 @@ U fv_j(JanetArray* x) {
 }
 
 U fv_i(JanetArray* x) {
-    J n=(J)x->count;
+    J n=L(x);
     VA(n+8+16,y);
     J* x_i=y;
     Janet* js=x->data;
@@ -41,7 +42,7 @@ U fv_i(JanetArray* x) {
 }
 
 U fv_b(JanetArray* x) {
-    J n=(J)x->count;
+    J n=L(x);
     VA(n+16,y);
     B* x_b=y+16;
     Janet* js=x->data;
