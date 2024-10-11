@@ -34,7 +34,6 @@ ZU fv_j(JanetArray* x) {
     DO(i,n,x_f[i+2]=janet_unwrap_number(js[i]));
     R y;
 }
-
 ZU fv_i(JanetArray* x) {
     J n=L(x);
     VA(n+8+16,y);
@@ -43,7 +42,6 @@ ZU fv_i(JanetArray* x) {
     DO(i,n,x_i[i+2]=(J)janet_unwrap_integer(js[i]));
     R y;
 }
-
 ZU fv_b(JanetArray* x) {
     J n=L(x);
     VA(n+16,y);
@@ -59,14 +57,12 @@ Z JanetArray* j_vb(U x) {
     DO(j,n,xs[j]=janet_wrap_boolean((int32_t)b_p[j]));
     free(x);R arr;
 }
-
 Z JanetArray* j_vf(U x) {
     JA(x,n,xs)
     F* f_p=x;
     DO(j,n,xs[j]=janet_wrap_number(f_p[j+2]));
     free(x);R arr;
 }
-
 Z JanetArray* j_vi(U x) {
     JA(x,n,xs)
     J* i_p=x;
@@ -130,7 +126,7 @@ Z Janet tyof_j(int32_t argc, Janet *argv) {
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
     const char* inp=janet_getcstring(argv,0);
     T e;
-    T o=apple_printty(inp,&e);
+        T o=apple_printty(inp,&e);
     ERR(o,e)
     R janet_cstringv(o);
 }
@@ -140,7 +136,7 @@ Z Janet jit(int32_t argc, Janet *argv) {
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
     const char* inp=janet_getcstring(argv,0);
     T err;
-    FnTy* ty=apple_ty(inp,&err);
+        FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
     T tystr=apple_printty(inp,&err);
     S f_sz;U s;
