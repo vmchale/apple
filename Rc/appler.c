@@ -68,7 +68,7 @@ ZU fi(SEXP x) {
 ZU fb(SEXP x) {
     J dim=length(x);
     B* ret=malloc(dim+16);
-    J* i_p=ret;
+    J* i_p=(J*)ret;
     J rnk=1;i_p[0]=rnk;i_p[1]=dim;
     DO(i,dim,ret[i+16]=(B)(LOGICAL(x)[i]));
     R ret;
@@ -80,14 +80,14 @@ SEXP hs_init_R(void) {
 }
 
 SEXP ty_R(SEXP a) {
-    const T inp=CHAR(asChar(a));T err;
+    const char* inp=CHAR(asChar(a));T err;
     T typ=apple_printty(inp,&err);
     ERR(typ,err);
     R mkString(typ);
 }
 
 SEXP jit_R(SEXP a){
-    const T inp=CHAR(asChar(a));T err;
+    const char* inp=CHAR(asChar(a));T err;
     FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
     S f_sz;U s;
@@ -102,7 +102,7 @@ SEXP jit_R(SEXP a){
 }
 
 SEXP asm_R(SEXP a) {
-    const T inp=CHAR(asChar(a));T err;
+    const char* inp=CHAR(asChar(a));T err;
     T ret=apple_dumpasm(inp,&err);
     ERR(ret,err);
     R mkString(ret);
