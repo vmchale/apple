@@ -14,6 +14,7 @@ char* apple_dumpasm(const char*, char**);
 char* apple_x86(const char*, char**);
 char* apple_aarch64(const char*, char**);
 char* apple_dumpir(const char*, char**);
+char* apple_print_ts_sz(const char*, size_t*, char**);
 
 enum apple_t{I_t,F_t,B_t,IA,FA,BA};
 

@@ -37,12 +37,28 @@ ct Af = FA; ct Ai = IA; ct Ab = BA
 t32 :: CType -> CInt
 t32 = fromIntegral.fromEnum.ct
 
+ppn :: T.Text -> Ptr CSize -> IO CString
+ppn t szP = BS.unsafeUseAsCStringLen (encodeUtf8 t) $ \(bs, sz) -> do
+    p <- mallocBytes (sz+1)
+    _ <- memcpy p bs (fromIntegral sz)
+    poke szP (fromIntegral sz)
+    pokeByteOff p sz (0::CChar) $> p
+
 tcstr :: T.Text -> IO CString
 tcstr t =
     BS.unsafeUseAsCStringLen (encodeUtf8 t) $ \(bs,sz) -> do
         p <- mallocBytes (sz+1)
         _ <- memcpy p bs (fromIntegral sz)
         pokeByteOff p sz (0::CChar) $> p
+
+tn :: CString -> Ptr CSize -> Ptr CString -> IO CString
+tn src nPtr errPtr = do
+    bSrc <- BS.unsafePackCString src
+    case tyExpr (BSL.fromStrict bSrc) of
+        Left err -> (poke errPtr =<< tcstr (ptxt err)) $> nullPtr
+        Right d -> ppn (aText d) nPtr
+
+apple_print_ts_sz = tn
 
 harnessString :: Pretty a => (BSL.ByteString -> Either a (Doc ann)) -> CString -> Ptr CString -> IO CString
 harnessString oup src errPtr = do
@@ -111,3 +127,4 @@ foreign export ccall apple_printty :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_dumpasm :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_dumpir :: CString -> Ptr CString -> IO CString
 foreign export ccall apple_ty :: CString -> Ptr CString -> IO (Ptr FnTy)
+foreign export ccall apple_print_ts_sz :: CString -> Ptr CSize -> Ptr CString -> IO CString

@@ -103,7 +103,7 @@ typedef struct JO {
 
 Z void cache_dealloc(JO* self) {
     munmap(self->bc,self->c_sz);
-    free(self->sa);freety(self->ty);free(self->ffi);
+    free(self->sa);freety(self->ty);free(self->ffi);free(self->ts);
 }
 
 Z PY apple_ts(JO* self) {R PyUnicode_FromString(self->ts);}
@@ -162,12 +162,15 @@ Z PY apple_jit(PY self, PY args) {
     T err;
     FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
-    T tystr=apple_printty(inp,&err);
+    S sz;
+        T ts_str=apple_print_ts_sz(inp,&sz,&err);
+    T buf=malloc(sz+8);
+    sprintf(buf,"<fn : %s>",ts_str);free(ts_str);
     U fp;S f_sz;U s;
     fp=apple_compile(&sys,inp,&f_sz,&s);
     JO* cc=PyObject_New(JO, &JOT);
     ffi_cif* ffi=apple_ffi(ty);
-    cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;cc->ts=tystr;
+    cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;cc->ts=buf;
     Py_INCREF(cc);
     R (PY)cc;
 }
