@@ -98,13 +98,15 @@ Z PY apple_ir(PY self, PY args) {
 
 typedef struct JO {
     PyObject_HEAD
-    U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;
+    U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;T ts;
 } JO;
 
 Z void cache_dealloc(JO* self) {
     munmap(self->bc,self->c_sz);
     free(self->sa);freety(self->ty);free(self->ffi);
 }
+
+Z PY apple_ts(JO* self) {R PyUnicode_FromString(self->ts);}
 
 // file:///usr/share/doc/libffi8/html/The-Basics.html
 Z PY apple_call(PY self, PY args, PY kwargs) {
@@ -147,6 +149,7 @@ static PyTypeObject JOT = {
     .tp_name = "apple.AppleJIT",
     .tp_doc = PyDoc_STR("JIT-compiled function in-memory"),
     .tp_basicsize = sizeof(JO),
+    .tp_repr=(reprfunc)apple_ts,
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyType_GenericNew,
@@ -159,11 +162,12 @@ Z PY apple_jit(PY self, PY args) {
     T err;
     FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
+    T tystr=apple_printty(inp,&err);
     U fp;S f_sz;U s;
     fp=apple_compile(&sys,inp,&f_sz,&s);
     JO* cc=PyObject_New(JO, &JOT);
     ffi_cif* ffi=apple_ffi(ty);
-    cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;
+    cc->bc=fp;cc->c_sz=f_sz;cc->ty=ty;cc->sa=s;cc->ffi=ffi;cc->ts=tystr;
     Py_INCREF(cc);
     R (PY)cc;
 }
