@@ -8,11 +8,13 @@
 typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;typedef char* T;
 
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
+#define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;};}
+
 #define CD(rnk,x,t,ds) J* i_p=x;J rnk=i_p[0];npy_intp* ds=malloc(sizeof(npy_intp)*rnk);J t=1;DO(i,rnk,t*=i_p[i+1];ds[i]=(npy_intp)i_p[i+1]);
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ds=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ds[i]);}
 #define PC(x,n,w,data) S sz=w*n;U data=malloc(sz);memcpy(data,x+rnk*8+8,sz);free(x);
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
-#define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;};}
+
 #define O(pya) PyArray_ENABLEFLAGS((NP)pya,NPY_ARRAY_OWNDATA)
 
 #define Z static
@@ -27,8 +29,7 @@ ZU f_npy(const NP o) {
     memcpy(x_f+rnk+1,data,n*8);
     R x;
 }
-
-ZU b_npy(NP o) {
+ZU b_npy(const NP o) {
     CT(o,'?',"Error: expected an array of booleans")
     A(rnk,n,1,x,o);
     B* x_p=x;
@@ -36,8 +37,7 @@ ZU b_npy(NP o) {
     memcpy(x_p+8*rnk+8,data,n*8);
     R x;
 }
-
-ZU i_npy(NP o) {
+ZU i_npy(const NP o) {
     CT(o,'l',"Error: expected an array of 64-bit integers")
     A(rnk,n,8,x,o);
     J* x_i=x;
