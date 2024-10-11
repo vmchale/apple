@@ -128,7 +128,7 @@ static JF *galloc_jit() {R (JF*)janet_abstract(&jit_t, sizeof(JF));}
 Z Janet tyof_j(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
-    const T inp=janet_getcstring(argv,0);
+    const char* inp=janet_getcstring(argv,0);
     T e;
     T o=apple_printty(inp,&e);
     ERR(o,e)
@@ -138,7 +138,7 @@ Z Janet tyof_j(int32_t argc, Janet *argv) {
 Z Janet jit(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
-    const T inp=janet_getcstring(argv,0);
+    const char* inp=janet_getcstring(argv,0);
     T err;
     FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
