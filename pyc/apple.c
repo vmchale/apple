@@ -13,7 +13,7 @@ typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
 #define PC(x,n,w,data) S sz=w*n;U data=malloc(sz);memcpy(data,x+rnk*8+8,sz);free(x);
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;};}
-#define O(pya) PyArray_ENABLEFLAGS((NP*)pya,NPY_ARRAY_OWNDATA)
+#define O(pya) PyArray_ENABLEFLAGS((NP)pya,NPY_ARRAY_OWNDATA)
 
 #define Z static
 #define ZU static U
