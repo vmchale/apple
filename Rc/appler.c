@@ -6,7 +6,7 @@
 #include"../include/apple_abi.h"
 #include"../c/ffi.c"
 
-typedef size_t S;
+typedef size_t S;typedef char* T;
 
 // asReal : SEXP -> double
 // asInteger : SEXP -> int
@@ -58,18 +58,18 @@ ZU fr(SEXP x) {
 }
 
 ZU fi(SEXP x) {
-    J rnk=1;J dim=length(x);
+    J dim=length(x);
     J* ret=malloc(8*dim+16);
-    ret[0]=rnk;ret[1]=dim;
+    J rnk=1;ret[0]=rnk;ret[1]=dim;
     DO(i,dim,ret[i+2]=(J)(INTEGER(x)[i]));
     R ret;
 }
 
 ZU fb(SEXP x) {
-    J rnk=1;J dim=length(x);
+    J dim=length(x);
     B* ret=malloc(dim+16);
     J* i_p=ret;
-    i_p[0]=rnk;i_p[1]=dim;
+    J rnk=1;i_p[0]=rnk;i_p[1]=dim;
     DO(i,dim,ret[i+16]=(B)(LOGICAL(x)[i]));
     R ret;
 }
@@ -80,20 +80,18 @@ SEXP hs_init_R(void) {
 }
 
 SEXP ty_R(SEXP a) {
-    char* err;char** err_p=&err;
-    const char* inp=CHAR(asChar(a));
-    char* typ=apple_printty(inp,err_p);
+    const T inp=CHAR(asChar(a));T err;
+    T typ=apple_printty(inp,&err);
     ERR(typ,err);
     R mkString(typ);
 }
 
 SEXP jit_R(SEXP a){
-    char* err; char** err_p=&err;
-    const char* inp=CHAR(asChar(a));
-    FnTy* ty=apple_ty(inp,err_p);
+    const T inp=CHAR(asChar(a));T err;
+    FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
-    U fp;S f_sz;U s;
-    fp=apple_compile(&sys,inp,&f_sz,&s);
+    S f_sz;U s;
+    U fp=apple_compile(&sys,inp,&f_sz,&s);
     AppleC* rc=malloc(sizeof(AppleC));
     ffi_cif* ffi=apple_ffi(ty);
     rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;rc->sa=s;rc->ffi=ffi;
@@ -104,9 +102,8 @@ SEXP jit_R(SEXP a){
 }
 
 SEXP asm_R(SEXP a) {
-    char* err; char** err_p=&err;
-    const char* inp=CHAR(asChar(a));
-    char* ret=apple_dumpasm(inp,err_p);
+    const T inp=CHAR(asChar(a));T err;
+    T ret=apple_dumpasm(inp,&err);
     ERR(ret,err);
     R mkString(ret);
 }
