@@ -23,9 +23,7 @@ typedef size_t S;typedef char* T;
 #define ZU static U
 #define ZR static SEXP
 
-typedef struct AppleC {
-    U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;
-} AppleC;
+typedef struct AppleC {U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;} AppleC;
 
 ZR rf(U x) {
     DA(n,x,rnk,REALSXP,r)
