@@ -72,7 +72,7 @@ Z void freety(FnTy* x){free(x->args);free(x);}
 Z PY apple_typeof(PY self, PY args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
-    T res = apple_printty(inp,&err);
+        T res = apple_printty(inp,&err);
     ERR(res,err);
     PY py = PyUnicode_FromString(res);
     free(res);R py;
@@ -81,7 +81,7 @@ Z PY apple_typeof(PY self, PY args) {
 Z PY apple_asm(PY self, PY args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
-    T res = apple_dumpasm(inp,&err);
+        T res = apple_dumpasm(inp,&err);
     ERR(res,err);
     PY py = PyUnicode_FromString(res);
     free(res);R py;
@@ -90,7 +90,7 @@ Z PY apple_asm(PY self, PY args) {
 Z PY apple_ir(PY self, PY args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
-    T res = apple_dumpir(inp,&err);
+        T res = apple_dumpir(inp,&err);
     ERR(res,err);
     PY py = PyUnicode_FromString(res);
     free(res); R py;
@@ -173,7 +173,7 @@ Z PY apple_jit(PY self, PY args) {
 }
 
 static PyMethodDef AFn[] = {
-    {"jit", apple_jit, METH_VARARGS, "Compile an expressoin into a callable object"},
+    {"jit", apple_jit, METH_VARARGS, "Compile an expression into a callable object"},
     {"typeof", apple_typeof, METH_VARARGS, "Display type of expression"},
     {"asm", apple_asm, METH_VARARGS, "Dump assembly"},
     {"ir", apple_ir, METH_VARARGS, "Dump IR (debug)"},
