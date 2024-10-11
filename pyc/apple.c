@@ -52,22 +52,18 @@ Z PY npy_i(U x) {
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);O(res);
     R res;
 }
-
 Z PY npy_f(U x) {
     CD(rnk,x,t,dims);
     PC(x,t,8,data);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);O(res);
     R res;
 }
-
 Z PY npy_b(U x) {
     CD(rnk,x,t,dims);
     PC(x,t,1,data);
     PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);O(res);
     R res;
 }
-
-Z void freety(FnTy* x){free(x->args);free(x);}
 
 Z PY apple_typeof(PY self, PY args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
@@ -101,6 +97,7 @@ typedef struct JO {
     U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;T ts;
 } JO;
 
+Z void freety(FnTy* x){free(x->args);free(x);}
 Z void cache_dealloc(JO* self) {
     munmap(self->bc,self->c_sz);
     free(self->sa);freety(self->ty);free(self->ffi);free(self->ts);
@@ -110,7 +107,7 @@ Z PY apple_ts(JO* self) {R PyUnicode_FromString(self->ts);}
 
 // file:///usr/share/doc/libffi8/html/The-Basics.html
 Z PY apple_call(PY self, PY args, PY kwargs) {
-    JO* c=self;PY arg0=NULL;PY arg1=NULL;PY arg2=NULL;PY arg3=NULL;PY arg4=NULL;PY arg5=NULL;
+    JO* c=(JO*)self;PY arg0=NULL;PY arg1=NULL;PY arg2=NULL;PY arg3=NULL;PY arg4=NULL;PY arg5=NULL;
     PyArg_ParseTuple(args, "|OOOOOO", &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     FnTy* ty=c->ty;U fp=c->bc;
     PY r;
