@@ -5,7 +5,7 @@
 #include"../include/apple_abi.h"
 #include"../c/ffi.c"
 
-typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
+typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;typedef char* T;
 
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
 #define CD(rnk,x,t,ds) J* i_p=x;J rnk=i_p[0];npy_intp* ds=malloc(sizeof(npy_intp)*rnk);J t=1;DO(i,rnk,t*=i_p[i+1];ds[i]=(npy_intp)i_p[i+1]);
@@ -71,30 +71,27 @@ Z PY npy_b(U x) {
 Z void freety(FnTy* x){free(x->args);free(x);}
 
 Z PY apple_typeof(PY self, PY args) {
-    const char* inp;
-    PyArg_ParseTuple(args, "s", &inp);
-    char* err;char** err_p = &err;
-    char* res = apple_printty(inp,err_p);
+    const T inp;PyArg_ParseTuple(args, "s", &inp);
+    T err;
+    T res = apple_printty(inp,&err);
     ERR(res,err);
     PY py = PyUnicode_FromString(res);
     free(res);R py;
 }
 
 Z PY apple_asm(PY self, PY args) {
-    const char* inp;
-    PyArg_ParseTuple(args, "s", &inp);
-    char* err;char** err_p = &err;
-    char* res = apple_dumpasm(inp,err_p);
+    const T inp;PyArg_ParseTuple(args, "s", &inp);
+    T err;
+    T res = apple_dumpasm(inp,&err);
     ERR(res,err);
     PY py = PyUnicode_FromString(res);
     free(res);R py;
 }
 
 Z PY apple_ir(PY self, PY args) {
-    const char* inp;
-    PyArg_ParseTuple(args, "s", &inp);
-    char* err;char** err_p = &err;
-    char* res = apple_dumpir(inp,err_p);
+    const T inp;PyArg_ParseTuple(args, "s", &inp);
+    T err;
+    T res = apple_dumpir(inp,&err);
     ERR(res,err);
     PY py = PyUnicode_FromString(res);
     free(res); R py;
@@ -159,10 +156,9 @@ static PyTypeObject JOT = {
 };
 
 Z PY apple_jit(PY self, PY args) {
-    const char* inp;
-    PyArg_ParseTuple(args, "s", &inp);
-    char* err;char** err_p=&err;
-    FnTy* ty=apple_ty(inp,err_p);
+    const T inp;PyArg_ParseTuple(args, "s", &inp);
+    T err;
+    FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
     U fp;S f_sz;U s;
     fp=apple_compile(&sys,inp,&f_sz,&s);
