@@ -36,6 +36,7 @@ luhn=apple.jit('''
   }
 ''')
 assert luhn(np.array([4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]))
+del luhn
 
 def unstring(isbn):
     return np.array([int(c) for c in isbn.replace('-','')])
@@ -44,6 +45,7 @@ isbn13=apple.jit("λxs. {t ← (+)/(*)`xs (}:(cyc. ⟨1,3::int⟩ 7)); (t|10)=0}
 
 assert isbn13(unstring("978-0596528126"))
 assert not(isbn13(unstring("978-1788399083")))
+del isbn13
 
 any_v=apple.jit("λbs. (∨)/ₒ #f bs :: bool")
 assert any_v(np.array([False,False,False,True]))
