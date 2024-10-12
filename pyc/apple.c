@@ -21,49 +21,15 @@ typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
 #define ZU static U
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
-ZU f_npy(const NP o) {
-    CT(o,'d',"Error: expected an array of floats")
-    A(rnk,n,8,x,o);
-    F* x_f=x;
-    U data=PyArray_DATA(o);
-    memcpy(x_f+rnk+1,data,n*8);
-    R x;
-}
-ZU b_npy(const NP o) {
-    CT(o,'?',"Error: expected an array of booleans")
-    A(rnk,n,1,x,o);
-    B* x_p=x;
-    U data=PyArray_DATA(o);
-    memcpy(x_p+8*rnk+8,data,n*8);
-    R x;
-}
-ZU i_npy(const NP o) {
-    CT(o,'l',"Error: expected an array of 64-bit integers")
-    A(rnk,n,8,x,o);
-    J* x_i=x;
-    U data=PyArray_DATA(o);
-    memcpy(x_i+rnk+1,data,n*8);
-    R x;
-}
+ZU f_npy(const NP o) {CT(o,'d',"Error: expected an array of floats");A(rnk,n,8,x,o);F* x_f=x;U data=PyArray_DATA(o);memcpy(x_f+rnk+1,data,n*8);R x;}
+ZU b_npy(const NP o) {CT(o,'?',"Error: expected an array of booleans");A(rnk,n,1,x,o);B* x_p=x;U data=PyArray_DATA(o);memcpy(x_p+8*rnk+8,data,n*8);R x;}
+ZU i_npy(const NP o) {CT(o,'l',"Error: expected an array of 64-bit integers");A(rnk,n,8,x,o);J* x_i=x;U data=PyArray_DATA(o);memcpy(x_i+rnk+1,data,n*8);R x;}
 
-Z PY npy_i(U x) {
-    CD(rnk,x,t,dims);
-    PC(x,t,8,data);
-    PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);O(res);
-    R res;
-}
-Z PY npy_f(U x) {
-    CD(rnk,x,t,dims);
-    PC(x,t,8,data);
-    PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);O(res);
-    R res;
-}
-Z PY npy_b(U x) {
-    CD(rnk,x,t,dims);
-    PC(x,t,1,data);
-    PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);O(res);
-    R res;
-}
+Z PY npy_i(U x) {CD(rnk,x,t,dims);PC(x,t,8,data);PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);O(res);R res;}
+Z PY npy_f(U x) {CD(rnk,x,t,dims);PC(x,t,8,data);PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);O(res);R res;}
+Z PY npy_b(U x) {CD(rnk,x,t,dims);PC(x,t,1,data);PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);O(res);R res;}
+
+_ const T sarg(PY args){T inp;PyArg_ParseTuple(args,"s",&inp);R inp;}
 
 Z PY apple_typeof(PY self, PY args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
