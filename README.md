@@ -106,7 +106,7 @@ make
 sudo make install-lib
 ```
 
-To install the shared library.
+To install the shared library (requires [jq](https://jqlang.github.io/jq/)).
 
 ### Python
 

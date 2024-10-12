@@ -13,7 +13,7 @@ The REPL and typechecker are available on the [release page](https://github.com/
 
 ### Libraries
 
-To install the libraries, you can use [ghcup](https://www.haskell.org/ghcup/) to install cabal and GHC.
+To install the libraries, you can use [ghcup](https://www.haskell.org/ghcup/) to install cabal and GHC. Download [jq](https://jqlang.github.io/jq/).
 
 Then:
 
