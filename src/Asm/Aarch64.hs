@@ -208,6 +208,7 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | Sdiv { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
                          | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
+                         | SubsRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
                          | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
                          | Asr { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
                          | CmpRC { ann :: a, rSrc :: reg, cSrc :: Word16 }
@@ -271,6 +272,7 @@ mapR f (AddRRS l r0 r1 r2 s) = AddRRS l (f r0) (f r1) (f r2) s
 mapR f (SubRR l r0 r1 r2)    = SubRR l (f r0) (f r1) (f r2)
 mapR f (AddRC l r0 r1 c)     = AddRC l (f r0) (f r1) c
 mapR f (SubRC l r0 r1 c)     = SubRC l (f r0) (f r1) c
+mapR f (SubsRC l r0 r1 c)    = SubsRC l (f r0) (f r1) c
 mapR f (ZeroR l r)           = ZeroR l (f r)
 mapR f (Mvn l r0 r1)         = Mvn l (f r0) (f r1)
 mapR f (AndRR l r0 r1 r2)    = AndRR l (f r0) (f r1) (f r2)
@@ -347,6 +349,7 @@ mapF2 _ (AddRRS l r0 r1 r2 s) = AddRRS l r0 r1 r2 s
 mapF2 _ (AddRC l r0 r1 c)     = AddRC l r0 r1 c
 mapF2 _ (SubRR l r0 r1 r2)    = SubRR l r0 r1 r2
 mapF2 _ (SubRC l r0 r1 c)     = SubRC l r0 r1 c
+mapF2 _ (SubsRC l r0 r1 c)    = SubsRC l r0 r1 c
 mapF2 _ (ZeroR l r)           = ZeroR l r
 mapF2 _ (Mvn l r0 r1)         = Mvn l r0 r1
 mapF2 _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
@@ -423,6 +426,7 @@ mapFR _ (AddRRS l r0 r1 r2 s) = AddRRS l r0 r1 r2 s
 mapFR _ (AddRC l r0 r1 c)     = AddRC l r0 r1 c
 mapFR _ (SubRR l r0 r1 r2)    = SubRR l r0 r1 r2
 mapFR _ (SubRC l r0 r1 c)     = SubRC l r0 r1 c
+mapFR _ (SubsRC l r0 r1 c)    = SubsRC l r0 r1 c
 mapFR _ (ZeroR l r)           = ZeroR l r
 mapFR _ (Mvn l r0 r1)         = Mvn l r0 r1
 mapFR _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
@@ -536,6 +540,7 @@ instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg
         p4 (Mvn _ rD rS)          = "mvn" <+> pretty rD <> "," <+> pretty rS
         p4 (MulRR _ rD rS rS')    = "mul" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS'
         p4 (SubRC _ rD rS u)      = "sub" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u
+        p4 (SubsRC _ rD rS u)     = "subs" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u
         p4 (AddRC _ rD rS u)      = "add" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u
         p4 (Lsl _ rD rS u)        = "lsl" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u
         p4 (Asr _ rD rS u)        = "asr" <+> pretty rD <> "," <+> pretty rS <> "," <+> hexd u
