@@ -934,7 +934,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     i <- nI; j <- nI; m <- nI; n <- nI
     aRd <- nI; xRd <- nI; td <- nI
-    z <- newF2Temp; z0 <- nF; zs <- nF
+    z <- nF2; z0 <- nF
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
     (prologue, et, ~(Just zs)) <- if te tX then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
