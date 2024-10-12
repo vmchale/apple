@@ -39,23 +39,8 @@ ZR rb(U x) {DA(n,x,rnk,LGLSXP,r);B* b_p=x+8*rnk+8;DO(i,n,LOGICAL(r)[i]=(int)b_p[
 
 // vector only
 ZU fr(SEXP x) {U ret;J dim=length(x);V(dim,REAL(x),ret);R ret;}
-
-ZU fi(SEXP x) {
-    J dim=length(x);
-    J* ret=malloc(8*dim+16);
-    J rnk=1;ret[0]=rnk;ret[1]=dim;
-    DO(i,dim,ret[i+2]=(J)(INTEGER(x)[i]));
-    R ret;
-}
-
-ZU fb(SEXP x) {
-    J dim=length(x);
-    B* ret=malloc(dim+16);
-    J* i_p=(J*)ret;
-    J rnk=1;i_p[0]=rnk;i_p[1]=dim;
-    DO(i,dim,ret[i+16]=(B)(LOGICAL(x)[i]));
-    R ret;
-}
+ZU fi(SEXP x) {J dim=length(x);J* ret=malloc(8*dim+16);J rnk=1;ret[0]=rnk;ret[1]=dim;DO(i,dim,ret[i+2]=(J)(INTEGER(x)[i]));R ret;}
+ZU fb(SEXP x) {J dim=length(x);B* ret=malloc(dim+16);J* i_p=(J*)ret;J rnk=1;i_p[0]=rnk;i_p[1]=dim;DO(i,dim,ret[i+16]=(B)(LOGICAL(x)[i]));R ret;}
 
 SEXP hs_init_R(void) {
     hs_init(0,0);
@@ -79,7 +64,7 @@ SEXP jit_R(SEXP a){
     AppleC* rc=malloc(sizeof(AppleC));
     ffi_cif* ffi=apple_ffi(ty);
     rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;rc->sa=s;rc->ffi=ffi;
-    // http://homepage.divms.uiowa.edu/~luke/R/simpleref.html
+    // http://homepage.divms.uiowa.edu/~luke/R/simpleref.html#toc6
     // https://github.com/hadley/r-internals/blob/master/external-pointers.md
     SEXP r=R_MakeExternalPtr((U)rc,R_NilValue,R_NilValue);
     R_RegisterCFinalizer(r,&clear);
