@@ -12,7 +12,7 @@ typedef size_t S;typedef char* T;
 // asInteger : SEXP -> int
 // ScalarReal : double -> SEXP
 // ScalarInteger : int -> SEXP
-// SEXPTYPE = INTSXP | REALSXP
+// SEXPTYPE = INTSXP | REALSXP | LGLSXP
 // EXTPTR_PTR : SEXP -> void*
 
 // http://adv-r.had.co.nz/C-interface.html
