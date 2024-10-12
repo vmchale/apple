@@ -29,8 +29,6 @@ Z PY npy_i(U x) {CD(rnk,x,t,dims);PC(x,t,8,data);PY res=PyArray_SimpleNewFromDat
 Z PY npy_f(U x) {CD(rnk,x,t,dims);PC(x,t,8,data);PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);O(res);R res;}
 Z PY npy_b(U x) {CD(rnk,x,t,dims);PC(x,t,1,data);PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);O(res);R res;}
 
-_ const T sarg(PY args){T inp;PyArg_ParseTuple(args,"s",&inp);R inp;}
-
 Z PY apple_typeof(PY self, PY args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
