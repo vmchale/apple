@@ -20,40 +20,25 @@ typedef size_t S;typedef char* T;
 #define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
 #define DA(n,x,rnk,t,ra) J* i_p=x;J rnk=i_p[0];SEXP ds=PROTECT(allocVector(INTSXP,(int)rnk));J n=1;DO(i,rnk,n*=i_p[i+1];INTEGER(ds)[i]=(int)i_p[i+1]);SEXP ra=PROTECT(allocArray(t,ds));
 
+#define Z static
 #define ZU static U
 #define ZR static SEXP
 
 typedef struct AppleC {U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;} AppleC;
 
-ZR rf(U x) {
-    DA(n,x,rnk,REALSXP,r)
-    F* x_f=x;
-    memcpy(REAL(r),x_f+rnk+1,n*8);
-    UNPROTECT(2);
-    R r;
+Z void freety(FnTy* x){free(x->args);free(x);}
+Z void clear(SEXP jit) {
+    AppleC* c=(AppleC*)R_ExternalPtrAddr(jit);
+    munmap(c->code,c->code_sz);
+    free(c->sa);free(c->ffi);freety(c->ty);
 }
 
-ZR ri(U x) {
-    DA(n,x,rnk,INTSXP,r)
-    DO(i,n,INTEGER(r)[i]=(int)i_p[i+rnk+1]);
-    UNPROTECT(2);
-    R r;
-}
-
-ZR rb(U x) {
-    DA(n,x,rnk,LGLSXP,r)
-    B* b_p=x+8*rnk+8;
-    DO(i,n,LOGICAL(r)[i]=(int)b_p[i]);
-    UNPROTECT(2);
-    R r;
-}
+ZR rf(U x) {DA(n,x,rnk,REALSXP,r);F* x_f=x;memcpy(REAL(r),x_f+rnk+1,n*8);UNPROTECT(2);R r;}
+ZR ri(U x) {DA(n,x,rnk,INTSXP,r);DO(i,n,INTEGER(r)[i]=(int)i_p[i+rnk+1]);UNPROTECT(2);R r;}
+ZR rb(U x) {DA(n,x,rnk,LGLSXP,r);B* b_p=x+8*rnk+8;DO(i,n,LOGICAL(r)[i]=(int)b_p[i]);UNPROTECT(2);R r;}
 
 // vector only
-ZU fr(SEXP x) {
-    U ret;
-    J dim=length(x);
-    V(dim,REAL(x),ret);R ret;
-}
+ZU fr(SEXP x) {U ret;J dim=length(x);V(dim,REAL(x),ret);R ret;}
 
 ZU fi(SEXP x) {
     J dim=length(x);
@@ -85,8 +70,9 @@ SEXP ty_R(SEXP a) {
 }
 
 SEXP jit_R(SEXP a){
-    const char* inp=CHAR(asChar(a));T err;
-    FnTy* ty=apple_ty(inp,&err);
+    const char* inp=CHAR(asChar(a));
+    T err;
+        FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
     S f_sz;U s;
     U fp=apple_compile(&sys,inp,&f_sz,&s);
@@ -96,6 +82,7 @@ SEXP jit_R(SEXP a){
     // http://homepage.divms.uiowa.edu/~luke/R/simpleref.html
     // https://github.com/hadley/r-internals/blob/master/external-pointers.md
     SEXP r=R_MakeExternalPtr((U)rc,R_NilValue,R_NilValue);
+    R_RegisterCFinalizer(r,&clear);
     R r;
 }
 
