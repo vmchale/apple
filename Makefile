@@ -13,10 +13,10 @@ endif
 libapple$(EXT): $(HS_SRC) include/apple.h
 	cabal build flib:apple -w $(HC)
 ifeq ($(UNAME),Linux)
-	cp $$(cabal-plan list-bins apple:flib:apple | awk '{print $$2}').$(LD_VER) $@
+	cp $$(jq '."install-plan"[]|select(."component-name"=="flib:apple")|."bin-file"' dist-newstyle/cache/plan.json -r).$(LD_VER) $@
 	strip $@
 else
-	cp $$(cabal-plan list-bins apple:flib:apple | awk '{print $$2}') $@
+	cp $$(jq '."install-plan"[]|select(."component-name"=="flib:apple")|."bin-file"' dist-newstyle/cache/plan.json -r) $@
 endif
 
 docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html
