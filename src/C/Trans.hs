@@ -986,6 +986,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     z <- nF2; z0 <- nF
     (prologue, et, ~(Just zs)) <- if te tB then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop=for tA i 0 ILt (Tmp m)
+    -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
                 [forc tB j 0 ILt (Tmp o) $ prologue
                     [ MX2 () z (ConstF (0,0)),
                         f2or tB k 0 ILt (Tmp n)
