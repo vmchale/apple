@@ -40,6 +40,7 @@ addControlFlow (BB asms _:bbs) = do
     ; acc <- case last asms of
             B _ lϵ        -> do {l_i <- lookupLabel lϵ; pure [l_i]}
             Bc _ _ lϵ     -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            BCc _ _ lϵ    -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
             Tbnz _ _ _ lϵ -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
             Tbz _ _ _ lϵ  -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
             Cbnz _ _ lϵ   -> do {l_i <- lookupLabel lϵ; pure $ f [l_i]}
@@ -133,6 +134,7 @@ uses Fcsel{}              = IS.empty
 uses (TstI _ r _)         = singleton r
 uses Label{}              = IS.empty
 uses Bc{}                 = IS.empty
+uses BCc{}                = IS.empty
 uses B{}                  = IS.empty
 uses (Cbnz _ r _)         = singleton r
 uses (Cbz _ r _)          = singleton r
@@ -210,6 +212,7 @@ defs Fcsel{}             = IS.empty
 defs TstI{}              = IS.empty
 defs Label{}             = IS.empty
 defs Bc{}                = IS.empty
+defs BCc{}               = IS.empty
 defs B{}                 = IS.empty
 defs Cbnz{}              = IS.empty
 defs Cbz{}               = IS.empty
@@ -290,6 +293,7 @@ defsF TstI{}             = IS.empty
 defsF (Fcsel _ d0 _ _ _) = singleton d0
 defsF Label{}            = IS.empty
 defsF Bc{}               = IS.empty
+defsF BCc{}              = IS.empty
 defsF B{}                = IS.empty
 defsF Cbnz{}             = IS.empty
 defsF Cbz{}              = IS.empty
@@ -369,6 +373,7 @@ usesF TstI{}               = IS.empty
 usesF (Fcsel _ _ d0 d1 _)  = fromList [d0, d1]
 usesF Label{}              = IS.empty
 usesF Bc{}                 = IS.empty
+usesF BCc{}                = IS.empty
 usesF B{}                  = IS.empty
 usesF Cbnz{}               = IS.empty
 usesF Cbz{}                = IS.empty

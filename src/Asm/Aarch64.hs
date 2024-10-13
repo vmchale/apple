@@ -179,7 +179,8 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | C { ann :: a, label :: Label }
                          | Bl { ann :: a, cfunc :: CFunc }
                          | Bc { ann :: a, cond :: Cond, label :: Label }
-                         | Ret { ann :: a }                                              | RetL { ann :: a, label :: Label }
+                         | BCc { ann :: a, cond :: Cond, label :: Label }
+                         | Ret { ann :: a } | RetL { ann :: a, label :: Label }
                          | FMovXX { ann :: a, dDest, dSrc :: freg }
                          | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                          | MovRR { ann :: a, rDest, rSrc :: reg }
@@ -257,6 +258,7 @@ mapR :: (areg -> reg) -> AArch64 areg afreg af2 a -> AArch64 reg afreg af2 a
 mapR _ (Label x l)           = Label x l
 mapR _ (B x l)               = B x l
 mapR _ (Bc x c l)            = Bc x c l
+mapR _ (BCc x c l)           = BCc x c l
 mapR _ (Bl x f)              = Bl x f
 mapR _ (C x l)               = C x l
 mapR _ (FMovXX l r0 r1)      = FMovXX l r0 r1
@@ -334,6 +336,7 @@ mapF2 :: (af2 -> f2) -> AArch64 areg afreg af2 a -> AArch64 areg afreg f2 a
 mapF2 _ (Label x l)           = Label x l
 mapF2 _ (B x l)               = B x l
 mapF2 _ (Bc x c l)            = Bc x c l
+mapF2 _ (BCc x c l)           = BCc x c l
 mapF2 _ (Bl x f)              = Bl x f
 mapF2 _ (C x l)               = C x l
 mapF2 _ (FMovXX l xr0 xr1)    = FMovXX l xr0 xr1
@@ -411,6 +414,7 @@ mapFR :: (afreg -> freg) -> AArch64 areg afreg af2 a -> AArch64 areg freg af2 a
 mapFR _ (Label x l)           = Label x l
 mapFR _ (B x l)               = B x l
 mapFR _ (Bc x c l)            = Bc x c l
+mapFR _ (BCc x c l)           = BCc x c l
 mapFR _ (Bl x f)              = Bl x f
 mapFR _ (C x l)               = C x l
 mapFR f (FMovXX l xr0 xr1)    = FMovXX l (f xr0) (f xr1)
@@ -519,6 +523,7 @@ instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg
         p4 (Bl _ l)               = "bl" <+> pSym l
         p4 (C _ l)                = "call" <+> pretty l
         p4 (Bc _ c l)             = "b." <> pretty c <+> prettyLabel l
+        p4 (BCc _ c l)            = "bc." <> pretty c <+> prettyLabel l
         p4 (FMovXX _ xr0 xr1)     = "fmov" <+> pretty xr0 <> "," <+> pretty xr1
         p4 (FMovDR _ d r)         = "fmov" <+> pretty d <> "," <+> pretty r
         p4 (MovRR _ r0 r1)        = "mov" <+> pretty r0 <> "," <+> pretty r1
