@@ -33,7 +33,7 @@ fx C.F3 = IR.F3; fx C.F4 = IR.F4; fx C.F5 = IR.F5
 cToIR :: LSt -> [CS a] -> ([Stmt], WSt)
 cToIR (LSt ls ts) cs = runState (foldMapM cToIRM cs) (WSt ls ts)
 
-tick reg = IR.MT reg (Reg reg+1)
+tick reg = IR.MT reg (Reg reg+1); untick r=IR.MT r (Reg r-1)
 
 nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 
@@ -63,13 +63,13 @@ cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]
 cToIRM (Rof _ t ec s)        = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE ec):MJ (IR.IRel IEq (Reg t') 0) eL:L l:irs++[IR.MT t' (Reg t'-1), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+    pure $ IR.MT t' (irE ec):MJ (IR.IRel IEq (Reg t') 0) eL:L l:irs++[untick t', MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
   where
     t'=ctemp t
 cToIRM (Rof1 _ t ec s)        = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE ec):L l:irs++[IR.MT t' (Reg t'-1), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+    pure $ IR.MT t' (irE ec):L l:irs++[untick t', MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
   where
     t'=ctemp t
 cToIRM (For _ t el rel eu s) = do
