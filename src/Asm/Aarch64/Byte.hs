@@ -183,11 +183,6 @@ asm ix st (Bc _ p l:asms) =
         offs=(lIx-ix) `quot` 4
         isn=[0b01010100, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), (fromIntegral (0x7 .&. offs) `shiftL` 5) .|. bp p]
     in isn:asm (ix+4) st asms
-asm ix st (BCc _ p l:asms) =
-    let lIx=get l st
-        offs=(lIx-ix) `quot` 4
-        isn=[0b01010100, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), (fromIntegral (0x7 .&. offs) `shiftL` 5) .|. 1 `shiftL` 4 .|. bp p]
-    in isn:asm (ix+4) st asms
 asm ix st (Cbnz _ r l:asms) =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
