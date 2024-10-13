@@ -4,6 +4,7 @@ module Asm.CF ( N, FreshM
               , lookupLabel, lC
               , broadcast
               , b3
+              , insert
               , singleton
               , fromList
               ) where
@@ -44,6 +45,8 @@ b3 i l = modify (third3 (M.alter (\k -> Just$case k of {Nothing -> [i]; Just is 
 
 singleton :: E reg => reg -> IS.IntSet
 singleton = IS.singleton . E.toInt
+
+insert r = IS.insert (E.toInt r)
 
 fromList :: E reg => [reg] -> IS.IntSet
 fromList = foldMap singleton
