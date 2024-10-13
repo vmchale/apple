@@ -489,21 +489,13 @@ s2 (r0:r1:rs) = (r0, Just r1):s2 rs
 s2 [r]        = [(r, Nothing)]
 s2 []         = []
 
-offs :: [a] -> [Word16]
-offs = scanl' (\i _ -> i+16) 0
-
-rsOffs :: [a] -> ([(a, Maybe a)], [Word16], Word16)
-rsOffs rs = let ixs=offs rs in (s2 rs, ixs, last ixs)
-
 pus, pos :: [AReg] -> [AArch64 AReg freg ()]
-pus = concatMap go.s2 where go (r0, Just r1) = [Stp () r0 r1 (Pr SP (-16))]; go (r, Nothing) = [Str () r (Pr SP (-16))]
-pos = concatMap go.reverse.s2 where go (r0, Just r1) = [Ldp () r0 r1 (Po SP 16)]; go (r, Nothing) = [Ldr () r (Po SP 16)]
+pus = map go.s2 where go (r0, Just r1) = Stp () r0 r1 (Pr SP (-16)); go (r, Nothing) = Str () r (Pr SP (-16))
+pos = map go.reverse.s2 where go (r0, Just r1) = Ldp () r0 r1 (Po SP 16); go (r, Nothing) = Ldr () r (Po SP 16)
 
 puds, pods :: [freg] -> [AArch64 AReg freg ()]
-puds rs = let (pps, ixs, r) = rsOffs rs in SubRC () SP SP r:concat (zipWith go pps ixs)
-  where go (r0, Just r1) ix = [StpD () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [StrD () r (RP SP ix)]
-pods rs = let (pps, ixs, r) = rsOffs rs in concat (zipWith go pps ixs)++[AddRC () SP SP r]
-  where go (r0, Just r1) ix = [LdpD () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [LdrD () r (RP SP ix)]
+puds = map go.s2 where go (r0, Just r1) = StpD () r0 r1 (Pr SP (-16)); go (r, Nothing) = StrD () r (Pr SP (-16))
+pods = map go.reverse.s2 where go (r0, Just r1) = LdpD () r0 r1 (Po SP 16); go (r, Nothing) = LdrD () r (Po SP 16)
 
 puxs, poxs :: [freg] -> [AArch64 AReg freg ()]
 puxs = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 32, Stp2 () (V2Reg r0) (V2Reg r1) (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, StrS () (V2Reg r) (R SP)]
