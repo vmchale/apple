@@ -31,6 +31,7 @@ iF a = gg where
     gg [s@(If l _ [] b1@(b10:_))]            = gEs l b10 [s { eBranch = gg b1 }]
     gg [s@(Def _ _ cs)]                      = [s { body = gg cs }]
     gg (s@(For l _ _ _ _ cs):ss@(s0:_))      = s { body = gg cs }:fs l s0++gg ss
+    gg (s@(Rof l _ _ cs):ss@(s0:_))          = s { body = gg cs }:fs l s0++gg ss
     gg (s@(While l _ _ _ cs):ss@(s0:_))      = s { body = gg cs }:fs l s0++gg ss
     gg (s@(For1 l _ _ _ _ cs):ss@(s0:_))     = s { body = gg cs }:fs l s0++gg ss
     gg (s@(Rof1 l _ _ cs):ss@(s0:_))         = s { body = gg cs }:fs l s0++gg ss
