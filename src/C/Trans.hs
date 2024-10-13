@@ -879,9 +879,9 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     aRd <- newITemp; xRd <- newITemp; td <- newITemp
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    let loop = rof tA i (Tmp m-1)
+    let loop = rof tA i (Tmp m)
                   [ MX () z 0,
-                    rof tX j (Tmp n-1)
+                    rof tX j (Tmp n)
                         [ MX () z (FTmp z+FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
                   , WrF () (Raw td (Tmp i) (Just aL) 8) (FTmp z)
                   ]
