@@ -160,6 +160,8 @@ infix 9 =:
 (=:) = MT ()
 
 data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
+          | Rof { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
+          | Rof1 { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
           | For1 { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
           | While { lann :: a, iVar :: Temp, loopCond :: IRel, eDone :: CE, body :: [CS a] }
           | WT { lann :: a, bE :: PE, body :: [CS a] }
@@ -211,6 +213,8 @@ pL _ (Free t)               = "free" <+> pretty t
 pL f (Ma l _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz) <> f l
 pL f (MaΠ l _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz) <> f l
 pL f (For l t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (Rof l t ec ss)         = "rof" <> parens (pretty t <> comma <> pretty t <> "=" <> pretty ec <> comma <> "nz" <+> pretty t) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (Rof1 l t ec ss)        = "rof-1" <> parens (pretty t <> comma <> pretty t <> "=" <> pretty ec <> comma <> "nz" <+> pretty t) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (For1 l t el rel eu ss) = "for-1" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (While l t rel eb ss)  = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (WT l p ss)            = "while" <> parens (pretty p) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l

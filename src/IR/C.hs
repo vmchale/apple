@@ -60,6 +60,18 @@ cToIRM (C.Free t)            = pure [IR.Free (ctemp t)]
 cToIRM (C.Wr _ a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF _ a x)         = pure [IR.WrF (irAt a) (irX x)]
 cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]
+cToIRM (Rof _ t ec s)        = do
+    l <- nextL; eL <- nextL
+    irs <- foldMapM cToIRM s
+    pure $ IR.MT t' (irE ec):MJ (IR.IRel IEq (Reg t') 0) eL:L l:irs++[IR.MT t' (Reg t'-1), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+  where
+    t'=ctemp t
+cToIRM (Rof1 _ t ec s)        = do
+    l <- nextL; eL <- nextL
+    irs <- foldMapM cToIRM s
+    pure $ IR.MT t' (irE ec):L l:irs++[IR.MT t' (Reg t'-1), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+  where
+    t'=ctemp t
 cToIRM (For _ t el rel eu s) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s

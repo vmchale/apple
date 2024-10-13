@@ -65,6 +65,8 @@ initLiveness = IM.fromList . go where
     go []                       = []
     go (For ann _ _ _ _ ss:cs)  = (node ann, (ann, emptyL)):go ss++go cs
     go (For1 ann _ _ _ _ ss:cs) = (node ann, (ann, emptyL)):go ss++go cs
+    go (Rof ann _ _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
+    go (Rof1 ann _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
     go (While ann _ _ _ ss:cs)  = (node ann, (ann, emptyL)):go ss++go cs
     go (WT ann _ ss:cs)         = (node ann, (ann, emptyL)):go ss++go cs
     go (If ann _ ss ss':cs)     = (node ann, (ann, emptyL)):go ss++go ss'++go cs
@@ -75,6 +77,8 @@ initLiveness = IM.fromList . go where
 inspectOrder :: [CS ControlAnn] -> [N]
 inspectOrder (For ann _ _ _ _ ss:cs)  = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (For1 ann _ _ _ _ ss:cs) = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (Rof ann _ _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (Rof1 ann _ _ ss:cs)     = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (While ann _ _ _ ss:cs)  = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (WT ann _ ss:cs)         = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (If ann _ ss ss':cs)     = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
@@ -145,6 +149,20 @@ addCF ((For1 _ t el c eu ss):stmts) = do
     pure $ For1 (ControlAnn i (f (h [])) udϵ) t el c eu ss':stmts'
   where
     udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+addCF ((Rof _ t ec ss):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h, ss') <- tieBody i f ss
+    pure $ Rof (ControlAnn i (f (h [])) udϵ) t ec ss':stmts'
+  where
+    udϵ = UD (uE ec) IS.empty IS.empty IS.empty
+addCF ((Rof1 _ t ec ss):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h, ss') <- tieBody i f ss
+    pure $ Rof1 (ControlAnn i (f (h [])) udϵ) t ec ss':stmts'
+  where
+    udϵ = UD (uE ec) IS.empty IS.empty IS.empty
 addCF ((While _ t c ed ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
@@ -259,6 +277,8 @@ brs :: [CS ()] -> FreshM ()
 brs []                        = pure ()
 brs (G _ l retL:stmts)        = do {i <- fm retL; b3 i l; brs stmts}
 brs (Def _ f b:stmts)         = fm f *> brs b *> brs stmts
+brs (Rof _ _ _ ss:stmts)      = brs ss *> brs stmts
+brs (Rof1 _ _ _ ss:stmts)     = brs ss *> brs stmts
 brs (For _ _ _ _ _ ss:stmts)  = brs ss *> brs stmts
 brs (For1 _ _ _ _ _ ss:stmts) = brs ss *> brs stmts
 brs (While _ _ _ _ ss:stmts)  = brs ss *> brs stmts

@@ -195,7 +195,9 @@ nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
 nee :: T a -> Bool
 nee (Arr sh _) = nzSh sh; nee _=False
 
+rof t = if ne t then Rof1 () else Rof ()
 for t = if ne t then For1 () else For (); for1 t = if n1 t then For1 () else For ()
+rofc t = if nec t then Rof1 () else Rof ()
 forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
 
@@ -856,9 +858,9 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
     aRd <- newITemp; xRd <- newITemp; td <- newITemp
-    let loop = forc (eAnn a) i 0 ILt (Tmp m)
+    let loop = rofc (eAnn a) i (Tmp m)
                 [ MX () z 0,
-                  for tX j 0 ILt (Tmp n)
+                  rof tX j (Tmp n)
                       [ MX () z (FTmp z+FAt (Raw aRd (Tmp m*Tmp j+Tmp i) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
                 , WrF () (Raw td (Tmp i) (Just aL) 8) (FTmp z)
                 ]
@@ -877,9 +879,9 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     aRd <- newITemp; xRd <- newITemp; td <- newITemp
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    let loop = for tA i 0 ILt (Tmp m)
+    let loop = rof tA i (Tmp m-1)
                   [ MX () z 0,
-                    for tX j 0 ILt (Tmp n)
+                    rof tX j (Tmp n-1)
                         [ MX () z (FTmp z+FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
                   , WrF () (Raw td (Tmp i) (Just aL) 8) (FTmp z)
                   ]
@@ -900,8 +902,8 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, 
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
     let loop=forc tA i 0 ILt (Tmp m)
-                [forc (eAnn b) j 0 ILt (Tmp o)
-                    [ MX () z 0, for tA k 0 ILt (Tmp n)
+                [rofc (eAnn b) j (Tmp o)
+                    [ MX () z 0, rof tA k (Tmp n)
                         [MX () z (FTmp z+FAt (Raw aRd (Tmp k*Tmp m+Tmp i) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))]
                     , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
                 ]
@@ -921,8 +923,8 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
     let loop=for tA i 0 ILt (Tmp m)
-                [forc tB j 0 ILt (Tmp o)
-                    [ MX () z 0, for tB k 0 ILt (Tmp n)
+                [rofc tB j (Tmp o)
+                    [ MX () z 0, rof tB k (Tmp n)
                               [MX () z (FTmp z+FAt (Raw aRd (Tmp n*Tmp i+Tmp k) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))]
                     , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
                     ]
@@ -1046,7 +1048,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just (ot, oSz) <- aRr oTy
     (plX, (lX, aP)) <- plA xs
     let sz'=Tmp szR-fromIntegral(n-1)
     let loopBody=CpyE () (AElem slopP 1 0 Nothing xSz) (AElem aP 1 (Tmp i) lX xSz) (fromIntegral n) xSz:ss++[wt (AElem t 1 (Tmp i) (Just a) oSz) fR]
-        loop=for oTy i 0 ILt (Tmp sz'R) loopBody
+        loop=rof oTy i (Tmp sz'R) loopBody
     pure (Just a, plX$szR =: ev (eAnn xs) (aP,lX):sz'R =: sz':aV++aSlop++loop:[pops])
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just ((_, 1), (tO, cRnk)) <- mAA (eAnn op), Just (tX, 1) <- tRnk (eAnn xs) = do
     a <- nextArr t
