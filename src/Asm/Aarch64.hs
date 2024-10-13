@@ -496,10 +496,8 @@ rsOffs :: [a] -> ([(a, Maybe a)], [Word16], Word16)
 rsOffs rs = let ixs=offs rs in (s2 rs, ixs, last ixs)
 
 pus, pos :: [AReg] -> [AArch64 AReg freg ()]
-pus rs = let (pps, ixs, r) = rsOffs rs in SubRC () SP SP r:concat (zipWith go pps ixs)
-  where go (r0, Just r1) ix = [Stp () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [Str () r (RP SP ix)]
-pos rs = let (pps, ixs, r) = rsOffs rs in concat (zipWith go pps ixs)++[AddRC () SP SP r]
-  where go (r0, Just r1) ix = [Ldp () r0 r1 (RP SP ix)]; go (r, Nothing) ix = [Ldr () r (RP SP ix)]
+pus = concatMap go.s2 where go (r0, Just r1) = [Stp () r0 r1 (Pr SP (-16))]; go (r, Nothing) = [Str () r (Pr SP (-16))]
+pos = concatMap go.reverse.s2 where go (r0, Just r1) = [Ldp () r0 r1 (Po SP 16)]; go (r, Nothing) = [Ldr () r (Po SP 16)]
 
 puds, pods :: [freg] -> [AArch64 AReg freg ()]
 puds rs = let (pps, ixs, r) = rsOffs rs in SubRC () SP SP r:concat (zipWith go pps ixs)
