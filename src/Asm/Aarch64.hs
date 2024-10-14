@@ -512,8 +512,8 @@ puds = map go.s2 where go (r0, Just r1) = StpD () r0 r1 (Pr SP (-16)); go (r, No
 pods = map go.reverse.s2 where go (r0, Just r1) = LdpD () r0 r1 (Po SP 16); go (r, Nothing) = LdrD () r (Po SP 16)
 
 puxs, poxs :: [freg] -> [AArch64 AReg freg ()]
-puxs = concatMap go.s2 where go (r0, Just r1) = [SubRC () SP SP 32, Stp2 () (V2Reg r0) (V2Reg r1) (R SP)]; go (r, Nothing) = [SubRC () SP SP 16, StrS () (V2Reg r) (R SP)]
-poxs = concatMap go.reverse.s2 where go (r0, Just r1) = [Ldp2 () (V2Reg r0) (V2Reg r1) (R SP), AddRC () SP SP 32]; go (r, Nothing) = [LdrS () (V2Reg r) (R SP), AddRC () SP SP 16]
+puxs = map go.s2 where go (r0, Just r1) = Stp2 () (V2Reg r0) (V2Reg r1) (Pr SP (-32)); go (r, Nothing) = StrS () (V2Reg r) (Pr SP (-16))
+poxs = map go.reverse.s2 where go (r0, Just r1) = Ldp2 () (V2Reg r0) (V2Reg r1) (Po SP 32); go (r, Nothing) = LdrS () (V2Reg r) (Po SP 16)
 
 hexd :: Integral a => a -> Doc ann
 hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")
