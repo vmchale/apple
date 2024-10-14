@@ -3,7 +3,6 @@ import numpy as np
 inputs = np.array([[0.,0],[0,1],[1,0],[1,1]])
 expected_output = np.array([0.,1,1,0])
 
-# weights and bias initialization
 hidden_weights=np.array([[0.51426693,0.56885825],[0.48725347,0.15041493]])
 hidden_bias=np.array([0.79726405,0.67601843])
 output_weights=np.array([0.14801747,0.37182892])
@@ -58,12 +57,9 @@ hw=apple.jit('''
 }
 ''')
 hidden_weights=hw(hidden_weights,d_hidden_layer)
-print('hidden_weights\n',hidden_weights)
 
 hb=apple.jit("λbh.λhΔ. [(+)/ₒ x y]`{0,1} bh (hΔ::M float)")
 hidden_bias=hb(hidden_bias,d_hidden_layer)
-print('hidden_bias\n',hidden_bias)
 
 bo=apple.jit("λbo.λl1Δ. {sum ← [(+)/x]; bo + sum (l1Δ::Vec 4 float)}")
 output_bias=bo(output_bias,d_predicted_output)
-print('output_bias\n',output_bias)

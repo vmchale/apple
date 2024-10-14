@@ -4,7 +4,7 @@ def sigmoid (x):
     return 1/(1+np.exp(-x))
 
 def sigmoid_derivative(x):
-    return x*(1 - x)
+    return x*(1-x)
 
 inputs = np.array([[0,0],[0,1],[1,0],[1,1]])
 expected_output = np.array([[0],[1],[1],[0]])
@@ -33,10 +33,6 @@ d_hidden_layer = error_hidden_layer * sigmoid_derivative(hidden_layer_output)
 
 #Updating Weights and Biases
 output_weights += hidden_layer_output.T.dot(d_predicted_output)
-print('output_weights\n',output_weights)
 output_bias += np.sum(d_predicted_output,axis=0,keepdims=True)
-print('output_bias\n',output_bias)
 hidden_weights += inputs.T.dot(d_hidden_layer)
-print('hidden_weights\n',hidden_weights)
 hidden_bias += np.sum(d_hidden_layer,axis=0,keepdims=True)
-print('hidden_bias\n',hidden_bias)
