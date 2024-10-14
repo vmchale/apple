@@ -43,8 +43,8 @@ d_predicted_output = dpo(predicted_output)
 dhe=apple.jit('''
 λl1Δ.λwo.λho.
 {
-  sDdx ← [x*(1-x)];
-  he ← l1Δ (*)⊗ (wo::Vec 4 float);
+  sDdx ← [x*(1.0-x)];
+  he ← l1Δ (*)⊗ wo;
   (*)`{0,0} (sDdx`{0} ho) he
 }
 ''')
