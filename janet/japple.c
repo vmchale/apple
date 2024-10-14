@@ -5,7 +5,7 @@
 
 // int janet_getboolean(const Janet *argv, int32_t n);
 
-typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;typedef uint8_t B;typedef char* T;
+typedef double F;typedef int64_t J;typedef uint8_t B;
 
 #define ZU static U
 #define Z static
@@ -16,7 +16,7 @@ typedef void* U;typedef size_t S;typedef double F;typedef int64_t J;typedef uint
 #define VA(sz,y) U y=malloc(sz);{J* x_i=y;x_i[0]=1;x_i[1]=n;}
 #define L(a) (J)a->count
 
-typedef struct JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi; T ts;} JF;
+TS JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi; T ts;} JF;
 
 void freety(FnTy* x){free(x->args);free(x);}
 static int jit_gc(void *data, size_t len) {
@@ -66,9 +66,9 @@ Z Janet apple_call(void *x, int32_t argc, Janet *argv) {
     R r;
 }
 
-Z void jit_ts(void* jit, JanetBuffer* buf) {JF* c=(JF*)jit;janet_buffer_push_cstring(buf,c->ts);}
+Z void jit_ts(U jit, JanetBuffer* buf) {JF* c=(JF*)jit;janet_buffer_push_cstring(buf,c->ts);}
 
-static const JanetAbstractType jit_t = {
+G JanetAbstractType jit_t = {
     .name = "jit",
     .gc = jit_gc,
     .gcmark = NULL,
@@ -88,7 +88,7 @@ static JF *galloc_jit() {R (JF*)janet_abstract(&jit_t, sizeof(JF));}
 Z Janet tyof_j(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
-    const char* inp=janet_getcstring(argv,0);
+    K char* inp=janet_getcstring(argv,0);
     T e;
         T o=apple_printty(inp,&e);
     ERR(o,e)
@@ -98,7 +98,7 @@ Z Janet tyof_j(int32_t argc, Janet *argv) {
 Z Janet jit(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     janet_checktypes(argv[0], JANET_TFLAG_STRING);
-    const char* inp=janet_getcstring(argv,0);
+    K char* inp=janet_getcstring(argv,0);
     T err;
         FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);

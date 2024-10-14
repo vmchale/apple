@@ -6,8 +6,6 @@
 #include"../include/apple_abi.h"
 #include"../c/ffi.c"
 
-typedef size_t S;typedef char* T;
-
 // asReal : SEXP -> double
 // asInteger : SEXP -> int
 // ScalarReal : double -> SEXP
@@ -17,14 +15,14 @@ typedef size_t S;typedef char* T;
 
 // http://adv-r.had.co.nz/C-interface.html
 
+#define SZ sizeof
 #define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
 #define DA(n,x,rnk,t,ra) J* i_p=x;J rnk=i_p[0];SEXP ds=PROTECT(allocVector(INTSXP,(int)rnk));J n=1;DO(i,rnk,n*=i_p[i+1];INTEGER(ds)[i]=(int)i_p[i+1]);SEXP ra=PROTECT(allocArray(t,ds));
 
-#define Z static
 #define ZU static U
 #define ZR static SEXP
 
-typedef struct AppleC {U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;} AppleC;
+TS AppleC {U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;} AppleC;
 
 Z void freety(FnTy* x){free(x->args);free(x);}
 Z void clear(SEXP jit) {
@@ -48,20 +46,20 @@ SEXP hs_init_R(void) {
 }
 
 SEXP ty_R(SEXP a) {
-    const char* inp=CHAR(asChar(a));T err;
+    K char* inp=CHAR(asChar(a));T err;
     T typ=apple_printty(inp,&err);
     ERR(typ,err);
     R mkString(typ);
 }
 
 SEXP jit_R(SEXP a){
-    const char* inp=CHAR(asChar(a));
+    K char* inp=CHAR(asChar(a));
     T err;
         FnTy* ty=apple_ty(inp,&err);
     ERR(ty,err);
     S f_sz;U s;
     U fp=apple_compile(&sys,inp,&f_sz,&s);
-    AppleC* rc=malloc(sizeof(AppleC));
+    AppleC* rc=malloc(SZ(AppleC));
     ffi_cif* ffi=apple_ffi(ty);
     rc->code=fp;rc->code_sz=f_sz;rc->ty=ty;rc->sa=s;rc->ffi=ffi;
     // http://homepage.divms.uiowa.edu/~luke/R/simpleref.html#toc6
@@ -72,7 +70,7 @@ SEXP jit_R(SEXP a){
 }
 
 SEXP asm_R(SEXP a) {
-    const char* inp=CHAR(asChar(a));T err;
+    K char* inp=CHAR(asChar(a));T err;
     T ret=apple_dumpasm(inp,&err);
     ERR(ret,err);
     R mkString(ret);
@@ -85,16 +83,16 @@ SEXP run_R(SEXP args){
     FnTy* ty=c->ty;U fp=c->code;ffi_cif* cif=c->ffi;
     SEXP r;
     int argc=ty->argc;
-    U* vals=alloca(sizeof(U)*argc);U ret=alloca(8);
+    U* vals=alloca(SZ(U)*argc);U ret=alloca(8);
     uint8_t fs=0;
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         switch(ty->args[k]){
-            C(FA, U* x=alloca(sizeof(U));x[0]=fr(arg);fs|=1<<k;vals[k]=x;)
-            C(IA, U* x=alloca(sizeof(U));x[0]=fi(arg);fs|=1<<k;vals[k]=x;)
-            C(BA, U* x=alloca(sizeof(U));x[0]=fb(arg);fs|=1<<k;vals[k]=x;)
-            C(F_t, F* xf=alloca(sizeof(F));xf[0]=asReal(arg);vals[k]=xf;)
-            C(I_t, J* xi=alloca(sizeof(J));xi[0]=(J)asInteger(arg);vals[k]=xi;)
+            C(FA, U* x=alloca(SZ(U));x[0]=fr(arg);fs|=1<<k;vals[k]=x;)
+            C(IA, U* x=alloca(SZ(U));x[0]=fi(arg);fs|=1<<k;vals[k]=x;)
+            C(BA, U* x=alloca(SZ(U));x[0]=fb(arg);fs|=1<<k;vals[k]=x;)
+            C(F_t, F* xf=alloca(SZ(F));xf[0]=asReal(arg);vals[k]=xf;)
+            C(I_t, J* xi=alloca(SZ(J));xi[0]=(J)asInteger(arg);vals[k]=xi;)
         }
     }
     ffi_call(cif,fp,ret,vals);

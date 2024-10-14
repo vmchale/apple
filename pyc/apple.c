@@ -5,19 +5,20 @@
 #include"../include/apple_abi.h"
 #include"../c/ffi.c"
 
-typedef void* U;typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;typedef char* T;
+typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
 
+#define SZ sizeof
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;};}
 
-#define CD(rnk,x,t,ds) J* i_p=x;J rnk=i_p[0];npy_intp* ds=malloc(sizeof(npy_intp)*rnk);J t=1;DO(i,rnk,t*=i_p[i+1];ds[i]=(npy_intp)i_p[i+1]);
+// CD - copy dims AD - apple dimensionate
+#define CD(rnk,x,t,ds) J* i_p=x;J rnk=i_p[0];npy_intp* ds=malloc(SZ(npy_intp)*rnk);J t=1;DO(i,rnk,t*=i_p[i+1];ds[i]=(npy_intp)i_p[i+1]);
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ds=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ds[i]);}
 #define PC(x,n,w,data) S sz=w*n;U data=malloc(sz);memcpy(data,x+rnk*8+8,sz);free(x);
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 
 #define O(pya) PyArray_ENABLEFLAGS((NP)pya,NPY_ARRAY_OWNDATA)
 
-#define Z static
 #define ZU static U
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
@@ -56,7 +57,7 @@ Z PY apple_ir(PY self, PY args) {
     free(res); R py;
 }
 
-typedef struct JO {
+TS JO {
     PyObject_HEAD
     U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;T ts;
 } JO;
@@ -77,18 +78,18 @@ Z PY apple_call(PY self, PY args, PY kwargs) {
     PY r;
     ffi_cif* cif=c->ffi;
     int argc=ty->argc;
-    U* vals=alloca(sizeof(U)*argc);U ret=alloca(8);
+    U* vals=alloca(SZ(U)*argc);U ret=alloca(8);
     PY pyarg;PY pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
     uint8_t fs=0;
     for(int k=0;k<argc;k++){
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             switch(ty->args[k]){
-                C(IA,U* x=alloca(sizeof(U));x[0]=i_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(BA,U* x=alloca(sizeof(U));x[0]=b_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(FA,U* x=alloca(sizeof(U));x[0]=f_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(I_t,J* xi=alloca(sizeof(J));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;)
-                C(F_t,F* xf=alloca(sizeof(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;)
+                C(IA,U* x=alloca(SZ(U));x[0]=i_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(BA,U* x=alloca(SZ(U));x[0]=b_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(FA,U* x=alloca(SZ(U));x[0]=f_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(I_t,J* xi=alloca(SZ(J));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;)
+                C(F_t,F* xf=alloca(SZ(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;)
             }
         }
     }
@@ -144,6 +145,6 @@ static PyMethodDef AFn[] = {
     {NULL,NULL,0,NULL}
 };
 
-static struct PyModuleDef applemodule = { PyModuleDef_HEAD_INIT, "apple", NULL, -1, AFn };
+Z struct PyModuleDef applemodule = { PyModuleDef_HEAD_INIT, "apple", NULL, -1, AFn };
 
 PyMODINIT_FUNC PyInit_apple(void) { hs_init(0,0); import_array(); PY m=PyModule_Create(&applemodule); PyModule_AddType(m,&JOT); R m; }

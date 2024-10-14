@@ -3,8 +3,8 @@
 #include<ffi.h>
 #include"../include/apple.h"
 
-#define G static const
 #define R return
+#define G static const
 // https://github.com/tlack/b-decoded/blob/3c21a33a5c3f5d39f75014e10f875fe830a8b326/orig-files/c.h#L8
 #define C(i,a) case i:{a;}break;
 
