@@ -9,22 +9,10 @@ output_bias=0.57823076
 
 import apple
 
-h=apple.jit('''
-λX.λwh.λbh.
-{
-  sigmoid ← [1%(1+ℯ(_x))];
-  sigmoid`{0} ([(+)`bh x]'(X%.wh))
-}
-''')
+h=apple.jit("λX.λwh.λbh. {sigmoid ← [1%(1+ℯ(_x))]; sigmoid`{0} ([(+)`bh x]'(X%.wh))}")
 hidden_layer_output=h(inputs,hidden_weights,hidden_bias)
 
-o=apple.jit('''
-λho.λwo.λbo.
-{
-  sigmoid ← [1%(1+ℯ(_x))];
-  sigmoid'((+bo)'(ho%:wo))
-}
-''')
+o=apple.jit("λho.λwo.λbo. {sigmoid ← [1%(1+ℯ(_x))]; sigmoid'((+bo)'(ho%:wo))}")
 predicted_output=o(hidden_layer_output,output_weights,output_bias)
 
 dpo=apple.jit('''
