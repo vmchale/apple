@@ -37,7 +37,7 @@ array([3., 4., 5., 6.])
 repl:1:> (import apple)
 @{_ @{:value <cycle 0>} apple/jit @{:private true} apple/tyof @{:private true}}
 repl:2:> (def sliding-mean (apple/jit ``([((+)/x)%ℝ(:x)]\`7)``))
-<jit 0x6000014240C0>
+<jit Vec (i + 7) float → Vec i float>
 repl:3:> (sliding-mean @[0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0])
 @[3 4 5 6 7]
 ```
