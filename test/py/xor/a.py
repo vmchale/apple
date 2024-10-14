@@ -1,7 +1,6 @@
 import numpy as np
 
 inputs = np.array([[0.,0],[0,1],[1,0],[1,1]])
-expected_output = np.array([0.,1,1,0])
 
 hidden_weights=np.array([[0.51426693,0.56885825],[0.48725347,0.15041493]])
 hidden_bias=np.array([0.79726405,0.67601843])
