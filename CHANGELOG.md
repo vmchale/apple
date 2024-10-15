@@ -7,6 +7,12 @@
   * Parsing infix expressions of min/max will no longer crash
   * REPL shows constraints in types
   * Don't crash when on `:inspect`ing a scalar
+  * Booleans are allowed as arguments to functions
+  * Implement `IsEq` for booleans &c.
+  * Prettier-print expressions in error messages
+  * Parse errors report with Happy's `explist`
+  * Functions report that they are not a member of typeclasses
+  * Occurs check for fancy shapes doesn't bail out/crash
 
 # 0.3.0.0
 
