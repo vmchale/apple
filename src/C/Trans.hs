@@ -64,11 +64,11 @@ newF2Temp = F2Temp <$> nextI
 addAA :: Int -> [Word64] -> CSt -> CSt
 addAA i aa (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts
 
-addVar :: Nm a -> Temp -> CSt -> CSt
-addVar n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l (insert n r v) b d d2 a f aas ts
+addVar :: Nm a -> Temp -> CM ()
+addVar n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l (insert n r v) b d d2 a f aas ts)
 
-addD :: Nm a -> FTemp -> CSt -> CSt
-addD n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b (insert n r d) d2 a f aas ts
+addD :: Nm a -> FTemp -> CM ()
+addD n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b (insert n r d) d2 a f aas ts)
 
 bI :: Nm a -> CM Temp
 bI n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=ITemp t in (r, CSt (t+1) ar as l (insert n r v) b d d2 a f aas ts))
@@ -82,11 +82,11 @@ bB n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=BTemp t in (r, CSt (
 addD2 :: Nm a -> F2Temp -> CSt -> CSt
 addD2 n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d (insert n r d2) a f aas ts
 
-addB :: Nm a -> BTemp -> CSt -> CSt
-addB n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v (insert n r b) d d2 a f aas ts
+addB :: Nm a -> BTemp -> CM ()
+addB n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v (insert n r b) d d2 a f aas ts)
 
-addAVar :: Nm a -> (Maybe AL, Temp) -> CSt -> CSt
-addAVar n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 (insert n r a) f aas ts
+addAVar :: Nm a -> (Maybe AL, Temp) -> CM ()
+addAVar n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b d d2 (insert n r a) f aas ts)
 
 addF :: Nm a -> (Label, [Arg], RT) -> CSt -> CSt
 addF n f (CSt t ar as l v b d d2 a fs aas ts) = CSt t ar as l v b d d2 a (insert n f fs) aas ts
@@ -217,16 +217,11 @@ writeCM :: E (T ()) -> CM [CS ()]
 writeCM eϵ = do
     cs <- traverse (\_ -> newITemp) [(0::Int)..5]; fs <- traverse (\_ -> newFTemp) [(0::Int)..5]
     (zipWith (\xr xr' -> MX () xr' (FTmp xr)) [F0,F1,F2,F3,F4,F5] fs ++) . (zipWith (\r r' -> r' =: Tmp r) [C0,C1,C2,C3,C4,C5] cs ++) <$> go eϵ fs cs where
-    go (Lam _ x@(Nm _ _ F) e) (fr:frs) rs = do
-        modify (addD x fr)
-        go e frs rs
+    go (Lam _ x@(Nm _ _ F) e) (fr:frs) rs = addD x fr *> go e frs rs
+    go (Lam _ x@(Nm _ _ B) e) frs (r:rs) = addB x (bt r) *> go e frs rs where bt (ITemp i)=BTemp i
     go (Lam _ (Nm _ _ F) _) [] _ = error "Not enough floating-point registers!"
-    go (Lam _ x@(Nm _ _ I) e) frs (r:rs) = do
-        modify (addVar x r)
-        go e frs rs
-    go (Lam _ x@(Nm _ _ Arr{}) e) frs (r:rs) = do
-        modify (addAVar x (Nothing, r))
-        go e frs rs
+    go (Lam _ x@(Nm _ _ I) e) frs (r:rs) = addVar x r *> go e frs rs
+    go (Lam _ x@(Nm _ _ Arr{}) e) frs (r:rs) = addAVar x (Nothing, r) *> go e frs rs
     go Lam{} _ [] = error "Not enough registers!"
     go e _ _ | isF (eAnn e) = do {f <- newFTemp ; (++[MX () FRet0 (FTmp f)]) <$> feval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = do {t <- newITemp; (++[CRet =: Tmp t]) <$> eval e t} -- avoid clash when calling functions
@@ -242,18 +237,10 @@ writeF :: E (T ())
        -> [Arg]
        -> RT
        -> CM (Maybe AL, [CS ()])
-writeF (Lam _ x e) (AA r l:rs) ret = do
-    modify (addAVar x (l,r))
-    writeF e rs ret
-writeF (Lam _ x e) (IPA r:rs) ret = do
-    modify (addVar x r)
-    writeF e rs ret
-writeF (Lam _ x e) (FA fr:rs) ret = do
-    modify (addD x fr)
-    writeF e rs ret
-writeF (Lam _ x e) (BA r:rs) ret = do
-    modify (addB x r)
-    writeF e rs ret
+writeF (Lam _ x e) (AA r l:rs) ret = addAVar x (l,r) *> writeF e rs ret
+writeF (Lam _ x e) (IPA r:rs) ret = addVar x r *> writeF e rs ret
+writeF (Lam _ x e) (FA fr:rs) ret = addD x fr *> writeF e rs ret
+writeF (Lam _ x e) (BA r:rs) ret = addB x r *> writeF e rs ret
 writeF e [] (IT r) | isArr (eAnn e) = aeval e r
 writeF e [] (IT r) | isI (eAnn e) = (Nothing,)<$>eval e r
 writeF e [] (IT r) | isΠR (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
@@ -391,7 +378,7 @@ llet :: (Nm (T ()), E (T ())) -> CM [CS ()]
 llet (n,e') | isArr (eAnn e') = do
     eR <- newITemp
     (l, ss) <- aeval e' eR
-    modify (addAVar n (l,eR)) $> ss
+    addAVar n (l,eR) $> ss
 llet (n,e') | isI (eAnn e') = do
     eR <- bI n
     eval e' eR
