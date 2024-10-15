@@ -326,6 +326,8 @@ occSh (SVar (Nm _ (U i) _)) = IS.singleton i
 occSh (Cat sh0 sh1)         = occSh sh0 <> occSh sh1
 occSh (_ `Cons` sh)         = occSh sh
 occSh Nil{}                 = IS.empty
+occSh (Rev sh)              = occSh sh
+occSh (Π sh)                = occSh sh
 
 occI :: I a -> IS.IntSet
 occI Ix{}                    = IS.empty
@@ -773,6 +775,7 @@ checkTy I (IsEq, _)           = pure Nothing
 checkTy F (IsEq, _)           = pure Nothing
 checkTy t (c@IsNum, l)        = Left$ Doesn'tSatisfy l t c
 checkTy t (c@HasBits, l)      = Left$ Doesn'tSatisfy l t c
+checkTy t@Arrow{} (c, l)      = Left$ Doesn'tSatisfy l t c
 checkTy (Arr _ t) c@(IsEq, _) = checkTy t c
 
 substI :: Subst a -> Int -> Maybe (T a)
