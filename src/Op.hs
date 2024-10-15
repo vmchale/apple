@@ -20,7 +20,7 @@ data BUn = BNeg
 
 data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp
 
-data BBin = AndB | OrB | XorB
+data BBin = AndB | OrB | XorB | BEq
 
 data IBin = IPlus | IMinus | ITimes | IAsr | IMax | IMin | IDiv | IAsl | IRem | BI !BBin
 
@@ -39,7 +39,7 @@ instance Pretty BUn where
     pretty BNeg = "¬"
 
 instance Pretty BBin where
-   pretty AndB = "∧"; pretty XorB = "⊻"; pretty OrB = "∨"
+   pretty AndB = "∧"; pretty XorB = "⊻"; pretty OrB = "∨"; pretty BEq = "="
 
 instance Pretty IBin where
     pretty IPlus  = "+"

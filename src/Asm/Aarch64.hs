@@ -202,6 +202,7 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | AndRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | OrRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | Eon { ann :: a, rDest, rSrc, rSrc2 :: reg }
                          | MulRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
                          | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
@@ -246,7 +247,8 @@ data AArch64 reg freg f2 a = Label { ann :: a, label :: Label }
                          | Fcsel { ann :: a, dDest, dSrc1, dSrc2 :: freg, cond :: Cond }
                          | Cset { ann :: a, rDest :: reg, cond :: Cond }
                          | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
-                         | EorI { ann :: a, rSrc, rDesg :: reg, imm :: BM }
+                         | EorI { ann :: a, rDest, rSrc :: reg, imm :: BM }
+                         | Bfc { ann :: a, rDest :: reg, lsb :: Word8, width :: Word8 }
                          deriving (Functor, Generic)
 
 instance (NFData r, NFData d, NFData x, NFData a) => NFData (AArch64 r d x a) where
@@ -278,6 +280,7 @@ mapR f (Mvn l r0 r1)         = Mvn l (f r0) (f r1)
 mapR f (AndRR l r0 r1 r2)    = AndRR l (f r0) (f r1) (f r2)
 mapR f (OrRR l r0 r1 r2)     = OrRR l (f r0) (f r1) (f r2)
 mapR f (Eor l r0 r1 r2)      = Eor l (f r0) (f r1) (f r2)
+mapR f (Eon l r0 r1 r2)      = Eon l (f r0) (f r1) (f r2)
 mapR f (Lsl l r0 r1 s)       = Lsl l (f r0) (f r1) s
 mapR f (Asr l r0 r1 s)       = Asr l (f r0) (f r1) s
 mapR f (CmpRR l r0 r1)       = CmpRR l (f r0) (f r1)
@@ -329,6 +332,7 @@ mapR f (Cset l r c)          = Cset l (f r) c
 mapR f (EorI l r0 r1 i)      = EorI l (f r0) (f r1) i
 mapR f (Ldp2 l r0 r1 a)      = Ldp2 l r0 r1 (f<$>a)
 mapR f (Stp2 l r0 r1 a)      = Stp2 l r0 r1 (f<$>a)
+mapR f (Bfc x r l w)         = Bfc x (f r) l w
 
 mapF2 :: (af2 -> f2) -> AArch64 areg afreg af2 a -> AArch64 areg afreg f2 a
 mapF2 _ (Label x l)           = Label x l
@@ -355,6 +359,7 @@ mapF2 _ (Mvn l r0 r1)         = Mvn l r0 r1
 mapF2 _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
 mapF2 _ (OrRR l r0 r1 r2)     = OrRR l r0 r1 r2
 mapF2 _ (Eor l r0 r1 r2)      = Eor l r0 r1 r2
+mapF2 _ (Eon l r0 r1 r2)      = Eon l r0 r1 r2
 mapF2 _ (EorI l r0 r1 i)      = EorI l r0 r1 i
 mapF2 _ (Lsl l r0 r1 s)       = Lsl l r0 r1 s
 mapF2 _ (Asr l r0 r1 s)       = Asr l r0 r1 s
@@ -406,6 +411,7 @@ mapF2 _ (TstI l r i)          = TstI l r i
 mapF2 _ (Cset l r c)          = Cset l r c
 mapF2 f (Ldp2 l r0 r1 a)      = Ldp2 l (f r0) (f r1) a
 mapF2 f (Stp2 l r0 r1 a)      = Stp2 l (f r0) (f r1) a
+mapF2 _ (Bfc x r l w)         = Bfc x r l w
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg af2 a -> AArch64 areg freg af2 a
 mapFR _ (Label x l)           = Label x l
@@ -432,6 +438,7 @@ mapFR _ (Mvn l r0 r1)         = Mvn l r0 r1
 mapFR _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
 mapFR _ (OrRR l r0 r1 r2)     = OrRR l r0 r1 r2
 mapFR _ (Eor l r0 r1 r2)      = Eor l r0 r1 r2
+mapFR _ (Eon l r0 r1 r2)      = Eon l r0 r1 r2
 mapFR _ (EorI l r0 r1 i)      = EorI l r0 r1 i
 mapFR _ (Lsl l r0 r1 s)       = Lsl l r0 r1 s
 mapFR _ (Asr l r0 r1 s)       = Asr l r0 r1 s
@@ -483,6 +490,7 @@ mapFR _ (TstI l r i)          = TstI l r i
 mapFR _ (Cset l r c)          = Cset l r c
 mapFR _ (Ldp2 l q0 q1 a)      = Ldp2 l q0 q1 a
 mapFR _ (Stp2 l q0 q1 a)      = Stp2 l q0 q1 a
+mapFR _ (Bfc x r l w)         = Bfc x r l w
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -535,6 +543,7 @@ instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg
         p4 (AndRR _ rD rS rS')    = "and" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS'
         p4 (OrRR _ rD rS rS')     = "orr" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS'
         p4 (Eor _ rD rS rS')      = "eor" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS'
+        p4 (Eon _ rD rS rS')      = "eon" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty rS'
         p4 (EorI _ rD rS i)       = "eor" <+> pretty rD <> "," <+> pretty rS <> "," <+> pretty i
         p4 (ZeroR _ rD)           = "eor" <+> pretty rD <> "," <+> pretty rD <> "," <+> pretty rD
         p4 (Mvn _ rD rS)          = "mvn" <+> pretty rD <> "," <+> pretty rS
@@ -588,6 +597,7 @@ instance (Pretty reg, Pretty freg, SIMD f2reg) => Pretty (AArch64 reg freg f2reg
         p4 (Fcsel _ d0 d1 d2 p)   = "fcsel" <+> pretty d0 <> "," <+> pretty d1 <> "," <+> pretty d2 <> "," <+> pretty p
         p4 (TstI _ r i)           = "tst" <+> pretty r <> "," <+> pretty i
         p4 (Cset _ r c)           = "cset" <+> pretty r <> "," <+> pretty c
+        p4 (Bfc _ r l w)          = "bfc" <+> pretty r <> "," <+> pretty l <> "," <+> pretty w
         p4 Label{}                = error "shouldn't happen."
 
 instance (Pretty reg, Pretty freg, SIMD f2reg) => Show (AArch64 reg freg f2reg a) where show=show.pretty

@@ -115,6 +115,7 @@ asm ix st (AddRR l r0 r1 r2:asms) = asm ix st (AddRRS l r0 r1 r2 0:asms)
 asm ix st (AddRRS _ r0 r1 r2 s:asms) = [0b10001011, be r2, s `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (AndRR _ r0 r1 r2:asms) = [0b10001010, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Eor _ r0 r1 r2:asms) = [0b11001010, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
+asm ix st (Eon _ r0 r1 r2:asms) = [0b11001010, 0b1 `shiftL` 5 .|. be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Mvn _ r0 r1:asms) = [0b10101010, 0x1 `shiftL` 5 .|. be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (OrRR _ r0 r1 r2:asms) = [0b10101010, be r2, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Neg _ r0 r1:asms) = [0b11001011, be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
@@ -166,7 +167,8 @@ asm ix st (Ldp2 _ q0 q1 (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 16, u <= 1008 
 asm ix st (Ldp2 x q0 q1 (R rb):asms) = asm ix st (Ldp2 x q0 q1 (RP rb 0):asms)
 asm ix st (CmpRR _ r0 r1:asms) = [0b11101011, be r1, be r0 `shiftR` 3, (0x7 .&. be r0) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
 asm ix st (CmpRC _ r u:asms) = [0b11110001, fromIntegral (u `shiftR` 6), (0b111111 .&. fromIntegral u) `shiftL` 2 .|. (be r `shiftR` 3), (0x7 .&. be r) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
-asm ix st (SubsRC _ r0 r1 u:asms) = [0b11110001, fromIntegral (u `shiftR` 6), (0b111111 .&. fromIntegral u) `shiftL` 2 .|. (be r1 `shiftR` 3), lb r1 r0]:asm (ix+4) st asms
+asm ix st (SubsRC _ r0 r1 u:asms) = [0b11110001, fromIntegral (u `shiftR` 6), (0b111111 .&. fromIntegral u) `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
+asm ix st (Bfc _ r l w:asms) | l >= 0 && l <= 64 && w >= 1 && w <= 63 = [0b10110011, 0x1 `shiftL` 6 .|. ((-l) `mod` 64), (w-1) `shiftL` 2 .|. 0b11, 0b111 `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (Scvtf _ d r:asms) = [0b10011110, 0b01100010, be r `shiftR` 3, lb r d]:asm (ix+4) st asms
 asm ix st (Fcvtms _ r d:asms) = [0b10011110, 0x1 `shiftL` 6 .|. 0b110000, be d `shiftR` 3, lb d r]:asm (ix+4) st asms
 asm ix st (Fcvtas _ r d:asms) = [0b10011110, 0x1 `shiftL` 6 .|. 0b100100, be d `shiftR` 3, lb d r]:asm (ix+4) st asms

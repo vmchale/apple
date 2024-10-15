@@ -23,15 +23,16 @@ fabsReg IR.F0 = FArg0; fabsReg IR.F1 = FArg1; fabsReg IR.F2 = FArg2
 fabsReg IR.F3 = FArg3; fabsReg IR.F4 = FArg4; fabsReg IR.F5 = FArg5
 fabsReg IR.FRet = FArg0; fabsReg IR.FRet1 = FArg1
 
-mB Op.AndB = AndRR
-mB Op.OrB  = OrRR
-mB Op.XorB = Eor
+mB Op.AndB = Just AndRR
+mB Op.OrB  = Just OrRR
+mB Op.XorB = Just Eor
+mB Op.BEq  = Nothing
 
 mIop Op.IPlus  = Just AddRR
 mIop Op.IMinus = Just SubRR
 mIop Op.ITimes = Just MulRR
 mIop Op.IDiv   = Just Sdiv
-mIop (Op.BI b) = Just$mB b
+mIop (Op.BI b) = mB b
 mIop _         = Nothing
 
 mFop Op.FPlus  = Just Fadd
@@ -198,6 +199,9 @@ ir (IR.Cset t (IR.IU Op.IOdd e0)) = do
 ir (IR.Cset t (IR.IU Op.IEven e0)) = do
     (plE0,r0) <- plI e0
     pure $ plE0 [TstI () r0 (BM 1 0), Cset () (absReg t) Eq]
+ir (IR.Cset t b) = do
+    (plE0,r0) <- plI b
+    pure $ plE0 [MovRR () (absReg t) r0]
 ir (IR.Fcmov (IR.IRel op e0 (IR.ConstI i64)) t e) | c <- iop op, Just u <- m12 i64 = do
     (plE0,r0) <- plI e0; (plE,i) <- plF e
     pure $ plE $ plE0 [CmpRC () r0 u, Fcsel () (fabsReg t) i (fabsReg t) c]
@@ -474,6 +478,9 @@ eval (IR.IB Op.IMin e0 e1) t = do
 eval (IR.IB Op.IMax e0 e1) t = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [CmpRR () r0 r1, Csel () (absReg t) r0 r1 Geq]
+eval (IR.IB (Op.BI Op.BEq) e0 e1) t = do
+    (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
+    pure $ plE0 $ plE1 [Eon () (absReg t) r0 r1, Bfc () (absReg t) 1 63]
 eval (IR.IB op e0 e1) t | Just isn <- mIop op = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [isn () (absReg t) r0 r1]
