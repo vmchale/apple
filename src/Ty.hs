@@ -773,6 +773,7 @@ checkTy B (HasBits, _)        = pure Nothing
 checkTy F (IsOrd, _)          = pure Nothing
 checkTy I (IsEq, _)           = pure Nothing
 checkTy F (IsEq, _)           = pure Nothing
+checkTy B (IsEq, _)           = pure Nothing
 checkTy t (c@IsNum, l)        = Left$ Doesn'tSatisfy l t c
 checkTy t (c@HasBits, l)      = Left$ Doesn'tSatisfy l t c
 checkTy t@Arrow{} (c, l)      = Left$ Doesn'tSatisfy l t c
