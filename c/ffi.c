@@ -10,7 +10,7 @@
 
 #define DO(i,n,a) {int i;for(i=0;i<n;i++){a;}}
 
-#define F(r,t) {switch(t){C(I_t,r=&ffi_type_sint64) C(F_t,r=&ffi_type_double) C(FA,r=&ffi_type_pointer) C(IA,r=&ffi_type_pointer) C(BA,r=&ffi_type_pointer)}}
+#define F(r,t) {switch(t){C(I_t,r=&ffi_type_sint64) C(B_t,r=&ffi_type_uint8) C(F_t,r=&ffi_type_double) C(FA,r=&ffi_type_pointer) C(IA,r=&ffi_type_pointer) C(BA,r=&ffi_type_pointer)}}
 
 G JC sys={(P)&malloc,(P)&free,(P)&lrand48,(P)&drand48,(P)&exp,(P)&log,(P)&pow};
 
