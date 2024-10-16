@@ -725,6 +725,7 @@ rwSh (Cat s0 s1) | (is, Nil) <- unroll (rwSh s0), (js, Nil) <- unroll (rwSh s1) 
                  | otherwise = Cat (rwSh s0) (rwSh s1)
 rwSh (Rev s) | (is, Nil) <- unroll (rwSh s) = roll Nil (reverse is)
              | otherwise = Rev (rwSh s)
+rwSh (Π s) | Nil <- rwSh s = Nil
 rwSh (Π s) | Just i <- iunroll (rwSh s) = rwI i `Cons` Nil
            | otherwise = Π (rwSh s)
 

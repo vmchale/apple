@@ -1252,6 +1252,8 @@ peval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
     (plE, (lE, eR)) <- plA e
     (plI,iE) <- plC i
     pure $ plE $ plI [MB () t (PAt (AElem eR 1 iE lE 8))]
+peval (EApp _ (Builtin _ T) e) t = peval e t
+peval (EApp _ (Builtin _ Flat) e) t = peval e t
 peval (EApp _ (Builtin _ Odd) e0) t = do
     (pl,eR) <- plEV e0
     pure $ pl [Cset () (IUn IOdd (Tmp eR)) t]
@@ -1374,6 +1376,8 @@ eval (EApp _ (Builtin _ Size) xs) t | Arr sh _ <- eAnn xs = do
     (plE, (l, xsR)) <- plA xs
     rnkR <- nI
     pure $ plE [rnkR =: eRnk sh (xsR,l), SZ () t xsR (Tmp rnkR) l]
+eval (EApp _ (Builtin _ T) x) t = eval x t
+eval (EApp _ (Builtin _ Flat) x) t = eval x t
 eval (EApp _ (Builtin _ Floor) x) t = do
     xR <- nF
     plX <- feval x xR
@@ -1523,6 +1527,8 @@ feval (Cond _ p e0 e1) t = snd <$> cond p e0 e1 (FT t)
 feval (EApp _ (Builtin _ Head) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [MX () t (FAt (AElem a 1 0 l 8))]
+feval (EApp _ (Builtin _ T) x) t = feval x t
+feval (EApp _ (Builtin _ Flat) x) t = feval x t
 feval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
     (plE, (lE, eR)) <- plA e; (plI, iR) <- plC i
     pure $ plE $ plI [MX () t (FAt (AElem eR 1 iR lE 8))]
@@ -1692,6 +1698,8 @@ m'sa t = maybe []  ((:[]).Sa () t)
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [t =: Tmp (getT st x)])
+πe (EApp _ (Builtin _ T) x) t = πe x t
+πe (EApp _ (Builtin _ Flat) x) t = πe x t
 πe (LLet _ b e) t = do
     ss <- llet b
     fourth (ss++) <$> πe e t
