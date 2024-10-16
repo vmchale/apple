@@ -155,8 +155,8 @@ maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
 maM f (Arr sh t) t'                 = (<>) <$> mSh f sh Nil <*> maM f t t'
 maM f (P ts) (P ts')                = mconcat <$> zipWithM (maM f) ts ts'
 maM _ (Ρ n _) (Ρ n' _) | n == n'    = Right mempty
-maM f (Ρ n rs) t@(Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = mapTySubst (insert n t) . mconcat <$> traverse (uncurry (maM f)) (IM.elems (IM.intersectionWith (,) rs rs'))
-maM f (Ρ n rs) t@(P ts) | length ts >= fst (IM.findMax rs) = mapTySubst (IM.insert (unU$unique n) t) . mconcat <$> traverse (uncurry (maM f)) [ (ts!!(i-1),tϵ) | (i,tϵ) <- IM.toList rs ]
+maM f (Ρ n rs) t@(Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = iTS n t . mconcat <$> traverse (uncurry (maM f)) (IM.elems (IM.intersectionWith (,) rs rs'))
+maM f (Ρ n rs) t@(P ts) | length ts >= fst (IM.findMax rs) = iTS n t . mconcat <$> traverse (uncurry (maM f)) [ (ts!!(i-1),tϵ) | (i,tϵ) <- IM.toList rs ]
 maM _ t t'                          = Left $ MatchFailed (void t) (void t')
 
 shSubst :: Subst a -> Sh a -> Sh a
@@ -256,6 +256,10 @@ ftie = IEVar () <$> freshN "n" ()
 mapTySubst f (Subst t i sh) = Subst (f t) i sh
 mapShSubst f (Subst t i sh) = Subst t i (f sh)
 
+iTS n t = mapTySubst (insert n t)
+uTS u n = mapTySubst (IM.insert u n)
+iSh u sh = mapShSubst (IM.insert u sh)
+
 data Focus = LF | RF
 
 instance NFData Focus where rnf LF=(); rnf RF=()
@@ -309,9 +313,9 @@ mgSh f l inp (Cons i sh) (Cons i' sh') = do
     pure (Cons i'' sh'', s2)
 mgSh _ _ inp s@(SVar sh) (SVar sh') | sh == sh' = pure (s, inp)
 mgSh _ l inp s@(SVar (Nm _ (U i) _)) sh | i `IS.member` occSh sh = throwError $ OSh l s sh
-                                        | otherwise = pure (sh, mapShSubst (IM.insert i sh) inp)
+                                        | otherwise = pure (sh, iSh i sh inp)
 mgSh _ l inp sh s@(SVar (Nm _ (U i) _)) | i `IS.member` occSh sh = throwError $ OSh l sh s
-                                        | otherwise = pure (sh, mapShSubst (IM.insert i sh) inp)
+                                        | otherwise = pure (sh, iSh i sh inp)
 mgSh _ l _ sh@Nil sh'@Cons{} = throwError $ USh l sh sh'
 mgSh _ l _ sh@Cons{} sh'@Nil{} = throwError $ USh l sh' sh
 mgSh f l inp (Rev sh) (Rev sh') = mgSh f l inp sh sh'
@@ -406,9 +410,9 @@ mgu _ _ s I t@Li{} = pure (t, s)
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (Li i', Subst mempty iS mempty <> s)}
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
 mgu _ (l, _) s t'@(TVar (Nm _ (U i) _)) t | i `IS.member` occ t = throwError $ OT l t' t
-                                          | otherwise = pure (t, mapTySubst (IM.insert i t) s)
+                                          | otherwise = pure (t, uTS i t s)
 mgu _ (l, _) s t t'@(TVar (Nm _ (U i) _)) | i `IS.member` occ t = throwError $ OT l t' t
-                                          | otherwise = pure (t, mapTySubst (IM.insert i t) s)
+                                          | otherwise = pure (t, uTS i t s)
 mgu _ (l, e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
 mgu _ (l, e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
 mgu f l s (Arr sh t) (Arr sh' t') = do
@@ -429,12 +433,12 @@ mgu f l s (Arr (SVar n) t) t'@Li{} = second (scalar n) <$> mgu f l s t t'
 mgu f l s t'@Li{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
 mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f l) s ts ts'
 -- TODO: rho occurs check
-mgu f l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (mapTySubst (insert n t')) <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
+mgu f l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (iTS n t') <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
                                        | otherwise = throwError $ UF lϵ e t t'
 mgu f l s t@P{} t'@Ρ{} = mgu f l s t' t
 mgu _ l s (Ρ n rs) (Ρ n' rs') = do
     (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep LF l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
-    let t=Ρ n' (rs<>rs') in pure (t, mapTySubst (insert n t) rss)
+    let t=Ρ n' (rs<>rs') in pure (t, iTS n t rss)
 mgu _ (l, e) _ t0@Ρ{} t1 = throwError $ UF l e t0 t1
 mgu _ (l, e) _ t0 t1@Ρ{} = throwError $ UF l e t0 t1
 mgu _ (l, e) _ t0@Li{} t1 = throwError $ UF l e t0 t1
