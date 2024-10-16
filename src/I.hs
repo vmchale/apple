@@ -21,8 +21,8 @@ instance HasRs (ISt a) where
 
 type M a = State (ISt a)
 
-bind :: Nm a -> E a -> ISt a -> ISt a
-bind n e (ISt r bs) = ISt r (insert n e bs)
+bind :: Nm a -> E a -> M a ()
+bind n e = modify (\(ISt r bs) -> ISt r (insert n e bs))
 
 runI i = second (max_.renames) . flip runState (ISt (Rs i mempty) mempty)
 
@@ -74,11 +74,11 @@ iM (LLet l (n, e') e) = do
     pure $ LLet l (n, e'I) eI
 iM (Let l (n, e') e) | not(hR e')= do
     eI <- iM e'
-    modify (bind n eI) *> iM e
+    bind n eI *> iM e
                      | otherwise = iM(LLet l (n,e') e)
 iM (Def _ (n, e') e) = do
     eI <- iM e'
-    modify (bind n eI) *> iM e
+    bind n eI *> iM e
 iM e@(Var t (Nm _ (U i) _)) = do
     st <- gets binds
     case IM.lookup i st of
@@ -97,7 +97,7 @@ bM (Tup l es) = Tup l <$> traverse bM es
 bM (Cond l p e0 e1) = Cond l <$> bM p <*> bM e0 <*> bM e1
 bM (EApp l (Lam _ n e') e) | not(hR e) = do
     eI <- bM e
-    modify (bind n eI) *> bM e'
+    bind n eI *> bM e'
                            | otherwise = do
     eI <- bM e
     LLet l (n, eI) <$> bM e'
