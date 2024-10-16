@@ -85,11 +85,11 @@ Z PY apple_call(PY self, PY args, PY kwargs) {
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             switch(ty->args[k]){
-                C(IA,U* x=alloca(SZ(U));x[0]=i_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(BA,U* x=alloca(SZ(U));x[0]=b_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(FA,U* x=alloca(SZ(U));x[0]=f_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(I_t,J* xi=alloca(SZ(J));xi[0]=PyLong_AsLong(pyarg);vals[k]=xi;)
-                C(F_t,F* xf=alloca(SZ(F));xf[0]=PyFloat_AsDouble(pyarg);vals[k]=xf;)
+                C(IA,U* x=alloca(SZ(U));*x=i_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(BA,U* x=alloca(SZ(U));*x=b_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(FA,U* x=alloca(SZ(U));*x=f_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(I_t,J* xi=alloca(SZ(J));*xi=PyLong_AsLong(pyarg);vals[k]=xi;)
+                C(F_t,F* xf=alloca(SZ(F));*xf=PyFloat_AsDouble(pyarg);vals[k]=xf;)
             }
         }
     }
