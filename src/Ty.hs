@@ -106,7 +106,7 @@ liftU :: UM a x -> TyM a x
 liftU a = do
     i <- gets maxU
     (b, j) <- liftEither$runStateT a i
-    modify (setMaxU j) $> b
+    setMaxU j $> b
 
 mI :: Focus -> I a -> I a -> Either (TyE a) (Subst a)
 mI _ i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
@@ -199,11 +199,11 @@ runTyM i = fmap (second maxU) . flip runStateT (TySt i IM.empty IM.empty IM.empt
 mapMaxU :: (Int -> Int) -> TySt a -> TySt a
 mapMaxU f (TySt u l v vcs) = TySt (f u) l v vcs
 
-setMaxU :: Int -> TySt a -> TySt a
-setMaxU i (TySt _ l v vcs) = TySt i l v vcs
+setMaxU :: Int -> TyM a ()
+setMaxU i = modify (\(TySt _ l v vcs) -> TySt i l v vcs)
 
-addStaEnv :: Nm a -> T () -> TySt a -> TySt a
-addStaEnv n t (TySt u l v vcs) = TySt u (insert n t l) v vcs
+addStaEnv :: Nm a -> T () -> TyM a ()
+addStaEnv n t = modify (\(TySt u l v vcs) -> TySt u (insert n t l) v vcs)
 
 addPolyEnv :: Nm a -> T () -> TySt a -> TySt a
 addPolyEnv n t (TySt u l v vcs) = TySt u l (insert n t v) vcs
@@ -693,7 +693,7 @@ liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do
     i<- gets maxU
     let (u,t',vs) = cloneT i t
-    modify (setMaxU u) $> (t',vs)
+    setMaxU u $> (t',vs)
 
 cloneWithConstraints :: T b -> TyM a (T b)
 cloneWithConstraints t = do
@@ -871,14 +871,14 @@ tyE s (ILit l m) = do
 tyE s (Builtin l b) = do {(t,sϵ) <- tyB l b ; pure (Builtin t b, sϵ<>s)}
 tyE s (Lam _ nϵ e) = do
     n <- ftv "a"
-    modify (addStaEnv nϵ n)
+    addStaEnv nϵ n
     (e', s') <- tyE s e
     let lamTy = n ~> eAnn e'
     pure (Lam lamTy (nϵ { loc = n }) e', s')
 tyE s (Let _ (n, e') e) = do
     (e'Res, s') <- tyE s e'
     let e'Ty = eAnn e'Res
-    modify (addStaEnv n (aT (void s') e'Ty))
+    addStaEnv n (aT (void s') e'Ty)
     (eRes, s'') <- tyE s' e
     pure (Let (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s'')
 tyE s (Def _ (n, e') e) = do
@@ -890,7 +890,7 @@ tyE s (Def _ (n, e') e) = do
 tyE s (LLet _ (n, e') e) = do
     (e'Res, s') <- tyE s e'
     let e'Ty = eAnn e'Res
-    modify (addStaEnv n (aT (void s') e'Ty))
+    addStaEnv n (aT (void s') e'Ty)
     (eRes, s'') <- tyE s' e
     pure (LLet (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s'')
 tyE s e@(ALit l es) = do
