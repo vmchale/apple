@@ -79,8 +79,8 @@ bD n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=FTemp t in (r, CSt (
 bB :: Nm a -> CM BTemp
 bB n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=BTemp t in (r, CSt (t+1) ar as l v (insert n r b) d d2 a f aas ts))
 
-addD2 :: Nm a -> F2Temp -> CSt -> CSt
-addD2 n r (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d (insert n r d2) a f aas ts
+addD2 :: Nm a -> F2Temp -> CM ()
+addD2 n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b d (insert n r d2) a f aas ts)
 
 addB :: Nm a -> BTemp -> CM ()
 addB n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v (insert n r b) d d2 a f aas ts)
@@ -279,10 +279,8 @@ hasS FLit{}         = True
 hasS Cond{}         = False
 
 write2 :: E (T ()) -> [F2Temp] -> F2Temp -> CM [CS ()]
-write2 (Lam _ x e) (v:vs) vret = do
-    modify (addD2 x v)
-    write2 e vs vret
-write2 e [] r = f2eval e r
+write2 (Lam _ x e) (v:vs) vret = addD2 x v *> write2 e vs vret
+write2 e [] r                  = f2eval e r
 
 writeF :: E (T ())
        -> [Arg]
@@ -393,7 +391,7 @@ forAll is bs = thread (zipWith g is bs) where
     g t b@(ConstI i) | i > 0 = (:[]) . For1 () t 0 ILt b
     g t b            = (:[]) . For () t 0 ILt b
 
--- the resulting expressions/statement contain free variables that will be iterated over in the main rank-ification loop, these free variables are returned alongside
+-- the resulting expressions/statement contain free variables to be iterated over; these free variables are returned alongside
 extrCell :: Int64 -> [Cell () Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM ([Temp], [CS ()])
 extrCell sz fixBounds sstrides (srcP, srcL) dest = do
     (dims, ts, arrIxes, complts) <- switch fixBounds
@@ -422,8 +420,7 @@ plSlop sz slopRnk dims = do
          pop sz (Tmp slopE))
 
 codT :: T () -> T ()
-codT (Arrow _ t@Arrow{}) = codT t
-codT (Arrow _ t)         = t
+codT (Arrow _ t@Arrow{}) = codT t; codT (Arrow _ t) = t
 
 r00 :: E (T ()) -> Maybe (E (T ()), [E (T ())])
 r00 (EApp _ (Builtin _ (Rank is)) f) | all ((==0).fst) is = Just (f, [])
@@ -694,7 +691,7 @@ aeval e t | Just (f, xss) <- r00 e, all isF (unroll$eAnn f), tXs@(Arr sh _) <- e
     let xR=head xRs; lX=head lXs
     arg1s <- traverse (\_ -> nF) xss; ret1 <- nF
     args <- traverse (\_ -> nF2) xss; ret <- nF2
-    ss1 <- writeRF f [FT arg | arg <- reverse arg1s] (FT ret1)
+    ss1 <- writeRF f [FT fa | fa <- reverse arg1s] (FT ret1)
     ss <- write2 f (reverse args) ret
     let m1s = zipWith3 (\arg1 xRd lXϵ -> MX () arg1 (FAt (Raw xRd (Tmp i) lXϵ 8))) arg1s xRds lXs; wr1 = WrF () (Raw tD (Tmp i) (Just a) 8) (FTmp ret1)
         ms = zipWith3 (\argϵ xRd lXϵ -> MX2 () argϵ (FAt (Raw xRd (Tmp i) lXϵ 8))) args xRds lXs; wr = Wr2F () (Raw tD (Tmp i) (Just a) 8) (FTmp ret)
