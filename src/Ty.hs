@@ -123,8 +123,8 @@ mI LF i0@IEVar{} i1@Ix{} = Left $ MatchIFailed LF i0 i1
 mI LF i0@Ix{} i1@IEVar{} = Left $ MatchIFailed LF i0 i1
 mI f (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI f i (Ix l (iϵ-j))
-mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: too stringent
-mI f (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: too stringent
+mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent, should enter confessional error context
+mI f (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent
 
 mSh :: Focus -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mSh _ (SVar (Nm _ (U i) _)) sh      = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
@@ -319,12 +319,42 @@ mgSh f l inp (Cat sh0 sh0') (Cat sh1 sh1') = do
     (sh', s) <- mgSh f l inp sh0 sh1
     (sh'', s') <- mgShPrep f l s sh0' sh1'
     pure (Cat sh' sh'', s')
-mgSh f l inp (Rev sh) sh' | (is, Nil) <- unroll sh' = do
-    mgShPrep f l inp sh (roll Nil$reverse is)
-mgSh f l inp sh (Rev sh') | (is, Nil) <- unroll sh' = do
-    mgShPrep f l inp (roll Nil$reverse is) sh
+mgSh f l inp (Rev sh) sh' | (is, Nil) <- unroll sh' =
+    mgSh f l inp sh (roll Nil$reverse is)
+mgSh f l inp sh (Rev sh') | (is, Nil) <- unroll sh' =
+    mgSh f l inp (roll Nil$reverse is) sh
+mgSh f l inp (Rev sh) Nil = mgSh f l inp sh Nil
+mgSh f l inp Nil (Rev sh) = mgSh f l inp Nil sh
+mgSh f l inp (Π sh) Nil = mgSh f l inp sh Nil
+mgSh f l inp Nil (Π sh) = mgSh f l inp Nil sh
+mgSh f l inp (Cat sh0 sh1) Nil = do
+    (_, s) <- mgSh f l inp sh0 Nil
+    (_, s') <- mgShPrep f l s sh1 Nil
+    pure (Nil, s')
+mgSh f l inp Nil (Cat sh0 sh1) = do
+    (_, s) <- mgSh f l inp Nil sh0
+    (_, s') <- mgShPrep f l s Nil sh1
+    pure (Nil, s')
+mgSh f l inp sh0@Rev{} sh1@Π{} = do
+    i <- nI l
+    let sh=vx i
+    (_, s') <- mgSh f l inp sh sh0
+    (_, s'') <- mgShPrep f l s' sh sh1
+    pure (sh, s'')
+mgSh f l inp sh0@Π{} sh1@Rev{} = do
+    i <- nI l
+    let sh=vx i
+    (_, s') <- mgSh f l inp sh sh0
+    (_, s'') <- mgShPrep f l s' sh sh1
+    pure (sh, s'')
 mgSh _ l _ sh0@Cons{} sh1 = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0 sh1@Cons{} = throwError $ UShD l sh0 sh1
+mgSh _ l _ sh0@Π{} sh1@Cat{} = throwError $ UShD l sh0 sh1
+mgSh _ l _ sh0@Cat{} sh1@Π{} = throwError $ UShD l sh0 sh1
+mgSh _ l _ sh0@Rev{} sh1@Cat{} = throwError $ UShD l sh0 sh1
+mgSh _ l _ sh0@Cat{} sh1@Rev{} = throwError $ UShD l sh0 sh1
+-- TODO: enter confessional context (error messages)
+mgSh f l inp (Π t0) (Π t1) = undefined
 
 mguPrep :: Focus -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mguPrep f l s t0 t1 =
