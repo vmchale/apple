@@ -271,12 +271,13 @@ bS Sqrt  = True
 bS _     = False
 
 hasS :: E a -> Bool
-hasS (Builtin _ b)  = bS b
-hasS (EApp _ e0 e1) = hasS e0&&hasS e1
-hasS (Lam _ _ e)    = hasS e
-hasS Var{}          = True
-hasS FLit{}         = True
-hasS Cond{}         = False
+hasS (Builtin _ b)     = bS b
+hasS (EApp _ e0 e1)    = hasS e0&&hasS e1
+hasS (Lam _ _ e)       = hasS e
+hasS Var{}             = True
+hasS FLit{}            = True
+hasS Cond{}            = False
+hasS (LLet _ (_,e) e') = hasS e&&hasS e'
 
 write2 :: E (T ()) -> [F2Temp] -> F2Temp -> CM [CS ()]
 write2 (Lam _ x e) (v:vs) vret = addD2 x v *> write2 e vs vret
