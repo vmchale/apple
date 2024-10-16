@@ -93,6 +93,7 @@ SEXP run_R(SEXP args){
             C(BA, U* x=alloca(SZ(U));*x=fb(arg);fs|=1<<k;vals[k]=x;)
             C(F_t, F* xf=alloca(SZ(F));*xf=asReal(arg);vals[k]=xf;)
             C(I_t, J* xi=alloca(SZ(J));*xi=(J)asInteger(arg);vals[k]=xi;)
+            C(B_t, B* xb=alloca(SZ(B));*xb=(B)asLogical(arg);vals[k]=xb;)
         }
     }
     ffi_call(cif,fp,ret,vals);
