@@ -197,7 +197,6 @@ nee (Arr sh _) = nzSh sh; nee _=False
 
 rof t = if ne t then Rof1 () else Rof ()
 for t = if ne t then For1 () else For (); for1 t = if n1 t then For1 () else For ()
-rofc t = if nec t then Rof1 () else Rof ()
 forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
 
