@@ -11,7 +11,7 @@ module Ty ( TyE
           ) where
 
 import           A
-import           Control.DeepSeq            (NFData)
+import           Control.DeepSeq            (NFData (rnf))
 import           Control.Exception          (Exception, throw)
 import           Control.Monad              (zipWithM)
 import           Control.Monad.Except       (liftEither, throwError)
@@ -41,18 +41,19 @@ data Subst a = Subst { tySubst :: IM.IntMap (T a)
                      , sSubst  :: IM.IntMap (Sh a) -- ^ Shape variables
                      } deriving (Functor)
 
-data TyE a = IllScoped a (Nm a)
-           | UF a (E a) (T a) (T a)
-           | UI a (I a) (I a)
-           | USh a (Sh a) (Sh a)
-           | OT a (T a) (T a)
-           | OSh a (Sh a) (Sh a)
-           | OI a (I a) (I a)
+data TyE a = IllScoped a !(Nm a)
+           | UF a (E a) !(T a) !(T a)
+           | UI a !(I a) !(I a)
+           | USh a !(Sh a) !(Sh a)
+           | UShD a !(Sh a) !(Sh a)
+           | OT a !(T a) !(T a)
+           | OSh a !(Sh a) !(Sh a)
+           | OI a !(I a) !(I a)
            | ExistentialArg (T ())
-           | MatchFailed (T ()) (T ())
-           | MatchShFailed (Sh a) (Sh a)
-           | MatchIFailed (I a) (I a)
-           | Doesn'tSatisfy a (T a) C
+           | MatchFailed !(T ()) !(T ())
+           | MatchShFailed !(Sh a) !(Sh a)
+           | MatchIFailed !Focus !(I a) !(I a)
+           | Doesn'tSatisfy a (T a) !C
            deriving (Generic)
 
 instance Semigroup (Subst a) where
@@ -70,6 +71,7 @@ instance Pretty a => Pretty (TyE a) where
     pretty (IllScoped l n)         = located l$ squotes (pretty n) <+> "is not in scope."
     pretty (UF l e ty ty')         = located l$ "could not unify" <+> squotes (pretty ty) <+> "with" <+> squotes (pretty ty') <+> "in expression" <+> squotes (pretty e)
     pretty (USh l sh sh')          = located l$ "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
+    pretty (UShD l sh sh')         = located l$ "unification gave up on" <+> squotes (pretty sh) <+> squotes (pretty sh')
     pretty (UI l ix ix')           = located l$ "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
     pretty (OT l ty ty')           = located l$ "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
     pretty (OI l i j)              = located l$ "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
@@ -77,7 +79,7 @@ instance Pretty a => Pretty (TyE a) where
     pretty (ExistentialArg ty)     = "Existential occurs as an argument in" <+> squotes (pretty ty)
     pretty (MatchFailed t t')      = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
     pretty (MatchShFailed sh sh')  = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
-    pretty (MatchIFailed i i')     = "Failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
+    pretty (MatchIFailed f i i')   = pretty f <+> "Failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
     pretty (Doesn'tSatisfy l ty c) = located l$ squotes (pretty ty) <+> "is not a member of class" <+> pretty c
 
 instance (Pretty a) => Show (TyE a) where
@@ -109,14 +111,16 @@ liftU a = do
     setMaxU j $> b
 
 mI :: Focus -> I a -> I a -> Either (TyE a) (Subst a)
-mI _ i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
-                             | otherwise = Left $ MatchIFailed i0 i1
+mI f i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
+                             | otherwise = Left $ MatchIFailed f i0 i1
 mI _ (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI _ ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI _ (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
 mI RF IEVar{} IEVar{} = Right mempty
--- TODO: Ix should match against ∃
-mI _ i0@IEVar{} i1@IEVar{} = Left $ MatchIFailed i0 i1
+-- TODO: Ix should match against ∃ (on the right only), also propagate!
+mI LF i0@IEVar{} i1@IEVar{} = Left $ MatchIFailed LF i0 i1
+mI LF i0@IEVar{} i1@Ix{} = Left $ MatchIFailed LF i0 i1
+mI LF i0@Ix{} i1@IEVar{} = Left $ MatchIFailed LF i0 i1
 mI f (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI f i (Ix l (iϵ-j))
 mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: too stringent
@@ -248,6 +252,8 @@ mapShSubst f (Subst t i sh) = Subst t i (f sh)
 
 data Focus = LF | RF
 
+instance NFData Focus where rnf LF=(); rnf RF=()
+
 instance Pretty Focus where pretty LF="⦠"; pretty RF="∢"
 
 mguIPrep :: Focus -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
@@ -280,9 +286,9 @@ mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
     (k, s) <- mguIPrep f inp i0 j0
     (m, s') <- mguIPrep f s i1 j1
     pure (StaMul l k m, s')
-mguI _ _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l i0 i1
-mguI _ _ i0@(Ix l _) i1@IEVar{} = throwError $ UI l i0 i1
-mguI _ _ i0@(IEVar l _) i1@StaPlus{} = throwError $ UI l i0 i1 -- TODO: focus case
+mguI LF _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l i0 i1
+mguI LF _ i0@(Ix l _) i1@IEVar{} = throwError $ UI l i0 i1
+mguI _ _ i0@(IEVar l _) i1@StaPlus{} = throwError $ UI l i0 i1 -- TODO: focus?
 mguI _ _ i0@(StaPlus l _ _) i1@IEVar{} = throwError $ UI l i0 i1
 mguI _ _ i0 i1 = error (show (i0,i1))
 
@@ -311,6 +317,8 @@ mgSh f l inp (Rev sh) sh' | (is, Nil) <- unroll sh' = do
     mgShPrep f l inp sh (roll Nil$reverse is)
 mgSh f l inp sh (Rev sh') | (is, Nil) <- unroll sh' = do
     mgShPrep f l inp (roll Nil$reverse is) sh
+mgSh _ l _ sh0@Cons{} sh1 = throwError $ UShD l sh0 sh1
+mgSh _ l _ sh0 sh1@Cons{} = throwError $ UShD l sh0 sh1
 
 mguPrep :: Focus -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mguPrep f l s t0 t1 =
@@ -347,6 +355,8 @@ occ Li{}                  = IS.empty
 occ (P ts)                = foldMap occ ts
 occ (Ρ (Nm _ (U i) _) rs) = IS.insert i $ foldMap occ rs
 
+scalar sv = mapShSubst (insert sv Nil)
+
 mgu :: Focus -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
     (t0'', s0) <- mguPrep LF l s t0 t0'
@@ -369,18 +379,18 @@ mgu f l s (Arr sh t) (Arr sh' t') = do
     (t'', s0) <- mguPrep f l s t t'
     (sh'', s1) <- mgShPrep f (fst l) s0 sh sh'
     pure (Arr sh'' t'', s1)
-mgu _ (l, e) _ F I = throwError $ UF l e F I
-mgu _ (l, e) _ I F = throwError $ UF l e I F
-mgu _ (l, e) _ F t@Li{} = throwError $ UF l e F t
-mgu _ (l, e) _ t@Li{} F = throwError $ UF l e t F
-mgu f l s (Arr (SVar n) t) F = second (mapShSubst (insert n Nil)) <$> mguPrep f l s t F
-mgu f l s (Arr (SVar n) t) I = second (mapShSubst (insert n Nil)) <$> mguPrep f l s t I
-mgu f l s F (Arr (SVar n) t) = second (mapShSubst (insert n Nil)) <$> mguPrep f l s F t
-mgu f l s I (Arr (SVar n) t) = second (mapShSubst (insert n Nil)) <$> mguPrep f l s I t
-mgu f l s (Arr (SVar n) t) B = second (mapShSubst (insert n Nil)) <$> mguPrep f l s t B
-mgu f l s B (Arr (SVar n) t) = second (mapShSubst (insert n Nil)) <$> mguPrep f l s B t
-mgu f l s (Arr (SVar n) t) t'@P{} = second (mapShSubst (insert n Nil)) <$> mguPrep f l s t t'
-mgu f l s t'@P{} (Arr (SVar n) t) = second (mapShSubst (insert n Nil)) <$> mguPrep f l s t' t
+mgu f l s (Arr (SVar n) t) F = second (scalar n) <$> mguPrep f l s t F
+mgu f l s (Arr (SVar n) t) I = second (scalar n) <$> mguPrep f l s t I
+mgu f l s F (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s F t
+mgu f l s I (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s I t
+mgu f l s (Arr (SVar n) t) B = second (scalar n) <$> mguPrep f l s t B
+mgu f l s B (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s B t
+mgu f l s (Arr (SVar n) t) t'@P{} = second (scalar n) <$> mguPrep f l s t t'
+mgu f l s t'@P{} (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s t' t
+mgu f l s (Arr (SVar n) t) t'@Ρ{} = second (scalar n) <$> mguPrep f l s t t'
+mgu f l s t'@Ρ{} (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s t' t
+mgu f l s (Arr (SVar n) t) t'@Li{} = second (scalar n) <$> mguPrep f l s t t'
+mgu f l s t'@Li{} (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s t' t
 mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f l) s ts ts'
 -- TODO: rho occurs check
 mgu f l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (mapTySubst (insert n t')) <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
@@ -389,28 +399,18 @@ mgu f l s t@P{} t'@Ρ{} = mgu f l s t' t
 mgu _ l s (Ρ n rs) (Ρ n' rs') = do
     (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep LF l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     let t=Ρ n' (rs<>rs') in pure (t, mapTySubst (insert n t) rss)
-mgu _ (l, e) _ F t@Arr{} = throwError $ UF l e F t
-mgu _ (l, e) _ t@Arr{} F = throwError $ UF l e t F
-mgu _ (l, e) _ B t@Arr{} = throwError $ UF l e B t
-mgu _ (l, e) _ t@Arr{} B = throwError $ UF l e t B
-mgu _ (l, e) _ I t@Arr{} = throwError $ UF l e I t
-mgu _ (l, e) _ t@Arr{} I = throwError $ UF l e t I
-mgu _ (l, e) _ t@Li{} t'@Arr{} = throwError $ UF l e t t'
-mgu _ (l, e) _ t@Arr{} t'@Li{} = throwError $ UF l e t t'
-mgu _ (l, e) _ F t@P{} = throwError $ UF l e F t
-mgu _ (l, e) _ t@P{} F = throwError $ UF l e t F
-mgu _ (l, e) _ I t@P{} = throwError $ UF l e I t
-mgu _ (l, e) _ t@P{} I = throwError $ UF l e t I
-mgu _ (l, e) _ B t@P{} = throwError $ UF l e B t
-mgu _ (l, e) _ t@P{} B = throwError $ UF l e t B
-mgu _ (l, e) _ t@P{} t'@Arr{} = throwError $ UF l e t t'
-mgu _ (l, e) _ t@Arr{} t'@P{} = throwError $ UF l e t t'
-mgu _ (l, e) _ I B= throwError $ UF l e I B
-mgu _ (l, e) _ B I = throwError $ UF l e B I
-mgu _ (l, e) _ t@Li{} B = throwError $ UF l e t B
-mgu _ (l, e) _ B t@Li{} = throwError $ UF l e B t
-mgu _ (l, e) _ t@Ρ{} t'@Arr{} = throwError $ UF l e t t'
-mgu _ (l, e) _ t@Arr{} t'@Ρ{} = throwError $ UF l e t t'
+mgu _ (l, e) _ t0@Ρ{} t1 = throwError $ UF l e t0 t1
+mgu _ (l, e) _ t0 t1@Ρ{} = throwError $ UF l e t0 t1
+mgu _ (l, e) _ t0@Li{} t1 = throwError $ UF l e t0 t1
+mgu _ (l, e) _ t0 t1@Li{} = throwError $ UF l e t0 t1
+mgu _ (l, e) _ B t1 = throwError $ UF l e B t1
+mgu _ (l, e) _ t0 B = throwError $ UF l e t0 B
+mgu _ (l, e) _ F t1 = throwError $ UF l e F t1
+mgu _ (l, e) _ t0 F = throwError $ UF l e t0 F
+mgu _ (l, e) _ I t1 = throwError $ UF l e I t1
+mgu _ (l, e) _ t0 I = throwError $ UF l e t0 I
+mgu _ (l, e) _ t0@P{} t1 = throwError $ UF l e t0 t1
+mgu _ (l, e) _ t0 t1@P{} = throwError $ UF l e t0 t1
 
 zSt _ s [] _           = pure ([], s)
 zSt _ s _ []           = pure ([], s)
@@ -736,7 +736,7 @@ rwArr F            = F
 rwArr t@Li{}       = t
 rwArr t@TVar{}     = t
 rwArr (P ts)       = P (rwArr<$>ts)
-rwArr (Arr Nil t)  = rwArr t
+rwArr (Arr sh t)   | Nil <- rwSh sh = rwArr t
 rwArr (Arr ixes arr) | (is, Nil) <- unroll (rwSh ixes), Arr sh t <- rwArr arr = Arr (roll sh is) t
 rwArr (Arr sh t)   = Arr (rwSh sh) (rwArr t)
 rwArr (Ρ n fs)     = Ρ n (rwArr<$>fs)
@@ -931,7 +931,13 @@ tyE s (Ann l e t) = do
     (e', s') <- tyE s e
     s'' <- liftEither $ maM LF (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
     pure (e', s'<>s'')
+tyE _ Dfn{} = desugar
+tyE _ ResVar{} = desugar
+tyE _ Parens{} = desugar
 
 sSt :: Subst a -> [E a] -> TyM a ([E (T ())], Subst a)
 sSt s []     = pure([], s)
 sSt s (e:es) = do{(e',s') <- tyE s e; first (e':) <$> sSt s' es} -- TODO: recurse other way idk
+
+desugar :: a
+desugar = error "Internal error. Should have been desugared by now."
