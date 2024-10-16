@@ -2,7 +2,6 @@
 
   * Proper type of `frange`
   * Display integer types with index in REPL
-  * Don't crash on some type errors
   * Allow tuple types in annotations
   * Parsing infix expressions of min/max will no longer crash
   * REPL shows constraints in types
@@ -12,7 +11,7 @@
   * Prettier-print expressions in error messages
   * Parse errors report with Happy's `explist`
   * Functions report that they are not a member of typeclasses
-  * Occurs check for fancy shapes doesn't bail out/crash
+  * Tie up various cases in typechecker (no longer bail out/crash)
 
 # 0.3.0.0
 
