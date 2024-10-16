@@ -132,6 +132,12 @@ mSh _ Nil Nil                       = Right mempty
 mSh f (Cons i sh) (Cons i' sh')     = (<>) <$> mI f i i' <*> mSh f sh sh'
 mSh f (Cat sh0 sh1) (Cat sh0' sh1') = (<>) <$> mSh f sh0 sh0' <*> mSh f sh1 sh1'
 mSh f (Rev sh) (Rev sh')            = mSh f sh sh'
+mSh f (Π sh) Nil                    = mSh f sh Nil
+mSh _ Nil (Π Nil)                   = Right mempty
+mSh f (Rev sh) Nil                  = mSh f sh Nil
+mSh _ Nil (Rev Nil)                 = Right mempty
+mSh f (Cat sh0 sh1) Nil             = (<>) <$> mSh f sh0 Nil <*> mSh f sh1 Nil
+mSh _ Nil (Cat Nil Nil)             = Right mempty
 mSh _ sh sh'                        = Left $ MatchShFailed sh sh'
 
 match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
@@ -271,19 +277,19 @@ mguI _ inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = throwError $
                                           | otherwise = pure (ix, IM.insert i ix inp)
 mguI _ inp ix iix@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $ OI l ix iix
                                           | otherwise = pure (ix, IM.insert i ix inp)
-mguI f inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep f inp i0 i1
-mguI f inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguIPrep f inp i0 i1
-mguI f inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguIPrep f inp i (Ix lk (j-k))
+mguI f inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguI f inp i0 i1
+mguI f inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguI f inp i0 i1
+mguI f inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguI f inp i (Ix lk (j-k))
                                                   | otherwise = throwError $ UI l i0 i1
-mguI f inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguIPrep f inp i1 i0
+mguI f inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguI f inp i1 i0
 mguI f inp (StaPlus l i0 i1) (StaPlus _ j0 j1) = do
     -- FIXME: too stringent
-    (k, s) <- mguIPrep f inp i0 j0
+    (k, s) <- mguI f inp i0 j0
     (m, s') <- mguIPrep f s i1 j1
     pure (StaPlus l k m, s')
 mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
     -- FIXME: too stringent
-    (k, s) <- mguIPrep f inp i0 j0
+    (k, s) <- mguI f inp i0 j0
     (m, s') <- mguIPrep f s i1 j1
     pure (StaMul l k m, s')
 mguI LF _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l i0 i1
@@ -298,7 +304,7 @@ mgShPrep f l s = mgSh f l s `on` shSubst s.rwSh
 mgSh :: Focus -> a -> Subst a -> Sh a -> Sh a -> UM a (Sh a, Subst a)
 mgSh _ _ inp Nil Nil = pure (Nil, inp)
 mgSh f l inp (Cons i sh) (Cons i' sh') = do
-    (i'', sI) <- mguIPrep f (iSubst inp) i i'
+    (i'', sI) <- mguI f (iSubst inp) i i'
     (sh'', s2) <- mgShPrep f l (inp { iSubst = sI }) sh sh'
     pure (Cons i'' sh'', s2)
 mgSh _ _ inp s@(SVar sh) (SVar sh') | sh == sh' = pure (s, inp)
@@ -308,9 +314,9 @@ mgSh _ l inp sh s@(SVar (Nm _ (U i) _)) | i `IS.member` occSh sh = throwError $ 
                                         | otherwise = pure (sh, mapShSubst (IM.insert i sh) inp)
 mgSh _ l _ sh@Nil sh'@Cons{} = throwError $ USh l sh sh'
 mgSh _ l _ sh@Cons{} sh'@Nil{} = throwError $ USh l sh' sh
-mgSh f l inp (Rev sh) (Rev sh') = mgShPrep f l inp sh sh'
+mgSh f l inp (Rev sh) (Rev sh') = mgSh f l inp sh sh'
 mgSh f l inp (Cat sh0 sh0') (Cat sh1 sh1') = do
-    (sh', s) <- mgShPrep f l inp sh0 sh1
+    (sh', s) <- mgSh f l inp sh0 sh1
     (sh'', s') <- mgShPrep f l s sh0' sh1'
     pure (Cat sh' sh'', s')
 mgSh f l inp (Rev sh) sh' | (is, Nil) <- unroll sh' = do
@@ -359,7 +365,7 @@ scalar sv = mapShSubst (insert sv Nil)
 
 mgu :: Focus -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
-    (t0'', s0) <- mguPrep LF l s t0 t0'
+    (t0'', s0) <- mgu LF l s t0 t0'
     (t1'', s1) <- mguPrep f l s0 t1 t1'
     pure (Arrow t0'' t1'', s1)
 mgu _ _ s I I = pure (I, s)
@@ -367,7 +373,7 @@ mgu _ _ s F F = pure (F, s)
 mgu _ _ s B B = pure (B, s)
 mgu _ _ s t@Li{} I = pure (t, s)
 mgu _ _ s I t@Li{} = pure (t, s)
-mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguIPrep f (iSubst s) i0 i1; pure (Li i', Subst mempty iS mempty <> s)}
+mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (Li i', Subst mempty iS mempty <> s)}
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
 mgu _ (l, _) s t'@(TVar (Nm _ (U i) _)) t | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = pure (t, mapTySubst (IM.insert i t) s)
@@ -376,21 +382,21 @@ mgu _ (l, _) s t t'@(TVar (Nm _ (U i) _)) | i `IS.member` occ t = throwError $ O
 mgu _ (l, e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
 mgu _ (l, e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
 mgu f l s (Arr sh t) (Arr sh' t') = do
-    (t'', s0) <- mguPrep f l s t t'
+    (t'', s0) <- mgu f l s t t'
     (sh'', s1) <- mgShPrep f (fst l) s0 sh sh'
     pure (Arr sh'' t'', s1)
-mgu f l s (Arr (SVar n) t) F = second (scalar n) <$> mguPrep f l s t F
-mgu f l s (Arr (SVar n) t) I = second (scalar n) <$> mguPrep f l s t I
-mgu f l s F (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s F t
-mgu f l s I (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s I t
-mgu f l s (Arr (SVar n) t) B = second (scalar n) <$> mguPrep f l s t B
-mgu f l s B (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s B t
-mgu f l s (Arr (SVar n) t) t'@P{} = second (scalar n) <$> mguPrep f l s t t'
-mgu f l s t'@P{} (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s t' t
-mgu f l s (Arr (SVar n) t) t'@Ρ{} = second (scalar n) <$> mguPrep f l s t t'
-mgu f l s t'@Ρ{} (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s t' t
-mgu f l s (Arr (SVar n) t) t'@Li{} = second (scalar n) <$> mguPrep f l s t t'
-mgu f l s t'@Li{} (Arr (SVar n) t) = second (scalar n) <$> mguPrep f l s t' t
+mgu f l s (Arr (SVar n) t) F = second (scalar n) <$> mgu f l s t F
+mgu f l s (Arr (SVar n) t) I = second (scalar n) <$> mgu f l s t I
+mgu f l s F (Arr (SVar n) t) = second (scalar n) <$> mgu f l s F t
+mgu f l s I (Arr (SVar n) t) = second (scalar n) <$> mgu f l s I t
+mgu f l s (Arr (SVar n) t) B = second (scalar n) <$> mgu f l s t B
+mgu f l s B (Arr (SVar n) t) = second (scalar n) <$> mgu f l s B t
+mgu f l s (Arr (SVar n) t) t'@P{} = second (scalar n) <$> mgu f l s t t'
+mgu f l s t'@P{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
+mgu f l s (Arr (SVar n) t) t'@Ρ{} = second (scalar n) <$> mgu f l s t t'
+mgu f l s t'@Ρ{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
+mgu f l s (Arr (SVar n) t) t'@Li{} = second (scalar n) <$> mgu f l s t t'
+mgu f l s t'@Li{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
 mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f l) s ts ts'
 -- TODO: rho occurs check
 mgu f l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (mapTySubst (insert n t')) <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
