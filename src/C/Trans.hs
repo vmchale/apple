@@ -1645,7 +1645,7 @@ feval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- nI
     (offs, a, _, plT) <- πe e k
     pure $ m'sa k a++plT ++ MX () t (FAt (Raw k (ConstI$offs!!(i-1)) Nothing 1)):m'pop a
-feval (EApp _ (Var _ f) x) t | Just ~(tX, _) <- rr (eAnn x) = do
+feval (EApp _ (Var _ f) x) t | isR (eAnn x) = do
     st <- gets fvars
     let (l, [a], FT r) = getT st f
     plX <- eeval x (art a)
