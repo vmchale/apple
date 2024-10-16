@@ -88,11 +88,11 @@ SEXP run_R(SEXP args){
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         switch(ty->args[k]){
-            C(FA, U* x=alloca(SZ(U));x[0]=fr(arg);fs|=1<<k;vals[k]=x;)
-            C(IA, U* x=alloca(SZ(U));x[0]=fi(arg);fs|=1<<k;vals[k]=x;)
-            C(BA, U* x=alloca(SZ(U));x[0]=fb(arg);fs|=1<<k;vals[k]=x;)
-            C(F_t, F* xf=alloca(SZ(F));xf[0]=asReal(arg);vals[k]=xf;)
-            C(I_t, J* xi=alloca(SZ(J));xi[0]=(J)asInteger(arg);vals[k]=xi;)
+            C(FA, U* x=alloca(SZ(U));*x=fr(arg);fs|=1<<k;vals[k]=x;)
+            C(IA, U* x=alloca(SZ(U));*x=fi(arg);fs|=1<<k;vals[k]=x;)
+            C(BA, U* x=alloca(SZ(U));*x=fb(arg);fs|=1<<k;vals[k]=x;)
+            C(F_t, F* xf=alloca(SZ(F));*xf=asReal(arg);vals[k]=xf;)
+            C(I_t, J* xi=alloca(SZ(J));*xi=(J)asInteger(arg);vals[k]=xi;)
         }
     }
     ffi_call(cif,fp,ret,vals);
