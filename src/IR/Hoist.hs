@@ -55,11 +55,11 @@ mapF f (MX t e)       = MX (f t) (mapFF f e)
 mapF _ s@L{}          = s
 mapF _ s@C{}          = s
 mapF _ s@R{}          = s
-mapF _ s@IRnd{}       = s
-mapF f (FRnd t)       = FRnd (f t)
 mapF _ s@J{}          = s
-mapF _ s@Free{}       = s
+mapF _ s@IRnd{}       = s
 mapF _ s@RA{}         = s
+mapF f (FRnd t)       = FRnd (f t)
+mapF _ s@Free{}       = s
 mapF f (MT t e)       = MT t (mapFE f e)
 mapF f (Wr a e)       = Wr (mapFA f a) (mapFE f e)
 mapF f (WrF a x)      = WrF (mapFA f a) (mapFF f x)
@@ -83,8 +83,7 @@ lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 hl :: (Loop, A.Array Int (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, (FTemp, Double))]
 hl ((n,ns), info, linfo) = go ss
   where
-    lH=liveness (gN n linfo)
-    fliveInH=fins lH
+    fliveInH=fins lH; lH=liveness (gN n linfo)
     go ((MX x (ConstF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef x (node a) = (n, node a, (x,i)):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
