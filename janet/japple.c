@@ -3,8 +3,6 @@
 #include<sys/mman.h>
 #include"../c/ffi.c"
 
-// int janet_getboolean(const Janet *argv, int32_t n);
-
 typedef double F;typedef int64_t J;typedef uint8_t B;
 
 #define ZU static U
@@ -43,11 +41,12 @@ Z Janet apple_call(void *x, int32_t argc, Janet *argv) {
     uint8_t fs=0;
     for(int k=0;k<aarg;k++){
         switch(ty->args[k]){
-            C(F_t, F* xf=alloca(sizeof(F));xf[0]=janet_getnumber(argv,k);vals[k]=xf;)
-            C(I_t, J* xi=alloca(sizeof(J));xi[0]=(J)janet_getinteger(argv,k);vals[k]=xi;)
-            C(FA, U* a=alloca(sizeof(U));a[0]=fv_j(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;)
-            C(IA, U* a=alloca(sizeof(U));a[0]=fv_i(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;)
-            C(BA, U* a=alloca(sizeof(U));a[0]=fv_b(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;)
+            C(F_t,F* xf=alloca(sizeof(F));*xf=janet_getnumber(argv,k);vals[k]=xf;)
+            C(I_t,J* xi=alloca(sizeof(J));*xi=(J)janet_getinteger(argv,k);vals[k]=xi;)
+            C(B_t,B* xb=alloca(sizeof(B));*xb=(B)janet_getboolean(argv,k);vals[k]=xb;)
+            C(FA,U* a=alloca(sizeof(U));*a=fv_j(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;)
+            C(IA,U* a=alloca(sizeof(U));*a=fv_i(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;)
+            C(BA,U* a=alloca(sizeof(U));*a=fv_b(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;)
         }
     }
     U fp=jit->bc;ffi_cif* cif=jit->ffi;
