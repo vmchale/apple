@@ -70,6 +70,8 @@ Z void cache_dealloc(JO* self) {
 
 Z PY apple_ts(JO* self) {R PyUnicode_FromString(self->ts);}
 
+#define SA(t,x) t* x=alloca(SZ(t))
+
 // file:///usr/share/doc/libffi8/html/The-Basics.html
 Z PY apple_call(PY self, PY args, PY kwargs) {
     JO* c=(JO*)self;PY arg0=NULL;PY arg1=NULL;PY arg2=NULL;PY arg3=NULL;PY arg4=NULL;PY arg5=NULL;
@@ -85,11 +87,11 @@ Z PY apple_call(PY self, PY args, PY kwargs) {
         pyarg=pyargs[k];
         if(pyarg!=NULL){
             switch(ty->args[k]){
-                C(IA,U* x=alloca(SZ(U));*x=i_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(BA,U* x=alloca(SZ(U));*x=b_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(FA,U* x=alloca(SZ(U));*x=f_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
-                C(I_t,J* xi=alloca(SZ(J));*xi=PyLong_AsLong(pyarg);vals[k]=xi;)
-                C(F_t,F* xf=alloca(SZ(F));*xf=PyFloat_AsDouble(pyarg);vals[k]=xf;)
+                C(IA,SA(U,x);*x=i_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(BA,SA(U,x);*x=b_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(FA,SA(U,x);*x=f_npy((NP)pyarg);fs|=1<<k;vals[k]=x;)
+                C(I_t,SA(J,xi);*xi=PyLong_AsLong(pyarg);vals[k]=xi;)
+                C(F_t,SA(F,xf);*xf=PyFloat_AsDouble(pyarg);vals[k]=xf;)
             }
         }
     }
