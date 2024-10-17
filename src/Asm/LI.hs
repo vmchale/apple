@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Asm.LI ( mkIntervals ) where
 
 import           Asm.Ar
