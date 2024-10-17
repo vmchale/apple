@@ -64,6 +64,8 @@ instance Pretty FTemp where
     pretty FRet1     = "f_ret1"
 
 instance Show Temp where show=show.pretty
+instance Show FTemp where show=show.pretty
+instance Show F2 where show=show.pretty
 
 data Stmt = L Label
           | MJ Exp Label
