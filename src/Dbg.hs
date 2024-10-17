@@ -145,10 +145,12 @@ prettyCI :: [CS Liveness] -> Doc ann
 prettyCI = prettyLines.fmap (pL ((space<>).pretty))
 
 dumpLoop :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss,_) = pS ss<#>pretty (fmap (\(nϵ,ns) -> nϵ:IS.toList ns) t); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
+dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss,_) = lir ss<#>pretty (fmap (\(nϵ,ns) -> nϵ:IS.toList ns) t);
 
 dumpDomTree :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-dumpDomTree = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (_,t,asϵ,_) = pS asϵ<#>pretty (drawTree (show<$>t)); pS=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
+dumpDomTree = fmap (pg.hoist.π).ir where π (a,_,_)=a; pg (_,t,asϵ,_) = lir asϵ<#>pretty (drawTree (show<$>t))
+
+lir=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
