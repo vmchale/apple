@@ -36,14 +36,11 @@ pF is = snd $ execState (traverse_ g is) (IS.empty, IM.empty) where
 
 -- backward pass (last mentioned, ...)
 pB, fpB :: Copointed p => [p NLiveness] -> IM.IntMap Int
-pB = pF.reverse
-fpB = fpF.reverse
+pB = pF.reverse; fpB = fpF.reverse
 
 intervals :: (Copointed p) => [p NLiveness] -> [p Live]
 intervals asms = fmap (fmap lookupL) asms
     where lookupL x = let n = nx x in Live (lI n findFirst) (lI n findLast) (lI n findFirstF) (lI n findLastF)
           lI = IM.findWithDefault IS.empty
-          findFirst = collate (pF asms)
-          findLast = collate (pB asms)
-          findFirstF = collate (fpF asms)
-          findLastF = collate (fpB asms)
+          findFirst = collate (pF asms); findLast = collate (pB asms)
+          findFirstF = collate (fpF asms); findLastF = collate (fpB asms)
