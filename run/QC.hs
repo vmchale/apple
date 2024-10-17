@@ -3,21 +3,21 @@
 module QC ( gas, Val (..), freeP ) where
 
 import           A
-import           Control.Monad.State.Strict (StateT, evalStateT, get, gets, modify, put, runStateT)
-import           Control.Monad.Trans.Class  (lift)
-import           Data.Bifunctor             (bimap)
-import           Data.Functor               (($>))
-import           Data.Int                   (Int64)
-import qualified Data.IntMap                as IM
-import           Foreign.C.Types            (CDouble (..))
-import           Foreign.LibFFI             (Arg, argCDouble, argInt64, argPtr, argWord8)
-import           Foreign.Marshal.Alloc      (free, mallocBytes)
-import           Foreign.Ptr                (Ptr)
-import           Foreign.Storable           (poke, sizeOf)
+import           Control.Monad.Trans.Class        (lift)
+import           Control.Monad.Trans.State.Strict (StateT, evalStateT, get, gets, modify, put, runStateT)
+import           Data.Bifunctor                   (bimap)
+import           Data.Functor                     (($>))
+import           Data.Int                         (Int64)
+import qualified Data.IntMap                      as IM
+import           Foreign.C.Types                  (CDouble (..))
+import           Foreign.LibFFI                   (Arg, argCDouble, argInt64, argPtr, argWord8)
+import           Foreign.Marshal.Alloc            (free, mallocBytes)
+import           Foreign.Ptr                      (Ptr)
+import           Foreign.Storable                 (poke, sizeOf)
 import           Hs.A
 import           Nm
-import           Prettyprinter              (Pretty (..))
-import           Test.QuickCheck.Gen        (Gen, chooseAny, chooseInt64, frequency, genDouble, generate, vectorOf)
+import           Prettyprinter                    (Pretty (..))
+import           Test.QuickCheck.Gen              (Gen, chooseAny, chooseInt64, frequency, genDouble, generate, vectorOf)
 import           U
 
 rnk :: Gen Int64

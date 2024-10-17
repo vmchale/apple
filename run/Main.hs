@@ -6,8 +6,8 @@ module Main (main) where
 import           A
 import           Control.Monad             (zipWithM, zipWithM_)
 import           Control.Monad.IO.Class    (liftIO)
-import           Control.Monad.State       (StateT, evalStateT, gets, modify)
 import           Control.Monad.Trans.Class (lift)
+import           Control.Monad.Trans.State (StateT, evalStateT, gets, modify)
 import           Criterion                 (benchmark, nfIO)
 import qualified Data.ByteString.Lazy      as BSL
 import           Data.Foldable             (traverse_)

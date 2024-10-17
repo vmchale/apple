@@ -266,7 +266,6 @@ executable arepl
         criterion,
         prettyprinter,
         haskeline,
-        mtl,
         transformers,
         text,
         directory,
