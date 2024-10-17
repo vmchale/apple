@@ -8,17 +8,20 @@ module Prettyprinter.Ext ( (<#>), (<?>)
                          , ptxt
                          , aText
                          , prettyDumpBinds
+                         , tlhex2
                          , pAD
                          ) where
 
-import           Data.Bits                 (Bits (..))
-import qualified Data.IntMap               as IM
-import qualified Data.Text                 as T
-import           Data.Word                 (Word64)
-import           Numeric                   (showHex)
-import           Prettyprinter             (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
-                                            layoutSmart, parens, softline', vsep, (<+>))
-import           Prettyprinter.Render.Text (renderStrict)
+import           Data.Bits                  (Bits (..))
+import qualified Data.IntMap                as IM
+import qualified Data.Text                  as T
+import qualified Data.Text.Lazy             as TL
+import           Data.Text.Lazy.Builder     (toLazyTextWith)
+import           Data.Text.Lazy.Builder.Int (hexadecimal)
+import           Data.Word                  (Word64)
+import           Prettyprinter              (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
+                                             layoutSmart, parens, softline', vsep, (<+>))
+import           Prettyprinter.Render.Text  (renderStrict)
 
 infixr 6 <#>
 infixr 5 <?>
@@ -56,8 +59,11 @@ prettyDumpBinds :: Pretty b => IM.IntMap b -> Doc a
 prettyDumpBinds b = vsep (prettyBind <$> IM.toList b)
 
 hex2 :: Integral a => a -> Doc ann
-hex2 i | i < 16 = pretty ((($"").(('0':).).showHex) i)
-       | otherwise = pretty ((($"").showHex) i)
+hex2 = pretty.tlhex2
+
+tlhex2 :: Integral a => a -> TL.Text
+tlhex2 i | i < 16 = toLazyTextWith 2 ("0" <> hexadecimal i)
+         | otherwise = toLazyTextWith 2 (hexadecimal i)
 
 -- FIXME: this is certainly wrong for arm/endianness
 pAD ds = prettyLines ((\(n,dd) -> "arr_" <> pretty n <> ":" <+> ".8byte" <+> concatWith (\x y -> x <> "," <> y) (fmap p64 dd)) <$> IM.toList ds)

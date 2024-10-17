@@ -26,40 +26,42 @@ module Dbg ( dumpAAbs
            ) where
 
 import           A
-import qualified Asm.Aarch64          as Aarch64
-import qualified Asm.Aarch64.Byte     as Aarch64
-import qualified Asm.Aarch64.P        as Aarch64
+import qualified Asm.Aarch64                as Aarch64
+import qualified Asm.Aarch64.Byte           as Aarch64
+import qualified Asm.Aarch64.P              as Aarch64
 import           Asm.Aarch64.T
 import           Asm.L
 import           Asm.LI
 import           Asm.M
-import qualified Asm.X86              as X86
+import qualified Asm.X86                    as X86
 import           Asm.X86.Byte
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           C
 import           C.Alloc
-import qualified C.Trans              as C
+import qualified C.Trans                    as C
 import           CF
-import           Control.Exception    (throw, throwIO)
-import           Control.Monad        ((<=<))
-import           Data.Bifunctor       (second)
-import qualified Data.ByteString      as BS
-import qualified Data.ByteString.Lazy as BSL
-import qualified Data.IntMap          as IM
-import qualified Data.IntSet          as IS
-import qualified Data.Text            as T
-import qualified Data.Text.IO         as TIO
-import           Data.Tree            (drawTree)
-import           Data.Tuple           (swap)
-import           Data.Tuple.Extra     (fst3)
-import           Data.Word            (Word64)
+import           Control.Exception          (throw, throwIO)
+import           Control.Monad              ((<=<))
+import           Data.Bifunctor             (second)
+import qualified Data.ByteString            as BS
+import qualified Data.ByteString.Lazy       as BSL
+import qualified Data.IntMap                as IM
+import qualified Data.IntSet                as IS
+import qualified Data.Text                  as T
+import qualified Data.Text.IO               as TIO
+import qualified Data.Text.Lazy             as TL
+import           Data.Text.Lazy.Builder     (toLazyText)
+import           Data.Text.Lazy.Builder.Int (hexadecimal)
+import           Data.Tree                  (drawTree)
+import           Data.Tuple                 (swap)
+import           Data.Tuple.Extra           (fst3)
+import           Data.Word                  (Word64)
 import           IR
 import           IR.Hoist
 import           L
-import           Numeric              (showHex)
 import           P
-import           Prettyprinter        (Doc, Pretty (..), comma, concatWith, punctuate, space, (<+>))
+import           Prettyprinter              (Doc, Pretty (..), comma, concatWith, punctuate, space, (<+>))
 import           Prettyprinter.Ext
 import           Ty
 
@@ -103,8 +105,7 @@ rightPad n str = T.take n (str <> T.replicate n " ")
 
 present :: Pretty a => (a, BS.ByteString) -> T.Text
 present (x, b) = rightPad 45 (ptxt x) <> he b
-    where he = T.unwords.fmap (pad.T.pack.($"").showHex).BS.unpack
-          pad s | T.length s == 1 = T.cons '0' s | otherwise = s
+    where he = T.unwords.fmap (TL.toStrict . tlhex2).BS.unpack
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
 nasm f = (\(d,i) -> "section .data\n\n" <> nasmD (IM.toList d) <#> i) . second ((prolegomena <#>).pAsm) . either throw id . x86G
@@ -113,7 +114,7 @@ nasm f = (\(d,i) -> "section .data\n\n" <> nasmD (IM.toList d) <#> i) . second (
 nasmD :: [(Int, [Word64])] -> Doc ann
 nasmD = prettyLines . fmap nasmArr
     where nasmArr (i, ds) = "arr_" <> pretty i <+> "dq" <+> concatWith (<>) (punctuate comma (fmap hexn ds))
-          hexn = pretty.($"").(("0x"++).).showHex
+          hexn = pretty.toLazyText.hexadecimal
 
 dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.(\(x,_,st) -> irToX86 st x)) . ir
