@@ -1,15 +1,14 @@
 -- Based on Appel
 --
 -- live ranges
-module LR ( reconstruct
-          , reconstructFlat
-          ) where
+module LR ( reconstruct, reconstructFlat ) where
 
-import           CF               hiding (done, liveness)
+import           CF                  hiding (done, liveness)
+import           Control.Composition (thread)
 import           Data.Copointed
 -- this seems to be faster
-import qualified Data.IntMap.Lazy as IM
-import qualified Data.IntSet      as IS
+import qualified Data.IntMap.Lazy    as IM
+import qualified Data.IntSet         as IS
 
 emptyLiveness :: Liveness
 emptyLiveness = Liveness IS.empty IS.empty IS.empty IS.empty
@@ -56,7 +55,6 @@ liveness is nSt =
 
 iterNodes :: [Int] -> LivenessMap -> LivenessMap
 iterNodes is = thread (fmap stepNode is)
-    where thread = foldr (.) id
 
 stepNode :: Int -> LivenessMap -> LivenessMap
 stepNode n ns = {-# SCC "stepNode" #-} IM.insert n (c, Liveness ins' out' fins' fout') ns
