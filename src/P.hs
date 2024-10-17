@@ -183,11 +183,13 @@ cmm = fmap (f.C.writeC).opt where f (cs,_,aa,t)=(frees t cs,aa)
 ec :: Int -> E a -> Either (Err a) ([CS Liveness], LSt, C.AsmData)
 ec i = fmap ((\(cs,u,aa,t) -> (frees t cs,u,aa)) . C.writeC) . optE i
 
+cir (cs,u,aa,t) = let (s, WSt u' m)=cToIR u (frees t cs); (n,s')=pall u' (optIR s) in (s',aa,WSt n m)
+
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IR.AsmData, WSt)
-ir = fmap (f.C.writeC).opt where f (cs,u,aa,t) = let (s,u')=cToIR u (frees t cs) in (pall (optIR s),aa,u')
+ir = fmap (cir.C.writeC).opt
 
 eir :: Int -> E a -> Either (Err a) ([Stmt], IR.AsmData, WSt)
-eir i = fmap (f.C.writeC).optE i where f (cs,u,aa,t) = let (s,u')=cToIR u (frees t cs) in (pall (optIR s),aa,u')
+eir i = fmap (cir.C.writeC).optE i
 
 eDumpC :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpC i = fmap (prettyCS.𝜋).ec i where 𝜋 (a,_,c)=(c,a)

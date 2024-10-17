@@ -1,22 +1,22 @@
 module IR.Hoist ( loop, graphParts, pall ) where
 
 import           CF
-import           Control.Composition        (thread)
-import           Control.Monad.Trans.State.Strict (gets, modify, runState)
-import qualified Data.Array                 as A
-import           Data.Bifunctor             (bimap, first, second)
-import           Data.Foldable              (toList)
-import           Data.Function              (on)
-import           Data.Functor               (($>))
-import           Data.Graph                 (Tree (Node))
-import           Data.Graph.Dom             (Graph, Node, domTree)
-import qualified Data.IntMap                as IM
-import qualified Data.IntSet                as IS
-import           Data.List                  (sortBy)
-import qualified Data.Map.Strict            as M
-import           Data.Maybe                 (catMaybes, fromJust, fromMaybe)
-import           Data.Tuple.Extra           (first3, fst3, second3, snd3, thd3, third3)
-import           Data.Void                  (Void, absurd)
+import           Control.Composition              (thread)
+import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
+import qualified Data.Array                       as A
+import           Data.Bifunctor                   (first, second)
+import           Data.Foldable                    (toList)
+import           Data.Function                    (on)
+import           Data.Functor                     (($>))
+import           Data.Graph                       (Tree (Node))
+import           Data.Graph.Dom                   (Graph, Node, domTree)
+import qualified Data.IntMap                      as IM
+import qualified Data.IntSet                      as IS
+import           Data.List                        (sortBy)
+import qualified Data.Map.Strict                  as M
+import           Data.Maybe                       (catMaybes, fromJust, fromMaybe)
+import           Data.Tuple.Extra                 (first3, second3, snd3)
+import           Data.Void                        (Void, absurd)
 import           IR
 import           IR.CF
 import           LR
@@ -115,29 +115,44 @@ hl ((n,ns), info, linfo) = go ss
     ss = (info A.!)<$>IS.toList ns
     gN = IM.findWithDefault (error "internal error: node not in map.")
 
-pall :: [Stmt] -> [Stmt]
-pall ss =
+data S = S { nl :: !Label
+           , f1s :: !(M.Map Double FTemp), f2s :: !(M.Map (Double, Double) F2)
+           , su :: !SS
+           }
+
+i1 x t = modify (\(S u f1 f2 s) -> S u (M.insert x t f1) f2 s); i2 x t = modify (\(S u f1 f2 s) -> S u f1 (M.insert x t f2) s)
+br t r (S u f1 f2 (SS s l)) = S u f1 f2 (SS (M.insert t r s) l); fl = state (\(S u f1 f2 s) -> (u, S (u+1) f1 f2 s))
+
+data SS = SS { sus :: !(M.Map FTemp FTemp), lls :: !(M.Map Label Label) }
+
+instance Semigroup SS where (<>) (SS s l) (SS s' l') = SS (s<>s') (l<>l')
+instance Monoid SS where mempty=SS M.empty M.empty
+
+pall :: Label -> [Stmt] -> (Label, [Stmt])
+pall u ss =
     let ss' = fmap (second node) cf
-        (s, ss'') = go ss'
-    in {-# SCC "applySubst" #-} applySubst s ss''
+        (s, ss'', u') = go u ss'
+    in (u', {-# SCC "applySubst" #-} applySubst s ss'')
   where
-    go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
-    go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (_, subst, _)) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
-    go ((s,_):ssϵ) = second (s:)$go ssϵ
-    go [] = (M.empty, [])
+    go i ((_,n):ssϵ) | n `IS.member` dels = go i ssϵ
+    go i ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (S m _ _ subst)) = {-# SCC "consolidate" #-} consolidate i cs in bimap3 (subst<>) ((css++[s])++) (go m ssϵ)
+    go i ((s,_):ssϵ) = second3 (s:)$go i ssϵ
+    go i [] = (SS M.empty M.empty, [], i)
     (cf, is, dels) = indels ss
-    applySubst s = fmap (mapF (\t -> fromMaybe t (M.lookup t s)))
-    consolidate = first catMaybes . flip runState (M.empty, M.empty, M.empty) . traverse gg
+    applySubst (SS s sl) = fmap (mapF (\t -> fromMaybe t (M.lookup t s)))
+    consolidate i = first concat.flip runState (S i M.empty M.empty mempty).traverse gg
+    -- Fig 18.5 Appel
+    gg :: CM -> State S [Stmt]
     gg (FM t x) = do
-        seen <- gets fst3
+        seen <- gets f1s
         case M.lookup x seen of
-            Nothing -> modify (first3 (M.insert x t)) $> Just (MX t (ConstF x))
-            Just r  -> modify (second3 (M.insert t r)) $> Nothing
+            Nothing -> do {i1 x t; l <- fl; pure [L l, MX t (ConstF x)]}
+            Just r  -> modify (br t r) $> []
     gg (F2M t x) = do
-        seen <- gets thd3
+        seen <- gets f2s
         case M.lookup x seen of
-            Nothing -> modify (third3 (M.insert x t)) $> Just (MX2 t (ConstF x))
-            Just r  -> modify (second3 (M.insert (vv t) (vv r))) $> Nothing
+            Nothing -> do {i2 x t; l <- fl; pure [L l, MX2 t (ConstF x)]}
+            Just r  -> modify ((br `on` vv) t r) $> []
 
 indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [CM], IS.IntSet)
 indels ss = (c, is IM.empty, ds)
@@ -192,3 +207,6 @@ mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
     sa = A.listArray (0,m-1) (sortBy (compare `on` (node.snd)) ns)
+
+bimap3 :: (a -> b) -> (c -> d) -> (a,c,e) -> (b,d,e)
+bimap3 f g ~(x,y,z) = (f x, g y, z)
