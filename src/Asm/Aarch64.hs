@@ -206,7 +206,6 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | AddRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | AddRRS { ann :: a, rDest, rSrc1, rSrc2 :: reg, sC :: Word8 }
                          | ZeroR { ann :: a, rDest :: reg }
-                         | Mvn { ann :: a, rDest, rSrc :: reg }
                          | AndRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | OrRR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | Eor { ann :: a, rDest, rSrc1, rSrc2 :: reg }
@@ -302,7 +301,6 @@ mapR f (AddRC l r0 r1 c)     = AddRC l (f r0) (f r1) c
 mapR f (SubRC l r0 r1 c)     = SubRC l (f r0) (f r1) c
 mapR f (SubsRC l r0 r1 c)    = SubsRC l (f r0) (f r1) c
 mapR f (ZeroR l r)           = ZeroR l (f r)
-mapR f (Mvn l r0 r1)         = Mvn l (f r0) (f r1)
 mapR f (AndRR l r0 r1 r2)    = AndRR l (f r0) (f r1) (f r2)
 mapR f (OrRR l r0 r1 r2)     = OrRR l (f r0) (f r1) (f r2)
 mapR f (Eor l r0 r1 r2)      = Eor l (f r0) (f r1) (f r2)
@@ -403,7 +401,6 @@ mapFR _ (SubRR l r0 r1 r2)    = SubRR l r0 r1 r2
 mapFR _ (SubRC l r0 r1 c)     = SubRC l r0 r1 c
 mapFR _ (SubsRC l r0 r1 c)    = SubsRC l r0 r1 c
 mapFR _ (ZeroR l r)           = ZeroR l r
-mapFR _ (Mvn l r0 r1)         = Mvn l r0 r1
 mapFR _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
 mapFR _ (OrRR l r0 r1 r2)     = OrRR l r0 r1 r2
 mapFR _ (Eor l r0 r1 r2)      = Eor l r0 r1 r2
@@ -547,7 +544,6 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg)) => Pretty (AArch64 reg fre
         p4 (Eon _ rD rS rS')      = "eon" <+> ar3 rD rS rS'
         p4 (EorI _ rD rS i)       = "eor" <+> ar2 rD rS <> "," <+> pretty i
         p4 (ZeroR _ rD)           = "eor" <+> ar3 rD rD rD
-        p4 (Mvn _ rD rS)          = "mvn" <+> pretty rD <> "," <+> pretty rS
         p4 (MulRR _ rD rS rS')    = "mul" <+> ar3 rD rS rS'
         p4 (SubRC _ rD rS u)      = "sub" <+> r2i rD rS u
         p4 (SubsRC _ rD rS u)     = "subs" <+> r2i rD rS u
