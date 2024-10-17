@@ -111,7 +111,7 @@ ir (IR.S2 Op.FMax t r) = pure [Fmaxp () (fabsReg t) (f2absReg r)]
 ir (IR.S2 Op.FMin t r) = pure [Fminp () (fabsReg t) (f2absReg r)]
 ir (IR.Fill2 r t) = pure [DupD () (f2absReg r) (fabsReg t)]
 ir (IR.Ma _ t e) = do {r <- nR; plE <- eval e IR.C0; pure $ plE ++ [puL, AddRC () FP ASP 16, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0, poL]}
-ir (IR.Free t) = do {r <- nR; pure $ [puL, MovRR () CArg0 (absReg t), AddRC () FP ASP 16, MovRCf () r Free, Blr () r, poL]}
+ir (IR.Free t) = do {r <- nR; pure [puL, MovRR () CArg0 (absReg t), AddRC () FP ASP 16, MovRCf () r Free, Blr () r, poL]}
 ir (IR.Sa8 t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u, MovRR () (absReg t) ASP]
 ir (IR.Sa8 t (IR.Reg r)) = let r'=absReg r in do {plR <- aR8 r'; pure $ plR++[SubRR () ASP ASP (absReg r), MovRR () (absReg t) ASP]}
 ir (IR.Sa8 t e) = do
@@ -366,10 +366,10 @@ ir (IR.Cpy1 (IR.AP tD eD _) (IR.AP tS eS _) eN) = do
 -- ir (IR.IRnd t) = pure [MrsR () (absReg t)]
 ir (IR.IRnd t) = do
     r <- nR
-    pure $ [puL, AddRC () FP ASP 16, MovRCf () r JR, Blr () r, MovRR () (absReg t) CArg0, poL]
+    pure [puL, AddRC () FP ASP 16, MovRCf () r JR, Blr () r, MovRR () (absReg t) CArg0, poL]
 ir (IR.FRnd t) = do
     r <- nR
-    pure $ [puL, AddRC () FP ASP 16, MovRCf () r DR, Blr () r, FMovXX () (fabsReg t) FArg0, poL]
+    pure [puL, AddRC () FP ASP 16, MovRCf () r DR, Blr () r, FMovXX () (fabsReg t) FArg0, poL]
 ir s             = error (show s)
 
 puL, poL :: AArch64 AbsReg freg ()
