@@ -152,7 +152,7 @@ fToInt (FReg i) = 19+i
 
 data Shift = Zero | Three | Four
 
-instance NFData Shift where rnf Zero = (); rnf Three = (); rnf Four = ()
+instance NFData Shift where rnf Zero=(); rnf Three=(); rnf Four=()
 
 instance Pretty Shift where
     pretty Zero = "#0"; pretty Three = "#3"; pretty Four = "#4"
