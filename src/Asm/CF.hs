@@ -9,12 +9,12 @@ module Asm.CF ( N, FreshM
               ) where
 
 import           Asm.M
-import           Class.E                    as E
-import           Control.Monad.State.Strict (State, evalState, gets, modify, state)
-import           Data.Functor               (($>))
-import qualified Data.IntSet                as IS
-import qualified Data.Map                   as M
-import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
+import           Class.E                          as E
+import           Control.Monad.Trans.State.Strict (State, evalState, gets, modify, state)
+import           Data.Functor                     (($>))
+import qualified Data.IntSet                      as IS
+import qualified Data.Map                         as M
+import           Data.Tuple.Extra                 (second3, snd3, thd3, third3)
 
 type N=Int
 

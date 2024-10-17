@@ -3,21 +3,21 @@
 module IR.Hoist ( loop, hoist, pall ) where
 
 import           CF
-import           Control.Composition        (thread)
-import           Control.Monad.State.Strict (gets, modify, runState)
-import qualified Data.Array                 as A
-import           Data.Bifunctor             (bimap, first, second)
-import           Data.Foldable              (toList)
-import           Data.Function              (on)
-import           Data.Functor               (($>))
-import           Data.Graph                 (Tree (Node))
-import           Data.Graph.Dom             (Graph, Node, domTree)
-import qualified Data.IntMap                as IM
-import qualified Data.IntSet                as IS
-import           Data.List                  (sortBy)
-import qualified Data.Map.Strict            as M
-import           Data.Maybe                 (catMaybes, fromJust, fromMaybe)
-import           Data.Tuple.Extra           (first3, snd3)
+import           Control.Composition              (thread)
+import           Control.Monad.Trans.State.Strict (gets, modify, runState)
+import qualified Data.Array                       as A
+import           Data.Bifunctor                   (bimap, first, second)
+import           Data.Foldable                    (toList)
+import           Data.Function                    (on)
+import           Data.Functor                     (($>))
+import           Data.Graph                       (Tree (Node))
+import           Data.Graph.Dom                   (Graph, Node, domTree)
+import qualified Data.IntMap                      as IM
+import qualified Data.IntSet                      as IS
+import           Data.List                        (sortBy)
+import qualified Data.Map.Strict                  as M
+import           Data.Maybe                       (catMaybes, fromJust, fromMaybe)
+import           Data.Tuple.Extra                 (first3, snd3)
 import           IR
 import           IR.CF
 import           LR

@@ -3,9 +3,9 @@ module I ( inline
          ) where
 
 import           A
-import           Control.Monad.State.Strict (State, gets, modify, runState)
-import           Data.Bifunctor             (second)
-import qualified Data.IntMap                as IM
+import           Control.Monad.Trans.State.Strict (State, gets, modify, runState)
+import           Data.Bifunctor                   (second)
+import qualified Data.IntMap                      as IM
 import           Nm
 import           Nm.IntMap
 import           R

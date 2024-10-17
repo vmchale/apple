@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
@@ -34,33 +33,33 @@ import           A
 import           A.Eta
 import           A.Opt
 import           Asm.Aarch64
-import qualified Asm.Aarch64.Byte           as Aarch64
-import qualified Asm.Aarch64.Opt            as Aarch64
-import qualified Asm.Aarch64.P              as Aarch64
+import qualified Asm.Aarch64.Byte                 as Aarch64
+import qualified Asm.Aarch64.Opt                  as Aarch64
+import qualified Asm.Aarch64.P                    as Aarch64
 import           Asm.Aarch64.T
 import           Asm.M
 import           Asm.X86
 import           Asm.X86.Byte
 import           Asm.X86.Opt
-import qualified Asm.X86.P                  as X86
+import qualified Asm.X86.P                        as X86
 import           Asm.X86.Trans
 import           C
 import           C.Alloc
-import           C.Trans                    as C
-import           CF                         (Liveness)
-import           Control.DeepSeq            (NFData)
-import           Control.Exception          (Exception, throw, throwIO)
-import           Control.Monad              ((<=<))
-import           Control.Monad.State.Strict (evalState, state)
-import           Data.Bifunctor             (first, second)
-import qualified Data.ByteString            as BS
-import qualified Data.ByteString.Lazy       as BSL
-import qualified Data.Text                  as T
-import           Data.Tuple.Extra           (first3)
-import           Data.Typeable              (Typeable)
-import           Data.Word                  (Word64)
-import           Foreign.Ptr                (FunPtr, Ptr)
-import           GHC.Generics               (Generic)
+import           C.Trans                          as C
+import           CF                               (Liveness)
+import           Control.DeepSeq                  (NFData)
+import           Control.Exception                (Exception, throw, throwIO)
+import           Control.Monad                    ((<=<))
+import           Control.Monad.Trans.State.Strict (evalState, state)
+import           Data.Bifunctor                   (first, second)
+import qualified Data.ByteString                  as BS
+import qualified Data.ByteString.Lazy             as BSL
+import qualified Data.Text                        as T
+import           Data.Tuple.Extra                 (first3)
+import           Data.Typeable                    (Typeable)
+import           Data.Word                        (Word64)
+import           Foreign.Ptr                      (FunPtr, Ptr)
+import           GHC.Generics                     (Generic)
 import           I
 import           IR
 import           IR.C
@@ -70,7 +69,7 @@ import           L
 import           Nm
 import           Parser
 import           Parser.Rw
-import           Prettyprinter              (Doc, Pretty (..))
+import           Prettyprinter                    (Doc, Pretty (..))
 import           Prettyprinter.Ext
 import           R.Dfn
 import           R.R

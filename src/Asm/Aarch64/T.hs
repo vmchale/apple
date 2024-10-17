@@ -2,12 +2,12 @@ module Asm.Aarch64.T ( irToAarch64 ) where
 
 import           Asm.Aarch64
 import           Asm.M
-import           Control.Monad.State.Strict (runState)
-import           Data.Bifunctor             (second)
-import           Data.Bits                  (rotateR, (.&.))
-import           Data.Tuple                 (swap)
-import           Data.Word                  (Word16, Word64, Word8)
-import           GHC.Float                  (castDoubleToWord64)
+import           Control.Monad.Trans.State.Strict (runState)
+import           Data.Bifunctor                   (second)
+import           Data.Bits                        (rotateR, (.&.))
+import           Data.Tuple                       (swap)
+import           Data.Word                        (Word16, Word64, Word8)
+import           GHC.Float                        (castDoubleToWord64)
 import qualified IR
 import qualified Op
 

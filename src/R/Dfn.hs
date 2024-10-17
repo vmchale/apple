@@ -3,8 +3,8 @@
 module R.Dfn ( dedfn ) where
 
 import           A
-import           Control.Monad.State.Strict (state)
-import qualified Data.Text                  as T
+import           Control.Monad.Trans.State.Strict (state)
+import qualified Data.Text                        as T
 import           Nm
 import           R.M
 import           U

@@ -2,14 +2,14 @@ module Asm.X86.Trans ( irToX86 ) where
 
 import           Asm.M
 import           Asm.X86
-import           Control.Monad.State.Strict (runState)
-import           Data.Bifunctor             (second)
-import           Data.ByteString.Internal   (accursedUnutterablePerformIO)
-import           Data.Int                   (Int32, Int64, Int8)
-import           Data.Tuple                 (swap)
-import           Foreign.Marshal.Alloc      (alloca)
-import           Foreign.Ptr                (castPtr)
-import           Foreign.Storable           (peek, poke)
+import           Control.Monad.Trans.State.Strict (runState)
+import           Data.Bifunctor                   (second)
+import           Data.ByteString.Internal         (accursedUnutterablePerformIO)
+import           Data.Int                         (Int32, Int64, Int8)
+import           Data.Tuple                       (swap)
+import           Foreign.Marshal.Alloc            (alloca)
+import           Foreign.Ptr                      (castPtr)
+import           Foreign.Storable                 (peek, poke)
 import qualified IR
 import qualified Op
 

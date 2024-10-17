@@ -1,15 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TupleSections    #-}
+{-# LANGUAGE TupleSections #-}
 
 -- live intervals
 module LI ( intervals ) where
 
 import           CF
-import           Control.Monad.State.Strict (execState, get, put)
+import           Control.Monad.Trans.State.Strict (execState, get, put)
 import           Data.Copointed
-import           Data.Foldable              (traverse_)
-import qualified Data.IntMap.Lazy           as IM
-import qualified Data.IntSet                as IS
+import           Data.Foldable                    (traverse_)
+import qualified Data.IntMap.Lazy                 as IM
+import qualified Data.IntSet                      as IS
 
 collate :: IM.IntMap Int -> IM.IntMap IS.IntSet
 collate = IM.unionsWith IS.union . fmap g . IM.toList where g (r, n) = IM.singleton n (IS.singleton r)

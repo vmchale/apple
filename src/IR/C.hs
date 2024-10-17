@@ -2,8 +2,8 @@ module IR.C ( ctemp, cToIR ) where
 
 import           Bits
 import           C
-import           Control.Monad              (foldM)
-import           Control.Monad.State.Strict (State, runState, state)
+import           Control.Monad                    (foldM)
+import           Control.Monad.Trans.State.Strict (State, runState, state)
 import           IR
 import           Op
 

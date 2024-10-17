@@ -6,8 +6,8 @@ module R.M ( RM
            , nextU
            ) where
 
-import           Control.Monad.State.Strict (State, runState, state)
-import qualified Data.Text                  as T
+import           Control.Monad.Trans.State.Strict (State, runState, state)
+import qualified Data.Text                        as T
 import           Nm
 import           U
 

@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Ty ( TyE
@@ -11,25 +10,25 @@ module Ty ( TyE
           ) where
 
 import           A
-import           Control.DeepSeq            (NFData (rnf))
-import           Control.Exception          (Exception, throw)
-import           Control.Monad              (zipWithM)
-import           Control.Monad.Except       (liftEither, throwError)
-import           Control.Monad.State.Strict (StateT (runStateT), gets, modify, state)
-import           Data.Bifunctor             (first, second)
-import           Data.Containers.ListUtils  (nubOrd)
-import           Data.Foldable              (traverse_)
-import           Data.Function              (on)
-import           Data.Functor               (void, ($>))
-import qualified Data.IntMap                as IM
-import qualified Data.IntSet                as IS
-import           Data.Maybe                 (catMaybes)
-import qualified Data.Text                  as T
-import           Data.Typeable              (Typeable)
-import           GHC.Generics               (Generic)
+import           Control.DeepSeq                  (NFData (rnf))
+import           Control.Exception                (Exception, throw)
+import           Control.Monad                    (zipWithM)
+import           Control.Monad.Except             (liftEither, throwError)
+import           Control.Monad.Trans.State.Strict (StateT (runStateT), gets, modify, state)
+import           Data.Bifunctor                   (first, second)
+import           Data.Containers.ListUtils        (nubOrd)
+import           Data.Foldable                    (traverse_)
+import           Data.Function                    (on)
+import           Data.Functor                     (void, ($>))
+import qualified Data.IntMap                      as IM
+import qualified Data.IntSet                      as IS
+import           Data.Maybe                       (catMaybes)
+import qualified Data.Text                        as T
+import           Data.Typeable                    (Typeable)
+import           GHC.Generics                     (Generic)
 import           Nm
 import           Nm.IntMap
-import           Prettyprinter              (Doc, Pretty (..), hardline, indent, squotes, (<+>))
+import           Prettyprinter                    (Doc, Pretty (..), hardline, indent, squotes, (<+>))
 import           Prettyprinter.Ext
 import           Ty.Clone
 import           U

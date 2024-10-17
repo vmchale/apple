@@ -4,11 +4,11 @@ module R.R ( RM
            , module R
            ) where
 
-import           Control.Monad.State.Strict (State, gets, runState)
-import           Data.Bifunctor             (second)
-import           Data.Functor               (($>))
-import qualified Data.Text                  as T
-import           Lens.Micro.Mtl             (modifying)
+import           Control.Monad.Trans.State.Strict (State, gets, runState)
+import           Data.Bifunctor                   (second)
+import           Data.Functor                     (($>))
+import qualified Data.Text                        as T
+import           Lens.Micro.Mtl                   (modifying)
 import           Nm
 import           R
 import           U

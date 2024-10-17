@@ -5,20 +5,20 @@ module C.Trans ( writeC ) where
 import           A
 import           Bits
 import           C
-import           CF.AL                      (AL (..))
-import qualified CF.AL                      as AL
-import           Control.Composition        (thread)
-import           Control.Monad              (zipWithM)
-import           Control.Monad.State.Strict (State, gets, modify, runState, state)
-import           Data.Bifunctor             (first, second)
-import           Data.Functor               (($>))
-import           Data.Int                   (Int64)
-import qualified Data.IntMap                as IM
-import qualified Data.IntSet                as IS
-import           Data.List                  (scanl')
-import           Data.Maybe                 (catMaybes, isJust)
-import           Data.Word                  (Word64)
-import           GHC.Float                  (castDoubleToWord64)
+import           CF.AL                            (AL (..))
+import qualified CF.AL                            as AL
+import           Control.Composition              (thread)
+import           Control.Monad                    (zipWithM)
+import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
+import           Data.Bifunctor                   (first, second)
+import           Data.Functor                     (($>))
+import           Data.Int                         (Int64)
+import qualified Data.IntMap                      as IM
+import qualified Data.IntSet                      as IS
+import           Data.List                        (scanl')
+import           Data.Maybe                       (catMaybes, isJust)
+import           Data.Word                        (Word64)
+import           GHC.Float                        (castDoubleToWord64)
 import           Nm
 import           Nm.IntMap
 import           Op

@@ -6,14 +6,14 @@ import           C
 import           CF
 import           CF.AL
 -- seems to pretty clearly be faster
-import           Control.Monad.State.Strict (State, evalState, gets, modify, state)
-import           Data.Bifunctor             (first)
-import           Data.Functor               (($>))
-import qualified Data.IntMap                as IM
-import qualified Data.IntSet                as IS
-import           Data.List                  (uncons)
-import qualified Data.Map                   as M
-import           Data.Tuple.Extra           (second3, snd3, thd3, third3)
+import           Control.Monad.Trans.State.Strict (State, evalState, gets, modify, state)
+import           Data.Bifunctor                   (first)
+import           Data.Functor                     (($>))
+import qualified Data.IntMap                      as IM
+import qualified Data.IntSet                      as IS
+import           Data.List                        (uncons)
+import qualified Data.Map                         as M
+import           Data.Tuple.Extra                 (second3, snd3, thd3, third3)
 
 type N=Int
 

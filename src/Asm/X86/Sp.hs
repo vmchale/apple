@@ -2,13 +2,13 @@ module Asm.X86.Sp ( spill ) where
 
 import           Asm.X86
 import           Asm.X86.CF
-import           Control.Monad.Extra        (concatMapM)
-import           Control.Monad.State.Strict (State, runState, state)
-import           Data.Functor               (void)
-import           Data.Int                   (Int32, Int8)
-import qualified Data.IntMap.Strict         as IM
-import qualified Data.IntSet                as IS
-import           Data.Maybe                 (catMaybes)
+import           Control.Monad.Extra              (concatMapM)
+import           Control.Monad.Trans.State.Strict (State, runState, state)
+import           Data.Functor                     (void)
+import           Data.Int                         (Int32, Int8)
+import qualified Data.IntMap.Strict               as IM
+import qualified Data.IntSet                      as IS
+import           Data.Maybe                       (catMaybes)
 
 type SpM = State Int
 

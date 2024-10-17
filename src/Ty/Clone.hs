@@ -4,10 +4,10 @@ module Ty.Clone ( cloneT ) where
 
 
 import           A
-import           Control.Monad.State.Strict (State, gets, runState)
-import qualified Data.IntMap                as IM
-import           Lens.Micro                 (Lens')
-import           Lens.Micro.Mtl             (modifying, use)
+import           Control.Monad.Trans.State.Strict (State, gets, runState)
+import qualified Data.IntMap                      as IM
+import           Lens.Micro                       (Lens')
+import           Lens.Micro.Mtl                   (modifying, use)
 import           Nm
 import           U
 

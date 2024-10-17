@@ -6,12 +6,12 @@ module R ( Rs (..), HasRs (..)
          ) where
 
 import           A
-import           Control.Monad.State.Strict (StateT, runState)
-import           Data.Bifunctor             (second)
-import           Data.Functor               (($>))
-import qualified Data.IntMap                as IM
-import           Lens.Micro                 (Lens')
-import           Lens.Micro.Mtl             (modifying, use, (.=))
+import           Control.Monad.Trans.State.Strict (StateT, runState)
+import           Data.Bifunctor                   (second)
+import           Data.Functor                     (($>))
+import qualified Data.IntMap                      as IM
+import           Lens.Micro                       (Lens')
+import           Lens.Micro.Mtl                   (modifying, use, (.=))
 import           Nm
 import           Ty.Clone
 import           U
