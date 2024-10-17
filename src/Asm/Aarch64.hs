@@ -502,8 +502,8 @@ puxs = map go.s2 where go (r0, Just r1) = Stp2 () (V2Reg r0) (V2Reg r1) (Pr SP (
 poxs = map go.reverse.s2 where go (r0, Just r1) = Ldp2 () (V2Reg r0) (V2Reg r1) (Po SP 32); go (r, Nothing) = LdrS () (V2Reg r) (Po SP 16)
 
 hexd :: Integral a => a -> Doc ann
-hexd n | n < 0 = pretty ("#-0x"++(showHex (-n)$""))
-       | otherwise = pretty ("#0x"++(showHex n$""))
+hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")
+       | otherwise = pretty ("#0x"++showHex n "")
 
 pvd v = pv v <> ".2d"
 pvv v = pv v <> ".16b"; pvs v = pv v <> ".8b"
