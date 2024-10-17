@@ -5,12 +5,12 @@ module IR.CF ( rToInt, fToInt
 import           CF
 -- seems to pretty clearly be faster
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
-import           Data.Bifunctor             (second)
-import           Data.Functor               (($>))
-import qualified Data.IntSet                as IS
-import qualified Data.Map                   as M
-import           Data.Tuple.Extra           (fst3, second3, snd3, thd3, third3)
-import           Data.Void                  (absurd)
+import           Data.Bifunctor                   (second)
+import           Data.Functor                     (($>))
+import qualified Data.IntSet                      as IS
+import qualified Data.Map                         as M
+import           Data.Tuple.Extra                 (fst3, second3, snd3, thd3, third3)
+import           Data.Void                        (absurd)
 import           IR
 
 type N=Int
