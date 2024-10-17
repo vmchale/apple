@@ -34,6 +34,8 @@ import           Prettyprinter.Ext
 import           Ty.Clone
 import           U
 
+infixl 7 \-
+
 data TySt a = TySt { maxU :: !Int, staEnv, polyEnv :: IM.IntMap (T ()), varConstr :: IM.IntMap (C, a) }
 
 data Subst a = Subst { tySubst :: IM.IntMap (T a)
@@ -183,22 +185,25 @@ infixr 4 !>
 (!>) _ ix@Ix{} = ix
 (!>) _ ix@IEVar{} = ix
 
+(\-) :: Subst a -> Int -> Subst a
+(\-) (Subst ts is ss) u = Subst (IM.delete u ts) is ss
+
 aT :: Subst a -> T a -> T a
 aT s (Arr sh ty) = Arr (shSubst s sh) (aT s ty)
 aT s (Arrow t₁ t₂) = Arrow (aT s t₁) (aT s t₂)
-aT s@(Subst ts is ss) ty'@(TVar n) =
+aT s@(Subst ts _ _) ty'@(TVar n) =
     let u = unU $ unique n in
     case IM.lookup u ts of
-        Just ty@TVar{} -> aT (Subst (IM.delete u ts) is ss) ty
-        Just ty@Ρ{}    -> aT (Subst (IM.delete u ts) is ss) ty
+        Just ty@TVar{} -> aT (s\-u) ty
+        Just ty@Ρ{}    -> aT (s\-u) ty
         Just ty        -> aT s ty
         Nothing        -> ty'
 aT s (P ts) = P (aT s <$> ts)
-aT s@(Subst ts is ss) (Ρ n rs) =
+aT s@(Subst ts _ _) (Ρ n rs) =
     let u = unU (unique n) in
     case IM.lookup u ts of
-        Just ty@Ρ{}    -> aT (Subst (IM.delete u ts) is ss) ty
-        Just ty@TVar{} -> aT (Subst (IM.delete u ts) is ss) ty
+        Just ty@Ρ{}    -> aT (s\-u) ty
+        Just ty@TVar{} -> aT (s\-u) ty
         Just ty        -> aT s ty
         Nothing        -> Ρ n (aT s<$>rs)
 aT _ ty = ty
@@ -821,9 +826,9 @@ checkTy t@Arrow{} (c, l)      = Left$ Doesn'tSatisfy l t c
 checkTy (Arr _ t) c@(IsEq, _) = checkTy t c
 
 substI :: Subst a -> Int -> Maybe (T a)
-substI s@(Subst ts is sh) i =
+substI s@(Subst ts _ _) i =
     case IM.lookup i ts of
-        Just ty@TVar{} -> Just $ aT (Subst (IM.delete i ts) is sh) ty
+        Just ty@TVar{} -> Just $ aT (s\-i) ty
         Just ty        -> Just $ aT s ty
         Nothing        -> Nothing
 
