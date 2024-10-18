@@ -17,6 +17,7 @@ import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
 import           Data.List                        (scanl')
 import           Data.Maybe                       (catMaybes, isJust)
+import           Data.Tuple.Extra                 (second3)
 import           Data.Word                        (Word64)
 import           GHC.Float                        (castDoubleToWord64)
 import           Nm
@@ -318,6 +319,13 @@ m'p (Just (a,pop)) = (++[pop]).(a:)
 sas :: [Maybe (CS (), CS ())] -> [CS ()] -> [CS ()]
 sas = thread.fmap m'p
 
+aSD :: E (T ()) -> [(T (), ArrAcc, Temp)] -> T () -> ArrAcc -> Temp -> CM ([CS ()], [Maybe (CS (), CS ())])
+aSD f as rT rAt td = do
+    (args, rArgs, pinchArgs) <- unzip3 <$> traverse (\(t,r,xd) -> second3 (:[xd=:(Tmp xd+ConstI (bT t))]) <$> arg t r) as
+    (r, wR, pinch) <- rW rT rAt
+    ss <- writeRF f args r
+    pure (concat rArgs++ss++[wR, td=:(Tmp td+ConstI (bT rT))], pinch:pinchArgs)
+
 aS :: E (T ()) -> [(T (), Int64 -> ArrAcc)] -> T () -> (Int64 -> ArrAcc) -> CM ([CS ()], [Maybe (CS (), CS ())])
 aS f as rT rAt = do
     (args, rArgs, pinchArgs) <- unzip3 <$> traverse (\(t,r) -> arg t (r$bT t)) as
@@ -585,11 +593,11 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs <- eAnn
     pure (Just a, plE$szR=:ev tXs (xR,l):aV++xRd=:DP xR 1:td=:DP t 1:[loop])
 aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, Just sz <- nSz tC, nind tD = do
     (plE, (l, xR)) <- plA e
-    iR <- nI; szR <- nI
+    iR <- nI; xRd <- nI; td <- nI; szR <- nI
     (a,aV) <- vSz t (Tmp szR) sz
-    (step, pinches) <- aS op [(tD, AElem xR 1 (Tmp iR) l)] tC (AElem t 1 (Tmp iR) (Just a))
+    (step, pinches) <- aSD op [(tD, Raw xRd 0 l undefined, xRd)] tC (Raw td 0 (Just a) undefined) td
     let loop=rof (eAnn e) iR (Tmp szR) step
-    pure (Just a, plE$szR=:ev (eAnn e) (xR,l):aV++sas pinches [loop])
+    pure (Just a, plE$szR=:ev (eAnn e) (xR,l):aV++xRd=:DP xR 1:td=:DP t 1:sas pinches [loop])
 aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t | tXs@(Arr (_ `Cons` Nil) tX) <- eAnn xs, Just sz <- nSz tX = do
     a <- nextArr t
     szR <- nI; nR <- nI; b <- nBT
