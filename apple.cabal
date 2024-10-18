@@ -118,6 +118,8 @@ library
         Nm.IntMap
 
     default-language:   Haskell2010
+    default-extensions:
+        LambdaCase
     other-extensions:
         DeriveGeneric DeriveAnyClass OverloadedStrings StandaloneDeriving
         RankNTypes FlexibleContexts DeriveFoldable DeriveFunctor

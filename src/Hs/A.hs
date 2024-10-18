@@ -34,7 +34,7 @@ data P4 a b c d = P4 a b c d; hs4 (P4 a b c d) = (a,b,c,d)
 
 instance Storable AB where
     sizeOf _ = 1
-    peek p = (\b -> case b of 1 -> T; 0 -> F) <$> peek (castPtr p :: Ptr Word8)
+    peek p = (\case 1 -> T; 0 -> F) <$> peek (castPtr p :: Ptr Word8)
     poke p F = poke (castPtr p :: Ptr Word8) 0
     poke p T = poke (castPtr p :: Ptr Word8) 1
 

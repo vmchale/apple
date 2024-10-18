@@ -61,10 +61,10 @@ thread = foldr (.) id
 n !* d = IM.findWithDefault maxBound n d
 
 dec :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
-dec = IM.alter (\k -> case k of {Nothing -> Nothing;Just d -> Just$d-1})
+dec = IM.alter (\case {Nothing -> Nothing;Just d -> Just$d-1})
 
 inc :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
-inc = IM.alter (\k -> case k of {Nothing -> Just 1;Just d -> Just$d+1})
+inc = IM.alter (\case {Nothing -> Just 1;Just d -> Just$d+1})
 
 emptySt :: IS.IntSet -- ^ Precolored registers
         -> [Int]
