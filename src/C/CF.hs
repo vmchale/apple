@@ -69,6 +69,9 @@ initLiveness = IM.fromList . go where
     go (For1 ann _ _ _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
     go (Rof ann _ _ ss:cs)          = (node ann, (ann, emptyL)):go ss++go cs
     go (Rof1 ann _ _ ss:cs)         = (node ann, (ann, emptyL)):go ss++go cs
+    go (R2of ann _ _ ss s1:cs)      = (node ann, (ann, emptyL)):go s1++go ss++go cs
+    go (R2ofE ann _ _ ss:cs)        = (node ann, (ann, emptyL)):go ss++go cs
+    go (R2ofO ann _ _ ss s1:cs)     = (node ann, (ann, emptyL)):go s1++go ss++go cs
     go (While ann _ _ _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
     go (WT ann _ ss:cs)             = (node ann, (ann, emptyL)):go ss++go cs
     go (If ann _ ss ss':cs)         = (node ann, (ann, emptyL)):go ss++go ss'++go cs
@@ -84,6 +87,9 @@ inspectOrder (F2orO ann _ _ _ _ ss s1:cs) = node ann:inspectOrder s1++inspectOrd
 inspectOrder (For1 ann _ _ _ _ ss:cs)     = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (Rof ann _ _ ss:cs)          = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (Rof1 ann _ _ ss:cs)         = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (R2of ann _ _ ss s1:cs)      = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
+inspectOrder (R2ofE ann _ _ ss:cs)        = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (R2ofO ann _ _ ss s1:cs)     = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
 inspectOrder (While ann _ _ _ ss:cs)      = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (WT ann _ ss:cs)             = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (If ann _ ss ss':cs)         = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
@@ -154,7 +160,14 @@ addCF ((F2orE _ t el c eu ss):stmts) = do
     pure $ F2orE (ControlAnn i (f (h [])) udϵ) t el c eu ss':stmts'
   where
     udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
-addCF ((F2or _ t el c eu s1 ss):stmts) = do
+addCF ((R2ofE _ t ec ss):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h, ss') <- tieBody i f ss
+    pure $ R2ofE (ControlAnn i (f (h [])) udϵ) t ec ss':stmts'
+  where
+    udϵ = UD (uE ec) IS.empty IS.empty IS.empty
+addCF ((F2or _ t el c eu ss s1):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
     (h1, s1') <- tieBranch i f s1
@@ -162,10 +175,10 @@ addCF ((F2or _ t el c eu s1 ss):stmts) = do
     let ss'' = case uncons ss' of
             Nothing        -> []
             Just (hb, ssϵ) -> fmap (mC h1) hb:ssϵ
-    pure $ F2or (ControlAnn i (f (h (h1 []))) udϵ) t el c eu s1' ss'':stmts'
+    pure $ F2or (ControlAnn i (f (h (h1 []))) udϵ) t el c eu ss'' s1':stmts'
   where
     udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
-addCF ((F2orO _ t el c eu s1 ss):stmts) = do
+addCF ((F2orO _ t el c eu ss s1):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
     (h1, s1') <- tieBranch i f s1
@@ -173,9 +186,31 @@ addCF ((F2orO _ t el c eu s1 ss):stmts) = do
     let ss'' = case uncons ss' of
             Nothing        -> []
             Just (hb, ssϵ) -> fmap (mC h1) hb:ssϵ
-    pure $ F2orO (ControlAnn i (f (h (h1 []))) udϵ) t el c eu s1' ss'':stmts'
+    pure $ F2orO (ControlAnn i (f (h (h1 []))) udϵ) t el c eu ss'' s1':stmts'
   where
     udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+addCF ((R2of _ t ec ss s1):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h1, s1') <- tieBranch i f s1
+    (h, ss') <- tieBody i f ss
+    let ss'' = case uncons ss' of
+            Nothing        -> []
+            Just (hb, ssϵ) -> fmap (mC h1) hb:ssϵ
+    pure $ R2of (ControlAnn i (f (h (h1 []))) udϵ) t ec ss'' s1':stmts'
+  where
+    udϵ = UD (uE ec) IS.empty IS.empty IS.empty
+addCF ((R2ofO _ t ec ss s1):stmts) = do
+    i <- getFresh
+    (f, stmts') <- next stmts
+    (h1, s1') <- tieBranch i f s1
+    (h, ss') <- tieBody i f ss
+    let ss'' = case uncons ss' of
+            Nothing        -> []
+            Just (hb, ssϵ) -> fmap (mC h1) hb:ssϵ
+    pure $ R2ofO (ControlAnn i (f (h (h1 []))) udϵ) t ec ss'' s1':stmts'
+  where
+    udϵ = UD (uE ec) IS.empty IS.empty IS.empty
 addCF ((For1 _ t el c eu ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
@@ -332,6 +367,9 @@ brs (F2orO _ _ _ _ _ ss s1:stmts) = brs ss *> brs s1 *> brs stmts
 brs (For1 _ _ _ _ _ ss:stmts)     = brs ss *> brs stmts
 brs (Rof _ _ _ ss:stmts)          = brs ss *> brs stmts
 brs (Rof1 _ _ _ ss:stmts)         = brs ss *> brs stmts
+brs (R2of _ _ _ ss s1:stmts)      = brs ss *> brs s1 *> brs stmts
+brs (R2ofE _ _ _ ss:stmts)        = brs ss *> brs stmts
+brs (R2ofO _ _ _ ss s1:stmts)     = brs ss *> brs s1 *> brs stmts
 brs (While _ _ _ _ ss:stmts)      = brs ss *> brs stmts
 brs (WT _ _ ss:stmts)             = brs ss *> brs stmts
 brs (If _ _ ss ss':stmts)         = brs ss *> brs ss' *> brs stmts
