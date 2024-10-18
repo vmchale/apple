@@ -50,3 +50,6 @@ hidden_bias=hb(hidden_bias,d_hidden_layer)
 
 bo=apple.jit("λbo.λl1Δ. {sum ← [(+)/x]; bo + sum (l1Δ::Vec 4 float)}")
 output_bias=bo(output_bias,d_predicted_output)
+
+ow=apple.jit("λwo.λho.λl1Δ.(+)`wo ((|:ho)%:(l1Δ::Vec n float))")
+output_weights=ow(output_weights,hidden_layer_output,d_predicted_output)
