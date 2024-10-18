@@ -203,6 +203,7 @@ asm ix st (LdrS _ q (BI rb ri s):asms) = [0b00111100, 0b111 `shiftL` 5 .|. be ri
 asm ix st (StrS x q (R rb):asms) = asm ix st (StrS x q (RP rb 0):asms)
 asm ix st (StrS _ q (RP rb u):asms) | (u',0) <- u `quotRem` 16, u <= 65520 = [0b00111101, 0x2 `shiftL` 6 .|. fromIntegral (u' `shiftR` 6), fromIntegral (0b111111 .&. u') `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (StrS _ q (Pr rb i):asms) | i >= -256 && i < 255 = let (ub,lub)=i9 i in [0b00111100, 0x2 `shiftL` 6 .|. ub, lub `shiftL` 4 .|. 0x3 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
+asm ix st (StrS _ q (Po rb i):asms) | i >= -256 && i < 255 = let (ub,lub)=i9 i in [0b00111100, 0x2 `shiftL` 6 .|. ub, lub `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (LdrS x q (R rb):asms) = asm ix st (LdrS x q (RP rb 0):asms)
 asm ix st (LdrS _ q (RP rb u):asms) | (u',0) <- u `quotRem` 16, u <= 65520 = [0b00111101, 0b11 `shiftL` 6 .|. fromIntegral (u' `shiftR` 6), fromIntegral (0b11111 .&. u') `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (LdrS _ q (Po rb i):asms) | i >= -256 && i <= 255 = let (ub,lub)=i9 i in [0b00111100, 0x6 `shiftL` 5 .|. ub, lub `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
