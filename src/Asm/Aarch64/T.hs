@@ -301,6 +301,13 @@ ir (IR.Cpy1 (IR.AP tD (Just (IR.ConstI di)) _) (IR.AP tS (Just (IR.ConstI si)) _
     l <- nextL; eL <- nextL
     let rDA=IReg rD; rSA=IReg rS
     pure $ plEN [Cbz () rN eL, MovRR () rDA (absReg tD), MovRR () rSA (absReg tS), MovRR () i rN, Label () l, LdrB () t (RP rSA du), StrB () t (RP rDA su), AddRC () rSA rSA 1, AddRC () rDA rDA 1, SubsRC () i i 1, Bc () Neq l, Label () eL]
+ir (IR.Cpy1 (IR.AP tD eD _) (IR.AP tS eS _) (IR.ConstI 1)) = do
+    rD <- nextI; rS <- nextI
+    t <- nR
+    plED <- eval (maybe id (+) eD$IR.Reg tD) (IR.ITemp rD)
+    plES <- eval (maybe id (+) eS$IR.Reg tS) (IR.ITemp rS)
+    let rDA=IReg rD; rSA=IReg rS
+    pure $ plED ++ plES ++ [LdrB () t (R rSA), StrB () t (R rDA)]
 ir (IR.Cpy1 (IR.AP tD eD _) (IR.AP tS eS _) eN) = do
     rD <- nextI; rS <- nextI; i <- nR; t <- nR
     plED <- eval (maybe id (+) eD$IR.Reg tD) (IR.ITemp rD)
