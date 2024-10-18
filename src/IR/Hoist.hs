@@ -159,7 +159,7 @@ indels ss = (c, is IM.empty, ds)
   where
     (c,h) = hs ss
     ds = IS.fromList (snd3<$>h)
-    go n s = IM.alter (\d -> case d of {Nothing -> Just [s]; Just ssϵ -> Just$s:ssϵ}) n
+    go n s = IM.alter (\case {Nothing -> Just [s]; Just ssϵ -> Just$s:ssϵ}) n
     is = thread ((\(n,_,s) -> go n s)<$>h)
 
 hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, CM)])
