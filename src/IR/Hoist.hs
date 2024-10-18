@@ -1,6 +1,4 @@
-{-# LANGUAGE TupleSections #-}
-
-module IR.Hoist ( loop, hoist, pall ) where
+module IR.Hoist ( loop, graphParts, pall ) where
 
 import           CF
 import           Control.Composition              (thread)
@@ -124,12 +122,12 @@ hs ss = let (ls, cf, dm) = loop ss
      in (cf, concatMap (\l -> hl (l,dm,mm)) (ols ls))
 
 loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], A.Array Int (Stmt, ControlAnn))
-loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).hoist
+loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
   where
     mkL (n, ns) = (n, IS.fromList ns)
 
-hoist :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], A.Array Int (Stmt, ControlAnn))
-hoist ss = (\ssϵ -> (\(x,y,z,_) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
+graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], A.Array Int (Stmt, ControlAnn))
+graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
 {-# SCC ols #-}
 ols :: [Loop] -> [Loop]
@@ -157,8 +155,8 @@ loopHeads g ss seen (Node n cs) =
 hasEdge :: Graph -> Node -> Node -> Bool
 hasEdge g n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
 
-mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, A.Array Int (Stmt, ControlAnn), IM.IntMap (Stmt, ControlAnn))
-mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa, IM.fromList ((\(s, ann) -> (node ann, (s, ann)))<$>ns))
+mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, A.Array Int (Stmt, ControlAnn))
+mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
     sa = A.listArray (0,m-1) (sortBy (compare `on` (node.snd)) ns)
