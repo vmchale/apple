@@ -157,6 +157,9 @@ ir (IR.Wr (IR.AP t (Just (IR.IB Op.IPlus (IR.IB Op.IAsl eI (IR.ConstI 3)) (IR.Co
 ir (IR.Wr (IR.AP t (Just eI) _) e) = do
     (plE,r) <- plI e; (plEI,rI) <- plI eI
     pure $ plE $ plEI [Str () r (BI (absReg t) rI Zero)]
+ir (IR.WrF2 (IR.AP t Nothing _) e) = do
+    (plE,v) <- plF2 e
+    pure$plE [StrS () v (R (absReg t))]
 ir (IR.WrF2 (IR.AP t (Just eI) _) e) = do
     (plEI, rI) <- plI eI
     (plE,v) <- plF2 e
