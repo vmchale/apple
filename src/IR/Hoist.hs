@@ -21,6 +21,7 @@ import           IR.CF
 import           LR
 
 type N=Int
+type CfTbl=A.Array Int (Stmt, ControlAnn); type StmtTbl=A.Array Int Stmt
 
 mapFA :: (FTemp -> FTemp) -> AE -> AE
 mapFA f (AP t (Just e) l) = AP t (Just$mapFE f e) l
@@ -78,7 +79,7 @@ type Loop = (N, IS.IntSet)
 lm :: [(Stmt, NLiveness)] -> IM.IntMap NLiveness
 lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 
-hl :: (Loop, A.Array Int (Stmt, ControlAnn), IM.IntMap NLiveness) -> [(N, N, (FTemp, Double))]
+hl :: (Loop, CfTbl, IM.IntMap NLiveness) -> [(N, N, (FTemp, Double))]
 hl ((n,ns), info, linfo) = go ss
   where
     fliveInH=fins lH; lH=liveness (gN n linfo)
@@ -121,19 +122,20 @@ hs ss = let (ls, cf, dm) = loop ss
             mm = lm (reconstructFlat cf)
      in (cf, concatMap (\l -> hl (l,dm,mm)) (ols ls))
 
-loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], A.Array Int (Stmt, ControlAnn))
+loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], CfTbl)
 loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
   where
     mkL (n, ns) = (n, IS.fromList ns)
 
-graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], A.Array Int (Stmt, ControlAnn))
+graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], CfTbl)
 graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
 {-# SCC ols #-}
 ols :: [Loop] -> [Loop]
 ols ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
 
-et :: Graph -> A.Array Int Stmt -> [N] -> Tree N -> [(N, [N])]
+-- het (HLoop)
+et :: Graph -> StmtTbl -> [N] -> Tree N -> [(N, [N])]
 et g ss seen t = expandLoop t <$> loopHeads g ss seen t
 
 -- everything the start node dominates
@@ -144,7 +146,7 @@ expandLoop t s = (s, fromJust (go t))
     go (Node n tϵ) | n==s = Just$concatMap toList tϵ
     go (Node _ ns) = mh (go<$>ns) where mh xs=case catMaybes xs of {[] -> Nothing; (nϵ:_) -> Just nϵ}
 
-loopHeads :: Graph -> A.Array Int Stmt -> [N] -> Tree N -> [N]
+loopHeads :: Graph -> StmtTbl -> [N] -> Tree N -> [N]
 loopHeads g ss seen (Node n cs) =
     let bes=filter (hasEdge g n) seen
     in (if isMJ n then (bes++) else id) $ concatMap (loopHeads g ss (n:seen)) cs
@@ -155,7 +157,7 @@ loopHeads g ss seen (Node n cs) =
 hasEdge :: Graph -> Node -> Node -> Bool
 hasEdge g n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
 
-mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, A.Array Int (Stmt, ControlAnn))
+mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, CfTbl)
 mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
