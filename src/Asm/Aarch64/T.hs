@@ -173,6 +173,8 @@ ir (IR.WrB (IR.AP t (Just eI) _) (IR.ConstI n)) | Just u <- mu16 n = do
     pure $ plEI [MovRC () i u, StrB () i (BI (absReg t) rI Zero)]
 ir (IR.WrB (IR.AP t (Just (IR.ConstI ix)) _) (IR.Is i)) | Just iu <- mu16 ix = do
     pure [StrB () (absReg i) (RP (absReg t) iu)]
+ir (IR.WrB (IR.AP t Nothing _) (IR.Is i)) =
+    pure [StrB () (absReg i) (R (absReg t))]
 ir (IR.WrB (IR.AP t (Just eI) _) (IR.Is i)) = do
     (plEI,rI) <- plI eI
     pure $ plEI [StrB () (absReg i) (BI (absReg t) rI Zero)]

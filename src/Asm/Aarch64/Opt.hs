@@ -5,6 +5,7 @@ import           Asm.Aarch64
 opt :: (Eq reg, Eq freg) => [AArch64 reg freg ()] -> [AArch64 reg freg ()]
 opt (AddRC _ r0 r0' 0:asms) | r0==r0' = opt asms
 opt (SubRC _ r0 r0' 0:asms) | r0==r0' = opt asms
+opt (Ldr x r0 (R ar):AddRC _ r1 r2 u:asms) | ar==r1&&r1==r2 = Ldr x r0 (Po ar (fromIntegral u)):opt asms
 opt (LdrD x d0 (R ar):AddRC _ r1 r2 u:asms) | ar==r1&&r1==r2 = LdrD x d0 (Po ar (fromIntegral u)):opt asms
 opt (LdrS x q0 (R ar):AddRC _ r1 r2 u:asms) | ar==r1&&r1==r2 = LdrS x q0 (Po ar (fromIntegral u)):opt asms
 opt (StrD x d0 (R ar):AddRC _ r1 r2 u:asms) | ar==r1&&r1==r2 = StrD x d0 (Po ar (fromIntegral u)):opt asms
