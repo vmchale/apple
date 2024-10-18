@@ -403,6 +403,8 @@ cosϵ t = do
     d0 = fabsReg t
 
 f2eval :: IR.F2E -> IR.F2 -> WM [AArch64 AbsReg FAbsReg ()]
+f2eval (IR.FAt (IR.AP tB Nothing _)) tD =
+    pure [LdrS () (f2absReg tD) (R (absReg tB))]
 f2eval (IR.FAt (IR.AP tB (Just e) _)) tD = do
     i <- nextI; plE <- eval e (IR.ITemp i)
     pure $ plE ++ [LdrS () (f2absReg tD) (BI (absReg tB) (IReg i) Zero)]
