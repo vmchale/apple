@@ -214,6 +214,10 @@ for t = if ne t then For1 () else For (); for1 t = if n1 t then For1 () else For
 forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
 
+r21 (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ c ss _ -> R2ofE () tϵ c ss
+                                | even i = R2ofO ()
+r21 _                           = R2of ()
+
 f21o (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
                                  | even i = F2orO ()
 f21o _                           = F2or ()
