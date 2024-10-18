@@ -50,7 +50,7 @@ clean:
 	make -C Rc clean
 	make -C janet clean
 	rm -f nb/*.html
-	rm -rf dist-newstyle tags tags.mtime moddeps.svg *.hp *.o *.prof *.tix *.svg *.so *.dylib py/__pycache__
+	rm -rf dist-newstyle tags tags.mtime moddeps.svg *.hp *.o *.prof *.tix *.svg *.so *.dylib $$(fd -H '^__pycache__$$' -t d)
 
 fmt:
 	fd '\.(cpphs|hs)$$' $$(ja -F'\s*:\s*' '{%/hs-source-dirs/}{`2}' -i apple.cabal) -x stylish-haskell -i
