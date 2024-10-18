@@ -4,7 +4,7 @@ import           CF
 import           Control.Composition              (thread)
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
 import qualified Data.Array                       as A
-import           Data.Bifunctor                   (first, second)
+import           Data.Bifunctor                   (bimap, first, second)
 import           Data.Foldable                    (toList)
 import           Data.Function                    (on)
 import           Data.Functor                     (($>))
@@ -14,8 +14,8 @@ import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
 import           Data.List                        (sortBy)
 import qualified Data.Map.Strict                  as M
-import           Data.Maybe                       (catMaybes, fromJust, fromMaybe)
-import           Data.Tuple.Extra                 (first3, second3, snd3)
+import           Data.Maybe                       (catMaybes, fromJust, fromMaybe, mapMaybe)
+import           Data.Tuple.Extra                 (first3, snd3)
 import           Data.Void                        (Void, absurd)
 import           IR
 import           IR.CF
@@ -100,72 +100,83 @@ type Loop = (N, IS.IntSet)
 lm :: [(Stmt, NLiveness)] -> IM.IntMap NLiveness
 lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
 
-data CM = FM !FTemp !Double | F2M !F2 !(Double, Double)
+data CM = LL !Label | FM !FTemp !Double | F2M !F2 !(Double, Double)
 
-hl :: (Loop, CfTbl, IM.IntMap NLiveness) -> [(N, N, CM)]
-hl ((n,ns), info, linfo) = go ss
+nh :: LM Label
+nh = state (\u -> (u, u+1))
+
+hl :: (Loop, CfTbl, IM.IntMap NLiveness) -> LM (M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
+hl ((n,ns), info, linfo) = do {fl <- nh; pure (M.singleton lh (fl,ns), (n,Nothing,LL fl):go ss)}
   where
     fliveInH=fins lH; lH=liveness (gN n linfo)
-    go ((MX x (ConstF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef (fToInt x) (node a) = (n, node a, FM x i):go ssϵ
-    go ((MX2 x (ConstF i), a):ssϵ) | f2ToInt x `IS.notMember` fliveInH && notFDef (f2ToInt x) (node a) = (n, node a, F2M x i):go ssϵ
+    go ((MX x (ConstF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef (fToInt x) (node a) = (n, Just$node a, FM x i):go ssϵ
+    go ((MX2 x (ConstF i), a):ssϵ) | f2ToInt x `IS.notMember` fliveInH && notFDef (f2ToInt x) (node a) = (n, Just$node a, F2M x i):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
     otherDefFs nL = defsFNode.ud.snd.(info A.!)<$>IS.toList(IS.delete nL ns)
     notFDef r nL = not $ any (r `IS.member`) (otherDefFs nL)
     ss = (info A.!)<$>IS.toList ns
+    (L lh,_) = info A.! n
     gN = IM.findWithDefault (error "internal error: node not in map.")
 
-data S = S { nl :: !Label
-           , f1s :: !(M.Map Double FTemp), f2s :: !(M.Map (Double, Double) F2)
-           , su :: !SS
+data S = S { f1s :: !(M.Map Double FTemp), f2s :: !(M.Map (Double, Double) F2)
+           , su :: !(M.Map FTemp FTemp)
            }
 
-i1 x t = modify (\(S u f1 f2 s) -> S u (M.insert x t f1) f2 s); i2 x t = modify (\(S u f1 f2 s) -> S u f1 (M.insert x t f2) s)
-br t r (S u f1 f2 (SS s l)) = S u f1 f2 (SS (M.insert t r s) l); fl = state (\(S u f1 f2 s) -> (u, S (u+1) f1 f2 s))
+type LM=State Label
 
-data SS = SS { sus :: !(M.Map FTemp FTemp), lls :: !(M.Map Label Label) }
+i1 x t = modify (\(S f1 f2 s) -> S (M.insert x t f1) f2 s); i2 x t = modify (\(S f1 f2 s) -> S f1 (M.insert x t f2) s)
+br t r (S f1 f2 s) = S f1 f2 (M.insert t r s)
 
-instance Semigroup SS where (<>) (SS s l) (SS s' l') = SS (s<>s') (l<>l')
-instance Monoid SS where mempty=SS M.empty M.empty
+pall :: Label -> [Stmt] -> ([Stmt], Label)
+pall u ss = runState (iM ss) u
 
-pall :: Label -> [Stmt] -> (Label, [Stmt])
-pall u ss =
-    let ss' = fmap (second node) cf
-        (s, ss'', u') = go u ss'
-    in (u', {-# SCC "applySubst" #-} applySubst s ss'')
+rwL :: M.Map Label (Label, IS.IntSet) -> (Stmt, ControlAnn) -> (Stmt, N)
+rwL s (MJ e l, a) = let n=node a in (case M.lookup l s of {Just (lϵ,m) | n `IS.notMember` m -> MJ e lϵ; _ -> MJ e l}, n)
+rwL _ (ss, a)     = (ss, node a)
+
+iM :: [Stmt] -> LM [Stmt]
+iM ss = do
+    (cf, m, is, dels) <- indels ss
+    let go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
+        go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (S _ _ subst)) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
+        go ((s,_):ssϵ) = second (s:)$go ssϵ
+        go [] = (M.empty, [])
+
+        ss'=map (rwL m) cf
+        (ts, ss'') = go ss'
+    pure ({-# SCC "applySubst" #-} applySubst ts ss'')
   where
-    go i ((_,n):ssϵ) | n `IS.member` dels = go i ssϵ
-    go i ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (S m _ _ subst)) = {-# SCC "consolidate" #-} consolidate i cs in bimap3 (subst<>) ((css++[s])++) (go m ssϵ)
-    go i ((s,_):ssϵ) = second3 (s:)$go i ssϵ
-    go i [] = (SS M.empty M.empty, [], i)
-    (cf, is, dels) = indels ss
-    applySubst (SS s sl) = fmap (mapF (\t -> fromMaybe t (M.lookup t s)))
-    consolidate i = first concat.flip runState (S i M.empty M.empty mempty).traverse gg
-    -- Fig 18.5 Appel
+    applySubst s = map (mapF (\t -> fromMaybe t (M.lookup t s)))
+    consolidate = first concat.flip runState (S M.empty M.empty mempty).traverse gg
     gg :: CM -> State S [Stmt]
+    gg (LL l) = pure [L l]
     gg (FM t x) = do
         seen <- gets f1s
         case M.lookup x seen of
-            Nothing -> do {i1 x t; l <- fl; pure [L l, MX t (ConstF x)]}
+            Nothing -> i1 x t$>[MX t (ConstF x)]
             Just r  -> modify (br t r) $> []
     gg (F2M t x) = do
         seen <- gets f2s
         case M.lookup x seen of
-            Nothing -> do {i2 x t; l <- fl; pure [L l, MX2 t (ConstF x)]}
+            Nothing -> i2 x t$>[MX2 t (ConstF x)]
             Just r  -> modify ((br `on` vv) t r) $> []
 
-indels :: [Stmt] -> ([(Stmt, ControlAnn)], IM.IntMap [CM], IS.IntSet)
-indels ss = (c, is IM.empty, ds)
+indels :: [Stmt] -> LM ([(Stmt, ControlAnn)], M.Map Label (Label, IS.IntSet), IM.IntMap [CM], IS.IntSet)
+indels ss = do
+    (c,ls,h) <- hs ss
+    let ds = IS.fromList (mapMaybe snd3 h)
+        is = thread ((\(n,_,s) -> go n s)<$>h)
+    pure (c, ls, is IM.empty, ds)
   where
-    (c,h) = hs ss
-    ds = IS.fromList (snd3<$>h)
     go n s = IM.alter (\case {Nothing -> Just [s]; Just ssϵ -> Just$s:ssϵ}) n
-    is = thread ((\(n,_,s) -> go n s)<$>h)
 
-hs :: [Stmt] -> ([(Stmt, ControlAnn)], [(N, N, CM)])
+hs :: [Stmt] -> LM ([(Stmt, ControlAnn)], M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
 hs ss = let (ls, cf, dm) = loop ss
             mm = lm (reconstructFlat cf)
-     in (cf, concatMap (\l -> hl (l,dm,mm)) (ols ls))
+     in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (ols ls))
+  where
+    bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
 loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], CfTbl)
 loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
@@ -179,7 +190,6 @@ graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlo
 ols :: [Loop] -> [Loop]
 ols ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
 
--- het (HLoop)
 et :: Graph -> StmtTbl -> [N] -> Tree N -> [(N, [N])]
 et g ss seen t = expandLoop t <$> loopHeads g ss seen t
 
@@ -207,6 +217,3 @@ mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
     sa = A.listArray (0,m-1) (sortBy (compare `on` (node.snd)) ns)
-
-bimap3 :: (a -> b) -> (c -> d) -> (a,c,e) -> (b,d,e)
-bimap3 f g ~(x,y,z) = (f x, g y, z)
