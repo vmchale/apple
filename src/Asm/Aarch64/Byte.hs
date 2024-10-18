@@ -180,6 +180,7 @@ asm ix st (StrD _ d (BI rb ri s):asms) = [0xfc, 0x1 `shiftL` 5 .|. be ri, 0x3 `s
 asm ix st (StrD _ d (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 8, u <= 32760 = [0b11111101, fromIntegral (uϵ `shiftR` 6), fromIntegral (uϵ .&. 0b111111) `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
 asm ix st (StrD _ d (Po rb i):asms) | i >= -256 && i <= 255 = let (ub,lub)=i9 i in [0xfc, ub, lub `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
 asm ix st (StrD _ d (Pr rb i):asms) | i >= -256 && i <= 255 = let (ub,lub)=i9 i in [0xfc, ub, lub `shiftL` 4 .|. 0x3 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
+asm ix st (StrD _ d (Po rb i):asms) | i >= -256 && i <= 255 = let (ub,lub)=i9 i in [0xfc, ub, lub `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb d]:asm (ix+4) st asms
 asm ix st (StrD x d (R rb):asms) = asm ix st (StrD x d (RP rb 0):asms)
 asm ix st (Stp x r0 r1 (R rb):asms) = asm ix st (Stp x r0 r1 (RP rb 0):asms)
 asm ix st (Stp _ r0 r1 (RP rb u):asms) | (u', 0) <- u `quotRem` 8, u <= 504 = [0xa9, fromIntegral (u' `shiftR` 1), fromIntegral (0x1 .&. u') `shiftL` 7 .|. be r1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb r0]:asm (ix+4) st asms

@@ -569,15 +569,15 @@ aeval (EApp _ (Builtin _ Flat) xs) t | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty
     pure (Just a, plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
 aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs <- eAnn e, hasS f = do
     (plE, (l, xR)) <- plA e
-    i <- nI; szR <- nI
+    i <- nI; td <- nI; xRd <- nI; szR <- nI
     (a,aV) <- v8 t (Tmp szR)
     x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     ss <- write2 f [x] y
     s1 <- writeRF f [FT x0] (FT y0)
-    let step=MX2 () x (FAt (AElem xR 1 (Tmp i) l 8)):ss++[Wr2F () (AElem t 1 (Tmp i) (Just a) 8) (FTmp y)]
-        step1=MX () x0 (FAt (AElem xR 1 (Tmp i) l 8)):s1++[WrF () (AElem t 1 (Tmp i) (Just a) 8) (FTmp y0)]
-        loop=f2or tXs i 0 ILt (Tmp szR) step step1
-    pure (Just a, plE$szR=:ev tXs (xR,l):aV++[loop])
+    let step=MX2 () x (FAt (Raw xRd 0 l 8)):xRd=:(Tmp xRd+16):ss++[Wr2F () (Raw td 0 (Just a) 8) (FTmp y), td=:(Tmp td+16)]
+        step1=MX () x0 (FAt (Raw xRd 0 l 8)):xRd=:(Tmp xRd+8):s1++[WrF () (Raw td 0 (Just a) 8) (FTmp y0), td=:(Tmp td+8)]
+        loop=r2of tXs i (Tmp szR) step step1
+    pure (Just a, plE$szR=:ev tXs (xR,l):aV++xRd=:DP xR 1:td=:DP t 1:[loop])
 aeval (EApp _ (EApp _ (Builtin _ Map) op) e) t | (Arrow tD tC) <- eAnn op, Just sz <- nSz tC, nind tD = do
     (plE, (l, xR)) <- plA e
     iR <- nI; xRd <- nI; td <- nI; szR <- nI
