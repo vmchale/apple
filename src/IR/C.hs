@@ -102,6 +102,12 @@ cToIRM (R2of _ t c s s1) = do
     pure $ IR.MT t' (irE c):MJ (IR.IRel IEq (Reg t') 0) eL:MJ (IR.IU IEven (Reg t')) l:ir1++untick t':IR.L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
   where
     t'=ctemp t
+cToIRM (R2ofO _ t c s s1) = do
+    l <- nextL; eL <- nextL
+    irs <- foldMapM cToIRM s; ir1 <- foldMapM cToIRM s1
+    pure $ IR.MT t' (irE c):MJ (IR.IRel IEq (Reg t') 0) eL:ir1++untick t':IR.L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+  where
+    t'=ctemp t
 cToIRM (F2orE _ t el rel eu s) = do
     l <- nextL
     irs <- foldMapM cToIRM s
