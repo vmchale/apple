@@ -211,8 +211,7 @@ nee (Arr sh _) = nzSh sh; nee _=False
 
 rof t = if ne t then Rof1 () else Rof (); rof1 t = if n1 t then Rof1 () else Rof ()
 for t = if ne t then For1 () else For (); for1 t = if n1 t then For1 () else For ()
-forc t = if nec t then For1 () else For ()
-fors t = if nee t then For1 () else For ()
+forc t = if nec t then For1 () else For (); fors t = if nee t then For1 () else For ()
 
 f21o (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
                                  | even i = F2orO ()
