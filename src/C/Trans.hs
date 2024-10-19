@@ -1709,14 +1709,15 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <-
     acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     i <- nI; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
+    pD <- nI; qD <- nI
     ss1 <- writeRF op (FT<$>[acc0,x0,y0]) (FT acc0)
     ss <- write2 op [acc2, x, y] acc2
     seed <- writeRF zop (FT<$>[x0,y0]) (FT acc0)
     let seed2 = case c0 of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> Fill () acc2 acc; FMin -> Fill () acc2 acc}
-        step1 = MX () x0 (FAt (AElem pR 1 (Tmp i) lP 8)):MX () y0 (FAt (AElem qR 1 (Tmp i) lQ 8)):ss1
-        step = MX2 () x (FAt (AElem pR 1 (Tmp i) lP 8)):MX2 () y (FAt (AElem qR 1 (Tmp i) lQ 8)):ss
-        loop = f21o tyP i 1 ILt (Tmp szR) step step1
-    pure $ plPP$plQ$szR=:ev tyP (pR,lP):MX () x0 (FAt (AElem pR 1 0 lP 8)):MX () y0 (FAt (AElem qR 1 0 lQ 8)):seed++[seed2, loop, Comb () c0 acc acc2, MX () acc (FTmp acc+FTmp acc0)]
+        step1 = MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):ss1
+        step = MX2 () x (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+16):MX2 () y (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+16):ss
+        loop = r21 tyP i (Tmp szR) step step1
+    pure $ plPP$plQ$szR=:ev tyP (pR,lP):pD=:DP pR 1:MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):qD=:DP qR 1:MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):seed++[seed2, loop, Comb () c0 acc acc2, MX () acc (FTmp acc+FTmp acc0)]
   where
     fz (Lam _ _ (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b0) _) (EApp _ (EApp _ (Builtin _ b1) _) _))))) | fS b0, fS b1 = (,) <$> mFop b0 <*> mFop b1
     fz _ = Nothing
