@@ -106,7 +106,7 @@ nh :: LM Label
 nh = state (\u -> (u, u+1))
 
 hl :: (Loop, CfTbl, IM.IntMap NLiveness) -> LM (M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
-hl ((n,ns), info, linfo) = do {fl <- nh; pure (M.singleton lh (fl,ns), (n,Nothing,LL fl):go ss)}
+hl ((n,ns), info, linfo) = do {fl <- nh; let ss'=go ss in if null ss' then pure (M.empty, []) else pure (M.singleton lh (fl,ns), (n,Nothing,LL fl):ss')}
   where
     fliveInH=fins lH; lH=liveness (gN n linfo)
     go ((MX x (ConstF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef (fToInt x) (node a) = (n, Just$node a, FM x i):go ssϵ
