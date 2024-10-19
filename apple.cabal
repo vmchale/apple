@@ -14,6 +14,7 @@ data-files:         ./include/apple_abi.h
 extra-source-files:
     include/apple.h
     include/apple_p.h
+    include/m.h
     test/examples/*.🍎
     test/examples/*.🍏
     bench/apple/*.🍏
@@ -188,6 +189,7 @@ foreign-library apple
     default-language:   Haskell2010
     include-dirs:       include
     install-includes:   apple.h
+                        m.h
     ghc-options:
         -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
         -Wredundant-constraints -Wmissing-export-lists

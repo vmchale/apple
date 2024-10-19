@@ -5,9 +5,8 @@
 #include"../include/apple_abi.h"
 #include"../c/ffi.c"
 
-typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
+typedef PyObject* PY;typedef PyArrayObject* NP;
 
-#define SZ sizeof
 #define CT(o,c,s) {PyArray_Descr *d=PyArray_DESCR(o);if(!(d->type==c)){PyErr_SetString(PyExc_RuntimeError,s);}}
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;};}
 
@@ -17,9 +16,7 @@ typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
 #define PC(x,n,w,data) S sz=w*n;U data=malloc(sz);{memcpy(data,x+rnk*8+8,sz);free(x);}
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 
-#define O(pya) PyArray_ENABLEFLAGS((NP)pya,NPY_ARRAY_OWNDATA)
-
-#define ZU static U
+#define O(pya) {PyArray_ENABLEFLAGS((NP)pya,NPY_ARRAY_OWNDATA);}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
 ZU f_npy(const NP o) {CT(o,'d',"Error: expected an array of floats");A(rnk,n,8,x,o);F* x_f=x;U data=PyArray_DATA(o);memcpy(x_f+rnk+1,data,n*8);R x;}
@@ -29,6 +26,8 @@ ZU i_npy(const NP o) {CT(o,'l',"Error: expected an array of 64-bit integers");A(
 Z PY npy_i(U x) {CD(rnk,x,t,dims);PC(x,t,8,data);PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_INT64,data);O(res);R res;}
 Z PY npy_f(U x) {CD(rnk,x,t,dims);PC(x,t,8,data);PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_FLOAT64,data);O(res);R res;}
 Z PY npy_b(U x) {CD(rnk,x,t,dims);PC(x,t,1,data);PY res=PyArray_SimpleNewFromData(rnk,dims,NPY_BOOL,data);O(res);R res;}
+
+// PyArray_New + no-copy
 
 Z PY apple_typeof(PY self, PY args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
@@ -57,20 +56,20 @@ Z PY apple_ir(PY self, PY args) {
     free(res); R py;
 }
 
+TS CA {U h;U d;} CA;
+Z void CA_dealloc(CA* self) {free(self->h);}
+
 TS JO {
     PyObject_HEAD
     U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;T ts;
 } JO;
 
-Z void freety(FnTy* x){free(x->args);free(x);}
 Z void cache_dealloc(JO* self) {
     munmap(self->bc,self->c_sz);
     free(self->sa);freety(self->ty);free(self->ffi);free(self->ts);
 }
 
 Z PY apple_ts(JO* self) {R PyUnicode_FromString(self->ts);}
-
-#define SA(t,x) t* x=alloca(SZ(t))
 
 // file:///usr/share/doc/libffi8/html/The-Basics.html
 Z PY apple_call(PY self, PY args, PY kwargs) {
