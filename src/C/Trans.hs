@@ -218,8 +218,7 @@ f21o (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ el c eu ss _ -> F2orE () tϵ el 
                                  | even i = F2orO ()
 f21o _                           = F2or ()
 
-r21 (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ c ss _ -> R2ofE () tϵ c ss
-                                | even i = R2ofO ()
+r21 (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ c ss _ -> R2ofE () tϵ c ss | even i = R2ofO ()
 r21 _                           = R2of ()
 
 r2of ty | to ty = R2ofO ()
