@@ -921,23 +921,6 @@ aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | Just sz <- aB res = do
     ix <- nI
     let loop=for res i 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) (Just a) sz) (AElem xR 1 0 lX sz) (Tmp szR) sz, ix+=Tmp szR]
     pure (Just a, plX $ plN ++ szR =: ev (eAnn xs) (xR,lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[loop])
-aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | Just (F, [m,n]) <- tIx$eAnn a, Just s <- cLog n = do
-    i <- nI; j <- nI; mR <- nI; nR <- nI; z <- nF
-    (aL,aV) <- v8 t (Tmp mR)
-    (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    let loop = For () i 0 ILt (Tmp mR)
-                  [ MX () z 0,
-                    for (eAnn x) j 0 ILt (Tmp nR)
-                        [ MX () z (FTmp z+FAt (AElem aR 2 (Bin IAsl (Tmp i) (ConstI s)+Tmp j) lA 8)*FAt (AElem xR 1 (Tmp j) lX 8)) ]
-                  , WrF () (AElem t 1 (Tmp i) (Just aL) 8) (FTmp z)
-                  ]
-    pure (Just aL,
-        plAA$
-        plX$
-        mR=:ConstI m
-        :aV
-        ++nR=:ConstI n
-        :[loop])
 aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = do
     i <- nI; j <- nI; m <- nI; n <- nI; z <- nF
     (aL,aV) <- v8 t (Tmp m)
