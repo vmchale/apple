@@ -132,7 +132,8 @@ library
         -Wall -fno-warn-missing-signatures -Wno-x-partial
         -Wincomplete-uni-patterns -Wincomplete-record-updates
         -Wredundant-constraints -Widentities -Wmissing-export-lists
-        -Wcpp-undef
+        -Wcpp-undef -Wunused-packages -Wno-operator-whitespace-ext-conflict
+
 
     build-depends:
         base >=4.17 && <5,
@@ -152,12 +153,6 @@ library
         composition-prelude >=1.1.0.1,
         dom-lt
 
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
-
-    if impl(ghc >=9.2)
-        ghc-options: -Wno-operator-whitespace-ext-conflict
-
 library as
     exposed-modules:
         H
@@ -168,7 +163,7 @@ library as
     ghc-options:
         -Wall -Wno-x-partial -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints -Widentities
-        -Wmissing-export-lists -Wcpp-undef
+        -Wmissing-export-lists -Wcpp-undef -Wunused-packages
 
     build-depends:
         base,
@@ -178,9 +173,6 @@ library as
         prettyprinter,
         text,
         bytestring
-
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
 
 foreign-library apple
     type:               native-shared
@@ -194,7 +186,7 @@ foreign-library apple
     ghc-options:
         -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
         -Wredundant-constraints -Wmissing-export-lists
-        -Wno-missing-signatures
+        -Wno-missing-signatures -Wunused-packages
 
     build-depends:
         base,
@@ -209,9 +201,6 @@ foreign-library apple
     if os(windows)
         options: standalone
 
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
-
 executable atc
     main-is:          Main.hs
     hs-source-dirs:   app
@@ -221,16 +210,13 @@ executable atc
     ghc-options:
         -Wall -Wno-x-partial -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints -Widentities
-        -Wmissing-export-lists -Wcpp-undef
+        -Wmissing-export-lists -Wcpp-undef -Wunused-packages
 
     build-depends:
         base,
         apple,
         optparse-applicative >=0.13.0.0,
         bytestring
-
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
 
 executable writeo
     main-is:          Main.hs
@@ -241,16 +227,13 @@ executable writeo
     ghc-options:
         -Wall -Wno-x-partial -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints -Widentities
-        -Wcpp-undef -Wmissing-export-lists
+        -Wcpp-undef -Wmissing-export-lists -Wunused-packages
 
     build-depends:
         base,
         as,
         optparse-applicative >=0.14.0.0,
         text
-
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
 
 executable arepl
     main-is:          Main.hs
@@ -262,6 +245,7 @@ executable arepl
         -Wincomplete-uni-patterns -Wincomplete-record-updates
         -Wredundant-constraints -Widentities -Wmissing-export-lists
         -Wcpp-undef -Wno-operator-whitespace-ext-conflict
+        -Wunused-packages
 
     build-depends:
         base,
@@ -279,9 +263,6 @@ executable arepl
         containers,
         split >=0.2.0.0
 
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
-
 test-suite apple-test
     type:               exitcode-stdio-1.0
     main-is:            Spec.hs
@@ -291,7 +272,7 @@ test-suite apple-test
         -threaded -rtsopts "-with-rtsopts=-N -k1k" -Wall
         -fno-warn-missing-signatures -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints -Widentities
-        -Wmissing-export-lists -Wcpp-undef
+        -Wmissing-export-lists -Wcpp-undef -Wunused-packages
 
     build-depends:
         base,
@@ -304,9 +285,6 @@ test-suite apple-test
         QuickCheck,
         tasty-quickcheck
 
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
-
 test-suite apple-o
     type:             exitcode-stdio-1.0
     main-is:          Test.hs
@@ -316,7 +294,7 @@ test-suite apple-o
         -rtsopts -with-rtsopts=-k1k -Wall
         -fno-warn-missing-signatures -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints -Widentities
-        -Wmissing-export-lists -Wcpp-undef
+        -Wmissing-export-lists -Wcpp-undef -Wunused-packages
 
     build-depends:
         base,
@@ -329,9 +307,6 @@ test-suite apple-o
         filepath,
         directory
 
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
-
 benchmark apple-bench
     type:               exitcode-stdio-1.0
     main-is:            Bench.hs
@@ -340,7 +315,7 @@ benchmark apple-bench
     ghc-options:
         -rtsopts -Wall -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints -Widentities
-        -Wmissing-export-lists -Wcpp-undef
+        -Wmissing-export-lists -Wcpp-undef -Wunused-packages
 
     build-depends:
         base,
@@ -351,6 +326,3 @@ benchmark apple-bench
         erf,
         hypergeometric >=0.1.2.0,
         deepseq
-
-    if impl(ghc >=8.10)
-        ghc-options: -Wunused-packages
