@@ -69,13 +69,13 @@ cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]
 cToIRM (Rof _ t ec s)        = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE ec):MJ (IR.IRel IEq (Reg t') 0) eL:L l:irs++[untick t', MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+    pure $ IR.MT t' (irE ec):MJ (IR.IRel IEq (Reg t') 0) eL:L l:irs++[untick t', MJ (IR.IRel IGt (Reg t') 0) l, L eL]
   where
     t'=ctemp t
 cToIRM (Rof1 _ t ec s)        = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE ec):L l:irs++[untick t', MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+    pure $ IR.MT t' (irE ec):L l:irs++[untick t', MJ (IR.IRel IGt (Reg t') 0) l, L eL]
   where
     t'=ctemp t
 cToIRM (For _ t el rel eu s) = do
@@ -93,19 +93,19 @@ cToIRM (F2or _ t el rel eu s s1) = do
 cToIRM (R2ofE _ t c s) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE c):MJ (IR.IRel IEq (Reg t') 0) eL:L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+    pure $ IR.MT t' (irE c):MJ (IR.IRel IEq (Reg t') 0) eL:L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGt (Reg t') 0) l, L eL]
   where
     t'=ctemp t
 cToIRM (R2of _ t c s s1) = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s; ir1 <- foldMapM cToIRM s1
-    pure $ IR.MT t' (irE c):MJ (IR.IRel IEq (Reg t') 0) eL:MJ (IR.IU IEven (Reg t')) l:ir1++untick t':IR.L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+    pure $ IR.MT t' (irE c):MJ (IR.IRel IEq (Reg t') 0) eL:MJ (IR.IU IEven (Reg t')) l:ir1++untick t':IR.L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGt (Reg t') 0) l, L eL]
   where
     t'=ctemp t
 cToIRM (R2ofO _ t c s s1) = do
-    l <- nextL; eL <- nextL
+    l <- nextL
     irs <- foldMapM cToIRM s; ir1 <- foldMapM cToIRM s1
-    pure $ IR.MT t' (irE c):MJ (IR.IRel IEq (Reg t') 0) eL:ir1++untick t':IR.L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGeq (Reg t') 0) l, L eL]
+    pure $ IR.MT t' (irE c):ir1++untick t':IR.L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGt (Reg t') 0) l]
   where
     t'=ctemp t
 cToIRM (F2orE _ t el rel eu s) = do
