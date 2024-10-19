@@ -209,7 +209,7 @@ te (Arr (i `Cons` _) _) = ipe i; te _ = False
 to (Arr (i `Cons` _) _) = ipo i; to _ = False
 nee (Arr sh _) = nzSh sh; nee _=False
 
-rof t = if ne t then Rof1 () else Rof ()
+rof t = if ne t then Rof1 () else Rof (); rof1 t = if n1 t then Rof1 () else Rof ()
 for t = if ne t then For1 () else For (); for1 t = if n1 t then For1 () else For ()
 forc t = if nec t then For1 () else For ()
 fors t = if nee t then For1 () else For ()
@@ -1671,11 +1671,12 @@ feval (Id _ (FoldOfZip zop op [p])) acc | tPs <- eAnn p, Just (tP, pSz) <- aRr t
     x <- rtemp tP
     i <- nI; szR <- nI
     (plPP, (lP, pR)) <- plA p
+    pD <- nI
     ss <- writeRF op [FT acc, x] (FT acc)
-    let step = mt (AElem pR 1 (Tmp i) lP pSz) x:ss
-        loop = for1 (eAnn p) i 1 ILt (Tmp szR) step
+    let step = mt (Raw pD 0 lP pSz) x:pD=:(Tmp pD+ConstI pSz):ss
+        loop = rof1 (eAnn p) i (Tmp szR-1) step
     sseed <- writeRF zop [x] (FT acc)
-    pure $ plPP$szR =: ev tPs (pR,lP):mt (AElem pR 1 0 lP pSz) x:sseed++[loop]
+    pure $ plPP$szR =: ev tPs (pR,lP):pD=:DP pR 1:mt (Raw pD 0 lP pSz) x:pD=:(Tmp pD+ConstI pSz):sseed++[loop]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) (FLit _ start)) (FLit _ end)) (ILit _ steps), ys])) acc | Just (tQ, qSz) <- aRr (eAnn ys) = do
     x <- nF; y <- rtemp tQ
     incrR <- nF; i <- nI
