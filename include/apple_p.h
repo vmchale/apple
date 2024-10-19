@@ -11,7 +11,7 @@ void paf(U xs) {
     pj(rnk);pf(" ");
     J t=1,d;
     DO(i,rnk,{d=dims[i];t*=d;pj(d);if (i!=rnk-1) {pf(",");}}) nl;
-    F* e=xs+(rnk+1)*sizeof(F);
+    F* e=xs+(rnk+1)*8;
     PA("%f",t,e);
 }
 
@@ -21,7 +21,7 @@ void pai(U xs) {
     pj(rnk);pf(" ");
     J t=1,d;
     DO(i,rnk,{d=dims[i];t*=d;pj(d);if (i!=rnk-1) {pf(",");}}) nl;
-    J* e=xs+(rnk+1)*sizeof(J);
+    J* e=xs+(rnk+1)*8;
     PA("%lld",t,e);
 }
 
