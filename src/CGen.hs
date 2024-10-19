@@ -27,7 +27,7 @@ instance Pretty CF where
                 <> foldMap f args
                 <> "R res;")
         where px CR="F"; px CI="J"; px CB="B"; px _="U"
-              ax Af=("poke_af"<>).parens;ax Ai=("poke_ai"<>).parens;ax Ab=error "not implemented.";ax _=id
+              ax Af=("poke_af"<>).parens;ax Ai=("poke_ai"<>).parens;ax Ab=("poke_ab"<>).parens;ax _=id
               d (t,var) = px t <+> l var <> "=" <> ax t (pretty var) <> ";"
               f (Af,var) = "free" <> parens (l var) <> ";"
               f (Ai,var) = "free" <> parens (l var) <> ";"

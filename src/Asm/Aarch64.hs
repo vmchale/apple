@@ -73,6 +73,15 @@ instance SIMD (V2Reg FAReg) where
 instance NFData AReg where
 instance NFData FAReg where
 
+class P32 a where
+    pw :: a -> Doc ann
+
+instance P32 AReg where
+    pw X0 = "w0"; pw X1 = "w1"; pw X2 = "w2"; pw X3 = "w3"; pw X4 = "w4"; pw X5 = "w5"; pw X6 = "w6"; pw X7 = "w7"
+    pw X8 = "w8"; pw X9 = "w9"; pw X10 = "w10"; pw X11 = "w11"; pw X12 = "w12"; pw X13 = "w13"; pw X14 = "w14"; pw X15 = "w15"
+    pw X16 = "w16"; pw X17 = "w17"; pw X18 = "w18"; pw X19 = "w19"; pw X20 = "w20"; pw X21 = "w21"; pw X22 = "w22"; pw X23 = "w23"
+    pw X24 = "w24"; pw X25 = "w25"; pw X26 = "w26"; pw X27 = "w27"; pw X28 = "w28"; pw X29 = "w29"; pw X30 = "w30"; pw SP = "sp"
+
 data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 | CArg7 | LR | FP | ASP
 -- r0-r7 used for return values as well
 
@@ -89,6 +98,17 @@ instance Pretty AbsReg where
     pretty CArg6    = "X6"
     pretty CArg7    = "X7"
     pretty FP       = "FP"
+
+instance P32 AbsReg where
+    pw (IReg i) = "W" <> pretty i
+    pw CArg0    = "W0"
+    pw CArg1    = "W1"
+    pw CArg2    = "W2"
+    pw CArg3    = "W3"
+    pw CArg4    = "W4"
+    pw CArg5    = "W5"
+    pw CArg6    = "W6"
+    pw CArg7    = "W7"
 
 type F2Abs = V2Reg FAbsReg
 
@@ -504,7 +524,7 @@ hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")
 pvd v = pv v <> ".2d"
 pvv v = pv v <> ".16b"; pvs v = pv v <> ".8b"
 
-ar2 r0 r1 = pretty r0 <> "," <+> pretty r1
+ar2 r0 r1 = pretty r0 <> "," <+> pretty r1; aw r a = pw r <> "," <+> pretty a
 ar3 r0 r1 r2 = pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2
 ar4 r0 r1 r2 r3 = pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3
 ri r u = pretty r <> "," <+> hexd u
@@ -513,7 +533,7 @@ av2 q0 q1 = pvd q0 <> "," <+> pvd q1
 v3 q0 q1 q2 = pvd q0 <> "," <+> pvd q1 <> "," <+> pvd q2
 qa q0 q1 a = pq q0 <> "," <+> pq q1 <> "," <+> pretty a
 
-instance (Pretty reg, Pretty freg, SIMD (V2Reg freg)) => Pretty (AArch64 reg freg a) where
+instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch64 reg freg a) where
     pretty (Label _ l)            = prettyLabel l <> ":"
     pretty isn = i4 (p4 isn)
       where
@@ -529,9 +549,9 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg)) => Pretty (AArch64 reg fre
         p4 (MovRR _ r0 r1)        = "mov" <+> ar2 r0 r1
         p4 (MovRC _ r u)          = "mov" <+> ri r u
         p4 (Ldr _ r a)            = "ldr" <+> ar2 r a
-        p4 (LdrB _ r a)           = "ldrb" <+> ar2 r a
+        p4 (LdrB _ r a)           = "ldrb" <+> aw r a
         p4 (Str _ r a)            = "str" <+> ar2 r a
-        p4 (StrB _ r a)           = "strb" <+> ar2 r a
+        p4 (StrB _ r a)           = "strb" <+> aw r a
         p4 (LdrD _ xr a)          = "ldr" <+> ar2 xr a
         p4 (StrD _ xr a)          = "str" <+> ar2 xr a
         p4 (AddRRS _ rD rS rS' s) = "add" <+> ar3 rD rS rS' <> "," <+> "LSL" <+> "#" <> pretty s
@@ -617,10 +637,10 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg)) => Pretty (AArch64 reg fre
         p4 (Ins _ v i r)          = "ins" <+> pvd v <> brackets (pretty i) <> "," <+> pretty r
         p4 (DupD _ v r)           = "dup" <+> pvd v <> "," <+> pvd (V2Reg r) <> "[0]"
 
-instance (Pretty reg, Pretty freg, SIMD (V2Reg freg)) => Show (AArch64 reg freg a) where show=show.pretty
+instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty
 
-prettyLive :: (Pretty reg, Pretty freg, SIMD (V2Reg freg), Pretty o) => AArch64 reg freg o -> Doc ann
+prettyLive :: (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg, Pretty o) => AArch64 reg freg o -> Doc ann
 prettyLive r = pretty r <+> pretty (ann r)
 
-prettyDebug :: (Pretty freg, Pretty reg, SIMD (V2Reg freg), Pretty o) => [AArch64 reg freg o] -> Doc ann
+prettyDebug :: (Pretty freg, Pretty reg, SIMD (V2Reg freg), P32 reg, Pretty o) => [AArch64 reg freg o] -> Doc ann
 prettyDebug = prettyLines . fmap prettyLive
