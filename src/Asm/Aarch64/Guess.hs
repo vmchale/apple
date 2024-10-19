@@ -28,4 +28,5 @@ collectS (Fsqrt2 _ v _)   = ss v
 collectS (Fneg2 _ v _)    = ss v
 collectS (Ldp2 _ q0 q1 _) = S.fromList (simd2<$>[q0,q1])
 collectS (Fmla _ v _ _)   = ss v
+collectS (Fmls _ v _ _)   = ss v
 collectS _                = S.empty
