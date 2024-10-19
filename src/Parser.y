@@ -27,7 +27,7 @@ import Prettyprinter (Pretty (pretty), (<+>), concatWith, squotes)
 %name parseE E
 %tokentype { Tok }
 %error { parseErr }
-%errorhandlertype explist
+%error.expected
 %monad { Parse } { (>>=) } { pure }
 %lexer { lift alexMonadScan >>= } { EOF _ }
 
@@ -336,8 +336,8 @@ E :: { E AlexPosn }
 
 {
 
-parseErr :: (Tok, [String]) -> Parse a
-parseErr = throwError . uncurry Unexpected
+parseErr :: Tok -> [String] -> Parse a
+parseErr tok = throwError . Unexpected tok
 
 data Bnd = L | LL | D
 
