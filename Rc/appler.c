@@ -15,16 +15,13 @@
 
 // http://adv-r.had.co.nz/C-interface.html
 
-#define SZ sizeof
 #define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
 #define DA(n,x,rnk,t,ra) J* i_p=x;J rnk=i_p[0];SEXP ds=PROTECT(allocVector(INTSXP,(int)rnk));J n=1;DO(i,rnk,n*=i_p[i+1];INTEGER(ds)[i]=(int)i_p[i+1]);SEXP ra=PROTECT(allocArray(t,ds));
 
-#define ZU static U
 #define ZR static SEXP
 
 TS AppleC {U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;} AppleC;
 
-Z void freety(FnTy* x){free(x->args);free(x);}
 Z void clear(SEXP jit) {
     AppleC* c=(AppleC*)R_ExternalPtrAddr(jit);
     munmap(c->code,c->code_sz);
@@ -88,12 +85,12 @@ SEXP run_R(SEXP args){
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);
         switch(ty->args[k]){
-            C(FA, U* x=alloca(SZ(U));*x=fr(arg);fs|=1<<k;vals[k]=x;)
-            C(IA, U* x=alloca(SZ(U));*x=fi(arg);fs|=1<<k;vals[k]=x;)
-            C(BA, U* x=alloca(SZ(U));*x=fb(arg);fs|=1<<k;vals[k]=x;)
-            C(F_t, F* xf=alloca(SZ(F));*xf=asReal(arg);vals[k]=xf;)
-            C(I_t, J* xi=alloca(SZ(J));*xi=(J)asInteger(arg);vals[k]=xi;)
-            C(B_t, B* xb=alloca(SZ(B));*xb=(B)asLogical(arg);vals[k]=xb;)
+            C(FA,SA(U,x);*x=fr(arg);fs|=1<<k;vals[k]=x;)
+            C(IA,SA(U,x);*x=fi(arg);fs|=1<<k;vals[k]=x;)
+            C(BA,SA(U,x);*x=fb(arg);fs|=1<<k;vals[k]=x;)
+            C(F_t,SA(F,xf);*xf=asReal(arg);vals[k]=xf;)
+            C(I_t,SA(J,xi);*xi=(J)asInteger(arg);vals[k]=xi;)
+            C(B_t,SA(B,xb);*xb=(B)asLogical(arg);vals[k]=xb;)
         }
     }
     ffi_call(cif,fp,ret,vals);

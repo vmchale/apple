@@ -1,8 +1,5 @@
-#include<stdint.h>
-typedef intptr_t P;typedef char* T;typedef size_t S;typedef void* U;
-
+#include"m.h"
 #define K const
-#define TS typedef struct
 
 // exp, log, pow can be NULL on X86
 TS JC {P ma; P free;P r;P xr;P e;P log;P pow;} JC;
@@ -22,6 +19,8 @@ T apple_print_ts_sz(K char*, S*, T*);
 enum apple_t{I_t,F_t,B_t,IA,FA,BA};
 
 TS FnTy {int argc; enum apple_t* args; enum apple_t res;} FnTy;
+
+Z void freety(FnTy* x){free(x->args);free(x);}
 
 // NULL on error
 FnTy* apple_ty(K char*, T*);
