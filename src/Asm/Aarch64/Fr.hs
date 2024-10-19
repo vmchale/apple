@@ -27,7 +27,7 @@ frameC = concat.go IS.empty IS.empty IS.empty
                 qs = handleD0 cf $ fmap fi f2s
                 save = pus cs; restore = pos cs
                 saved = puds ds; restored = pods ds
-                saveq = puxs (ds++qs); restorex = poxs (ds++qs)
+                saveq = puxs qs; restorex = poxs qs
             in (save ++ saved ++ saveq ++ void isn0:void isn1:restorex ++ restored ++ restore) : go s'' fs'' vs' isns
           go s fs vs (isn:isns) =
             let i = copoint isn
