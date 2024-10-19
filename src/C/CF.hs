@@ -109,19 +109,19 @@ tieBranch i f ss = do
             in ((hi:),) $ case uncons ss' of
                 Nothing       -> ss'++[l']
                 Just (hh, bs) -> let h' = fmap (addH i) hh in h':bs++[l']
-        Nothing -> (id, preSs)
+        Nothing -> (id, [])
 
 tieBody :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
 tieBody h f ss = do
     preSs <- addCF ss
-    case uncons preSs of
+    pure $ case uncons preSs of
         Just (i1, _) ->
             let hi=node (lann i1)
                 (ss',l) = unsnoc preSs
                 l'=fmap (mC ((h:).f)) l
                 ss''=ss'++[l']
-            in pure ((hi:), ss'')
-        Nothing -> pure (id, [])
+            in ((hi:), ss'')
+        Nothing -> (id, [])
 
 -- | Pair 'CS with a unique node name and a list of all possible
 -- destinations.
