@@ -1020,14 +1020,14 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
                           tdi=:(Tmp td+(Tmp io*mE+Tmp jo)*8)
                         , aid=:(Tmp aRd+(Tmp io*mE+Tmp ko)*8)
                         , For1 () 1 iii 0 ILt ɴE [
-                              For1 () 1 ki 0 ILt ɴE [
                               bid=:(Tmp bRd+(Tmp ko*nE+Tmp jo)*8)
-                                , For1 () 1 ji 0 ILt ɴE [
+                              , For1 () 1 ki 0 ILt ɴE [
+                                      For1 () 1 ji 0 ILt ɴE [
                                         let z=Raw tdi (Tmp ji) (Just aL) 8 in
                                         WrF () z (FAt (Raw aid (Tmp ki) lA 8)*FAt (Raw bid (Tmp ji) lB 8)+FAt z)
-                                      , bid=:(Tmp bid+oE*8)
-                                      ]
-                            ]
+                                    ]
+                              , bid=:(Tmp bid+oE*8)
+                              ]
                             , tdi=:(Tmp tdi+mE*8)
                             , aid=:(Tmp aid+mE*8)
                         ]
