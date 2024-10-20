@@ -1006,7 +1006,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     tA=eAnn a; tB=eAnn b
 -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (_, [_,o]) <- tIx tB
-                                              , m `rem` 32 == 0 && o `rem` 32 == 0 = do
+                                              , m `rem` ɴ == 0 && o `rem` ɴ == 0 = do
     aL <- nextArr t
     i₀ <- nI; j₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI
     aRd <- nI; bRd <- nI; td <- nI
@@ -1014,10 +1014,10 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
     (plB, (lB, bR)) <- plA b
     let mE=ConstI m;nE=ConstI n;oE=ConstI o
         zero=For () l 0 ILt (mE*oE) [WrF () (Raw td (Tmp l) lA 8) 0]
-        loop=For1 () ɴ i₀ 0 ILt mE
-                [For1 () ɴ j₀ 0 ILt oE
-                    [For1 () 1 i (Tmp i₀) ILt (Tmp i₀+ɴ)
-                        [For1 () 1 j (Tmp j₀) ILt (Tmp j₀+ɴ)
+        loop=For1 () ɴE i₀ 0 ILt mE
+                [For1 () ɴE j₀ 0 ILt oE
+                    [For1 () 1 i (Tmp i₀) ILt (Tmp i₀+ɴE)
+                        [For1 () 1 j (Tmp j₀) ILt (Tmp j₀+ɴE)
                             [For1 () 1 k 0 ILt nE $
                                 let zA=Raw td (Tmp i*oE+Tmp j) (Just aL) 8 in
                                 [ WrF () zA (FAt (Raw aRd (Tmp i*nE+Tmp k) lA 8)*FAt (Raw bRd (Tmp k*nE+Tmp j) lB 8)+FAt zA) ]
@@ -1032,7 +1032,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
         :[zero, loop])
   where
     tA=eAnn a;tB=eAnn b
-    ɴ=32
+    ɴ=32; ɴE=ConstI ɴ
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF
