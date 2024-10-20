@@ -66,7 +66,7 @@ initLiveness = IM.fromList . go where
     go (F2orE ann _ _ _ _ ss:cs)    = (node ann, (ann, emptyL)):go ss++go cs
     go (F2or ann _ _ _ _ ss s1:cs)  = (node ann, (ann, emptyL)):go s1++go ss++go cs
     go (F2orO ann _ _ _ _ ss s1:cs) = (node ann, (ann, emptyL)):go s1++go ss++go cs
-    go (For1 ann _ _ _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
+    go (For1 ann _ _ _ _ _ ss:cs)   = (node ann, (ann, emptyL)):go ss++go cs
     go (Rof ann _ _ ss:cs)          = (node ann, (ann, emptyL)):go ss++go cs
     go (Rof1 ann _ _ ss:cs)         = (node ann, (ann, emptyL)):go ss++go cs
     go (R2of ann _ _ ss s1:cs)      = (node ann, (ann, emptyL)):go s1++go ss++go cs
@@ -84,7 +84,7 @@ inspectOrder (For ann _ _ _ _ ss:cs)      = node ann:inspectOrder ss++inspectOrd
 inspectOrder (F2orE ann _ _ _ _ ss:cs)    = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (F2or ann _ _ _ _ ss s1:cs)  = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
 inspectOrder (F2orO ann _ _ _ _ ss s1:cs) = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
-inspectOrder (For1 ann _ _ _ _ ss:cs)     = node ann:inspectOrder ss++inspectOrder cs
+inspectOrder (For1 ann _ _ _ _ _ ss:cs)   = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (Rof ann _ _ ss:cs)          = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (Rof1 ann _ _ ss:cs)         = node ann:inspectOrder ss++inspectOrder cs
 inspectOrder (R2of ann _ _ ss s1:cs)      = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
@@ -211,11 +211,11 @@ addCF ((R2ofO _ t ec ss s1):stmts) = do
     pure $ R2ofO (ControlAnn i (f (h (h1 []))) udϵ) t ec ss'' s1':stmts'
   where
     udϵ = UD (uE ec) IS.empty IS.empty IS.empty
-addCF ((For1 _ t el c eu ss):stmts) = do
+addCF ((For1 _ tk t el c eu ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
     (h, ss') <- tieBody i f ss
-    pure $ For1 (ControlAnn i (f (h [])) udϵ) t el c eu ss':stmts'
+    pure $ For1 (ControlAnn i (f (h [])) udϵ) tk t el c eu ss':stmts'
   where
     udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
 addCF ((Rof _ t ec ss):stmts) = do
@@ -364,7 +364,7 @@ brs (For _ _ _ _ _ ss:stmts)      = brs ss *> brs stmts
 brs (F2orE _ _ _ _ _ ss:stmts)    = brs ss *> brs stmts
 brs (F2or _ _ _ _ _ ss s1:stmts)  = brs ss *> brs s1 *> brs stmts
 brs (F2orO _ _ _ _ _ ss s1:stmts) = brs ss *> brs s1 *> brs stmts
-brs (For1 _ _ _ _ _ ss:stmts)     = brs ss *> brs stmts
+brs (For1 _ _ _ _ _ _ ss:stmts)   = brs ss *> brs stmts
 brs (Rof _ _ _ ss:stmts)          = brs ss *> brs stmts
 brs (Rof1 _ _ _ ss:stmts)         = brs ss *> brs stmts
 brs (R2of _ _ _ ss s1:stmts)      = brs ss *> brs s1 *> brs stmts

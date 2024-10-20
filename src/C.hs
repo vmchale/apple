@@ -164,7 +164,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | R2of { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a], body1 :: [CS a] }
           | R2ofE { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
           | R2ofO { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a], body1 :: [CS a] }
-          | For1 { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
+          | For1 { lann :: a, tck :: CE, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
           | F2or { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a], body1 :: [CS a] }
           | F2orE { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
           | F2orO { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a], body1 :: [CS a]}
@@ -228,7 +228,7 @@ pL f (Rof1 l t ec ss)        = "rof-1" <> parens (pretty t <> "≔" <> pretty ec
 pL f (R2of l t ec ss ss1)    = "rof" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "-=2") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <#> lbrace <#> indent 4 (pCS f ss1) <#> rbrace <> f l
 pL f (R2ofO l t ec ss ss1)   = "rof-o" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "-=2") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <#> lbrace <#> indent 4 (pCS f ss1) <#> rbrace <> f l
 pL f (R2ofE l t ec ss)       = "rof-e" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "-=2") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
-pL f (For1 l t el rel eu ss) = "for-1" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (For1 l tk t el rel eu ss) = "for-1" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=" <> pretty tk) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (F2or l t el rel eu ss ss1) = "for" <> parens (pretty t <> comma <+> pretty t <> "=" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=2") <#> lbrace <#> indent 4 (pCS f ss) <#> rbrace <#> lbrace <#> indent 4 (pCS f ss1) <#> rbrace <> f l
 pL f (F2orE l t el rel eu ss) = "fore" <> parens (pretty t <> comma <+> pretty t <> "=" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=2") <#> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (F2orO l t el rel eu ss ss1) = "for-o" <> parens (pretty t <> comma <+> pretty t <> "=" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=2") <#> lbrace <#> indent 4 (pCS f ss) <#> rbrace <#> lbrace <#> indent 4 (pCS f ss1) <#> rbrace <> f l
