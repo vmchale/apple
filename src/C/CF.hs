@@ -320,6 +320,7 @@ uses (MT _ _ e)            = uE e
 uses (MB _ _ e)            = uB e
 uses Comb{}                = IS.empty
 uses Fill{}                = IS.empty
+uses (CD _ a)              = uA a
 uses (WrP _ a e)           = uA a<>uB e
 uses Rnd{}                 = IS.empty
 uses FRnd{}                = IS.empty

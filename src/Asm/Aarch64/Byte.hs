@@ -287,7 +287,12 @@ asm ix st (LdrRL _ r l:asms) =
     let p = pI$arr l st
         w0=p .&. 0xffff; w1=(p .&. 0xffff0000) `lsr` 16; w2=(p .&. 0xFFFF00000000) `lsr` 32; w3=(p .&. 0xFFFF000000000000) `lsr` 48
     in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
+asm ix st (Prfm _ pr (BI rb ri s):asms) = [0xf8, 0x5 `shiftL` 5 .|. be ri, 0b011 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0b10 `shiftL` 2 .|. be rb `shiftR` 3, be rb `shiftL` 5 .|. rpf pr]:asm (ix+4) st asms
 asm _ _ (isn:_) = error (show isn)
+
+rpf :: Pfop -> Word8
+rpf (Pfop PLD L1 Keep) = 0b0
+rpf (Pfop PLD L1 Strm) = 0b1
 
 m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
 m4 r a = let w0=a .&. 0xffff; w1=(a .&. 0xffff0000) `lsr` 16; w2=(a .&. 0xFFFF00000000) `lsr` 32; w3=(a .&. 0xFFFF000000000000) `lsr` 48

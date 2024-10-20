@@ -200,6 +200,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | FRnd { lann :: a, frndDest :: FTemp }
           | Def { lann :: a, fLabel :: Label, body :: [CS a] }
           | G { lann :: a, gt :: Label, retLabel :: Label }
+          | CD { lann :: a, dtgt :: ArrAcc }
           deriving Functor
           -- TODO: PlDims cause we have diml
 
@@ -254,6 +255,7 @@ pL f (Def la l cs)         = hardline <> pS l <> ":" <#> indent 4 (pCS f cs) <> 
 pL f (G la l _)            = "GOTO" <+> pS l <> f la
 pL f (Comb l s t r)        = parens ("combine" <> pretty s <+> pretty t <> "," <+> pretty r) <> f l
 pL f (Fill l r t)          = parens ("fill" <+> pretty r <+> brackets (pretty t)) <> f l
+pL f (CD l a) = parens ("prep" <+> pretty a) <> f l
 
 pS :: Label -> Doc ann
 pS l = "fun_" <> pretty l

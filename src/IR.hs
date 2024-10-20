@@ -87,6 +87,7 @@ data Stmt = L Label
           | Cpy1 AE AE Exp
           | C Label | R Label
           | IRnd Temp | FRnd FTemp
+          | CD AE
 
 instance Pretty Stmt where
     pretty (L l)         = hardline <> prettyLabel l <> ":"
@@ -117,6 +118,7 @@ instance Pretty Stmt where
     pretty (Cset t e)    = parens ("cset" <+> pretty t <+> "<-" <+> pretty e)
     pretty (S2 o t r)    = parens ("comb" <> pretty o <+> pretty t <+> pretty r)
     pretty (Fill2 r t)   = parens ("fill" <+> pretty r <> "," <+> pretty t)
+    pretty (CD a)        = parens ("pre" <+> pretty a)
 
 instance Show Stmt where show = show . pretty
 

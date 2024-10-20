@@ -7,6 +7,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , Addr (..)
                    , Cond (..)
                    , Shift (..), ISl (..), BM (..)
+                   , Pfop (..), TT (..), PT (..), CT (..)
                    , AbsReg (..), FAbsReg (..), F2Abs
                    , AReg (..), FAReg (..), V2Reg (..)
                    , SIMD (..)
@@ -20,10 +21,10 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
-import           Control.DeepSeq   (NFData (..), rwhnf)
+import           Control.DeepSeq   (NFData (..), rwhnf,deepseq)
 import           Data.Copointed
 import           Data.Int          (Int16)
-import           Data.Word         (Word16, Word32, Word8)
+import           Data.Word         (Word16, Word8)
 import           GHC.Generics      (Generic)
 import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
@@ -150,13 +151,19 @@ fToInt FArg6    = 16
 fToInt FArg7    = 17
 fToInt (FReg i) = 19+i
 
-data PT = PLD | PLI | PST; data CT=L1|L2|L3
+data TT = PLD | PLI | PST; data CT=L1|L2|L3; data PT=Keep|Strm
 
 instance NFData PT where rnf=rwhnf
+instance NFData TT where rnf=rwhnf
 instance NFData CT where rnf=rwhnf
 
-instance Pretty PT where pretty PLD="pld"; pretty PLI="pli"; pretty PST="pst"
+instance Pretty TT where pretty PLD="pld"; pretty PLI="pli"; pretty PST="pst"
 instance Pretty CT where pretty L1="l1"; pretty L2="l2"; pretty L3="l3"
+instance Pretty PT where pretty Keep="keep"; pretty Strm="strm"
+
+data Pfop=Pfop !TT !CT !PT
+instance Pretty Pfop where pretty (Pfop t c p) = pretty t <> pretty c <> pretty p
+instance NFData Pfop where rnf (Pfop t c p) = t `deepseq` c `deepseq` p `deepseq` ()
 
 data Shift = Zero | Three | Four
 
@@ -304,8 +311,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
                          | EorI { ann :: a, rDest, rSrc :: reg, imm :: BM }
                          | Bfc { ann :: a, rDest :: reg, lsb :: Word8, width :: Word8 }
-                         | Prfm { ann :: a, ptt :: !PT, ctt :: !CT, imm19 :: !Word32 }
-                         -- RPRFM
+                         | Prfm { ann :: a, pro :: !Pfop, aSrc :: Addr reg }
                          deriving (Functor, Generic)
 
 instance (NFData r, NFData d, NFData a) => NFData (AArch64 r d a) where
@@ -412,6 +418,7 @@ mapR f (Ins l v i r)         = Ins l v i (f r)
 mapR _ (DupD l v r)          = DupD l v r
 mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
+mapR f (Prfm l po r) = Prfm l po (f<$>r)
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -513,6 +520,7 @@ mapFR f (Ins l v i r)         = Ins l (f<$>v) i r
 mapFR f (DupD l v r)          = DupD l (f<$>v) (f r)
 mapFR f (ZeroD l d)           = ZeroD l (f d)
 mapFR f (EorD l d0 d1 d2)     = EorD l (f d0) (f d1) (f d2)
+mapFR _ (Prfm l po a) = Prfm l po a
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -652,6 +660,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Dup _ v r)             = "dup" <+> pvd v <> "," <+> pretty r
         p4 (Ins _ v i r)           = "ins" <+> pvd v <> brackets (pretty i) <> "," <+> pretty r
         p4 (DupD _ v r)            = "dup" <+> pvd v <> "," <+> pvd (V2Reg r) <> "[0]"
+        p4 (Prfm _ po r)       = "prfm" <+> ar2 po r
 
 instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty
 
