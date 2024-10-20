@@ -20,10 +20,10 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
-import           Control.DeepSeq   (NFData (..))
+import           Control.DeepSeq   (NFData (..), rwhnf)
 import           Data.Copointed
 import           Data.Int          (Int16)
-import           Data.Word         (Word16, Word8)
+import           Data.Word         (Word16, Word32, Word8)
 import           GHC.Generics      (Generic)
 import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
@@ -150,16 +150,24 @@ fToInt FArg6    = 16
 fToInt FArg7    = 17
 fToInt (FReg i) = 19+i
 
+data PT = PLD | PLI | PST; data CT=L1|L2|L3
+
+instance NFData PT where rnf=rwhnf
+instance NFData CT where rnf=rwhnf
+
+instance Pretty PT where pretty PLD="pld"; pretty PLI="pli"; pretty PST="pst"
+instance Pretty CT where pretty L1="l1"; pretty L2="l2"; pretty L3="l3"
+
 data Shift = Zero | Three | Four
 
-instance NFData Shift where rnf Zero=(); rnf Three=(); rnf Four=()
+instance NFData Shift where rnf=rwhnf
 
 instance Pretty Shift where
     pretty Zero = "#0"; pretty Three = "#3"; pretty Four = "#4"
 
 data ISl = IZero | Twelve
 
-instance NFData ISl where rnf IZero=(); rnf Twelve=()
+instance NFData ISl where rnf=rwhnf
 
 instance Pretty ISl where pretty IZero = "#0"; pretty Twelve="#0xc"
 
@@ -296,6 +304,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
                          | EorI { ann :: a, rDest, rSrc :: reg, imm :: BM }
                          | Bfc { ann :: a, rDest :: reg, lsb :: Word8, width :: Word8 }
+                         | Prfm { ann :: a, ptt :: !PT, ctt :: !CT, imm19 :: !Word32 }
+                         -- RPRFM
                          deriving (Functor, Generic)
 
 instance (NFData r, NFData d, NFData a) => NFData (AArch64 r d a) where
