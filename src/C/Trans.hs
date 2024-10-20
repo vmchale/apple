@@ -1009,7 +1009,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
                                               , m `rem` ɴ == 0 && n `rem` ɴ == 0 && o `rem` ɴ == 0 = do
     aL <- nextArr t
     l <- nI; io <- nI; jo <- nI; ko <- nI; iii <- nI; ji <- nI; ki <- nI
-    aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI
+    aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI; zA <- nF
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
     let mE=ConstI m;nE=ConstI n;oE=ConstI o
@@ -1022,9 +1022,10 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
                         , For1 () 1 iii 0 ILt ɴE [
                               bid=:(Tmp bRd+(Tmp ko*nE+Tmp jo)*8)
                             , For1 () 1 ki 0 ILt ɴE [
-                                  For1 () 1 ji 0 ILt ɴE [
+                                  MX () zA (FAt (Raw aid (Tmp ki) lA 8))
+                                , For1 () 1 ji 0 ILt ɴE [
                                     let z=Raw tdi (Tmp ji) (Just aL) 8 in
-                                    WrF () z (FAt (Raw aid (Tmp ki) lA 8)*FAt (Raw bid (Tmp ji) lB 8)+FAt z)
+                                    WrF () z (FTmp zA*FAt (Raw bid (Tmp ji) lB 8)+FAt z)
                                   ]
                                 , bid=:(Tmp bid+oE*8)
                               ]
