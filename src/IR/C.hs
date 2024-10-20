@@ -120,10 +120,10 @@ cToIRM (F2orO _ t el rel eu s s1) = do
     pure $ IR.MT t' (irE el):ir1++tick t':L l:irs++[IR.MT t' (Reg t'+2), MJ (IR.IRel rel (Reg t') (irE eu)) l]
   where
     t'=ctemp t
-cToIRM (For1 _ t el rel eu s) = do
+cToIRM (For1 _ tk t el rel eu s) = do
     l <- nextL
     irs <- foldMapM cToIRM s
-    pure $ IR.MT t' (irE el):L l:irs++[tick t', MJ (IR.IRel rel (Reg t') (irE eu)) l]
+    pure $ IR.MT t' (irE el):L l:irs++[IR.MT t' (Reg t'+irE tk), MJ (IR.IRel rel (Reg t') (irE eu)) l]
   where
     t'=ctemp t
 cToIRM (While _ t rel eb s) = do
