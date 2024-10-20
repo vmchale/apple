@@ -946,8 +946,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
                         [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (Raw xRd (Tmp j) lX 8)))) ]
                         [ MX () zs (FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
                   , Comb () Op.FPlus z0 z
-                  -- TODO: don't need zs if even
-                  , WrF () (Raw td (Tmp i) (Just aL) 8) et
+                  , WrF () (Raw td 0 (Just aL) 8) et, td+=8
                   ]
     pure (Just aL,
         plAA$
@@ -1005,7 +1004,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     tA=eAnn a; tB=eAnn b
 -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
 -- FIXME: only works on square matrices
-aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (_, [_,o]) <- tIx tB, n `rem` 2 == 0 = do
+aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (_, [_,o]) <- tIx tB, n `rem` 2 == 0 && m==n && n==o = do
     aL <- nextArr t
     l <- nI; io <- nI; jo <- nI; ko <- nI; ji <- nI
     aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI; zA <- nF2; z0 <- nF; zi <- nF2
