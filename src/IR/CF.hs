@@ -187,6 +187,8 @@ uses (WrB a e)      = uA a<>uE e
 uses S2{}           = IS.empty
 uses Fill2{}        = IS.empty
 uses (CD a)         = uA a
+uses (CS a)         = uA a
+uses (WS a)         = uA a
 uses (Sa8 _ e)      = uE e
 uses (Pop8 e)       = uE e
 uses (Sa _ e)       = uE e
@@ -237,6 +239,8 @@ usesF (Cpy1 a0 a1 e) = uAF a0<>uAF a1<>uFF e
 usesF (S2 _ _ r)     = f2is r
 usesF (Fill2 _ r)    = fsingleton r
 usesF CD{} = IS.empty
+usesF CS{} = IS.empty
+usesF WS{} = IS.empty
 
 defsF (MX t _)      = fsingleton t
 defsF (MX2 t _)     = f2is t
