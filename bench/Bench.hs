@@ -67,6 +67,7 @@ main = do
     dp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/dotprod.🍏"
     v <- fmap aaa . leakFp =<< BSL.readFile "test/data/vb.🍏"
     mul <- fmap aaa.leakFp =<< BSL.readFile "test/data/mul.🍏"
+    smul <- fmap aaa.leakFp =<< BSL.readFile "test/data/sizedMul.🍎"
     mulT <- fmap aaa.leakFp =<< BSL.readFile "test/data/mulT.🍏"
     vr <- fmap aaa . leakFp =<< BSL.readFile "test/data/vmul.🍏"
     mulrank <- fmap aaa . leakFp =<< BSL.readFile "test/examples/mul.🍏"
@@ -137,6 +138,7 @@ main = do
                       , bench "window" $ nfIO (do {p <- withForeignPtr f wMax; free p})
                       , bench "vmul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> withForeignPtr va $ \vPtr -> v mPtr vPtr; free p})
                       , bench "mul" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> mul mPtr mPtr; free p})
+                      , bench "mul (sized)" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> smul mPtr mPtr; free p})
                       , bench "vmul (rank)" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> withForeignPtr va $ \vPtr -> vr mPtr vPtr; free p})
                       , bench "mul (rank)" $ nfIO (do {p <- withForeignPtr m $ \mPtr -> mulrank mPtr mPtr; free p})
                       , bench "mul-of-transp" $ nfIO (do {p <- withForeignPtr m $ \mPtr ->mulT mPtr mPtr; free p})
@@ -185,7 +187,7 @@ main = do
               pure (iPtr,fPtr)
           simdEnv = do
               isp <- aAF (AA 1 [100000] (replicate 100000 (1::Int64)))
-              mPtr <- aAF (AA 2 [500,500] (replicate 250000 (0.002::Double)))
+              mPtr <- aAF (AA 2 [1024,1024] (replicate 1048576 (0.002::Double)))
               vPtr <- aAF (AA 1 [500] (replicate 500 (3::Double)))
               pure (isp, mPtr, vPtr)
           xorEnv = do
