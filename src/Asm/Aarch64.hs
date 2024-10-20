@@ -249,8 +249,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Madd { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
                          | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
                          | Sdiv { ann :: a, rDest, rSrc1, rSrc2 :: reg }
-                         | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16, l12 :: !ISl }
-                         | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16, l12 :: !ISl }
+                         | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16, s12 :: !ISl }
+                         | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16, s12 :: !ISl }
                          | SubsRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
                          | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
                          | Asr { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
