@@ -187,7 +187,7 @@ main = do
               pure (iPtr,fPtr)
           simdEnv = do
               isp <- aAF (AA 1 [100000] (replicate 100000 (1::Int64)))
-              mPtr <- aAF (AA 2 [128,128] (replicate 16384 (0.002::Double)))
+              mPtr <- aAF (AA 2 [1024,1024] (replicate 1048576 (0.002::Double)))
               vPtr <- aAF (AA 1 [500] (replicate 500 (3::Double)))
               pure (isp, mPtr, vPtr)
           xorEnv = do
