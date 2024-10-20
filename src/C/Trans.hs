@@ -987,7 +987,6 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     (plB, (lB, bR)) <- plA b
     (prologue, et, ~(Just zs)) <- if te tB then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop=for tA i 0 ILt (Tmp m)
-    -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
                 [forc tB j 0 ILt (Tmp o) $ prologue
                     [ MX2 () z (ConstF (0,0)),
                         f2or tB k 0 ILt (Tmp n)
@@ -1005,26 +1004,28 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
   where
     tA=eAnn a; tB=eAnn b
 -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
-aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (_, [_,o]) <- tIx tB
-                                              , n `rem` ɴc == 0 = do
+-- FIXME: only works on square matrices
+aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (_, [_,o]) <- tIx tB, n `rem` 2 == 0 = do
     aL <- nextArr t
     l <- nI; io <- nI; jo <- nI; ko <- nI; ji <- nI
     aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI; zA <- nF2; z0 <- nF; zi <- nF2
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
-    let mE=ConstI m;nE=ConstI n;oE=ConstI o
+    let ɴc=o; ɴcE=ConstI ɴc
+        -- NC=whole matrix? lol (might depend on m (rows)?)
+        mE=ConstI m;nE=ConstI n;oE=ConstI o
         zero=For () l 0 ILt (mE*oE) [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
+        -- TODO: when ɴᴄ=whole column, jo=0
         loop=For1 () 1 io 0 ILt mE [
                 For1 () ɴcE jo 0 ILt oE [
-                      tdi=:(Tmp td+(Tmp io*mE+Tmp jo)*8)
+                      tdi=:(Tmp td+(Tmp io*nE+Tmp jo)*8)
                     , For1 () 1 ko 0 ILt nE [
                           aid=:(Tmp aRd+(Tmp io*mE+Tmp ko)*8)
                         , bid=:(Tmp bRd+(Tmp ko*nE+Tmp jo)*8)
                         , MX () z0 (FAt (Raw aid 0 lA 8)), Fill () zA z0
                         , For1 () 2 ji 0 ILt ɴcE $
                             let z=Raw tdi (Tmp ji) (Just aL) 8
-                            in [MX2 () zi (FAt z), Wr2F () z (FBin FPlus (FTmp zi) (FBin FTimes (FTmp zA) (FAt (Raw bid (Tmp ji) lB 8))))
-                        ]
+                            in [MX2 () zi (FAt z), Wr2F () z (FBin FPlus (FTmp zi) (FBin FTimes (FTmp zA) (FAt (Raw bid (Tmp ji) lB 8))))]
                     ]
                 ]
             ]
@@ -1035,7 +1036,6 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
         :[zero, loop])
   where
     tA=eAnn a;tB=eAnn b
-    ɴc=512; ɴcE=ConstI ɴc
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF
