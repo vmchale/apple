@@ -53,3 +53,7 @@ assert not(any_v(np.array([False,False,False])))
 
 prime_mask=apple.jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))))'(irange 2 N 1)")
 assert (prime_mask(9)==np.array([True,True,False,True,False,True,False,False])).all()
+
+N=1024; bs=np.random.rand(N,N)
+mul=apple.jit(f"[(x::Arr ({N}×{N}) float)%.(y::Arr ({N}×{N}) float)]")
+assert (bs@bs==mul(bs,bs)).all()
