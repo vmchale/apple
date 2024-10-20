@@ -69,6 +69,7 @@ mapF f (MX t e)       = MX (f t) (mapFF f e)
 mapF f (MX2 t e)      = MX2 (view f t) (mapFF2 f e)
 mapF f (S2 o t r)     = S2 o (f t) (view f r)
 mapF f (Fill2 r t)    = Fill2 (view f r) (f t)
+mapF _ s@CD{}         = s
 mapF _ s@L{}          = s
 mapF _ s@C{}          = s
 mapF _ s@R{}          = s
