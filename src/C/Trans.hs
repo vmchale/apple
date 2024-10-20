@@ -1009,7 +1009,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
                                               , n `rem` ɴc == 0 = do
     aL <- nextArr t
     l <- nI; io <- nI; jo <- nI; ko <- nI; ji <- nI
-    aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI; zA <- nF2; z0 <- nF
+    aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI; zA <- nF2; z0 <- nF; zi <- nF2
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
     let mE=ConstI m;nE=ConstI n;oE=ConstI o
@@ -1021,9 +1021,9 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
                           aid=:(Tmp aRd+(Tmp io*mE+Tmp ko)*8)
                         , bid=:(Tmp bRd+(Tmp ko*nE+Tmp jo)*8)
                         , MX () z0 (FAt (Raw aid 0 lA 8)), Fill () zA z0
-                        , For1 () 2 ji 0 ILt ɴcE [
+                        , For1 () 2 ji 0 ILt ɴcE $
                             let z=Raw tdi (Tmp ji) (Just aL) 8
-                            in Wr2F () z (FBin FPlus (FBin FTimes (FTmp zA) (FAt (Raw bid (Tmp ji) lB 8))) (FAt z))
+                            in [MX2 () zi (FAt z), Wr2F () z (FBin FPlus (FTmp zi) (FBin FTimes (FTmp zA) (FAt (Raw bid (Tmp ji) lB 8))))
                         ]
                     ]
                 ]
