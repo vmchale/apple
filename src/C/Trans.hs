@@ -1044,8 +1044,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
     (plB, (lB, bR)) <- plA b
     let loop=for tA i 0 ILt (Tmp m)
                 [forc tB j 0 ILt (Tmp o)
-                    [ CD () (Raw aRd (Tmp n*(Tmp i+1)+Tmp k) lA 8)
-                    , MX () z 0, for tB k 0 ILt (Tmp n)
+                    [ MX () z 0, for tB k 0 ILt (Tmp n)
                           [MX () z (FTmp z+FAt (Raw aRd (Tmp n*Tmp i+Tmp k) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))]
                     , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
                     ]
