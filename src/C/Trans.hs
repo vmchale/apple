@@ -1006,25 +1006,34 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     tA=eAnn a; tB=eAnn b
 -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (_, [_,o]) <- tIx tB
-                                              , m `rem` ɴ == 0 && o `rem` ɴ == 0 = do
+                                              , m `rem` ɴ == 0 && n `rem` ɴ == 0 && o `rem` ɴ == 0 = do
     aL <- nextArr t
-    i₀ <- nI; j₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI
-    aRd <- nI; bRd <- nI; td <- nI
+    l <- nI; io <- nI; jo <- nI; ko <- nI; iii <- nI; ji <- nI; ki <- nI
+    aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
     let mE=ConstI m;nE=ConstI n;oE=ConstI o
-        zero=For () l 0 ILt (mE*oE) [WrF () (Raw td (Tmp l) lA 8) 0]
-        loop=For1 () ɴE i₀ 0 ILt mE
-                [For1 () ɴE j₀ 0 ILt oE
-                    [For1 () 1 i (Tmp i₀) ILt (Tmp i₀+ɴE)
-                        [For1 () 1 j (Tmp j₀) ILt (Tmp j₀+ɴE)
-                            [For1 () 1 k 0 ILt nE $
-                                let zA=Raw td (Tmp i*oE+Tmp j) (Just aL) 8 in
-                                [ WrF () zA (FAt (Raw aRd (Tmp i*nE+Tmp k) lA 8)*FAt (Raw bRd (Tmp k*nE+Tmp j) lB 8)+FAt zA) ]
+        zero=For () l 0 ILt (mE*oE) [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
+        loop=For1 () ɴE io 0 ILt mE [
+                For1 () ɴE jo 0 ILt oE [
+                    For1 () ɴE ko 0 ILt nE [
+                          tdi=:(Tmp td+(Tmp io*mE+Tmp jo)*8)
+                        , aid=:(Tmp aRd+(Tmp io*mE+Tmp ko)*8)
+                        , For1 () 1 iii 0 ILt ɴE [
+                              For1 () 1 ki 0 ILt ɴE [
+                              bid=:(Tmp bRd+(Tmp ko*nE+Tmp jo)*8)
+                                , For1 () 1 ji 0 ILt ɴE [
+                                        let z=Raw tdi (Tmp ji) (Just aL) 8 in
+                                        WrF () z (FAt (Raw aid (Tmp ki) lA 8)*FAt (Raw bid (Tmp ji) lB 8)+FAt z)
+                                      , bid=:(Tmp bid+oE*8)
+                                      ]
                             ]
+                            , tdi=:(Tmp tdi+mE*8)
+                            , aid=:(Tmp aid+mE*8)
                         ]
                     ]
                 ]
+            ]
     pure (Just aL,
         plAA$plB$
         Ma () aL t 2 (ConstI$m*o) 8:diml (t, Just aL) [mE,oE]
@@ -1032,7 +1041,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
         :[zero, loop])
   where
     tA=eAnn a;tB=eAnn b
-    ɴ=32; ɴE=ConstI ɴ
+    ɴ=8; ɴE=ConstI ɴ
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF
