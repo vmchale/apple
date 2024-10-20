@@ -19,3 +19,4 @@ The Vim plugin for Apple provides the following |digraphs|:
 ⟩   >>
 ⅟   1%
 ⍉   o\
+×   xx
