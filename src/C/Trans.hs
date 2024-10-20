@@ -1006,7 +1006,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     tA=eAnn a; tB=eAnn b
 -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (_, [_,o]) <- tIx tB
-                                              , m `rem` ɴ == 0 && n `rem` ɴ == 0 && o `rem` ɴ == 0 = do
+                                              , m `rem` ɴr == 0 && n `rem` ɴc == 0 && o `rem` ɴr == 0 = do
     aL <- nextArr t
     l <- nI; io <- nI; jo <- nI; ko <- nI; iii <- nI; ji <- nI; ki <- nI
     aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI; zA <- nF
@@ -1014,16 +1014,16 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
     (plB, (lB, bR)) <- plA b
     let mE=ConstI m;nE=ConstI n;oE=ConstI o
         zero=For () l 0 ILt (mE*oE) [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        loop=For1 () ɴE io 0 ILt mE [
-                For1 () ɴE jo 0 ILt oE [
-                    For1 () ɴE ko 0 ILt nE [
+        loop=For1 () ɴrE io 0 ILt mE [
+                For1 () ɴcE jo 0 ILt oE [
+                    For1 () ɴrE ko 0 ILt nE [
                           tdi=:(Tmp td+(Tmp io*mE+Tmp jo)*8)
                         , aid=:(Tmp aRd+(Tmp io*mE+Tmp ko)*8)
-                        , For1 () 1 iii 0 ILt ɴE [
+                        , For1 () 1 iii 0 ILt ɴrE [
                               bid=:(Tmp bRd+(Tmp ko*nE+Tmp jo)*8)
-                            , For1 () 1 ki 0 ILt ɴE [
+                            , For1 () 1 ki 0 ILt ɴrE [
                                   MX () zA (FAt (Raw aid (Tmp ki) lA 8))
-                                , For1 () 1 ji 0 ILt ɴE [
+                                , For1 () 1 ji 0 ILt ɴcE [
                                     let z=Raw tdi (Tmp ji) (Just aL) 8 in
                                     WrF () z (FTmp zA*FAt (Raw bid (Tmp ji) lB 8)+FAt z)
                                   ]
@@ -1042,7 +1042,8 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
         :[zero, loop])
   where
     tA=eAnn a;tB=eAnn b
-    ɴ=32; ɴE=ConstI ɴ
+    ɴr=16; ɴrE=ConstI ɴr
+    ɴc=512; ɴcE=ConstI ɴc
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF
