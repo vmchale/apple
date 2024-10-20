@@ -119,6 +119,8 @@ ir (IR.CS (IR.AP rB (Just (IR.IB Op.IAsl eI (IR.ConstI 3))) _)) = do
 ir (IR.WS (IR.AP rB (Just (IR.IB Op.IAsl eI (IR.ConstI 3))) _)) = do
     (plE,i) <- plI eI
     pure $ plE [Prfm () (Pfop PST L1 Strm) (BI (absReg rB) i Three) ]
+ir (IR.WS (IR.AP rB Nothing _)) = do
+    pure $ [Prfm () (Pfop PST L1 Strm) (R (absReg rB)) ]
 ir (IR.Ma _ t e) = do {r <- nR; plE <- eval e IR.C0; pure $ plE ++ [puL, AddRC () FP ASP 16 IZero, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0, poL]}
 ir (IR.Free t) = do {r <- nR; pure [puL, MovRR () CArg0 (absReg t), AddRC () FP ASP 16 IZero, MovRCf () r Free, Blr () r, poL]}
 ir (IR.Sa8 t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u IZero, MovRR () (absReg t) ASP]
