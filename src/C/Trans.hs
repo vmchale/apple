@@ -1042,7 +1042,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
         :[zero, loop])
   where
     tA=eAnn a;tB=eAnn b
-    ɴ=8; ɴE=ConstI ɴ
+    ɴ=32; ɴE=ConstI ɴ
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF
