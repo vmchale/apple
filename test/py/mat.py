@@ -1,6 +1,7 @@
 import numpy as np
-bs=np.random.rand(1024,1024)
+N=1024
+bs=np.random.rand(N,N)
 
 import apple
-mul=apple.jit("[(x::M ₁₀₂₄,₁₀₂₄ float)%.(y::M ₁₀₂₄,₁₀₂₄ float)]")
+mul=apple.jit(f"[(x::Arr ({N}×{N}) float)%.(y::Arr ({N}×{N}) float)]")
 assert (bs@bs==mul(bs,bs)).all()
