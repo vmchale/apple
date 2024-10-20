@@ -261,8 +261,8 @@ asm ix st (C _ l:asms) =
     let lIx=get l st
         offs=(lIx-(ix+4)) `quot` 4
         isn=[0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
-        pro=asm ix undefined [Stp () X29 X30 (Pr SP (-16))]
-    in pro++isn:asm (ix+8) st (Ldp () X29 X30 (Po SP 16):asms)
+        prol=asm ix undefined [Stp () X29 X30 (Pr SP (-16))]
+    in prol++isn:asm (ix+8) st (Ldp () X29 X30 (Po SP 16):asms)
 asm ix st (B _ l:asms) =
     let lIx=get l st
         offs=(lIx-ix) `quot` 4
@@ -293,6 +293,7 @@ asm _ _ (isn:_) = error (show isn)
 rpf :: Pfop -> Word8
 rpf (Pfop PLD L1 Keep) = 0b0
 rpf (Pfop PLD L1 Strm) = 0b1
+rpf (Pfop PST L1 Strm) = 0b10001
 
 m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
 m4 r a = let w0=a .&. 0xffff; w1=(a .&. 0xffff0000) `lsr` 16; w2=(a .&. 0xFFFF00000000) `lsr` 32; w3=(a .&. 0xFFFF000000000000) `lsr` 48
