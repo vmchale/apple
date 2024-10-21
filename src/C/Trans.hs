@@ -940,7 +940,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
     (prologue, et, ~(Just zs)) <- if te tX then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
-    -- loop tiling/blocking? so that x doesn't get evicted from the cache
+    -- loop tiling/blocking here?
     let loop = for tA i 0 ILt (Tmp m) $ prologue
                   [ MX2 () z (ConstF (0,0)),
                     f2or tX j 0 ILt (Tmp n)
