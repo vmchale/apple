@@ -288,7 +288,7 @@ asm ix st (LdrRL _ r l:asms) =
         w0=p .&. 0xffff; w1=(p .&. 0xffff0000) `lsr` 16; w2=(p .&. 0xFFFF00000000) `lsr` 32; w3=(p .&. 0xFFFF000000000000) `lsr` 48
     in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
 asm ix st (Prfm x pr (R r):asms) = asm ix st (Prfm x pr (RP r 0):asms)
-asm ix st (Prfm _ pr (RP rb i):asms) = [0xf9, 0b10 `shiftL` 6 .|. fromIntegral (i `shiftR` 6), fromIntegral i `shiftL` 2 .|. be rb `shiftR` 2, be rb `shiftL` 5 .|. rpf pr]:asm (ix+4) st asms
+asm ix st (Prfm _ pr (RP rb i):asms) | (i',0) <- i `quotRem` 8, i >= 0 && i <= 32760 = [0xf9, 0b10 `shiftL` 6 .|. fromIntegral (i' `shiftR` 6), fromIntegral i' `shiftL` 2 .|. be rb `shiftR` 2, be rb `shiftL` 5 .|. rpf pr]:asm (ix+4) st asms
 asm ix st (Prfm _ pr (BI rb ri s):asms) = [0xf8, 0x5 `shiftL` 5 .|. be ri, 0b011 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0b10 `shiftL` 2 .|. be rb `shiftR` 3, be rb `shiftL` 5 .|. rpf pr]:asm (ix+4) st asms
 asm _ _ (isn:_) = error (show isn)
 
