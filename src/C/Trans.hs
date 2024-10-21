@@ -942,8 +942,8 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     (prologue, et, ~(Just zs)) <- if te tX then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     -- loop tiling/blocking here?
     let loop = for tA i 0 ILt (Tmp m) $ prologue
-                  [ MX2 () z (ConstF (0,0)),
-                    f2or tX j 0 ILt (Tmp n)
+                  [ MX2 () z (ConstF (0,0))
+                  , f2or tX j 0 ILt (Tmp n)
                         [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (Raw xRd (Tmp j) lX 8)))) ]
                         [ MX () zs (FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
                   , Comb () Op.FPlus z0 z
@@ -1014,7 +1014,9 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
     let ɴc=o; ɴcE=ConstI ɴc
         -- NC=whole matrix? lol (might depend on m (rows)?)
         mE=ConstI m;nE=ConstI n;oE=ConstI o
-        zero=For () l 0 ILt (mE*oE) [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
+        zero=f2or tB l 0 ILt (mE*oE)
+                [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
+                [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         -- TODO: when ɴᴄ=whole column, jo=0
         loop=For1 () 1 io 0 ILt mE [
                 For1 () ɴcE jo 0 ILt oE [
