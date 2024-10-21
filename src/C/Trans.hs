@@ -1167,12 +1167,13 @@ aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just (ot, oSz) <- aRr oTy
     szR <- nI; sz'R <- nI; i <- nI; fR <- rtemp ot
     (a,aV) <- vSz t (Tmp sz'R) xSz
     (slopP, aSlop, pops) <- vslop xSz n
+    td <- nI
     (_, ss) <- writeF op [AA slopP Nothing] fR
     (plX, (lX, aP)) <- plA xs
     let sz'=Tmp szR-fromIntegral(n-1)
-    let loopBody=CpyE () (AElem slopP 1 0 Nothing xSz) (AElem aP 1 (Tmp i) lX xSz) (fromIntegral n) xSz:ss++[wt (AElem t 1 (Tmp i) (Just a) oSz) fR]
+    let loopBody=CpyE () (AElem slopP 1 0 Nothing xSz) (AElem aP 1 (Tmp i) lX xSz) (fromIntegral n) xSz:ss++[wt (Raw td 0 (Just a) oSz) fR, td+=ConstI oSz]
         loop=for oTy i 0 ILt (Tmp sz'R) loopBody
-    pure (Just a, plX$szR =: ev (eAnn xs) (aP,lX):sz'R =: sz':aV++aSlop++loop:[pops])
+    pure (Just a, plX$szR =: ev (eAnn xs) (aP,lX):sz'R =: sz':aV++aSlop++td=:DP t 1:loop:[pops])
 aeval (EApp oTy (EApp _ (Builtin _ (DI n)) op) xs) t | Just ((_, 1), (tO, cRnk)) <- mAA (eAnn op), Just (tX, 1) <- tRnk (eAnn xs) = do
     a <- nextArr t
     d1x <- nI; i <- nI; d1 <- nI
