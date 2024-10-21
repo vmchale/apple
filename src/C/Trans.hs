@@ -1007,7 +1007,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
 -- FIXME: only works on square matrices
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (_, [_,o]) <- tIx tB, n `rem` 2 == 0 && m==n && n==o = do
     aL <- nextArr t
-    l <- nI; io <- nI; jo <- nI; ko <- nI; ji <- nI
+    l <- nI; io <- nI; ko <- nI; ji <- nI
     aRd <- nI; bRd <- nI; td <- nI; tdi <- nI; aid <- nI; bid <- nI; zA <- nF2; z0 <- nF; zi <- nF2
     (plAA, (lA, aR)) <- plA a
     (plB, (lB, bR)) <- plA b
@@ -1017,18 +1017,15 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
         zero=f2or tB l 0 ILt (mE*oE)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        -- TODO: when ɴᴄ=whole column, jo=0
         loop=For1 () 1 io 0 ILt mE [
-                For1 () ɴcE jo 0 ILt oE [
-                      tdi=:(Tmp td+(Tmp io*mE+Tmp jo)*8)
-                    , For1 () 1 ko 0 ILt nE [
-                          aid=:(Tmp aRd+(Tmp io*mE+Tmp ko)*8)
-                        , bid=:(Tmp bRd+(Tmp ko*nE+Tmp jo)*8)
-                        , MX () z0 (FAt (Raw aid 0 lA 8)), Fill () zA z0
-                        , For1 () 2 ji 0 ILt ɴcE $
-                            let z=Raw tdi (Tmp ji) (Just aL) 8
-                            in [MX2 () zi (FAt z), Wr2F () z (FBin FPlus (FTmp zi) (FBin FTimes (FTmp zA) (FAt (Raw bid (Tmp ji) lB 8))))]
-                    ]
+                  tdi=:(Tmp td+(Tmp io*mE)*8)
+                , For1 () 1 ko 0 ILt nE [
+                      aid=:(Tmp aRd+(Tmp io*mE+Tmp ko)*8)
+                    , bid=:(Tmp bRd+(Tmp ko*nE)*8)
+                    , MX () z0 (FAt (Raw aid 0 lA 8)), Fill () zA z0
+                    , For1 () 2 ji 0 ILt ɴcE $
+                        let z=Raw tdi (Tmp ji) (Just aL) 8
+                        in [MX2 () zi (FAt z), Wr2F () z (FBin FPlus (FTmp zi) (FBin FTimes (FTmp zA) (FAt (Raw bid (Tmp ji) lB 8))))]
                 ]
             ]
     pure (Just aL,
