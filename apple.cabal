@@ -272,7 +272,6 @@ executable arepl
         text,
         directory,
         filepath,
-        extra,
         QuickCheck,
         containers,
         split >=0.2.0.0
