@@ -1020,7 +1020,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
         -- TODO: when ɴᴄ=whole column, jo=0
         loop=For1 () 1 io 0 ILt mE [
                 For1 () ɴcE jo 0 ILt oE [
-                      tdi=:(Tmp td+(Tmp io*nE+Tmp jo)*8)
+                      tdi=:(Tmp td+(Tmp io*mE+Tmp jo)*8)
                     , For1 () 1 ko 0 ILt nE [
                           aid=:(Tmp aRd+(Tmp io*mE+Tmp ko)*8)
                         , bid=:(Tmp bRd+(Tmp ko*nE+Tmp jo)*8)
