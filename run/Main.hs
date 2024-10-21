@@ -5,12 +5,14 @@ module Main (main) where
 
 import           A
 import           Control.Monad             (zipWithM, zipWithM_)
+import           Data.Text.Lazy.Builder    (toLazyTextWith)
 import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.State (StateT, evalStateT, gets, modify)
 import           Criterion                 (benchmark, nfIO)
 import qualified Data.ByteString.Lazy      as BSL
 import           Data.Foldable             (traverse_)
+import           Data.Text.Lazy.Builder.Int (hexadecimal)
 import           Data.Functor              ((<&>))
 import           Data.Int                  (Int64)
 import           Data.List                 (isPrefixOf, scanl')
@@ -19,6 +21,7 @@ import           Data.Maybe                (catMaybes)
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as TIO
 import qualified Data.Text.Lazy            as TL
+import qualified Data.Text.Lazy.IO         as TLIO
 import           Data.Text.Lazy.Encoding   (encodeUtf8)
 import           Data.Traversable          (forM)
 import           Data.Word                 (Word8)
@@ -32,7 +35,6 @@ import           Hs.A
 import           Hs.FFI
 import           L
 import           Nm
-import           Numeric.Extra             (showHex)
 import           Prettyprinter             (Doc, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
 import           Prettyprinter.Ext
 import           Prettyprinter.Render.Text (putDoc)
@@ -329,14 +331,14 @@ annR s = do
 freeAsm (sz, fp, mp) = freeFunPtr sz fp -- *> traverse_ free mp
 
 
-dbgAB :: T b -> U a -> IO T.Text
+dbgAB :: T b -> U a -> IO TL.Text
 dbgAB t p = do
     rnk <- peek (castPtr p :: Ptr Int64)
     dims <- forM [1..fromIntegral rnk] $ \o -> peek $ p `plusPtr` (8*o)
     let sz = fromIntegral (8+8*rnk+rSz t*product dims)
-    hextext <$> peekArray sz (castPtr p :: Ptr Word8)
+    hb <$> peekArray sz (castPtr p :: Ptr Word8)
 
-hextext = T.unwords . fmap (T.pack.($"").showHex)
+hb = TL.unwords.map (toLazyTextWith 1.hexadecimal)
 
 inspect :: String -> Repl AlexPosn ()
 inspect s = do
@@ -354,7 +356,7 @@ inspect s = do
                         asm@(_, fp, _) <- efp eC
                         p <- callFFI fp (retPtr undefined) []
                         case eAnn e of
-                            (Arr _ t) -> do TIO.putStrLn =<< dbgAB t p
+                            (Arr _ t) -> do TLIO.putStrLn =<< dbgAB t p
                                             free p *> freeAsm asm
                             _ -> pErr ("only arrays can be inspected." :: T.Text)
         where bs = ubs s
