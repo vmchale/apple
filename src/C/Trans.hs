@@ -934,18 +934,20 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
         :[loop])
   where
     tA=eAnn a; tX=eAnn x
-aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
+aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
+    | Just (F, [n_i]) <- tIx tX
+    , Just ɴ <- mT n_i = do
     i <- nI; j₀ <- nI; j <- nI; m <- nI; n <- nI; z <- nF; za <- nF; zx <- nF
     aRd <- nI; xRd <- nI; td <- nI; aid <- nI; xid <- nI
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    let loop = For1 () 16 j₀ 0 ILt (Tmp n) [
+    let loop = For1 () ɴ j₀ 0 ILt (Tmp n) [
                     for tA i 0 ILt (Tmp m) $
                         let zr=Raw td (Tmp i) (Just aL) 8 in
                         [ aid=:(Tmp aRd+(Tmp n*Tmp i+Tmp j₀)*8)
                         , xid=:(Tmp xRd+Tmp j₀*8)
                         , MX () z (FAt zr)
-                        , For1 () 1 j 0 ILt 16 $
+                        , For1 () 1 j 0 ILt ɴ $
                                [ MX () za (FAt (Raw aid 0 lA 8)), aid+=8
                                , MX () zx (FAt (Raw xid 0 lX 8)), xid+=8
                                , MX () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zx)))
@@ -963,6 +965,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
         :[loop])
   where
     tA=eAnn a; tX=eAnn x
+    mT n | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | otherwise = Nothing
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; z <- nF2
     aRd <- nI; xRd <- nI; td <- nI
