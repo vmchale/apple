@@ -1375,6 +1375,13 @@ eval (EApp _ (Builtin _ Size) xs) t | Arr sh _ <- eAnn xs = do
     (plE, (l, xsR)) <- plA xs
     rnkR <- nI
     pure $ plE [rnkR =: eRnk sh (xsR,l), SZ () t xsR (Tmp rnkR) l]
+eval (EApp _ (EApp _ (Builtin _ IntExp) (FLit _ (-1))) n) t = do
+    (plR,nR) <- plEV n
+    pure $ plR [t=:1, Cmov () (IUn IOdd (Tmp nR)) t (ConstI (-1))]
+eval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
+    xR <- nI; nR <- nI
+    plX <- eval x xR; plN <- eval n nR
+    pure $ plX ++ plN ++ [t=:1, While () nR IGt 0 [Ifn't () (IUn IEven (Tmp nR)) [t=:(Tmp t*Tmp xR)], nR =: Bin IAsr (Tmp nR) 1, MT () xR (Tmp xR*Tmp xR)]]
 eval (EApp _ (Builtin _ T) x) t = eval x t
 eval (EApp _ (Builtin _ Flat) x) t = eval x t
 eval (EApp _ (Builtin _ Floor) x) t = do
