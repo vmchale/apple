@@ -112,6 +112,7 @@ ir (IR.S2 Op.FMin t r) = pure [Fminp () (fabsReg t) (f2absReg r)]
 ir (IR.Fill2 r t) = pure [DupD () (f2absReg r) (fabsReg t)]
 ir (IR.CD (IR.AP rB Nothing _)) = pure [Prfm () (Pfop PLD L1 Keep) (R (absReg rB))]
 ir (IR.CD (IR.AP rB (Just (IR.ConstI i)) _)) = pure [Prfm () (Pfop PLD L1 Keep) (RP (absReg rB) (fromIntegral i))]
+ir (IR.CS (IR.AP rB (Just (IR.ConstI i)) _)) = pure [Prfm () (Pfop PLD L1 Strm) (RP (absReg rB) (fromIntegral i))]
 ir (IR.CD (IR.AP rB (Just (IR.IB Op.IAsl eI (IR.ConstI 3))) _)) = do
     (plE,i) <- plI eI
     pure $ plE [Prfm () (Pfop PLD L1 Keep) (BI (absReg rB) i Three) ]
