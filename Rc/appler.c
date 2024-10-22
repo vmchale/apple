@@ -33,7 +33,7 @@ ZR ri(U x) {DA(n,x,rnk,INTSXP,r);DO(i,n,INTEGER(r)[i]=(int)i_p[i+rnk+1]);UNPROTE
 ZR rb(U x) {DA(n,x,rnk,LGLSXP,r);B* b_p=x+8*rnk+8;DO(i,n,LOGICAL(r)[i]=(int)b_p[i]);UNPROTECT(2);R r;}
 
 // vector only
-ZU fr(SEXP x) {U ret;J dim=length(x);V(dim,REAL(x),ret);R ret;}
+ZU fr(SEXP x) {J dim=length(x);V(dim,REAL(x),ret);R ret;}
 ZU fi(SEXP x) {J dim=length(x);J* ret=R_alloc(8,dim+2);J rnk=1;ret[0]=rnk;ret[1]=dim;DO(i,dim,ret[i+2]=(J)(INTEGER(x)[i]));R ret;}
 ZU fb(SEXP x) {J dim=length(x);B* ret=R_alloc(1,dim+16);J* i_p=(J*)ret;J rnk=1;i_p[0]=rnk;i_p[1]=dim;DO(i,dim,ret[i+16]=(B)(LOGICAL(x)[i]));R ret;}
 

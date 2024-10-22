@@ -6,7 +6,7 @@
 #define NIL janet_wrap_nil()
 #define ERR(p,msg){if(p==NULL){printf("%s\n",msg);free(msg);R NIL;};}
 #define JA(x,n,xs) J n=((J*)x)[1];JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
-#define VA(sz,y) U y=malloc(sz);{J* x_i=y;x_i[0]=1;x_i[1]=n;}
+#define VA(sz,y) U y=malloc(sz+16);{J* x_i=y;x_i[0]=1;x_i[1]=n;}
 #define L(a) (J)a->count
 
 TS JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi; T ts;} JF;
@@ -18,9 +18,9 @@ static int jit_gc(void *data, size_t len) {
     R 0;
 }
 
-ZU fv_j(JanetArray* x) {J n=L(x);VA(n*8+16,y);F* x_f=y;Janet* js=x->data;DO(i,n,x_f[i+2]=janet_unwrap_number(js[i]));R y;}
-ZU fv_i(JanetArray* x) {J n=L(x);VA(n+8+16,y) J* x_i=y;Janet* js=x->data;DO(i,n,x_i[i+2]=(J)janet_unwrap_integer(js[i]));R y;}
-ZU fv_b(JanetArray* x) {J n=L(x);VA(n+16,y);B* x_b=y+16;Janet* js=x->data;DO(i,n,x_b[i]=janet_unwrap_boolean(js[i]));R y;}
+ZU fv_j(JanetArray* x) {J n=L(x);VA(n*8,y);F* x_f=y;Janet* js=x->data;DO(i,n,x_f[i+2]=janet_unwrap_number(js[i]));R y;}
+ZU fv_i(JanetArray* x) {J n=L(x);VA(n*8,y) J* x_i=y;Janet* js=x->data;DO(i,n,x_i[i+2]=(J)janet_unwrap_integer(js[i]));R y;}
+ZU fv_b(JanetArray* x) {J n=L(x);VA(n,y);B* x_b=y+16;Janet* js=x->data;DO(i,n,x_b[i]=janet_unwrap_boolean(js[i]));R y;}
 
 Z JanetArray* j_vb(U x) {JA(x,n,xs);B* b_p=x+16;DO(j,n,xs[j]=janet_wrap_boolean((int32_t)b_p[j]));free(x);R arr;}
 Z JanetArray* j_vf(U x) {JA(x,n,xs);F* f_p=x;DO(j,n,xs[j]=janet_wrap_number(f_p[j+2]));free(x);R arr;}
