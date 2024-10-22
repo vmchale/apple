@@ -1060,8 +1060,8 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
                         , For1 () 1 k 0 ILt ɴc
                             [ MX () z (FAt (Raw aid (Tmp k) lA 8))
                             , For1 () 1 j 0 ILt ɴc $
-                                let za=Raw tid (Tmp j) (Just aL) 8 in
-                                [ WrF () za (FAt za+FTmp z*FAt (Raw bid (Tmp j) lB 8)) ]
+                                let zr=Raw tid (Tmp j) (Just aL) 8 in
+                                [ WrF () zr (FAt zr+FTmp z*FAt (Raw bid (Tmp j) lB 8)) ]
                             , bid+=(nE*8)
                             ]
                         , aid+=(mE*8)
