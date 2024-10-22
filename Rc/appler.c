@@ -80,7 +80,7 @@ SEXP run_R(SEXP args){
     FnTy* ty=c->ty;U fp=c->code;ffi_cif* cif=c->ffi;
     SEXP r;
     int argc=ty->argc;
-    U* vals=alloca(SZ(U)*argc);U ret=alloca(8);
+    U* vals=alloca(SZ(U)*argc), ret=alloca(8);
     uint8_t fs=0;
     for(int k=0;k<argc;k++){
         args=CDR(args);SEXP arg=CAR(args);

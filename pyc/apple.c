@@ -77,14 +77,13 @@ ZF apple_ts(JO* self) {R PyUnicode_FromString(self->ts);}
 
 // file:///usr/share/doc/libffi8/html/The-Basics.html
 ZF apple_call(PY self, PY args, PY kwargs) {
-    JO* c=(JO*)self;PY arg0=NULL;PY arg1=NULL;PY arg2=NULL;PY arg3=NULL;PY arg4=NULL;PY arg5=NULL;
+    JO* c=(JO*)self;PY arg0=NULL,arg1=NULL,arg2=NULL,arg3=NULL,arg4=NULL,arg5=NULL;
     PyArg_ParseTuple(args, "|OOOOOO", &arg0, &arg1, &arg2, &arg3, &arg4, &arg5);
     FnTy* ty=c->ty;U fp=c->bc;
-    PY r;
     ffi_cif* cif=c->ffi;
     int argc=ty->argc;
     U* vals=alloca(SZ(U)*argc);U ret=alloca(8);
-    PY pyarg;PY pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
+    PY pyarg, pyargs[]={arg0,arg1,arg2,arg3,arg4,arg5};
     uint8_t fs=0;
     for(int k=0;k<argc;k++){
         pyarg=pyargs[k];
@@ -100,6 +99,7 @@ ZF apple_call(PY self, PY args, PY kwargs) {
     }
     ffi_call(cif,fp,ret,vals);
     DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
+    PY r;
     switch(ty->res){
         C(IA,r=npy_i(*(U*)ret))
         C(FA,r=npy_f(*(U*)ret))
@@ -133,7 +133,7 @@ ZF apple_jit(PY self, PY args) {
         T ts_str=apple_print_ts_sz(inp,&sz,&err);
     T buf=malloc(sz+8);
     sprintf(buf,"<fn : %s>",ts_str);free(ts_str);
-    U fp;S f_sz;U s;
+    U fp,s;S f_sz;
     fp=apple_compile(&sys,inp,&f_sz,&s);
     JO* cc=PyObject_New(JO, &JOT);
     ffi_cif* ffi=apple_ffi(ty);
