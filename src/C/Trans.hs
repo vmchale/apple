@@ -1039,9 +1039,9 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
 -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
     | Just (F, [m,n]) <- tIx tA, Just (F, [_,o]) <- tIx tB
-    , m `rem` 8 == 0 && n `rem` 8 == 0 && o `rem` 8 == 0 = do
+    , m `rem` 2 == 0 && n `rem` 2 == 0 && o `rem` 2 == 0 = do
     aL <- nextArr t
-    i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI; z <- nF
+    i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI; z <- nF2; z₀ <- nF
     aRd <- nI; bRd <- nI; td <- nI
     aid <- nI; bid <- nI; tid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
@@ -1058,10 +1058,11 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
                     , For1 () 1 i 0 ILt ɴc
                         [ bid=:(Tmp bRd+(Tmp k₀*oE+Tmp j₀)*8)
                         , For1 () 1 k 0 ILt ɴc
-                            [ MX () z (FAt (Raw aid (Tmp k) lA 8))
-                            , For1 () 1 j 0 ILt ɴc $
+                            [ MX () z₀ (FAt (Raw aid (Tmp k) lA 8))
+                            , Fill () z z₀
+                            , For1 () 2 j 0 ILt ɴc $
                                 let zr=Raw tid (Tmp j) (Just aL) 8 in
-                                [ WrF () zr (FAt zr+FTmp z*FAt (Raw bid (Tmp j) lB 8)) ]
+                                [ Wr2F () zr (FBin FPlus (FAt zr) (FBin FTimes (FTmp z) (FAt (Raw bid (Tmp j) lB 8)))) ]
                             , bid+=(oE*8)
                             ]
                         , aid+=(nE*8)
