@@ -14,7 +14,7 @@ typedef PyObject* PY;typedef PyArrayObject* NP;typedef size_t S;
 // CD - copy dims AD - apple dimensionate
 #define CD(rnk,x,t,ds) J* i_p=x;J rnk=i_p[0];npy_intp* ds=malloc(SZ(npy_intp)*rnk);J t=1;DO(i,rnk,t*=i_p[i+1];ds[i]=(npy_intp)i_p[i+1]);
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ds=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ds[i]);}
-#define PC(x,n,w,data) S sz=w*n;U data=malloc(sz);memcpy(data,x+rnk*8+8,sz);free(x);
+#define PC(x,n,w,data) S sz=w*n;U data=malloc(sz);{memcpy(data,x+rnk*8+8,sz);free(x);}
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 
 #define O(pya) PyArray_ENABLEFLAGS((NP)pya,NPY_ARRAY_OWNDATA)
