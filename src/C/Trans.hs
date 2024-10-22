@@ -1037,7 +1037,9 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
   where
     tA=eAnn a; tB=eAnn b
 -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
-aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just (F, [_,o]) <- tIx tB = do
+aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
+    | Just (F, [m,n]) <- tIx tA, Just (F, [_,o]) <- tIx tB
+    , m `rem` 8 == 0 && n `rem` 8 == 0 && o `rem` 8 == 0 = do
     aL <- nextArr t
     i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI; z <- nF
     aRd <- nI; bRd <- nI; td <- nI
