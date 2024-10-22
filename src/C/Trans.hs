@@ -1045,7 +1045,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
     aRd <- nI; bRd <- nI; td <- nI
     aid <- nI; bid <- nI; tid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    let ɴ=8; ɴc=ConstI ɴ
+    let ɴ=minimum[m,n,o]; ɴc=ConstI ɴ
         mE=ConstI m;nE=ConstI n;oE=ConstI o
         zero=f2or tB l 0 ILt (mE*oE)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
