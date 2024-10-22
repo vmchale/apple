@@ -1053,19 +1053,19 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
         loop=For1 () ɴc i₀ 0 ILt mE
             [ For1 () ɴc j₀ 0 ILt oE
                 [For1 () ɴc k₀ 0 ILt nE
-                    [ tid=:(Tmp td+(Tmp i₀*mE+Tmp j₀)*8)
-                    , aid=:(Tmp aRd+(Tmp i₀*mE+Tmp k₀)*8)
+                    [ tid=:(Tmp td+(Tmp i₀*oE+Tmp j₀)*8)
+                    , aid=:(Tmp aRd+(Tmp i₀*nE+Tmp k₀)*8)
                     , For1 () 1 i 0 ILt ɴc
-                        [ bid=:(Tmp bRd+(Tmp k₀*nE+Tmp j₀)*8)
+                        [ bid=:(Tmp bRd+(Tmp k₀*oE+Tmp j₀)*8)
                         , For1 () 1 k 0 ILt ɴc
                             [ MX () z (FAt (Raw aid (Tmp k) lA 8))
                             , For1 () 1 j 0 ILt ɴc $
                                 let zr=Raw tid (Tmp j) (Just aL) 8 in
                                 [ WrF () zr (FAt zr+FTmp z*FAt (Raw bid (Tmp j) lB 8)) ]
-                            , bid+=(nE*8)
+                            , bid+=(oE*8)
                             ]
-                        , aid+=(mE*8)
-                        , tid+=(mE*8)
+                        , aid+=(nE*8)
+                        , tid+=(oE*8)
                         ]
                     ]
                 ]
