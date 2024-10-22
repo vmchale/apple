@@ -1049,9 +1049,9 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         loop=For1 () ɴc i₀ 0 ILt mE
-            [ For1 () ɴc j₀ 0 ILt nE
-                [For1 () ɴc k₀ 0 ILt oE
-                    [ tid=:(Tmp td+(Tmp i₀*nE+Tmp j₀)*8)
+            [ For1 () ɴc j₀ 0 ILt oE
+                [For1 () ɴc k₀ 0 ILt nE
+                    [ tid=:(Tmp td+(Tmp i₀*mE+Tmp j₀)*8)
                     , aid=:(Tmp aRd+(Tmp i₀*mE+Tmp k₀)*8)
                     , For1 () 1 i 0 ILt ɴc
                         [ bid=:(Tmp bRd+(Tmp k₀*nE+Tmp j₀)*8)
@@ -1063,7 +1063,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
                             , bid+=(nE*8)
                             ]
                         , aid+=(mE*8)
-                        , tid+=(nE*8)
+                        , tid+=(mE*8)
                         ]
                     ]
                 ]
