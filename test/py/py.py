@@ -64,6 +64,6 @@ def test(M,N,K):
     m=apple.jit(f"[(x::Arr ({M}×{N}) float)%.(y::Arr ({N}×{K}) float)]")
     assert (bs@cs==m(bs,cs)).all()
 
-vs(50,64);vs(64,64)
+vs(100,32)
 test(512,512,512);test(64,64,64)
 test(512,128,128);test(512,256,128)
