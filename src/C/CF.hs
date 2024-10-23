@@ -217,7 +217,7 @@ addCF ((For1 _ tk t el c eu ss):stmts) = do
     (h, ss') <- tieBody i f ss
     pure $ For1 (ControlAnn i (f (h [])) udϵ) tk t el c eu ss':stmts'
   where
-    udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
+    udϵ = UD (uE el<>uE eu<>uE tk) IS.empty IS.empty IS.empty
 addCF ((Rof _ t ec ss):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
