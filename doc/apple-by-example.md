@@ -4,7 +4,7 @@
 # Introduction
 
 Apple is an experimental compiler with a working though not-perfectly-designed
-typed frontend.
+typed frontend. The language is missing the ability to sort an array but otherwise capable.
 
 ## Installation
 
