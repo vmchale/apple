@@ -13,3 +13,8 @@ microbenchmark(x%*%y)
 
 dp<-jit("[(+)/ ((*)`(x::Vec n float) y)]")
 microbenchmark(run(dp,x,y))
+
+A<-matrix(runif(1024,0,1),32);x<-runif(32,0,1)
+vmul<-jit("[x::M float%:y]")
+microbenchmark(A%*%x)
+microbenchmark(run(vmul,A,x))
