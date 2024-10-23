@@ -3,47 +3,47 @@
 module Main (main) where
 
 import           A
-import           Control.Monad             (zipWithM, zipWithM_)
-import           Data.Text.Lazy.Builder    (toLazyTextWith)
-import           Control.Monad.IO.Class    (liftIO)
-import           Control.Monad.Trans.Class (lift)
-import           Control.Monad.Trans.State (StateT, evalStateT, gets, modify)
-import           Criterion                 (benchmark, nfIO)
-import qualified Data.ByteString.Lazy      as BSL
-import           Data.Foldable             (traverse_)
+import           Control.Monad              (zipWithM, zipWithM_)
+import           Control.Monad.IO.Class     (liftIO)
+import           Control.Monad.Trans.Class  (lift)
+import           Control.Monad.Trans.State  (StateT, evalStateT, gets, modify)
+import           Criterion                  (benchmark, nfIO)
+import qualified Data.ByteString.Lazy       as BSL
+import           Data.Foldable              (traverse_)
+import           Data.Functor               ((<&>))
+import           Data.Int                   (Int64)
+import           Data.List                  (isPrefixOf, scanl')
+import           Data.List.Split            (chunksOf)
+import           Data.Maybe                 (catMaybes)
+import qualified Data.Text                  as T
+import qualified Data.Text.IO               as TIO
+import qualified Data.Text.Lazy             as TL
+import           Data.Text.Lazy.Builder     (toLazyTextWith)
 import           Data.Text.Lazy.Builder.Int (hexadecimal)
-import           Data.Functor              ((<&>))
-import           Data.Int                  (Int64)
-import           Data.List                 (isPrefixOf, scanl')
-import           Data.List.Split           (chunksOf)
-import           Data.Maybe                (catMaybes)
-import qualified Data.Text                 as T
-import qualified Data.Text.IO              as TIO
-import qualified Data.Text.Lazy            as TL
-import qualified Data.Text.Lazy.IO         as TLIO
-import           Data.Text.Lazy.Encoding   (encodeUtf8)
-import           Data.Traversable          (forM)
-import           Data.Word                 (Word8)
+import           Data.Text.Lazy.Encoding    (encodeUtf8)
+import qualified Data.Text.Lazy.IO          as TLIO
+import           Data.Traversable           (forM)
+import           Data.Word                  (Word8)
 import           Dbg
-import           Foreign.LibFFI            (callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
-import           Foreign.Marshal.Alloc     (free)
-import           Foreign.Marshal.Array     (peekArray)
-import           Foreign.Ptr               (Ptr, castPtr, plusPtr)
-import           Foreign.Storable          (peek)
+import           Foreign.LibFFI             (callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
+import           Foreign.Marshal.Alloc      (free)
+import           Foreign.Marshal.Array      (peekArray)
+import           Foreign.Ptr                (Ptr, castPtr, plusPtr)
+import           Foreign.Storable           (peek)
 import           Hs.A
 import           Hs.FFI
 import           L
 import           Nm
-import           Prettyprinter             (Doc, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
+import           Prettyprinter              (Doc, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
 import           Prettyprinter.Ext
-import           Prettyprinter.Render.Text (putDoc)
+import           Prettyprinter.Render.Text  (putDoc)
 import           QC
 import           Sys.DL
-import           System.Console.Haskeline  (Completion, CompletionFunc, InputT, completeFilename, defaultSettings, fallbackCompletion, getInputLine, historyFile, runInputT,
-                                            setComplete, simpleCompletion)
-import           System.Directory          (doesFileExist, getHomeDirectory)
-import           System.FilePath           ((</>))
-import           System.Info               (arch)
+import           System.Console.Haskeline   (Completion, CompletionFunc, InputT, completeFilename, defaultSettings, fallbackCompletion, getInputLine, historyFile, runInputT,
+                                             setComplete, simpleCompletion)
+import           System.Directory           (doesFileExist, getHomeDirectory)
+import           System.FilePath            ((</>))
+import           System.Info                (arch)
 import           Ty
 import           Ty.M
 

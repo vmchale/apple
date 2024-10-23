@@ -139,7 +139,7 @@ iM :: [Stmt] -> LM [Stmt]
 iM ss = do
     (cf, m, is, dels) <- indels ss
     let go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
-        go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, (S _ _ subst)) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
+        go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, S _ _ subst) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
         go ((s,_):ssϵ) = second (s:)$go ssϵ
         go [] = (M.empty, [])
 

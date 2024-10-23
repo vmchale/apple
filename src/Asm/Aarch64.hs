@@ -21,7 +21,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
-import           Control.DeepSeq   (NFData (..), rwhnf,deepseq)
+import           Control.DeepSeq   (NFData (..), deepseq, rwhnf)
 import           Data.Copointed
 import           Data.Int          (Int16)
 import           Data.Word         (Word16, Word8)
@@ -418,7 +418,7 @@ mapR f (Ins l v i r)         = Ins l v i (f r)
 mapR _ (DupD l v r)          = DupD l v r
 mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
-mapR f (Prfm l po r) = Prfm l po (f<$>r)
+mapR f (Prfm l po r)         = Prfm l po (f<$>r)
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -520,7 +520,7 @@ mapFR f (Ins l v i r)         = Ins l (f<$>v) i r
 mapFR f (DupD l v r)          = DupD l (f<$>v) (f r)
 mapFR f (ZeroD l d)           = ZeroD l (f d)
 mapFR f (EorD l d0 d1 d2)     = EorD l (f d0) (f d1) (f d2)
-mapFR _ (Prfm l po a) = Prfm l po a
+mapFR _ (Prfm l po a)         = Prfm l po a
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -660,7 +660,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Dup _ v r)             = "dup" <+> pvd v <> "," <+> pretty r
         p4 (Ins _ v i r)           = "ins" <+> pvd v <> brackets (pretty i) <> "," <+> pretty r
         p4 (DupD _ v r)            = "dup" <+> pvd v <> "," <+> pvd (V2Reg r) <> "[0]"
-        p4 (Prfm _ po r)       = "prfm" <+> ar2 po r
+        p4 (Prfm _ po r)           = "prfm" <+> ar2 po r
 
 instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty
 

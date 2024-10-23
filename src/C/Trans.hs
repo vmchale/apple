@@ -950,7 +950,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
                         [ aid=:(Tmp aRd+(Tmp n*Tmp i+Tmp j₀)*8)
                         , xid=:(Tmp xRd+Tmp j₀*8)
                         , MX () z (FAt zr)
-                        , For1 () 1 j 0 ILt ɴ $
+                        , For1 () 1 j 0 ILt ɴ
                                [ MX () za (FAt (Raw aid 0 lA 8)), aid+=8
                                , MX () zx (FAt (Raw xid 0 lX 8)), xid+=8
                                , MX () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zx)))
@@ -1039,7 +1039,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
 -- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
     | Just (F, [m,n]) <- tIx tA, Just (F, [_,o]) <- tIx tB
-    , m `rem` 2 == 0 && n `rem` 2 == 0 && o `rem` 2 == 0 = do
+    , all even [m,n,o] = do
     aL <- nextArr t
     i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI; z <- nF2; z₀ <- nF
     aRd <- nI; bRd <- nI; td <- nI

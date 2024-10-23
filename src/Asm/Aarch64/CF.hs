@@ -177,7 +177,7 @@ uses (Ins _ _ _ r)        = singleton r
 uses DupD{}               = IS.empty
 uses ZeroD{}              = IS.empty
 uses EorD{}               = IS.empty
-uses (Prfm _ _ a) = uA a
+uses (Prfm _ _ a)         = uA a
 
 defs FMovXX{}            = IS.empty
 defs (MovRC _ r _)       = singleton r
@@ -280,7 +280,7 @@ defs DupD{}              = IS.empty
 defs Ins{}               = IS.empty
 defs ZeroD{}             = IS.empty
 defs EorD{}              = IS.empty
-defs Prfm{} = IS.empty
+defs Prfm{}              = IS.empty
 
 defsF :: (E freg) => AArch64 reg freg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
@@ -386,7 +386,7 @@ defsF (DupD _ v _)       = singleton v
 defsF (Ins _ v _ _)      = singleton v
 defsF (ZeroD _ v)        = singleton v
 defsF (EorD _ v _ _)     = singleton v
-defsF Prfm{} = IS.empty
+defsF Prfm{}             = IS.empty
 
 usesF :: (E freg, Eq freg) => AArch64 reg freg ann -> IS.IntSet
 usesF (FMovXX _ _ r)       = singleton r
