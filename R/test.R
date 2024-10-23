@@ -33,3 +33,8 @@ gc()
 
 prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))))'(irange 2 N 1)")
 stopifnot(all(run(prime_mask,9)==c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE)))
+
+A<-matrix(runif(32,0,1),4);x<-runif(8,0,1)
+mul<-jit("[x::M float%:y]")
+run(mul,A,x)
+(A%*%x)[,1]
