@@ -12,10 +12,22 @@ typedef PyObject* PY;typedef PyArrayObject* NP;
 
 #define ZF Z PY
 
+TS CA {U h;U d;} CA;
+Z void CA_dealloc(CA* self) {free(self->h);}
+
+static PyTypeObject AT = {
+    PyVarObject_HEAD_INIT(NULL,0)
+    .tp_name="apple.ANumPy",
+    .tp_basicsize = sizeof(CA),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyType_GenericNew,
+    .tp_dealloc = (destructor)CA_dealloc,
+};
+
 // CD - copy dims AD - apple dimensionate
 #define CD(rnk,x,t,ls) J* i_p=x;J rnk=i_p[0];npy_intp* ls=malloc(SZ(npy_intp)*rnk);J t=1;DO(i,rnk,t*=i_p[i+1];ls[i]=(npy_intp)i_p[i+1]);
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ls=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ls[i]);}
-#define PC(x,n,w,d) S sz=w*n;U d=malloc(sz);{memcpy(d,x+rnk*8+8,sz);free(x);}
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
@@ -23,15 +35,13 @@ ZU f_npy(const NP o) {CT(o,'d',"Error: expected an array of floats");A(rnk,n,8,x
 ZU b_npy(const NP o) {CT(o,'?',"Error: expected an array of booleans");A(rnk,n,1,x,o);B* x_p=x;U data=PyArray_DATA(o);memcpy(x_p+8*rnk+8,data,n);R x;}
 ZU i_npy(const NP o) {CT(o,'l',"Error: expected an array of 64-bit integers");A(rnk,n,8,x,o);J* x_i=x;U data=PyArray_DATA(o);memcpy(x_i+rnk+1,data,n*8);R x;}
 
-#define RO(rnk,ls,T,d) {PY r=PyArray_SimpleNewFromData(rnk,ls,T,d);PyArray_ENABLEFLAGS((NP)r,NPY_ARRAY_OWNDATA);R r;}
+#define RP(rnk,x,n,w,ls,T) {S sz=w*n;CA* d=PyObject_New(CA,&AT);d->h=x;d->d=x+rnk*8+8;PyArray_Descr* pd=PyArray_DescrFromType(T); PY r=PyArray_NewFromDescr(&PyArray_Type,pd,(int)rnk,ls,NULL,d->d,NPY_ARRAY_C_CONTIGUOUS,NULL); R r;}
 
-#define NPA(f,s,T) ZF f(U x) {CD(rnk,x,t,ls);PC(x,t,s,d);RO(rnk,ls,T,d);}
+#define NPA(f,s,T) ZF f(U x) {CD(rnk,x,t,ls);RP(rnk,x,t,s,ls,T);}
 
 NPA(npy_i,8,NPY_INT64)
 NPA(npy_f,8,NPY_FLOAT64)
 NPA(npy_b,1,NPY_BOOL)
-
-// PyArray_New + no-copy
 
 ZF apple_typeof(PY self, PY args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
@@ -59,9 +69,6 @@ ZF apple_ir(PY self, PY args) {
     PY py = PyUnicode_FromString(res);
     free(res); R py;
 }
-
-TS CA {U h;U d;} CA;
-Z void CA_dealloc(CA* self) {free(self->h);}
 
 TS JO {
     PyObject_HEAD
