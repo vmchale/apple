@@ -302,7 +302,7 @@ eeval e (IT t) = eval e t
 eeval e (FT t) = feval e t
 eeval e (PT t) = peval e t
 
-data RI a b = Cell a | Index b deriving Show
+data RI a b = Cell a | Index b
 
 part :: [RI a b] -> ([a], [b])
 part []           = ([], [])
