@@ -1,6 +1,5 @@
 -- https://eli.thegreenplace.net/2013/11/05/how-to-jit-an-introduction
-module Hs.FFI ( bsFp
-              , allocNear
+module Hs.FFI ( allocNear
               , allocExec
               , finish
               , freeFunPtr
@@ -33,14 +32,6 @@ finish bs fAt = BS.unsafeUseAsCStringLen bs $ \(b, sz) -> do
     r <- mprotect fAt sz' #{const PROT_EXEC}
     when (r == -1) $ error "call to mprotect failed."
     pure (castPtrToFunPtr fAt)
-
-bsFp :: BS.ByteString -> IO (FunPtr a, CSize)
-bsFp bs = BS.unsafeUseAsCStringLen bs $ \(bytes, sz) -> do
-    let sz' = fromIntegral sz
-    fAt <- {-# SCC "mmap" #-} allocExec sz'
-    _ <- {-# SCC "memcpy" #-} memcpy fAt bytes sz'
-    _ <- {-# SCC "mprotect" #-} mprotect fAt sz' #{const PROT_EXEC}
-    pure (castPtrToFunPtr fAt, sz')
 
 freeFunPtr :: Int -> FunPtr a -> IO ()
 freeFunPtr sz fp = void $ munmap (castFunPtrToPtr fp) (fromIntegral sz)
