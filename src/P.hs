@@ -23,7 +23,6 @@ module P ( Err (..)
          , as, x86G
          , eDumpX86, eDumpAarch64
          , ex86G, eAarch64
-         , bytes
          , funP, aFunP
          , eFunP, eAFunP
          , ctxFunP, actxFunP
@@ -141,9 +140,6 @@ funP = fmap π.allFp <=< either throwIO pure . x86G
 
 aFunP :: BSL.ByteString -> IO (FunPtr a, Maybe (Ptr Word64))
 aFunP = fmap π.Aarch64.allFp <=< either throwIO pure . aarch64
-
-bytes :: BSL.ByteString -> Either (Err AlexPosn) BS.ByteString
-bytes = fmap assemble . x86G
 
 as :: T.Text -> BSL.ByteString -> Doc ann
 as f = prolegomena.either throw (second aso).aarch64

@@ -284,7 +284,6 @@ executable arepl
 test-suite apple-test
     type:               exitcode-stdio-1.0
     main-is:            Spec.hs
-    build-tool-depends: cpphs:cpphs
     hs-source-dirs:     test
     default-language:   Haskell2010
     ghc-options:

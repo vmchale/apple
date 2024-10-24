@@ -34,12 +34,7 @@ main :: IO ()
 main = do
     pjit <- fpn =<< BSL.readFile "test/examples/isPrime.🍏"
     rjit <- fpn =<< BSL.readFile "math/numbertheory/radical.🍎"
-    defaultMain $ testGroup "All" $ pTest pjit rjit:rTy:tyT:allT:
-#ifdef x86_64_HOST_ARCH
-        [x64T]
-#else
-        []
-#endif
+    defaultMain $ testGroup "All" $ pTest pjit rjit:[rTy,tyT,allT]
 
 pTest :: FunPtr (Int64 -> CUChar)
       -> FunPtr (Int64 -> Int64)
@@ -131,13 +126,9 @@ allT = testGroup "jit"
     , testCase "ix" $
         let v = AA 1 [20] [1..20::Int64]
         in do { res0 <- fpAa "bench/apple/evens.🍎" v; res1 <- fpAa "bench/apple/evenIx.🍎" v; (res0 :: Apple Int64) @?= res1 }
-    ,  rfTest
-    ]
-
-x64T :: TestTree
-x64T = testGroup "x64"
-    [ testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
+    , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
+    , rfTest
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
@@ -183,8 +174,11 @@ rfTest = testCase "rising factorial" $ do
 
 fpAf :: FilePath -> [Double] -> IO Double
 fpAf fp xs = do
-    f <- bytesE <$> BSL.readFile fp
-    jitAf f xs
+    f <- fmap af.fpn =<< BSL.readFile fp
+    wA a $ \p -> do
+        pure $ f p
+  where
+    a = v1 xs
 
 jitKl = fpAaf "test/examples/kl.🍎"
 jitB = fpAaf "test/examples/b.🍎"
@@ -226,27 +220,18 @@ fpAaf fp xs ys = do
     jitAaf f xs ys
 
 fpAaff :: FilePath -> [Double] -> [Double] -> Double -> IO Double
-fpAaff fp xs ys z = do {f <- bytesE <$> BSL.readFile fp; jitAaff f xs ys z}
-
-jitAaff :: BS.ByteString -> [Double] -> [Double] -> Double -> IO Double
-jitAaff code xs ys z =
-    let a=v1 xs; b=v1 ys in
+fpAaff fp xs ys z = do
+    f <- fmap aaff.fpn =<< BSL.readFile fp
     wA a $ \p -> wA b $ \q -> do
-        (fp,_) <- bsFp code
-        pure $ aaff fp p q z
+        pure $ f p q z
+  where
+    a=v1 xs; b=v1 ys
 
-jitAaf :: FunPtr (U Double-> U Double -> Double) -> [Double] -> [Double] -> IO Double
+jitAaf :: FunPtr (U Double -> U Double -> Double) -> [Double] -> [Double] -> IO Double
 jitAaf fp xs ys =
     let a=v1 xs; b=v1 ys in
     wA a $ \p -> wA b $ \q -> do
         pure $ aaf fp p q
-
-jitAf :: BS.ByteString -> [Double] -> IO Double
-jitAf code xs =
-    let a = v1 xs in
-    wA a $ \p -> do
-        (fp,_) <- bsFp code
-        pure $ af fp p
 
 jitExp :: Int64 -> Double -> IO Double
 jitExp = fpIff "test/examples/exp.🍏"
@@ -287,9 +272,6 @@ ncdfJit = fpFf "math/ncdf.🍎"
 erfJit :: Double -> IO Double
 erfJit = fpFf "math/erf.🍏"
 
-jitFact :: Double -> IO Double
-jitFact = fpFf "test/examples/ffact.🍎"
-
 jitRF :: Int -> Int -> IO Int
 jitRF m n = do
     fp <- fpn =<< BSL.readFile "test/examples/risingFactorial.🍎"
@@ -299,8 +281,6 @@ wA :: Storable a => Apple a -> (U a -> IO b) -> IO b
 wA x act =
     allocaBytes (sizeOf x) $ \p ->
         poke p x *> act p
-
-bytesE = either throw id . bytes
 
 foreign import ccall "dynamic" ib :: FunPtr (Int64 -> CUChar) -> Int64 -> CUChar
 foreign import ccall "dynamic" ii :: FunPtr (Int64 -> Int64) -> Int64 -> Int64
