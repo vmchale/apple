@@ -52,7 +52,7 @@ gg (SVar (Nm _ (U n) _)) = do
         Nothing -> do {r <- lift rnk; ds <- lift$vectorOf (fromIntegral r) dim; modify (mapS (IM.insert n (r,ds))) $> (r,ds)}
         Just s  -> pure s
 
-data ValP = ArrDp !(Ptr (Apple Double)) | ArrIp !(Ptr (Apple Int64)) | ArrBp !(Ptr (Apple AB))
+data ValP = ArrDp !(Ptr AF) | ArrIp !(Ptr AI) | ArrBp !(Ptr (Apple AB))
 
 freeP :: ValP -> IO ()
 freeP (ArrDp a) = free a; freeP (ArrIp a) = free a; freeP (ArrBp a) = free a
@@ -60,7 +60,7 @@ freeP (ArrDp a) = free a; freeP (ArrIp a) = free a; freeP (ArrBp a) = free a
 gas :: [T a] -> IO [(Arg, Val, Maybe ValP)]
 gas = flip evalStateT (RSubst IM.empty IM.empty).traverse ga
 
-data Val = ArrD !(Apple Double) | AI !(Apple Int64) | AB !(Apple AB) | II !Int64 | D !Double | BB !Bool
+data Val = ArrD !AF | AI !AI | AB !(Apple AB) | II !Int64 | D !Double | BB !Bool
 
 instance Pretty Val where
     pretty (ArrD a)   = pretty a
@@ -109,14 +109,14 @@ gB sh = do
     es <- lift$map b8<$>vectorOf n chooseAny
     pure (AA r ds es)
 
-gI :: Sh a -> ShM (Apple Int64)
+gI :: Sh a -> ShM AI
 gI sh = do
     (r, ds) <- gg sh
     let n=fromIntegral$product ds
     es <- lift$vectorOf n chooseAny
     pure (AA r ds es)
 
-gD :: Sh a -> ShM (Apple Double)
+gD :: Sh a -> ShM AF
 gD sh = do
     (r, ds) <- gg sh
     let n=fromIntegral$product ds

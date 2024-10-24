@@ -122,10 +122,10 @@ allT = testGroup "jit"
     , testCase "ramanujan" $ do { res <- fpFf "test/examples/ramanujanFact.🍎" 7 ; res ≈ 5040 }
     , testCase "conv (1-d)" $
         let v = AA 1 [10] [1..10::Double]
-        in do { res0 <- fpAa "bench/apple/maxWindow.🍎" v; res1 <- fpAa "bench/apple/convMax.🍏" v; (res0 :: Apple Double) @?= res1 }
+        in do { res0 <- fpAa "bench/apple/maxWindow.🍎" v; res1 <- fpAa "bench/apple/convMax.🍏" v; (res0 :: AF) @?= res1 }
     , testCase "ix" $
         let v = AA 1 [20] [1..20::Int64]
-        in do { res0 <- fpAa "bench/apple/evens.🍎" v; res1 <- fpAa "bench/apple/evenIx.🍎" v; (res0 :: Apple Int64) @?= res1 }
+        in do { res0 <- fpAa "bench/apple/evens.🍎" v; res1 <- fpAa "bench/apple/evenIx.🍎" v; (res0 :: AI) @?= res1 }
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
     , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
     , rfTest
@@ -194,7 +194,7 @@ fpAi fp bs = the<$>tfpAi fp [bs] where the [x]=x; the _ = error "the"
 v1 :: [a] -> Apple a
 v1 xs = AA 1 [fromIntegral (length xs)] xs
 
-fpAaafp4 :: FilePath -> Apple Double -> Apple Double -> Apple Double -> Double -> IO (Apple Double, Apple Double, Apple Double, Double)
+fpAaafp4 :: FilePath -> AF -> AF -> AF -> Double -> IO (AF, AF, AF, Double)
 fpAaafp4 fp xs ys zs w = do
     f <- fpn =<< BSL.readFile fp
     wA xs $ \pX -> wA ys $ \pY -> wA zs $ \pZ -> do
