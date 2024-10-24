@@ -219,7 +219,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | C { ann :: a, label :: Label }
                          | Bl { ann :: a, cfunc :: CFunc }
                          | Bc { ann :: a, cond :: Cond, label :: Label }
-                         | Ret { ann :: a }                                              | RetL { ann :: a, label :: Label }
+                         | Ret { ann :: a } | RetL { ann :: a, label :: Label }
                          | FMovXX { ann :: a, dDest, dSrc :: freg }
                          | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                          | Dup { ann :: a, vDest :: V2Reg freg, rSrc :: reg }

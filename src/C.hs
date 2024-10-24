@@ -161,20 +161,20 @@ infix 9 =:
 data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
           | Rof { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
           | Rof1 { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
-          | R2of { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a], body1 :: [CS a] }
+          | R2of { lann :: a, ixVar :: Temp, eCnt :: CE, body, body1 :: [CS a] }
           | R2ofE { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
-          | R2ofO { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a], body1 :: [CS a] }
+          | R2ofO { lann :: a, ixVar :: Temp, eCnt :: CE, body, body1 :: [CS a] }
           | For1 { lann :: a, tck :: CE, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
-          | F2or { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a], body1 :: [CS a] }
+          | F2or { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body, body1 :: [CS a] }
           | F2orE { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
-          | F2orO { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a], body1 :: [CS a]}
+          | F2orO { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body, body1 :: [CS a]}
           | While { lann :: a, iVar :: Temp, loopCond :: IRel, eDone :: CE, body :: [CS a] }
           | WT { lann :: a, bE :: PE, body :: [CS a] }
           | MT { lann :: a, tDest :: Temp, tSrc :: CE }
           | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE FTemp Double CE }
           | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: CFE F2Temp (Double, Double) Void }
           | Comb { lann :: a, op2 :: FBin, ftDest :: FTemp, f2Src :: F2Temp }
-          | Fill { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp }
+          | Fill { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp } | F1ll { lann :: a, f2dest :: F2Temp, fSrc :: FTemp }
           | MB { lann :: a, bDest :: BTemp, pSrc :: PE }
           | Wr { lann :: a, addr :: ArrAcc, wrE :: CE }
           | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE FTemp Double CE }
@@ -194,12 +194,12 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | Fcmov { lann :: a, scond :: PE, fdest :: FTemp, fsrc :: CFE FTemp Double CE }
           -- TODO: Fcneg?
           | Cset { lann :: a, scond :: PE, bdest :: BTemp }
-          | SZ { lann :: a, szDest :: Temp, arr :: Temp, rank :: CE, mLabel :: Maybe AL }
+          | SZ { lann :: a, szDest, arr :: Temp, rank :: CE, mLabel :: Maybe AL }
           | PlProd { lann :: a, nDest :: Temp, pdims :: [CE] }
           | Rnd { lann :: a, rndDest :: Temp }
           | FRnd { lann :: a, frndDest :: FTemp }
           | Def { lann :: a, fLabel :: Label, body :: [CS a] }
-          | G { lann :: a, gt :: Label, retLabel :: Label }
+          | G { lann :: a, gt, retLabel :: Label }
           deriving Functor
           -- TODO: PlDims cause we have diml
 
@@ -254,6 +254,7 @@ pL f (Def la l cs)         = hardline <> pS l <> ":" <#> indent 4 (pCS f cs) <> 
 pL f (G la l _)            = "GOTO" <+> pS l <> f la
 pL f (Comb l s t r)        = parens ("combine" <> pretty s <+> pretty t <> "," <+> pretty r) <> f l
 pL f (Fill l r t)          = parens ("fill" <+> pretty r <+> brackets (pretty t)) <> f l
+pL f (F1ll l r t)          = parens ("ins" <+> pretty r <+> pretty t) <> f l
 
 pS :: Label -> Doc ann
 pS l = "fun_" <> pretty l

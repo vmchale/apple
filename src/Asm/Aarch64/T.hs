@@ -106,6 +106,7 @@ ir (IR.C l)      = pure [C () l]
 ir (IR.MX t e)   = feval e t
 ir (IR.MX2 t e)  = f2eval e t
 ir (IR.MT t e)   = eval e t
+ir (IR.Ins (IR.F2Temp i) t) = pure [FMovXX () (FReg i) (fabsReg t)]
 ir (IR.S2 Op.FPlus t r) = pure [Faddp () (fabsReg t) (f2absReg r)]
 ir (IR.S2 Op.FMax t r) = pure [Fmaxp () (fabsReg t) (f2absReg r)]
 ir (IR.S2 Op.FMin t r) = pure [Fminp () (fabsReg t) (f2absReg r)]

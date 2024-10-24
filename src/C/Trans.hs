@@ -8,6 +8,7 @@ import           Control.Composition              (thread)
 import           Control.Monad                    (zipWithM)
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor                   (first, second)
+import           Data.Function                    (fix)
 import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
@@ -937,7 +938,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = 
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
     | Just (F, [n_i]) <- tIx tX
     , Just ɴ <- mT n_i = do
-    i <- nI; j₀ <- nI; j <- nI; l <- nI; m <- nI; n <- nI; z <- nF; za <- nF; zx <- nF
+    i <- nI; j₀ <- nI; j <- nI; l <- nI; m <- nI; n <- nI; z <- nF2; za <- nF2; zx <- nF2; z₀ <- nF
     aRd <- nI; xRd <- nI; td <- nI; aid <- nI; xid <- nI
     (aL,aV) <- v8 t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
@@ -949,13 +950,15 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
                         let zr=Raw td (Tmp i) (Just aL) 8 in
                         [ aid=:(Tmp aRd+(Tmp n*Tmp i+Tmp j₀)*8)
                         , xid=:(Tmp xRd+Tmp j₀*8)
-                        , MX () z (FAt zr)
-                        , For1 () 1 j 0 ILt ɴ
-                               [ MX () za (FAt (Raw aid 0 lA 8)), aid+=8
-                               , MX () zx (FAt (Raw xid 0 lX 8)), xid+=8
-                               , MX () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zx)))
+                        , MX () z₀ (FAt zr)
+                        , F1ll () z z₀
+                        , For1 () 2 j 0 ILt ɴ
+                               [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
+                               , MX2 () zx (FAt (Raw xid 0 lX 8)), xid+=16
+                               , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zx)))
                                ]
-                        , WrF () zr (FTmp z)
+                        , Comb () Op.FPlus z₀ z
+                        , WrF () zr (FTmp z₀)
                         ]
                   ]
     pure (Just aL,
@@ -968,7 +971,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
         :[zero,loop])
   where
     tA=eAnn a; tX=eAnn x
-    mT n | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | otherwise = Nothing
+    mT n | n `rem` 32 == 0 = Just 32 | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; z <- nF2
     aRd <- nI; xRd <- nI; td <- nI

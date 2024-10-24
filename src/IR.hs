@@ -73,7 +73,7 @@ data Stmt = L Label
           | MX2 F2 F2E
           -- happd on x86
           | S2 FBin FTemp F2
-          | Fill2 F2 FTemp
+          | Fill2 F2 FTemp | Ins F2 FTemp
           | Ma AL Temp Exp -- label, register, size
           | Free Temp | RA !AL -- "return array" no-op
           | Wr AE Exp | WrF AE FE | WrF2 AE F2E | WrB AE Exp
@@ -117,6 +117,7 @@ instance Pretty Stmt where
     pretty (Cset t e)    = parens ("cset" <+> pretty t <+> "<-" <+> pretty e)
     pretty (S2 o t r)    = parens ("comb" <> pretty o <+> pretty t <+> pretty r)
     pretty (Fill2 r t)   = parens ("fill" <+> pretty r <> "," <+> pretty t)
+    pretty (Ins r t)     = parens ("ins" <+> pretty r <> "," <+> pretty t)
 
 instance Show Stmt where show = show . pretty
 
