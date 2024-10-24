@@ -50,6 +50,7 @@ repl:3:> (sliding-mean @[0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0])
 
 The JIT'ed moving average in Apple happens to be faster than the rolling mean from
 the [zoo package](https://cran.r-project.org/web/packages/zoo/index.html).
+Dot product in Apple is also faster than R.
 
 ## Dimension As a Functor
 
