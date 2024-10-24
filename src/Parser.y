@@ -341,11 +341,6 @@ parseErr tok = throwError . Unexpected tok
 
 data Bnd = L | LL | D
 
-infixl 8 ~>
-
-(~>) :: E a -> Int -> E a
-(~>) e i = let l=eAnn e in EApp l e (Builtin l (TAt i))
-
 bindΠ :: AlexPosn -> [(Nm AlexPosn)] -> E AlexPosn -> Parse (E AlexPosn)
 bindΠ l ns e = do
     ρ <- lift $ freshName "ρ"
