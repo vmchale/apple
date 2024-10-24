@@ -797,9 +797,9 @@ aeval (EApp _ (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs
             :diml (t, Just a) (Tmp<$>(oDims++dots))
         ++ix=:0:it=:0:m'p pinch loop++[pops])
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, rnk) <- tRnk (eAnn xs)
-                                                                    , (Arrow _ tC) <- eAnn f
-                                                                    , Just ySz <- nSz tC
-                                                                    , Just aSz <- nSz tA = do
+                                                                   , (Arrow _ tC) <- eAnn f
+                                                                   , Just ySz <- nSz tC
+                                                                   , Just aSz <- nSz tA = do
     a <- nextArr t
     (plX, (lX, xR)) <- plA xs
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral rnk] ]
@@ -828,10 +828,10 @@ aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, r
         ++xRd =: DP xR (ConstI rnk):slopPd =: DP slopP (ConstI slopRnk):di =: 0:m'p pinch loop
         ++[popS])
 aeval (EApp _ (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t | Just (tA, xRnk) <- tRnk (eAnn xs)
-                                                                    , (Arrow _ tCod) <- eAnn f
-                                                                    , Just (tC, opRnk) <- tRnk tCod
-                                                                    , Just aSz <- nSz tA
-                                                                    , Just cSz <- nSz tC = do
+                                                                   , (Arrow _ tCod) <- eAnn f
+                                                                   , Just (tC, opRnk) <- tRnk tCod
+                                                                   , Just aSz <- nSz tA
+                                                                   , Just cSz <- nSz tC = do
     a <- nextArr t
     (plX, (lX, xR)) <- plA xs
     let ixIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixIs then Index() else Cell() | ix <- [1..fromIntegral xRnk] ]
