@@ -38,3 +38,9 @@ A<-matrix(runif(32,0,1),4);x<-runif(8,0,1)
 mul<-jit("[x::M float%:y]")
 run(mul,A,x)
 (A%*%x)[,1]
+
+x<-runif(128,0,1);y<-runif(128,0,1)
+dp<-jit("[(+)/ ((*)`(x::Vec n float) y)]")
+(x%*%y)[,1]
+run(dp,x,y)
+# LOL stopifnot((x%*%y)[,1]==sum(x*y))
