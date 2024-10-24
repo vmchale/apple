@@ -8,7 +8,6 @@ import           Control.Composition              (thread)
 import           Control.Monad                    (zipWithM)
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor                   (first, second)
-import           Data.Function                    (fix)
 import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
@@ -1018,16 +1017,24 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, 
     tA=eAnn a; tB=eAnn b
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
-    i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF2; z0 <- nF
+    i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF2; z0 <- nF; za <- nF2; zb <- nF2; za1 <- nF; zb1 <- nF
     aRd <- nI; bRd <- nI; td <- nI
+    bid <- nI; aid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
     (prologue, et, ~(Just zs)) <- if te tB then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop=for tA i 0 ILt (Tmp m)
                 [forc tB j 0 ILt (Tmp o) $ prologue
-                    [ MX2 () z (ConstF (0,0)),
-                        f2or tB k 0 ILt (Tmp n)
-                              [MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (Raw aRd (Tmp n*Tmp i+Tmp k) lA 8)) (FAt (Raw bRd (Tmp n*Tmp j+Tmp k) lB 8))))]
-                              [MX () zs (FTmp zs+FAt (Raw aRd (Tmp n*Tmp i+Tmp k) lA 8)*FAt (Raw bRd (Tmp n*Tmp j+Tmp k) lB 8))]
+                    [ MX2 () z (ConstF (0,0))
+                    , MT () aid (Tmp aRd+(Tmp n*Tmp i)*8)
+                    , MT () bid (Tmp bRd+(Tmp n*Tmp j)*8)
+                    , f2or tB k 0 ILt (Tmp n)
+                            [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
+                            , MX2 () zb (FAt (Raw bid 0 lB 8)), bid+=16
+                            , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zb)))]
+                            [ MX () za1 (FAt (Raw aid 0 lA 8)), aid+=8
+                            , MX () zb1 (FAt (Raw bid 0 lB 8)), bid+=8
+                            , MX () zs (FTmp zs+FTmp za1*FTmp zb1)
+                            ]
                     , Comb () Op.FPlus z0 z
                     , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) et]
                     ]
