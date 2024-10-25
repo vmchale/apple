@@ -1004,7 +1004,8 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, 
     let loop=forc tA i 0 ILt (Tmp m)
                 [forc (eAnn b) j 0 ILt (Tmp o)
                     [ MX () z 0, for tA k 0 ILt (Tmp n)
-                        [MX () z (FTmp z+FAt (Raw aRd (Tmp k*Tmp m+Tmp i) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))]
+                        [ MX () z (FTmp z+FAt (Raw aRd (Tmp k*Tmp m+Tmp i) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))
+                        ]
                     , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
                 ]
     pure (Just aL,
@@ -1015,9 +1016,37 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, 
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
+aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
+    | Just (F, [m,n]) <- tIx tA
+    , Just (F, [o,_]) <- tIx tB
+    , Just ɴ <- mT n
+    = do
+    aL <- nextArr t
+    i <- nI; j <- nI; k <- nI
+    z <- nF
+    aRd <- nI; bRd <- nI; td <- nI
+    (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
+    let mE=ConstI m;nE=ConstI n;oE=ConstI o
+        loop=For1 () 1 i 0 ILt mE [
+                For1 () 1 j 0 ILt oE
+                    [ MX () z 0
+                    , For1 () 1 k 0 ILt nE
+                        [ MX () z (FTmp z+FAt (Raw aRd (nE*Tmp i+Tmp k) lA 8)*FAt (Raw bRd (nE*Tmp j+Tmp k) lB 8)) ]
+                    , WrF () (Raw td (Tmp i*oE+Tmp j) (Just aL) 8) (FTmp z)
+                    ]
+             ]
+    pure (Just aL,
+        plAA$plB$
+        Ma () aL t 2 (ConstI$m*o) 8:diml (t, Just aL) [mE,oE]
+        ++aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
+        :[loop])
+  where
+    tA=eAnn a; tB=eAnn b
+    mT n | n `rem` 32 == 0 = Just 32 | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
-    i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF2; z0 <- nF; za <- nF2; zb <- nF2; za1 <- nF; zb1 <- nF
+    i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
+    z <- nF2; z0 <- nF; za <- nF2; zb <- nF2; za1 <- nF; zb1 <- nF
     aRd <- nI; bRd <- nI; td <- nI
     tid <- nI; bid <- nI; aid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
