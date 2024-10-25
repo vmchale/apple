@@ -1025,7 +1025,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI
     aRd <- nI; bRd <- nI; td <- nI
     aid <- nI; bid <- nI; tid <- nI
-    z <- nF; za <- nF; zb <- nF
+    z₀ <- nF; z <- nF2; za <- nF2; zb <- nF2
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
     let mE=ConstI m;nE=ConstI n;oE=ConstI o
         zero=f2or tB l 0 ILt (mE*oE)
@@ -1037,15 +1037,17 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
                         [ For1 () 1 i 0 ILt ɴ
                             [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
                             , For1 () 1 j 0 ILt ɴ $
-                                [ MX () z (FAt (Raw tid 0 (Just aL) 8))
+                                [ MX () z₀ (FAt (Raw tid 0 (Just aL) 8))
+                                , F1ll () z z₀
                                 , aid=:(Tmp aRd+((Tmp i₀+Tmp i)*nE+Tmp k₀)*8)
                                 , bid=:(Tmp bRd+((Tmp j₀+Tmp j)*nE+Tmp k₀)*8)
-                                , For1 () 1 k 0 ILt ɴ
-                                    [ MX () za (FAt (Raw aid 0 lA 8)), aid+=8
-                                    , MX () zb (FAt (Raw bid 0 lB 8)), bid+=8
-                                    , MX () z (FTmp z+FTmp za*FTmp zb)
+                                , For1 () 2 k 0 ILt ɴ
+                                    [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
+                                    , MX2 () zb (FAt (Raw bid 0 lB 8)), bid+=16
+                                    , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zb)))
                                     ]
-                                , WrF () (Raw tid 0 (Just aL) 8) (FTmp z)
+                                , Comb () Op.FPlus z₀ z
+                                , WrF () (Raw tid 0 (Just aL) 8) (FTmp z₀)
                                 , tid+=8
                                 ]
                             ]
