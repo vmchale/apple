@@ -44,3 +44,11 @@ dp<-jit("[(+)/ ((*)`(x::Vec n float) y)]")
 (x%*%y)[,1]
 run(dp,x,y)
 # LOL stopifnot((x%*%y)[,1]==sum(x*y))
+
+B<-matrix(runif(4096,0,1),64);C<-matrix(runif(4096,0,1),64)
+m6<-jit("[(x::(Arr (64×64) float))%.(y::Arr (64×64) float)]")
+stopifnot(all(B%*%C==run(m6,B,C)))
+
+mT6<-jit("[(x::(Arr (64×64) float))%.|:(y::Arr (64×64) float)]")
+(B%*%t(C))[,55]
+run(mT6,B,C)[,55]
