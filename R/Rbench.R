@@ -19,3 +19,12 @@ A<-matrix(runif(1024,0,1),32);x<-runif(32,0,1)
 vmul<-jit("[x::M float%:y]")
 microbenchmark(A%*%x)
 microbenchmark(run(vmul,A,x))
+
+B<-matrix(runif(4096,0,1),64);C<-matrix(runif(4096,0,1),64)
+m6<-jit("[(x::(Arr (64×64) float))%.(y::Arr (64×64) float)]")
+microbenchmark(B%*%C)
+microbenchmark(B%*%t(C))
+
+mT6<-jit("[(x::(Arr (64×64) float))%.|:(y::Arr (64×64) float)]")
+microbenchmark(run(m6,B,C))
+microbenchmark(run(mT6,B,C))
