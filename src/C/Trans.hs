@@ -1022,24 +1022,32 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     , Just ɴ <- mT n
     = do
     aL <- nextArr t
-    i <- nI; j <- nI; k <- nI
-    z <- nF
+    i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI
     aRd <- nI; bRd <- nI; td <- nI
+    aid <- nI; bid <- nI; tid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
     let mE=ConstI m;nE=ConstI n;oE=ConstI o
-        loop=For1 () 1 i 0 ILt mE [
-                For1 () 1 j 0 ILt oE
-                    [ MX () z 0
-                    , For1 () 1 k 0 ILt nE
-                        [ MX () z (FTmp z+FAt (Raw aRd (nE*Tmp i+Tmp k) lA 8)*FAt (Raw bRd (nE*Tmp j+Tmp k) lB 8)) ]
-                    , WrF () (Raw td (Tmp i*oE+Tmp j) (Just aL) 8) (FTmp z)
+        zero=f2or tB l 0 ILt (mE*oE)
+                [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
+                [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
+        loop=For1 () ɴ i₀ 0 ILt mE [
+                For1 () ɴ j₀ 0 ILt oE [
+                    For1 () ɴ k₀ 0 ILt nE
+                        [ For1 () 1 i 0 ILt ɴ [
+                            For1 () 1 k 0 ILt ɴ [
+                                For1 () 1 j 0 ILt ɴ $
+                                    let zr=Raw td ((Tmp i+Tmp i₀)*oE+Tmp j+Tmp j₀) (Just aL) 8 in
+                                    [ WrF () zr (FAt zr+FAt (Raw aRd ((Tmp i+Tmp i₀)*nE+Tmp k+Tmp k₀) lA 8)*FAt (Raw bRd ((Tmp j+Tmp j₀)*nE+Tmp k+Tmp k₀) lB 8)) ]
+                                ]
+                            ]
+                        ]
                     ]
              ]
     pure (Just aL,
         plAA$plB$
         Ma () aL t 2 (ConstI$m*o) 8:diml (t, Just aL) [mE,oE]
         ++aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
-        :[loop])
+        :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
     mT n | n `rem` 32 == 0 = Just 32 | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
