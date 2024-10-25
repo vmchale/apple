@@ -12,8 +12,8 @@ import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.List                        (scanl')
 import           Data.Maybe                       (catMaybes)
+import           Data.List                        (foldl1', scanl')
 import           Data.Tuple.Extra                 (second3)
 import           Data.Word                        (Word64)
 import           GHC.Float                        (castDoubleToWord64)
@@ -1106,7 +1106,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
     aRd <- nI; bRd <- nI; td <- nI
     aid <- nI; bid <- nI; tid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    let ɴ=minimum[m,n,o]; ɴc=ConstI ɴ
+    let ɴ=foldl1' gcd [m,n,o]; ɴc=ConstI ɴ
         mE=ConstI m;nE=ConstI n;oE=ConstI o
         zero=f2or tB l 0 ILt (mE*oE)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
