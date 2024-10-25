@@ -1019,11 +1019,12 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF2; z0 <- nF; za <- nF2; zb <- nF2; za1 <- nF; zb1 <- nF
     aRd <- nI; bRd <- nI; td <- nI
-    bid <- nI; aid <- nI
+    tid <- nI; bid <- nI; aid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
     (prologue, et, ~(Just zs)) <- if te tB then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop=for tA i 0 ILt (Tmp m)
-                [forc tB j 0 ILt (Tmp o) $ prologue
+                [ MT () tid (Tmp td+(Tmp i*Tmp o)*8)
+                , forc tB j 0 ILt (Tmp o) $ prologue
                     [ MX2 () z (ConstF (0,0))
                     , MT () aid (Tmp aRd+(Tmp n*Tmp i)*8)
                     , MT () bid (Tmp bRd+(Tmp n*Tmp j)*8)
@@ -1036,8 +1037,10 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
                             , MX () zs (FTmp zs+FTmp za1*FTmp zb1)
                             ]
                     , Comb () Op.FPlus z0 z
-                    , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) et]
+                    , WrF () (Raw tid 0 (Just aL) 8) et
+                    , tid+=8
                     ]
+                ]
     pure (Just aL,
         plAA$plB$
         m=:ev tA (aR,lA):o=:ev tB (bR,lB)
