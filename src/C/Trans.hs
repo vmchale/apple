@@ -1025,6 +1025,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI
     aRd <- nI; bRd <- nI; td <- nI
     aid <- nI; bid <- nI; tid <- nI
+    z <- nF; za <- nF; zb <- nF
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
     let mE=ConstI m;nE=ConstI n;oE=ConstI o
         zero=f2or tB l 0 ILt (mE*oE)
@@ -1033,11 +1034,19 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
         loop=For1 () ɴ i₀ 0 ILt mE [
                 For1 () ɴ j₀ 0 ILt oE [
                     For1 () ɴ k₀ 0 ILt nE
-                        [ For1 () 1 i 0 ILt ɴ [
-                            For1 () 1 k 0 ILt ɴ [
-                                For1 () 1 j 0 ILt ɴ $
-                                    let zr=Raw td ((Tmp i+Tmp i₀)*oE+Tmp j+Tmp j₀) (Just aL) 8 in
-                                    [ WrF () zr (FAt zr+FAt (Raw aRd ((Tmp i+Tmp i₀)*nE+Tmp k+Tmp k₀) lA 8)*FAt (Raw bRd ((Tmp j+Tmp j₀)*nE+Tmp k+Tmp k₀) lB 8)) ]
+                        [ For1 () 1 i 0 ILt ɴ
+                            [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
+                            , For1 () 1 j 0 ILt ɴ $
+                                [ MX () z (FAt (Raw tid 0 (Just aL) 8))
+                                , aid=:(Tmp aRd+((Tmp i₀+Tmp i)*nE+Tmp k₀)*8)
+                                , bid=:(Tmp bRd+((Tmp j₀+Tmp j)*nE+Tmp k₀)*8)
+                                , For1 () 1 k 0 ILt ɴ
+                                    [ MX () za (FAt (Raw aid 0 lA 8)), aid+=8
+                                    , MX () zb (FAt (Raw bid 0 lB 8)), bid+=8
+                                    , MX () z (FTmp z+FTmp za*FTmp zb)
+                                    ]
+                                , WrF () (Raw tid 0 (Just aL) 8) (FTmp z)
+                                , tid+=8
                                 ]
                             ]
                         ]
@@ -1050,7 +1059,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
         :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
-    mT n | n `rem` 32 == 0 = Just 32 | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
+    mT n | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, _) <- tRnk tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
