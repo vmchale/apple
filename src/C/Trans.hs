@@ -998,7 +998,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     | Just (F, [m,n]) <- tIx tA
     , Just (F, [o,_]) <- tIx tB
-    , Just ɴ <- mT n
+    , Just ɴ <- mT (foldl1' gcd [m,n,o])
     = do
     aL <- nextArr t
     i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI
