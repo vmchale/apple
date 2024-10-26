@@ -1076,44 +1076,34 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
--- https://developer.arm.com/documentation/den0013/d/Optimizing-Code-to-Run-on-ARM-Processors/ARM-memory-system-optimization/Loop-tiling
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
-    | Just (F, [m,n]) <- tIx tA, Just (F, [_,o]) <- tIx tB
-    , all even [m,n,o] = do
+    | Just (F, [_,oe]) <- tIx tB
+    , even oe = do
     aL <- nextArr t
-    i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI; z <- nF2; z₀ <- nF
+    m <- nI; n <- nI; o <- nI; i <- nI; j <- nI; k <- nI; l <- nI; z <- nF2; z₀ <- nF
     aRd <- nI; bRd <- nI; td <- nI
-    aid <- nI; bid <- nI; tid <- nI
+    bid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    let ɴ=foldl1' gcd [m,n,o]; ɴc=ConstI ɴ
-        mE=ConstI m;nE=ConstI n;oE=ConstI o
-        zero=f2or tB l 0 ILt (mE*oE)
+    let zero=f2or tB l 0 ILt (Tmp m*Tmp o)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        loop=For1 () ɴc i₀ 0 ILt mE
-            [ For1 () ɴc j₀ 0 ILt oE
-                [For1 () ɴc k₀ 0 ILt nE
-                    [ tid=:(Tmp td+(Tmp i₀*oE+Tmp j₀)*8)
-                    , aid=:(Tmp aRd+(Tmp i₀*nE+Tmp k₀)*8)
-                    , For1 () 1 i 0 ILt ɴc
-                        [ bid=:(Tmp bRd+(Tmp k₀*oE+Tmp j₀)*8)
-                        , For1 () 1 k 0 ILt ɴc
-                            [ MX () z₀ (FAt (Raw aid (Tmp k) lA 8))
-                            , Fill () z z₀
-                            , For1 () 2 j 0 ILt ɴc $
-                                let zr=Raw tid (Tmp j) (Just aL) 8 in
-                                [ Wr2F () zr (FBin FPlus (FAt zr) (FBin FTimes (FTmp z) (FAt (Raw bid (Tmp j) lB 8)))) ]
-                            , bid+=(oE*8)
-                            ]
-                        , aid+=(nE*8)
-                        , tid+=(oE*8)
-                        ]
+        loop=for tA i 0 ILt (Tmp m)
+                [ bid=:Tmp bRd
+                , forc tA k 0 ILt (Tmp n)
+                    [ MX () z₀ (FAt (Raw aRd (Tmp k) lA 8))
+                    , Fill () z z₀
+                    , For1 () 2 j 0 ILt (Tmp o) $
+                        let zr=Raw td (Tmp j) (Just aL) 8 in
+                        [ Wr2F () zr (FBin FPlus (FAt zr) (FBin FTimes (FTmp z) (FAt (Raw bid (Tmp j) lB 8)))) ]
+                    , bid+=(Tmp o*8)
                     ]
+                , aRd+=(Tmp n*8)
+                , td+=(Tmp o*8)
                 ]
-            ]
     pure (Just aL,
         plAA$plB$
-        Ma () aL t 2 (mE*oE) 8:diml (t, Just aL) [mE,oE]
+        m=:ev tA (aR,lA):n=:ec tA (aR,lA):o=:ec tB (bR,lB):
+        Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m,Tmp o]
         ++aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
         :[zero,loop])
   where
