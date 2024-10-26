@@ -998,7 +998,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     | Just (F, [m,n]) <- tIx tA
     , Just (F, [o,_]) <- tIx tB
-    , Just ɴ <- mT (foldl1' gcd [m,n,o])
+    , Just ɴ <- mT n, Just ᴍ <- mT m, Just ᴏ <- mT o
     = do
     aL <- nextArr t
     i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI
@@ -1010,12 +1010,12 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
         zero=f2or tB l 0 ILt (mE*oE)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        loop=For1 () ɴ i₀ 0 ILt mE [
-                For1 () ɴ j₀ 0 ILt oE [
+        loop=For1 () ᴍ i₀ 0 ILt mE [
+                For1 () ᴏ j₀ 0 ILt oE [
                     For1 () ɴ k₀ 0 ILt nE
-                        [ For1 () 1 i 0 ILt ɴ
+                        [ For1 () 1 i 0 ILt ᴍ
                             [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
-                            , For1 () 1 j 0 ILt ɴ $
+                            , For1 () 1 j 0 ILt ᴏ $
                                 [ MX () z₀ (FAt (Raw tid 0 (Just aL) 8))
                                 , F1ll () z z₀
                                 , aid=:(Tmp aRd+((Tmp i₀+Tmp i)*nE+Tmp k₀)*8)
