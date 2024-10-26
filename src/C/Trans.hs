@@ -995,27 +995,6 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
         :[loop])
   where
     tA=eAnn a; tX=eAnn x
-aeval (EApp _ (EApp _ (Builtin _ Mul) (EApp _ (Builtin _ T) a)) b) t | Just (F, _) <- tRnk tA = do
-    aL <- nextArr t
-    i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF
-    aRd <- nI; bRd <- nI; td <- nI
-    (plAA, (lA, aR)) <- plA a
-    (plB, (lB, bR)) <- plA b
-    let loop=forc tA i 0 ILt (Tmp m)
-                [forc (eAnn b) j 0 ILt (Tmp o)
-                    [ MX () z 0, for tA k 0 ILt (Tmp n)
-                        [ MX () z (FTmp z+FAt (Raw aRd (Tmp k*Tmp m+Tmp i) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))
-                        ]
-                    , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
-                ]
-    pure (Just aL,
-        plAA$plB$
-        m=:ec tA (aR,lA):o=:ec tB (bR,lB)
-        :Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
-        ++n=:ev tA (aR,lA):aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
-        :[loop])
-  where
-    tA=eAnn a; tB=eAnn b
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     | Just (F, [m,n]) <- tIx tA
     , Just (F, [o,_]) <- tIx tB
