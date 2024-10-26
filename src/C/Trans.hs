@@ -204,9 +204,11 @@ ne (Arr (i `Cons` _) _) = nz i; ne _=False
 n1 (Arr (i `Cons` _) _) = ni1 i; n1 _=False
 nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
 
-te, to, nee :: T a -> Bool
+te,to,toc,tec,nee :: T a -> Bool
 te (Arr (i `Cons` _) _) = ipe i; te _ = False
 to (Arr (i `Cons` _) _) = ipo i; to _ = False
+tec (Arr (_ `Cons` i `Cons` _) _) = ipe i; tec _ = False
+toc (Arr (_ `Cons` i `Cons` _) _) = ipo i; toc _ = False
 nee (Arr sh _) = nzSh sh; nee _=False
 
 rof t = if ne t then Rof1 () else Rof (); rof1 t = if n1 t then Rof1 () else Rof ()
@@ -227,6 +229,10 @@ r2of ty | to ty = R2ofO ()
 f2or ty | to ty = F2orO ()
         | te ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
         | otherwise = F2or ()
+
+f2orc ty | toc ty = F2orO ()
+         | tec ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
+         | otherwise = F2or ()
 
 staR :: Sh a -> [Int64]
 staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s
@@ -1015,7 +1021,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
                     For1 () ɴ k₀ 0 ILt nE
                         [ For1 () 1 i 0 ILt ᴍ
                             [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
-                            , For1 () 1 j 0 ILt ᴏ $
+                            , For1 () 1 j 0 ILt ᴏ
                                 [ MX () z₀ (FAt (Raw tid 0 (Just aL) 8))
                                 , F1ll () z z₀
                                 , aid=:(Tmp aRd+((Tmp i₀+Tmp i)*nE+Tmp k₀)*8)
@@ -1076,25 +1082,22 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, 
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
-aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
-    | Just (F, [_,oe]) <- tIx tB
-    , even oe = do
+aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t = do
     aL <- nextArr t
     m <- nI; n <- nI; o <- nI; i <- nI; j <- nI; k <- nI; l <- nI; z <- nF2; z₀ <- nF
-    aRd <- nI; bRd <- nI; td <- nI
-    bid <- nI
+    aRd <- nI; bRd <- nI; td <- nI; bid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
     let zero=f2or tB l 0 ILt (Tmp m*Tmp o)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         loop=for tA i 0 ILt (Tmp m)
                 [ bid=:Tmp bRd
-                , forc tA k 0 ILt (Tmp n)
-                    [ MX () z₀ (FAt (Raw aRd (Tmp k) lA 8))
-                    , Fill () z z₀
-                    , For1 () 2 j 0 ILt (Tmp o) $
-                        let zr=Raw td (Tmp j) (Just aL) 8 in
-                        [ Wr2F () zr (FBin FPlus (FAt zr) (FBin FTimes (FTmp z) (FAt (Raw bid (Tmp j) lB 8)))) ]
+                , forc tA k 0 ILt (Tmp n) $
+                    MX () z₀ (FAt (Raw aRd (Tmp k) lA 8)):Fill () z z₀:
+                    [ let zr=Raw td (Tmp j) (Just aL) 8 in
+                        f2orc tB j 0 ILt (Tmp o)
+                            [Wr2F () zr (FBin FPlus (FAt zr) (FBin FTimes (FTmp z) (FAt (Raw bid (Tmp j) lB 8))))]
+                            [WrF () zr (FAt zr+FTmp z₀*FAt (Raw bid (Tmp j) lB 8))]
                     , bid+=(Tmp o*8)
                     ]
                 , aRd+=(Tmp n*8)
@@ -1106,25 +1109,6 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t
         Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m,Tmp o]
         ++aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
         :[zero,loop])
-  where
-    tA=eAnn a; tB=eAnn b
-aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, _) <- tRnk tA = do
-    aL <- nextArr t
-    i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI; z <- nF
-    aRd <- nI; bRd <- nI; td <- nI
-    (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    let loop=for tA i 0 ILt (Tmp m)
-                [forc tB j 0 ILt (Tmp o)
-                    [ MX () z 0, for tB k 0 ILt (Tmp n)
-                          [MX () z (FTmp z+FAt (Raw aRd (Tmp n*Tmp i+Tmp k) lA 8)*FAt (Raw bRd (Tmp k*Tmp o+Tmp j) lB 8))]
-                    , WrF () (Raw td (Tmp i*Tmp o+Tmp j) (Just aL) 8) (FTmp z)]
-                    ]
-    pure (Just aL,
-        plAA$plB$
-        m=:ev tA (aR,lA):o=:ec tB (bR,lB)
-        :Ma () aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
-        ++n=:ev tB (bR,lB):aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
-        :[loop])
   where
     tA=eAnn a; tB=eAnn b
 aeval (EApp _ (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, Just sz <- rSz tX = do
