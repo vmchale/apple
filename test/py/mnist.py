@@ -24,14 +24,17 @@ ssoftmax=apple.jit('''
 ''')
 
 vsigmoid=apple.jit("([1%(1+ℯ(_x))]`{0})")
-mmul=apple.jit("[x%.(y::M float)]")
+def mul(M,N,K):
+    return apple.jit(f"[(x::Arr ({M}×{N}) float)%.(y::Arr ({N}×{K}) float)]")
+ml1=mul(60000,784,128)
+ml2=mul(60000,128,10)
 
 train_labels_v=apple.jit("((λn.[?x=n,.1::float,.0]'irange 0 9 1)')")(train_labels)
 
 def fw(l1,l2,x):
-    x_l1p=mmul(x,l1)
+    x_l1p=ml1(x,l1)
     x_sigmoid=vsigmoid(x_l1p)
-    x_l2p=mmul(x_sigmoid,l2)
+    x_l2p=ml2(x_sigmoid,l2)
     out=ssoftmax(x_l2p)
     return x_l1p,x_sigmoid,x_l2p,out
 
@@ -47,12 +50,12 @@ errorjit=apple.jit('''
   (*)`{0,0} ({n⟜2%(ℝ(𝓉out)); [x*n]`{0} ((-)`{0,0} out targets)}) (dsoftmax xl2p)
 }
 ''')
-u_l2jit=apple.jit('[(|:(x::M float))%.y]')
+u_l2jit=apple.jit('[(|:(x::Arr (60000×128) float))%.(y::Arr (60000×10) float)]')
 u_l1jit=apple.jit('''
 λx.λl2.λerror.λxl1p.
 {
   dsigmoid ← ((λx.⸎x⟜ℯ(_x);x%(1+x)^2)`{0});
-  (⍉x)%.((*)`{0,0} (⍉(l2%.(⍉error))) (dsigmoid xl1p))
+  (⍉(x::Arr (60000×784) float))%.((*)`{0,0} (⍉((l2::Arr (128×10) float)%.(⍉(error::Arr (60000×10) float)))) (dsigmoid xl1p))
 }
 ''')
 
@@ -93,7 +96,6 @@ print('update_l2\n',update_l2)
 def fw_bw(x,targets):
 
     x_l1p,x_sigmoid,x_l2p,out=fw(l1,l2,x)
-
 
     error=errorjit(out,targets,x_l2p)
 

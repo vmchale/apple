@@ -1,0 +1,1 @@
+[(x::Arr (64×64) float)%.⍉(y::Arr (64×64) float)]
