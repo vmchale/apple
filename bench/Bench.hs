@@ -140,14 +140,14 @@ main = do
                       , bench "++" $ nfIO (do {p <- withForeignPtr isp $ \iSmallPtr -> catFp iSmallPtr iSmallPtr; free p})
                       , bench "window" $ nfIO (do {p <- withForeignPtr f wMax; free p})
                       ]
-                , env matEnv $ \ ~(m6,m9,m10,v6,v9) ->
+                , env matEnv $ \ ~(m6,m9,v6,v9) ->
                   bgroup "mat"
                       [ bench "vmul (sized) (2^6)" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> withForeignPtr v6 $ \vPtr -> vb6 mPtr vPtr; free p})
                       , bench "vmul (sized) (2^9)" $ nfIO (do {p <- withForeignPtr m9 $ \mPtr -> withForeignPtr v9 $ \vPtr -> vb9 mPtr vPtr; free p})
                       , bench "vmul (2^6)" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> withForeignPtr v6 $ \vPtr -> v mPtr vPtr; free p})
                       , bench "vmul (2^9)" $ nfIO (do {p <- withForeignPtr m9 $ \mPtr -> withForeignPtr v9 $ \vPtr -> v mPtr vPtr; free p})
                       , bench "mul (2^6)" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> mul mPtr mPtr; free p})
-                      , bench "mul (2^10)" $ nfIO (do {p <- withForeignPtr m10 $ \mPtr -> mul mPtr mPtr; free p})
+                      , bench "mul (2^9)" $ nfIO (do {p <- withForeignPtr m9 $ \mPtr -> mul mPtr mPtr; free p})
                       , bench "vmul (rank) (2^9)" $ nfIO (do {p <- withForeignPtr m9 $ \mPtr -> withForeignPtr v9 $ \vPtr -> vr mPtr vPtr; free p})
                       , bench "mul (rank) (2^6)" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> mulrank mPtr mPtr; free p})
                       , bench "mul-of-transp (sized) (2^6)" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> mT6 mPtr mPtr; free p})
@@ -175,7 +175,7 @@ main = do
                           xorFp whPtr woPtr bhPtr 0.57823076
                       ]
                 , env simdEnv $ \ isp ->
-                  env matEnv $ \ ~(m6,_,_,_,_) ->
+                  env matEnv $ \ ~(m6,_,_,_) ->
                   bgroup "mnist"
                       [ bench "vize" $ nfIO (do {p <- withForeignPtr isp $ \iSmallPtr -> v'izeFp iSmallPtr; free p})
                       , bench "softmax" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> softmax mPtr; free p})
@@ -202,10 +202,9 @@ main = do
           matEnv = do
               m6Ptr <- aAF (AA 2 [64,64] (replicate 4096 (0.002::Double)))
               m9Ptr <- aAF (AA 2 [512,512] (replicate 262144 (0.002::Double)))
-              m10Ptr <- aAF (AA 2 [1024,1024] (replicate 1048576 (0.002::Double)))
               v6Ptr <- aAF (AA 1 [64] (replicate 64 (2::Double)))
               v9Ptr <- aAF (AA 1 [512] (replicate 512 (3::Double)))
-              pure (m6Ptr, m9Ptr, m10Ptr, v6Ptr, v9Ptr)
+              pure (m6Ptr, m9Ptr, v6Ptr, v9Ptr)
           xorEnv = do
               whPtr <- aAF (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493::Double])
               woPtr <- aAF (AA 1 [2] [0.14801747,0.37182892::Double])
