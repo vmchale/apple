@@ -67,8 +67,6 @@ main = do
     dp <- fmap aaf . leakFp =<< BSL.readFile "test/examples/dotprod.🍏"
     v <- fmap aaa . leakFp =<< BSL.readFile "test/data/vb.🍏"
     mul <- fmap aaa.leakFp =<< BSL.readFile "test/data/mul.🍏"
-    sm10 <- fmap aaa.leakFp =<< BSL.readFile "test/data/m10.🍎"
-    sm6 <- fmap aaa.leakFp =<< BSL.readFile "test/data/m6.🍎"
     mulT <- fmap aaa.leakFp =<< BSL.readFile "test/data/mulT.🍏"
     mT6 <- fmap aaa.leakFp =<< BSL.readFile "test/data/mT6.🍎"
     mT9 <- fmap aaa.leakFp =<< BSL.readFile "test/data/mT9.🍎"
@@ -150,8 +148,6 @@ main = do
                       , bench "vmul (2^9)" $ nfIO (do {p <- withForeignPtr m9 $ \mPtr -> withForeignPtr v9 $ \vPtr -> v mPtr vPtr; free p})
                       , bench "mul (2^6)" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> mul mPtr mPtr; free p})
                       , bench "mul (2^10)" $ nfIO (do {p <- withForeignPtr m10 $ \mPtr -> mul mPtr mPtr; free p})
-                      , bench "mul (sized) (2^10)" $ nfIO (do {p <- withForeignPtr m10 $ \mPtr -> sm10 mPtr mPtr; free p})
-                      , bench "mul (sized) (2^6)" $ nfIO (do {p <- withForeignPtr m10 $ \mPtr -> sm6 mPtr mPtr; free p})
                       , bench "vmul (rank) (2^9)" $ nfIO (do {p <- withForeignPtr m9 $ \mPtr -> withForeignPtr v9 $ \vPtr -> vr mPtr vPtr; free p})
                       , bench "mul (rank) (2^6)" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> mulrank mPtr mPtr; free p})
                       , bench "mul-of-transp (sized) (2^6)" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> mT6 mPtr mPtr; free p})
