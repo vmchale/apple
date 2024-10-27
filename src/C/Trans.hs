@@ -942,20 +942,20 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         loop = For1 () ɴ j₀ 0 ILt (Tmp n) [
-                    for tA i 0 ILt (Tmp m) $
-                        let zr=Raw td (Tmp i) (Just aL) 8 in
-                        [ aid=:(Tmp aRd+(Tmp n*Tmp i+Tmp j₀)*8)
-                        , xid=:(Tmp xRd+Tmp j₀*8)
-                        , MX () z₀ (FAt zr)
-                        , F1ll () z z₀
-                        , For1 () 2 j 0 ILt ɴ
-                               [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
-                               , MX2 () zx (FAt (Raw xid 0 lX 8)), xid+=16
-                               , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zx)))
-                               ]
-                        , Comb () Op.FPlus z₀ z
-                        , WrF () zr (FTmp z₀)
-                        ]
+                  for tA i 0 ILt (Tmp m) $
+                      let zr=Raw td (Tmp i) (Just aL) 8 in
+                      [ aid=:(Tmp aRd+(Tmp n*Tmp i+Tmp j₀)*8)
+                      , xid=:(Tmp xRd+Tmp j₀*8)
+                      , MX () z₀ (FAt zr)
+                      , F1ll () z z₀
+                      , For1 () 2 j 0 ILt ɴ
+                             [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
+                             , MX2 () zx (FAt (Raw xid 0 lX 8)), xid+=16
+                             , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zx)))
+                             ]
+                      , Comb () Op.FPlus z₀ z
+                      , WrF () zr (FTmp z₀)
+                      ]
                   ]
     pure (Just aL,
         plAA$
@@ -1083,9 +1083,10 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t = do
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         loop=for tA i 0 ILt (Tmp m)
                 [ bid=:Tmp bRd
-                , forc tA k 0 ILt (Tmp n) $
-                    MX () z₀ (FAt (Raw aRd (Tmp k) lA 8)):Fill () z z₀:
-                    [ let zr=Raw td (Tmp j) (Just aL) 8 in
+                , forc tA k 0 ILt (Tmp n)
+                    [ MX () z₀ (FAt (Raw aRd (Tmp k) lA 8))
+                    , Fill () z z₀
+                    , let zr=Raw td (Tmp j) (Just aL) 8 in
                         f2orc tB j 0 ILt (Tmp o)
                             [Wr2F () zr (FBin FPlus (FAt zr) (FBin FTimes (FTmp z) (FAt (Raw bid (Tmp j) lB 8))))]
                             [WrF () zr (FAt zr+FTmp z₀*FAt (Raw bid (Tmp j) lB 8))]
