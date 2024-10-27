@@ -970,8 +970,8 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         loop=For1 () ᴍ i₀ 0 ILt mE [
                 For1 () ᴏE j₀ 0 ILt oE [
-                    For1 () ɴ k₀ 0 ILt nE
-                        [ For1 () 1 i 0 ILt ᴍ
+                    For1 () ɴ k₀ 0 ILt nE [
+                      For1 () 1 i 0 ILt ᴍ
                             [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
                             , For1 () ᴏE j 0 ILt ᴏE $
                                   zipWith (\z₀ toffs -> MX () z₀ (FAt (Raw tid (ConstI toffs) (Just aL) 8))) z₀s oᴋ
@@ -986,7 +986,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
                                   ]
                                 ++zipWith (\z₀ z -> Comb () Op.FPlus z₀ z) z₀s zs
                                 ++zipWith (\z₀ toff -> WrF () (Raw tid (ConstI toff) (Just aL) 8) (FTmp z₀)) (rot1 z₀s) (rot1 oᴋ)
-                                ++[tid+=32]
+                                ++[tid+=(ᴏE*8)]
                             ]
                         ]
                     ]
