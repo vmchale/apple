@@ -24,10 +24,10 @@ ssoftmax=apple.jit('''
 ''')
 
 vsigmoid=apple.jit("([1%(1+ℯ(_x))]`{0})")
-def mul(M,N,K):
-    return apple.jit(f"[(x::Arr ({M}×{N}) float)%.(y::Arr ({N}×{K}) float)]")
-ml1=mul(60000,784,128)
-ml2=mul(60000,128,10)
+def mul(N,K):
+    return apple.jit(f"[x%.(y::Arr ({N}×{K}) float)]")
+ml1=mul(784,128)
+ml2=mul(128,10)
 
 train_labels_v=apple.jit("((λn.[?x=n,.1::float,.0]'irange 0 9 1)')")(train_labels)
 
