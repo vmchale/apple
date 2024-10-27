@@ -1038,7 +1038,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
   where
     tA=eAnn a; tB=eAnn b
     mT n | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
-aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Just (F, _) <- tRnk tA = do
+aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | (Arr _ F) <- tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
     z <- nF2; z0 <- nF; za <- nF2; zb <- nF2; za1 <- nF; zb1 <- nF
