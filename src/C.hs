@@ -174,7 +174,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE FTemp Double CE }
           | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: CFE F2Temp (Double, Double) Void }
           | Comb { lann :: a, op2 :: FBin, ftDest :: FTemp, f2Src :: F2Temp }
-          | Fill { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp } | Ins { lann :: a, f2dest :: F2Temp, fSrc :: FTemp }
+          | DS { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp } | Ins { lann :: a, f2dest :: F2Temp, fSrc :: FTemp }
           | MB { lann :: a, bDest :: BTemp, pSrc :: PE }
           | Wr { lann :: a, addr :: ArrAcc, wrE :: CE }
           | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE FTemp Double CE }
@@ -253,7 +253,7 @@ pL f (FRnd l x)            = pretty x <+> "=" <+> "(frnd)" <> f l
 pL f (Def la l cs)         = hardline <> pS l <> ":" <#> indent 4 (pCS f cs) <> f la
 pL f (G la l _)            = "GOTO" <+> pS l <> f la
 pL f (Comb l s t r)        = parens ("combine" <> pretty s <+> pretty t <> "," <+> pretty r) <> f l
-pL f (Fill l r t)          = parens ("fill" <+> pretty r <+> brackets (pretty t)) <> f l
+pL f (DS l r t)            = parens ("dup" <+> pretty r <+> brackets (pretty t)) <> f l
 pL f (Ins l r t)           = parens ("ins" <+> pretty r <+> pretty t) <> f l
 
 pS :: Label -> Doc ann

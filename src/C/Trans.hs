@@ -1359,7 +1359,7 @@ plC (Var I x)  = do {st <- gets vars; pure (id, Tmp$getT st x)}
 plC e          = do {t <- nI; pl <- eval e t; pure ((pl++), Tmp t)}
 
 plD2 :: E (T ()) -> CM ([CS ()] -> [CS ()], F2Temp)
-plD2 (Var F x) = do {tϵ <- gets (getT2 x); case tϵ of {Right t2 -> pure (id, t2); Left t1 -> do {t <- nF2; pure ((Fill () t t1:), t)}}}
+plD2 (Var F x) = do {tϵ <- gets (getT2 x); case tϵ of {Right t2 -> pure (id, t2); Left t1 -> do {t <- nF2; pure ((DS () t t1:), t)}}}
 plD2 e         = do {t <- nF2; pl <- f2eval e t; pure ((pl++), t)}
 
 plD :: E (T ()) -> CM ([CS ()] -> [CS ()], F1E)
@@ -1638,7 +1638,7 @@ f2eval :: E (T ()) -> F2Temp -> CM [CS ()]
 f2eval (LLet _ b e) t = do
     ss <- llet b
     (ss++) <$> f2eval e t
-f2eval (Var _ x) t = do {tϵ <- gets (getT2 x); pure $ case tϵ of Right t2 -> [MX2 () t (FTmp t2)]; Left t1 -> [Fill () t t1]}
+f2eval (Var _ x) t = do {tϵ <- gets (getT2 x); pure $ case tϵ of Right t2 -> [MX2 () t (FTmp t2)]; Left t1 -> [DS () t t1]}
 f2eval (EApp _ (EApp _ (Builtin _ Plus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
     (pl0,t0) <- plD2 e0; (pl1,t1) <- plD2 e1; (pl2,t2) <- plD2 e2
     pure $ pl0 $ pl1 $ pl2 [MX2 () t (FBin FPlus (FTmp t0) (FBin FTimes (FTmp t1) (FTmp t2)))]
@@ -1753,7 +1753,7 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <-
     ss1 <- writeRF op (FT<$>[acc0,x0,y0]) (FT acc0)
     ss <- write2 op [acc2, x, y] acc2
     seed <- writeRF zop (FT<$>[x0,y0]) (FT acc0)
-    let seed2 = case c0 of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> Fill () acc2 acc; FMin -> Fill () acc2 acc}
+    let seed2 = case c0 of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> DS () acc2 acc; FMin -> DS () acc2 acc}
         step1 = MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):ss1
         step = MX2 () x (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+16):MX2 () y (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+16):ss
         loop = r21 tyP i (Tmp szR) step step1
@@ -1776,7 +1776,7 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca
     (plX, (lX, xR)) <- plA e
     ss1 <- writeRF op [FT acc, FT x0] (FT acc)
     ss <- write2 op [acc2, x] acc2
-    let seedO = case c of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> Fill () acc2 acc; FMin -> Fill () acc2 acc}
+    let seedO = case c of {FPlus -> MX2 () acc2 (ConstF (0,0)); FTimes -> MX2 () acc2 (ConstF (1,1)); FMax -> DS () acc2 acc; FMin -> DS () acc2 acc}
     let loop = f21o tXs i 1 ILt (Tmp szR) (MX2 () x (FAt (AElem xR 1 (Tmp i) lX 8)):ss) (MX () x0 (FAt (AElem xR 1 (Tmp i) lX 8)):ss1)
     pure $ plX$szR=:ev tXs (xR,lX):MX () acc (FAt (AElem xR 1 0 lX 8)):seedO:[loop, Comb () c acc0 acc2, MX () acc (FBin c (FTmp acc) (FTmp acc0))]
   where

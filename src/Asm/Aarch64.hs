@@ -224,7 +224,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | FMovDR { ann :: a, dDest :: freg, rSrc :: reg }
                          | Dup { ann :: a, vDest :: V2Reg freg, rSrc :: reg }
                          | Ins { ann :: a, vDest :: V2Reg freg, vIx :: Word8, rSrc :: reg }
-                         | DupD { ann :: a, vDest :: V2Reg freg, dSrc :: freg }
+                         | DupD { ann :: a, vDest, vSrc :: V2Reg freg, qix :: !Word8 }
                          | MovRR { ann :: a, rDest, rSrc :: reg }
                          | MovQQ { ann :: a, qDest, qSrc :: V2Reg freg }
                          | MovRC { ann :: a, rDest :: reg, cSrc :: Word16 }
@@ -415,7 +415,7 @@ mapR _ (Fmla l v0 v1 v2)     = Fmla l v0 v1 v2
 mapR _ (Fmls l v0 v1 v2)     = Fmls l v0 v1 v2
 mapR f (Dup l v r)           = Dup l v (f r)
 mapR f (Ins l v i r)         = Ins l v i (f r)
-mapR _ (DupD l v r)          = DupD l v r
+mapR _ (DupD l v0 v1 i)      = DupD l v0 v1 i
 mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
 mapR f (Prfm l po r)         = Prfm l po (f<$>r)
@@ -517,7 +517,7 @@ mapFR f (Fmla l v0 v1 v2)     = Fmla l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (Fmls l v0 v1 v2)     = Fmls l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (Dup l v r)           = Dup l (f<$>v) r
 mapFR f (Ins l v i r)         = Ins l (f<$>v) i r
-mapFR f (DupD l v r)          = DupD l (f<$>v) (f r)
+mapFR f (DupD l v0 v1 i)      = DupD l (f<$>v0) (f<$>v1) i
 mapFR f (ZeroD l d)           = ZeroD l (f d)
 mapFR f (EorD l d0 d1 d2)     = EorD l (f d0) (f d1) (f d2)
 mapFR _ (Prfm l po a)         = Prfm l po a
@@ -659,7 +659,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Bfc _ r l w)           = "bfc" <+> pretty r <> "," <+> pretty l <> "," <+> pretty w
         p4 (Dup _ v r)             = "dup" <+> pvd v <> "," <+> pretty r
         p4 (Ins _ v i r)           = "ins" <+> pvd v <> brackets (pretty i) <> "," <+> pretty r
-        p4 (DupD _ v r)            = "dup" <+> pvd v <> "," <+> pvd (V2Reg r) <> "[0]"
+        p4 (DupD _ v0 v1 i)        = "dup" <+> pvd v0 <> "," <+> pvd v1 <> brackets (pretty i)
         p4 (Prfm _ po r)           = "prfm" <+> ar2 po r
 
 instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty

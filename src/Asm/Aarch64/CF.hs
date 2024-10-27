@@ -382,7 +382,7 @@ defsF (Fmla _ v _ _)     = singleton v
 defsF (Fmls _ v _ _)     = singleton v
 defsF (Dup _ v _)        = singleton v
 defsF StrS{}             = IS.empty
-defsF (DupD _ v _)       = singleton v
+defsF (DupD _ v _ _)     = singleton v
 defsF (Ins _ v _ _)      = singleton v
 defsF (ZeroD _ v)        = singleton v
 defsF (EorD _ v _ _)     = singleton v
@@ -491,7 +491,7 @@ usesF (MovQQ _ _ vS)       = singleton vS
 usesF (StrS _ v _)         = singleton v
 usesF Dup{}                = IS.empty
 usesF (Ins _ v _ _)        = singleton v
-usesF (DupD _ _ r)         = singleton r
+usesF (DupD _ _ r _)       = singleton r
 usesF (ZeroD _ d)          = singleton d
 usesF Prfm{} = IS.empty
 
