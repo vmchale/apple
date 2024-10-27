@@ -45,7 +45,7 @@ neL = state (\(CSt t ar as l v b d d2 a f aas ts) -> (l, CSt t ar as (l+1) v b d
 nI = ITemp <$> nextI; nBT = BTemp <$> nextI
 nF = FTemp <$> nextI; nF2 = F2Temp <$> nextI
 
-nIs = traverse (\_ -> nI); nFs = traverse (\_ -> nF)
+nIs = traverse (\_ -> nI); nFs = traverse (\_ -> nF); nF2s = traverse (\_ -> nF2)
 
 addAA :: Int -> [Word64] -> CSt -> CSt
 addAA i aa (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts
@@ -675,7 +675,7 @@ aeval e t | Just (f, xss) <- r00 e, all isF (unroll$eAnn f), tXs@(Arr sh _) <- e
     (plXs, (lXs, xRs)) <- second unzip.unzip <$> traverse plA xss
     let xR=head xRs; lX=head lXs
     arg1s <- nFs xss; ret1 <- nF
-    args <- traverse (\_ -> nF2) xss; ret <- nF2
+    args <- nF2s xss; ret <- nF2
     ss1 <- writeRF f [FT fa | fa <- reverse arg1s] (FT ret1)
     ss <- write2 f (reverse args) ret
     let m1s = zipWith3 (\arg1 xRd lXϵ -> MX () arg1 (FAt (Raw xRd (Tmp i) lXϵ 8))) arg1s xRds lXs; wr1 = WrF () (Raw tD (Tmp i) (Just a) 8) (FTmp ret1)
@@ -956,33 +956,33 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     | Just (F, [m,n]) <- tIx tA
     , Just (F, [o,_]) <- tIx tB
-    , Just ɴ <- mT n, Just ᴍ <- mT m, Just ᴏ <- mT o
-    = do
+    , Just ɴ <- mT n, Just ᴍ <- mT m, Just ᴏ <- mT o = do
+    let oᴋ=[0..(ᴏ-1)]; ᴏE=ConstI ᴏ
+        mE=ConstI m;nE=ConstI n;oE=ConstI o
     aL <- nextArr t
     i₀ <- nI; j₀ <- nI; k₀ <- nI; i <- nI; j <- nI; k <- nI; l <- nI
     aRd <- nI; bRd <- nI; td <- nI
     aid <- nI; bid <- nI; tid <- nI
-    za <- nF2; z₀s <- nFs [1..ᴋ]; zs <- traverse (\_ -> nF2) [1..ᴋ]; zbs <- traverse (\_ -> nF2) [1..ᴋ]
+    za <- nF2; z₀s <- nFs [1..ᴏ]; zs <- nF2s [1..ᴏ]; zbs <- nF2s [1..ᴏ]
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    let mE=ConstI m;nE=ConstI n;oE=ConstI o
-        zero=f2or tB l 0 ILt (mE*oE)
+    let zero=f2or tB l 0 ILt (mE*oE)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         loop=For1 () ᴍ i₀ 0 ILt mE [
-                For1 () ᴏ j₀ 0 ILt oE [
+                For1 () ᴏE j₀ 0 ILt oE [
                     For1 () ɴ k₀ 0 ILt nE
                         [ For1 () 1 i 0 ILt ᴍ
                             [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
-                            , For1 () (ConstI ᴋ) j 0 ILt ᴏ $
+                            , For1 () ᴏE j 0 ILt ᴏE $
                                   zipWith (\z₀ toffs -> MX () z₀ (FAt (Raw tid (ConstI toffs) (Just aL) 8))) z₀s oᴋ
                                 ++zipWith (\z z₀ -> F1ll () z z₀) zs z₀s
                                 ++[ aid=:(Tmp aRd+((Tmp i₀+Tmp i)*nE+Tmp k₀)*8)
                                   , bid=:(Tmp bRd+((Tmp j₀+Tmp j)*nE+Tmp k₀)*8)
                                   , For1 () 2 k 0 ILt ɴ $
-                                    zipWith (\zb bo -> MX2 () zb (FAt (Raw bid (nE*ConstI bo) lB 8))) (drop 1 zbs) (drop 1 oᴋ)
-                                    ++MX2 () za (FAt (Raw aid 0 lA 8)):aid+=16
-                                    :MX2 () (head zbs) (FAt (Raw bid 0 lB 8)):bid+=16
-                                    :zipWith (\z zb -> MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zb)))) zs zbs
+                                      zipWith (\zb bo -> MX2 () zb (FAt (Raw bid (nE*ConstI bo) lB 8))) (drop 1 zbs) (drop 1 oᴋ)
+                                      ++MX2 () za (FAt (Raw aid 0 lA 8)):aid+=16
+                                      :MX2 () (head zbs) (FAt (Raw bid 0 lB 8)):bid+=16
+                                      :zipWith (\z zb -> MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zb)))) zs zbs
                                   ]
                                 ++zipWith (\z₀ z -> Comb () Op.FPlus z₀ z) z₀s zs
                                 ++zipWith (\z₀ toff -> WrF () (Raw tid (ConstI toff) (Just aL) 8) (FTmp z₀)) (rot1 z₀s) (rot1 oᴋ)
@@ -998,9 +998,8 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
         :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
-    ᴋ=4; oᴋ=[0..(ᴋ-1)]
     mT n | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
-    rot1 = take (fromIntegral ᴋ).drop 1.cycle
+    rot1 xs = take (length xs) $ drop 1 $ cycle xs
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | (Arr _ F) <- tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
