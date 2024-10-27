@@ -12,8 +12,8 @@ import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
+import           Data.List                        (scanl')
 import           Data.Maybe                       (catMaybes)
-import           Data.List                        (foldl1', scanl')
 import           Data.Tuple.Extra                 (second3)
 import           Data.Word                        (Word64)
 import           GHC.Float                        (castDoubleToWord64)
