@@ -1037,26 +1037,32 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | (Arr _ F)
     tA=eAnn a; tB=eAnn b
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t = do
     aL <- nextArr t
-    m <- nI; n <- nI; o <- nI; i <- nI; j <- nI; k <- nI; l <- nI; z <- nF2; z₀ <- nF
+    m <- nI; n <- nI; o <- nI; i <- nI; j <- nI; k <- nI; l <- nI; zr <- nF2; zr₀ <- nF; z₀ <- nF2; z₁ <- nF2; z₀₀ <- nF; z₁₀ <- nF
     aRd <- nI; bRd <- nI; td <- nI; bid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
     let zero=f2or tB l 0 ILt (Tmp m*Tmp o)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        loop=for tA i 0 ILt (Tmp m)
-                [ bid=:Tmp bRd
-                , forc tA k 0 ILt (Tmp n)
-                    [ MX () z₀ (FAt (Raw aRd (Tmp k) lA 8))
-                    , Fill () z z₀
-                    , let zr=Raw td (Tmp j) (Just aL) 8 in
+        kjloop = For1 () 2 k 0 ILt (Tmp n)
+                    [ MX () z₀₀ (FAt (Raw aRd (Tmp k) lA 8))
+                    -- TODO: this could be a single fetch (dup works on indexed large registers)
+                    , MX () z₁₀ (FAt (Raw aRd (Tmp k+1) lA 8))
+                    , DS () z₀ z₀₀, DS () z₁ z₁₀
+                    , let za=Raw td (Tmp j) (Just aL) 8 in
                         f2orc tB j 0 ILt (Tmp o)
-                            [Wr2F () zr (FBin FPlus (FAt zr) (FBin FTimes (FTmp z) (FAt (Raw bid (Tmp j) lB 8))))]
-                            [WrF () zr (FAt zr+FTmp z₀*FAt (Raw bid (Tmp j) lB 8))]
-                    , bid+=(Tmp o*8)
+                            [ MX2 () zr (FAt za)
+                            , MX2 () zr (FBin FPlus (FTmp zr) (FBin FTimes (FTmp z₀) (FAt (Raw bid (Tmp j) lB 8))))
+                            , MX2 () zr (FBin FPlus (FTmp zr) (FBin FTimes (FTmp z₁) (FAt (Raw bid (Tmp o+Tmp j) lB 8))))
+                            , Wr2F () za (FTmp zr)
+                            ]
+                            [ MX () zr₀ (FAt za)
+                            , MX () zr₀ (FTmp zr₀+FTmp z₀₀*FAt (Raw bid (Tmp j) lB 8))
+                            , MX () zr₀ (FTmp zr₀+FTmp z₁₀*FAt (Raw bid (Tmp o+Tmp j) lB 8))
+                            , WrF () za (FTmp zr₀)
+                            ]
+                    , bid+=(Tmp o*16)
                     ]
-                , aRd+=(Tmp n*8)
-                , td+=(Tmp o*8)
-                ]
+        loop=for tA i 0 ILt (Tmp m) [bid=:Tmp bRd, kjloop, aRd+=(Tmp n*8), td+=(Tmp o*8)]
     pure (Just aL,
         plAA$plB$
         m=:ev tA (aR,lA):n=:ec tA (aR,lA):o=:ec tB (bR,lB):
