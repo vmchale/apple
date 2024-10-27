@@ -8,12 +8,11 @@ import           Control.Composition              (thread)
 import           Control.Monad                    (zipWithM)
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor                   (first, second)
-import           Data.Function                    (fix)
 import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.List                        (scanl')
+import           Data.List                        (find, scanl')
 import           Data.Maybe                       (catMaybes)
 import           Data.Tuple.Extra                 (second3)
 import           Data.Word                        (Word64)
@@ -913,7 +912,7 @@ aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | Just sz <- aB res = do
     pure (Just a, plX $ plN ++ szR =: ev (eAnn xs) (xR,lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[loop])
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
     | Just (F, [n_i]) <- tIx tX
-    , Just ɴ <- mT n_i = do
+    , Just ɴ <- mT n_i, ɴc <- ConstI ɴ = do
     i <- nI; j₀ <- nI; j <- nI; l <- nI; m <- nI; n <- nI; z <- nF2; za <- nF2; zx <- nF2; z₀ <- nF
     aRd <- nI; xRd <- nI; td <- nI; aid <- nI; xid <- nI
     (aL,aV) <- v8 t (Tmp m)
@@ -921,14 +920,14 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
     let zero=f2or tX l 0 ILt (Tmp m)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        loop = For1 () ɴ j₀ 0 ILt (Tmp n) [
+        loop = For1 () ɴc j₀ 0 ILt (Tmp n) [
                   for tA i 0 ILt (Tmp m) $
                       let zr=Raw td (Tmp i) (Just aL) 8 in
                       [ aid=:(Tmp aRd+(Tmp n*Tmp i+Tmp j₀)*8)
                       , xid=:(Tmp xRd+Tmp j₀*8)
                       , MX () z₀ (FAt zr)
                       , F1ll () z z₀
-                      , For1 () 2 j 0 ILt ɴ
+                      , For1 () 2 j 0 ILt ɴc
                              [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
                              , MX2 () zx (FAt (Raw xid 0 lX 8)), xid+=16
                              , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zx)))
@@ -947,7 +946,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
         :[zero,loop])
   where
     tA=eAnn a; tX=eAnn x
-    mT n | n `rem` 32 == 0 = Just 32 | n `rem` 16 == 0 = Just 16 | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
+    mT n = find (\k -> n `rem` k == 0) [32,16,8,4]
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
     i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; z <- nF2
     aRd <- nI; xRd <- nI; td <- nI
@@ -1032,7 +1031,6 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
   where
     tA=eAnn a; tB=eAnn b
     mT n | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
-    cN=fix (\r n -> let (q,s) = n `quotRem` 2 in if s==0 then 2*r q else 1)
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | (Arr _ F) <- tA = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
