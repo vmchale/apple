@@ -908,7 +908,7 @@ aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
                       [ aid=:(Tmp aRd+(Tmp n*Tmp i+Tmp j₀)*8)
                       , xid=:(Tmp xRd+Tmp j₀*8)
                       , MX () z₀ (FAt zr)
-                      , F1ll () z z₀
+                      , Ins () z z₀
                       , For1 () 2 j 0 ILt ɴc
                              [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
                              , MX2 () zx (FAt (Raw xid 0 lX 8)), xid+=16
@@ -975,7 +975,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
                             [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
                             , For1 () ᴏE j 0 ILt ᴏE $
                                   zipWith (\z₀ toffs -> MX () z₀ (FAt (Raw tid (ConstI toffs) (Just aL) 8))) z₀s oᴋ
-                                ++zipWith (\z z₀ -> F1ll () z z₀) zs z₀s
+                                ++zipWith (\z z₀ -> Ins () z z₀) zs z₀s
                                 ++[ aid=:(Tmp aRd+((Tmp i₀+Tmp i)*nE+Tmp k₀)*8)
                                   , bid=:(Tmp bRd+((Tmp j₀+Tmp j)*nE+Tmp k₀)*8)
                                   , For1 () 2 k 0 ILt ɴ $

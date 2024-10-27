@@ -174,7 +174,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE FTemp Double CE }
           | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: CFE F2Temp (Double, Double) Void }
           | Comb { lann :: a, op2 :: FBin, ftDest :: FTemp, f2Src :: F2Temp }
-          | Fill { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp } | F1ll { lann :: a, f2dest :: F2Temp, fSrc :: FTemp }
+          | Fill { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp } | Ins { lann :: a, f2dest :: F2Temp, fSrc :: FTemp }
           | MB { lann :: a, bDest :: BTemp, pSrc :: PE }
           | Wr { lann :: a, addr :: ArrAcc, wrE :: CE }
           | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE FTemp Double CE }
@@ -254,7 +254,7 @@ pL f (Def la l cs)         = hardline <> pS l <> ":" <#> indent 4 (pCS f cs) <> 
 pL f (G la l _)            = "GOTO" <+> pS l <> f la
 pL f (Comb l s t r)        = parens ("combine" <> pretty s <+> pretty t <> "," <+> pretty r) <> f l
 pL f (Fill l r t)          = parens ("fill" <+> pretty r <+> brackets (pretty t)) <> f l
-pL f (F1ll l r t)          = parens ("ins" <+> pretty r <+> pretty t) <> f l
+pL f (Ins l r t)           = parens ("ins" <+> pretty r <+> pretty t) <> f l
 
 pS :: Label -> Doc ann
 pS l = "fun_" <> pretty l
