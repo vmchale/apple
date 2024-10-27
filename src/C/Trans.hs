@@ -37,14 +37,12 @@ data CSt = CSt { tempU       :: !Int
                , mts         :: IM.IntMap Temp
                }
 
-nextI :: CM Int
+nextI, nextAA :: CM Int
 nextI = state (\(CSt tϵ ar as l v b d d2 a f aas ts) -> (tϵ, CSt (tϵ+1) ar as l v b d d2 a f aas ts))
+nextAA = state (\(CSt t ar as l v b d d2 a f aas ts) -> (as, CSt t ar (as+1) l v b d d2 a f aas ts))
 
 nextArr :: Temp -> CM AL
 nextArr r = state (\(CSt t a@(AL i) as l v b d d2 aϵ f aas ts) -> (a, CSt t (AL$i+1) as l v b d d2 aϵ f aas (AL.insert a r ts)))
-
-nextAA :: CM Int
-nextAA = state (\(CSt t ar as l v b d d2 a f aas ts) -> (as, CSt t ar (as+1) l v b d d2 a f aas ts))
 
 neL :: CM Label
 neL = state (\(CSt t ar as l v b d d2 a f aas ts) -> (l, CSt t ar as (l+1) v b d d2 a f aas ts))
@@ -177,13 +175,12 @@ nz (StaPlus _ i0 i1) = nz i0 || nz i1 -- no negative dims
 nz (StaMul _ i0 i1) = nz i0 && nz i1
 nz _ = False
 
-ipe :: I a -> Bool
+ipe, ipo :: I a -> Bool
 ipe (Ix _ i)          = i > 0 && even i
 ipe (StaPlus _ i0 i1) = ipe i0&&ipe i1||ipo i0&&ipo i1
 ipe (StaMul _ i0 i1)  = ipe i0 || ipe i1
 ipe _                 = False
 
-ipo :: I a -> Bool
 ipo (Ix _ i)          = odd i
 ipo (StaPlus _ i0 i1) = ipe i0&&ipo i1||ipo i0&&ipe i1
 ipo (StaMul _ i0 i1)  = ipo i0 && ipo i1
@@ -233,12 +230,6 @@ f2or ty | to ty = F2orO ()
 f2orc ty | toc ty = F2orO ()
          | tec ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
          | otherwise = F2or ()
-
-staR :: Sh a -> [Int64]
-staR Nil = []; staR (Ix _ i `Cons` s) = fromIntegral i:staR s
-
-tRnd :: T a -> (T a, [Int64])
-tRnd (Arr sh t) = (t, staR sh)
 
 mIFs :: [E a] -> Maybe [Word64]
 mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
@@ -472,7 +463,7 @@ aeval (Var _ x) t = do
     st <- gets avars
     let (i, r) = {-# SCC "getA" #-} getT st x
     pure (i, [t =: Tmp r])
-aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
+aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | Just (F, ixs) <- tIx ty = do
     a <- nextArr t
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     xR <- nF; scaleR <- nF; k <- nI
@@ -480,7 +471,7 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (F, ixs) <- tRnd ty = do
         plRnd = [FRnd () xR, MX () xR (FTmp scaleR*FTmp xR+e0e), WrF () (AElem t rnk (Tmp k) (Just a) 8) (FTmp xR)]
         loop=fors ty k 0 ILt (ConstI n) plRnd
     pure (Just a, plE0 $ plE1 (Ma () a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++MX () scaleR (e1e-e0e):[loop]))
-aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
+aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | Just (I, ixs) <- tIx ty = do
     a <- nextArr t
     scaleR <- nI; iR <- nI; k <- nI
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
@@ -488,13 +479,13 @@ aeval (EApp ty (EApp _ (Builtin _ A.R) e0) e1) t | (I, ixs) <- tRnd ty = do
         plRnd = [Rnd () iR, iR =: (Bin IRem (Tmp iR) (Tmp scaleR) + e0e), Wr () (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
         loop=fors ty k 0 ILt (ConstI n) plRnd
     pure (Just a, plE0$plE1$Ma () a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++scaleR=:(e1e-e0e+1):[loop])
-aeval (Builtin ty Eye) t | (I, ixs@[i,_]) <- tRnd ty = do
+aeval (Builtin ty Eye) t | Just (I, ixs@[i,_]) <- tIx ty = do
     a <- nextArr t
     td <- nI; k <- nI
     let rnk=fromIntegral$length ixs; n=product ixs
         loop = fors ty k 0 ILt (ConstI i) [Wr () (At td [ConstI i, 1] [Tmp k, Tmp k] (Just a) 8) (ConstI 1)]
     pure (Just a, Ma () a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[td=:DP t rnk, loop])
-aeval (Builtin ty Eye) t | (F, ixs@[i,_]) <- tRnd ty = do
+aeval (Builtin ty Eye) t | Just (F, ixs@[i,_]) <- tIx ty = do
     a <- nextArr t
     td <- nI; k <- nI
     let rnk=fromIntegral$length ixs; n=product ixs
