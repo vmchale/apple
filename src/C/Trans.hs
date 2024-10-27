@@ -910,27 +910,6 @@ aeval (EApp res (EApp _ (Builtin _ Cyc) xs) n) t | Just sz <- aB res = do
     ix <- nI
     let loop=for res i 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) (Just a) sz) (AElem xR 1 0 lX sz) (Tmp szR) sz, ix+=Tmp szR]
     pure (Just a, plX $ plN ++ szR =: ev (eAnn xs) (xR,lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[loop])
-aeval (EApp _ (EApp _ (Builtin _ VMul) (EApp _ (Builtin _ T) a)) x) t | f1 tX = do
-    i <- nI; j <- nI; m <- nI; n <- nI; z <- nF
-    (aL,aV) <- v8 t (Tmp m)
-    (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    aRd <- nI; xRd <- nI; td <- nI
-    let loop = forc (eAnn a) i 0 ILt (Tmp m)
-                [ MX () z 0,
-                  for tX j 0 ILt (Tmp n)
-                      [ MX () z (FTmp z+FAt (Raw aRd (Tmp m*Tmp j+Tmp i) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
-                , WrF () (Raw td (Tmp i) (Just aL) 8) (FTmp z)
-                ]
-    pure (Just aL,
-        plAA$
-        plX$
-        m=:ec tA (aR,lA)
-        :aV
-        ++n=:ev tX (xR,lX)
-        :aRd=:DP aR 2:xRd=:DP xR 1:td=:DP t 1
-        :[loop])
-  where
-    tA=eAnn a; tX=eAnn x
 aeval (EApp _ (EApp _ (Builtin _ VMul) a) x) t
     | Just (F, [n_i]) <- tIx tX
     , Just ɴ <- mT n_i = do
