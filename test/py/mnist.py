@@ -50,7 +50,7 @@ errorjit=apple.jit('''
   (*)`{0,0} ({n⟜2%(ℝ(𝓉out)); [x*n]`{0} ((-)`{0,0} out targets)}) (dsoftmax xl2p)
 }
 ''')
-u_l2jit=apple.jit('[(|:(x::Arr (60000×128) float))%.(y::Arr (60000×10) float)]')
+u_l2jit=apple.jit('[(|:(x::Arr (60000×128) float))%.y]')
 u_l1jit=apple.jit('''
 λx.λl2.λerror.λxl1p.
 {
