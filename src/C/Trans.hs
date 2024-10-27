@@ -37,27 +37,15 @@ data CSt = CSt { tempU       :: !Int
                , mts         :: IM.IntMap Temp
                }
 
-nextI, nextAA :: CM Int
 nextI = state (\(CSt tϵ ar as l v b d d2 a f aas ts) -> (tϵ, CSt (tϵ+1) ar as l v b d d2 a f aas ts))
 nextAA = state (\(CSt t ar as l v b d d2 a f aas ts) -> (as, CSt t ar (as+1) l v b d d2 a f aas ts))
-
-nextArr :: Temp -> CM AL
 nextArr r = state (\(CSt t a@(AL i) as l v b d d2 aϵ f aas ts) -> (a, CSt t (AL$i+1) as l v b d d2 aϵ f aas (AL.insert a r ts)))
-
-neL :: CM Label
 neL = state (\(CSt t ar as l v b d d2 a f aas ts) -> (l, CSt t ar as (l+1) v b d d2 a f aas ts))
 
-nBT :: CM BTemp
-nBT = BTemp<$>nextI
+nI = ITemp <$> nextI; nBT = BTemp <$> nextI
+nF = FTemp <$> nextI; nF2 = F2Temp <$> nextI
 
-nI :: CM Temp
-nI = ITemp <$> nextI
-
-nF :: CM FTemp
-nF = FTemp <$> nextI
-
-nF2 :: CM F2Temp
-nF2 = F2Temp <$> nextI
+nIs = traverse (\_ -> nI); nFs = traverse (\_ -> nF)
 
 addAA :: Int -> [Word64] -> CSt -> CSt
 addAA i aa (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts
@@ -67,15 +55,6 @@ addVar n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l (inse
 
 addD :: Nm a -> FTemp -> CM ()
 addD n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b (insert n r d) d2 a f aas ts)
-
-bI :: Nm a -> CM Temp
-bI n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=ITemp t in (r, CSt (t+1) ar as l (insert n r v) b d d2 a f aas ts))
-
-bD :: Nm a -> CM FTemp
-bD n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=FTemp t in (r, CSt (t+1) ar as l v b (insert n r d) d2 a f aas ts))
-
-bB :: Nm a -> CM BTemp
-bB n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=BTemp t in (r, CSt (t+1) ar as l v (insert n r b) d d2 a f aas ts))
 
 addD2 :: Nm a -> F2Temp -> CM ()
 addD2 n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b d (insert n r d2) a f aas ts)
@@ -88,6 +67,10 @@ addAVar n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b 
 
 addF :: Nm a -> (Label, [Arg], RT) -> CSt -> CSt
 addF n f (CSt t ar as l v b d d2 a fs aas ts) = CSt t ar as l v b d d2 a (insert n f fs) aas ts
+
+bI n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=ITemp t in (r, CSt (t+1) ar as l (insert n r v) b d d2 a f aas ts))
+bD n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=FTemp t in (r, CSt (t+1) ar as l v b (insert n r d) d2 a f aas ts))
+bB n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=BTemp t in (r, CSt (t+1) ar as l v (insert n r b) d d2 a f aas ts))
 
 {-# SCC getT2 #-}
 getT2 :: Nm a -> CSt -> Either FTemp F2Temp
@@ -102,8 +85,7 @@ infix 9 +=
 (+=) t i = t =: (Tmp t+i)
 
 fop op e0 = EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) op) e0)
-eMinus = fop Minus
-eDiv = fop Div
+eDiv = fop Div; eMinus = fop Minus
 
 isF, isI, isB, isIF :: T a -> Bool
 isF F = True; isF _ = False
@@ -239,7 +221,7 @@ writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty 
 
 writeCM :: E (T ()) -> CM [CS ()]
 writeCM eϵ = do
-    cs <- traverse (\_ -> nI) [(0::Int)..5]; fs <- traverse (\_ -> nF) [(0::Int)..5]
+    cs <- nIs [(0::Int)..5]; fs <- nFs [(0::Int)..5]
     (zipWith (\xr xr' -> MX () xr' (FTmp xr)) [F0,F1,F2,F3,F4,F5] fs ++) . (zipWith (\r r' -> r' =: Tmp r) [C0,C1,C2,C3,C4,C5] cs ++) <$> go eϵ fs cs where
     go (Lam _ x@(Nm _ _ F) e) (fr:frs) rs = addD x fr *> go e frs rs
     go (Lam _ x@(Nm _ _ B) e) frs (r:rs) = addB x (bt r) *> go e frs rs where bt (ITemp i)=BTemp i
@@ -382,7 +364,7 @@ plDim rnk (a,l) =
 
 offByDim :: [Temp] -> CM ([Temp], [CS ()])
 offByDim dims = do
-    sts <- traverse (\_ -> nI) (undefined:dims)
+    sts <- nIs (undefined:dims)
     let ss=zipWith3 (\s1 s0 d -> s1 =: (Tmp s0*Tmp d)) (tail sts) sts dims
     pure (reverse sts, head sts =: 1:ss)
     -- drop 1 for strides
@@ -688,11 +670,11 @@ aeval (EApp _ (EApp _ (Builtin _ Map) f) xs) t | tX <- eAnn xs, Just (_, xRnk) <
         :[pops])
 aeval e t | Just (f, xss) <- r00 e, all isF (unroll$eAnn f), tXs@(Arr sh _) <- eAnn (head xss), hasS f = do
     a <- nextArr t
-    xRds <- traverse (\_ -> nI) xss; tD <- nI
+    xRds <- nIs xss; tD <- nI
     rnkR <- nI; szR <- nI; i <- nI
     (plXs, (lXs, xRs)) <- second unzip.unzip <$> traverse plA xss
     let xR=head xRs; lX=head lXs
-    arg1s <- traverse (\_ -> nF) xss; ret1 <- nF
+    arg1s <- nFs xss; ret1 <- nF
     args <- traverse (\_ -> nF2) xss; ret <- nF2
     ss1 <- writeRF f [FT fa | fa <- reverse arg1s] (FT ret1)
     ss <- write2 f (reverse args) ret
@@ -704,7 +686,7 @@ aeval e t | Just (f, xss) <- r00 e, all isF (unroll$eAnn f), tXs@(Arr sh _) <- e
     pure (Just a, thread plXs$rnkR=:eRnk sh (xR,lX):SZ () szR xR (Tmp rnkR) lX:Ma () a t (Tmp rnkR) (Tmp szR) 8:CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):zipWith (\xRϵ xRd -> xRd=:DP xRϵ (Tmp rnkR)) xRs xRds++tD=:DP t (Tmp rnkR):[loop])
 aeval e t | Just (f, xss) <- r00 e, Just xsTys <- traverse (aN.eAnn) xss, tXs@(Arr sh _) <- eAnn (head xss), tC <- codT (eAnn f), Just szC <- nSz tC = do
     a <- nextArr t
-    xRds <- traverse (\_ -> nI) xss; tD <- nI
+    xRds <- nIs xss; tD <- nI
     rnkR <- nI; szR <- nI; i <- nI
     (plXs, (lXs, xRs)) <- second unzip.unzip <$> traverse plA xss
     let xR=head xRs; lX=head lXs
@@ -1030,6 +1012,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
         :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
+    ik=[(1::Int)..4]
     mT n | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
 aeval (EApp _ (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | (Arr _ F) <- tA = do
     aL <- nextArr t
@@ -1279,7 +1262,7 @@ aeval (EApp _ (Builtin _ T) x) t | Just (ty, rnk) <- tRnk (eAnn x) = do
     (sts, plSs) <- offByDim (reverse dts)
     (std, plSd) <- offByDim dts
     let n:sstrides = sts; (_:dstrides) = std
-    is <- traverse (\_ -> nI) [1..rnk]
+    is <- nIs [1..rnk]
     let loop=thread (zipWith (\i tt -> (:[]) . For () i 0 ILt (Tmp tt)) is dts) [CpyE () (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>is) l sze) 1 sze]
     pure (Just a, plX$plDs++plSs++Ma () a t (ConstI rnk) (Tmp n) sze:diml (t, Just a) (Tmp<$>reverse dts)++init plSd++xd =: (Tmp xR+dO):td =: (Tmp t+dO):loop)
 aeval (EApp _ (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
@@ -1362,8 +1345,7 @@ aeval (EApp oTy (EApp _ (Builtin _ (Conv is)) f) x) t
     (plX, (lX, xR)) <- plA x
     (dts, plDs) <- plDim xRnk (xR, lX)
     (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- nI; pure (odim, odim =: (Tmp dt-fromIntegral (i-1)))}) dts is
-    io <- traverse (\_ -> nI) tdims
-    iw <- traverse (\_ -> nI) is; j <- nI
+    io <- nIs tdims; iw <- nIs is; j <- nI
     let slopSz=product is; slopRnk=length is; slopE=fromIntegral (slopSz*fromIntegral oSz+(slopRnk+1)*8); slopDims=fromIntegral<$>is
         rnk=ConstI oRnk
     z <- rtemp tC; k <- nI; o <- rtemp tX
