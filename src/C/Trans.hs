@@ -1070,8 +1070,9 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t = do
                           [ Wr2F () za (FBin FPlus (FAt za) (FBin FTimes (FTmp z₀) (FAt (Raw bid (Tmp j) lB 8)))) ]
                           [ WrF () za (FAt za+FTmp z₀₀*FAt (Raw bid (Tmp j) lB 8))]
                     , bid+=(Tmp o*8)
+                    , bidϵ+=(Tmp o*8)
                     ]
-        loop=for tA i 0 ILt (Tmp m) [bid=:Tmp bRd, bidϵ=:(Tmp bid+(Tmp o*8)), kjloop, aRd+=(Tmp n*8), td+=(Tmp o*8)]
+        loop=for tA i 0 ILt (Tmp m) [bid=:Tmp bRd, bidϵ=:(Tmp bid+Tmp o*8), kjloop, aRd+=(Tmp n*8), td+=(Tmp o*8)]
     pure (Just aL,
         plAA$plB$
         m=:ev tA (aR,lA):n=:ec tA (aR,lA):o=:ec tB (bR,lB):
