@@ -367,8 +367,7 @@ ir (IR.Cpy1 (IR.AP tD eD _) (IR.AP tS eS _) eN) = do
     (plEN, rN) <- plI eN
     l <- nextL; eL <- nextL
     let rDA=IReg rD; rSA=IReg rS
-    pure $ plED ++ plES ++ plEN [Cbz () rN eL, MovRR () i rN, Label () l, LdrB () t (BI rSA i Zero), StrB () t (BI rDA i Zero), SubsRC () i i 1, Bc () Neq l, Label () eL]
--- ir (IR.IRnd t) = pure [MrsR () (absReg t)]
+    pure $ plED ++ plES ++ plEN [Cbz () rN eL, MovRR () i rN, Label () l, LdrB () t (BI rSA i Zero), StrB () t (BI rDA i Zero), SubsRC () i i 1, Bc () Geq l, Label () eL]
 ir (IR.IRnd t) = do
     r <- nR
     pure [puL, AddRC () FP ASP 16 IZero, MovRCf () r JR, Blr () r, MovRR () (absReg t) CArg0, poL]
