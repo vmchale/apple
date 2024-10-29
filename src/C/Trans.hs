@@ -1037,6 +1037,7 @@ aeval (EApp _ (EApp _ (Builtin _ Mul) a) b) t | Just (F, [m,n]) <- tIx tA, Just 
             ]
     pure (Just aL,
         plAA$plB$
+        -- FIXME: what if it doesn't fit in 12-bit immediate (should use register instead)
         Ma () aL t 2 (ConstI$m*o) 8:diml (t, Just aL) [mE,oE]
         ++aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
         :[zero, loop])

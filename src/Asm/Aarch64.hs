@@ -242,7 +242,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Msub { ann :: a, rDest, rSrc1, rSrc2, rSrc3 :: reg }
                          | Sdiv { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | AddRC { ann :: a, rDest, rSrc :: reg, rC :: Word16, l12 :: !ISl }
-                         | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
+                         | SubRC { ann :: a, rDest, rSrc :: reg, rC :: Word16, l12 :: !ISl }
                          | SubsRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
                          | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
                          | Asr { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
@@ -321,7 +321,7 @@ mapR f (AddRR l r0 r1 r2)    = AddRR l (f r0) (f r1) (f r2)
 mapR f (AddRRS l r0 r1 r2 s) = AddRRS l (f r0) (f r1) (f r2) s
 mapR f (SubRR l r0 r1 r2)    = SubRR l (f r0) (f r1) (f r2)
 mapR f (AddRC l r0 r1 c s)   = AddRC l (f r0) (f r1) c s
-mapR f (SubRC l r0 r1 c)     = SubRC l (f r0) (f r1) c
+mapR f (SubRC l r0 r1 c s)   = SubRC l (f r0) (f r1) c s
 mapR f (SubsRC l r0 r1 c)    = SubsRC l (f r0) (f r1) c
 mapR f (ZeroR l r)           = ZeroR l (f r)
 mapR f (AndRR l r0 r1 r2)    = AndRR l (f r0) (f r1) (f r2)
@@ -421,7 +421,7 @@ mapFR _ (AddRR l r0 r1 r2)    = AddRR l r0 r1 r2
 mapFR _ (AddRRS l r0 r1 r2 s) = AddRRS l r0 r1 r2 s
 mapFR _ (AddRC l r0 r1 c s)   = AddRC l r0 r1 c s
 mapFR _ (SubRR l r0 r1 r2)    = SubRR l r0 r1 r2
-mapFR _ (SubRC l r0 r1 c)     = SubRC l r0 r1 c
+mapFR _ (SubRC l r0 r1 c s)   = SubRC l r0 r1 c s
 mapFR _ (SubsRC l r0 r1 c)    = SubsRC l r0 r1 c
 mapFR _ (ZeroR l r)           = ZeroR l r
 mapFR _ (AndRR l r0 r1 r2)    = AndRR l r0 r1 r2
@@ -568,7 +568,8 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (EorI _ rD rS i)        = "eor" <+> ar2 rD rS <> "," <+> pretty i
         p4 (ZeroR _ rD)            = "eor" <+> ar3 rD rD rD
         p4 (MulRR _ rD rS rS')     = "mul" <+> ar3 rD rS rS'
-        p4 (SubRC _ rD rS u)       = "sub" <+> r2i rD rS u
+        p4 (SubRC _ rD rS u IZero) = "sub" <+> r2i rD rS u
+        p4 (SubRC _ rD rS u s)     = "sub" <+> r2i rD rS u <> "," <+> pretty s
         p4 (SubsRC _ rD rS u)      = "subs" <+> r2i rD rS u
         p4 (AddRC _ rD rS u IZero) = "add" <+> r2i rD rS u
         p4 (AddRC _ rD rS u s)     = "add" <+> r2i rD rS u <> "," <+> pretty s

@@ -112,7 +112,8 @@ ir (IR.S2 Op.FMin t r) = pure [Fminp () (fabsReg t) (f2absReg r)]
 ir (IR.Fill2 r t) = pure [DupD () (f2absReg r) (fabsReg t)]
 ir (IR.Ma _ t e) = do {r <- nR; plE <- eval e IR.C0; pure $ plE ++ [puL, AddRC () FP ASP 16 IZero, MovRCf () r Malloc, Blr () r, MovRR () (absReg t) CArg0, poL]}
 ir (IR.Free t) = do {r <- nR; pure [puL, MovRR () CArg0 (absReg t), AddRC () FP ASP 16 IZero, MovRCf () r Free, Blr () r, poL]}
-ir (IR.Sa8 t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u, MovRR () (absReg t) ASP]
+ir (IR.Sa8 t (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [SubRC () ASP ASP u IZero, MovRR () (absReg t) ASP]
+ir (IR.Sa8 t (IR.Reg r)) = let r'=absReg r in do {plR <- aR8 r'; pure $ plR++[SubRR () ASP ASP r', MovRR () (absReg t) ASP]}
 ir (IR.Sa8 t e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     let r'=IReg r
@@ -126,6 +127,7 @@ ir (IR.Sa t e) = do
     plR <- aR irr
     pure $ plE ++ plR ++ [SubRR () ASP ASP r', MovRR () (absReg t) ASP]
 ir (IR.Pop8 (IR.ConstI i)) | Just u <- mu16 (sai i) = pure [AddRC () ASP ASP u IZero]
+ir (IR.Pop8 (IR.Reg r)) = let r'=absReg r in do {plR <- aR8 r'; pure $ plR ++ [AddRR () ASP ASP r']}
 ir (IR.Pop8 e) = do
     r <- nextI; plE <- eval e (IR.ITemp r)
     let r'=IReg r
@@ -582,7 +584,10 @@ eval (IR.IB Op.IPlus e (IR.ConstI i)) t | 0 <- i .&. 4095, Just u <- m12 (i `shi
     pure $ plE ++ [AddRC () (absReg t) (IReg r) u Twelve]
 eval (IR.IB Op.IMinus e (IR.ConstI i)) t | Just u <- m12 i = do
     (plE,r) <- plI e
-    pure $ plE [SubRC () (absReg t) r u]
+    pure $ plE [SubRC () (absReg t) r u IZero]
+eval (IR.IB Op.IMinus e (IR.ConstI i)) t | 0 <- i .&. 4095, Just u <- m12 (i `shiftR` 12) = do
+    (plE,r) <- plI e
+    pure $ plE [SubRC () (absReg t) r u Twelve]
 eval (IR.IB Op.IAsl e (IR.ConstI i)) t = do
     (plE,r) <- plI e
     pure $ plE [Lsl () (absReg t) r (fromIntegral (i `mod` 64))]
