@@ -1,0 +1,21 @@
+roots = [
+  '^E.apple_compile',
+  '^E.apple_printty',
+  '^E.apple_dumpasm',
+  '^E.apple_dumpir',
+  '^E.apple_ty',
+  '^E.apple_print_ts_sz',
+  '^Main\.main$',
+  '^Paths_',
+  '^Parser\.happy',
+  'HappyAction',
+  '^L\.(begin|end|skip|token|alexInputPrevChar|runAlex)',
+  '^Dbg\.dump(AAbs|C|DomTree|Loop)'
+]
+unused-types = true
+
+root-instances = [
+  { class = '\.NFData$' },
+  { module = 'E', class = '\.Enum$' },
+  { module = 'L' },
+]
