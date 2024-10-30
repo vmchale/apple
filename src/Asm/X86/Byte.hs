@@ -3,7 +3,7 @@
 --
 -- https://wiki.osdev.org/X86-64_Instruction_Encoding
 
-module Asm.X86.Byte ( allFp, assemble, assembleCtx, dbgFp ) where
+module Asm.X86.Byte ( allFp, assembleCtx, dbgFp ) where
 
 import           Asm.M
 import           Asm.X86
@@ -51,11 +51,6 @@ allFp (ds, instrs) = do
     let is = asm 0 (pI p, arrs, fn, lbls) instrs; b = BS.pack.concat$is; bs = BS.pack<$>is
         mP = snd<$>IM.lookupMin arrs
     (bs,,mP)<$>finish b p
-
-assemble :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> BS.ByteString
-assemble (_, instrs) =
-    let (_, lbls) = mkIx 0 instrs in
-    BS.pack.concat$asm 0 (error "Internal error: no self", error "Arrays not allowed :(", Nothing, lbls) instrs
 
 data VEXM = F | F38 | F3A
 
