@@ -13,14 +13,14 @@ vmul<-jit("[x::M float%:y]")
 microbenchmark(A%*%x)
 microbenchmark(run(vmul,A,x))
 
-library(glue)
 msz <- function(M,N,K){
     print(c(M,N,K))
     A<-matrix(runif(M*N,0,1),M);B<-matrix(runif(N*K,0,1),K)
-    m<-jit(glue::glue("[(x::(Arr ({M}×{N}) float))%.(y::Arr ({N}×{K}) float)]"))
-    print(microbenchmark(A%*%B))
+    m<-jit("[x%.(y::M float)]")
+    print(microbenchmark(run(m,A,B)));print(microbenchmark(A%*%B))
 }
 
+library(glue)
 mT <- function(M,N,K){
     print(c(M,N,K))
     A<-matrix(runif(M*N,0,1),M);B<-matrix(runif(K*N,0,1),N)
