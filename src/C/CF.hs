@@ -305,7 +305,7 @@ uA (Raw _ e l _)      = m'insert l (uE e)
 uA (At _ ss ixs l _)  = m'insert l (uE@<>ss<>uE@<>ixs)
 
 uses :: CS a -> IS.IntSet
-uses (Ma _ _ _ r n _)      = uE r<>uE n
+uses (Ma _ _ _ _ r n _)    = uE r<>uE n
 uses MaΠ{}                 = IS.empty
 uses (MX _ _ e)            = uF e
 uses (MX2 _ _ e)           = uF2 e
@@ -345,9 +345,9 @@ uB Is{}           = IS.empty
 uB (BU _ e)       = uB e
 
 defs :: CS a -> IS.IntSet
-defs (Ma _ a _ _ _ _) = singleton a
-defs (MaΠ _ a _ _)    = singleton a
-defs _                = IS.empty
+defs (Ma _ _ a _ _ _ _) = singleton a
+defs (MaΠ _ a _ _)      = singleton a
+defs _                  = IS.empty
 
 next :: [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
 next stmts = do

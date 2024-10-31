@@ -23,6 +23,7 @@ import           Op
 import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, hardline, indent, lbrace, parens, rbrace, tupled, (<+>))
 import           Prettyprinter.Ext
 import           Q
+import           Sh
 
 type Label=Word; type AsmData = IM.IntMap [Word64]
 
@@ -180,7 +181,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE FTemp Double CE }
           | Wr2F { lann :: a, addr :: ArrAcc, wrF2 :: CFE F2Temp (Double, Double) Void }
           | WrP { lann :: a, addr :: ArrAcc , wrB :: PE }
-          | Ma { lann :: a, label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
+          | Ma { lann :: a, ash :: Sh (), label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
           | Free Temp
           | MaΠ { lann :: a, label :: AL, temp :: Temp, aBytes :: Int64 }
           | RA { lann :: a, label :: !AL } -- return array no-op (takes label)
@@ -220,7 +221,7 @@ pL f (WrF l a e)            = pretty a <+> "=" <+> pretty e <> f l
 pL f (Wr2F l a e)           = pretty a <+> "=" <+> pretty e <> f l
 pL f (WrP l a e)            = pretty a <+> "=" <+> pretty e <> f l
 pL _ (Free t)               = "free" <+> pretty t
-pL f (Ma l _ t rnk e sz)    = pretty t <+> "=" <+> "malloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz) <> f l
+pL f (Ma l _ _ t rnk e sz)  = pretty t <+> "=" <+> "alloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz) <> f l
 pL f (MaΠ l _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz) <> f l
 pL f (For l t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (Rof l t ec ss)         = "rof" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "--") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
