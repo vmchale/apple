@@ -4,9 +4,11 @@ import           C
 import           C.CF
 import           CF
 import           CF.AL
-import           Control.Monad.Trans.State.Strict (State)
+import           Control.Monad.Trans.State.Strict (State, modify)
+import           Data.Bifunctor                   (second)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
+import           Data.List                        (find)
 import           Data.Maybe                       (mapMaybe)
 import           LR
 import           Sh
@@ -22,6 +24,12 @@ sus = error "Array only freed at the beginning of one branch of the conditional.
 type Subst = IM.IntMap AL
 
 data Slots = Ss { livest :: !IS.IntSet, mLive :: [(AL, Sh ())] }
+
+m'liven :: AL -> Sh () -> State Slots ()
+m'liven l sh = modify (\(Ss s ls) -> Ss s ((l,sh):ls))
+
+ffit :: [(AL, Sh ())] -> Sh () -> Maybe AL
+ffit aaϵ sh = fst <$> find (\(_, sh') -> fits sh sh') aaϵ
 
 ilt :: I a -> I a -> Bool
 ilt (Ix _ i) (Ix _ j)                     = i <= j
@@ -40,8 +48,8 @@ fits _ _                              = False
 -- every time we encounter an allocation, make note (size via malloc). Then when its live interval is over, remove from livest?
 --
 -- first cut: don't do re-fills
-aa :: [CS Liveness] -> State Slots [CS Liveness]
-aa = undefined
+aa :: [CS Liveness] -> State Slots (Subst, [CS Liveness])
+aa (c@(Ma _ sh l _ _ _ _):cs) = do {m'liven l sh; second (c:) <$> aa cs}
 
 iF :: IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
 iF a = gg where
