@@ -25,9 +25,6 @@ type Subst = IM.IntMap AL
 
 data Slots = Ss { livest :: !IS.IntSet, mLive :: [(AL, Sh ())] }
 
--- what about loop? has to be allocated once... different optimization?
--- (could write compiler differently)
-
 m'liven :: AL -> Sh () -> State Slots (Maybe (AL, AL))
 m'liven l sh = state (\st@(Ss _ ls) -> case ffit st sh of Nothing -> (Nothing, st { mLive = (l,sh):ls }))
 
@@ -49,11 +46,12 @@ fits (Cat sh0 sh1) (Cat sh0' sh1')    | fits sh0 sh0' && fits sh1 sh1' = True
 fits _ _                              = False
 
 -- every time we encounter an allocation, make note (size via malloc). Then when its live interval is over, remove from livest?
+-- (with substitutions...)
 --
 -- first cut: don't do re-fills
 aa :: [CS Liveness] -> State Slots (Subst, [CS Liveness])
 aa (c@(Ma _ sh l _ _ _ _):cs) = do {m'liven l sh; second (c:) <$> aa cs}
--- livest should be updated here?
+-- livest should be updated w/ isns
 
 iF :: IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
 iF a = gg where
