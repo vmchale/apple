@@ -4,7 +4,7 @@ import           C
 import           C.CF
 import           CF
 import           CF.AL
-import           Control.Monad.Trans.State.Strict (State, modify,state)
+import           Control.Monad.Trans.State.Strict (State, state)
 import           Data.Bifunctor                   (second)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
@@ -24,6 +24,9 @@ sus = error "Array only freed at the beginning of one branch of the conditional.
 type Subst = IM.IntMap AL
 
 data Slots = Ss { livest :: !IS.IntSet, mLive :: [(AL, Sh ())] }
+
+-- what about loop? has to be allocated once... different optimization?
+-- (could write compiler differently)
 
 m'liven :: AL -> Sh () -> State Slots (Maybe (AL, AL))
 m'liven l sh = state (\st@(Ss _ ls) -> case ffit st sh of Nothing -> (Nothing, st { mLive = (l,sh):ls }))
