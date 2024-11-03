@@ -4,7 +4,7 @@ import           C
 import           C.CF
 import           CF
 import           CF.AL
-import           Control.Monad.Trans.State.Strict (State, modify)
+import           Control.Monad.Trans.State.Strict (State, modify,state)
 import           Data.Bifunctor                   (second)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
@@ -25,11 +25,11 @@ type Subst = IM.IntMap AL
 
 data Slots = Ss { livest :: !IS.IntSet, mLive :: [(AL, Sh ())] }
 
-m'liven :: AL -> Sh () -> State Slots ()
-m'liven l sh = modify (\(Ss s ls) -> Ss s ((l,sh):ls))
+m'liven :: AL -> Sh () -> State Slots (Maybe (AL, AL))
+m'liven l sh = state (\st@(Ss _ ls) -> case ffit st sh of Nothing -> (Nothing, st { mLive = (l,sh):ls }))
 
-ffit :: [(AL, Sh ())] -> Sh () -> Maybe AL
-ffit aaϵ sh = fst <$> find (\(_, sh') -> fits sh sh') aaϵ
+ffit :: Slots -> Sh () -> Maybe AL
+ffit (Ss mask aaϵ) sh = fst <$> find (\(AL lϵ, sh') -> lϵ `IS.notMember` mask && fits sh sh') aaϵ
 
 ilt :: I a -> I a -> Bool
 ilt (Ix _ i) (Ix _ j)                     = i <= j
@@ -50,6 +50,7 @@ fits _ _                              = False
 -- first cut: don't do re-fills
 aa :: [CS Liveness] -> State Slots (Subst, [CS Liveness])
 aa (c@(Ma _ sh l _ _ _ _):cs) = do {m'liven l sh; second (c:) <$> aa cs}
+-- livest should be updated here?
 
 iF :: IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
 iF a = gg where
