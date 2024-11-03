@@ -333,6 +333,7 @@ uses (Pop _ e)             = uE e
 uses (Sa _ _ e)            = uE e
 uses (CpyD _ d s n)        = uA d<>uA s<>uE n
 uses (CpyE _ d s n _)      = uA d<>uA s<>uE n
+uses (Aa _ a _ _ e)        = sinsert a (uE e)
 
 uB :: PE -> IS.IntSet
 uB (PAt a)        = uA a
