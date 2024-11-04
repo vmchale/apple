@@ -469,13 +469,13 @@ aeval (EApp (Arr sh I) (EApp _ (Builtin _ A.R) e0) e1) t | Just ixs <- staIx sh 
         plRnd = [Rnd () iR, iR =: (Bin IRem (Tmp iR) (Tmp scaleR) + e0e), Wr () (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
         loop=fors sh k 0 ILt (ConstI n) plRnd
     pure (Just a, plE0$plE1$Ma () sh a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++scaleR=:(e1e-e0e+1):[loop])
-aeval (Builtin (Arr sh I) Eye) t | Just (ixs@[i,_]) <- staIx sh = do
+aeval (Builtin (Arr sh I) Eye) t | Just ixs@[i,_] <- staIx sh = do
     a <- nextArr t
     td <- nI; k <- nI
     let rnk=fromIntegral$length ixs; n=product ixs
         loop = fors sh k 0 ILt (ConstI i) [Wr () (At td [ConstI i, 1] [Tmp k, Tmp k] (Just a) 8) (ConstI 1)]
     pure (Just a, Ma () sh a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[td=:DP t rnk, loop])
-aeval (Builtin (Arr sh F) Eye) t | Just (ixs@[i,_]) <- staIx sh = do
+aeval (Builtin (Arr sh F) Eye) t | Just ixs@[i,_] <- staIx sh = do
     a <- nextArr t
     td <- nI; k <- nI
     let rnk=fromIntegral$length ixs; n=product ixs
