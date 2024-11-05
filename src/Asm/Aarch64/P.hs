@@ -9,6 +9,7 @@ import           Asm.G
 import           Asm.LI
 import qualified Data.IntMap       as IM
 import qualified Data.Set          as S
+import           Data.Word         (Word16)
 
 gallocFrame :: Int -- ^ int supply for spilling
             -> [AArch64 AbsReg FAbsReg ()] -> [AArch64 AReg FAReg ()]
@@ -34,7 +35,10 @@ gallocOn :: Int -> [AArch64 AbsReg FAbsReg ()] -> (IM.IntMap AReg, IM.IntMap FAR
 gallocOn u = go u 0 pres True
     where go uϵ offs pres' i isns = rmaps
               where rmaps = case (regsM, fregsM) of
-                        (Right regs, Right fregs) -> (regs, fregs, (if i then init else undefined) isns)
+                        (Right regs, Right fregs) ->
+                            let sa=as$8*fromIntegral offs
+                                sai = if i then init else (++[AddRC () ASP ASP sa IZero, AddRC () FP FP sa IZero]).init.(SubRC () ASP ASP sa IZero:).(SubRC () FP FP sa IZero:)
+                            in (regs, fregs, sai isns)
                         (Left s, Right fregs) ->
                             let (uϵ', offs', isns') = spill uϵ offs s isns
                             in go uϵ' offs' pres' False isns'
@@ -42,6 +46,9 @@ gallocOn u = go u 0 pres True
                     regsM = alloc aIsns (filter (/= X18) [X0 .. X28]) (IM.keysSet pres') pres'
                     fregsM = allocF aFIsns [D0 .. D30] (IM.keysSet preFs) preFs
                     (aIsns, aFIsns) = bundle isns
+
+as :: Word16 -> Word16
+as i | i `rem` 16 == 0 = i | otherwise = i+8
 
 pres :: IM.IntMap AReg
 pres = IM.fromList [(0, X0), (1, X1), (2, X2), (3, X3), (4, X4), (5, X5), (6, X6), (7, X7), (8, X30), (9, SP), (18, X29)]
