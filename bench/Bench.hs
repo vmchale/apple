@@ -78,15 +78,14 @@ main = do
     softmax <- fmap aa . leakFp =<< BSL.readFile "test/data/softmax.🍎"
     amgm <- fmap fff.leakFp =<< BSL.readFile "math/amgm.🍏"
     amgmG <- fmap fff.leakFp =<< BSL.readFile "test/data/amgmGen.🍏"
-    defaultMain [ env files $ \ ~(t, x, 𝛾, ꜰ, ᴀ) ->
+    defaultMain [ env files $ \ ~(m, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
-                      [ bench "tyParse (tcdf)" $ nf tyParse t
-                      , bench "tyParse (xor)" $ nf tyParse x
+                      [ bench "tyParse (mnist)" $ nf tyParse m
                       , bench "x86asm (gamma)" $ nf x86G 𝛾
                       , bench "x86asm (fcdf)" $ nf x86G ꜰ
                       -- , bench "x86asm (A)" $ nf x86G ᴀ
+                      , bench "arm (mnist)" $ nf aarch64 m
                       , bench "arm (fcdf)" $ nf aarch64 ꜰ
-                      , bench "arm (tcdf)" $ nf aarch64 t
                       , bench "arm (A)" $ nf aarch64 ᴀ
                       ]
                       -- TODO: thunks after type checking?
@@ -183,11 +182,10 @@ main = do
                 ]
     where erfSrc = BSL.readFile "math/erf.🍏"
           gamma = BSL.readFile "math/gamma.🍏"
-          tcdf = BSL.readFile "math/tcdf.🍎"
-          xor = BSL.readFile "test/examples/xor.🍎"
+          mnist = BSL.readFile "test/examples/stepMnist.🍏"
           fcdf = BSL.readFile "math/fcdf.🍎"
           offA = BSL.readFile "test/examples/ellipticFourier.🍎"
-          files = (,,,,) <$> tcdf <*> xor <*> gamma <*> fcdf <*> offA
+          files = (,,,) <$> mnist <*> gamma <*> fcdf <*> offA
           erfParsed = parseRename <$> erfSrc
           erfTy = tyParse <$> erfSrc
           yeet :: (Exception e) => Either e a -> a
