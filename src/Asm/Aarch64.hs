@@ -30,6 +30,7 @@ import           GHC.Generics      (Generic)
 import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
 import           Prettyprinter.Ext
+import           Q
 import           System.Info       (os)
 
 -- https://developer.arm.com/documentation/102374/0101/Registers-in-AArch64---other-registers
@@ -420,10 +421,6 @@ mapR _ (DupD l v0 v1 i)      = DupD l v0 v1 i
 mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
 mapR f (Prfm l po r)         = Prfm l po (f<$>r)
-
-infixr 7 @<>
-(@<>) :: Monoid m => (areg -> m) -> Addr areg -> m
-(@<>) = foldMap
 
 fR :: Monoid m => (areg -> m) -> AArch64 areg afreg a -> m
 fR _ Label{}               = mempty

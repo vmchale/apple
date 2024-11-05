@@ -28,6 +28,7 @@ import           Data.Word         (Word8)
 import           GHC.Generics      (Generic)
 import           Prettyprinter     (Doc, Pretty (..), brackets, colon, (<+>))
 import           Prettyprinter.Ext
+import           Q
 
 data X86Reg = Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15 | Rbx | Rax | Rbp | Rsp
             deriving (Eq, Ord, Enum, Generic)
@@ -449,13 +450,6 @@ prettyLive r = pretty r <+> pretty (ann r)
 
 prettyDebugX86 :: (Pretty freg, Pretty reg, Pretty o) => [X86 reg freg o] -> Doc ann
 prettyDebugX86 = prettyLines . fmap prettyLive
-
-(@<>) :: Semigroup m => (reg -> m) -> Addr reg -> m
-(@<>) f (R r)           = f r
-(@<>) f (RC r _)        = f r
-(@<>) f (RC32 r _)      = f r
-(@<>) f (RS r0 _ r1)    = f r0 <> f r1
-(@<>) f (RSD r0 _ r1 _) = f r0 <> f r1
 
 mapR :: (areg -> reg) -> X86 areg afreg a -> X86 reg afreg a
 mapR f (MovRR l r0 r1)              = MovRR l (f r0) (f r1)
