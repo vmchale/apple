@@ -3,6 +3,7 @@ module Asm.Aarch64.P ( gallocFrame, gallocOn ) where
 import           Asm.Aarch64
 import           Asm.Aarch64.Fr
 import           Asm.Aarch64.Guess
+import           Asm.Aarch64.Sp
 import           Asm.Ar.P
 import           Asm.G
 import           Asm.LI
@@ -30,10 +31,13 @@ frame clob clobd asms = pre++asms++post++[Ret ()] where
     -- FIXME: vector registers
 
 gallocOn :: Int -> [AArch64 AbsReg FAbsReg ()] -> (IM.IntMap AReg, IM.IntMap FAReg, [AArch64 AbsReg FAbsReg ()])
-gallocOn u = go u 0 pres
-    where go uϵ offs pres' isns = rmaps
+gallocOn u = go u 0 pres True
+    where go uϵ offs pres' i isns = rmaps
               where rmaps = case (regsM, fregsM) of
-                        (Right regs, Right fregs) -> (regs, fregs, init isns)
+                        (Right regs, Right fregs) -> (regs, fregs, (if i then init else undefined) isns)
+                        (Left s, Right fregs) ->
+                            let (uϵ', offs', isns') = spill uϵ offs s isns
+                            in go uϵ' offs' pres' False isns'
                     -- https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms#Respect-the-purpose-of-specific-CPU-registers
                     regsM = alloc aIsns (filter (/= X18) [X0 .. X28]) (IM.keysSet pres') pres'
                     fregsM = allocF aFIsns [D0 .. D30] (IM.keysSet preFs) preFs
