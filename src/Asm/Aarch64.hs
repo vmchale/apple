@@ -13,6 +13,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    , SIMD (..)
                    , prettyDebug
                    , mapR, mapFR
+                   , fR
                    , toInt, fToInt
                    , pus, pos
                    , puds, pods
@@ -186,7 +187,7 @@ instance NFData BM where rnf (BM i ls) = rnf i `seq` rnf ls
 instance Pretty BM where
     pretty (BM m l) = "0b" <> pretty (replicate (fromIntegral m) '1' ++ replicate (fromIntegral l) '0')
 
-data Addr reg = R reg | RP reg Word16 | BI reg reg Shift | Po reg Int16 | Pr reg Int16 deriving (Functor, Generic)
+data Addr reg = R reg | RP reg Word16 | BI reg reg Shift | Po reg Int16 | Pr reg Int16 deriving (Functor, Foldable, Generic)
 
 instance NFData a => NFData (Addr a) where
 
@@ -419,6 +420,53 @@ mapR _ (DupD l v0 v1 i)      = DupD l v0 v1 i
 mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
 mapR f (Prfm l po r)         = Prfm l po (f<$>r)
+
+infixr 7 @<>
+(@<>) :: Monoid m => (areg -> m) -> Addr areg -> m
+(@<>) = foldMap
+
+fR :: Monoid m => (areg -> m) -> AArch64 areg afreg a -> m
+fR _ Label{}               = mempty
+fR _ B{}                   = mempty
+fR _ Bc{}                  = mempty
+fR _ C{}                   = mempty
+fR _ FMovXX{}              = mempty
+fR f (MovRR _ r0 r1)       = f r0<>f r1
+fR f (MovRC _ r _)         = f r
+fR f (Ldr _ r a)           = f r<>f@<>a
+fR f (Blr _ r)             = f r
+fR f (LdrB _ r a)          = f r<>f@<>a
+fR f (Str _ r a)           = f r<>f@<>a
+fR f (StrB _ r a)          = f r<>f@<>a
+fR f (LdrD _ _ a)          = f@<>a
+fR f (AddRR _ r0 r1 r2)    = f r0<>f r1<>f r2
+fR f (AddRRS _ r0 r1 r2 _) = f r0<>f r1<>f r2
+fR f (AddRC _ r0 r1 _ _)   = f r0<>f r1
+fR f (SubRR _ r0 r1 r2)    = f r0<>f r1<>f r2
+fR f (SubRC _ r0 r1 _ _)   = f r0<>f r1
+fR f (SubsRC _ r0 r1 _)    = f r0<>f r1
+fR f (ZeroR _ r)           = f r
+fR f (AndRR _ r0 r1 r2)    = f r0<>f r1<>f r2
+fR f (OrRR _ r0 r1 r2)     = f r0<>f r1<>f r2
+fR f (Eor _ r0 r1 r2)      = f r0<>f r1<>f r2
+fR f (Eon _ r0 r1 r2)      = f r0<>f r1<>f r2
+fR f (EorI _ r0 r1 _)      = f r0<>f r1
+fR f (Lsl _ r0 r1 _)       = f r0<>f r1
+fR f (Asr _ r0 r1 _)       = f r0<>f r1
+fR f (CmpRR _ r0 r1)       = f r0<>f r1
+fR f (CmpRC _ r _)         = f r
+fR f (Neg _ r0 r1)         = f r0<>f r1
+fR _ Fmul{}                = mempty
+fR _ Fadd{}                = mempty
+fR _ Fsub{}                = mempty
+fR _ Fdiv{}                = mempty
+fR _ Ret{}                 = mempty
+fR _ RetL{}                = mempty
+fR _ FcmpZ{}               = mempty
+fR f (Cbz _ r _)           = f r
+fR f (Cbnz _ r _)          = f r
+fR f (Tbz _ r _ _)         = f r
+fR f (Tbnz _ r _ _)        = f r
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
