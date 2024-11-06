@@ -17,6 +17,8 @@ data Live = Live { new, done, fnew, fdone :: !IS.IntSet }
 instance Pretty Liveness where
     pretty (Liveness is os fis fos) = pretty (Live is os fis fos)
 
+instance Show Liveness where show=show.pretty
+
 instance Pretty Live where
     pretty (Live is os fis fos) = braces (pp (is<>fis) <+> ";" <+> pp (os<>fos))
         where pp = mconcat . punctuate "," . fmap pretty . IS.toList
