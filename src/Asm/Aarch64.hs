@@ -181,7 +181,7 @@ instance NFData ISl where rnf=rwhnf
 instance Pretty ISl where pretty IZero = "#0"; pretty Twelve="#0xc"
 
 -- left: shift left by this much
-data BM = BM { ims, left :: !Word8 } deriving Eq
+data BM = BM { ims, left :: !Word8 }
 
 instance NFData BM where rnf (BM i ls) = rnf i `seq` rnf ls
 
