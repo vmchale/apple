@@ -984,7 +984,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
                             [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
                             , For1 () ᴏE j 0 ILt ᴏE $
                                   zipWith (\z₀ toffs -> MX () z₀ (FAt (Raw tid (ConstI toffs) (Just aL) 8))) z₀s oᴋ
-                                ++zipWith (\z z₀ -> Ins () z z₀) zs z₀s
+                                ++zipWith (Ins ()) zs z₀s
                                 ++[ aid=:(Tmp aRd+((Tmp i₀+Tmp i)*nE+Tmp k₀)*8)
                                   , bid=:(Tmp bRd+((Tmp j₀+Tmp j)*nE+Tmp k₀)*8)
                                   , For1 () 2 k 0 ILt ɴ $
@@ -993,7 +993,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
                                       :MX2 () (head zbs) (FAt (Raw bid 0 lB 8)):bid+=16
                                       :zipWith (\z zb -> MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zb)))) zs zbs
                                   ]
-                                ++zipWith (\z₀ z -> Comb () Op.FPlus z₀ z) z₀s zs
+                                ++zipWith (Comb () Op.FPlus) z₀s zs
                                 ++zipWith (\z₀ toff -> WrF () (Raw tid (ConstI toff) (Just aL) 8) (FTmp z₀)) (rot1 z₀s) (rot1 oᴋ)
                                 ++[tid+=(ᴏE*8)]
                             ]
