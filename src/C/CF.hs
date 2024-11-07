@@ -22,10 +22,10 @@ type FreshM = State (N, M.Map Label N, M.Map Label [N])
 runFreshM :: FreshM a -> a
 runFreshM = flip evalState (0, mempty, mempty)
 
-cfC :: [CS ()] -> ([N], [CS ControlAnn], IM.IntMap (ControlAnn, Liveness))
+cfC :: [CS a] -> ([N], [CS ControlAnn], IM.IntMap (ControlAnn, Liveness))
 cfC cs = let cfs = mkControlFlow cs in (inspectOrder cfs, cfs, initLiveness cfs)
 
-mkControlFlow :: [CS ()] -> [CS ControlAnn]
+mkControlFlow :: [CS a] -> [CS ControlAnn]
 mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
 
 getFresh :: FreshM N
@@ -98,7 +98,7 @@ inspectOrder (Def ann _ ss:cs)            = node ann:inspectOrder ss++inspectOrd
 inspectOrder (c:cs)                       = node (lann c):inspectOrder cs
 inspectOrder []                           = []
 
-tieBranch :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
+tieBranch :: N -> ([N] -> [N]) -> [CS a] -> FreshM ([N] -> [N], [CS ControlAnn])
 tieBranch i f ss = do
     preSs <- addCF ss
     pure $ case uncons preSs of
@@ -111,7 +111,7 @@ tieBranch i f ss = do
                 Just (hh, bs) -> let h' = fmap (addH i) hh in h':bs++[l']
         Nothing -> (id, [])
 
-tieBody :: N -> ([N] -> [N]) -> [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
+tieBody :: N -> ([N] -> [N]) -> [CS a] -> FreshM ([N] -> [N], [CS ControlAnn])
 tieBody h f ss = do
     preSs <- addCF ss
     pure $ case uncons preSs of
@@ -125,7 +125,7 @@ tieBody h f ss = do
 
 -- | Pair 'CS with a unique node name and a list of all possible
 -- destinations.
-addCF :: [CS ()] -> FreshM [CS ControlAnn]
+addCF :: [CS a] -> FreshM [CS ControlAnn]
 addCF [] = pure []
 addCF ((Def _ l ss):stmts) = do
     i <- ll l
@@ -350,7 +350,7 @@ defs (Ma _ _ a _ _ _ _) = singleton a
 defs (MaΠ _ a _ _)      = singleton a
 defs _                  = IS.empty
 
-next :: [CS ()] -> FreshM ([N] -> [N], [CS ControlAnn])
+next :: [CS a] -> FreshM ([N] -> [N], [CS ControlAnn])
 next stmts = do
     nextStmts <- addCF stmts
     case nextStmts of
@@ -358,7 +358,7 @@ next stmts = do
         (stmt:_) -> pure ((node (lann stmt) :), nextStmts)
 
 -- | Construct map assigning labels to their node name.
-brs :: [CS ()] -> FreshM ()
+brs :: [CS a] -> FreshM ()
 brs []                            = pure ()
 brs (G _ l retL:stmts)            = do {i <- fm retL; b3 i l; brs stmts}
 brs (Def _ f b:stmts)             = fm f *> brs b *> brs stmts

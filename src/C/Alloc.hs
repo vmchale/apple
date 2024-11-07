@@ -4,8 +4,8 @@ import           C
 import           C.CF
 import           CF
 import           CF.AL
-import           Control.Monad.Trans.State.Strict (State, state)
-import           Data.Bifunctor                   (second)
+import           Control.Monad.Trans.State.Strict (State, evalState, modify, state)
+import           Data.Functor                     (($>))
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
 import           Data.List                        (find)
@@ -14,22 +14,32 @@ import           LR
 import           Sh
 
 frees :: IM.IntMap Temp -> [CS ()] -> [CS Liveness]
-frees a = iF a.live
+frees a = iF a.live.raa a.live
 
-live :: [CS ()] -> [CS Liveness]
+live :: [CS a] -> [CS Liveness]
 live = fmap (fmap liveness) . (\(is,isns,lm) -> reconstruct is lm isns) . cfC
 
 sus = error "Array only freed at the beginning of one branch of the conditional."
 
-type Subst = IM.IntMap AL
+type Alias = IM.IntMap Int
 
-data Slots = Ss { livest :: !IS.IntSet, mLive :: [(AL, Sh ())] }
+data Slots = Ss { keep :: !Alias, mLive :: [(AL, Sh ())] }
 
-m'liven :: AL -> Sh () -> State Slots (Maybe (AL, AL))
-m'liven l sh = state (\st@(Ss _ ls) -> case ffit st sh of Nothing -> (Nothing, st { mLive = (l,sh):ls }))
+iK :: Int -> Int -> Slots -> Slots
+iK o n (Ss ms l) = Ss (IM.insert o n ms) l
 
-ffit :: Slots -> Sh () -> Maybe AL
-ffit (Ss mask aaϵ) sh = fst <$> find (\(AL lϵ, sh') -> lϵ `IS.notMember` mask && fits sh sh') aaϵ
+(@@) :: Alias -> IS.IntSet -> IS.IntSet
+(@@) s = IS.map (\l -> IM.findWithDefault l l s)
+
+m'liven :: IS.IntSet -> AL -> Sh () -> State Slots (Maybe AL)
+m'liven il l@(AL i) sh = state g where
+    g s@(Ss k ls) =
+        case ffit il s sh of
+            Nothing         -> (Nothing, Ss k ((l,sh):ls))
+            Just l'@(AL i') -> (Just l', Ss (IM.insert i i' k) ls)
+
+ffit :: IS.IntSet -> Slots -> Sh () -> Maybe AL
+ffit il (Ss ms aaϵ) sh = fst <$> find (\(lϵ, sh') -> lϵ `notMember` (ms@@il) && fits sh sh') aaϵ
 
 ilt :: I a -> I a -> Bool
 ilt (Ix _ i) (Ix _ j)                     = i <= j
@@ -45,13 +55,25 @@ fits (SVar sv0) (SVar sv1)            = sv0 == sv1
 fits (Cat sh0 sh1) (Cat sh0' sh1')    | fits sh0 sh0' && fits sh1 sh1' = True
 fits _ _                              = False
 
--- every time we encounter an allocation, make note (size via malloc). Then when its live interval is over, remove from livest?
--- (with substitutions...)
+st :: IM.IntMap Temp -> AL -> Temp
+st k (AL i)= IM.findWithDefault (error "Internal error: bad substitution?") i k
+
+raa :: IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
+raa ts cs = evalState (aa ts cs) (Ss IM.empty [])
+
+-- every time we encounter an allocation, make note (size via malloc).
 --
 -- first cut: don't do re-fills
-aa :: [CS Liveness] -> State Slots (Subst, [CS Liveness])
-aa (c@(Ma _ sh l _ _ _ _):cs) = do {m'liven l sh; second (c:) <$> aa cs}
--- livest should be updated w/ isns
+aa :: IM.IntMap Temp -> [CS Liveness] -> State Slots [CS Liveness]
+aa ts (c@(Ma a sh l@(AL i) t _ _ _):cs) = do
+    s <- m'liven (ins a) l sh
+    next <- case s of
+            Nothing         -> pure c
+            Just l'@(AL i') -> modify (iK i i') $> Aa a l t (st ts l') 0
+    (next:) <$> aa ts cs
+aa ts (c:cs) = (c:) <$> aa ts cs
+-- new liveness information needs to prevent frees oops
+aa _ [] = pure []
 
 iF :: IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
 iF a = gg where
