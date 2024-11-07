@@ -859,6 +859,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ CatE) x) y) t | tX <- eAnn x, Just (t
     let tyN=bT ty
     (a,aV) <- vSz oSh t (Tmp tn) tyN
     (plX, (lX, xR)) <- plA x; (plY, (lY, yR)) <- plA y
+    -- TODO: if size is statically known, could place y later (and reuse alloc...)
     pure (Just a, plX $ plY $ xnR =: ev tX (xR,lX):ynR =: ev (eAnn y) (yR,lY):tn =: (Tmp xnR+Tmp ynR):aV++CpyE () (AElem t 1 0 (Just a) tyN) (AElem xR 1 0 lX tyN) (Tmp xnR) tyN:[CpyE () (AElem t 1 (Tmp xnR) (Just a) tyN) (AElem yR 1 0 lY tyN) (Tmp ynR) tyN])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t = do
     n <- nI; startR <- nI; endR <- nI
