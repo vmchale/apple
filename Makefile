@@ -75,3 +75,4 @@ tags: $(HS_SRC)
 	rm -f tags
 	ghc-tags --ctags
 	ctags --append=yes --languages=ALEX,HAPPY -R src
+	fd '\.(h|c)$$' pyc Rc janet include c | ctags --append=yes -L -
