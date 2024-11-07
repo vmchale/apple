@@ -16,7 +16,7 @@ import           LR
 import           Sh
 
 frees :: IM.IntMap Temp -> [CS ()] -> [CS Liveness]
-frees a = (\(n,cs) -> iF n a cs).second live.raa a.live
+frees a = iF a.(\(al, cs) -> map (fmap (sCF al)) (live cs)).raa a.live
 
 live :: [CS a] -> [CS Liveness]
 live = fmap (fmap liveness) . (\(is,isns,lm) -> reconstruct is lm isns) . cfC
@@ -25,20 +25,20 @@ sus = error "Array only freed at the beginning of one branch of the conditional.
 
 type Alias = IM.IntMap Int
 
-data Slots = Ss { keep :: !Alias, nfree :: !IS.IntSet, mLive :: [(AL, Sh ())] }
+data Slots = Ss { keep  :: !Alias, mLive :: [(AL, Sh ())] }
 
 (@@) :: Alias -> IS.IntSet -> IS.IntSet
 (@@) s = IS.map (\l -> IM.findWithDefault l l s)
 
 m'liven :: IS.IntSet -> AL -> Sh () -> State Slots (Maybe AL)
 m'liven il l@(AL i) sh = state g where
-    g s@(Ss k m ls) =
+    g s@(Ss k ls) =
         case ffit il s sh of
-            Nothing         -> (Nothing, Ss k m ((l,sh):ls))
-            Just l'@(AL i') -> (Just l', Ss (IM.insert i i' k) (IS.insert i m) ls)
+            Nothing         -> (Nothing, Ss k ((l,sh):ls))
+            Just l'@(AL i') -> (Just l', Ss (IM.insert i i' k) ls)
 
 ffit :: IS.IntSet -> Slots -> Sh () -> Maybe AL
-ffit il (Ss ms _ aaϵ) sh = fst <$> find (\(lϵ, sh') -> lϵ `notMember` (ms@@il) && fits sh sh') aaϵ
+ffit il (Ss ms aaϵ) sh = fst <$> find (\(lϵ, sh') -> lϵ `notMember` (ms@@il) && fits sh sh') aaϵ
 
 ilt :: I a -> I a -> Bool
 ilt (Ix _ i) (Ix _ j)                     = i <= j
@@ -55,10 +55,10 @@ fits (Cat sh0 sh1) (Cat sh0' sh1')    | fits sh0 sh0' && fits sh1 sh1' = True
 fits _ _                              = False
 
 st :: IM.IntMap Temp -> AL -> Temp
-st k (AL i)= IM.findWithDefault (error "Internal error: bad substitution?") i k
+st k (AL i) = IM.findWithDefault (error "Internal error: bad substitution?") i k
 
-raa :: IM.IntMap Temp -> [CS Liveness] -> (IS.IntSet, [CS Liveness])
-raa = swap . second nfree . flip runState (Ss IM.empty IS.empty []) .* aa
+raa :: IM.IntMap Temp -> [CS Liveness] -> (Alias, [CS Liveness])
+raa = swap . second keep . flip runState (Ss IM.empty []) .* aa
 
 sCF :: Alias -> Liveness -> Liveness
 sCF al (Liveness i o fi fo) = Liveness (al@@i) (al@@o) fi fo
@@ -69,18 +69,15 @@ sCF al (Liveness i o fi fo) = Liveness (al@@i) (al@@o) fi fo
 aa :: IM.IntMap Temp -> [CS Liveness] -> State Slots [CS Liveness]
 aa ts (c@(Ma a sh l t _ _ _):cs) = do
     s <- m'liven (ins a) l sh
-    next <- case s of
-            Nothing         -> pure c
-            Just l' -> do
-                al <- gets keep
-                pure $ Aa (sCF al a) l t (st ts l') 0
+    let next = case s of
+            Nothing -> c
+            Just l' -> Aa a l t (st ts l') 0
     (next:) <$> aa ts cs
-aa ts (c:cs) = do {s <- gets keep; (fmap (sCF s) c:) <$> aa ts cs}
--- new liveness information needs to prevent frees oops
+aa ts (c:cs) = (c:)<$>aa ts cs
 aa _ [] = pure []
 
-iF :: IS.IntSet -> IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
-iF m a = gg where
+iF :: IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
+iF a = gg where
     gg (RA{}:cs)                             = gg cs
     gg [s@(For l _ _ _ _ cs)]                = s { body = gg cs }:fss l
     gg [s@(Rof l _ _ cs)]                    = s { body = gg cs }:fss l
@@ -113,6 +110,6 @@ iF m a = gg where
     gEs l s x = if es l s then x else sus
 
     fss l = [ Free t | t <- tss l ]
-    tss l = mapMaybe (`IM.lookup` a) (IS.toList ((ins l IS.\\ out l) IS.\\ m))
+    tss l = mapMaybe (`IM.lookup` a) (IS.toList (ins l IS.\\ out l))
     fs l0 s1 = [ Free t | t <- ts l0 s1 ]
-    ts l0 s1 = mapMaybe (`IM.lookup` a) (IS.toList ((ins l0 IS.\\ ins (lann s1)) IS.\\ m))
+    ts l0 s1 = mapMaybe (`IM.lookup` a) (IS.toList (ins l0 IS.\\ ins (lann s1)))

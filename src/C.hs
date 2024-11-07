@@ -223,7 +223,7 @@ pL f (Wr2F l a e)           = pretty a <+> "=" <+> pretty e <> f l
 pL f (WrP l a e)            = pretty a <+> "=" <+> pretty e <> f l
 pL _ (Free t)               = "free" <+> pretty t
 pL f (Ma l _ _ t rnk e sz)  = pretty t <+> "=" <+> "alloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz) <> f l
-pL f (Aa l _ d s (ConstI 0)) = pretty d <+> "=" <+> "a@" <> parens (pretty s) <> f l
+pL f (Aa l _ d s (ConstI 0)) = pretty d <+> "=" <+> "a@" <> pretty s <> f l
 pL f (Aa l _ d s offsz)     = pretty d <+> "=" <+> "a@" <> parens (pretty s <> "+" <> pretty offsz) <> f l
 pL f (MaΠ l _ t sz)         = pretty t <+> "=" <+> "malloc" <> parens (pretty sz) <> f l
 pL f (For l t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
