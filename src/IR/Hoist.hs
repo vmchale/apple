@@ -22,7 +22,7 @@ import           IR.CF
 import           LR
 
 type N=Int
-type CfTbl=A.Array Int (Stmt, ControlAnn); type StmtTbl=A.Array Int Stmt
+type LTbl = A.Array Int Liveness; type CfTbl=A.Array Int (Stmt, ControlAnn); type StmtTbl=A.Array Int Stmt
 
 mapFA :: (FTemp -> FTemp) -> AE -> AE
 mapFA f (AP t (Just e) l) = AP t (Just$mapFE f e) l
@@ -97,19 +97,19 @@ mapF f (Cset t p)     = Cset t (mapFE f p)
 
 type Loop = (N, IS.IntSet)
 
--- TODO: array?
-lm :: [(Stmt, NLiveness)] -> IM.IntMap NLiveness
-lm = IM.fromList.fmap (\(_,n) -> (nx n, n))
+lm :: [(Stmt, NLiveness)] -> LTbl
+lm cs = A.array (0, maximum ns) (zip ns (liveness<$>ls))
+  where ls=map snd cs; ns = map nx ls
 
 data CM = LL !Label | FM !FTemp !Double | F2M !F2 !(Double, Double)
 
 nh :: LM Label
 nh = state (\u -> (u, u+1))
 
-hl :: (Loop, CfTbl, IM.IntMap NLiveness) -> LM (M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
+hl :: (Loop, CfTbl, LTbl) -> LM (M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
 hl ((n,ns), info, linfo) = do {fl <- nh; let ss'=go ss in if null ss' then pure (M.empty, []) else pure (M.singleton lh (fl,ns), (n,Nothing,LL fl):ss')}
   where
-    fliveInH=fins lH; lH=liveness (gN n linfo)
+    fliveInH=fins lH; lH=linfo A.! n
     go ((MX x (ConstF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef (fToInt x) (node a) = (n, Just$node a, FM x i):go ssϵ
     go ((MX2 x (ConstF i), a):ssϵ) | f2ToInt x `IS.notMember` fliveInH && notFDef (f2ToInt x) (node a) = (n, Just$node a, F2M x i):go ssϵ
     go (_:ssϵ)                      = go ssϵ
@@ -118,7 +118,6 @@ hl ((n,ns), info, linfo) = do {fl <- nh; let ss'=go ss in if null ss' then pure 
     notFDef r nL = not $ any (r `IS.member`) (otherDefFs nL)
     ss = (info A.!)<$>IS.toList ns
     (L lh,_) = info A.! n
-    gN = IM.findWithDefault (error "internal error: node not in map.")
 
 data S = S { f1s :: !(M.Map Double FTemp), f2s :: !(M.Map (Double, Double) F2)
            , su :: !(M.Map FTemp FTemp)
