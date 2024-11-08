@@ -5,7 +5,7 @@ import           C.CF
 import           CF
 import           CF.AL
 import           Control.Composition              ((.*))
-import           Control.Monad.Trans.State.Strict (State, gets, runState, state)
+import           Control.Monad.Trans.State.Strict (State, runState, state)
 import           Data.Bifunctor                   (second)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
@@ -25,7 +25,7 @@ sus = error "Array only freed at the beginning of one branch of the conditional.
 
 type Alias = IM.IntMap Int
 
-data Slots = Ss { keep  :: !Alias, mLive :: [(AL, Sh ())] }
+data Slots = Ss { keep :: !Alias, mLive :: [(AL, Sh ())] }
 
 (@@) :: Alias -> IS.IntSet -> IS.IntSet
 (@@) s = IS.map (\l -> IM.findWithDefault l l s)
@@ -49,6 +49,7 @@ ilt _ _                                   = False
 
 fits :: Sh a -> Sh a -> Bool
 fits (ix `Cons` Nil) (ix' `Cons` Nil) = ilt ix ix'
+fits (ix `Cons` sh) (ix' `Cons` sh')  = ilt ix ix' && fits sh sh'
 fits (Rev sh0) (Rev sh1)              = fits sh0 sh1
 fits (SVar sv0) (SVar sv1)            = sv0 == sv1
 fits (Cat sh0 sh1) (Cat sh0' sh1')    | fits sh0 sh0' && fits sh1 sh1' = True
@@ -60,11 +61,10 @@ st k (AL i) = IM.findWithDefault (error "Internal error: bad substitution?") i k
 raa :: IM.IntMap Temp -> [CS Liveness] -> (Alias, [CS Liveness])
 raa = swap . second keep . flip runState (Ss IM.empty []) .* aa
 
+{-# SCC sCF #-}
 sCF :: Alias -> Liveness -> Liveness
 sCF al (Liveness i o fi fo) = Liveness (al@@i) (al@@o) fi fo
 
--- every time we encounter an allocation, make note (size via malloc).
---
 -- first cut: don't do re-fills
 aa :: IM.IntMap Temp -> [CS Liveness] -> State Slots [CS Liveness]
 aa ts (c@(Ma a sh l t _ _ _):cs) = do
