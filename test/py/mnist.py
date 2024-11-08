@@ -22,26 +22,18 @@ train=apple.jit('''
 λx.λtargets.
 λl1.λl2.
   {
-    softmax ← λxs.
-      { m ⟜ (⋉)/* _1 xs; a ⟜ [e:(x-m)]`{0} xs
-      ; sum ← [(+)/x]
-      ; n ⟜ sum`{1} (a::M float)
-      ; ⍉([(%x)'y]`{0,1} n a)
-      };
-    dsoftmax ← λxs.
-        { m ⟜ (⋉)/* _1 xs; a ⟜ [e:(x-m)]`{0} xs
-        ; sum ← [(+)/x]
-        ; n ⟜ sum`{1} (a::M float)
-        ; ⍉([x*(1-x)]`{0} ([(%x)'y]`{0,1} n a))
-        };
     dsigmoid ← ((λx.⸎x⟜ℯ(_x);x%(1+x)^2)`{0});
     -- fw
     xl1p ⟜ x%.l1;
     xSigmoid ← [1%(1+ℯ(_x))]`{0} xl1p;
     xl2p ⟜ xSigmoid%.l2;
-    out ← softmax xl2p;
+    m ⟜ (⋉)/* _1 xl2p; a ⟜ [e:(x-m)]`{0} xl2p;
+    sum ← [(+)/x];
+    n ← sum`{1} (a::M float);
+    out ⟜ ⍉([(%x)'y]`{0,1} n a);
+    dsoftmax_l2 ← [x*(1-x)]`{0} out;
     -- bw
-    error ⟜ (*)`{0,0} ({n⟜2%(ℝ(𝓉out)); [x*n]`{0} ((-)`{0,0} out targets)}) (dsoftmax xl2p);
+    error ⟜ (*)`{0,0} ({n⟜2%(ℝ(𝓉out)); [x*n]`{0} ((-)`{0,0} out targets)}) dsoftmax_l2;
     ul2 ← (⍉xSigmoid)%.error;
     ul1 ← (⍉x)%.((*)`{0,0} (⍉(l2%.(⍉error))) (dsigmoid xl1p));
     ((+)`{0,0} l1 ul1, (+)`{0,0} l2 ul2)
