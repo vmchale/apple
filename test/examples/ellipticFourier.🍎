@@ -7,12 +7,12 @@
   ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λₒ 0 dts; T ⟜}. pts
   ; coeffs ← λn.
     { n ⟜ ℝn; k ⟜ 2*n*𝜋%T
-    ; cosDiffs ⟜ (-)\~((cos. ∴ (k*))'pts)
-    ; sinDiffs ⟜ (-)\~((sin. ∴ (k*))'pts)
     ; c ⟜ T%(2*n^2*𝜋^2)
+    ; cosDiffs ⟜ (-)\~((cos. ∴ (k*))'pts)
     ; aₙ ← c*sum ((*)`dxss cosDiffs)
-    ; bₙ ← c*sum ((*)`dxss sinDiffs)
     ; cₙ ← c*sum ((*)`dyss cosDiffs)
+    ; sinDiffs ⟜ (-)\~((sin. ∴ (k*))'pts)
+    ; bₙ ← c*sum ((*)`dxss sinDiffs)
     ; dₙ ← c*sum ((*)`dyss sinDiffs)
     ; (aₙ,bₙ,cₙ,dₙ)
     }
