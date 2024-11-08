@@ -1272,10 +1272,10 @@ aeval (EApp _ (Builtin _ T) x) t | Arr sh ty <- eAnn x, Just rnk <- staRnk sh = 
     (dts, plDs) <- plDim rnk (xR, l)
     (sts, plSs) <- offByDim (reverse dts)
     (std, plSd) <- offByDim dts
-    let n:sstrides = sts; (_:dstrides) = std
+    let _:sstrides = sts; (_:dstrides) = std
     is <- nIs [1..rnk]
     let loop=thread (zipWith (\i tt -> (:[]) . For () i 0 ILt (Tmp tt)) is dts) [CpyE () (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>is) l sze) 1 sze]
-    pure (Just a, plX$plDs++plSs++Ma () sh a t (ConstI rnk) (Tmp n) sze:diml (t, Just a) (Tmp<$>reverse dts)++init plSd++xd =: (Tmp xR+dO):td =: (Tmp t+dO):loop)
+    pure (Just a, plX$plDs++init plSs++Ma () sh a t (ConstI rnk) (Tmp (head dts)*Tmp (head sstrides)) sze:diml (t, Just a) (Tmp<$>reverse dts)++init plSd++xd =: (Tmp xR+dO):td =: (Tmp t+dO):loop)
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
     a <- nextArr t
     szX <- nI; szY <- nI; i <- nI; j <- nI; k <- nI
