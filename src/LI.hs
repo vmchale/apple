@@ -1,5 +1,3 @@
-{-# LANGUAGE TupleSections #-}
-
 -- live intervals
 module LI ( intervals ) where
 
