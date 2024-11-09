@@ -1,6 +1,7 @@
 module IR.Hoist ( loop, graphParts, hoist ) where
 
 import           CF
+import           Control.Arrow                    ((&&&))
 import           Control.Composition              (thread)
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
 import qualified Data.Array                       as A
@@ -12,9 +13,8 @@ import           Data.Graph                       (Tree (Node))
 import           Data.Graph.Dom                   (Graph, Node, domTree)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.List                        (sortBy)
 import qualified Data.Map.Strict                  as M
-import           Data.Maybe                       (catMaybes, fromJust, fromMaybe, mapMaybe)
+import           Data.Maybe                       (catMaybes, fromJust, mapMaybe)
 import           Data.Tuple.Extra                 (first3, snd3)
 import           Data.Void                        (Void, absurd)
 import           IR
@@ -134,15 +134,12 @@ type LM=State Label
 i1 x t = modify (\(S f1 f2 s) -> S (M.insert x t f1) f2 s); i2 x t = modify (\(S f1 f2 s) -> S f1 (M.insert x t f2) s)
 br t r (S f1 f2 s) = S f1 f2 (M.insert t r s)
 
-hoist :: Label -> [Stmt] -> ([Stmt], Label)
-hoist u ss = runState (iM ss) u
-
 rwL :: M.Map Label (Label, IS.IntSet) -> (Stmt, ControlAnn) -> (Stmt, N)
 rwL s (MJ e l, a) = let n=node a in (case M.lookup l s of {Just (lϵ,m) | n `IS.notMember` m -> MJ e lϵ; _ -> MJ e l}, n)
 rwL _ (ss, a)     = (ss, node a)
 
-iM :: [Stmt] -> LM [Stmt]
-iM ss = do
+hoist :: Label -> [Stmt] -> ([Stmt], Label)
+hoist u ss = flip runState u $ do
     (cf, m, is, dels) <- indels ss
     let go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
         go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, S _ _ subst) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
@@ -156,16 +153,16 @@ iM ss = do
     consolidate =
           first concat
         . flip runState emptyS
-        . traverse gg
+        . traverse c
 
-    gg :: CM -> State S [Stmt]
-    gg (LL l) = pure [L l]
-    gg (FM t x) = do
+    c :: CM -> State S [Stmt]
+    c (LL l) = pure [L l]
+    c (FM t x) = do
         seen <- gets f1s
         case M.lookup x seen of
             Nothing -> i1 x t$>[MX t (KF x)]
             Just r  -> modify (br t r) $> []
-    gg (F2M t x) = do
+    c (F2M t x) = do
         seen <- gets f2s
         case M.lookup x seen of
             Nothing -> i2 x t$>[MX2 t (KF x)]
@@ -181,7 +178,7 @@ indels ss = do
 hs :: [Stmt] -> LM ([(Stmt, ControlAnn)], M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
 hs ss = let (ls, cf, dm) = loop ss
             mm = lm (reconstructFlat cf)
-     in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (ols ls))
+     in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
   where
     bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
@@ -193,9 +190,9 @@ loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
 graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], CfTbl)
 graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
-{-# SCC ols #-}
-ols :: [Loop] -> [Loop]
-ols ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
+{-# SCC outers #-}
+outers :: [Loop] -> [Loop]
+outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
 
 et :: Graph -> StmtTbl -> [N] -> Tree N -> [(N, [N])]
 et g ss seen t = expandLoop t <$> loopHeads g ss seen t
@@ -223,4 +220,4 @@ mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, CfTbl)
 mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
-    sa = A.listArray (0,m-1) (sortBy (compare `on` (node.snd)) ns)
+    sa = A.array (0,m-1) ((node.snd &&& id)<$>ns)
