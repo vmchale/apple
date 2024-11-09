@@ -123,9 +123,8 @@ buildF l st [] = (l, st)
 buildF l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =
     let ca = fst3 (copoint isn)
         u = usesFNode ca; d = defsFNode ca
-        lm = l IS.\\ u
+        lm = l IS.\\ u; le = lm `IS.union` d
         ml' = thread [ kϵ @! mIx | kϵ <- IS.toList (u `IS.union` d) ] ml
-        le = lm `IS.union` d
         st' = St ml' as al (mapWl (S.insert mIx) mv) ns ds i wk s a
         st'' = thread [ addEdge lϵ dϵ | lϵ <- IS.toList le, dϵ <- IS.toList d ] st'
         l' = u `IS.union` (lm IS.\\ d)
@@ -149,9 +148,8 @@ build l st [] = (l, st)
 build l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoint isn) =
     let ca = fst3 (copoint isn)
         u = usesNode ca; d = defsNode ca
-        lm = l IS.\\ u
+        lm = l IS.\\ u; le = lm `IS.union` d
         ml' = thread [ kϵ @! mIx | kϵ <- IS.toList (u `IS.union` d) ] ml
-        le = lm `IS.union` d
         st' = St ml' as al (mapWl (S.insert mIx) mv) ns ds i wk s a
         st'' = thread [ addEdge lϵ dϵ | lϵ <- IS.toList le, dϵ <- IS.toList d ] st'
         l' = u `IS.union` (lm IS.\\ d)
