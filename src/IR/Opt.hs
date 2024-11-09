@@ -11,14 +11,14 @@ optIR = fmap opt
 optE :: Exp -> Exp
 optE (IB ITimes e0 e1) =
     case (optE e0, optE e1) of
-        (ConstI 0, _)                             -> ConstI 0
-        (_, ConstI 0)                             -> ConstI 0
-        (ConstI 1, e1')                           -> e1'
-        (e0', ConstI 1)                           -> e0'
-        (ConstI i0, ConstI i1)                    -> ConstI$i0*i1
-        (e0', ConstI i)        | Just s <- cLog i -> IB IAsl e0' (ConstI s)
-        (ConstI i, e1')      | Just s <- cLog i   -> IB IAsl e1' (ConstI s)
-        (e0', e1')                                -> IB ITimes e0' e1'
+        (ConstI 0, _)                      -> ConstI 0
+        (_, ConstI 0)                      -> ConstI 0
+        (ConstI 1, e1')                    -> e1'
+        (e0', ConstI 1)                    -> e0'
+        (ConstI i0, ConstI i1)             -> ConstI$i0*i1
+        (e0', ConstI i) | Just s <- cLog i -> IB IAsl e0' (ConstI s)
+        (ConstI i, e1') | Just s <- cLog i -> IB IAsl e1' (ConstI s)
+        (e0', e1')                         -> IB ITimes e0' e1'
 optE (IB IPlus e0 e1) =
     case (optE e0, optE e1) of
         (ConstI 0, e1')        -> e1'
