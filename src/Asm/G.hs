@@ -9,6 +9,7 @@ import qualified Data.IntMap      as IM
 import qualified Data.IntSet      as IS
 import qualified Data.Set         as S
 import           Data.Tuple.Extra (fst3, snd3, thd3)
+import           Q
 
 type K=Int
 
@@ -45,9 +46,6 @@ mapMv f st = st { mvS = f (mvS st) }; mapWk f st = st { wkls = f (wkls st) }; ma
 thread :: [a -> a] -> a -> a
 thread = foldr (.) id
 
-(!:) :: IM.Key -> Int -> GL -> GL
-(!:) k i = IM.alter (\kϵ -> Just$case kϵ of {Nothing -> [i]; Just is -> i:is}) k
-
 (@!) :: IM.Key -> M -> Movs -> Movs
 (@!) k i = IM.alter (\kϵ -> Just$case kϵ of {Nothing -> S.singleton i; Just is -> S.insert i is}) k
 
@@ -57,10 +55,10 @@ thread = foldr (.) id
 n !* d = IM.findWithDefault maxBound n d
 
 dec :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
-dec = IM.alter (\case {Nothing -> Nothing;Just d -> Just$d-1})
+dec = IM.alter (\case {Nothing -> Nothing;Just d -> Just$!d-1})
 
 inc :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
-inc = IM.alter (\case {Nothing -> Just 1;Just d -> Just$d+1})
+inc = IM.alter (\case {Nothing -> Just 1;Just d -> Just$!d+1})
 
 emptySt :: IS.IntSet -- ^ Precolored registers
         -> [Int]
@@ -85,7 +83,7 @@ alloc :: (Ord reg, Arch arch areg afreg, Copointed (arch areg afreg))
       => [arch areg afreg (UD, Liveness, Maybe (Int,Int))]
       -> [reg] -- ^ available registers
       -> IS.IntSet -- ^ Precolored @areg@
-      -> IM.IntMap reg -- ^ Precolored map
+      -> IM.IntMap reg -- ^ Precolored
       -> Either IS.IntSet (IM.IntMap reg) -- ^ Map from abs reg. id (temp) to concrete reg.
 alloc aIsns regs preC preCM =
     let st0 = builds (unBB<$>bb aIsns) (emptySt preC (IS.toList $ getIs nIsns IS.\\ preC))
@@ -100,8 +98,8 @@ allocF :: (Ord freg, Arch arch areg afreg, Copointed (arch areg afreg))
        => [arch areg afreg (UD, Liveness, Maybe (Int,Int))]
        -> [freg] -- ^ available registers
        -> IS.IntSet -- ^ Precolored @afreg@
-       -> IM.IntMap freg -- ^ Precolored map
-       -> Either IS.IntSet (IM.IntMap freg) -- ^ Map from abs freg. id (temp) to concrete reg.
+       -> IM.IntMap freg -- ^ Precolored
+       -> Either IS.IntSet (IM.IntMap freg) -- ^ Map from abs reg. id (temp) to concrete reg.
 allocF aIsns regs preC preCM =
     let st0 = buildsF (unBB<$>bb aIsns) (emptySt preC (IS.toList $ getIFs nIsns IS.\\ preC))
         st1 = mkWorklist ᴋ st0
@@ -174,8 +172,7 @@ addEdge u v st@(St ml as al mv ns ds i wk s a) =
         then
             let as' = S.insert (u,v) $ S.insert (v,u) as
                 preC = pre wk
-                uC = u `IS.notMember` preC
-                vC = v `IS.notMember` preC
+                uC = u `IS.notMember` preC; vC = v `IS.notMember` preC
                 al' = (if uC then u !: v else id)$(if vC then v !: u else id) al
                 ds' = (if uC then inc u else id)$(if vC then inc v else id) ds
             in St ml as' al' mv ns ds' i wk s a
@@ -187,9 +184,6 @@ mkWorklist ᴋ st@(St _ _ _ _ _ ds i wk _ _) =
     let wk' = thread [ (case () of { _ | n !* ds >= ᴋ -> mapSp; _ | isMR n st -> mapFr; _-> mapSimp}) (IS.insert n) | n <- i ] wk
     in st { initial = [], wkls = wk' }
 
--- same for xmm0, r15
--- ᴋ = 16
-
 isMR :: Int -> St -> Bool
 isMR i st = not $ S.null (nodeMoves i st)
 
@@ -199,10 +193,12 @@ nodeMoves n (St ml _ _ mv _ _ _ _ _ _) = ml !. n `S.intersection` (actv mv `S.un
 
 {-# SCC simplify #-}
 simplify :: K -> St -> St
-simplify ᴋ s@(St _ _ _ _ _ _ _ wk@(Wk _ _ _ stϵ) st _) | Just (n,ns) <- IS.minView stϵ =
-    let s' = s { wkls = wk { simp = ns }, stack = n:st }
-    in thread [ ddg ᴋ m | m <- adj n s' ] s'
-                                                       | otherwise = s
+simplify ᴋ s@(St _ _ _ _ _ _ _ wk@(Wk _ _ _ stϵ) st _) =
+    case IS.minView stϵ of
+        Just (n,ns) ->
+            let s' = s { wkls = wk { simp = ns }, stack = n:st }
+            in thread [ ddg ᴋ m | m <- adj n s' ] s'
+        _ -> s
 
 {-# SCC ddg #-}
 -- decrement degree
@@ -211,13 +207,13 @@ ddg ᴋ m s | m `IS.member` pre (wkls s) = s
         | otherwise =
     let d = degs s; s' = s { degs = dec m d }
     in if d IM.! m == ᴋ
-        then let s'' = enaMv (m:adj m s) s'
+        then let s'' = enMv (m:adj m s) s'
              in mapWk (mapSp (IS.delete m).(if isMR m s'' then mapFr else mapSimp) (IS.insert m)) s''
         else s'
 
 -- enable moves
-enaMv :: [Int] -> St -> St
-enaMv ns = thread (fmap g ns) where
+enMv :: [Int] -> St -> St
+enMv ns = thread (fmap g ns) where
     g n st = let ms = S.toList (nodeMoves n st) in thread (fmap h ms) st
         where h m stϵ | m `S.member` actv(mvS stϵ) = mapMv (mapWl (S.insert m) . mapActv (S.delete m)) st
                       | otherwise = st

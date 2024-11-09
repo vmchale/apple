@@ -183,7 +183,7 @@ cmm = fmap (f.C.writeC).opt where f (cs,_,aa,t)=(frees t cs,aa)
 ec :: Int -> E a -> Either (Err a) ([CS Liveness], LSt, C.AsmData)
 ec i = fmap ((\(cs,u,aa,t) -> (frees t cs,u,aa)) . C.writeC) . optE i
 
-cir (cs,u,aa,t) = let (s, WSt u' m)=cToIR u (frees t cs); (s',n)=pall u' (optIR s) in (s',aa,WSt n m)
+cir (cs,u,aa,t) = let (s, WSt u' m)=cToIR u (frees t cs); (s',n)=hoist u' (optIR s) in (s',aa,WSt n m)
 
 ir :: BSL.ByteString -> Either (Err AlexPosn) ([Stmt], IR.AsmData, WSt)
 ir = fmap (cir.C.writeC).opt

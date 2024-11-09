@@ -1,4 +1,4 @@
-module IR.Hoist ( loop, graphParts, pall ) where
+module IR.Hoist ( loop, graphParts, hoist ) where
 
 import           CF
 import           Control.Composition              (thread)
@@ -134,8 +134,8 @@ type LM=State Label
 i1 x t = modify (\(S f1 f2 s) -> S (M.insert x t f1) f2 s); i2 x t = modify (\(S f1 f2 s) -> S f1 (M.insert x t f2) s)
 br t r (S f1 f2 s) = S f1 f2 (M.insert t r s)
 
-pall :: Label -> [Stmt] -> ([Stmt], Label)
-pall u ss = runState (iM ss) u
+hoist :: Label -> [Stmt] -> ([Stmt], Label)
+hoist u ss = runState (iM ss) u
 
 rwL :: M.Map Label (Label, IS.IntSet) -> (Stmt, ControlAnn) -> (Stmt, N)
 rwL s (MJ e l, a) = let n=node a in (case M.lookup l s of {Just (lϵ,m) | n `IS.notMember` m -> MJ e lϵ; _ -> MJ e l}, n)
@@ -149,11 +149,10 @@ iM ss = do
         go ((s,_):ssϵ) = second (s:)$go ssϵ
         go [] = (M.empty, [])
 
-        ss'=map (rwL m) cf
-        (ts, ss'') = go ss'
-    pure ({-# SCC "applySubst" #-} applySubst ts ss'')
+        (ts, ss') = go (rwL m<$>cf)
+    pure ({-# SCC "applySubst" #-} map (ts@>) ss')
   where
-    applySubst s = map (mapF (\t -> fromMaybe t (M.lookup t s)))
+    (@>) s = mapF (\t -> M.findWithDefault t t s)
     consolidate =
           first concat
         . flip runState emptyS
@@ -176,10 +175,8 @@ indels :: [Stmt] -> LM ([(Stmt, ControlAnn)], M.Map Label (Label, IS.IntSet), IM
 indels ss = do
     (c,ls,h) <- hs ss
     let ds = IS.fromList (mapMaybe snd3 h)
-        is = thread ((\(n,_,s) -> go n s)<$>h)
+        is = thread ((\(n,_,s) -> n!:s)<$>h)
     pure (c, ls, is IM.empty, ds)
-  where
-    go n s = IM.alter (\case {Nothing -> Just [s]; Just ssϵ -> Just$s:ssϵ}) n
 
 hs :: [Stmt] -> LM ([(Stmt, ControlAnn)], M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
 hs ss = let (ls, cf, dm) = loop ss
