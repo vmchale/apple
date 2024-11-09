@@ -48,31 +48,31 @@ optF2 :: F2E -> F2E
 optF2 (FAt p) = FAt (optP p)
 optF2 (FU f e) =
     case optF2 e of
-        ConstF (x,y) -> let hs=f1c f in ConstF (hs x, hs y)
-        e'           -> FU f e'
+        KF (x,y) -> let hs=f1c f in KF (hs x, hs y)
+        e'       -> FU f e'
 optF2 (FB FMinus e0 e1) =
     case (optF2 e0, optF2 e1) of
-        (e0', ConstF (0,0))              -> e0'
-        (ConstF (x0,y0), ConstF (x1,y1)) -> ConstF (x0-x1,y0-y1)
-        (e0', e1')                       -> FB FMinus e0' e1'
+        (e0', KF (0,0))          -> e0'
+        (KF (x0,y0), KF (x1,y1)) -> KF (x0-x1,y0-y1)
+        (e0', e1')               -> FB FMinus e0' e1'
 optF2 (FB FPlus e0 e1) =
     case (optF2 e0, optF2 e1) of
-        (e0', ConstF (0,0))              -> e0'
-        (ConstF (0,0), e1')              -> e1'
-        (ConstF (x0,y0), ConstF (x1,y1)) -> ConstF (x0+x1,y0+y1)
-        (e0',e1')                        -> FB FPlus e0' e1'
+        (e0', KF (0,0))          -> e0'
+        (KF (0,0), e1')          -> e1'
+        (KF (x0,y0), KF (x1,y1)) -> KF (x0+x1,y0+y1)
+        (e0',e1')                -> FB FPlus e0' e1'
 optF2 (FB FTimes e0 e1) =
     case (optF2 e0, optF2 e1) of
-        (ConstF (1,1), e1')              -> e1'
-        (e0', ConstF (1,1))              -> e0'
-        (ConstF (x0,y0), ConstF (x1,y1)) -> ConstF (x0+x1,y0+y1)
-        (e0',e1')                        -> FB FTimes e0' e1'
+        (KF (1,1), e1')          -> e1'
+        (e0', KF (1,1))          -> e0'
+        (KF (x0,y0), KF (x1,y1)) -> KF (x0+x1,y0+y1)
+        (e0',e1')                -> FB FTimes e0' e1'
 optF2 (FB FDiv e0 e1) =
     case (optF2 e0, optF2 e1) of
-        (e0', ConstF (1,1))              -> e0'
-        (ConstF (x0,y0), ConstF (x1,y1)) -> ConstF (x0/x1,y0/y1)
-        (e0',ConstF (x,y))               -> FB FTimes e0' (ConstF (1/x,1/y))
-        (e0',e1')                        -> FB FDiv e0' e1'
+        (e0', KF (1,1))          -> e0'
+        (KF (x0,y0), KF (x1,y1)) -> KF (x0/x1,y0/y1)
+        (e0',KF (x,y))           -> FB FTimes e0' (KF (1/x,1/y))
+        (e0',e1')                -> FB FDiv e0' e1'
 optF2 e = e
 
 f1c :: FUn -> Double -> Double
@@ -87,35 +87,35 @@ optF :: FE -> FE
 optF (FAt p) = FAt (optP p)
 optF (FConv e) =
     case optE e of
-        ConstI i -> ConstF$fromIntegral i
+        ConstI i -> KF$fromIntegral i
         e'       -> FConv e'
 optF (FU f e) =
     case optF e of
-        ConstF d -> ConstF (f1c f d)
-        e'       -> FU f e'
+        KF d -> KF (f1c f d)
+        e'   -> FU f e'
 optF (FB FMinus e0 e1) =
     case (optF e0, optF e1) of
-        (ConstF x0, ConstF x1) -> ConstF$x0-x1
-        (e0', ConstF 0)        -> e0'
-        (e0', e1')             -> FB FMinus e0' e1'
+        (KF x0, KF x1) -> KF$x0-x1
+        (e0', KF 0)    -> e0'
+        (e0', e1')     -> FB FMinus e0' e1'
 optF (FB FPlus e0 e1) =
     case (optF e0, optF e1) of
-        (ConstF 0, e1')        -> e1'
-        (e0', ConstF 0)        -> e0'
-        (ConstF x0, ConstF x1) -> ConstF$x0+x1
-        (e0',e1')              -> FB FPlus e0' e1'
+        (KF 0, e1')    -> e1'
+        (e0', KF 0)    -> e0'
+        (KF x0, KF x1) -> KF$x0+x1
+        (e0',e1')      -> FB FPlus e0' e1'
 optF (FB FTimes e0 e1) =
     case (optF e0, optF e1) of
-        (ConstF 1, e1')        -> e1'
-        (e0', ConstF 1)        -> e0'
-        (ConstF x0, ConstF x1) -> ConstF$x0*x1
-        (e0',e1')              -> FB FTimes e0' e1'
+        (KF 1, e1')    -> e1'
+        (e0', KF 1)    -> e0'
+        (KF x0, KF x1) -> KF$x0*x1
+        (e0',e1')      -> FB FTimes e0' e1'
 optF (FB FDiv e0 e1) =
     case (optF e0, optF e1) of
-        (e0', ConstF 1)        -> e0'
-        (ConstF x0, ConstF x1) -> ConstF$x0/x1
-        (e0', ConstF x)        -> FB FTimes e0' (ConstF$1/x)
-        (e0',e1')              -> FB FDiv e0' e1'
+        (e0', KF 1)    -> e0'
+        (KF x0, KF x1) -> KF$x0/x1
+        (e0', KF x)    -> FB FTimes e0' (KF$1/x)
+        (e0',e1')      -> FB FDiv e0' e1'
 optF fe      = fe
 
 optP :: AE -> AE

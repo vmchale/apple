@@ -211,7 +211,7 @@ irp (C.BConst False)   = IR.ConstI 0
 irp (C.Boo op e0 e1)   = IB (BI op) (irp e0) (irp e1)
 
 irX2 :: C.F2E -> IR.F2E
-irX2 (C.ConstF x)    = IR.ConstF x
+irX2 (C.ConstF x)    = IR.KF x
 irX2 (C.FAt a)       = IR.FAt (irAt a)
 irX2 (FTmp t)        = FReg (f2x t)
 irX2 (FBin op x0 x1) = FB op (irX2 x0) (irX2 x1)
@@ -219,7 +219,7 @@ irX2 (IE x)          = absurd x
 irX2 (FUn op x)      = FU op (irX2 x)
 
 irX :: F1E -> FE
-irX (C.ConstF x)    = IR.ConstF x
+irX (C.ConstF x)    = IR.KF x
 irX (FTmp t)        = FReg (fx t)
 irX (C.FAt a)       = IR.FAt (irAt a)
 irX (FBin op x0 x1) = FB op (irX x0) (irX x1)

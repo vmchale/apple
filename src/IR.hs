@@ -127,7 +127,7 @@ instance Pretty AE where
     pretty (AP t Nothing _)  = parens ("ptr" <+> pretty t)
     pretty (AP t (Just e) _) = parens ("ptr" <+> pretty t <> "+" <> pretty e)
 
-data FExp t c e = ConstF c
+data FExp t c e = KF c
                 | FB FBin (FExp t c e) (FExp t c e)
                 | FConv e
                 | FReg t
@@ -140,10 +140,10 @@ instance Num Exp where
     (+) = IB IPlus; (*) = IB ITimes; (-) = IB IMinus; fromInteger = ConstI . fromInteger
 
 instance Num (FExp ftemp Double e) where
-    (+) = FB FPlus; (*) = FB FTimes; (-) = FB FMinus; fromInteger = ConstF . fromInteger
+    (+) = FB FPlus; (*) = FB FTimes; (-) = FB FMinus; fromInteger = KF . fromInteger
 
 instance Fractional (FExp ftemp Double e) where
-    (/) = FB FDiv; fromRational = ConstF . fromRational
+    (/) = FB FDiv; fromRational = KF . fromRational
 
 data Exp = ConstI Int64
          | Reg Temp
@@ -157,7 +157,7 @@ data Exp = ConstI Int64
          | LA !Int -- assembler data
 
 instance (Pretty t, Pretty c, Pretty e) => Pretty (FExp t c e) where
-    pretty (ConstF x)   = parens ("double" <+> pretty x)
+    pretty (KF x)       = parens ("double" <+> pretty x)
     pretty (FConv e)    = parens ("itof" <+> pretty e)
     pretty (FReg t)     = parens ("freg" <+> pretty t)
     pretty (FB op e e') = parens (pretty op <+> pretty e <+> pretty e')

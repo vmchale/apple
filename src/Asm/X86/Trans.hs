@@ -150,7 +150,7 @@ ir (IR.WrF (IR.AP m (Just ei) _) (IR.FReg r)) = do
     pure $ plE ++ [IAddRR () (IReg eR) m', MovqAX () (R (IReg eR)) (fabsReg r)]
 ir (IR.WrF (IR.AP m Nothing _) (IR.FReg r)) =
     pure [MovqAX () (R (absReg m)) (fabsReg r)]
-ir (IR.WrF (IR.AP m Nothing _) (IR.ConstF x)) = do
+ir (IR.WrF (IR.AP m Nothing _) (IR.KF x)) = do
     iR <- nextR
     pure [MovRI () iR (fI64 x), MovAR () (R (absReg m)) iR]
 ir (IR.Cset t p) = foldMapA ir [IR.MT t 0, IR.Cmov p t 1]
@@ -335,7 +335,7 @@ feval (IR.FB Op.FMinus (IR.FReg r0) (IR.FB Op.FTimes (IR.FReg r1) (IR.FReg r2)))
 feval (IR.FB fop e0 e1) t | Just isn <- mSse fop = do
     (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
     pure $ plR0 $ plR1 [isn () (fabsReg t) i0 i1]
-feval (IR.ConstF x) t = do
+feval (IR.KF x) t = do
     iR <- nextR
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]
 feval (IR.FU Op.FAbs e) t = do
@@ -353,7 +353,7 @@ feval (IR.FU Op.FSin (IR.FReg r)) t =
 feval (IR.FU Op.FCos (IR.FReg r)) t =
     let sa = RC SP (-8) in
     pure [MovqAX () sa (fabsReg r), Fld () sa, Fcos (), Fstp () sa, MovqXA () (fabsReg t) sa]
-feval (IR.FB Op.FExp (IR.ConstF 2.718281828459045) e) t = do
+feval (IR.FB Op.FExp (IR.KF 2.718281828459045) e) t = do
     (plE,i) <- plF e
     let sa = RC SP (-8)
     -- https://www.madwizard.org/programming/snippets?id=36

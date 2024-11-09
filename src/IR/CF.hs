@@ -129,7 +129,7 @@ uFF (EAt e)        = uAF e
 uFF (BAt e)        = uAF e
 
 uF2 :: F2E -> IS.IntSet
-uF2 ConstF{}     = IS.empty
+uF2 KF{}         = IS.empty
 uF2 (FReg t)     = f2is t
 uF2 (FB _ e0 e1) = uF2 e0<>uF2 e1
 uF2 (FU _ e)     = uF2 e
@@ -137,7 +137,7 @@ uF2 (FAt e)      = uAF e
 uF2 (FConv x)    = absurd x
 
 uF :: FE -> IS.IntSet
-uF ConstF{}     = IS.empty
+uF KF{}         = IS.empty
 uF (FB _ e0 e1) = uF e0 <> uF e1
 uF (FConv e)    = uFF e
 uF (FReg t)     = fsingleton t
@@ -158,13 +158,13 @@ uFR (FConv e)    = uE e
 uFR (FB _ e0 e1) = uFR e0<>uFR e1
 uFR FReg{}       = IS.empty
 uFR (FU _ e)     = uFR e
-uFR ConstF{}     = IS.empty
+uFR KF{}         = IS.empty
 
 uFR2 :: F2E -> IS.IntSet
 uFR2 (FAt a)      = uA a
 uFR2 FReg{}       = IS.empty
 uFR2 (FB _ e0 e1) = uFR2 e0<>uFR2 e1
-uFR2 ConstF{}     = IS.empty
+uFR2 KF{}         = IS.empty
 uFR2 (FU _ e)     = uFR2 e
 uFR2 (FConv x)    = absurd x
 

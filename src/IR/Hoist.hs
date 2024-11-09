@@ -20,13 +20,13 @@ import           Data.Void                        (Void, absurd)
 import           IR
 import           IR.CF
 import           LR
+import           Q
 
 type N=Int
 type LTbl = A.Array Int Liveness; type CfTbl=A.Array Int (Stmt, ControlAnn); type StmtTbl=A.Array Int Stmt
 
 mapFA :: (FTemp -> FTemp) -> AE -> AE
-mapFA f (AP t (Just e) l) = AP t (Just$mapFE f e) l
-mapFA _ a                 = a
+mapFA f (AP t e l) = AP t (mapFE f<$>e) l
 
 mapFE :: (FTemp -> FTemp) -> Exp -> Exp
 mapFE f (IRFloor x)      = IRFloor (mapFF f x)
@@ -43,7 +43,7 @@ mapFE f (IRel rel e0 e1) = IRel rel (mapFE f e0) (mapFE f e1)
 mapFE _ e@LA{}           = e
 
 mapFF2 :: (FTemp -> FTemp) -> FExp F2 c Void -> FExp F2 c Void
-mapFF2 _ x@ConstF{}    = x
+mapFF2 _ x@KF{}        = x
 mapFF2 f (FAt a)       = FAt (mapFA f a)
 mapFF2 f (FReg r)      = FReg (view f r)
 mapFF2 f (FB op e0 e1) = FB op (mapFF2 f e0) (mapFF2 f e1)
@@ -51,7 +51,7 @@ mapFF2 f (FU op e)     = FU op (mapFF2 f e)
 mapFF2 _ (FConv x)     = absurd x
 
 mapFF :: (FTemp -> FTemp) -> FExp FTemp c Exp -> FExp FTemp c Exp
-mapFF _ x@ConstF{}    = x
+mapFF _ x@KF{}        = x
 mapFF f (FAt a)       = FAt (mapFA f a)
 mapFF f (FB op e0 e1) = FB op (mapFF f e0) (mapFF f e1)
 mapFF f (FU op e)     = FU op (mapFF f e)
@@ -107,11 +107,15 @@ nh :: LM Label
 nh = state (\u -> (u, u+1))
 
 hl :: (Loop, CfTbl, LTbl) -> LM (M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
-hl ((n,ns), info, linfo) = do {fl <- nh; let ss'=go ss in if null ss' then pure (M.empty, []) else pure (M.singleton lh (fl,ns), (n,Nothing,LL fl):ss')}
+hl ((n,ns), info, linfo) =
+    let ss'=go ss
+    in if null ss'
+        then pure (M.empty, [])
+        else do {fl <- nh; pure (M.singleton lh (fl,ns), (n,Nothing,LL fl):ss')}
   where
-    fliveInH=fins lH; lH=linfo A.! n
-    go ((MX x (ConstF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef (fToInt x) (node a) = (n, Just$node a, FM x i):go ssϵ
-    go ((MX2 x (ConstF i), a):ssϵ) | f2ToInt x `IS.notMember` fliveInH && notFDef (f2ToInt x) (node a) = (n, Just$node a, F2M x i):go ssϵ
+    fliveInH=fins (linfo A.! n)
+    go ((MX x (KF i), a):ssϵ) | fToInt x `IS.notMember` fliveInH && notFDef (fToInt x) (node a) = (n, Just$node a, FM x i):go ssϵ
+    go ((MX2 x (KF i), a):ssϵ) | f2ToInt x `IS.notMember` fliveInH && notFDef (f2ToInt x) (node a) = (n, Just$node a, F2M x i):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
     otherDefFs nL = defsFNode.ud.snd.(info A.!)<$>IS.toList(IS.delete nL ns)
@@ -122,6 +126,8 @@ hl ((n,ns), info, linfo) = do {fl <- nh; let ss'=go ss in if null ss' then pure 
 data S = S { f1s :: !(M.Map Double FTemp), f2s :: !(M.Map (Double, Double) F2)
            , su :: !(M.Map FTemp FTemp)
            }
+
+emptyS = S M.empty M.empty M.empty
 
 type LM=State Label
 
@@ -148,18 +154,22 @@ iM ss = do
     pure ({-# SCC "applySubst" #-} applySubst ts ss'')
   where
     applySubst s = map (mapF (\t -> fromMaybe t (M.lookup t s)))
-    consolidate = first concat.flip runState (S M.empty M.empty mempty).traverse gg
+    consolidate =
+          first concat
+        . flip runState emptyS
+        . traverse gg
+
     gg :: CM -> State S [Stmt]
     gg (LL l) = pure [L l]
     gg (FM t x) = do
         seen <- gets f1s
         case M.lookup x seen of
-            Nothing -> i1 x t$>[MX t (ConstF x)]
+            Nothing -> i1 x t$>[MX t (KF x)]
             Just r  -> modify (br t r) $> []
     gg (F2M t x) = do
         seen <- gets f2s
         case M.lookup x seen of
-            Nothing -> i2 x t$>[MX2 t (ConstF x)]
+            Nothing -> i2 x t$>[MX2 t (KF x)]
             Just r  -> modify ((br `on` vv) t r) $> []
 
 indels :: [Stmt] -> LM ([(Stmt, ControlAnn)], M.Map Label (Label, IS.IntSet), IM.IntMap [CM], IS.IntSet)
@@ -203,7 +213,7 @@ expandLoop t s = (s, fromJust (go t))
 
 loopHeads :: Graph -> StmtTbl -> [N] -> Tree N -> [N]
 loopHeads g ss seen (Node n cs) =
-    let bes=filter (hasEdge g n) seen
+    let bes=hasEdge g n #. seen
     in (if isMJ n then (bes++) else id) $ concatMap (loopHeads g ss (n:seen)) cs
   where
     isMJ nϵ = p (ss A.! nϵ)

@@ -208,7 +208,7 @@ ir (IR.MJ (IR.IRel op e (IR.ConstI i)) l) | c <- iop op, Just u <- m12 i = do
 ir (IR.MJ (IR.IRel op e0 e1) l) | c <- iop op = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [CmpRR () r0 r1, Bc () c l]
-ir (IR.MJ (IR.FRel op e (IR.ConstF 0)) l) | c <- frel op = do
+ir (IR.MJ (IR.FRel op e (IR.KF 0)) l) | c <- frel op = do
     (plE,i) <- plF e
     pure $ plE [FcmpZ () i, Bc () c l]
 ir (IR.MJ (IR.FRel op e0 e1) l) | c <- frel op = do
@@ -392,7 +392,7 @@ ssin t = do
     d1 <- nextF; d2 <- nextF; d3 <- nextF
     tsI <- nextI
     let tsIR=IR.FTemp tsI; tsC=FReg tsI
-    pl3 <- feval (IR.ConstF$ -(1/6)) tsIR; pl5 <- feval (IR.ConstF$1/120) tsIR; pl7 <- feval (IR.ConstF$ -(1/5040)) tsIR
+    pl3 <- feval (IR.KF$ -(1/6)) tsIR; pl5 <- feval (IR.KF$1/120) tsIR; pl7 <- feval (IR.KF$ -(1/5040)) tsIR
     pure $ [Fmul () d1 d0 d0, Fmul () d2 d1 d0, Fmul () d3 d2 d1, Fmul () d1 d1 d3] ++ pl3 ++ Fmadd () d0 d2 tsC d0 : pl5 ++ Fmadd () d0 d3 tsC d0 : pl7 ++ [Fmadd () d0 d1 tsC d0]
   where
     d0 = fabsReg t
@@ -402,7 +402,7 @@ cosϵ t = do
     d1 <- nextF; d2 <- nextF; d3 <- nextF
     tsI <- nextI
     let tsIR=IR.FTemp tsI; tsC=FReg tsI
-    pl0 <- feval 1 tsIR; pl2 <- feval (IR.ConstF$ -(1/2)) tsIR; pl4 <- feval (IR.ConstF$1/24) tsIR; pl6 <- feval (IR.ConstF$ -(1/720)) tsIR
+    pl0 <- feval 1 tsIR; pl2 <- feval (IR.KF$ -(1/2)) tsIR; pl4 <- feval (IR.KF$1/24) tsIR; pl6 <- feval (IR.KF$ -(1/720)) tsIR
     pure $ [Fmul () d1 d0 d0, Fmul () d2 d1 d1, Fmul () d3 d2 d1] ++ pl0 ++ FMovXX () d0 tsC : pl2 ++ Fmadd () d0 d1 tsC d0 : pl4 ++ Fmadd () d0 d2 tsC d0 : pl6 ++ [Fmadd () d0 d3 tsC d0]
   where
     d0 = fabsReg t
@@ -424,13 +424,13 @@ f2eval (IR.FB Op.FMinus e0 (IR.FB Op.FTimes e1 e2)) t = do
 f2eval (IR.FB Op.FPlus e0 e1) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
     pure$plE0$plE1 [Fadd2 () (f2absReg t) x0 x1]
-f2eval (IR.FB Op.FMinus (IR.ConstF (0,0)) e1) t = do
+f2eval (IR.FB Op.FMinus (IR.KF (0,0)) e1) t = do
     (plE1,x1) <- plF2 e1
     pure$plE1 [Fneg2 () (f2absReg t) x1]
-f2eval (IR.FB Op.FTimes (IR.ConstF (-1,-1)) e1) t = do
+f2eval (IR.FB Op.FTimes (IR.KF (-1,-1)) e1) t = do
     (plE1,x1) <- plF2 e1
     pure$plE1 [Fneg2 () (f2absReg t) x1]
-f2eval (IR.FB Op.FTimes e0 (IR.ConstF (-1,-1))) t = do
+f2eval (IR.FB Op.FTimes e0 (IR.KF (-1,-1))) t = do
     (plE,x) <- plF2 e0
     pure$plE [Fneg2 () (f2absReg t) x]
 f2eval (IR.FB Op.FMinus e0 e1) t = do
@@ -454,20 +454,20 @@ f2eval (IR.FU Op.FSqrt e) t = do
 f2eval (IR.FU Op.FNeg e) t = do
     (plE,x) <- plF2 e
     pure$plE[Fneg2 () (f2absReg t) x]
-f2eval (IR.ConstF (0,0)) t =
+f2eval (IR.KF (0,0)) t =
     let q=f2absReg t
     in pure [ZeroS () q]
-f2eval (IR.ConstF (x,y)) t | x==y = do
+f2eval (IR.KF (x,y)) t | x==y = do
     i <- nextI
     let r=IReg i
         w=castDoubleToWord64 x
     pure $ mw64 w r ++ [Dup () (f2absReg t) r]
-f2eval (IR.ConstF (0,y)) t = do
+f2eval (IR.KF (0,y)) t = do
     i <- nextI
     let q=f2absReg t; r=IReg i
         w=castDoubleToWord64 y
     pure $ ZeroS () q:mw64 w r++[Ins () q 1 r]
-f2eval (IR.ConstF (x,y)) t = do
+f2eval (IR.KF (x,y)) t = do
     i0 <- nextI; i1 <- nextI
     let r0=IReg i0; r1=IReg i1
         w0=castDoubleToWord64 x; w1=castDoubleToWord64 y
@@ -476,8 +476,8 @@ f2eval e _ = error (show e)
 
 feval :: IR.FE -> IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 feval (IR.FReg tS) tD = pure [FMovXX () (fabsReg tD) (fabsReg tS)]
-feval (IR.ConstF 0) t = pure [ZeroD () (fabsReg t)]
-feval (IR.ConstF d) t = do
+feval (IR.KF 0) t = pure [ZeroD () (fabsReg t)]
+feval (IR.KF d) t = do
     i <- nextI
     let r=IReg i
         w=castDoubleToWord64 d
@@ -489,7 +489,7 @@ feval (IR.FU Op.FSin e) t = do
     s <- ssin t; c <- cosϵ t
     lc <- nextL; endL <- nextL
     i <- nR; d2 <- nextF; i7 <- nextI
-    π4i<-nextI; plπ4 <- feval (IR.ConstF$pi/4) (IR.FTemp π4i); pl7 <- eval (IR.ConstI 7) (IR.ITemp i7)
+    π4i<-nextI; plπ4 <- feval (IR.KF$pi/4) (IR.FTemp π4i); pl7 <- eval (IR.ConstI 7) (IR.ITemp i7)
     let π4=FReg π4i
     dRot <- nextF; nres <- nextF
     pure $
@@ -505,8 +505,8 @@ feval (IR.FU Op.FSin e) t = do
         :Label () lc:c
         ++[Label () endL]
         ++[Fneg () nres d0, TstI () i (BM 1 2), Fcsel () d0 nres d0 Neq]
-feval (IR.FU Op.FCos e) t = feval (IR.FU Op.FSin (IR.ConstF(pi/2)-e)) t
-feval (IR.FB Op.FExp (IR.ConstF 2.718281828459045) e) t = do
+feval (IR.FU Op.FCos e) t = feval (IR.FU Op.FSin (IR.KF(pi/2)-e)) t
+feval (IR.FB Op.FExp (IR.KF 2.718281828459045) e) t = do
     r <- nR
     plE <- feval e IR.F0
     pure $ plE ++ [puL, AddRC () FP ASP 16 IZero, MovRCf () r Exp, Blr () r, FMovXX () (fabsReg t) FArg0, poL]
@@ -527,13 +527,13 @@ feval (IR.FB Op.FPlus (IR.FB Op.FTimes e0 e1) e2) t = do
 feval (IR.FB Op.FMinus e0 (IR.FB Op.FTimes e1 e2)) t = do
     (plE0,i0) <- plF e0; (plE1,i1) <- plF e1; (plE2,i2) <- plF e2
     pure $ plE0 $ plE1 $ plE2 [Fmsub () (fabsReg t) i1 i2 i0]
-feval (IR.FB Op.FMinus (IR.ConstF 0) e) t = do
+feval (IR.FB Op.FMinus (IR.KF 0) e) t = do
     (plE,i) <- plF e
     pure $ plE [Fneg () (fabsReg t) i]
-feval (IR.FB Op.FTimes (IR.ConstF (-1)) e) t = do
+feval (IR.FB Op.FTimes (IR.KF (-1)) e) t = do
     (plE,i) <- plF e
     pure $ plE [Fneg () (fabsReg t) i]
-feval (IR.FB Op.FTimes e (IR.ConstF (-1))) t = do
+feval (IR.FB Op.FTimes e (IR.KF (-1))) t = do
     (plE,i) <- plF e
     pure $ plE [Fneg () (fabsReg t) i]
 feval (IR.FB fop e0 e1) t | Just isn <- mFop fop = do
