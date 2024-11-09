@@ -96,6 +96,7 @@ mapF f (Cmov p t e)   = Cmov (mapFE f p) t (mapFE f e)
 mapF f (Cset t p)     = Cset t (mapFE f p)
 
 type Loop = (N, IS.IntSet)
+type LLoop = M.Map Label (Label, IS.IntSet)
 
 lm :: [(Stmt, NLiveness)] -> LTbl
 lm cs = A.array (0, maximum ns) (zip ns (liveness<$>ls))
@@ -106,7 +107,7 @@ data CM = LL !Label | FM !FTemp !Double | F2M !F2 !(Double, Double)
 nh :: LM Label
 nh = state (\u -> (u, u+1))
 
-hl :: (Loop, CfTbl, LTbl) -> LM (M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
+hl :: (Loop, CfTbl, LTbl) -> LM (LLoop, [(N, Maybe N, CM)])
 hl ((n,ns), info, linfo) =
     let ss'=go ss
     in if null ss'
@@ -134,7 +135,7 @@ type LM=State Label
 i1 x t = modify (\(S f1 f2 s) -> S (M.insert x t f1) f2 s); i2 x t = modify (\(S f1 f2 s) -> S f1 (M.insert x t f2) s)
 br t r (S f1 f2 s) = S f1 f2 (M.insert t r s)
 
-rwL :: M.Map Label (Label, IS.IntSet) -> (Stmt, ControlAnn) -> (Stmt, N)
+rwL :: LLoop -> (Stmt, ControlAnn) -> (Stmt, N)
 rwL s (MJ e l, a) = let n=node a in (case M.lookup l s of {Just (lϵ,m) | n `IS.notMember` m -> MJ e lϵ; _ -> MJ e l}, n)
 rwL _ (ss, a)     = (ss, node a)
 
@@ -150,12 +151,8 @@ hoist u ss = flip runState u $ do
     pure ({-# SCC "applySubst" #-} map (ts@>) ss')
   where
     (@>) s = mapF (\t -> M.findWithDefault t t s)
-    consolidate =
-          first concat
-        . flip runState emptyS
-        . traverse c
+    consolidate = first concat . flip runState emptyS . traverse c
 
-    c :: CM -> State S [Stmt]
     c (LL l) = pure [L l]
     c (FM t x) = do
         seen <- gets f1s
@@ -168,17 +165,17 @@ hoist u ss = flip runState u $ do
             Nothing -> i2 x t$>[MX2 t (KF x)]
             Just r  -> modify ((br `on` vv) t r) $> []
 
-indels :: [Stmt] -> LM ([(Stmt, ControlAnn)], M.Map Label (Label, IS.IntSet), IM.IntMap [CM], IS.IntSet)
+indels :: [Stmt] -> LM ([(Stmt, ControlAnn)], LLoop, IM.IntMap [CM], IS.IntSet)
 indels ss = do
-    (c,ls,h) <- hs ss
+    (c,ls,h) <- gatherLoops ss
     let ds = IS.fromList (mapMaybe snd3 h)
         is = thread ((\(n,_,s) -> n!:s)<$>h)
     pure (c, ls, is IM.empty, ds)
 
-hs :: [Stmt] -> LM ([(Stmt, ControlAnn)], M.Map Label (Label, IS.IntSet), [(N, Maybe N, CM)])
-hs ss = let (ls, cf, dm) = loop ss
-            mm = lm (reconstructFlat cf)
-     in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
+gatherLoops :: [Stmt] -> LM ([(Stmt, ControlAnn)], LLoop, [(N, Maybe N, CM)])
+gatherLoops ss = let (ls, cf, dm) = loop ss
+                     mm = lm (reconstructFlat cf)
+                 in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
   where
     bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
@@ -194,6 +191,7 @@ graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlo
 outers :: [Loop] -> [Loop]
 outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
 
+-- expand tree
 et :: Graph -> StmtTbl -> [N] -> Tree N -> [(N, [N])]
 et g ss seen t = expandLoop t <$> loopHeads g ss seen t
 
