@@ -1,22 +1,22 @@
 module IR.Hoist ( loop, graphParts, hoist ) where
 
 import           CF
-import           Control.Arrow                    ((&&&))
-import           Control.Composition              (thread)
-import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
-import qualified Data.Array                       as A
-import           Data.Bifunctor                   (bimap, first, second)
-import           Data.Foldable                    (toList)
-import           Data.Function                    (on)
-import           Data.Functor                     (($>))
-import           Data.Graph                       (Tree (Node))
-import           Data.Graph.Dom                   (Graph, Node, domTree)
-import qualified Data.IntMap                      as IM
-import qualified Data.IntSet                      as IS
-import qualified Data.Map.Strict                  as M
-import           Data.Maybe                       (catMaybes, fromJust, mapMaybe)
-import           Data.Tuple.Extra                 (first3, snd3)
-import           Data.Void                        (Void, absurd)
+import           Control.Arrow                  ((&&&))
+import           Control.Composition            (thread)
+import           Control.Monad.Trans.State.Lazy (State, gets, modify, runState, state)
+import qualified Data.Array                     as A
+import           Data.Bifunctor                 (bimap, first, second)
+import           Data.Foldable                  (toList)
+import           Data.Function                  (on)
+import           Data.Functor                   (($>))
+import           Data.Graph                     (Tree (Node))
+import           Data.Graph.Dom                 (Graph, Node, domTree)
+import qualified Data.IntMap                    as IM
+import qualified Data.IntSet                    as IS
+import qualified Data.Map.Strict                as M
+import           Data.Maybe                     (catMaybes, fromJust, mapMaybe)
+import           Data.Tuple.Extra               (first3, snd3)
+import           Data.Void                      (Void, absurd)
 import           IR
 import           IR.CF
 import           LR
