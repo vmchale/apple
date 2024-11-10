@@ -481,16 +481,11 @@ aeval (Builtin (Arr sh F) Eye) t | Just ixs@[i,_] <- staIx sh = do
     let rnk=fromIntegral$length ixs; n=product ixs
         loop = fors sh k 0 ILt (ConstI i) [WrF () (At td [ConstI i, 1] [Tmp k, Tmp k] (Just a) 8) (ConstF 1)]
     pure (Just a, Ma () sh a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[td=:DP t rnk, loop])
-aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t | F <- eAnn x = do
-    xR <- nF
-    plX <- feval x xR
-    (a,aV) <- v8 sh t 1
-    pure (Just a, plX++aV++[WrF () (AElem t 1 0 (Just a) 8) (FTmp xR)])
-aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t | I <- eAnn x = do
-    xR <- nI
-    plX <- eval x xR
-    (a,aV) <- v8 sh t 1
-    pure (Just a, plX++aV++[Wr () (AElem t 1 0 (Just a) 8) (Tmp xR)])
+aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t | Just (ty,sz) <- rr (eAnn x) = do
+    xR <- rtemp ty
+    plX <- eeval x xR
+    (a,aV) <- vSz sh t 1 sz
+    pure (Just a, plX++aV++[wt (AElem t 1 0 (Just a) 8) xR])
 aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t | P{} <- eAnn x = do
     xR <- nI
     (szs, mS, _, plX) <- πe x xR
