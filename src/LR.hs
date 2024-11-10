@@ -32,9 +32,9 @@ lookupNode = IM.findWithDefault (error "Internal error: failed to look up instru
 -- TODO: depth-first sort?
 -- dff
 
--- order in which to inspect nodes during liveness analysis
+-- default for flat
 inspectOrder :: Copointed p => [p ControlAnn] -> [Int]
-inspectOrder = fmap (node . copoint) -- don't need to reverse because thread goes in opposite order
+inspectOrder = fmap (node . copoint)
 
 reconstructFlat isns = let is=inspectOrder isns in reconstruct is (mkLiveness is isns) isns
 
@@ -53,14 +53,14 @@ liveness is l =
         preds = mkPred (fst<$>IM.elems l)
     in snd$stepWl preds initWl l
 
-type Preds = IM.IntMap [Int]
+type G = IM.IntMap [Int]
 
-mkPred :: [ControlAnn] -> Preds
+mkPred :: [ControlAnn] -> G
 mkPred cf = thread (g<$>cf) IM.empty where g (ControlAnn n cs _) = thread [ c!:n | c <- cs ]
 
 -- § 17.4 Appel
 
-stepWl :: Preds -> IS.IntSet -> LivenessMap -> (IS.IntSet, LivenessMap)
+stepWl :: G -> IS.IntSet -> LivenessMap -> (IS.IntSet, LivenessMap)
 stepWl preds is l =
     case IS.maxView is of
         Nothing -> (IS.empty, l)
@@ -71,7 +71,7 @@ stepWl preds is l =
 -- out-sets will only change if in-sets of predecessor change
 -- in-sets will only change if out-set changes
 
-stepN :: Preds -> Int -> LivenessMap -> (IS.IntSet, LivenessMap)
+stepN :: G -> Int -> LivenessMap -> (IS.IntSet, LivenessMap)
 stepN preds n ns = (iSelf wn, IM.insert n (c, Liveness ins' out' fins' fout') ns) where
     (c,l) = lookupNode n ns; (UD u uf d df) = ud c
     ins' = u <> (out l IS.\\ d); fins' = uf <> (fout l IS.\\ df)
