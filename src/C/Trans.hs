@@ -236,14 +236,8 @@ fS Times = True; fS Plus = True
 fS Max = True; fS Min = True
 fS _ = False
 
-bS Times = True
-bS Plus  = True
-bS Minus = True
-bS Div   = True
-bS Neg   = True
-bS Max   = True
-bS Min   = True
-bS Sqrt  = True
+bS Times = True; bS Plus = True; bS Minus = True; bS Div  = True
+bS Neg   = True; bS Max  = True; bS Min   = True; bS Sqrt = True
 bS _     = False
 
 hasS :: E a -> Bool
@@ -315,21 +309,18 @@ data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe AL) | BA !BTemp
 data RT = IT !Temp | FT !FTemp | PT !BTemp
 
 mt :: ArrAcc -> RT -> CS ()
+mt p (FT t) = MX () t (FAt p); mt p (PT t) = MB () t (PAt p)
 mt p (IT t) = t =: EAt p
-mt p (FT t) = MX () t (FAt p)
-mt p (PT t) = MB () t (PAt p)
 
 wt :: ArrAcc -> RT -> CS ()
-wt p (IT t) = Wr () p (Tmp t)
-wt p (FT t) = WrF () p (FTmp t)
+wt p (IT t) = Wr () p (Tmp t); wt p (FT t) = WrF () p (FTmp t)
 wt p (PT t) = WrP () p (Is t)
 
 ra (FT f)=FA f; ra (IT r)=IPA r; ra (PT r)=BA r
 art (IPA r)=IT r;art (FA r)=FT r; art (BA r)=PT r
 
 eeval :: E (T ()) -> RT -> CM [CS ()]
-eeval e (IT t) = eval e t
-eeval e (FT t) = feval e t
+eeval e (IT t) = eval e t; eeval e (FT t) = feval e t
 eeval e (PT t) = peval e t
 
 data RI a b = Cell a | Index b
