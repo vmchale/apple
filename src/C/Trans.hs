@@ -47,26 +47,13 @@ nF = FTemp <$> nextI; nF2 = F2Temp <$> nextI
 
 nIs = traverse (\_ -> nI); nFs = traverse (\_ -> nF); nF2s = traverse (\_ -> nF2)
 
-addAA :: Int -> [Word64] -> CSt -> CSt
-addAA i aa (CSt t ar as l v b d d2 a f aas ts) = CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts
-
-addVar :: Nm a -> Temp -> CM ()
+addAA i aa = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b d d2 a f (IM.insert i aa aas) ts)
 addVar n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l (insert n r v) b d d2 a f aas ts)
-
-addD :: Nm a -> FTemp -> CM ()
 addD n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b (insert n r d) d2 a f aas ts)
-
-addD2 :: Nm a -> F2Temp -> CM ()
 addD2 n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b d (insert n r d2) a f aas ts)
-
-addB :: Nm a -> BTemp -> CM ()
 addB n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v (insert n r b) d d2 a f aas ts)
-
-addAVar :: Nm a -> (Maybe AL, Temp) -> CM ()
 addAVar n r = modify (\(CSt t ar as l v b d d2 a f aas ts) -> CSt t ar as l v b d d2 (insert n r a) f aas ts)
-
-addF :: Nm a -> (Label, [Arg], RT) -> CSt -> CSt
-addF n f (CSt t ar as l v b d d2 a fs aas ts) = CSt t ar as l v b d d2 a (insert n f fs) aas ts
+addF n f = modify (\(CSt t ar as l v b d d2 a fs aas ts) -> CSt t ar as l v b d d2 a (insert n f fs) aas ts)
 
 bI n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=ITemp t in (r, CSt (t+1) ar as l (insert n r v) b d d2 a f aas ts))
 bD n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=FTemp t in (r, CSt (t+1) ar as l v b (insert n r d) d2 a f aas ts))
@@ -104,9 +91,6 @@ rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Ju
 mAA :: T a -> Maybe ((T a, Int64), (T a, Int64))
 mAA (Arrow t0 t1) = (,) <$> tRnk t0 <*> tRnk t1
 mAA _             = Nothing
-
-f1 :: T a -> Bool
-f1 (Arr (_ `Cons` Nil) F) = True; f1 _ = False
 
 bT :: Integral b => T a -> b
 bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT B=1; bT Arr{}=8
@@ -233,10 +217,10 @@ writeCM eϵ = do
     (zipWith (\xr xr' -> MX () xr' (FTmp xr)) [F0,F1,F2,F3,F4,F5] fs ++) . (zipWith (\r r' -> r' =: Tmp r) [C0,C1,C2,C3,C4,C5] cs ++) <$> go eϵ fs cs where
     go (Lam _ x@(Nm _ _ F) e) (fr:frs) rs = addD x fr *> go e frs rs
     go (Lam _ x@(Nm _ _ B) e) frs (r:rs) = addB x (bt r) *> go e frs rs where bt (ITemp i)=BTemp i
-    go (Lam _ (Nm _ _ F) _) [] _ = error "Not enough floating-point registers!"
+    go (Lam _ (Nm _ _ F) _) [] _ = error "Not enough floating-point registers."
     go (Lam _ x@(Nm _ _ I) e) frs (r:rs) = addVar x r *> go e frs rs
     go (Lam _ x@(Nm _ _ Arr{}) e) frs (r:rs) = addAVar x (Nothing, r) *> go e frs rs
-    go Lam{} _ [] = error "Not enough registers!"
+    go Lam{} _ [] = error "Not enough registers."
     go e _ _ | isF (eAnn e) = do {f <- nF ; (++[MX () FRet0 (FTmp f)]) <$> feval e f} -- avoid clash with xmm0 (arg + ret)
              | isI (eAnn e) = do {t <- nI; (++[CRet =: Tmp t]) <$> eval e t} -- avoid clash when calling functions
              | isB (eAnn e) = do {t <- nBT; (++[MB () CBRet (Is t)]) <$> peval e t}
@@ -429,20 +413,14 @@ llet (n,e') | isArr (eAnn e') = do
     eR <- nI
     (l, ss) <- aeval e' eR
     addAVar n (l,eR) $> ss
-llet (n,e') | isI (eAnn e') = do
-    eR <- bI n
-    eval e' eR
-llet (n,e') | isF (eAnn e') = do
-    eR <- bD n
-    feval e' eR
-llet (n,e') | isB (eAnn e') = do
-    eR <- bB n
-    peval e' eR
+llet (n,e') | isI (eAnn e') = do {eR <- bI n; eval e' eR}
+llet (n,e') | isF (eAnn e') = do {eR <- bD n; feval e' eR}
+llet (n,e') | isB (eAnn e') = do {eR <- bB n; peval e' eR}
 llet (n,e') | Arrow tD tC <- eAnn e', isR tD && isR tC = do
     l <- neL
     x <- rtemp tD; y <- rtemp tC
     (_, ss) <- writeF e' [ra x] y
-    modify (addF n (l, [ra x], y))
+    addF n (l, [ra x], y)
     pure [C.Def () l ss]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
@@ -933,7 +911,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t
   where
     tA=eAnn a; tX=eAnn x
     mT n = find (\k -> n `rem` k == 0) [32,16,8,4]
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t | f1 tX = do
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t | Arr _ F <- tX = do
     i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; z <- nF2
     aRd <- nI; xRd <- nI; td <- nI
     (aL,aV) <- v8 oSh t (Tmp m)
@@ -1250,7 +1228,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Rot) n) xs) t | Just (tX, xRnk) <- tR
 aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
     let rnk=fromIntegral$length ns
     n <- nextAA
-    modify (addAA n (rnk:fmap fromIntegral ns++ws))
+    addAA n (rnk:fmap fromIntegral ns++ws)
     pure (Nothing, [t =: LA n])
     -- TODO: boolean lits
 aeval (Id (Arr sh at) (AShLit ns es)) t | Just ty <- nt at, sz <- bT ty = do
