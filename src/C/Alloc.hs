@@ -27,6 +27,7 @@ type Alias = IM.IntMap Int
 
 data Slots = Ss { keep :: !Alias, mLive :: [(AL, Sh ())] }
 
+{-# SCC (@@) #-}
 (@@) :: Alias -> IS.IntSet -> IS.IntSet
 (@@) s = IS.map (\l -> IM.findWithDefault l l s)
 
@@ -55,9 +56,6 @@ fits (SVar sv0) (SVar sv1)            = sv0 == sv1
 fits (Cat sh0 sh1) (Cat sh0' sh1')    | fits sh0 sh0' && fits sh1 sh1' = True
 fits _ _                              = False
 
-st :: IM.IntMap Temp -> AL -> Temp
-st k (AL i) = IM.findWithDefault (error "Internal error: bad substitution?") i k
-
 raa :: IM.IntMap Temp -> [CS Liveness] -> (Alias, [CS Liveness])
 raa = swap . second keep . flip runState (Ss IM.empty []) .* aa
 
@@ -65,13 +63,17 @@ raa = swap . second keep . flip runState (Ss IM.empty []) .* aa
 sCF :: Alias -> Liveness -> Liveness
 sCF al (Liveness i o fi fo) = Liveness (al@@i) (al@@o) fi fo
 
+(!) :: IM.IntMap Temp -> AL -> Temp
+(!) k (AL i) = IM.findWithDefault (error "Internal error: bad substitution?") i k
+
 -- first cut: don't do re-fills
+{-# SCC aa #-}
 aa :: IM.IntMap Temp -> [CS Liveness] -> State Slots [CS Liveness]
 aa ts (c@(Ma a sh l t _ _ _):cs) = do
     s <- m'liven (ins a) l sh
     let next = case s of
             Nothing -> c
-            Just l' -> Aa a l t (st ts l') 0
+            Just l' -> Aa a l t (ts!l') 0
     (next:) <$> aa ts cs
 aa ts (c:cs) = (c:)<$>aa ts cs
 aa _ [] = pure []
