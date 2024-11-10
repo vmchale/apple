@@ -268,14 +268,12 @@ writeF (Lam _ x e) (IPA r:rs) ret = addVar x r *> writeF e rs ret
 writeF (Lam _ x e) (FA fr:rs) ret = addD x fr *> writeF e rs ret
 writeF (Lam _ x e) (BA r:rs) ret = addB x r *> writeF e rs ret
 writeF e [] (IT r) | isArr (eAnn e) = aeval e r
-writeF e [] (IT r) | isI (eAnn e) = (Nothing,)<$>eval e r
 writeF e [] (IT r) | isΠR (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
-writeF e [] (FT r) = (Nothing,)<$>feval e r
-writeF e [] (PT r) = (Nothing,)<$>peval e r
+writeF e [] r = (Nothing,)<$>eeval e r
 
 m'p :: Maybe (CS (), CS ()) -> [CS ()] -> [CS ()]
-m'p Nothing       = id
 m'p (Just (a,pϵ)) = (++[pϵ]).(a:)
+m'p Nothing       = id
 
 sas :: [Maybe (CS (), CS ())] -> [CS ()] -> [CS ()]
 sas = thread.fmap m'p
