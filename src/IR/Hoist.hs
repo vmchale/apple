@@ -119,10 +119,10 @@ hl ((n,ns), info, linfo) =
     go ((MX2 x (KF i), a):ssϵ) | f2ToInt x `IS.notMember` fliveInH && notFDef (f2ToInt x) (node a) = (n, Just$node a, F2M x i):go ssϵ
     go (_:ssϵ)                      = go ssϵ
     go []                           = []
-    otherDefFs nL = defsFNode.ud.snd.(info A.!)<$>IS.toList(IS.delete nL ns)
+    otherDefFs nL = defsFNode.ud.snd.getCf<$>IS.toList(IS.delete nL ns)
     notFDef r nL = not $ any (r `IS.member`) (otherDefFs nL)
-    ss = (info A.!)<$>IS.toList ns
-    (L lh,_) = info A.! n
+    ss = getCf<$>IS.toList ns; (L lh,_) = getCf n
+    getCf = (info A.!)
 
 data S = S { f1s :: !(M.Map Double FTemp), f2s :: !(M.Map (Double, Double) F2)
            , su :: !(M.Map FTemp FTemp)
