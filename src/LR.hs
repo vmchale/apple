@@ -9,6 +9,7 @@ import           Data.Copointed
 -- this seems to be faster
 import qualified Data.IntMap.Lazy    as IM
 import qualified Data.IntSet         as IS
+import           Q
 
 emptyLiveness :: Liveness
 emptyLiveness = Liveness IS.empty IS.empty IS.empty IS.empty
@@ -28,8 +29,8 @@ succNode x ns =
 lookupNode :: Int -> LivenessMap -> (ControlAnn, Liveness)
 lookupNode = IM.findWithDefault (error "Internal error: failed to look up instruction")
 
-done :: LivenessMap -> LivenessMap -> Bool
-done n0 n1 = {-# SCC "done" #-} and $ zipWith (\(_, l) (_, l') -> l == l') (IM.elems n0) (IM.elems n1) -- n0, n1 have same length
+-- TODO: depth-first sort?
+-- dff
 
 -- order in which to inspect nodes during liveness analysis
 inspectOrder :: Copointed p => [p ControlAnn] -> [Int]
@@ -47,18 +48,35 @@ mkLiveness :: Copointed p => [Int] -> [p ControlAnn] -> LivenessMap
 mkLiveness is asms = liveness is (initLiveness asms)
 
 liveness :: [Int] -> LivenessMap -> LivenessMap
-liveness is nSt =
-    if done nSt nSt'
-        then nSt
-        else liveness is nSt'
-    where nSt' = {-# SCC "iterNodes" #-} iterNodes is nSt
+liveness is l =
+    let initWl = IS.fromList is
+        preds = mkPred (fst<$>IM.elems l)
+    in snd$stepWl preds initWl l
 
-iterNodes :: [Int] -> LivenessMap -> LivenessMap
-iterNodes is = thread (fmap stepNode is)
+type Preds = IM.IntMap [Int]
 
-stepNode :: Int -> LivenessMap -> LivenessMap
-stepNode n ns = {-# SCC "stepNode" #-} IM.insert n (c, Liveness ins' out' fins' fout') ns
-    where (c, l) = lookupNode n ns; (UD u uf d df) = ud c
-          ins' = u <> (out l IS.\\ d); fins' = uf <> (fout l IS.\\ df)
-          out' = IS.unions (fmap ins succL); fout' = IS.unions (fmap fins succL)
-          succL = succNode c ns
+mkPred :: [ControlAnn] -> Preds
+mkPred cf = thread (g<$>cf) IM.empty where g (ControlAnn n cs _) = thread [ c!:n | c <- cs ]
+
+-- § 17.4 Appel
+
+stepWl :: Preds -> IS.IntSet -> LivenessMap -> (IS.IntSet, LivenessMap)
+stepWl preds is l =
+    case IS.maxView is of
+        Nothing -> (IS.empty, l)
+        Just (i,isϵ) ->
+            let (w,l') = stepN preds i l
+                in stepWl preds (w<>isϵ) l'
+
+-- out-sets will only change if in-sets of predecessor change
+-- in-sets will only change if out-set changes
+
+stepN :: Preds -> Int -> LivenessMap -> (IS.IntSet, LivenessMap)
+stepN preds n ns = (iSelf wn, IM.insert n (c, Liveness ins' out' fins' fout') ns) where
+    (c,l) = lookupNode n ns; (UD u uf d df) = ud c
+    ins' = u <> (out l IS.\\ d); fins' = uf <> (fout l IS.\\ df)
+    out' = ins @<> succL; fout' = fins @<> succL
+    succL = succNode c ns
+    wn | ins'/=ins l || fins'/=fins l = IS.fromList$IM.findWithDefault [] n preds
+       | otherwise = IS.empty
+    iSelf = if out'/=out l || fout'/=fout l then IS.insert n else id
