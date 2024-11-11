@@ -411,13 +411,15 @@ llet (n,e') | Arrow tD tC <- eAnn e', isR tD && isR tC = do
     addF n (l, [ra x], y)
     pure [C.Def () l ss]
 
-data AD = AD { eigen :: !Temp, alabel :: !(Maybe AL), eiSh :: Maybe (Sh ())
+data AD = AD { eigen :: !Temp, alabel :: !(Maybe AL), eit :: Maybe (T ())
              , arnk :: Maybe CE
              , elemSz :: Maybe Int64
              , arrn :: (Maybe CE)
              }
 
-fill :: E (T ()) -> AD -> [(Temp, Maybe AL)] -> CM [CS ()]
+data RA = AI !AD | NA !RT
+
+fill :: E (T ()) -> AD -> [RA] -> CM [CS ()]
 fill (Builtin (Arr sh F) Eye) (AD t lA _ (Just rnk) _ _) [] | Just [i,_] <- staIx sh = do
     k <- nI; td <- nI
     let loop = fors sh k 0 ILt (ConstI i) [WrF () (At td [ConstI i, 1] [Tmp k, Tmp k] lA 8) (ConstF 1)]
@@ -427,15 +429,17 @@ fill (Builtin (Arr sh I) Eye) (AD t lA _ (Just rnk) _ _) [] | Just [i,_] <- staI
     k <- nI; td <- nI
     let loop = fors sh k 0 ILt (ConstI i) [Wr () (At td [ConstI i, 1] [Tmp k, Tmp k] lA 8) (ConstI 1)]
     pure [td=:DP t rnk, loop]
-fill (Builtin _ Init) (AD t lA _ _ (Just sz) (Just n)) [(xR,lX)] =
+fill (Builtin _ Init) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [CpyE () (AElem t 1 0 lA sz) (AElem xR 1 0 lX sz) n sz]
-fill (Builtin _ Tail) (AD t lA _ _ (Just sz) (Just n)) [(xR,lX)] =
+fill (Builtin _ Tail) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [CpyE () (AElem t 1 0 lA sz) (AElem xR 1 1 lX sz) n sz]
-fill (EApp _ (Builtin _ Map) op) (AD t lA (Just sh) _ _ (Just n)) [(xR,l)] | (Arrow tD tC) <- eAnn op, nind tD = do
+fill (EApp _ (Builtin _ Map) op) (AD t lA (Just (Arr sh _)) _ _ (Just n)) [AI (AD xR l _ _ _ _)] | (Arrow tD tC) <- eAnn op, nind tD = do
     iR <- nI; xRd <- nI; td <- nI;
     (step, pinches) <- aSD op [(tD, Raw xRd 0 l undefined, xRd)] tC (Raw td 0 lA undefined) td
     let loop=rof sh iR n step
     pure (xRd=:DP xR 1:td=:DP t 1:sas pinches [loop])
+fill (EApp _ (Builtin _ CatE) _) (AD t lA _ _ (Just sz) _) [AI (AD xR lX _ _ _ (Just xn)), AI (AD yR lY _ _ _ (Just yn))] =
+    pure [CpyE () (AElem t 1 0 lA sz) (AElem xR 1 0 lX sz) xn sz, CpyE () (AElem t 1 xn lA sz) (AElem yR 1 0 lY sz) yn sz]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
@@ -489,7 +493,7 @@ aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Init) x) t | Just sz <- aB oTy = do
     nR <- nI
     (a,aV) <- vSz oSh t (Tmp nR) sz
     (plX, (lX, xR)) <- plA x
-    contents <- fill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [(xR, lX)]
+    contents <- fill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
     pure (Just a, plX$nR =: (ev (eAnn x) (xR,lX)-1):aV++contents)
 aeval (EApp oTy@(Arr oSh _) (Builtin _ InitM) x) t | Just sz <- aB oTy = do
     nR <- nI
@@ -501,7 +505,7 @@ aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Tail) x) t | Just sz <- aB oTy = do
     nR <- nI
     (a,aV) <- vSz oSh t (Tmp nR) sz
     (plX, (lX, xR)) <- plA x
-    contents <- fill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [(xR, lX)]
+    contents <- fill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
     pure (Just a, plX$nR =: (ev (eAnn x) (xR,lX)-1):aV++contents)
 aeval (EApp (Arr oSh _) (Builtin _ Head) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     a <- nextArr t
@@ -550,7 +554,7 @@ aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t | tX@(Arr sh _) <- eAnn e, (Arr
     (plE, (l, xR)) <- plA e
     nR <- nI
     (a,aV) <- vSz sh t (Tmp nR) sz
-    contents <- fill f (AD t (Just a) (Just sh) Nothing Nothing (Just$Tmp nR)) [(xR,l)]
+    contents <- fill f (AD t (Just a) (Just tX) Nothing Nothing (Just$Tmp nR)) [AI (AD xR l Nothing Nothing Nothing Nothing)]
     pure (Just a, plE$nR=:ev tX (xR,l):aV++contents)
 aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t | tXs@(Arr sh@(_ `Cons` Nil) tX) <- eAnn xs, Just sz <- nSz tX = do
     a <- nextArr t
@@ -833,13 +837,14 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t
             :diml (t, Just a) (Tmp<$>(oDims++dots))
         ++it=:0:loop++[popS]
         )
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ CatE) x) y) t | tX <- eAnn x, Just (ty, 1) <- tRnk tX = do
+aeval (EApp oTy@(Arr oSh _) g@(EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk oTy = do
     xnR <- nI; ynR <- nI; tn <- nI
-    let tyN=bT ty
-    (a,aV) <- vSz oSh t (Tmp tn) tyN
+    let sz=bT ty
+    (a,aV) <- vSz oSh t (Tmp tn) sz
     (plX, (lX, xR)) <- plA x; (plY, (lY, yR)) <- plA y
-    -- TODO: if size is statically known, could place y later (and reuse alloc...)
-    pure (Just a, plX $ plY $ xnR =: ev tX (xR,lX):ynR =: ev (eAnn y) (yR,lY):tn =: (Tmp xnR+Tmp ynR):aV++CpyE () (AElem t 1 0 (Just a) tyN) (AElem xR 1 0 lX tyN) (Tmp xnR) tyN:[CpyE () (AElem t 1 (Tmp xnR) (Just a) tyN) (AElem yR 1 0 lY tyN) (Tmp ynR) tyN])
+    contents <- fill g (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp tn)) [AI (AD xR lX Nothing Nothing Nothing (Just$Tmp xnR)), AI (AD yR lY Nothing Nothing Nothing (Just$Tmp ynR))]
+    -- TODO: if size is statically known, could place y later (one less alloc...)
+    pure (Just a, plX $ plY $ xnR =: ev (eAnn x) (xR,lX):ynR =: ev (eAnn y) (yR,lY):tn =: (Tmp xnR+Tmp ynR):aV++contents)
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t = do
     n <- nI; startR <- nI; endR <- nI
     (a,aV) <- v8 sh t (Tmp n)
