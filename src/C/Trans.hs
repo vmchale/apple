@@ -1137,19 +1137,18 @@ aeval (EApp (Arr sh _) (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isΠ tX, s
     pure (Just a, plN$aV++m'sa xR mSz++plX++loop:m'pop mSz)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Re) n) x) t | (Arr sh tO) <- eAnn x, sz <- bT tO = do
     a <- nextArr t
-    nR <- nI; k <- nI
-    (plX, (lX, xR)) <- plA x
-    plN <- eval n nR
+    k <- nI
+    (plN, nR) <- plEV n; (plX, (lX, xR)) <- plA x
     xRnk <- nI; oRnk <- nI; td <- nI; xRd <- nI; szX <- nI
     let loop = for oSh k 0 ILt (Tmp nR) [CpyE () (Raw td (Tmp k*Tmp szX) (Just a) sz) (Raw xRd 0 lX sz) (Tmp szX) sz]
     pure (Just a,
         plX$
         xRnk=:eRnk sh (xR,lX):oRnk=:(Tmp xRnk+1):SZ () szX xR (Tmp xRnk) lX
-        :plN
-        ++Ma () oSh a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr () (ADim t 0 (Just a)) (Tmp nR):CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
+        :(plN$
+        Ma () oSh a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr () (ADim t 0 (Just a)) (Tmp nR):CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
         :td=:DP t (Tmp oRnk)
         :xRd=:DP xR (Tmp xRnk)
-        :[loop])
+        :[loop]))
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | Arrow F (Arrow F F) <- eAnn op, tXs <- eAnn xs, hasS op = do
     nR <- nI; i <- nI
     (a,aV) <- v8 oSh t (Tmp nR)
