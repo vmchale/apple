@@ -1324,21 +1324,23 @@ aeval (EApp _ (Builtin _ RevE) e) t | Arr sh ty <- eAnn e, Just rnk <- staRnk sh
     let loop = for sh i 0 ILt (Tmp n) [CpyE () (AElem t rnkE (Tmp i*Tmp szA) (Just a) sz) (AElem eR rnkE ((Tmp n-Tmp i-1)*Tmp szA) lE sz) (Tmp szA) sz]
     pure (Just a, plE$n=:ev ty (eR,lE):tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () sh a t rnkE (Tmp n*Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim eR 0 lE) rnkE:[loop])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tyS <- eAnn seed, Just sz <- rSz tyS = do
-    nR <- nI; plN <- eval n nR; i <- nI
+    i <- nI
     acc <- rtemp tyS
     plS <- eeval seed acc
+    (plN, nR) <- plEV n
     (a,aV) <- vSz sh t (Tmp nR) sz
     ss <- writeRF op [acc] acc
     let loop=for sh i 0 ILt (Tmp nR) (wt (AElem t 1 (Tmp i) (Just a) sz) acc:ss)
-    pure (Just a, plS++plN++aV++[loop])
+    pure (Just a, plN$aV++plS++[loop])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | isΠR (eAnn seed) = do
-    nR <- nI; plN <- eval n nR; i <- nI; td <- nI; acc <- nI
+    (plN, nE) <- plC n
+    i <- nI; td <- nI; acc <- nI
     (szs,mP,_,plS) <- πe seed acc
     let πsz=last szs
-    (a,aV) <- vSz sh t (Tmp nR) πsz
+    (a,aV) <- vSz sh t nE πsz
     (_, ss) <- writeF op [IPA acc] (IT acc)
-    let loop=for sh i 0 ILt (Tmp nR) (CpyE () (Raw td (Tmp i) (Just a) πsz) (TupM acc Nothing) 1 πsz:ss)
-    pure (Just a, m'sa acc mP++plS++plN++aV++td=:DP t 1:loop:m'pop mP)
+    let loop=for sh i 0 ILt nE (CpyE () (Raw td (Tmp i) (Just a) πsz) (TupM acc Nothing) 1 πsz:ss)
+    pure (Just a, plN$aV++m'sa acc mP++plS++td=:DP t 1:loop:m'pop mP)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv is)) f) x) t
     | (Arrow _ tC) <- eAnn f
     , Just (tX, xRnk) <- tRnk (eAnn x)
