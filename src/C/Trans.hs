@@ -882,13 +882,12 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ FRange) start) end) steps) t =
     let loop=for sh i 0 ILt (Tmp n) [WrF () (AElem t 1 (Tmp i) (Just a) 8) (FTmp startR), MX () startR (FTmp startR+FTmp incrR)]
     pure (Just a, putStart++putIncr++putN++aV++[loop])
 aeval (EApp res@(Arr oSh _) (EApp _ (Builtin _ Cyc) xs) n) t | Just sz <- aB res = do
-    i <- nI; nR <- nI; nO <- nI; szR <- nI
+    i <- nI; nO <- nI; szR <- nI
     (a,aV) <- vSz oSh t (Tmp nO) sz
-    (plX, (lX, xR)) <- plA xs
-    plN <- eval n nR
+    (plN, nR) <- plEV n; (plX, (lX, xR)) <- plA xs
     ix <- nI
     let loop=for oSh i 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) (Just a) sz) (AElem xR 1 0 lX sz) (Tmp szR) sz, ix+=Tmp szR]
-    pure (Just a, plX $ plN ++ szR =: ev (eAnn xs) (xR,lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[loop])
+    pure (Just a, plX $ plN $ szR =: ev (eAnn xs) (xR,lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[loop])
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t
     | Just (F, [n_i]) <- tIx tX
     , Just ɴ <- mT n_i, ɴc <- ConstI ɴ = do
@@ -1119,19 +1118,20 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t | Just (tX, xRnk) <- t
     let rnkE=ConstI xsRnk; szX=bT tX
     pure (Just a, plXs$plX$d1R=:ev tXs (xsR,lXs):dss++d1'R=:(Tmp d1R+1):PlProd () nX (Tmp<$>dts):szR=:(Tmp d1'R*Tmp nX):Ma () oSh a t rnkE (Tmp szR) szX:Wr () (ADim t 0 (Just a)) (Tmp d1'R):CpyD () (ADim t 1 (Just a)) (ADim xsR 1 lXs) (ConstI$xsRnk-1):[CpyE () (AElem t rnkE (Tmp d1R*Tmp nX) (Just a) szX) (AElem xR (ConstI xRnk) 0 lX szX) (Tmp nX) szX, CpyE () (AElem t rnkE 0 (Just a) szX) (AElem xsR (ConstI xsRnk) 0 lXs szX) (Tmp d1R*Tmp nX) szX])
 aeval (EApp (Arr sh _) (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, Just xSz <- rSz tX = do
-    xR <- rtemp tX; nR <- nI
+    xR <- rtemp tX
+    (plN, nR) <- plEV n
+    putX <- eeval x xR
     (a,aV) <- vSz sh t (Tmp nR) xSz
     i <- nI
-    putN <- eval n nR; putX <- eeval x xR
     let loop=for sh i 0 ILt (Tmp nR) [wt (AElem t 1 (Tmp i) (Just a) xSz) xR]
-    pure (Just a, putN++aV++putX++[loop])
+    pure (Just a, plN$aV++putX++[loop])
 aeval (EApp (Arr sh _) (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
-    xR <- nI; nR <- nI; k <- nI
-    plN <- eval n nR
+    xR <- nI; k <- nI
+    (plN, nR) <- plEV n
     (a,aV) <- vSz sh t (Tmp nR) sz
     (_, mSz, _, plX) <- πe x xR
     let loop = for sh k 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp k) (Just a) sz) (TupM xR Nothing) 1 sz]
-    pure (Just a, m'sa xR mSz++plX++plN++aV++loop:m'pop mSz)
+    pure (Just a, plN$aV++m'sa xR mSz++plX++loop:m'pop mSz)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Re) n) x) t | (Arr sh tO) <- eAnn x, sz <- bT tO = do
     a <- nextArr t
     nR <- nI; k <- nI
@@ -1175,7 +1175,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arro
     ss <- writeRF op [acc, x] acc
     let loopBody=wt (AElem t 1 (Tmp i) (Just a) xSz) acc:wX:ss
         loop=fort (eAnn e) i 0 ILt (Tmp n) loopBody
-    pure (Just a, plE$plS++n =: (ev (eAnn e) (aP,l)+1):aV++m'p pinch [loop])
+    pure (Just a, plE$n =: (ev (eAnn e) (aP,l)+1):aV++m'p pinch (plS++[loop]))
 aeval (EApp (Arr sh _) (EApp _ (Builtin _ Scan) op) xs) t | (Arrow tAcc (Arrow tX _)) <- eAnn op, Just accSz <- rSz tAcc, Just xSz <- rSz tX = do
     acc <- rtemp tAcc; x <- rtemp tX; i <- nI; n <- nI
     (a,aV) <- vSz sh t (Tmp n) accSz
@@ -1909,9 +1909,9 @@ m'sa t = maybe []  ((:[]).sac t)
                 Arr{} -> do {(pl, (l, r)) <- plA e; pure (l, pl [Wr () (Raw t (ConstI off) Nothing 1) (Tmp r)])}) es offs
     pure (offs, Just sz, catMaybes ls, concat ss)
 πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs = do
-    xR <- nI; iR <- nI
-    (lX, plX) <- aeval e xR; plI <- eval i iR
-    pure (offs, Just sz, mempty, plX ++ plI ++ [CpyE () (TupM t Nothing) (AElem xR 1 (Tmp iR) lX sz) 1 sz])
+    xR <- nI
+    (plI, iR) <- plEV i; (lX, plX) <- aeval e xR
+    pure (offs, Just sz, mempty, plX ++ plI [CpyE () (TupM t Nothing) (AElem xR 1 (Tmp iR) lX sz) 1 sz])
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [t =: Tmp (getT st x)])
