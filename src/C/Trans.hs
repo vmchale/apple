@@ -444,6 +444,9 @@ fill (Builtin _ ConsE) (AD t lA _ _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ _ (Ju
     pure [wt (AElem t 1 0 lA sz) xR, CpyE () (AElem t 1 1 lA sz) (AElem xsR 1 0 lX sz) n sz]
 fill (Builtin _ Snoc) (AD t lA _ _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ _ (Just n))] =
     pure [wt (AElem t 1 n lA sz) xR, CpyE () (AElem t 1 0 lA sz) (AElem xsR 1 0 lX sz) n sz]
+fill (Builtin _ Cyc) (AD t lA (Just (Arr oSh _)) _ (Just sz) _) [AI (AD xR lX _ _ _ (Just nx)), NA (IT nR)] = do
+    i <- nI; ix <- nI
+    pure [ix=:0, rof oSh i (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) lA sz) (AElem xR 1 0 lX sz) nx sz, ix+=nx]]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
@@ -881,13 +884,12 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ FRange) start) end) steps) t =
     putIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
     let loop=for sh i 0 ILt (Tmp n) [WrF () (AElem t 1 (Tmp i) (Just a) 8) (FTmp startR), MX () startR (FTmp startR+FTmp incrR)]
     pure (Just a, putStart++putIncr++putN++aV++[loop])
-aeval (EApp res@(Arr oSh _) (EApp _ (Builtin _ Cyc) xs) n) t | Just sz <- aB res = do
-    i <- nI; nO <- nI; szR <- nI
+aeval (EApp oTy@(Arr oSh _) (EApp _ g@(Builtin _ Cyc) xs) n) t | Just sz <- aB oTy = do
+    nO <- nI; nx <- nI
     (a,aV) <- vSz oSh t (Tmp nO) sz
     (plN, nR) <- plEV n; (plX, (lX, xR)) <- plA xs
-    ix <- nI
-    let loop=for oSh i 0 ILt (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) (Just a) sz) (AElem xR 1 0 lX sz) (Tmp szR) sz, ix+=Tmp szR]
-    pure (Just a, plX $ plN $ szR =: ev (eAnn xs) (xR,lX):nO =: (Tmp szR*Tmp nR):aV++ix =: 0:[loop])
+    contents <- fill g (AD t (Just a) (Just oTy) Nothing (Just sz) Nothing) [AI (AD xR lX Nothing Nothing Nothing (Just$Tmp nx)), NA (IT nR)]
+    pure (Just a, plX $ plN $ nx =: ev (eAnn xs) (xR,lX):nO =: (Tmp nx*Tmp nR):aV++contents)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t
     | Just (F, [n_i]) <- tIx tX
     , Just ɴ <- mT n_i, ɴc <- ConstI ɴ = do
