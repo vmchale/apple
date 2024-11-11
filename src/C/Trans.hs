@@ -412,6 +412,27 @@ llet (n,e') | Arrow tD tC <- eAnn e', isR tD && isR tC = do
     addF n (l, [ra x], y)
     pure [C.Def () l ss]
 
+data AD = AD { eigen :: !Temp, alabel :: !(Maybe AL)
+             , arnk :: Maybe CE
+             , elemSz :: Maybe Int64
+             , arrn :: (Maybe CE)
+             }
+
+fill :: E (T ()) -> AD -> [(Temp, Maybe AL)] -> CM [CS ()]
+fill (Builtin (Arr sh F) Eye) (AD t lA (Just rnk) _ _) [] | Just [i,_] <- staIx sh = do
+    k <- nI; td <- nI
+    let loop = fors sh k 0 ILt (ConstI i) [WrF () (At td [ConstI i, 1] [Tmp k, Tmp k] lA 8) (ConstF 1)]
+    -- could use cache instruction here?
+    pure [td=:DP t rnk, loop]
+fill (Builtin (Arr sh I) Eye) (AD t lA (Just rnk) _ _) [] | Just [i,_] <- staIx sh = do
+    k <- nI; td <- nI
+    let loop = fors sh k 0 ILt (ConstI i) [Wr () (At td [ConstI i, 1] [Tmp k, Tmp k] lA 8) (ConstI 1)]
+    pure [td=:DP t rnk, loop]
+fill (Builtin _ Init) (AD t lA _ (Just sz) (Just n)) [(xR,lX)] =
+    pure [CpyE () (AElem t 1 0 lA sz) (AElem xR 1 0 lX sz) n sz]
+fill (Builtin _ Tail) (AD t lA _ (Just sz) (Just n)) [(xR,lX)] =
+    pure [CpyE () (AElem t 1 0 lA sz) (AElem xR 1 1 lX sz) n sz]
+
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
     ss <- llet b
@@ -436,18 +457,11 @@ aeval (EApp (Arr sh I) (EApp _ (Builtin _ A.R) e0) e1) t | Just ixs <- staIx sh 
         plRnd = [Rnd () iR, iR =: (Bin IRem (Tmp iR) (Tmp scaleR) + e0e), Wr () (AElem t rnk (Tmp k) (Just a) 8) (Tmp iR)]
         loop=fors sh k 0 ILt (ConstI n) plRnd
     pure (Just a, plE0$plE1$Ma () sh a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++scaleR=:(e1e-e0e+1):[loop])
-aeval (Builtin (Arr sh I) Eye) t | Just ixs@[i,_] <- staIx sh = do
+aeval e@(Builtin (Arr sh _) Eye) t | Just ixs <- staIx sh = do
     a <- nextArr t
-    td <- nI; k <- nI
     let rnk=fromIntegral$length ixs; n=product ixs
-        loop = fors sh k 0 ILt (ConstI i) [Wr () (At td [ConstI i, 1] [Tmp k, Tmp k] (Just a) 8) (ConstI 1)]
-    pure (Just a, Ma () sh a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[td=:DP t rnk, loop])
-aeval (Builtin (Arr sh F) Eye) t | Just ixs@[i,_] <- staIx sh = do
-    a <- nextArr t
-    td <- nI; k <- nI
-    let rnk=fromIntegral$length ixs; n=product ixs
-        loop = fors sh k 0 ILt (ConstI i) [WrF () (At td [ConstI i, 1] [Tmp k, Tmp k] (Just a) 8) (ConstF 1)]
-    pure (Just a, Ma () sh a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++[td=:DP t rnk, loop])
+    contents <- fill e (AD t (Just a) (Just rnk) Nothing (Just$ConstI n)) []
+    pure (Just a, Ma () sh a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++contents)
 aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t | Just (ty,sz) <- rr (eAnn x) = do
     xR <- rtemp ty
     plX <- eeval x xR
@@ -467,24 +481,24 @@ aeval (EApp (Arr oSh _) (Builtin _ AddDim) xs) t | (Arr sh ty) <- eAnn xs, Just 
     pure (Just a,
             plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:rnk =: (Tmp xRnk+1):Ma () oSh a t (Tmp rnk) (Tmp szR) sz:
            [Wr () (ADim t 0 (Just a)) 1, CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk), td=:DP t (Tmp rnk), xRd=:DP xR (Tmp xRnk), CpyE () (Raw td 0 (Just a) sz) (Raw xRd 0 lX sz) (Tmp szR) sz])
-aeval (EApp oTy@(Arr oSh _) (Builtin _ Init) x) t | Just sz <- aB oTy = do
+aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Init) x) t | Just sz <- aB oTy = do
     nR <- nI
     (a,aV) <- vSz oSh t (Tmp nR) sz
     (plX, (lX, xR)) <- plA x
-    pure (Just a, plX$nR =: (ev (eAnn x) (xR,lX)-1):aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR 1 0 lX sz) (Tmp nR) sz])
+    contents <- fill e (AD t (Just a) Nothing (Just sz) (Just$Tmp nR)) [(xR, lX)]
+    pure (Just a, plX$nR =: (ev (eAnn x) (xR,lX)-1):aV++contents)
 aeval (EApp oTy@(Arr oSh _) (Builtin _ InitM) x) t | Just sz <- aB oTy = do
     nR <- nI
     (a,aV) <- vSz oSh t (Bin IMax (Tmp nR) 0) sz
     (plX, (lX, xR)) <- plA x
-    pure (Just a,
-        plX$
-        nR =: (ev (eAnn x) (xR,lX)-1)
-        :aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR 1 0 lX sz) (Tmp nR) sz])
-aeval (EApp oTy@(Arr oSh _) (Builtin _ Tail) x) t | Just sz <- aB oTy = do
+    -- TODO: negative
+    pure (Just a, plX$nR =: (ev (eAnn x) (xR,lX)-1):aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR 1 0 lX sz) (Tmp nR) sz])
+aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Tail) x) t | Just sz <- aB oTy = do
     nR <- nI
     (a,aV) <- vSz oSh t (Tmp nR) sz
     (plX, (lX, xR)) <- plA x
-    pure (Just a, plX$nR =: (ev (eAnn x) (xR,lX)-1):aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR 1 1 lX sz) (Tmp nR) sz])
+    contents <- fill e (AD t (Just a) Nothing (Just sz) (Just$Tmp nR)) [(xR, lX)]
+    pure (Just a, plX$nR =: (ev (eAnn x) (xR,lX)-1):aV++contents)
 aeval (EApp (Arr oSh _) (Builtin _ Head) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     a <- nextArr t
     (plX, (lX, xR)) <- plA xs
