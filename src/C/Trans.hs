@@ -447,6 +447,9 @@ fill (Builtin _ Snoc) (AD t lA _ _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ _ (Jus
 fill (Builtin _ Cyc) (AD t lA (Just (Arr oSh _)) _ (Just sz) _) [AI (AD xR lX _ _ _ (Just nx)), NA (IT nR)] = do
     i <- nI; ix <- nI
     pure [ix=:0, rof oSh i (Tmp nR) [CpyE () (AElem t 1 (Tmp ix) lA sz) (AElem xR 1 0 lX sz) nx sz, ix+=nx]]
+fill (Builtin _ Re) (AD t lA (Just (Arr sh _)) _ (Just sz) _) [NA (IT nR), NA xR] = do
+    i <- nI
+    pure [for sh i 0 ILt (Tmp nR) [wt (AElem t 1 (Tmp i) lA sz) xR]]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
@@ -1119,14 +1122,12 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t | Just (tX, xRnk) <- t
     d1R <- nI; d1'R <- nI; szR <- nI; nX <- nI
     let rnkE=ConstI xsRnk; szX=bT tX
     pure (Just a, plXs$plX$d1R=:ev tXs (xsR,lXs):dss++d1'R=:(Tmp d1R+1):PlProd () nX (Tmp<$>dts):szR=:(Tmp d1'R*Tmp nX):Ma () oSh a t rnkE (Tmp szR) szX:Wr () (ADim t 0 (Just a)) (Tmp d1'R):CpyD () (ADim t 1 (Just a)) (ADim xsR 1 lXs) (ConstI$xsRnk-1):[CpyE () (AElem t rnkE (Tmp d1R*Tmp nX) (Just a) szX) (AElem xR (ConstI xRnk) 0 lX szX) (Tmp nX) szX, CpyE () (AElem t rnkE 0 (Just a) szX) (AElem xsR (ConstI xsRnk) 0 lXs szX) (Tmp d1R*Tmp nX) szX])
-aeval (EApp (Arr sh _) (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, Just xSz <- rSz tX = do
-    xR <- rtemp tX
+aeval (EApp oTy@(Arr sh _) (EApp _ g@(Builtin _ Re) n) x) t | tX <- eAnn x, Just xSz <- rSz tX = do
     (plN, nR) <- plEV n
-    putX <- eeval x xR
+    xR <- rtemp tX; putX <- eeval x xR
     (a,aV) <- vSz sh t (Tmp nR) xSz
-    i <- nI
-    let loop=for sh i 0 ILt (Tmp nR) [wt (AElem t 1 (Tmp i) (Just a) xSz) xR]
-    pure (Just a, plN$aV++putX++[loop])
+    contents <- fill g (AD t (Just a) (Just oTy) Nothing (Just xSz) Nothing) [NA$IT nR, NA xR]
+    pure (Just a, plN$aV++putX++contents)
 aeval (EApp (Arr sh _) (EApp _ (Builtin _ Re) n) x) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     xR <- nI; k <- nI
     (plN, nR) <- plEV n
