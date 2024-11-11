@@ -438,8 +438,12 @@ fill (EApp _ (Builtin _ Map) op) (AD t lA (Just (Arr sh _)) _ _ (Just n)) [AI (A
     (step, pinches) <- aSD op [(tD, Raw xRd 0 l undefined, xRd)] tC (Raw td 0 lA undefined) td
     let loop=rof sh iR n step
     pure (xRd=:DP xR 1:td=:DP t 1:sas pinches [loop])
-fill (EApp _ (Builtin _ CatE) _) (AD t lA _ _ (Just sz) _) [AI (AD xR lX _ _ _ (Just xn)), AI (AD yR lY _ _ _ (Just yn))] =
+fill (Builtin _ CatE) (AD t lA _ _ (Just sz) _) [AI (AD xR lX _ _ _ (Just xn)), AI (AD yR lY _ _ _ (Just yn))] =
     pure [CpyE () (AElem t 1 0 lA sz) (AElem xR 1 0 lX sz) xn sz, CpyE () (AElem t 1 xn lA sz) (AElem yR 1 0 lY sz) yn sz]
+fill (Builtin _ ConsE) (AD t lA _ _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ _ (Just n))] =
+    pure [wt (AElem t 1 0 lA sz) xR, CpyE () (AElem t 1 1 lA sz) (AElem xsR 1 0 lX sz) n sz]
+fill (Builtin _ Snoc) (AD t lA _ _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ _ (Just n))] =
+    pure [wt (AElem t 1 n lA sz) xR, CpyE () (AElem t 1 0 lA sz) (AElem xsR 1 0 lX sz) n sz]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
@@ -837,7 +841,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t
             :diml (t, Just a) (Tmp<$>(oDims++dots))
         ++it=:0:loop++[popS]
         )
-aeval (EApp oTy@(Arr oSh _) g@(EApp _ (Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk oTy = do
+aeval (EApp oTy@(Arr oSh _) (EApp _ g@(Builtin _ CatE) x) y) t | Just (ty, 1) <- tRnk oTy = do
     xnR <- nI; ynR <- nI; tn <- nI
     let sz=bT ty
     (a,aV) <- vSz oSh t (Tmp tn) sz
@@ -1074,12 +1078,13 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t = do
         :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, Just sz <- rSz tX = do
+aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t | tX <- eAnn x, Just sz <- rSz tX = do
     xR <- rtemp tX; nR <- nI; nϵR <- nI
     (a,aV) <- vSz oSh t (Tmp nR) sz
     plX <- eeval x xR
     (plXs, (l, xsR)) <- plA xs
-    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++wt (AElem t 1 0 (Just a) sz) xR:[CpyE () (AElem t 1 1 (Just a) sz) (AElem xsR 1 0 l sz) (Tmp nϵR) sz])
+    contents <- fill g (AD t (Just a) Nothing Nothing (Just sz) Nothing) [NA xR, AI (AD xsR l Nothing Nothing Nothing (Just$Tmp nϵR))]
+    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++contents)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     xR <- nI; nR <- nI; nϵR <- nI
     (_, mSz, _, plX) <- πe x xR
@@ -1093,12 +1098,13 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t | Just (tX, xRnk) <- 
     d1R <- nI; d1'R <- nI; szR <- nI; nX <- nI
     let rnkE=ConstI xsRnk; szX=bT tX
     pure (Just a, plXs$plX$d1R=:ev tXs (xsR,lXs):dss++d1'R=:(Tmp d1R+1):PlProd () nX (Tmp<$>dts):szR=:(Tmp d1'R*Tmp nX):Ma () oSh a t rnkE (Tmp szR) szX:Wr () (ADim t 0 (Just a)) (Tmp d1'R):CpyD () (ADim t 1 (Just a)) (ADim xsR 1 lXs) (ConstI$xsRnk-1):[CpyE () (AElem t rnkE 0 (Just a) szX) (AElem xR (ConstI xRnk) 0 lX szX) (Tmp nX) szX, CpyE () (AElem t rnkE (Tmp nX) (Just a) szX) (AElem xsR (ConstI xsRnk) 0 lXs szX) (Tmp d1R*Tmp nX) szX])
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, Just sz <- rSz tX = do
+aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t | tX <- eAnn x, Just sz <- rSz tX = do
     xR <- rtemp tX; nR <- nI; nϵR <- nI
     (a,aV) <- vSz oSh t (Tmp nR) sz
     plX <- eeval x xR
     (plXs, (l, xsR)) <- plA xs
-    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++wt (AElem t 1 (Tmp nϵR) (Just a) sz) xR:[CpyE () (AElem t 1 0 (Just a) sz) (AElem xsR 1 0 l sz) (Tmp nϵR) sz])
+    contents <- fill g (AD t (Just a) Nothing Nothing (Just sz) Nothing) [NA xR, AI (AD xsR l Nothing Nothing Nothing (Just$Tmp nϵR))]
+    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++contents)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     xR <- nI; nR <- nI; nϵR <- nI
     (_, mSz, _, plX) <- πe x xR
