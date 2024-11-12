@@ -414,7 +414,7 @@ llet (n,e') | Arrow tD tC <- eAnn e', isR tD && isR tC = do
 data AD = AD { eigen :: !Temp, alabel :: !(Maybe AL), eit :: Maybe (T ())
              , arnk :: Maybe CE
              , elemSz :: Maybe Int64
-             , arrn :: (Maybe CE)
+             , arrn :: Maybe CE
              }
 
 data RA = AI !AD | NA !RT
@@ -1156,8 +1156,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Re) n) x) t | (Arr sh tO) <- eAnn x, 
     pure (Just a,
         plX$
         xRnk=:eRnk sh (xR,lX):oRnk=:(Tmp xRnk+1):SZ () szX xR (Tmp xRnk) lX
-        :(plN$
-        Ma () oSh a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr () (ADim t 0 (Just a)) (Tmp nR):CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
+        :plN (Ma () oSh a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr () (ADim t 0 (Just a)) (Tmp nR):CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
         :td=:DP t (Tmp oRnk)
         :xRd=:DP xR (Tmp xRnk)
         :[loop]))
