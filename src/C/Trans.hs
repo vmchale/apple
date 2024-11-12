@@ -462,6 +462,9 @@ fill (EApp _ (Builtin _ Outer) op) (AD t lA _ _ _ _) [AI (AD xR lX (Just tXs) _ 
     (step, pinches) <- aS op [(tX, AElem xR 1 (Tmp i) lX), (tY, AElem yR 1 (Tmp j) lY)] tC (AElem t 2 (Tmp k) lA)
     let loop=fort tXs i 0 ILt nx [fort tYs j 0 ILt ny (step++[k+=1])]
     pure (k=:0:sas pinches [loop])
+fill (Builtin _ Rot) (AD t lA _ _ _ _) [AI (AD xsR lX _ _ (Just sz) (Just nx)), NA (IT nR)] = do
+    c <- nI
+    pure [Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=nx], c =: (nx-Tmp nR), CpyE () (AElem t 1 0 lA sz) (AElem xsR 1 (Tmp nR) lX sz) (Tmp c) sz, CpyE () (AElem t 1 (Tmp c) lA sz) (AElem xsR 1 0 lX sz) (Tmp nR) sz]
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
@@ -1231,12 +1234,15 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (DI n)) op) xs) t | Just ((_, 1), (tO
         ++loop
         :[pops])
     -- TODO: array case
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Rot) n) xs) t | tXs <- eAnn xs, Just sz <- aB tXs = do
-    c <- nI; szR <- nI
+aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Rot) n) xs) t | Just sz <- aB tXs = do
     (plN, nR) <- plEV n
     (plX, (lX, xsR)) <- plA xs
-    (a, aV) <- vSz oSh t (Tmp szR) sz
-    pure (Just a, plX$plN$szR =: ev tXs (xsR,lX):aV++Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=Tmp szR]:c =: (Tmp szR-Tmp nR):[CpyE () (AElem t 1 0 (Just a) sz) (AElem xsR 1 (Tmp nR) lX sz) (Tmp c) sz, CpyE () (AElem t 1 (Tmp c) (Just a) sz) (AElem xsR 1 0 lX sz) (Tmp nR) sz])
+    nx <- nI
+    (a, aV) <- vSz oSh t (Tmp nx) sz
+    contents <- fill g (AD t (Just a) Nothing Nothing Nothing Nothing) [AI (AD xsR lX Nothing Nothing (Just sz) (Just$Tmp nx)), NA (IT nR)]
+    pure (Just a, plX$nx =: ev tXs (xsR,lX):aV++plN contents)
+  where
+    tXs=eAnn xs
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Rot) n) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     a <- nextArr t
     c <- nI; szR <- nI
