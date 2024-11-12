@@ -433,6 +433,15 @@ fill (Builtin _ Init) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [CpyE () (AElem t 1 0 lA sz) (AElem xR 1 0 lX sz) n sz]
 fill (Builtin _ Tail) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [CpyE () (AElem t 1 0 lA sz) (AElem xR 1 1 lX sz) n sz]
+fill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just tXs) _ _ _)] | Arrow F F <- eAnn f, hasS f = do
+    td <- nI; xRd <- nI; i <- nI
+    x <- nF2; y <- nF2; x₀ <- nF; y₀ <- nF
+    ss <- write2 f [x] y
+    s1 <- writeRF f [FT x₀] (FT y₀)
+    let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+16):ss++[Wr2F () (Raw td 0 lA 8) (FTmp y), td=:(Tmp td+16)]
+        step1=MX () x₀ (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+8):s1++[WrF () (Raw td 0 lA 8) (FTmp y₀), td=:(Tmp td+8)]
+        loop=r2of tXs i n step step1
+    pure [xRd=:DP xR 1,td=:DP t 1, loop]
 fill (EApp _ (Builtin _ Map) op) (AD t lA (Just (Arr sh _)) _ _ (Just n)) [AI (AD xR l _ _ _ _)] | (Arrow tD tC) <- eAnn op, nind tD = do
     iR <- nI; xRd <- nI; td <- nI;
     (step, pinches) <- aSD op [(tD, Raw xRd 0 l undefined, xRd)] tC (Raw td 0 lA undefined) td
@@ -564,22 +573,11 @@ aeval (EApp (Arr oSh _) (Builtin _ Flat) xs) t | (Arr sh ty) <- eAnn xs, Just sz
     xRnk <- nI; szR <- nI
     (a,aV) <- vSz oSh t (Tmp szR) sz
     pure (Just a, plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:aV++[CpyE () (AElem t 1 0 (Just a) sz) (AElem xR (Tmp xRnk) 0 lX sz) (Tmp szR) sz])
-aeval (EApp _ (EApp _ (Builtin _ Map) f) e) t | Arrow F F <- eAnn f, tXs@(Arr sh _) <- eAnn e, hasS f = do
-    (plE, (l, xR)) <- plA e
-    i <- nI; td <- nI; xRd <- nI; szR <- nI
-    (a,aV) <- v8 sh t (Tmp szR)
-    x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
-    ss <- write2 f [x] y
-    s1 <- writeRF f [FT x0] (FT y0)
-    let step=MX2 () x (FAt (Raw xRd 0 l 8)):xRd=:(Tmp xRd+16):ss++[Wr2F () (Raw td 0 (Just a) 8) (FTmp y), td=:(Tmp td+16)]
-        step1=MX () x0 (FAt (Raw xRd 0 l 8)):xRd=:(Tmp xRd+8):s1++[WrF () (Raw td 0 (Just a) 8) (FTmp y0), td=:(Tmp td+8)]
-        loop=r2of tXs i (Tmp szR) step step1
-    pure (Just a, plE$szR=:ev tXs (xR,l):aV++xRd=:DP xR 1:td=:DP t 1:[loop])
 aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t | tX@(Arr sh _) <- eAnn e, (Arrow tD tC) <- eAnn op, Just sz <- nSz tC, nind tD = do
     (plE, (l, xR)) <- plA e
     nR <- nI
     (a,aV) <- vSz sh t (Tmp nR) sz
-    contents <- fill f (AD t (Just a) (Just tX) Nothing Nothing (Just$Tmp nR)) [AI (AD xR l Nothing Nothing Nothing Nothing)]
+    contents <- fill f (AD t (Just a) (Just tX) Nothing Nothing (Just$Tmp nR)) [AI (AD xR l (Just tX) Nothing Nothing Nothing)]
     pure (Just a, plE$nR=:ev tX (xR,l):aV++contents)
 aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t | tXs@(Arr sh@(_ `Cons` Nil) tX) <- eAnn xs, Just sz <- nSz tX = do
     a <- nextArr t
