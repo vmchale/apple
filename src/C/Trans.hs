@@ -456,6 +456,12 @@ fill (EApp _ (Builtin _ Scan) op) (AD t lA (Just oTy) _ (Just accSz) (Just n)) [
     let loop=for1 oTy i 1 ILeq n
                 (wt (AElem t 1 (Tmp i-1) lA accSz) acc:mt (AElem xR 1 (Tmp i) lX xSz) x:ss)
     pure [mt (AElem xR 1 0 lX xSz) acc, loop]
+fill (EApp _ (Builtin _ Outer) op) (AD t lA _ _ _ _) [AI (AD xR lX (Just tXs) _ _ (Just nx)), AI (AD yR lY (Just tYs) _ _ (Just ny))]
+    | Arrow tX (Arrow tY tC) <- eAnn op = do
+    i <- nI; j <- nI; k <- nI
+    (step, pinches) <- aS op [(tX, AElem xR 1 (Tmp i) lX), (tY, AElem yR 1 (Tmp j) lY)] tC (AElem t 2 (Tmp k) lA)
+    let loop=fort tXs i 0 ILt nx [fort tYs j 0 ILt ny (step++[k+=1])]
+    pure (k=:0:sas pinches [loop])
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
@@ -1272,13 +1278,14 @@ aeval (EApp _ (Builtin _ T) x) t | Arr sh ty <- eAnn x, Just rnk <- staRnk sh = 
     is <- nIs [1..rnk]
     let loop=thread (zipWith (\i tt -> (:[]) . For () i 0 ILt (Tmp tt)) is dts) [CpyE () (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>is) l sze) 1 sze]
     pure (Just a, plX$plDs++init plSs++Ma () sh a t (ConstI rnk) (Tmp (head dts)*Tmp (head sstrides)) sze:diml (t, Just a) (Tmp<$>reverse dts)++init plSd++xd =: (Tmp xR+dO):td =: (Tmp t+dO):loop)
-aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
+aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
     a <- nextArr t
-    szX <- nI; szY <- nI; i <- nI; j <- nI; k <- nI
+    szX <- nI; szY <- nI
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
-    (step, pinches) <- aS op [(tX ,AElem xR 1 (Tmp i) lX), (tY, AElem yR 1 (Tmp j) lY)] tC (AElem t 2 (Tmp k) (Just a))
-    let loop=fort (eAnn xs) i 0 ILt (Tmp szX) [fort (eAnn ys) j 0 ILt (Tmp szY) (step++[k+=1])]
-    pure (Just a, plX$plY$szX =: ev (eAnn xs) (xR,lX):szY =: ev (eAnn ys) (yR,lY):Ma () oSh a t 2 (Tmp szX*Tmp szY) zSz:diml (t, Just a) [Tmp szX, Tmp szY]++k=:0:sas pinches [loop])
+    contents <- fill g (AD t (Just a) Nothing Nothing (Just zSz) Nothing) [AI (AD xR lX (Just tXs) Nothing Nothing (Just$Tmp szX)), AI (AD yR lY (Just tYs) Nothing Nothing (Just$Tmp szY))]
+    pure (Just a, plX$plY$szX =: ev tXs (xR,lX):szY =: ev tYs (yR,lY):Ma () oSh a t 2 (Tmp szX*Tmp szY) zSz:diml (t, Just a) [Tmp szX, Tmp szY]++contents)
+  where
+    tXs = eAnn xs; tYs=eAnn ys
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, Arr sh tEC <- tC, Just szXT <- nSz tX, Just szYT <- nSz tY, Just szZT <- nSz tEC = do
     a <- nextArr t
     szX <- nI; szY <- nI; szZ <- nI; i <- nI; j <- nI; k <- nI; rnkZ <- nI; rnkO <- nI; z <- nI; z0 <- nI
