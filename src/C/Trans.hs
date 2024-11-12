@@ -875,9 +875,8 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)
     (a,aV) <- v8 sh t (Tmp n)
     i <- nI
     pStart <- eval start startR; pEnd <- eval end endR
-    let pN=n =: ((Tmp endR - Tmp startR)+1)
-        loop=for sh i 0 ILt (Tmp n) [Wr () (AElem t 1 (Tmp i) (Just a) 8) (Tmp startR), startR+=1]
-    pure (Just a, pStart++pEnd++pN:aV++[loop])
+    let loop=for sh i 0 ILt (Tmp n) [Wr () (AElem t 1 (Tmp i) (Just a) 8) (Tmp startR), startR+=1]
+    pure (Just a, pStart++pEnd++n =: ((Tmp endR - Tmp startR)+1):aV++[loop])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t = do
     n <- nI; startR <- nI; endR <- nI; incrR <- nI
     (a,aV) <- v8 sh t (Tmp n)
