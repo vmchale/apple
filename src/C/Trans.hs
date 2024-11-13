@@ -1185,7 +1185,7 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t | (Arrow tX
     (a,aV) <- vSz sh t (Tmp nR) zSz
     (plEX, (lX, aPX)) <- plA xs; (plEY, (lY, aPY)) <- plA ys
     (step, pinches) <- aS op [(tX, ixarg aPX 1 lX), (tY, ixarg aPY 1 lY)] tC (AElem t 1 (Just a) (Tmp i))
-    let loop=for sh i 0 ILt (Tmp nR) (step [i,i])
+    let loop=for sh i 0 ILt (Tmp nR) (step (repeat i))
     pure (Just a, plEX$plEY$nR =: ev (eAnn xs) (aPX,lX):aV++sas pinches [loop])
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ ScanS) op) seed) e) t | (Arrow tX (Arrow tY _)) <- eAnn op, Just xSz <- rSz tX, Just ySz <- nSz tY = do
     acc <- rtemp tX; i <- nI; n <- nI
@@ -1327,7 +1327,7 @@ aeval (EApp (Arr sh _) (EApp _ (Builtin _ Succ) op) xs) t | Arrow tX (Arrow _ tZ
     (plX, (lX, xR)) <- plA xs
     i <- nI
     (step, pinches) <- aS op [(tX, \iϵ -> AElem xR 1 lX (Tmp iϵ+1)), (tX, ixarg xR 1 lX)] tZ (AElem t 1 (Just a) (Tmp i))
-    let loop=for sh i 0 ILt (Tmp sz'R) (step [i,i])
+    let loop=for sh i 0 ILt (Tmp sz'R) (step (repeat i))
     pure (Just a, plX$szR =: ev (eAnn xs) (xR,lX):sz'R =: (Tmp szR-1):aV++sas pinches [loop])
 aeval (EApp oTy@(Arr oSh _) (Builtin _ RevE) e) t | Just sz <- aB oTy = do
     n <- nI; i <- nI
