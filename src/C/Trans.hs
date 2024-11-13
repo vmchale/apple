@@ -468,9 +468,7 @@ fill (Builtin _ Re) (AD t lA (Just (Arr sh _)) (Just sz) _) [NA (IT nR), NA xR] 
     (:[]) <$> afor sh 0 ILt (Tmp nR) (\i -> [wt (AElem t 1 lA (Tmp i) sz) xR])
 fill (EApp _ (Builtin _ Scan) op) (AD t lA (Just oTy) (Just accSz) (Just n)) [AI (AD xR lX _ (Just xSz) _), NA acc, NA x] = do
     ss <- writeRF op [acc, x] acc
-    i <- nI
-    let loop=for1 oTy i 1 ILeq n
-                (wt (AElem t 1 lA (Tmp i-1) accSz) acc:mt (AElem xR 1 lX (Tmp i) xSz) x:ss)
+    loop <- afor1 oTy 1 ILeq n (\i -> (wt (AElem t 1 lA (Tmp i-1) accSz) acc:mt (AElem xR 1 lX (Tmp i) xSz) x:ss))
     pure [mt (AElem xR 1 lX 0 xSz) acc, loop]
 fill (EApp _ (Builtin _ Outer) op) (AD t lA _ _ _) [AI (AD xR lX (Just tXs) _ (Just nx)), AI (AD yR lY (Just tYs) _ (Just ny))]
     | Arrow tX (Arrow tY tC) <- eAnn op = do
@@ -485,6 +483,7 @@ fill (Builtin _ Re) (AD t lA (Just (Arr sh _)) _ _) [NA (IT nR), ΠA xR sz] =
     (:[]) <$> afor sh 0 ILt (Tmp nR) (\k -> [CpyE () (AElem t 1 lA (Tmp k) sz) (TupM xR Nothing) 1 sz])
 
 afor sh el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
+afor1 ty el c eu ss = do {i <- nI; pure (for1 ty i el c eu (ss i))}
 afort (Arr sh _) el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
@@ -1476,23 +1475,23 @@ peval (EApp _ (Builtin _ N) e0) t = do
     (pl,e0R) <- plP e0
     pure $ pl [MB () t (BU BNeg e0R)]
 peval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arrow tX _) <- eAnn op, isB tX = do
-    x <- nBT
-    i <- nI; szR <- nI
+    x <- nBT; szR <- nI
     (plE, (l, aP)) <- plA e
     ss <- writeRF op [PT acc, PT x] (PT acc)
-    let loopBody=MB () x (PAt (AElem aP 1 l (Tmp i) 1)):ss
-        loop=for1 (eAnn e) i 1 ILt (Tmp szR) loopBody
-    pure $ plE$szR =: ev (eAnn e) (aP,l):MB () acc (PAt (AElem aP 1 l 0 1)):[loop]
+    loop <- afor1 tXs 1 ILt (Tmp szR) (\i -> MB () x (PAt (AElem aP 1 l (Tmp i) 1)):ss)
+    pure $ plE$szR =: ev tXs (aP,l):MB () acc (PAt (AElem aP 1 l 0 1)):[loop]
+  where
+    tXs=eAnn e
 peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tY _)) <- eAnn op, Just szY <- nSz tY = do
-    i <- nI; szR <- nI
+    szR <- nI
     (plE, (l, aP)) <- plA e
     plAcc <- peval seed acc
-    -- arg -> ix
     (x, wX, pinch) <- arg tY (iXelem aP 1 l szY)
     ss <- writeRF op [PT acc, x] (PT acc)
-    let loopBody=wX i:ss
-        loop=fort (eAnn e) i 0 ILt (Tmp szR) loopBody
+    loop <- afort tXs 0 ILt (Tmp szR) (\i -> wX i:ss)
     pure $ plE $ plAcc++szR=:ev (eAnn e) (aP,l):m'p pinch [loop]
+  where
+    tXs=eAnn e
 peval (EApp _ (Builtin _ Head) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [MB () t (PAt (AElem a 1 l 0 1))]
