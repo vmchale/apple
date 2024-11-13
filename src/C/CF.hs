@@ -300,7 +300,7 @@ uA (ARnk _ Nothing)   = IS.empty
 uA (ADim _ d l)       = m'insert l $ uE d
 uA (TupM _ (Just l))  = singleton l
 uA (TupM _ Nothing)   = IS.empty
-uA (AElem _ r ei l _) = m'insert l (uE r<>uE ei)
+uA (AElem _ r l ei _) = m'insert l (uE r<>uE ei)
 uA (Raw _ e l _)      = m'insert l (uE e)
 uA (At _ ss ixs l _)  = m'insert l (uE@<>ss<>uE@<>ixs)
 

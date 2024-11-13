@@ -68,16 +68,17 @@ instance Show Temp where show=show.pretty
 instance Show FTemp where show=show.pretty
 instance Show BTemp where show=show.pretty
 
-data ArrAcc = AElem Temp CE CE (Maybe AL) Int64 -- pointer, rank, elem., label for tracking liveness, elem. size (bytes)
+data ArrAcc = AElem Temp CE (Maybe AL) CE Int64 -- pointer, rank, label for tracking liveness, elem., elem. size (bytes)
             -- TODO: more robust way to handle rank (often statically known)
             | ARnk Temp (Maybe AL)
             | ADim Temp CE (Maybe AL) -- pointer, #, label
+            -- TODO: shape information
             | At Temp [CE] [CE] (Maybe AL) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
             | Raw Temp CE (Maybe AL) Int64 -- pointer to data, offset, label, element size
             | TupM Temp (Maybe AL)
 
 instance Pretty ArrAcc where
-    pretty (AElem t _ e _ _) = pretty t <> brackets (pretty e)
+    pretty (AElem t _ _ e _) = pretty t <> brackets (pretty e)
     pretty (ADim t e _)      = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
     pretty (At t s ix _ _)   = pretty t <> (brackets.pretty) @<> ix <+> (parens.pretty) @<> s
@@ -204,6 +205,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | G { lann :: a, gt, retLabel :: Label }
           deriving Functor
           -- TODO: PlDims cause we have diml
+          -- STRIDES(...)
 
 instance Copointed CS where copoint=lann
 
