@@ -1870,16 +1870,10 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     plAcc <- feval seed acc
     (x, wX, pinch) <- arg tX (iXelem eR 1 l xSz)
     ss <- writeRF op [FT acc, x] (FT acc)
-    loop <- afort (eAnn e) 0 ILt (Tmp szR) (\i -> wX i:ss)
-    pure $ plE $ plAcc++szR =: ev (eAnn e) (eR,l):m'p pinch [loop]
-feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX, tArr <- eAnn e = do
-    szR <- nI
-    plAcc <- feval seed acc
-    (plX, (lX, xR)) <- plA e
-    (x, wX, pinch) <- arg tX (iXelem xR 1 lX xSz)
-    ss <- writeRF op [FT acc, x] (FT acc)
     loop <- afort tArr 0 ILt (Tmp szR) (\i -> wX i:ss)
-    pure $ plX$plAcc++szR=:ev tArr (xR,lX):m'p pinch [loop]
+    pure $ plE $ plAcc++szR =: ev tArr (eR,l):m'p pinch [loop]
+  where
+    tArr=eAnn e
 feval (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
     (plN,nR) <- plC n
     plX <- feval x t
