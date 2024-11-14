@@ -168,13 +168,15 @@ ni1 _ = False
 nec :: T a -> Bool
 nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
 
-sho,she :: Sh a -> Bool
-sho (i `Cons` _) = ipo i; sho _ = False
-she (i `Cons` _) = ipe i; she _ = False
+ro,re,ao,ae :: Sh a -> Bool
+ro (i `Cons` _) = ipo i; ro _ = False
+re (i `Cons` _) = ipe i; re _ = False
+ao (i `Cons` Nil) = ipo i; ao (i `Cons` sh) = ipo i && ao sh; ao _ = False
+ae (i `Cons` Nil) = ipe i; ae (i `Cons` sh) = ipe i || ae sh; ae _ = False
 
-te,to,toc,tec :: T a -> Bool
-te (Arr (i `Cons` _) _) = ipe i; te _ = False
-to (Arr (i `Cons` _) _) = ipo i; to _ = False
+ter,tor,toc,tec :: T a -> Bool
+ter (Arr sh _) = re sh; ter _ = False
+tor (Arr sh _) = ro sh; tor _ = False
 tec (Arr (_ `Cons` i `Cons` _) _) = ipe i; tec _ = False
 toc (Arr (_ `Cons` i `Cons` _) _) = ipo i; toc _ = False
 
@@ -192,18 +194,26 @@ f21o _                           = F2or ()
 r21 (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ c ss _ -> R2ofE () tϵ c ss | even i = R2ofO ()
 r21 _                           = R2of ()
 
-r2of ty | to ty = R2ofO ()
-        | te ty = \tϵ c ss _ -> R2ofE () tϵ c ss
+r2ofs sh | ao sh = R2ofO ()
+         | ae sh = \tϵ c ss _ -> R2ofE () tϵ c ss
+         | otherwise = R2of ()
+
+r2of ty | tor ty = R2ofO ()
+        | ter ty = \tϵ c ss _ -> R2ofE () tϵ c ss
         | otherwise = R2of ()
 
-f2or sh | sho sh = F2orO ()
-        | she sh = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
+f2or sh | ro sh = F2orO ()
+        | re sh = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
         | otherwise = F2or ()
 
 f2ort (Arr sh _) = f2or sh; f2ort _ = F2or ()
 
 f2orc ty | toc ty = F2orO ()
          | tec ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
+         | otherwise = F2or ()
+
+f2ors sh | ao sh = F2or ()
+         | ae sh = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
          | otherwise = F2or ()
 
 mIFs :: [E a] -> Maybe [Word64]
@@ -920,7 +930,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t
     aRd <- nI; xRd <- nI; td <- nI; aid <- nI; xid <- nI
     (aL,aV) <- v8 oSh t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    let zero=f2ort tX l 0 ILt (Tmp m)
+    let zero=f2or oSh l 0 ILt (Tmp m)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         loop = For1 () ɴc j₀ 0 ILt (Tmp n) [
@@ -950,15 +960,15 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t
   where
     tA=eAnn a; tX=eAnn x
     mT n = find (\k -> n `rem` k == 0) [32,16,8,4]
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t | Arr _ F <- tX = do
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t | Arr xSh F <- tX = do
     i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; z <- nF2
     aRd <- nI; xRd <- nI; td <- nI
     (aL,aV) <- v8 oSh t (Tmp m)
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    (prologue, et, ~(Just zs)) <- if te tX then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    (prologue, et, ~(Just zs)) <- if re xSh then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop = fort tA i 0 ILt (Tmp m) $ prologue
                   [ MX2 () z (ConstF (0,0))
-                  , f2ort tX j 0 ILt (Tmp n)
+                  , f2or xSh j 0 ILt (Tmp n)
                         [ MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)) (FAt (Raw xRd (Tmp j) lX 8)))) ]
                         [ MX () zs (FAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*FAt (Raw xRd (Tmp j) lX 8)) ]
                   , Comb () Op.FPlus z0 z
@@ -986,7 +996,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     aid <- nI; bid <- nI; tid <- nI
     za <- nF2; z₀s <- nFs [1..ᴏ]; zs <- nF2s [1..ᴏ]; zbs <- nF2s [1..ᴏ]
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    let zero=f2ort tB l 0 ILt (mE*oE)
+    let zero=f2ors oSh l 0 ILt (mE*oE)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         loop=For1 () ᴍ i₀ 0 ILt mE [
@@ -1021,14 +1031,14 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     tA=eAnn a; tB=eAnn b
     mT n | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
     rot1 xs = take (length xs) $ drop 1 $ cycle xs
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | (Arr _ F) <- tA = do
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Arr _ F <- tA, Arr bSh _ <- tB = do
     aL <- nextArr t
     i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
     z <- nF2; z0 <- nF; za <- nF2; zb <- nF2; za1 <- nF; zb1 <- nF
     aRd <- nI; bRd <- nI; td <- nI
     tid <- nI; bid <- nI; aid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    (prologue, et, ~(Just zs)) <- if te tB then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    (prologue, et, ~(Just zs)) <- if re bSh then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop=fort tA i 0 ILt (Tmp m)
                 [ MT () tid (Tmp td+(Tmp i*Tmp o)*8)
                 , forc tB j 0 ILt (Tmp o) $ prologue
@@ -1061,7 +1071,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t = do
     m <- nI; n <- nI; o <- nI; i <- nI; j <- nI; k <- nI; l <- nI; zr <- nF2; zr₀ <- nF; z₀ <- nF2; z₁ <- nF2; z₀₀ <- nF; z₁₀ <- nF
     aRd <- nI; bRd <- nI; td <- nI; bid <- nI; bidϵ <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    let zero=f2ort tB l 0 ILt (Tmp m*Tmp o)
+    let zero=f2ors oSh l 0 ILt (Tmp m*Tmp o)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
         kjloop = f2ort tB k 0 ILt (Tmp n)
