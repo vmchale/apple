@@ -168,9 +168,11 @@ ni1 _ = False
 nec :: T a -> Bool
 nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
 
-ro,re,ao,ae :: Sh a -> Bool
+ro,re,co,ce,ao,ae :: Sh a -> Bool
 ro (i `Cons` _) = ipo i; ro _ = False
 re (i `Cons` _) = ipe i; re _ = False
+co (_ `Cons` i `Cons` _) = ipo i; co _ = False
+ce (_ `Cons` i `Cons` _) = ipe i; ce _ = False
 ao (i `Cons` Nil) = ipo i; ao (i `Cons` sh) = ipo i && ao sh; ao _ = False
 ae (i `Cons` Nil) = ipe i; ae (i `Cons` sh) = ipe i || ae sh; ae _ = False
 
@@ -1033,19 +1035,22 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t
     rot1 xs = take (length xs) $ drop 1 $ cycle xs
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t | Arr _ F <- tA, Arr bSh _ <- tB = do
     aL <- nextArr t
-    i <- nI; j <- nI; k <- nI; m <- nI; n <- nI; o <- nI
+    i <- nI; j <- nI; k <- nI; m <- nI; l <- nI; n <- nI; o <- nI
     z <- nF2; z0 <- nF; za <- nF2; zb <- nF2; za1 <- nF; zb1 <- nF
     aRd <- nI; bRd <- nI; td <- nI
     tid <- nI; bid <- nI; aid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    (prologue, et, ~(Just zs)) <- if re bSh then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
-    let loop=fort tA i 0 ILt (Tmp m)
+    (prologue, et, ~(Just zs)) <- if ce bSh then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    let zero=f2ors oSh l 0 ILt (Tmp m*Tmp o)
+                [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
+                [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
+        loop=fort tA i 0 ILt (Tmp m)
                 [ MT () tid (Tmp td+(Tmp i*Tmp o)*8)
                 , forc tB j 0 ILt (Tmp o) $ prologue
                     [ MX2 () z (ConstF (0,0))
                     , MT () aid (Tmp aRd+(Tmp n*Tmp i)*8)
                     , MT () bid (Tmp bRd+(Tmp n*Tmp j)*8)
-                    , f2ort tB k 0 ILt (Tmp n)
+                    , f2orc tB k 0 ILt (Tmp n)
                             [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
                             , MX2 () zb (FAt (Raw bid 0 lB 8)), bid+=16
                             , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zb)))]
@@ -1063,7 +1068,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t |
         m=:ev tA (aR,lA):o=:ev tB (bR,lB)
         :Ma () oSh aL t 2 (Tmp m*Tmp o) 8:diml (t, Just aL) [Tmp m, Tmp o]
         ++n=:ec tA (aR,lA):aRd=:DP aR 2:bRd=:DP bR 2:td=:DP t 2
-        :[loop])
+        :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t = do
