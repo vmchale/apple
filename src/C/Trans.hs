@@ -489,6 +489,7 @@ fill (Builtin _ RevE) (AD t lA (Just (Arr oSh _)) (Just sz) _) [AI (AD xR lX _ _
 afor sh el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
 afor1 ty el c eu ss = do {i <- nI; pure (for1 ty i el c eu (ss i))}
 afort (Arr sh _) el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
+aforst ty el c eu ss = do {i <- nI; pure (forst ty i el c eu (ss i))}
 
 aeval :: E (T ()) -> Temp -> CM (Maybe AL, [CS ()])
 aeval (LLet _ b e) t = do
@@ -623,7 +624,7 @@ aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t | tXs@(Arr sh@(_ `Cons` Nil) tX)
         :m'p pinch [nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, tXs <- eAnn xs, Just (_, xRnk) <- tRnk tXs, Just (ta, rnk) <- tRnk tD, Just szD <- nSz ta, Just sz <- nSz tC = do
     a <- nextArr t
-    szR <- nI; xd <- nI; i <- nI; k <- nI
+    szR <- nI; xd <- nI; i <- nI
     (plX, (lX, xR)) <- plA xs
     let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk..(xRnk-1)]]
     (slopP, slopSz, aSlop, pops) <- plSlop szD rnk slopDims
@@ -632,7 +633,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk-1)]]
         dimsFromIn=ConstI$xRnk-rnk
         oRnk=xRnk-rnk
-        step=CpyE () (AElem slopP (ConstI rnk) Nothing 0 szD) (Raw xd (Tmp i) lX szD) (Tmp slopSz) szD:ss++[wRet k, i+=Tmp slopSz]
+    loop <- aforst tXs 0 ILt (Tmp szR) $ \k -> CpyE () (AElem slopP (ConstI rnk) Nothing 0 szD) (Raw xd (Tmp i) lX szD) (Tmp slopSz) szD:ss++[wRet k, i+=Tmp slopSz]
     pure (Just a,
         plX$
         aSlop
@@ -641,7 +642,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn
             :CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn
         :xd=:DP xR (ConstI xRnk):i=:0
         :m'p pinch
-            (forst tXs k 0 ILt (Tmp szR) step:[pops]))
+            (loop:[pops]))
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t | (Arrow tD tC) <- eAnn f, tXs <- eAnn xs, Just (_, xRnk) <- tRnk tXs, Just (ta, rnk) <- tRnk tC, Just szO <- nSz ta, Just dSz <- nSz tD = do
     a <- nextArr t
     y <- nI; y0 <- nI; szX <- nI; szY <- nI
