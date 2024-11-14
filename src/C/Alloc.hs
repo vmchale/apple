@@ -73,7 +73,7 @@ aa ts (c@(Ma a sh l t _ _ _):cs) = do
     s <- m'liven (ins a) l sh
     let next = case s of
             Nothing -> c
-            Just l' -> Aa a l t (ts!l') 0
+            Just l' -> Aa a l t (ts!l')
     (next:) <$> aa ts cs
 aa ts (c:cs) = (c:)<$>aa ts cs
 aa _ [] = pure []
