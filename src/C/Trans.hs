@@ -468,10 +468,12 @@ fill (Builtin _ CatE) (AD t lA _ (Just sz) _) [AI (AD xR lX _ _ (Just xn)), AI (
     pure [CpyE () (AElem t 1 lA 0 sz) (AElem xR 1 lX 0 sz) xn sz, CpyE () (AElem t 1 lA xn sz) (AElem yR 1 lY 0 sz) yn sz]
 fill (Builtin _ ConsE) (AD t lA _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ (Just n))] =
     pure [wt (AElem t 1 lA 0 sz) xR, CpyE () (AElem t 1 lA 1 sz) (AElem xsR 1 lX 0 sz) n sz]
-fill (Builtin _ ConsE) (AD t (Just a) _ _ _) [ΠA xR sz, AI (AD xsR lX _ _ (Just n))] =
-    pure [CpyE () (AElem t 1 (Just a) 0 sz) (TupM xR Nothing) 1 sz, CpyE () (AElem t 1 (Just a) 1 sz) (AElem xsR 1 lX 0 sz) n sz]
+fill (Builtin _ ConsE) (AD t lA _ _ _) [ΠA xR sz, AI (AD xsR lX _ _ (Just n))] =
+    pure [CpyE () (AElem t 1 lA 0 sz) (TupM xR Nothing) 1 sz, CpyE () (AElem t 1 lA 1 sz) (AElem xsR 1 lX 0 sz) n sz]
 fill (Builtin _ Snoc) (AD t lA _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ (Just n))] =
     pure [wt (AElem t 1 lA n sz) xR, CpyE () (AElem t 1 lA 0 sz) (AElem xsR 1 lX 0 sz) n sz]
+fill (Builtin _ Snoc) (AD t lA _ _ _) [ΠA xR sz, AI (AD xsR lX _ _ (Just n))] =
+    pure [CpyE () (AElem t 1 lA n sz) (TupM xR Nothing) 1 sz, CpyE () (AElem t 1 lA 0 sz) (AElem xsR 1 lX 0 sz) n sz]
 fill (Builtin _ Cyc) (AD t lA (Just (Arr oSh _)) (Just sz) _) [AI (AD xR lX _ _ (Just nx)), NA (IT nR)] = do
     i <- nI; ix <- nI
     pure [ix=:0, rof oSh i (Tmp nR) [CpyE () (AElem t 1 lA (Tmp ix) sz) (AElem xR 1 lX 0 sz) nx sz, ix+=nx]]
@@ -1120,14 +1122,14 @@ aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t | tX <- eAnn x, Jus
     plX <- eeval x xR
     (plXs, (l, xsR)) <- plA xs
     contents <- fill g (AD t (Just a) Nothing (Just sz) Nothing) [NA xR, AI (AD xsR l Nothing Nothing (Just$Tmp nϵR))]
-    pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++contents)
+    pure (Just a, plX++plXs (nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++contents))
 aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     xR <- nI; nR <- nI; nϵR <- nI
     (_, mSz, _, plX) <- πe x xR
     (plXs, (lX, xsR)) <- plA xs
     (a,aV) <- vSz oSh t (Tmp nR) sz
     contents <- fill g (AD t (Just a) Nothing (Just sz) Nothing) [ΠA xR sz, AI (AD xsR lX Nothing Nothing (Just$Tmp nϵR))]
-    pure (Just a, plXs$m'sa xR mSz++plX++nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):aV++contents++m'pop mSz)
+    pure (Just a, m'sa xR mSz++plX++plXs (nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):aV++contents++m'pop mSz))
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t | Just (tX, xRnk) <- tRnk (eAnn x), tXs <- eAnn xs, Just (_, xsRnk) <- tRnk tXs = do
     a <- nextArr t
     (plX, (lX, xR)) <- plA x; (plXs, (lXs, xsR)) <- plA xs
@@ -1142,12 +1144,13 @@ aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t | tX <- eAnn x, Just
     (plXs, (l, xsR)) <- plA xs
     contents <- fill g (AD t (Just a) Nothing (Just sz) Nothing) [NA xR, AI (AD xsR l Nothing Nothing (Just$Tmp nϵR))]
     pure (Just a, plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):aV++contents)
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
+aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     xR <- nI; nR <- nI; nϵR <- nI
     (_, mSz, _, plX) <- πe x xR
     (plXs, (lX, xsR)) <- plA xs
     (a,aV) <- vSz oSh t (Tmp nR) sz
-    pure (Just a, plXs$m'sa xR mSz++plX++nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):aV++[CpyE () (AElem t 1 (Just a) (Tmp nϵR) sz) (TupM xR Nothing) 1 sz, CpyE () (AElem t 1 (Just a) 0 sz) (AElem xsR 1 lX 0 sz) (Tmp nϵR) sz]++m'pop mSz)
+    contents <- fill g (AD t (Just a) Nothing Nothing Nothing) [ΠA xR sz, AI (AD xsR lX Nothing Nothing (Just$Tmp nϵR))]
+    pure (Just a, plXs$m'sa xR mSz++plX++nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):aV++contents++m'pop mSz)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t | Just (tX, xRnk) <- tRnk (eAnn x), tXs <- eAnn xs, Just (_, xsRnk) <- tRnk tXs = do
     a <- nextArr t
     (plX, (lX, xR)) <- plA x; (plXs, (lXs, xsR)) <- plA xs
