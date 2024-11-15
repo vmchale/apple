@@ -306,7 +306,7 @@ ixarg t rnk l = AElem t rnk l.Tmp
 
 infixr 8 .%
 (.%) :: (a -> b -> c) -> (d -> a) -> b -> d -> c
-(.%) f g = \x y -> f (g y) x
+(.%) f g x y = f (g y) x
 
 arg :: T () -> Ix'd -> CM (RT, Temp -> CS (), Maybe (CS (), CS ()))
 arg ty at | isR ty = do
@@ -482,7 +482,7 @@ fill (Builtin _ Re) (AD t lA (Just (Arr sh _)) (Just sz) _) [NA (IT nR), NA xR] 
     (:[]) <$> afor sh 0 ILt (Tmp nR) (\i -> [wt (AElem t 1 lA (Tmp i) sz) xR])
 fill (EApp _ (Builtin _ Scan) op) (AD t lA (Just (Arr oSh _)) (Just accSz) (Just n)) [AI (AD xR lX _ (Just xSz) _), NA acc, NA x] = do
     ss <- writeRF op [acc, x] acc
-    loop <- afor1 oSh 1 ILeq n (\i -> (wt (AElem t 1 lA (Tmp i-1) accSz) acc:mt (AElem xR 1 lX (Tmp i) xSz) x:ss))
+    loop <- afor1 oSh 1 ILeq n (\i -> wt (AElem t 1 lA (Tmp i-1) accSz) acc:mt (AElem xR 1 lX (Tmp i) xSz) x:ss)
     pure [mt (AElem xR 1 lX 0 xSz) acc, loop]
 fill (EApp _ (Builtin _ Outer) op) (AD t lA _ _ _) [AI (AD xR lX (Just tXs) _ (Just nx)), AI (AD yR lY (Just tYs) _ (Just ny))]
     | Arrow tX (Arrow tY tC) <- eAnn op = do
@@ -835,7 +835,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     xRd <- nI; slopPd <- nI
     (complts, place) <- extrCell aSz ecArg sstrides (xRd, lX) slopPd
-    let loop=forAll complts (Tmp<$>oDims) $ place ++ ss ++ [(wY di), di+=1]
+    let loop=forAll complts (Tmp<$>oDims) $ place ++ ss ++ [wY di, di+=1]
     pure (Just a,
         plX $ dss
         ++aSlop
