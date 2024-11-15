@@ -168,10 +168,9 @@ ni1 _ = False
 nec :: T a -> Bool
 nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
 
-ro,re,co,ce,ao,ae :: Sh a -> Bool
+ro,re,ce,ao,ae :: Sh a -> Bool
 ro (i `Cons` _) = ipo i; ro _ = False
 re (i `Cons` _) = ipe i; re _ = False
-co (_ `Cons` i `Cons` _) = ipo i; co _ = False
 ce (_ `Cons` i `Cons` _) = ipe i; ce _ = False
 ao (i `Cons` Nil) = ipo i; ao (i `Cons` sh) = ipo i && ao sh; ao _ = False
 ae (i `Cons` Nil) = ipe i; ae (i `Cons` sh) = ipe i || ae sh; ae _ = False
@@ -195,10 +194,6 @@ f21o _                           = F2or ()
 
 r21 (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ c ss _ -> R2ofE () tϵ c ss | even i = R2ofO ()
 r21 _                           = R2of ()
-
-r2ofs sh | ao sh = R2ofO ()
-         | ae sh = \tϵ c ss _ -> R2ofE () tϵ c ss
-         | otherwise = R2of ()
 
 r2of ty | tor ty = R2ofO ()
         | ter ty = \tϵ c ss _ -> R2ofE () tϵ c ss
