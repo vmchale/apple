@@ -378,9 +378,9 @@ forAll is bs = thread (zipWith g is bs) where
 extrCell :: Int64 -> [Cell () Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM ([Temp], [CS ()])
 extrCell sz fixBounds sstrides (srcP, srcL) dest = do
     (dims, ts, arrIxes, complts) <- switch fixBounds
-    i <- nI; t <- nI
-    pure (complts, (i =: 0:) $ forAll ts (Tmp<$>dims)
-        [t =: EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL sz), Wr () (Raw dest (Tmp i) Nothing sz) (Tmp t), i+=1])
+    t <- nI; destd <- nI
+    pure (complts, (destd =: Tmp dest:) $ forAll ts (Tmp<$>dims)
+        [t =: EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL sz), Wr () (Raw destd 0 Nothing sz) (Tmp t), destd+=ConstI sz])
     where switch (Bound d:ds) = do {t <- nI; qmap (d:) (t:) (t:) id <$> switch ds}
           switch (Fixed:ds)   = do {f <- nI; qmap id id (f:) (f:) <$> switch ds}
           switch []           = pure ([], [], [], [])
@@ -782,7 +782,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
     let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral yRnk] ]
     oSz <- nI; zSz <- nI
-    ix <- nI; it <- nI
+    ix <- nI; td <- nI
     (dts, dss) <- plDim yRnk (yR, lY)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
@@ -795,7 +795,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     yRd <- nI; slopPd <- nI
     (complts, place) <- extrCell ySz ecArg sstrides (yRd, lY) slopPd
-    let loop=forAll complts (Tmp<$>oDims) $ pAX ix:place ++ ss ++ [CpyE () (AElem t oRnk (Just a) (Tmp it) cSz) (AElem zR (ConstI opRnk) lZ 0 undefined) (Tmp zSz) cSz, ix+=1, it+=Tmp zSz]
+    let loop=forAll complts (Tmp<$>oDims) $ pAX ix:place ++ ss ++ [CpyE () (Raw td 0 (Just a) cSz) (AElem zR (ConstI opRnk) lZ 0 undefined) (Tmp zSz) cSz, ix+=1, td+=(Tmp zSz*ConstI cSz)]
     (dots, doss) <- plDim opRnk (zR, lZ)
     pure (Just a,
         plX$
@@ -812,7 +812,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
         :PlProd () oSz (Tmp<$>(zSz:oDims))
             :Ma () oSh a t oRnk (Tmp oSz) cSz
             :diml (t, Just a) (Tmp<$>(oDims++dots))
-        ++ix=:0:it=:0:m'p pinch loop++[pops])
+        ++ix=:0:td=:DP t oRnk:m'p pinch loop++[pops])
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t
     | Just (tA, rnk) <- tRnk (eAnn xs)
     , (Arrow _ tC) <- eAnn f
