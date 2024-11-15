@@ -15,3 +15,16 @@ Vec 8 [4.0, 4.0, 4.0, 3.0, 3.0, 3.0, 1.0, 1.0]
 ```
 (->2)'([x->1>0.5]#.([(x,y)]`(𝔯 0 1::Vec n float) (irange 0 9 1)))
 ```
+
+sum vector-matrix via rerank/fold-with-seed
+```
+λa.λb. [(+)/ₒ x y]`{0,1∘[2]} a (b::M float)
+```
+sum via cons and then map-sum
+```
+λa.λb. ((+)/)'((<|)`{0,1∘[2]} a (b::M float))
+```
+(also various map-rank things)
+```
+λa.λb. [(+)/x]`{1∘[2]} ((<|)`{0,1∘[2]} a (b::M float))
+```
