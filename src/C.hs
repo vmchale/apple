@@ -73,7 +73,7 @@ data ArrAcc = AElem Temp CE (Maybe AL) CE Int64 -- pointer, rank, label for trac
             | ARnk Temp (Maybe AL)
             | ADim Temp CE (Maybe AL) -- pointer, #, label
             -- TODO: shape information
-            | At Temp [CE] [CE] (Maybe AL) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
+            | At Temp (Sh ()) [CE] [CE] (Maybe AL) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
             | Raw Temp CE (Maybe AL) Int64 -- pointer to data, offset, label, element size
             | TupM Temp (Maybe AL)
 
@@ -81,7 +81,7 @@ instance Pretty ArrAcc where
     pretty (AElem t _ _ e _) = pretty t <> brackets (pretty e)
     pretty (ADim t e _)      = pretty t <> dot <> "dim" <> brackets (pretty e)
     pretty (ARnk t _)        = "rnk" <> parens (pretty t)
-    pretty (At t s ix _ _)   = pretty t <> (brackets.pretty) @<> ix <+> (parens.pretty) @<> s
+    pretty (At _ t s ix _ _) = pretty t <> (brackets.pretty) @<> ix <+> (parens.pretty) @<> s
     pretty (Raw t o _ _)     = pretty t <> "@" <> pretty o
     pretty (TupM t _)        = "tup@" <> pretty t
 
@@ -159,6 +159,8 @@ instance (Pretty x, PS e, Pretty t, Pretty e) => Show (CFE t x e) where show=sho
 infix 9 =:
 
 (=:) = MT ()
+
+-- TODO: For F2or, maybe take shape? (more robust compared to what we do now)
 
 data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
           | Rof { lann :: a, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
