@@ -1330,7 +1330,7 @@ aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ Outer) op) xs) ys) t | (Arr
     tXs = eAnn xs; tYs=eAnn ys
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, Arr sh tEC <- tC, Just szXT <- nSz tX, Just szYT <- nSz tY, Just szZT <- nSz tEC = do
     a <- nextArr t
-    td <- nI; szX <- nI; szY <- nI; szZ <- nI; i <- nI; j <- nI; k <- nI; rnkZ <- nI; rnkO <- nI; z <- nI; z0 <- nI
+    td <- nI; szX <- nI; szY <- nI; szZ <- nI; i <- nI; j <- nI; rnkZ <- nI; rnkO <- nI; z <- nI; z0 <- nI
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
     (x, wX, pinchX) <- arg tX (iXelem xR 1 lX szXT)
     (y, wY, pinchY) <- arg tY (iXelem yR 1 lY szYT)
