@@ -786,9 +786,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     (complts, place) <- extrCell ySz ecArg sstrides (yRd, lY) slopPd
     let loop=forAll complts (Tmp<$>oDims) $ pAX ix:place ++ ss ++ [wt (AElem t (ConstI oRnk) (Just a) (Tmp ix) cSz) zR, ix+=1]
     pure (Just a,
-        plX$
-        plY$
-        dss++
+        plX$plY$dss++
         aSlop
         ++[tϵ=:0 | tϵ <- complts]
         ++mt (AElem xR (ConstI xRnk) lX 0 xSz) x
@@ -824,9 +822,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     let loop=forAll complts (Tmp<$>oDims) $ pAX ix:place ++ ss ++ [CpyE () (Raw td 0 (Just a) cSz) (AElem zR (ConstI opRnk) lZ 0 undefined) (Tmp zSz) cSz, td+=(Tmp zSz*ConstI cSz), ix+=1]
     (dots, doss) <- plDim opRnk (zR, lZ)
     pure (Just a,
-        plX$
-        plY$
-        dss
+        plX$plY$dss
         ++aSlop
         ++[tϵ=:0 | tϵ <- complts]
         ++mt (AElem xR (ConstI xRnk) lX 0 xSz) x
