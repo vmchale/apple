@@ -592,6 +592,7 @@ aeval (EApp (Arr oSh _) (Builtin _ Head) xs) t | Just (tX, xRnk) <- tRnk (eAnn x
     (dts, plDs) <- plDim xRnk (xR, lX)
     szA <- nI
     pure (Just a, plX$tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t 1 (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (ConstI$xRnk-1):[CpyE () (AElem t 1 (Just a) 0 sz) (AElem xR (ConstI xRnk) lX 0 sz) (Tmp szA) sz])
+                                               | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Last) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     a <- nextArr t
     (plX, (lX, xR)) <- plA xs
@@ -599,6 +600,7 @@ aeval (EApp (Arr oSh _) (Builtin _ Last) xs) t | Just (tX, xRnk) <- tRnk (eAnn x
     let n=head dts
     szA <- nI
     pure (Just a, plX$plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t 1 (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (ConstI$xRnk-1):[CpyE () (AElem t 1 (Just a) 0 sz) (AElem xR (ConstI xRnk) lX ((Tmp n-1)*Tmp szA) sz) (Tmp szA) sz])
+                                               | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Tail) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     a <- nextArr t
     (plX, (lX, xR)) <- plA xs
@@ -606,6 +608,7 @@ aeval (EApp (Arr oSh _) (Builtin _ Tail) xs) t | Just (tX, xRnk) <- tRnk (eAnn x
     let n=head dts; rnkE=ConstI xRnk
     szA <- nI; szz <- nI; d1 <- nI
     pure (Just a, plX$plDs++PlProd () szz (Tmp<$>tail dts):d1=:(Tmp n-1):szA=:(Tmp szz*Tmp d1):Ma () oSh a t rnkE (Tmp szA) sz:Wr () (ADim t 0 (Just a)) (Tmp d1):CpyD () (ADim t 1 (Just a)) (ADim xR 1 lX) (ConstI$xRnk-1):[CpyE () (AElem t rnkE (Just a) 0 sz) (AElem xR rnkE lX (Tmp szz) sz) (Tmp szA) sz])
+                                               | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Init) xs) t | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     a <- nextArr t
     (plX, (lX, xR)) <- plA xs
@@ -723,6 +726,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t | tX <- eAnn xs, Just (
         :PlProd () kL xDims:i =: 0:j =: 0
             :forst tX k 0 ILt (Tmp kL) step
         :[pops])
+                                                         | otherwise = unsupported
 aeval e t | (Arr oSh _) <- eAnn e, Just (f, xss) <- r00 e, all isF (unroll$eAnn f), (Arr sh _) <- eAnn (head xss), hasS f = do
     a <- nextArr t
     xRds <- nIs xss; tD <- nI
@@ -1154,6 +1158,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t | Just (tX, xRnk) <- 
     d1R <- nI; d1'R <- nI; szR <- nI; nX <- nI
     let rnkE=ConstI xsRnk; szX=bT tX
     pure (Just a, plXs$plX$d1R=:ev tXs (xsR,lXs):dss++d1'R=:(Tmp d1R+1):PlProd () nX (Tmp<$>dts):szR=:(Tmp d1'R*Tmp nX):Ma () oSh a t rnkE (Tmp szR) szX:Wr () (ADim t 0 (Just a)) (Tmp d1'R):CpyD () (ADim t 1 (Just a)) (ADim xsR 1 lXs) (ConstI$xsRnk-1):[CpyE () (AElem t rnkE (Just a) 0 szX) (AElem xR (ConstI xRnk) lX 0 szX) (Tmp nX) szX, CpyE () (AElem t rnkE (Just a) (Tmp nX) szX) (AElem xsR (ConstI xsRnk) lXs 0 szX) (Tmp d1R*Tmp nX) szX])
+                                                           | otherwise = unsupported
 aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t | tX <- eAnn x, Just sz <- rSz tX = do
     xR <- rtemp tX; nR <- nI; nϵR <- nI
     (a,aV) <- vSz oSh t (Tmp nR) sz
@@ -1175,6 +1180,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t | Just (tX, xRnk) <- t
     d1R <- nI; d1'R <- nI; szR <- nI; nX <- nI
     let rnkE=ConstI xsRnk; szX=bT tX
     pure (Just a, plXs$plX$d1R=:ev tXs (xsR,lXs):dss++d1'R=:(Tmp d1R+1):PlProd () nX (Tmp<$>dts):szR=:(Tmp d1'R*Tmp nX):Ma () oSh a t rnkE (Tmp szR) szX:Wr () (ADim t 0 (Just a)) (Tmp d1'R):CpyD () (ADim t 1 (Just a)) (ADim xsR 1 lXs) (ConstI$xsRnk-1):[CpyE () (AElem t rnkE (Just a) (Tmp d1R*Tmp nX) szX) (AElem xR (ConstI xRnk) lX 0 szX) (Tmp nX) szX, CpyE () (AElem t rnkE (Just a) 0 szX) (AElem xsR (ConstI xsRnk) lXs 0 szX) (Tmp d1R*Tmp nX) szX])
+                                                          | otherwise = unsupported
 aeval (EApp oTy@(Arr sh _) (EApp _ g@(Builtin _ Re) n) x) t | tX <- eAnn x, Just xSz <- rSz tX = do
     (plN, nR) <- plEV n
     xR <- rtemp tX; putX <- eeval x xR
@@ -1296,6 +1302,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Rot) n) xs) t | Just (tX, xRnk) <- tR
         :Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=Tmp d1]
         :c=:(Tmp d1-Tmp nR)
         :[CpyE () (AElem t rnkE (Just a) 0 sz) (AElem xR rnkE lX (Tmp nR*Tmp szR) sz) (Tmp c*Tmp szR) sz, CpyE () (AElem t rnkE (Just a) (Tmp c*Tmp szR) sz) (AElem xR rnkE lX 0 sz) (Tmp nR*Tmp szR) sz])
+                                                         | otherwise = unsupported
 aeval (Id _ (AShLit ns es)) t | Just ws <- mIFs es = do
     let rnk=fromIntegral$length ns
     n <- nextAA
@@ -1320,6 +1327,7 @@ aeval (EApp _ (Builtin _ T) x) t | Arr sh ty <- eAnn x, Just rnk <- staRnk sh = 
     is <- nIs [1..rnk]
     let loop=thread (zipWith (\i tt -> (:[]) . For () i 0 ILt (Tmp tt)) is dts) [CpyE () (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a) sze) (At xd (Tmp<$>sstrides) (Tmp<$>is) l sze) 1 sze]
     pure (Just a, plX$plDs++init plSs++Ma () sh a t (ConstI rnk) (Tmp (head dts)*Tmp (head sstrides)) sze:diml (t, Just a) (Tmp<$>reverse dts)++init plSd++xd =: (Tmp xR+dO):td =: (Tmp t+dO):loop)
+                                 | otherwise = unsupported
 aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ Outer) op) xs) ys) t | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
     a <- nextArr t
     szX <- nI; szY <- nI
@@ -1375,6 +1383,7 @@ aeval (EApp _ (Builtin _ RevE) e) t | Arr sh ty <- eAnn e, Just rnk <- staRnk sh
     (dts, plDs) <- plDim rnk (eR, lE)
     loop <- afor sh 0 ILt (Tmp n) $ \i -> [CpyE () (AElem t rnkE (Just a) (Tmp i*Tmp szA) sz) (AElem eR rnkE lE ((Tmp n-Tmp i-1)*Tmp szA) sz) (Tmp szA) sz]
     pure (Just a, plE$n=:ev ty (eR,lE):tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () sh a t rnkE (Tmp n*Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim eR 0 lE) rnkE:[loop])
+                                    | otherwise = unsupported
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t | tyS <- eAnn seed, Just sz <- rSz tyS = do
     acc <- rtemp tyS
     plS <- eeval seed acc
@@ -1975,6 +1984,8 @@ m'sa t = maybe []  ((:[]).sac t)
     let loop=For () i 0 ILt nR (ss++[CpyE () (TupM ttemp Nothing) (TupM t Nothing) 1 sz, CpyE () (TupM pre Nothing) (TupM ttemp Nothing) 1 sz])
     pure (offs, Just sz, [], m'sa pre mSz++plX++plN [sac ttemp sz, loop, popc sz]++m'pop mSz)
 πe e _ = error (show e)
+
+unsupported = error "Requires statically known rank."
 
 fourth f ~(x,y,z,w) = (x,y,z,f w)
 
