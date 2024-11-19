@@ -804,7 +804,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     let _:sstrides = sts; sss=init sssϵ
         allIx = rVars ixs yRnk
         (oDims, complDims) = iterDims allIx dts
-        slopRnk=fromIntegral cr::Int64; oRnk=ConstI$yRnk+opRnk-slopRnk
+        slopRnk=fromIntegral cr; oRnk=ConstI$yRnk+opRnk-slopRnk
     (slopP, _, aSlop, pops) <- plSlop xSz slopRnk (Tmp<$>complDims)
     (x, pAX, pinch) <- arg tX (\ixϵ -> AElem xR (ConstI xRnk) lX (Tmp ixϵ) xSz)
     (lZ, ss) <- writeF op [ra x, AA slopP Nothing] (IT zR)
@@ -863,7 +863,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     let _:sstrides = sts; sss=init sssϵ
         allIx = rVars ixs xRnk
         (oDims, complDims) = iterDims allIx dts
-        slopRnk=fromIntegral cr::Int64; slopRnkE=ConstI slopRnk; oRnk=ConstI$xRnk+opRnk-slopRnk
+        slopRnk=fromIntegral cr; slopRnkE=ConstI slopRnk; oRnk=ConstI$xRnk+opRnk-slopRnk
     (slopP, _, aSlop, popS) <- plSlop aSz slopRnk (Tmp<$>complDims)
     (lY, ss) <- writeF f [AA slopP Nothing] (IT yR)
     xRd <- nI; slopPd <- nI; oSz <- nI
