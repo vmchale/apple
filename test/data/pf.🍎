@@ -1,8 +1,0 @@
-λn.
-  { ni ⟜ ⌊(√(ℝn))
-  ; pns ← (⍳ 2 ni 1)
-  ; isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
-  ; pps ⟜  (λk. ((n|k)=0)) #. pns
-  -- prime factors of n (n not a square)
-  ; pf (pps⧺(n⊲(n/.)'pps))
-  }
