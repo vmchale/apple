@@ -21,6 +21,19 @@ ssoftmax=apple.jit('''
 ''')
 assert (ssoftmax(xs)==softmax(xs)).all()
 
+pf=apple.jit('''
+λn.
+  { ni ⟜ ⌊(√(ℝn))
+  ; pns ← (⍳ 2 ni 1)
+  ; isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
+  ; pps ⟜  ((λk. ((n|k)=0)) #. pns)
+  ; ?ni^2=n
+    ,.pf (pps⧺((n/.)'(}:? pps)))
+    ,.pf (pps⧺(n⊳((n/.)'pps)))
+  }
+''')
+assert (pf(60)==np.array([2,3,5])).all()
+
 luhn=apple.jit('''
 λxs.
   { digitSum ← [?x>10,.x-9,.x]
