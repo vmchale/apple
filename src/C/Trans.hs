@@ -340,12 +340,16 @@ eeval :: E (T ()) -> RT -> CM [CS ()]
 eeval e (IT t) = eval e t; eeval e (FT t) = feval e t
 eeval e (PT t) = peval e t
 
+rVars ixs rnk = let ixIs = IS.fromList ixs in [ if ix `IS.member` ixIs then Index() else Cell() | ix <- [1..fromIntegral rnk] ]
+
 data RI a b = Cell a | Index b
 
 part :: [RI a b] -> ([a], [b])
 part []           = ([], [])
 part (Cell i:is)  = first (i:) $ part is
 part (Index i:is) = second (i:) $ part is
+
+iterDims allIx dts = part $ zipWith (\ixϵ dt -> case ixϵ of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
 
 diml :: (Temp, Maybe AL) -> [CE] -> [CS ()]
 diml (t,l) ds = zipWith (\d i -> Wr () (ADim t (ConstI i) l) d) ds [0..]
@@ -375,15 +379,28 @@ forAll is bs = thread (zipWith g is bs) where
     g t b            = (:[]) . For () t 0 ILt b
 
 -- the resulting expressions/statement contain free variables to be iterated over; these free variables are returned alongside
-extrCell :: Int64 -> [Cell () Temp] -> [Temp] -> (Temp, Maybe AL) -> Temp -> CM ([Temp], [CS ()])
-extrCell sz fixBounds sstrides (srcP, srcL) dest = do
-    (dims, ts, arrIxes, complts) <- switch fixBounds
-    t <- nI; destd <- nI
-    pure (complts, (destd =: Tmp dest:) $ forAll ts (Tmp<$>dims)
-        [t =: EAt (At srcP (Tmp<$>sstrides) (Tmp<$>arrIxes) srcL sz), Wr () (Raw destd 0 Nothing sz) (Tmp t), destd+=ConstI sz])
-    where switch (Bound d:ds) = do {t <- nI; qmap (d:) (t:) (t:) id <$> switch ds}
-          switch (Fixed:ds)   = do {f <- nI; qmap id id (f:) (f:) <$> switch ds}
-          switch []           = pure ([], [], [], [])
+carg :: [RI a b]
+     -> (Temp, Maybe AL)
+     -> [Temp] -- ^ Dimensions
+     -> [Temp] -- ^ Strides
+     -> Int64 -- ^ Element size
+     -> Temp -- ^ Slop data pointer
+     -> CM ([Temp], [CS ()])
+carg rIx (srcP, srcL) dts strides sz dest =
+    extrCell ecArg
+  where
+    ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts rIx
+
+    extrCell :: [Cell () Temp] -> CM ([Temp], [CS ()])
+    extrCell fixBounds = do
+        (dims, ts, arrIxes, complts) <- switch fixBounds
+        t <- nI; destd <- nI
+        pure (complts, (destd =: Tmp dest:) $ forAll ts (Tmp<$>dims)
+            [t =: EAt (At srcP (Tmp<$>strides) (Tmp<$>arrIxes) srcL sz), Wr () (Raw destd 0 Nothing sz) (Tmp t), destd+=ConstI sz])
+      where switch (Bound d:ds) = do {t <- nI; qmap (d:) (t:) (t:) id <$> switch ds}
+            switch (Fixed:ds)   = do {f <- nI; qmap id id (f:) (f:) <$> switch ds}
+            switch []           = pure ([], [], [], [])
+
 
 vslop :: Int64 -> Int -> CM (Temp, [CS ()], CS ())
 vslop sz n = do
@@ -750,20 +767,18 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     , Just xSz <- nSz tX, Just ySz <- nSz yT = do
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
     zR <- rtemp tC
-    let ixsIs=IS.fromList ixs; allIx=[ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral yRnk] ]
     (dts, dss) <- plDim yRnk (yR, lY)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
-        allDims = zipWith (\ixϵ dt -> case ixϵ of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
-        ~(oDims, complDims) = part allDims
+        allIx=rVars ixs yRnk
+        (oDims, complDims) = iterDims allIx dts
         slopRnk=fromIntegral cr::Int64; oRnk=yRnk-slopRnk
     (slopP, _, aSlop, pops) <- plSlop ySz slopRnk (Tmp<$>complDims)
     ix <- nI
     (x, pAX, pinch) <- arg tX (\ixϵ -> AElem xR (ConstI xRnk) lX (Tmp ixϵ) xSz)
     (_, ss) <- writeF op [ra x, AA slopP Nothing] zR
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     oSz <- nI; yRd <- nI; slopPd <- nI
-    (complts, place) <- extrCell ySz ecArg sstrides (yRd, lY) slopPd
+    (complts, place) <- carg allIx (yRd, lY) dts sstrides ySz slopPd
     let loop=forAll complts (Tmp<$>oDims) $ pAX ix:place ++ ss ++ [wt (AElem t (ConstI oRnk) (Just a) (Tmp ix) cSz) zR, ix+=1]
     pure (plX$plY$dss
         ++aSlop
@@ -782,21 +797,19 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     , Just xSz <- nSz tX, Just cSz <- rSz tC, Just ySz <- nSz yT = do
     zR <- nI
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral yRnk] ]
     oSz <- nI; zSz <- nI
     ix <- nI; td <- nI
     (dts, dss) <- plDim yRnk (yR, lY)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
-        allDims = zipWith (\ixϵ dt -> case ixϵ of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
-        ~(oDims, complDims) = part allDims
+        allIx = rVars ixs yRnk
+        (oDims, complDims) = iterDims allIx dts
         slopRnk=fromIntegral cr::Int64; oRnk=ConstI$yRnk+opRnk-slopRnk
     (slopP, _, aSlop, pops) <- plSlop xSz slopRnk (Tmp<$>complDims)
     (x, pAX, pinch) <- arg tX (\ixϵ -> AElem xR (ConstI xRnk) lX (Tmp ixϵ) xSz)
     (lZ, ss) <- writeF op [ra x, AA slopP Nothing] (IT zR)
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     yRd <- nI; slopPd <- nI
-    (complts, place) <- extrCell ySz ecArg sstrides (yRd, lY) slopPd
+    (complts, place) <- carg allIx (yRd, lY) dts sstrides ySz slopPd
     let loop=forAll complts (Tmp<$>oDims) $ pAX ix:place ++ ss ++ [CpyE () (Raw td 0 (Just a) cSz) (AElem zR (ConstI opRnk) lZ 0 undefined) (Tmp zSz) cSz, td+=(Tmp zSz*ConstI cSz), ix+=1]
     (dots, doss) <- plDim opRnk (zR, lZ)
     pure (plX$plY$dss
@@ -817,21 +830,19 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     , (Arrow _ tC) <- eAnn f
     , Just ySz <- nSz tC, Just aSz <- nSz tA = do
     (plX, (lX, xR)) <- plA xs
-    let ixsIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixsIs then Index() else Cell() | ix <- [1..fromIntegral rnk] ]
     oSz <- nI
     di <- nI
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
-        allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
-        ~(oDims, complDims) = part allDims
+        allIx = rVars ixs rnk
+        (oDims, complDims) = iterDims allIx dts
         oRnk=rnk-fromIntegral cr; slopRnk=fromIntegral cr::Int64
     (slopP, _, aSlop, popS) <- plSlop aSz slopRnk (Tmp<$>complDims)
     (y, wY, pinch) <- rW tC (iXelem t (ConstI oRnk) Nothing ySz)
     (_, ss) <- writeF f [AA slopP Nothing] y
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     xRd <- nI; slopPd <- nI
-    (complts, place) <- extrCell aSz ecArg sstrides (xRd, lX) slopPd
+    (complts, place) <- carg allIx (xRd, lX) dts sstrides aSz slopPd
     let loop=forAll complts (Tmp<$>oDims) $ place ++ ss ++ [wY di, di+=1]
     pure (plX$dss
         ++aSlop
@@ -846,19 +857,17 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     , (Arrow _ tCod) <- eAnn f
     , Just (tC, opRnk) <- tRnk tCod, Just cSz <- nSz tC, Just aSz <- nSz tA = do
     (plX, (lX, xR)) <- plA xs
-    let ixIs = IS.fromList ixs; allIx = [ if ix `IS.member` ixIs then Index() else Cell() | ix <- [1..fromIntegral xRnk] ]
     yR <- nI; ySz <- nI; td <- nI
     (dts,dss) <- plDim xRnk (xR,lX)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
-        allDims = zipWith (\ix dt -> case ix of {Cell{} -> Cell dt; Index{} -> Index dt}) allIx dts
-        ~(oDims, complDims) = part allDims
+        allIx = rVars ixs xRnk
+        (oDims, complDims) = iterDims allIx dts
         slopRnk=fromIntegral cr::Int64; slopRnkE=ConstI slopRnk; oRnk=ConstI$xRnk+opRnk-slopRnk
     (slopP, _, aSlop, popS) <- plSlop aSz slopRnk (Tmp<$>complDims)
     (lY, ss) <- writeF f [AA slopP Nothing] (IT yR)
-    let ecArg = zipWith (\d tt -> case (d,tt) of (dϵ,Index{}) -> Bound dϵ; (_,Cell{}) -> Fixed) dts allIx
     xRd <- nI; slopPd <- nI; oSz <- nI
-    (complts, place) <- extrCell aSz ecArg sstrides (xRd, lX) slopPd
+    (complts, place) <- carg allIx (xRd, lX) dts sstrides aSz slopPd
     let loop=forAll complts (Tmp<$>oDims)
                 $ place ++ ss ++ [CpyE () (Raw td 0 (Just a) cSz) (AElem yR (ConstI opRnk) lY 0 undefined) (Tmp ySz) cSz, td+=(Tmp ySz*ConstI cSz)]
     (dots, doss) <- plDim opRnk (yR, lY)
