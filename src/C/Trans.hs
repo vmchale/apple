@@ -828,7 +828,6 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     , Just ySz <- nSz tC, Just aSz <- nSz tA = do
     (plX, (lX, xR)) <- plA xs
     oSz <- nI
-    di <- nI
     (dts, dss) <- plDim rnk (xR, lX)
     (sts, sssϵ) <- offByDim (reverse dts)
     let _:sstrides = sts; sss=init sssϵ
@@ -836,6 +835,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     (oDims, complts, ds, pinchS, slopP, copyCell) <- loopCell cr ixs (xR, lX) rnk dts sstrides aSz
     (y, wY, pinch) <- rW tC (iXelem t (ConstI oRnk) Nothing ySz)
     (_, ss) <- writeF f [AA slopP Nothing] y
+    di <- nI
     let loop=forAll complts (Tmp<$>oDims) $ copyCell ++ ss ++ [wY di, di+=1]
     pure (plX$dss
         ++pinchS(
