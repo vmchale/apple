@@ -163,7 +163,7 @@ x86G :: BSL.ByteString -> Either (Err AlexPosn) (IR.AsmData, [X86 X86Reg FX86Reg
 x86G = walloc (uncurry X86.gallocFrame)
 
 eAarch64 :: Int -> E a -> Either (Err a) (IR.AsmData, [AArch64 AReg FAReg ()])
-eAarch64 i = fmap (second (Aarch64.opt . Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . eir i
+eAarch64 i = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st) -> (aa,irToAarch64 st x))) . eir i
 
 ex86G :: Int -> E a -> Either (Err a) (IR.AsmData, [X86 X86Reg FX86Reg ()])
 ex86G i = wallocE i (uncurry X86.gallocFrame)
