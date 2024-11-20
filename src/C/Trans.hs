@@ -774,17 +774,16 @@ aeval e t a
     loop <- afor sh 0 ILt (Tmp szR) (\i -> step (repeat i) i)
     pure (thread plXs$rnkR=:eRnk sh (xR,lX):SZ () szR xR (Tmp rnkR) lX:Ma () oSh a t (Tmp rnkR) (Tmp szR) szC:CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):zipWith (\xRϵ xRd -> xRd=:DP xRϵ (Tmp rnkR)) xRs xRds++tD=:DP t (Tmp rnkR):sas pinches [loop])
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs) ys) t a
-    | Just (yT, yRnk) <- tRnk (eAnn ys)
-    , Just (_, xRnk) <- tRnk (eAnn xs)
+    | Just (yT, yRnk) <- tRnk (eAnn ys), Just (_, xRnk) <- tRnk (eAnn xs)
     , Arrow tX (Arrow _ tCod) <- eAnn op, Just (tC, cSz) <- rr tCod
     , Just xSz <- nSz tX, Just ySz <- nSz yT = do
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
     zR <- rtemp tC
     let oRnk=yRnk-fromIntegral cr
     (x, pAX, pinch) <- arg tX (\ixϵ -> AElem xR (ConstI xRnk) lX (Tmp ixϵ) xSz)
-    oSz <- nI
     (oDims, complts, dps, pinchC, slopP, copyCell) <- loopCell cr ixs (yR, lY) yRnk ySz
     (_, ss) <- writeF op [ra x, AA slopP Nothing] zR
+    oSz <- nI
     loop <- aall complts (Tmp<$>oDims) $ \ix -> pAX ix:copyCell ++ ss ++ [wt (AElem t (ConstI oRnk) (Just a) (Tmp ix) cSz) zR]
     pure (plX$plY$pinchC$
         [tϵ=:0 | tϵ <- complts]
