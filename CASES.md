@@ -2,6 +2,7 @@
 - [ ] fold-of-array
 - [ ] zip of array
 - [ ] fold-of-zip on array
+- [x] `di.` builtin
 - [ ] scan-of-array
 ```
  > \xs.\ys.[(+)`x y]Λ xs
@@ -16,7 +17,6 @@
 - [x] snoc array, cons array
 - [ ] fold, producing tuple
 - [ ] filter-on-array
-- [ ] zip on array?
 - [x] don't crash when stack-allocated tuples, arrays containing bools
 - [x] equality on arrays
   - [ ] equality on tup

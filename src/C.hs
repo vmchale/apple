@@ -206,6 +206,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           deriving Functor
           -- TODO: PlDims cause we have diml
           -- STRIDES(...)
+          -- MV aka Cpy for one elem
 
 instance Copointed CS where copoint=lann
 

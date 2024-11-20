@@ -74,6 +74,7 @@ T16 = T13.dim[0]
 - [ ] Use `Word64` for sets of registers
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ] (rand. 0 1::Arr (2×10) int)
 - [ ] `irange 0 0 0` crashes
 - [ ]  `}:? ((<0)#.irange 0 4 1)` segfaults
 - [ ] :cmm \xs. [⟨x->1,x->2⟩]'(xs::Vec n (float, float))
@@ -98,6 +99,7 @@ o → o → o
 - [ ] match doesn't check constraints on annotations
 - [ ] check in assembler phase for labels not being duplicate
 ## Type system
+- [ ] diagonal on higher-rank?
 - [x] Check that bindings are not too polymorphic
   - [ ] after inlining
   - [x] add a pass to prevent arrays of tuples of arrays
