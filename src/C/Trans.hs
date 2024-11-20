@@ -593,6 +593,12 @@ aeval (EApp (Arr sh I) (EApp _ (Builtin _ A.R) e0) e1) t a | Just ixs <- staIx s
     loop <- afors sh 0 ILt (ConstI n) $ \k ->
               [Rnd () iR, iR =: (Bin IRem (Tmp iR) (Tmp scaleR) + e0e), Wr () (AElem t rnk (Just a) (Tmp k) 8) (Tmp iR)]
     pure (plE0$plE1$Ma () sh a t rnk (ConstI n) 8:diml (t, Just a) (ConstI<$>ixs)++scaleR=:(e1e-e0e+1):[loop])
+aeval (EApp (Arr oSh ty) (Builtin _ Di) e) t a | Just sz <- nSz ty = do
+    (plX, (lX, xR)) <- plA e
+    xRd <- nI; n <- nI
+    ll <- afor oSh 0 ILt (Tmp n) $ \i ->
+            [CpyE () (AElem t 1 (Just a) (Tmp i) sz) (At xRd [Tmp n, 1] [Tmp i, Tmp i] lX sz) 1 sz]
+    pure $ plX$n=:ev (eAnn e) (xR,lX):vSz oSh t a (Tmp n) sz++[xRd=:DP xR 2, ll]
 aeval e@(Builtin (Arr sh _) Eye) t a | Just ixs <- staIx sh = do
     let n=product ixs
     contents <- rfill e (AD t (Just a) Nothing Nothing Nothing (Just$ConstI n)) []
