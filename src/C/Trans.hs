@@ -496,6 +496,8 @@ rfill (Builtin (Arr sh I) Eye) (AD t lA _ _ _ _) [] | Just [i,_] <- staIx sh = d
     pure [td=:DP t 2, loop]
 rfill (Builtin _ Init) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [CpyE () (AElem t 1 lA 0 sz) (AElem xR 1 lX 0 sz) n sz]
+rfill (Builtin _ InitM) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
+    pure [CpyE () (AElem t 1 lA 0 sz) (AElem xR 1 lX 0 sz) n sz]
 rfill (Builtin _ Tail) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [CpyE () (AElem t 1 lA 0 sz) (AElem xR 1 lX 1 sz) n sz]
 rfill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just tXs) _ _ _)] | Arrow F F <- eAnn f, hasS f = do
@@ -614,11 +616,11 @@ aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Init) x) t a | Just sz <- aB oTy = do
     (plX, (lX, xR)) <- plA x
     contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
     pure (plX$nR =: (ev (eAnn x) (xR,lX)-1):vSz oSh t a (Tmp nR) sz++contents)
-aeval (EApp oTy@(Arr oSh _) (Builtin _ InitM) x) t a | Just sz <- aB oTy = do
+aeval (EApp oTy@(Arr oSh _) e@(Builtin _ InitM) x) t a | Just sz <- aB oTy = do
     nR <- nI
     (plX, (lX, xR)) <- plA x
-    -- TODO: negative
-    pure (plX$nR =: (ev (eAnn x) (xR,lX)-1):vSz oSh t a (Bin IMax (Tmp nR) 0) sz++[CpyE () (AElem t 1 (Just a) 0 sz) (AElem xR 1 lX 0 sz) (Tmp nR) sz])
+    contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
+    pure (plX$nR =: Bin IMax (ev (eAnn x) (xR,lX)-1) 0:vSz oSh t a (Tmp nR) sz++contents)
 aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Tail) x) t a | Just sz <- aB oTy = do
     nR <- nI
     (plX, (lX, xR)) <- plA x
