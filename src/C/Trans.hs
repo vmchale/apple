@@ -181,11 +181,10 @@ tor (Arr sh _) = ro sh; tor _ = False
 tec (Arr (_ `Cons` i `Cons` _) _) = ipe i; tec _ = False
 toc (Arr (_ `Cons` i `Cons` _) _) = ipo i; toc _ = False
 
-fors sh | nzSh sh = For1 () 1 | otherwise = For ()
 for (i `Cons` _) | nz i = For1 () 1; for _ = For ()
 
 rof sh = if nzSh sh then Rof1 () else Rof (); rof1 sh = if n1 sh then Rof1 () else Rof ()
-fort (Arr sh _) = for sh; fort _ = For (); for1 sh = if n1 sh then For1 () 1 else For ()
+fort (Arr sh _) = for sh; fort _ = For ()
 forc t = if nec t then For1 () 1 else For ()
 
 f21o (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
@@ -551,9 +550,11 @@ rfill (Builtin _ AddDim) (AD t lA _ (Just rnk) (Just sz) _) [AI (AD xR lX _ (Jus
     pure [td=:DP t rnk, xRd=:DP xR xRnk, CpyE () (Raw td 0 lA sz) (Raw xRd 0 lX sz) n sz]
 
 afor sh el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
-afor1 ty el c eu ss = do {i <- nI; pure (for1 ty i el c eu (ss i))}
+afor1 sh el c eu ss = do {i <- nI; pure (ff i el c eu (ss i))} where
+    ff | n1 sh = For1 () 1 | otherwise = For ()
 afort (Arr sh _) el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
-afors sh el c eu ss = do {i <- nI; pure (fors sh i el c eu (ss i))}
+afors sh el c eu ss = do {i <- nI; pure (ff i el c eu (ss i))} where
+    ff | nzSh sh = For1 () 1 | otherwise = For ()
 
 maa :: E (T ()) -> CM (Temp, Maybe AL, [CS ()])
 maa (Var _ x) = do
@@ -1697,34 +1698,37 @@ feval (Id _ (FoldOfZip zop op [p])) acc | tPs@(Arr pSh _) <- eAnn p, Just (tP, p
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) (FLit _ start)) (FLit _ end)) (ILit _ steps), ys])) acc
     | tYs@(Arr ySh _) <- eAnn ys, Just (tQ, qSz) <- aRr tYs = do
     x <- nF; y <- rtemp tQ
-    incrR <- nF; i <- nI
+    incrR <- nF
     plY <- eeval (EApp tQ (Builtin undefined Head) ys) y
     (plYs, (lY, yR)) <- plA ys
     plIncr <- feval (FLit F$(end-start)/realToFrac (steps-1)) incrR
     seed <- writeRF zop [FT x, y] (FT acc)
     ss <- writeRF op [FT acc, FT x, y] (FT acc)
-    pure $ plYs $ plY ++ MX () x (ConstF start):seed ++ plIncr ++ [for1 ySh i 1 ILt (ConstI$fromIntegral steps) (mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss)]
+    ll <- afor1 ySh 1 ILt (ConstI$fromIntegral steps) $ \i -> (mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss)
+    pure $ plYs $ plY ++ MX () x (ConstF start):seed ++ plIncr ++ [ll]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) steps, ys])) acc
     | tYs@(Arr ySh _) <- eAnn ys, Just (tQ, qSz) <- aRr tYs = do
     x <- nF; y <- rtemp tQ
-    incrR <- nF; i <- nI; n <- nI
+    incrR <- nF; n <- nI
     plX <- feval start x; plY <- eeval (EApp tQ (Builtin undefined Head) ys) y
     (plYs, (lY, yR)) <- plA ys
     plN <- eval steps n
     plIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
     seed <- writeRF zop [FT x, y] (FT acc)
     ss <- writeRF op [FT acc, FT x, y] (FT acc)
-    pure $ plYs $ plY ++ plX ++ seed ++ plIncr ++ plN ++ [for1 ySh i 1 ILt (Tmp n) (mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss)]
+    ll <- afor1 ySh 1 ILt (Tmp n) $ \i -> (mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss)
+    pure $ plYs $ plY ++ plX ++ seed ++ plIncr ++ plN ++ [ll]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, ys])) acc
     | tYs@(Arr ySh _) <- eAnn ys, Just (tQ, qSz) <- aRr (eAnn ys) = do
     x <- nI; y <- rtemp tQ
-    szR <- nI; i <- nI
+    szR <- nI
     plX <- eval start x; plY <- eeval (EApp tQ (Builtin undefined Head) ys) y
     (plYs, (lY, yR)) <- plA ys
     (plI,iE) <- plC incr
     seed <- writeRF zop [IT x, y] (FT acc)
     ss <- writeRF op [FT acc, IT x, y] (FT acc)
-    pure $ plYs $ plY ++ plX ++ seed ++ plI (szR =: ev tYs (yR,lY):[for1 ySh i 1 ILt (Tmp szR) (mt (AElem yR 1 lY (Tmp i) qSz) y:x+=iE:ss)])
+    ll <- afor1 ySh 1 ILt (Tmp szR) $ \i -> (mt (AElem yR 1 lY (Tmp i) qSz) y:x+=iE:ss)
+    pure $ plYs $ plY ++ plX ++ seed ++ plI (szR =: ev tYs (yR,lY):[ll])
     -- TODO: fold-of-zip 1 SIMD
 feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op = do
     acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
