@@ -701,7 +701,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a | (Arrow tD tC) <- eA
             (loop:[pops]))
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a | (Arrow tD tC) <- eAnn f, tXs <- eAnn xs, Just (_, xRnk) <- tRnk tXs, Just (ta, rnk) <- tRnk tC, Just szO <- nSz ta, Just dSz <- nSz tD = do
     y <- nI; y0 <- nI; szX <- nI; szY <- nI
-    j <- nI; k <- nI; td <- nI; yd <- nI
+    j <- nI; td <- nI; yd <- nI
     (plX, (lX, xR)) <- plA xs
     (x0, wX0, pinch0) <- arg tD (\_ -> AElem xR (ConstI xRnk) lX 0 dSz)
     (x, wX, pinch) <- arg tD (\kϵ -> AElem xR (ConstI xRnk) lX (Tmp kϵ) dSz)
@@ -710,7 +710,8 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a | (Arrow tD tC) <- eA
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(xRnk-1)]]
         yDims=[EAt (ADim y0 (ConstI l) lY0) | l <- [0..(rnk-1)]]
         oRnk=xRnk+rnk
-        step=wX k:ss++[yd=:DP y (ConstI rnk), CpyE () (Raw td (Tmp j) (Just a) szO) (Raw yd 0 lY undefined) (Tmp szY) szO, j+=Tmp szY]
+    loop <- aforst tXs 0 ILt (Tmp szX) $ \k ->
+                wX k:ss++[yd=:DP y (ConstI rnk), CpyE () (Raw td (Tmp j) (Just a) szO) (Raw yd 0 lY undefined) (Tmp szY) szO, j+=Tmp szY]
     pure (plX$m'p pinch0 (wX0 undefined:ss0)
         ++PlProd () szY yDims
         :PlProd () szX xDims
@@ -718,7 +719,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a | (Arrow tD tC) <- eA
             :CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (ConstI xRnk)
             :CpyD () (ADim t (ConstI xRnk) (Just a)) (ADim y0 0 lY0) (ConstI rnk)
         :td=:DP t (ConstI$xRnk+rnk)
-        :j=:0:m'p pinch [forst tXs k 0 ILt (Tmp szX) step])
+        :j=:0:m'p pinch [loop])
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a | tX <- eAnn xs, Just (_, xRnk) <- tRnk tX, Just ((ta0, rnk0), (ta1, rnk1)) <- mAA (eAnn f), Just sz0 <- nSz ta0, Just sz1 <- nSz ta1 = do
     y <- nI; y0 <- nI
     szR <- nI; szY <- nI
