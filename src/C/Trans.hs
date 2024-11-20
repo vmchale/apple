@@ -396,12 +396,15 @@ carg rIx (srcP, srcL) dts strides sz dest =
             switch (Fixed:ds)   = do {f <- nI; qmap id id (f:) (f:) <$> switch ds}
             switch []           = pure ([], [], [], [])
 
-loopCell cr ixs (xR, lX) rnk dts strides sz = do
+loopCell cr ixs (xR, lX) rnk dts sz = do
+    (sts, sssϵ) <- offByDim (reverse dts)
+    let _:strides = sts; sss=init sssϵ
+
     (slopP, _, aSlop, popS) <- plSlop sz slopRnk (Tmp<$>complDims)
     xRd <- nI; slopPd <- nI
     (complts, copyCell) <- carg allIx (xRd, lX) dts strides sz slopPd
     let pinchSlop = (++[popS]) . (aSlop++)
-    pure (oDims, complts, [xRd=:DP xR (ConstI rnk), slopPd=:DP slopP slopRnkE], pinchSlop, slopP, copyCell)
+    pure (oDims, complts, sss++[xRd=:DP xR (ConstI rnk), slopPd=:DP slopP slopRnkE], pinchSlop, slopP, copyCell)
   where
     allIx = let ixIs = IS.fromList ixs in [ if ix `IS.member` ixIs then Index() else Cell() | ix <- [1..fromIntegral rnk] ]
     slopRnk=fromIntegral cr; slopRnkE=ConstI slopRnk
@@ -774,12 +777,10 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
     zR <- rtemp tC
     (dts, dss) <- plDim yRnk (yR, lY)
-    (sts, sssϵ) <- offByDim (reverse dts)
-    let _:sstrides = sts; sss=init sssϵ
-        oRnk=yRnk-fromIntegral cr
+    let oRnk=yRnk-fromIntegral cr
     (x, pAX, pinch) <- arg tX (\ixϵ -> AElem xR (ConstI xRnk) lX (Tmp ixϵ) xSz)
     oSz <- nI
-    (oDims, complts, dps, pinchS, slopP, copyCell) <- loopCell cr ixs (yR, lY) yRnk dts sstrides ySz
+    (oDims, complts, dps, pinchS, slopP, copyCell) <- loopCell cr ixs (yR, lY) yRnk dts ySz
     (_, ss) <- writeF op [ra x, AA slopP Nothing] zR
     ix <- nI
     let loop=forAll complts (Tmp<$>oDims) $ pAX ix:copyCell ++ ss ++ [wt (AElem t (ConstI oRnk) (Just a) (Tmp ix) cSz) zR, ix+=1]
@@ -787,8 +788,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
         ++pinchS(
         [tϵ=:0 | tϵ <- complts]
         ++mt (AElem xR (ConstI xRnk) lX 0 xSz) x
-        :sss
-        ++dps
+        :dps
         ++PlProd () oSz (Tmp<$>oDims)
             :Ma () oSh a t (ConstI oRnk) (Tmp oSz) cSz
             :diml (t, Just a) (Tmp<$>oDims)
@@ -802,11 +802,9 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     oSz <- nI; zSz <- nI
     ix <- nI; td <- nI
     (dts, dss) <- plDim yRnk (yR, lY)
-    (sts, sssϵ) <- offByDim (reverse dts)
-    let _:sstrides = sts; sss=init sssϵ
-        oRnk=ConstI$yRnk+opRnk-fromIntegral cr
+    let oRnk=ConstI$yRnk+opRnk-fromIntegral cr
     (x, pAX, pinch) <- arg tX (\ixϵ -> AElem xR (ConstI xRnk) lX (Tmp ixϵ) xSz)
-    (oDims, complts, ds, pinchS, slopP, copyCell) <- loopCell cr ixs (yR, lY) yRnk dts sstrides ySz
+    (oDims, complts, ds, pinchS, slopP, copyCell) <- loopCell cr ixs (yR, lY) yRnk dts ySz
     (lZ, ss) <- writeF op [ra x, AA slopP Nothing] (IT zR)
     let loop=forAll complts (Tmp<$>oDims) $ pAX ix:copyCell ++ ss ++ [CpyE () (Raw td 0 (Just a) cSz) (AElem zR (ConstI opRnk) lZ 0 undefined) (Tmp zSz) cSz, td+=(Tmp zSz*ConstI cSz), ix+=1]
     (dots, doss) <- plDim opRnk (zR, lZ)
@@ -814,8 +812,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
         ++pinchS(
         [tϵ=:0 | tϵ <- complts]
         ++mt (AElem xR (ConstI xRnk) lX 0 xSz) x
-        :sss
-        ++ds++copyCell
+        :ds++copyCell
         ++ss++doss
         ++PlProd () zSz (Tmp<$>dots)
         :PlProd () oSz (Tmp<$>(zSz:oDims))
@@ -829,10 +826,8 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     (plX, (lX, xR)) <- plA xs
     oSz <- nI
     (dts, dss) <- plDim rnk (xR, lX)
-    (sts, sssϵ) <- offByDim (reverse dts)
-    let _:sstrides = sts; sss=init sssϵ
-        oRnk=rnk-fromIntegral cr
-    (oDims, complts, ds, pinchS, slopP, copyCell) <- loopCell cr ixs (xR, lX) rnk dts sstrides aSz
+    let oRnk=rnk-fromIntegral cr
+    (oDims, complts, ds, pinchS, slopP, copyCell) <- loopCell cr ixs (xR, lX) rnk dts aSz
     (y, wY, pinch) <- rW tC (iXelem t (ConstI oRnk) Nothing ySz)
     (_, ss) <- writeF f [AA slopP Nothing] y
     di <- nI
@@ -842,8 +837,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
         PlProd () oSz (Tmp<$>oDims)
             :Ma () oSh a t (ConstI oRnk) (Tmp oSz) ySz
             :diml (t, Just a) (Tmp<$>oDims)
-        ++sss++ds
-        ++di =: 0:m'p pinch loop))
+        ++ds++di =: 0:m'p pinch loop))
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     | Just (tA, xRnk) <- tRnk (eAnn xs)
     , (Arrow _ tCod) <- eAnn f
@@ -851,10 +845,8 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     (plX, (lX, xR)) <- plA xs
     yR <- nI; ySz <- nI; td <- nI; oSz <- nI
     (dts,dss) <- plDim xRnk (xR,lX)
-    (sts, sssϵ) <- offByDim (reverse dts)
-    let _:sstrides = sts; sss=init sssϵ
-        oRnk=ConstI$xRnk+opRnk-fromIntegral cr
-    (oDims, complts, ds, pinchS, slopP, copyCell) <- loopCell cr ixs (xR, lX) xRnk dts sstrides aSz
+    let oRnk=ConstI$xRnk+opRnk-fromIntegral cr
+    (oDims, complts, ds, pinchS, slopP, copyCell) <- loopCell cr ixs (xR, lX) xRnk dts aSz
     (lY, ss) <- writeF f [AA slopP Nothing] (IT yR)
     let loop=forAll complts (Tmp<$>oDims)
                 $ copyCell ++ ss ++ [CpyE () (Raw td 0 (Just a) cSz) (AElem yR (ConstI opRnk) lY 0 undefined) (Tmp ySz) cSz, td+=(Tmp ySz*ConstI cSz)]
@@ -862,7 +854,6 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     pure (plX$dss
         ++pinchS(
         [tϵ=:0 | tϵ <- complts]
-        ++sss
         ++ds++copyCell
         ++ss
         ++doss
