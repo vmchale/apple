@@ -455,12 +455,16 @@ llet (n,e') | isArr (eAnn e') = do
 llet (n,e') | isI (eAnn e') = do {eR <- bI n; eval e' eR}
 llet (n,e') | isF (eAnn e') = do {eR <- bD n; feval e' eR}
 llet (n,e') | isB (eAnn e') = do {eR <- bB n; peval e' eR}
-llet (n,e') | Arrow tD tC <- eAnn e', isR tD && isR tC = do
+llet (n,e') | (tArgs, tC) <- ur (eAnn e'), all isR tArgs && isR tC = do
     l <- neL
-    x <- rtemp tD; y <- rtemp tC
-    (_, ss) <- writeF e' [ra x] y
-    addF n (l, [ra x], y)
+    xs <- traverse rtemp tArgs; y <- rtemp tC
+    let rrs=ra<$>xs
+    (_, ss) <- writeF e' rrs y
+    addF n (l, rrs, y)
     pure [C.Def () l ss]
+  where
+    ur (Arrow t t'@Arrow{}) = first (t:) (ur t')
+    ur (Arrow t t')         = ([t],t')
 
 data AD = AD { eigen :: !Temp, alabel :: !(Maybe AL), eit :: Maybe (T ())
              , ernk :: Maybe CE
