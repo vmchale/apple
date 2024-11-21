@@ -1,5 +1,5 @@
 ---
-- ignore: {name: Avoid lambda, within: [Asm.LI]}
+- ignore: {name: Avoid lambda, within: [Asm.LI, C.Trans]}
 - ignore: {name: Use const}
 
 - fixity: infixr 7 @<>
