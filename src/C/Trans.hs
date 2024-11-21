@@ -1710,7 +1710,7 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) (FLit _
     plIncr <- feval (FLit F$(end-start)/realToFrac (steps-1)) incrR
     seed <- writeRF zop [FT x, y] (FT acc)
     ss <- writeRF op [FT acc, FT x, y] (FT acc)
-    ll <- afor1 ySh 1 ILt (ConstI$fromIntegral steps) $ \i -> (mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss)
+    ll <- afor1 ySh 1 ILt (ConstI$fromIntegral steps) $ \i -> mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss
     pure $ plYs $ plY ++ MX () x (ConstF start):seed ++ plIncr ++ [ll]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) steps, ys])) acc
     | tYs@(Arr ySh _) <- eAnn ys, Just (tQ, qSz) <- aRr tYs = do
@@ -1722,7 +1722,7 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) 
     plIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
     seed <- writeRF zop [FT x, y] (FT acc)
     ss <- writeRF op [FT acc, FT x, y] (FT acc)
-    ll <- afor1 ySh 1 ILt (Tmp n) $ \i -> (mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss)
+    ll <- afor1 ySh 1 ILt (Tmp n) $ \i -> mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss
     pure $ plYs $ plY ++ plX ++ seed ++ plIncr ++ plN ++ [ll]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, ys])) acc
     | tYs@(Arr ySh _) <- eAnn ys, Just (tQ, qSz) <- aRr (eAnn ys) = do
@@ -1733,7 +1733,7 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) 
     (plI,iE) <- plC incr
     seed <- writeRF zop [IT x, y] (FT acc)
     ss <- writeRF op [FT acc, IT x, y] (FT acc)
-    ll <- afor1 ySh 1 ILt (Tmp szR) $ \i -> (mt (AElem yR 1 lY (Tmp i) qSz) y:x+=iE:ss)
+    ll <- afor1 ySh 1 ILt (Tmp szR) $ \i -> mt (AElem yR 1 lY (Tmp i) qSz) y:x+=iE:ss
     pure $ plYs $ plY ++ plX ++ seed ++ plI (szR =: ev tYs (yR,lY):[ll])
     -- TODO: fold-of-zip 1 SIMD
 feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op = do
