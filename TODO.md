@@ -74,9 +74,15 @@ T16 = T13.dim[0]
 - [ ] Use `Word64` for sets of registers
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ]
+```
+ > :yank ix test/data/ixGen.🍏
+ > :ix ⟨1.0,3,4⟩
+zsh: illegal hardware instruction  cabal run arepl
+```
 - [ ] (rand. 0 1::Arr (2×10) int)
 - [ ] `irange 0 0 0` crashes
-- [ ]  `}:? ((<0)#.irange 0 4 1)` segfaults
+- [x]  `}:? ((<0)#.irange 0 4 1)` segfaults
 - [ ] :cmm \xs. [⟨x->1,x->2⟩]'(xs::Vec n (float, float))
 - [ ] {. ⟨⟨1,1.0⟩,⟨2,3⟩⟩ type
 - [ ] segfault when `aso` is called pre-register allocation (arm)
