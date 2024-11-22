@@ -243,6 +243,7 @@ pL f (WT l p ss)           = "while" <> parens (pretty p) <+> lbrace <#> indent 
 pL f (Ifn't l p s)         = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s) <#> rbrace <> f l
 pL f (If l p s0 s1)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS f s1) <#> rbrace <> f l
 pL _ RA{}                  = mempty
+pL f (CpyE l a a' (ConstI 1) _) = "mv" <+> pretty a <> comma <+> pretty a' <> f l
 pL f (CpyE l a a' e n)     = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n) <> f l
 pL f (CpyD l a a' e)       = "cpydims" <+> pretty a <+> pretty a' <+> pretty e <> f l
 pL f (Sa8 l t e)           = pretty t <+> "=" <+> "salloc" <> parens (pretty e) <> f l
