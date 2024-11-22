@@ -12,7 +12,7 @@ run(chisqcdf,2,2);pchisq(2,2)
 tcdf<-lafile("../math/tcdf.🍎")
 run(tcdf,2,12);pt(2,12)
 
-sliding_mean<-jit("([((+)/x)%ℝ(:x)]\\`7)")
+sliding_mean<-jit("([(+)/x%ℝ(:x)]\\`7)")
 stopifnot(all(run(sliding_mean,seq(0,10,1.0))==c(3,4,5,6,7)))
 
 cat<-jit("[x++(y::Vec n int)]")
@@ -31,7 +31,7 @@ stopifnot(run(isbn,as.integer(c(9,7,8,0,5,9,6,5,2,8,1,2,6))));stopifnot(!run(isb
 rm(isbn)
 gc()
 
-prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))))'(irange 2 N 1)")
+prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))) 1)))'irange 2 N 1")
 stopifnot(all(run(prime_mask,9)==c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE)))
 
 A<-matrix(runif(32,0,1),4);x<-runif(8,0,1)

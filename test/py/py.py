@@ -24,9 +24,9 @@ assert (ssoftmax(xs)==softmax(xs)).all()
 pf=apple.jit('''
 λn.
   { ni ⟜ ⌊(√(ℝn))
-  ; pns ← (⍳ 2 ni 1)
+  ; pns ← ⍳ 2 ni 1
   ; isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
-  ; pps ⟜  ((λk. ((n|k)=0)) #. pns)
+  ; pps ⟜  (λk. ((n|k)=0)) #. pns
   ; ?ni^2=n
     ,.pf (pps⧺((n/.)'(}:? pps)))
     ,.pf (pps⧺(n⊳((n/.)'pps)))
@@ -57,5 +57,5 @@ any_v=apple.jit("λbs. (∨)/ₒ #f bs :: bool")
 assert any_v(np.array([False,False,False,True]))
 assert not(any_v(np.array([False,False,False])))
 
-prime_mask=apple.jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))))'(irange 2 N 1)")
+prime_mask=apple.jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))) 1)))'irange 2 N 1")
 assert (prime_mask(9)==np.array([True,True,False,True,False,True,False,False])).all()
