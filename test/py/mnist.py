@@ -34,8 +34,8 @@ train=apple.jit('''
     dsoftmax_l2 ← [x*(1-x)]`{0} out;
     -- bw
     error ⟜ (*)`{0,0} ({n⟜2%(ℝ(𝓉out)); [x*n]`{0} ((-)`{0,0} out targets)}) dsoftmax_l2;
-    ul2 ← (⍉xSigmoid)%.error;
-    ul1 ← (⍉x)%.((*)`{0,0} (⍉(l2%.(⍉error))) (dsigmoid xl1p));
+    ul2 ← ⍉xSigmoid%.error;
+    ul1 ← ⍉x%.((*)`{0,0} (⍉(l2%.⍉error)) (dsigmoid xl1p));
     ((+)`{0,0} l1 ul1, (+)`{0,0} l2 ul2)
   }''')
 
