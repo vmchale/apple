@@ -92,6 +92,7 @@ mapF f (Sa8 t e)      = Sa8 t (mapFE f e)
 mapF f (Pop8 e)       = Pop8 (mapFE f e)
 mapF f (Cpy a0 a1 e)  = Cpy (mapFA f a0) (mapFA f a1) (mapFE f e)
 mapF f (Cpy1 a0 a1 e) = Cpy1 (mapFA f a0) (mapFA f a1) (mapFE f e)
+mapF f (Mv a0 a1 n)   = Mv (mapFA f a0) (mapFA f a1) n
 mapF f (Cmov p t e)   = Cmov (mapFE f p) t (mapFE f e)
 mapF f (Cset t p)     = Cset t (mapFE f p)
 

@@ -189,6 +189,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | RA { lann :: a, label :: !AL } -- return array no-op (takes label)
           | CpyE { lann :: a, aDest, aSrc :: ArrAcc, nElem :: CE, elemSz :: !Int64 } -- copy elems
           | CpyD { lann :: a, aDest, aSrc :: ArrAcc, nDims :: CE } -- copy dims
+          | Mv { lann :: a, aDest, aSrc :: ArrAcc, elemSz :: !Int64 }
           | Ifn't { lann :: a, scond :: PE, branch :: [CS a] }
           | If { lann :: a, scond :: PE, iBranch, eBranch :: [CS a] }
           | Sa8 { lann :: a, temp :: Temp, alloc8 :: CE } | Pop8 { lann :: a, aeBytes :: CE }
@@ -243,8 +244,8 @@ pL f (WT l p ss)           = "while" <> parens (pretty p) <+> lbrace <#> indent 
 pL f (Ifn't l p s)         = "ifn't" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s) <#> rbrace <> f l
 pL f (If l p s0 s1)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pCS f s0) <#> rbrace <+> "else" <+> lbrace <#> indent 4 (pCS f s1) <#> rbrace <> f l
 pL _ RA{}                  = mempty
-pL f (CpyE l a a' (ConstI 1) _) = "mv" <+> pretty a <> comma <+> pretty a' <> f l
 pL f (CpyE l a a' e n)     = "cpy" <+> pretty a <> comma <+> pretty a' <+> parens (pretty e<>"*"<>pretty n) <> f l
+pL f (Mv l a a' n)         = "mv" <+> pretty a <> comma <+> pretty a' <+> parens (pretty n) <> f l
 pL f (CpyD l a a' e)       = "cpydims" <+> pretty a <+> pretty a' <+> pretty e <> f l
 pL f (Sa8 l t e)           = pretty t <+> "=" <+> "salloc" <> parens (pretty e) <> f l
 pL f (Pop8 l e)            = "pop" <+> pretty e <> f l

@@ -198,6 +198,7 @@ uses C{}            = IS.empty
 uses (Cset _ e)     = uE e
 uses (Cpy a0 a1 e)  = uA a0<>uA a1<>uE e
 uses (Cpy1 a0 a1 e) = uA a0<>uA a1<>uE e
+uses (Mv a0 a1 _)   = uA a0<>uA a1
 
 defs (MT t _)     = singleton t
 defs (IRnd t)     = singleton t
@@ -234,6 +235,7 @@ usesF C{}            = IS.empty
 usesF R{}            = IS.empty
 usesF (Cpy a0 a1 e)  = uAF a0<>uAF a1<>uFF e
 usesF (Cpy1 a0 a1 e) = uAF a0<>uAF a1<>uFF e
+usesF (Mv a0 a1 _)   = uAF a0<>uAF a1
 usesF (S2 _ _ r)     = f2is r
 usesF (Fill2 _ r)    = fsingleton r
 usesF (Ins _ r)      = fsingleton r

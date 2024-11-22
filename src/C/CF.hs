@@ -333,6 +333,7 @@ uses (Pop _ e)             = uE e
 uses (Sa _ _ e)            = uE e
 uses (CpyD _ d s n)        = uA d<>uA s<>uE n
 uses (CpyE _ d s n _)      = uA d<>uA s<>uE n
+uses (Mv _ d s _)          = uA d<>uA s
 uses (Aa _ a _ _)          = singleton a
 
 uB :: PE -> IS.IntSet
