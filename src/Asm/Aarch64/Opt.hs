@@ -7,6 +7,7 @@ opt=pe.mvs
   where
     pe (AddRC _ r0 r0' 0 _:asms) | r0==r0' = pe asms
     pe (SubRC _ r0 r0' 0 _:asms) | r0==r0' = pe asms
+    pe (Stp x r0 r1 (RP ar 0):AddRC _ r2 r3 u IZero:asms) | ar==r2&&r2==r3 = Stp x r0 r1 (Po ar (fromIntegral u)):pe asms
     pe (Str x r0 (RP ar 0):AddRC _ r1 r2 u IZero:asms) | ar==r1&&r1==r2 = Str x r0 (Po ar (fromIntegral u)):pe asms
     pe (Str x r0 (R ar):AddRC _ r1 r2 u IZero:asms) | ar==r1&&r1==r2 = Str x r0 (Po ar (fromIntegral u)):pe asms
     pe (Ldr x r0 (R ar):AddRC _ r1 r2 u IZero:asms) | ar==r1&&r1==r2 = Ldr x r0 (Po ar (fromIntegral u)):pe asms
