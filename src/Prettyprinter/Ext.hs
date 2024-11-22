@@ -11,7 +11,7 @@ module Prettyprinter.Ext ( (<#>), (<?>), (<!>)
                          , pAD
                          ) where
 
-import           Data.Bits                  (Bits (..))
+import           B
 import qualified Data.IntMap                as IM
 import qualified Data.Text                  as T
 import qualified Data.Text.Lazy             as TL
@@ -76,5 +76,4 @@ tlhex2 i | i < 16 = toLazyTextWith 2 ("0" <> hexadecimal i)
 pAD ds = prettyLines ((\(n,dd) -> "arr_" <> pretty n <> ":" <+> ".8byte" <+> concatWith (\x y -> x <> "," <> y) (fmap p64 dd)) <$> IM.toList ds)
 
 p64 :: Word64 -> Doc ann
-p64 w = "0x"<>hex2 w3<>hex2 w2<>hex2 w1<>hex2 w0
-    where w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
+p64 w = "0x"<>hex2 w3<>hex2 w2<>hex2 w1<>hex2 w0 where [w0,w1,w2,w3]=b4 w

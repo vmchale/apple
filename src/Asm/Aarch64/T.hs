@@ -2,9 +2,10 @@ module Asm.Aarch64.T ( irToAarch64 ) where
 
 import           Asm.Aarch64
 import           Asm.M
+import           B
 import           Control.Monad.Trans.State.Strict (runState)
 import           Data.Bifunctor                   (second)
-import           Data.Bits                        (rotateR, shiftR, (.&.))
+import           Data.Bits                        (shiftR, (.&.))
 import           Data.Tuple                       (swap)
 import           Data.Word                        (Word16, Word64, Word8)
 import           GHC.Float                        (castDoubleToWord64)
@@ -388,8 +389,8 @@ sai i | i `rem` 16 == 0 = i+16 | otherwise = i+16+(16-r) where r = i `rem` 16
 
 mw64 :: Word64 -> AbsReg -> [AArch64 AbsReg freg ()]
 mw64 w r =
-    let w0=w .&. 0xffff; w1=(w .&. 0xffff0000) `rotateR` 16; w2=(w .&. 0xFFFF00000000) `rotateR` 32; w3=(w .&. 0xFFFF000000000000) `rotateR` 48
-    in MovRC () r (fromIntegral w0):[MovK () r (fromIntegral wi) s | (wi, s) <- [(w1, 16), (w2, 32), (w3, 48)], wi /= 0 ]
+    MovRC () r w0:[MovK () r wi s | (wi, s) <- [(w1, 16), (w2, 32), (w3, 48)], wi /= 0 ]
+    where [w0,w1,w2,w3]=b4 w
 
 ssin :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 ssin t = do

@@ -76,6 +76,7 @@ library
 
     hs-source-dirs:     src
     other-modules:
+        B
         Bits
         CF
         CF.AL
