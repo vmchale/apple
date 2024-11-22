@@ -2,11 +2,11 @@
 {
   Σ ← [(+)/x];
   n ⟜ ℝ(:xs);
-  xbar ⟜ (Σ xs) % n; ybar ⟜ (Σ ys) % n;
+  xbar ⟜ Σ xs % n; ybar ⟜ Σ ys % n;
   xy ⟜ Σ ((*)`xs ys);
   x2 ⟜ Σ ((^2)'xs);
-  denom ⟜ (x2-n*(xbar^2));
-  a ← ((ybar*x2)-(xbar*xy))%denom;
-  b ← (xy-(n*xbar*ybar))%denom;
+  denom ⟜ x2-n*xbar^2;
+  a ← (ybar*x2-xbar*xy)%denom;
+  b ← (xy-n*xbar*ybar)%denom;
   (a,b)
 }

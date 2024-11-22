@@ -9,12 +9,12 @@
   -- ho: 4x2
   -- prediction: 4
   ho ⟜ sigmoid`{0} ([(+)`(bh::Vec 2 float) x]'X%.wh);
-  prediction ⟜ (sigmoid ∴ (+bo))'ho%:wo;
+  prediction ⟜ sigmoid ∴ (+bo)'ho%:wo;
   l1E ← (-)`Y prediction;
   l1Δ ⟜ (*)`(sDdx'prediction) l1E; -- 4
   he ← l1Δ (*)⊗ wo; -- 4x2
   hΔ ⟜ (*)`{0,0} (sDdx`{0} ho) he; -- 4x2
-  wha ← (+)`{0,0} wh ((|:X)%.hΔ);
+  wha ← (+)`{0,0} wh (|:X%.hΔ);
   woa ← (+)`wo (|:ho%:l1Δ);
   bha ← [(+)/ₒ x y]`{0,1} bh hΔ;
   boa ← bo + sum l1Δ;

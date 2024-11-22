@@ -1,2 +1,2 @@
 -- upper bound on the factorial: https://math.stackexchange.com/questions/676952/is-ramanujans-approximation-for-the-factorial-optimal-or-can-it-be-tweaked-a
-\n.(√𝜋)*((n%(e:1))**n)*((8*n^3+4*n^2+n+1%100)**⅙)
+\n.√𝜋*((n%(e:1))**n)*((8*n^3+4*n^2+n+1%100)**⅙)

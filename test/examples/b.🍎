@@ -2,8 +2,8 @@
 {
   Σ ← [(+)/x];
   n ⟜ ℝ(:xs);
-  xbar ⟜ (Σ xs)%n; ybar ← (Σ ys)%n;
+  xbar ⟜ Σ xs%n; ybar ← Σ ys%n;
   xy ← Σ ((*)`xs ys); x2 ← Σ ((^2)'xs);
-  denom ← (x2-(n*(xbar^2)));
-  (xy-(n*xbar*ybar))%denom
+  denom ← x2-n*xbar^2;
+  (xy-n*xbar*ybar)%denom
 }

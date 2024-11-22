@@ -1,5 +1,5 @@
 λN.
 {
-  isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1)));
-  isPrime'(irange 2 N 1)
+  isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))) 1));
+  isPrime'irange 2 N 1
 }

@@ -3,15 +3,15 @@
   ; tieSelf ← [({.x)⊳x]; Δ ← ((-)\~) ∴ tieSelf
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys
-  ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)
+  ; dxss ⟜ (%)`dxs dts; dyss ⟜ (%)`dys dts
   ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λₒ 0 dts; T ⟜}. pts
   ; coeffs ← λn.
     { n ⟜ ℝn; k ⟜ 2*n*𝜋%T
     ; c ⟜ T%(2*n^2*𝜋^2)
-    ; cosDiffs ⟜ (-)\~((cos. ∴ (k*))'pts)
+    ; cosDiffs ⟜ (-)\~(cos. ∴ (k*)'pts)
     ; aₙ ← c*sum ((*)`dxss cosDiffs)
     ; cₙ ← c*sum ((*)`dyss cosDiffs)
-    ; sinDiffs ⟜ (-)\~((sin. ∴ (k*))'pts)
+    ; sinDiffs ⟜ (-)\~(sin. ∴ (k*)'pts)
     ; bₙ ← c*sum ((*)`dxss sinDiffs)
     ; dₙ ← c*sum ((*)`dyss sinDiffs)
     ; (aₙ,bₙ,cₙ,dₙ)
@@ -20,7 +20,7 @@
   ; ppts ⟜ {: pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
-  ; A ← (0.5*sum ((*)`((%)`dxs dts) dtss) + sum ((*)`𝜉 dts))%T
-  ; C ← (0.5*sum ((*)`((%)`dys dts) dtss) + sum ((*)`𝛿 dts))%T
-  ; (coeffs'(irange 1 N 1),A,C)
+  ; A ← (½*sum ((*)`((%)`dxs dts) dtss) + sum ((*)`𝜉 dts))%T
+  ; C ← (½*sum ((*)`((%)`dys dts) dtss) + sum ((*)`𝛿 dts))%T
+  ; (coeffs'irange 1 N 1,A,C)
   }

@@ -2,5 +2,5 @@
 λho.λwo.λbo.
   { sigmoid ← [1%(1+ℯ(_x))]
   -- prediction: 4
-  ; (sigmoid ∴ (+bo))'(ho%:wo)
+  ; sigmoid ∴ (+bo)'ho%:wo
   }
