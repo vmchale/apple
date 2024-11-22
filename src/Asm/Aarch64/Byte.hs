@@ -284,8 +284,7 @@ asm ix st@(_, (_, Just (_, _, p)),_) (MovRCf _ r Pow:asms) =
     asm ix st (m4 r p++asms)
 asm ix st (LdrRL _ r l:asms) =
     let p = pI$arr l st
-        w0=p .&. 0xffff; w1=(p .&. 0xffff0000) `lsr` 16; w2=(p .&. 0xFFFF00000000) `lsr` 32; w3=(p .&. 0xFFFF000000000000) `lsr` 48
-    in asm ix st (MovRC () r (fromIntegral w0):MovK () r (fromIntegral w1) 16:MovK () r (fromIntegral w2) 32:MovK () r (fromIntegral w3) 48:asms)
+    in asm ix st (m4 r p++asms)
 asm ix st (Prfm x pr (R r):asms) = asm ix st (Prfm x pr (RP r 0):asms)
 asm ix st (Prfm _ pr (RP rb i):asms) | (i',0) <- i `quotRem` 8, i >= 0 && i <= 32760 = [0xf9, 0b10 `shiftL` 6 .|. fromIntegral (i' `shiftR` 6), fromIntegral i' `shiftL` 2 .|. be rb `shiftR` 2, be rb `shiftL` 5 .|. rpf pr]:asm (ix+4) st asms
 asm ix st (Prfm _ pr (BI rb ri s):asms) = [0xf8, 0x5 `shiftL` 5 .|. be ri, 0b011 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0b10 `shiftL` 2 .|. be rb `shiftR` 3, be rb `shiftL` 5 .|. rpf pr]:asm (ix+4) st asms
@@ -297,8 +296,9 @@ rpf (Pfop PLD L1 Strm) = 0b1
 rpf (Pfop PST L1 Strm) = 0b10001
 
 m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
-m4 r a = let w0=a .&. 0xffff; w1=(a .&. 0xffff0000) `lsr` 16; w2=(a .&. 0xFFFF00000000) `lsr` 32; w3=(a .&. 0xFFFF000000000000) `lsr` 48
-         in [MovRC () r (fromIntegral w0), MovK () r (fromIntegral w1) 16, MovK () r (fromIntegral w2) 32, MovK () r (fromIntegral w3) 48]
+m4 r a = [MovRC () r w0, MovK () r w1 16, MovK () r w2 32, MovK () r w3 48]
+  where [w0,w1,w2,w3]=take 4 $ fromIntegral<$>zipWith (\m e -> (a.&.m) `rotateR` e) masks ee
+        ee=[0,16..]; masks=iterate (*0x10000) 0xffff
 
 get :: Label -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Int
 get l =
