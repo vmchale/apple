@@ -426,6 +426,8 @@ vslop sz n = do
   where
     szSlop=16+fromIntegral n*sz
 
+idims rnk oRnk xR lX = [EAt (ADim xR (ConstI l) lX) | l <- take (fromIntegral rnk) [oRnk-1,oRnk-2..] ]
+
 plSlop :: Int64 -> Int64 -> [CE] -> CM (Temp, Temp, [CS ()], CS ())
 plSlop sz slopRnk dims = do
     slopP <- nI; slopSz <- nI; slopE <- nI
@@ -706,8 +708,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     , Just szD <- nSz ta, Just sz <- nSz tC = do
     szR <- nI; xd <- nI; i <- nI
     (plX, (lX, xR)) <- plA xs
-    let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk..(xRnk-1)]]
-    (slopP, slopSz, aSlop, pops) <- plSlop szD rnk slopDims
+    (slopP, slopSz, aSlop, pops) <- plSlop szD rnk (idims rnk xRnk xR lX)
     (y, wRet, pinch) <- rW tC (iXelem t 1 (Just a) sz)
     (_, ss) <- writeF f [AA slopP Nothing] y
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk-1)]]
@@ -755,8 +756,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     szR <- nI; szY <- nI
     i <- nI; j <- nI; kL <- nI; xd <- nI; td <- nI
     (plX, (lX, xR)) <- plA xs
-    let slopDims=[EAt (ADim xR (ConstI l) lX) | l <- [rnk0..(xRnk-1)]]
-    (slopP, slopSz, aSlop, pops) <- plSlop sz1 rnk0 slopDims
+    (slopP, slopSz, aSlop, pops) <- plSlop sz1 rnk0 (idims rnk0 xRnk xR lX)
     (lY0, ss0) <- writeF f [AA slopP Nothing] (IT y0)
     (lY, ss) <- writeF f [AA slopP Nothing] (IT y)
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk0-1)]]
