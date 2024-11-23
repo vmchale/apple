@@ -858,7 +858,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     oSz <- nI
     let oRnk=rnk-fromIntegral cr
     (oDims, complts, ds, pinchC, slopP, copyCell) <- loopCell cr ixs (xR, lX) rnk aSz
-    (y, wY, pinch) <- rW tC (iXelem t (ConstI oRnk) Nothing ySz)
+    (y, wY, pinch) <- rW tC (iXelem t (ConstI oRnk) (Just a) ySz)
     (_, ss) <- writeF f [AA slopP Nothing] y
     loop <- aall complts (Tmp<$>oDims) $ \di -> copyCell ++ ss ++ [wY di]
     pure (plX$pinchC$
