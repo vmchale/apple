@@ -268,7 +268,7 @@ addCF (stmt:stmts) = do
     pure ((stmt $> ControlAnn i (f []) (UD (uses stmt) IS.empty (defs stmt) IS.empty)):stmts')
 
 uE :: CE -> IS.IntSet
-uE ConstI{}      = IS.empty
+uE KI{}          = IS.empty
 uE LA{}          = IS.empty
 uE (EAt a)       = uA a
 uE Tmp{}         = IS.empty

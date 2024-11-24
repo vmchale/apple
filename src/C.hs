@@ -92,7 +92,7 @@ bPrec AndB=3; bPrec OrB=2; bPrec XorB=6; bPrec BEq=4
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing; mPrec (BI p) = Just$bPrec p
 fprec FPlus=Just 6;fprec FMinus=Just 6;fprec FTimes=Just 7; fprec FDiv=Just 7; fprec FExp=Just 8; fprec FMax=Nothing; fprec FMin=Nothing
 
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | ConstI !Int64 | CFloor (CFE FTemp Double CE)
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | KI !Int64 | CFloor (CFE FTemp Double CE)
         | LA !Int -- assembler data
         | DP Temp CE -- pointer, rank
 
@@ -100,7 +100,7 @@ instance Pretty CE where pretty=ps 0
 
 instance PS CE where
     ps _ (Tmp t)        = pretty t
-    ps _ (ConstI i)     = pretty i
+    ps _ (KI i)         = pretty i
     ps d (Bin op e0 e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <> pretty op <> ps (d'+1) e1)
                         | otherwise = parens (pretty op <+> ps 11 e0 <+> ps 11 e1)
     ps _ (EAt a)        = pretty a
@@ -111,7 +111,7 @@ instance PS CE where
 instance Show CE where show=show.pretty
 
 instance Num CE where
-    (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=ConstI . fromInteger
+    (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=KI . fromInteger
 
 type F1E=CFE FTemp Double CE; type F2E=CFE F2Temp (Double, Double) Void
 
