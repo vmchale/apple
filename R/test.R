@@ -1,6 +1,8 @@
 source("./apple.R")
 library(readr)
 
+set.seed(17)
+
 lafile<-function(f){str<-read_file(f);jit(str)}
 
 ncdf<-lafile("../math/ncdf.🍎")
