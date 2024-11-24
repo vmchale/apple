@@ -683,7 +683,7 @@ aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t a | tX@(Arr sh _) <- eAnn e, (A
     nR <- nI
     contents <- rfill f (AD t (Just a) (Just tX) Nothing Nothing (Just$Tmp nR)) [AI (AD xR l (Just tX) Nothing Nothing Nothing)]
     pure (plE$nR=:ev tX (xR,l):vSz sh t a (Tmp nR) sz++contents)
-aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t a | tXs@(Arr sh@(_ `Cons` Nil) tX) <- eAnn xs, Just sz <- nSz tX = do
+aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(Arr sh _) <- eAnn xs, Just sz <- nSz tX = do
     szR <- nI; nR <- nI; b <- nBT
     (plX, (lX, xsR)) <- plA xs
     (xR, rX, pinch) <- arg tX (\kϵ -> AElem xsR 1 lX (Tmp kϵ) sz)
@@ -695,7 +695,7 @@ aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t a | tXs@(Arr sh@(_ `Cons` Nil) t
   where
     w ty at tt      | isR ty = wt at tt
     w ty at (IT tt) | isΠ ty = Mv () at (TupM tt Nothing) (bT ty)
-aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t a | tXs@(Arr sh@(_ `Cons` Nil) tX) <- eAnn xs, Just sz <- nSz tX = do
+aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(Arr sh _) <- eAnn xs, Just sz <- nSz tX = do
     szR <- nI; nR <- nI; b <- nBT
     (plX, (lX, xsR)) <- plA xs
     (xR, rX, pinch) <- arg tX (iXelem xsR 1 lX sz)
