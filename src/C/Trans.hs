@@ -18,10 +18,9 @@ import           Data.Tuple.Extra                 (second3)
 import           Data.Word                        (Word64)
 import           GHC.Float                        (castDoubleToWord64)
 import           Nm
-import           Nm.IntMap
+import           Nm.IntMap                        as Nm
 import           Op
 import           Sh
-import           U
 
 data CSt = CSt { tempU       :: !Int
                , arrU        :: !AL
@@ -61,7 +60,7 @@ bB n = state (\(CSt t ar as l v b d d2 a f aas ts) -> let r=BTemp t in (r, CSt (
 
 {-# SCC getT2 #-}
 getT2 :: Nm a -> CSt -> Either FTemp F2Temp
-getT2 n@(Nm _ (U u) _) (CSt _ _ _ _ _ _ d d2 _ _ _ _) = case IM.lookup u d2 of {Just f2 -> Right f2; Nothing -> Left$getT d n}
+getT2 n (CSt _ _ _ _ _ _ d d2 _ _ _ _) = case Nm.lookup n d2 of {Just f2 -> Right f2; Nothing -> Left$getT d n}
 
 getT :: IM.IntMap b -> Nm a -> b
 getT st n = findWithDefault (error ("Internal error: variable " ++ show n ++ " not assigned to a temp.")) n st

@@ -7,10 +7,9 @@ import           Control.Monad.Trans.State.Strict (State, gets, modify, runState
 import           Data.Bifunctor                   (second)
 import qualified Data.IntMap                      as IM
 import           Nm
-import           Nm.IntMap
+import           Nm.IntMap                        as Nm
 import           R
 import           Ty
-import           U
 
 data ISt a = ISt { renames :: !Rs
                  , binds   :: IM.IntMap (E a)
@@ -79,9 +78,9 @@ iM (Let l (n, e') e) | not(hR e')= do
 iM (Def _ (n, e') e) = do
     eI <- iM e'
     bind n eI *> iM e
-iM e@(Var t (Nm _ (U i) _)) = do
+iM e@(Var t n) = do
     st <- gets binds
-    case IM.lookup i st of
+    case Nm.lookup n st of
         Just e' -> do {er <- rE e'; pure $ fmap (rwArr.aT (match (eAnn er) t)) er}
         Nothing -> pure e
 iM Dfn{}=desugar; iM ResVar{}=desugar; iM Parens{}=desugar; iM Ann{}=error "Internal error."
@@ -108,9 +107,9 @@ bM (EApp l e0 e1) = do
         Lam{} -> bM (EApp l e0' e1')
         _     -> pure $ EApp l e0' e1'
 bM (Lam l n e) = Lam l n <$> bM e
-bM e@(Var _ (Nm _ (U i) _)) = do
+bM e@(Var _ n) = do
     st <- gets binds
-    case IM.lookup i st of
+    case Nm.lookup n st of
         -- TODO: track if looked up once before (avoid spurious clones?)
         Just e' -> rE e' -- rE vs. match ... t?
         Nothing -> pure e
