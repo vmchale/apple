@@ -323,6 +323,9 @@ rW ty at | isΠ ty = do
     slopO <- nI
     pure $ let sz=bT ty in (IT slopO, \k -> Mv () (at k) (TupM slopO Nothing) sz, Just (sac slopO sz, popc sz))
 
+aiA slopD (xd,lX) i n sz = cpy (Raw slopD 0 Nothing) (Raw xd (i*n) lX) n sz
+aiR (td,l) (yRd,lY) n sz = [cpy (Raw td 0 l) (Raw yRd 0 lY) n sz, td+=(n*ConstI sz)]
+
 writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
@@ -1298,15 +1301,15 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t a
     , Arr xESh tEX <- tX, Arr yESh tEY <- tY, Arr xSh _ <- tXs, Arr ySh _ <- tYs
     , Just [xERnk,yERnk,xRnk,yRnk,oRnk] <- traverse staRnk [xESh,yESh,xSh,ySh,oSh]
     , Just [szXT,szYT,szZ] <- traverse nSz [tEX,tEY,tC] = do
-    slopXd <- nI; slopYd <- nI
+    xd <- nI; yd <- nI; slopXd <- nI; slopYd <- nI
     i <- nI; j <- nI; di <- nI; nX <- nI; nY <- nI
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
     (slopX,nXe,plSlopX,popSlopX) <- plSlop szXT xERnk (idims xERnk xRnk xR lX)
     (slopY,nYe,plSlopY,popSlopY) <- plSlop szYT yERnk (idims yERnk yRnk yR lY)
     (z, wZ, pinch) <- rW tC (iXelem t (ConstI oRnk) (Just a) szZ)
     (_, ss) <- writeF op [AA slopX, AA slopY] z
-    let loop = [ cpy (Raw slopXd 0 Nothing) (AElem xR (ConstI xRnk) lX (Tmp i*Tmp nXe)) (Tmp nXe) szXT
-               , cpy (Raw slopYd 0 Nothing) (AElem yR (ConstI yRnk) lY (Tmp j*Tmp nYe)) (Tmp nYe) szYT
+    let loop = [ aiA slopXd (xd,lX) (Tmp i) (Tmp nXe) szXT
+               , aiA slopYd (yd,lY) (Tmp j) (Tmp nYe) szYT
                ] ++ ss ++ [wZ di, di+=1]
     (dtxs,dxss) <- plDim (xRnk-xERnk) (xR,lX)
     (dtys,dyss) <- plDim (yRnk-yERnk) (yR,lY)
@@ -1317,7 +1320,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t a
         :diml (t, Just a) (Tmp<$>(dtxs++dtys))
         ++plSlopX++plSlopY
         ++slopXd=:DP slopX (ConstI xERnk):slopYd=:DP slopY (ConstI yERnk)
-        :sas [pinch] [di=:0, For () i 0 ILt (Tmp nX) [For () j 0 ILt (Tmp nY) loop]]
+        :sas [pinch] [xd=:DP xR (ConstI xRnk), yd=:DP yR (ConstI yRnk), di=:0, For () i 0 ILt (Tmp nX) [For () j 0 ILt (Tmp nY) loop]]
         ++[popSlopX,popSlopY])
   where
     tXs=eAnn xs; tYs=eAnn ys
