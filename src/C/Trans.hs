@@ -269,7 +269,7 @@ writeF :: E (T ())
        -> [Arg]
        -> RT
        -> CM (Maybe AL, [CS ()])
-writeF (Lam _ x e) (AA r l:rs) ret = addAVar x (l,r) *> writeF e rs ret
+writeF (Lam _ x e) (AA r:rs) ret = addAVar x (Nothing,r) *> writeF e rs ret
 writeF (Lam _ x e) (IPA r:rs) ret = addVar x r *> writeF e rs ret
 writeF (Lam _ x e) (FA fr:rs) ret = addD x fr *> writeF e rs ret
 writeF (Lam _ x e) (BA r:rs) ret = addB x r *> writeF e rs ret
@@ -326,7 +326,7 @@ rW ty at | isΠ ty = do
 writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
-data Arg = IPA !Temp | FA !FTemp | AA !Temp (Maybe AL) | BA !BTemp
+data Arg = IPA !Temp | FA !FTemp | AA !Temp | BA !BTemp
 data RT = IT !Temp | FT !FTemp | PT !BTemp
 
 mt :: ArrAcc -> RT -> CS ()
@@ -710,7 +710,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     (plX, (lX, xR)) <- plA xs
     (slopP, slopSz, aSlop, pops) <- plSlop szD rnk (idims rnk xRnk xR lX)
     (y, wRet, pinch) <- rW tC (iXelem t 1 (Just a) sz)
-    (_, ss) <- writeF f [AA slopP Nothing] y
+    (_, ss) <- writeF f [AA slopP] y
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk-1)]]
         dimsFromIn=ConstI$xRnk-rnk
         oRnk=xRnk-rnk
@@ -757,8 +757,8 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     i <- nI; j <- nI; kL <- nI; xd <- nI; td <- nI
     (plX, (lX, xR)) <- plA xs
     (slopP, slopSz, aSlop, pops) <- plSlop sz1 rnk0 (idims rnk0 xRnk xR lX)
-    (lY0, ss0) <- writeF f [AA slopP Nothing] (IT y0)
-    (lY, ss) <- writeF f [AA slopP Nothing] (IT y)
+    (lY0, ss0) <- writeF f [AA slopP] (IT y0)
+    (lY, ss) <- writeF f [AA slopP] (IT y)
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk0-1)]]
         yDims=[EAt (ADim y0 (ConstI l) lY0) | l <- [0..(rnk1-1)]]
         dimsFromIn=ConstI$xRnk-rnk0
@@ -815,7 +815,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     let oRnk=yRnk-fromIntegral cr
     (x, pAX, pinch) <- arg tX (\ixϵ -> AElem xR (ConstI xRnk) lX (Tmp ixϵ) xSz)
     (oDims, complts, dps, pinchC, slopP, copyCell) <- loopCell cr ixs (yR, lY) yRnk ySz
-    (_, ss) <- writeF op [ra x, AA slopP Nothing] zR
+    (_, ss) <- writeF op [ra x, AA slopP] zR
     oSz <- nI
     loop <- aall complts (Tmp<$>oDims) $ \ix -> pAX ix:copyCell ++ ss ++ [wt (AElem t (ConstI oRnk) (Just a) (Tmp ix) cSz) zR]
     pure (plX$plY$pinchC$
@@ -837,7 +837,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     let oRnk=ConstI$yRnk+opRnk-fromIntegral cr
     (x, pAX, pinch) <- arg tX (\ixϵ -> AElem xR (ConstI xRnk) lX (Tmp ixϵ) xSz)
     (oDims, complts, ds, pinchC, slopP, copyCell) <- loopCell cr ixs (yR, lY) yRnk ySz
-    (lZ, ss) <- writeF op [ra x, AA slopP Nothing] (IT zR)
+    (lZ, ss) <- writeF op [ra x, AA slopP] (IT zR)
     loop <- aall complts (Tmp<$>oDims) $ \ix -> pAX ix:copyCell ++ ss ++ [CpyE () (Raw td 0 (Just a) cSz) (AElem zR (ConstI opRnk) lZ 0 undefined) (Tmp zSz) cSz, td+=(Tmp zSz*ConstI cSz)]
     (dots, doss) <- plDim opRnk (zR, lZ)
     pure (plX$plY$pinchC$
@@ -859,7 +859,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     let oRnk=rnk-fromIntegral cr
     (oDims, complts, ds, pinchC, slopP, copyCell) <- loopCell cr ixs (xR, lX) rnk aSz
     (y, wY, pinch) <- rW tC (iXelem t (ConstI oRnk) (Just a) ySz)
-    (_, ss) <- writeF f [AA slopP Nothing] y
+    (_, ss) <- writeF f [AA slopP] y
     loop <- aall complts (Tmp<$>oDims) $ \di -> copyCell ++ ss ++ [wY di]
     pure (plX$pinchC$
         PlProd () oSz (Tmp<$>oDims)
@@ -874,7 +874,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     yR <- nI; ySz <- nI; td <- nI; oSz <- nI
     let oRnk=ConstI$xRnk+opRnk-fromIntegral cr
     (oDims, complts, ds, pinchC, slopP, copyCell) <- loopCell cr ixs (xR, lX) xRnk aSz
-    (lY, ss) <- writeF f [AA slopP Nothing] (IT yR)
+    (lY, ss) <- writeF f [AA slopP] (IT yR)
     let loop=forAll complts (Tmp<$>oDims)
                 $ copyCell ++ ss ++ [CpyE () (Raw td 0 (Just a) cSz) (AElem yR (ConstI opRnk) lY 0 undefined) (Tmp ySz) cSz, td+=(Tmp ySz*ConstI cSz)]
     (dots, doss) <- plDim opRnk (yR, lY)
@@ -1187,7 +1187,7 @@ aeval (EApp oTy@(Arr oSh _) (EApp _ (Builtin _ (DI n)) op) xs) t a | Just (ot, o
     szR <- nI; sz'R <- nI; fR <- rtemp ot
     (slopP, aSlop, pops) <- vslop xSz n
     td <- nI
-    (_, ss) <- writeF op [AA slopP Nothing] fR
+    (_, ss) <- writeF op [AA slopP] fR
     (plX, (lX, aP)) <- plA xs
     loop <- afor oSh 0 ILt (Tmp sz'R) $ \i ->
               CpyE () (AElem slopP 1 Nothing 0 xSz) (AElem aP 1 lX (Tmp i) xSz) (fromIntegral n) xSz
@@ -1199,8 +1199,8 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (DI n)) op) xs) t a | Just ((_, 1), (
     let szX=bT tX; szO=bT tO; oRnk=ConstI$1+cRnk; neϵ=fromIntegral n
     (plX, (lX, xR)) <- plA xs
     (slopP, aSlop, pops) <- vslop szX n
-    (lZ0, ss0) <- writeF op [AA slopP Nothing] (IT z0R)
-    (lZ, ss) <- writeF op [AA slopP Nothing] (IT zR)
+    (lZ0, ss0) <- writeF op [AA slopP] (IT z0R)
+    (lZ, ss) <- writeF op [AA slopP] (IT zR)
     (dots, plOds) <- plDim cRnk (z0R, lZ0)
     loop <- afor oSh 0 ILt (Tmp d1) $ \i ->
                 CpyE () (AElem slopP 1 Nothing 0 szX) (AElem xR 1 lX (Tmp i) szX) neϵ szX
@@ -1302,7 +1302,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t a
     (slopX,nXe,plSlopX,popSlopX) <- plSlop szXT xERnk (idims xERnk xRnk xR lX)
     (slopY,nYe,plSlopY,popSlopY) <- plSlop szYT yERnk (idims yERnk yRnk yR lY)
     (z, wZ, pinch) <- rW tC (iXelem t (ConstI oRnk) (Just a) szZ)
-    (_, ss) <- writeF op [AA slopX Nothing, AA slopY Nothing] z
+    (_, ss) <- writeF op [AA slopX, AA slopY] z
     let loop = [ CpyE () (Raw slopXd 0 Nothing szXT) (AElem xR (ConstI xRnk) lX (Tmp i*Tmp nXe) szXT) (Tmp nXe) szXT
                , CpyE () (Raw slopYd 0 Nothing szYT) (AElem yR (ConstI yRnk) lY (Tmp j*Tmp nYe) szYT) (Tmp nYe) szYT
                ] ++ ss ++ [wZ di, di+=1]
@@ -1365,7 +1365,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv is)) f) x) t a
     let slopSz=product is; slopRnk=length is; slopE=fromIntegral (slopSz*fromIntegral oSz+(slopRnk+1)*8); slopDims=fromIntegral<$>is
         rnk=ConstI oRnk
     z <- rtemp tC; o <- rtemp tX
-    (_, ss) <- writeF f [AA slopP Nothing] z
+    (_, ss) <- writeF f [AA slopP] z
     (sts, plS) <- offByDim (reverse dts)
     let _:strides = sts; sss=init plS
     extrWindow <- aall iw (ConstI . fromIntegral<$>is) $ \j ->

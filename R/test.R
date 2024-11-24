@@ -54,3 +54,7 @@ stopifnot(all(B%*%C==run(m6,B,C)))
 mT6<-jit("[(x::(Arr (64×64) float))%.|:(y::Arr (64×64) float)]")
 (B%*%t(C))[,55]
 run(mT6,B,C)[,55]
+
+covar<-lafile("../math/stats/covar.🍏")
+X <- matrix(rnorm(60),15,4);XT<-t(X)
+cov(X);run(covar,XT)
