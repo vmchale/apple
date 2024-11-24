@@ -711,7 +711,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     , Just xRnk <- staRnk xSh
     , Just (ta, rnk) <- tRnk tD
     , Just szD <- nSz ta, Just sz <- nSz tC = do
-    szR <- nI; xd <- nI; i <- nI
+    szR <- nI; slopPd <- nI; xd <- nI; i <- nI
     (plX, (lX, xR)) <- plA xs
     (slopP, slopSz, aSlop, pops) <- plSlop szD rnk (idims rnk xRnk xR lX)
     (y, wRet, pinch) <- rW tC (iXelem t 1 (Just a) sz)
@@ -719,11 +719,11 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     let xDims=[EAt (ADim xR (ConstI l) lX) | l <- [0..(rnk-1)]]
         dimsFromIn=ConstI$xRnk-rnk
         oRnk=xRnk-rnk
-    loop <- afors xSh 0 ILt (Tmp szR) $ \k -> cpy (AElem slopP (ConstI rnk) Nothing 0) (Raw xd (Tmp i) lX) (Tmp slopSz) szD:ss++[wRet k, i+=Tmp slopSz]
+    loop <- afors xSh 0 ILt (Tmp szR) $ \k -> aiA slopPd (xd,lX) (Tmp i) (ConstI szD) szD:ss++[wRet k, i+=Tmp slopSz]
     pure (plX$aSlop++PlProd () szR xDims
         :Ma () oSh a t (ConstI oRnk) (Tmp szR) sz
             :CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) dimsFromIn
-        :xd=:DP xR (ConstI xRnk):i=:0
+        :xd=:DP xR (ConstI xRnk):slopPd=:DP slopP (ConstI rnk):i=:0
         :m'p pinch
             (loop:[pops]))
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
