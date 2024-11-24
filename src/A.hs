@@ -13,16 +13,22 @@ module A ( T (..)
          , rLi
          ) where
 
-import           Control.DeepSeq   (NFData)
-import           Data.Bifunctor    (first)
-import           Data.Foldable     (toList)
-import qualified Data.IntMap       as IM
-import           GHC.Generics      (Generic)
+import           Control.DeepSeq                  (NFData)
+import           Control.Monad.Trans.State.Strict (evalState, get, modify, put)
+import           Data.Bifunctor                   (first)
+import           Data.Foldable                    (toList)
+import           Data.Functor                     (($>))
+import qualified Data.IntMap                      as IM
+import qualified Data.Set                         as S
+import qualified Data.Text                        as T
+import           Data.Tuple.Extra                 (third3)
+import           GHC.Generics                     (Generic)
 import           Nm
-import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace,
-                                    rbracket, tupled, vsep, (<+>))
+import           Prettyprinter                    (Doc, Pretty (..), align, braces, brackets, colon, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe,
+                                                   punctuate, rbrace, rbracket, tupled, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Sh
+import           U
 
 data C = IsNum | IsOrd | IsEq
        | HasBits deriving (Generic, Eq, Ord)
@@ -56,7 +62,32 @@ data T a = Arr (Sh a) (T a)
 
 instance Show (T a) where show=show.pretty
 
-instance Pretty (T a) where pretty=ps 0
+ppt = flip evalState (S.empty, IM.empty, 'a').pp where
+    pp F             = pure F
+    pp I             = pure I
+    pp B             = pure B
+    pp t@Li{}        = pure t
+    pp (TVar n)      = TVar<$>fr n
+    pp (Arrow t₀ t₁) = Arrow<$>pp t₀<*>pp t₁
+    pp (Arr sh t)    = Arr sh<$>pp t
+    pp (P ts)        = P<$>traverse pp ts
+    pp (Ρ n ts)      = Ρ<$>fr n<*>traverse pp ts
+
+    fr (Nm t (U i) x) = do
+        (ms,u,c) <- get
+        case IM.lookup i u of
+            Just n                 -> pure (Nm n (U i) x)
+            _ | t `S.notMember` ms -> put (S.insert t ms, IM.insert i t u, c) $> Nm t (U i) x
+            _                      -> do {t' <- next; modify (bimap12 (S.insert t') (IM.insert i t')) $> Nm t' (U i) x}
+
+    next = do
+        (ms,_,c) <- get
+        let t=T.singleton c
+        if t `S.notMember` ms
+            then pure t
+            else modify (third3 succ) *> next
+
+instance Pretty (T a) where pretty=ps 0.ppt
 
 instance PS (T a) where
     ps d (Arr (i `Cons` Nil) t) = group (parensp (d>appPrec) ("Vec" <+> ps (appPrec+1) i <+> ps (appPrec+1) t))
@@ -393,6 +424,8 @@ data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          | Ann { eAnn :: a, eEe :: E a, eTy :: T a }
          | Id { eAnn :: a, eIdiom :: Idiom }
          deriving (Functor, Generic)
+
+bimap12 f g ~(x,y,z) = (f x,g y,z)
 
 instance NFData Builtin where
 instance NFData ResVar where

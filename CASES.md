@@ -24,7 +24,4 @@
 - [ ] various things only compile when rank is known...
 - [ ] more rank cases...
 # Types
-- [ ] scan-with-seed accept differently typed seed
-- [ ] fold-with-seed generalize type
-- [ ] also the folds ^ are backwards lol
 - [ ] `hasbits` instance for boolean arrays?
