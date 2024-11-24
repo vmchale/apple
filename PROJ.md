@@ -11,5 +11,8 @@
 - [ ] efficient index-associated-with-loop: specify "at" addressed bound to
   for-loop, which is turned into something w/ strength reduction, post-index
     offset
+    - [ ] see index in debug, no need for strength reduction...
 - [ ] DNA type
 - [ ] C type
+- [ ] Einstein notation
+- [ ] specify iteration by wallpaper group...
