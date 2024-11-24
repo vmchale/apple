@@ -41,6 +41,7 @@
 - [ ] generalize "diagonal"?
 - [ ] fold-along-diagonal for poly mult. https://code.jsoftware.com/wiki/Vocabulary/slashdot
 ## Syntax
+- [ ] · for dot product?
 - [ ] https://en.wiktionary.org/wiki/Appendix:APL
 - [x] `Mᵢⱼ` should parse as `Arr (i `Cons` j `Cons` Nil)` maybe? (subscript
   unicode block)
@@ -74,6 +75,14 @@ T16 = T13.dim[0]
 - [ ] Use `Word64` for sets of registers
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+```
+ > \xs.\rs. [(-y)'x]`{1∘[2],0} xs (rs::Vec 2 float)
+λxs. (λrs. ((λx. (λy. (λx. x - y) ' x)) `{1∘[2],0} xs) rs)
+    : Arr (2 × j) float → Vec 2 float → Arr (sh ⧺ j) float
+ > \xs.\rs. [(-x)'y]`{0,1∘[2]} (rs::Vec 2 float) xs
+λxs. (λrs. ((λx. (λy. (λx. x - x) ' y)) `{0,1∘[2]} rs) xs)
+    : Arr (2 × j) float → Vec 2 float → Arr (2 × j) float
+```
 - [ ]
 ```
  > :yank ix test/data/ixGen.🍏
@@ -185,5 +194,7 @@ o → o → o
 - [ ] cellular automata
   - [ ] https://en.wikipedia.org/wiki/Rule_110
   - [ ] https://en.wikipedia.org/wiki/Rule_30
+- [ ] https://www.bathsheba.com/math/gyroid/
+- [ ] https://oeis.org/A000055
 # Debug
 - [ ] sanity check negative dims
