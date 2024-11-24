@@ -478,7 +478,7 @@ data AD = AD { eigen :: !Temp, alabel :: !(Maybe AL), eit :: Maybe (T ())
              , arrn :: Maybe CE
              }
 
-data RA = AI !AD | NA !RT | ΠA !Temp !Int64
+data RA = AI !AD | NA !RT | ΠA !Temp
 
 fill :: E (T ()) -> AD -> [RA] -> CM ([Maybe (CS (), CS ())], [CS ()])
 fill (EApp _ (Builtin _ Zip) op) (AD t lA (Just (Arr sh _)) _ _ _) [AI (AD aPX lX _ _ _ (Just n)), AI (AD aPY lY _ _ _ _)]
@@ -532,11 +532,11 @@ rfill (Builtin _ CatE) (AD t lA _ _ (Just sz) _) [AI (AD xR lX _ _ _ (Just xn)),
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) xn sz, cpy (AElem t 1 lA xn) (AElem yR 1 lY 0) yn sz]
 rfill (Builtin _ ConsE) (AD t lA _ _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ _ (Just n))] =
     pure [wt (AElem t 1 lA 0 sz) xR, cpy (AElem t 1 lA 1) (AElem xsR 1 lX 0) n sz]
-rfill (Builtin _ ConsE) (AD t lA _ _ _ _) [ΠA xR sz, AI (AD xsR lX _ _ _ (Just n))] =
+rfill (Builtin _ ConsE) (AD t lA _ _ _ _) [ΠA xR, AI (AD xsR lX _ _ (Just sz) (Just n))] =
     pure [Mv () (AElem t 1 lA 0 sz) (TupM xR Nothing) sz, cpy (AElem t 1 lA 1) (AElem xsR 1 lX 0) n sz]
 rfill (Builtin _ Snoc) (AD t lA _ _ (Just sz) _) [NA xR, AI (AD xsR lX _ _ _ (Just n))] =
     pure [wt (AElem t 1 lA n sz) xR, cpy (AElem t 1 lA 0) (AElem xsR 1 lX 0) n sz]
-rfill (Builtin _ Snoc) (AD t lA _ _ _ _) [ΠA xR sz, AI (AD xsR lX _ _ _ (Just n))] =
+rfill (Builtin _ Snoc) (AD t lA _ _ _ _) [ΠA xR, AI (AD xsR lX _ _ (Just sz) (Just n))] =
     pure [Mv () (AElem t 1 lA n sz) (TupM xR Nothing) sz, cpy (AElem t 1 lA 0) (AElem xsR 1 lX 0) n sz]
 rfill (Builtin _ Cyc) (AD t lA (Just (Arr oSh _)) _ (Just sz) _) [AI (AD xR lX _ _ _ (Just nx)), NA (IT nR)] = do
     i <- nI; ix <- nI
@@ -556,7 +556,7 @@ rfill (EApp _ (Builtin _ Outer) op) (AD t lA _ _ _ _) [AI (AD xR lX (Just tXs) _
 rfill (Builtin _ Rot) (AD t lA _ _ _ _) [AI (AD xsR lX _ _ (Just sz) (Just nx)), NA (IT nR)] = do
     c <- nI
     pure [Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=nx], c =: (nx-Tmp nR), cpy (AElem t 1 lA 0) (AElem xsR 1 lX (Tmp nR)) (Tmp c) sz, cpy (AElem t 1 lA (Tmp c)) (AElem xsR 1 lX 0) (Tmp nR) sz]
-rfill (Builtin _ Re) (AD t lA (Just (Arr sh _)) _ _ _) [NA (IT nR), ΠA xR sz] =
+rfill (Builtin _ Re) (AD t lA (Just (Arr sh _)) _ (Just sz) _) [NA (IT nR), ΠA xR] =
     (:[]) <$> afor sh 0 ILt (Tmp nR) (\k -> [Mv () (AElem t 1 lA (Tmp k) sz) (TupM xR Nothing) sz])
 rfill (Builtin _ RevE) (AD t lA (Just (Arr oSh _)) _ (Just sz) _) [AI (AD xR lX _ _ _ (Just n))] =
     (:[]) <$> afor oSh 0 ILt n (\i -> [Mv () (AElem t 1 lA (Tmp i) sz) (AElem xR 1 lX (n-Tmp i-1) sz) sz])
@@ -1112,7 +1112,7 @@ aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t a | tX <- eAnn x, i
     xR <- nI; nR <- nI; nϵR <- nI
     (_, mSz, _, plX) <- πe x xR
     (plXs, (lX, xsR)) <- plA xs
-    contents <- rfill g (AD t (Just a) Nothing Nothing (Just sz) Nothing) [ΠA xR sz, AI (AD xsR lX Nothing Nothing Nothing (Just$Tmp nϵR))]
+    contents <- rfill g (AD t (Just a) Nothing Nothing (Just sz) Nothing) [ΠA xR, AI (AD xsR lX Nothing Nothing (Just sz) (Just$Tmp nϵR))]
     pure (m'sa xR mSz++plX++plXs (nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents++m'pop mSz))
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t a | Just (tX, xRnk) <- tRnk (eAnn x), tXs <- eAnn xs, Just (_, xsRnk) <- tRnk tXs = do
     (plX, (lX, xR)) <- plA x; (plXs, (lXs, xsR)) <- plA xs
@@ -1131,7 +1131,7 @@ aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t a | tX <- eAnn x, is
     xR <- nI; nR <- nI; nϵR <- nI
     (_, mSz, _, plX) <- πe x xR
     (plXs, (lX, xsR)) <- plA xs
-    contents <- rfill g (AD t (Just a) Nothing Nothing Nothing Nothing) [ΠA xR sz, AI (AD xsR lX Nothing Nothing Nothing (Just$Tmp nϵR))]
+    contents <- rfill g (AD t (Just a) Nothing Nothing Nothing Nothing) [ΠA xR, AI (AD xsR lX Nothing Nothing (Just sz) (Just$Tmp nϵR))]
     pure (plXs$m'sa xR mSz++plX++nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents++m'pop mSz)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t a | Just (tX, xRnk) <- tRnk (eAnn x), tXs <- eAnn xs, Just (_, xsRnk) <- tRnk tXs = do
     (plX, (lX, xR)) <- plA x; (plXs, (lXs, xsR)) <- plA xs
@@ -1149,7 +1149,7 @@ aeval (EApp oTy@(Arr sh _) (EApp _ g@(Builtin _ Re) n) x) t a | tX <- eAnn x, is
     xR <- nI
     (plN, nR) <- plEV n
     (_, mSz, _, plX) <- πe x xR
-    contents <- rfill g (AD t (Just a) (Just oTy) Nothing Nothing Nothing) [NA (IT nR), ΠA xR sz]
+    contents <- rfill g (AD t (Just a) (Just oTy) Nothing (Just sz) Nothing) [NA (IT nR), ΠA xR]
     pure (plN$vSz sh t a (Tmp nR) sz++m'sa xR mSz++plX++contents++m'pop mSz)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Re) n) x) t a | (Arr sh tO) <- eAnn x, sz <- bT tO = do
     (plN, nR) <- plEV n; (plX, (lX, xR)) <- plA x
