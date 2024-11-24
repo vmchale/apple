@@ -1,1 +1,1 @@
-[(+)/ ((*)`(x::Vec n float) y)]
+[(+)/(*)`(x::Vec n float) y]
