@@ -2,7 +2,7 @@
 
 -- first IR with for loops and array accesses, inspired by C
 module C ( Temp (..), FTemp (..), F2Temp (..), BTemp (..)
-         , ArrAcc (..)
+         , TT (..), TStore, ArrAcc (..)
          , CE (..), CFE (..), F1E, F2E
          , PE (..)
          , CS (..)
@@ -156,6 +156,11 @@ instance (Pretty x, Pretty e, Pretty t, PS e) => PS (CFE t x e) where
 
 instance (Pretty x, PS e, Pretty t, Pretty e) => Show (CFE t x e) where show=show.pretty
 
+data TT = TI !Temp | TA !Temp (Maybe AL) | TF !FTemp | TB !BTemp
+type TStore = [TT]
+
+prettyTS = tupled.fmap (\case {TI t -> pretty t; TA t _ -> pretty t; TF t -> pretty t; TB b -> pretty b})
+
 infix 9 =:
 
 (=:) = MT ()
@@ -175,6 +180,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | MT { lann :: a, tDest :: Temp, tSrc :: CE }
           | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE FTemp Double CE }
           | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: CFE F2Temp (Double, Double) Void }
+          | ATT { lann :: a, πDest :: TStore, addr :: ArrAcc }
           | Comb { lann :: a, op2 :: FBin, ftDest :: FTemp, f2Src :: F2Temp }
           | DS { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp } | Ins { lann :: a, f2dest :: F2Temp, fSrc :: FTemp }
           | MB { lann :: a, bDest :: BTemp, pSrc :: PE }
@@ -182,6 +188,7 @@ data CS a = For { lann :: a, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper
           | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE FTemp Double CE }
           | Wr2F { lann :: a, addr :: ArrAcc, wrF2 :: CFE F2Temp (Double, Double) Void }
           | WrP { lann :: a, addr :: ArrAcc , wrB :: PE }
+          | WrT { lann :: a, addr :: ArrAcc, wrT :: TStore }
           | Ma { lann :: a, ash :: Sh (), label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
           | Aa { lann :: a, label :: AL, dTemp, srcTemp :: Temp }
           | Free Temp
@@ -219,11 +226,13 @@ pL f (MX l t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e 
 pL f (MX2 l t (FBin FPlus (FTmp t') e)) | t==t' = pretty t <+> "+=" <+> pretty e <> f l
 pL f (MX l t e)             = pretty t <+> "=" <+> pretty e <> f l
 pL f (MX2 l t e)            = pretty t <+> "=" <+> pretty e <> f l
+pL f (ATT l tt at)          = prettyTS tt <+> "=" <+> pretty at <> f l
 pL f (MB l t e)             = pretty t <+> "=" <+> pretty e <> f l
 pL f (Wr l a e)             = pretty a <+> "=" <+> pretty e <> f l
 pL f (WrF l a e)            = pretty a <+> "=" <+> pretty e <> f l
 pL f (Wr2F l a e)           = pretty a <+> "=" <+> pretty e <> f l
 pL f (WrP l a e)            = pretty a <+> "=" <+> pretty e <> f l
+pL f (WrT l a tt)           = pretty a <+> "=" <+> prettyTS tt <> f l
 pL _ (Free t)               = "free" <+> pretty t
 pL f (Ma l _ _ t rnk e sz)  = pretty t <+> "=" <+> "alloc" <> parens ("rnk=" <> pretty rnk <> comma <+> pretty e <> "*" <> pretty sz) <> f l
 pL f (Aa l _ d s)           = pretty d <+> "=" <+> "a@" <> pretty s <> f l

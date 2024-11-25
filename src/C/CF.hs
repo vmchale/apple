@@ -304,12 +304,15 @@ uA (AElem _ r l ei _) = m'insert l (uE r<>uE ei)
 uA (Raw _ e l _)      = m'insert l (uE e)
 uA (At _ ss ixs l _)  = m'insert l (uE@<>ss<>uE@<>ixs)
 
+uT (TA _ (Just l)) = singleton l; uT _ = IS.empty
+
 uses :: CS a -> IS.IntSet
 uses (Ma _ _ _ _ r n _)    = uE r<>uE n
 uses MaΠ{}                 = IS.empty
 uses (MX _ _ e)            = uF e
 uses (MX2 _ _ e)           = uF2 e
 uses (Wr _ a e)            = uA a <> uE e
+uses (WrT _ a tt)          = uA a <> uT@<>tt
 uses (RA _ l)              = singleton l
 uses (Cmov _ e0 _ e1)      = uB e0<>uE e1
 uses (Fcmov _ e0 _ e1)     = uB e0<>uF e1
@@ -318,6 +321,7 @@ uses (Wr2F _ a e)          = uA a <> uF2 e
 uses (Cset _ e _)          = uB e
 uses (MT _ _ e)            = uE e
 uses (MB _ _ e)            = uB e
+uses (ATT _ rs a)          = uT@<>rs<>uA a
 uses Comb{}                = IS.empty
 uses DS{}                  = IS.empty
 uses Ins{}                 = IS.empty
