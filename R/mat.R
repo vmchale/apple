@@ -5,7 +5,7 @@ x<-runif(10000,0,1);y<-runif(10000,0,1)
 microbenchmark(x%*%y)
 microbenchmark(sum(x*y))
 
-dp<-jit("[(+)/ ((*)`(x::Vec n float) y)]")
+dp<-jit("[(+)/(*)`(x::Vec n float) y]")
 microbenchmark(run(dp,x,y))
 
 A<-matrix(runif(1024,0,1),32);x<-runif(32,0,1)
