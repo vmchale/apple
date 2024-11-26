@@ -1351,12 +1351,12 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <-
     pure (plN$vSz sh t a (Tmp nR) sz++plS++[loop])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | isΠR (eAnn seed) = do
     (plN, nE) <- plC n
-    td <- nI; acc <- nI
+    td <- nI; acc <- nI; acc0 <- nI
     (szs,mP,_,plS) <- πe seed acc
     let πsz=last szs
-    (_, ss) <- writeF op [IPA acc] (IT acc)
-    loop <- afor sh 0 ILt nE $ \i -> Mv () (Raw td (Tmp i) (Just a) πsz) (TupM acc Nothing) πsz:ss
-    pure (plN$vSz sh t a nE πsz++m'sa acc mP++plS++td=:DP t 1:loop:m'pop mP)
+    (_, ss) <- writeF op [IPA acc] (IT acc0)
+    loop <- afor sh 0 ILt nE $ \i -> Mv () (Raw td (Tmp i) (Just a) πsz) (TupM acc Nothing) πsz:ss++[Mv () (TupM acc Nothing) (TupM acc0 Nothing) πsz]
+    pure (plN$vSz sh t a nE πsz++m'sa acc mP++m'sa acc0 mP++plS++td=:DP t 1:loop:m'pop mP++m'pop mP)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv is)) f) x) t a
     | (Arrow _ tC) <- eAnn f
     , Just (tX, xRnk) <- tRnk (eAnn x)
