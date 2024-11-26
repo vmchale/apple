@@ -12,7 +12,7 @@ import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.List                        (find, scanl')
+import           Data.List                        (find, genericLength, scanl')
 import           Data.Maybe                       (catMaybes)
 import           Data.Tuple.Extra                 (second3)
 import           Data.Word                        (Word64)
@@ -582,7 +582,7 @@ maa (Id _ (AShLit ns es)) | Just ws <- mIFs es = do
     -- TODO: boolean lits
     pure (t, Nothing, [t =: LA n])
   where
-    rnk=fromIntegral$length ns
+    rnk=genericLength ns
 maa e = do {t <- nI; a <- nextArr t; (t,Just a,) <$> aeval e t a}
 
 aeval :: E (T ()) -> Temp -> AL -> CM [CS ()]
@@ -597,14 +597,14 @@ aeval (Cond _ (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e0 e1) t a | Just
 aeval (EApp (Arr sh F) (EApp _ (Builtin _ A.R) e0) e1) t a | Just ixs <- staIx sh = do
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     xR <- nF; scaleR <- nF
-    let rnk=fromIntegral(length ixs); n=product ixs
+    let rnk=genericLength ixs; n=product ixs
     loop <- afors sh 0 ILt (KI n) $ \k ->
               [FRnd () xR, MX () xR (FTmp scaleR*FTmp xR+e0e), WrF () (AElem t rnk (Just a) (Tmp k) 8) (FTmp xR)]
     pure (plE0 $ plE1 (Ma () sh a t rnk (KI n) 8:diml (t, Just a) (KI<$>ixs)++MX () scaleR (e1e-e0e):[loop]))
 aeval (EApp (Arr sh I) (EApp _ (Builtin _ A.R) e0) e1) t a | Just ixs <- staIx sh = do
     scaleR <- nI; iR <- nI
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
-    let rnk=fromIntegral$length ixs; n=product ixs
+    let rnk=genericLength ixs; n=product ixs
     loop <- afors sh 0 ILt (KI n) $ \k ->
               [Rnd () iR, iR =: (Bin IRem (Tmp iR) (Tmp scaleR) + e0e), Wr () (AElem t rnk (Just a) (Tmp k) 8) (Tmp iR)]
     pure (plE0$plE1$Ma () sh a t rnk (KI n) 8:diml (t, Just a) (KI<$>ixs)++scaleR=:(e1e-e0e+1):[loop])
@@ -1182,6 +1182,14 @@ aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ ScanS) op) seed) e) t a | (
     pure (plE$n =: (ev tXs (aP,l)+1):vSz oSh t a (Tmp n) xSz++sas pinch (plS++loop))
   where
     tXs=eAnn e
+aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ ScanS) op) seed) e) t a | (Arrow tX (Arrow tY _)) <- eAnn op, isΠ tX, xSz <- bT tX, nind tY = do
+    acc <- nI; n <- nI
+    (_, mSz, _, plS) <- πe seed acc
+    (plE, (l, aP)) <- plA e
+    (pinch, loop) <- fill g (AD t (Just a) Nothing Nothing Nothing (Just$Tmp n)) [ΠA acc, AI (AD aP l (Just tXs) Nothing (Just xSz) Nothing)]
+    pure (plE$n =: (ev tXs (aP,l)+1):vSz oSh t a (Tmp n) xSz++m'sa acc mSz++sas pinch (plS++loop)++m'pop mSz)
+  where
+    tXs=eAnn e
 aeval (EApp oTy@(Arr sh _) g@(EApp _ (Builtin _ Scan) op) xs) t a | (Arrow tAcc (Arrow tX _)) <- eAnn op, Just accSz <- rSz tAcc, Just xSz <- rSz tX = do
     acc <- rtemp tAcc; x <- rtemp tX; n <- nI
     (plE, (l, aP)) <- plA xs
@@ -1248,7 +1256,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Rot) n) xs) t a | Just (tX, xRnk) <- 
         :[cpy (AElem t rnkE (Just a) 0) (AElem xR rnkE lX (Tmp nR*Tmp szR)) (Tmp c*Tmp szR) sz, cpy (AElem t rnkE (Just a) (Tmp c*Tmp szR)) (AElem xR rnkE lX 0) (Tmp nR*Tmp szR) sz])
                                                          | otherwise = unsupported
 aeval (Id (Arr sh at) (AShLit ns es)) t a | Just ty <- nt at, sz <- bT ty = do
-    let rnk=fromIntegral$length ns; n=fromIntegral$product ns
+    let rnk=genericLength ns; n=fromIntegral$product ns
     tt <- rtemp ty
     plEs <- zipWithM (\eϵ i -> do {pl <- eeval eϵ tt; pure $ pl ++ [wt (AElem t rnk (Just a) (KI i) sz) tt]}) es [0..]
     pure (Ma () sh a t rnk n sz:diml (t, Just a) (fromIntegral<$>ns)++concat plEs)
@@ -1897,7 +1905,6 @@ pop sz | sz `rem` 8 == 0 = Pop8 () | otherwise = Pop ()
 m'pop = maybe [] ((:[]).popc)
 m'sa t = maybe []  ((:[]).sac t)
 
--- TODO: allow this to target multiple registers
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe Int64, [AL], [CS ()]) -- element offsets, size to be popped off the stack, array labels kept live
 πe (EApp (P tys) (Builtin _ Head) xs) t | offs <- szT tys, sz <- last offs = do
     (plX, (lX, xR)) <- plA xs
