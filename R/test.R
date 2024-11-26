@@ -33,7 +33,7 @@ stopifnot(run(isbn,as.integer(c(9,7,8,0,5,9,6,5,2,8,1,2,6))));stopifnot(!run(isb
 rm(isbn)
 gc()
 
-prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))) 1)))'irange 2 N 1")
+prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([n|x=0]'⍳ 2 (⌊(√(ℝn))) 1)))'irange 2 N 1")
 stopifnot(all(run(prime_mask,9)==c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE)))
 
 A<-matrix(runif(32,0,1),4);x<-runif(8,0,1)
@@ -42,7 +42,7 @@ run(mul,A,x)
 (A%*%x)[,1]
 
 x<-runif(128,0,1);y<-runif(128,0,1)
-dp<-jit("[(+)/ ((*)`(x::Vec n float) y)]")
+dp<-jit("[(+)/(*)`(x::Vec n float) y]")
 (x%*%y)[,1]
 run(dp,x,y)
 # LOL stopifnot((x%*%y)[,1]==sum(x*y))

@@ -767,7 +767,7 @@ Vec 7 [3, 4, 5, 6, 7, 8, 9]
 λxs.
   { digitSum ← [?x>10,.x-9,.x]
   ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
-  ; 10-(t|10)=}.xs
+  ; 10-t|10=}.xs
   }
 ```
 
@@ -871,8 +871,8 @@ Compute the radical of an integer $n$, $\displaystyle \prod_{p|n} p$
 λn.
   { ni ⟜ ⌊(√(ℝn))
   ; pns ← ⍳ 2 ni 1
-  ; isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
-  ; pps ⟜  (λk. ((n|k)=0)) #. pns
+  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
+  ; pps ⟜  (λk. (n|k=0)) #. pns
   ; ?ni^2=n
     ,.((*)/ₒ 1 (pf (pps⧺(n/.)'(}:? pps))))
     ,.((*)/ₒ 1 (pf (n ⊲ pps⧺((n/.)'pps))))

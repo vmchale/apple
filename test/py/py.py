@@ -25,7 +25,7 @@ pf=apple.jit('''
 λn.
   { ni ⟜ ⌊(√(ℝn))
   ; pns ← ⍳ 2 ni 1
-  ; isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
+  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
   ; pps ⟜  (λk. ((n|k)=0)) #. pns
   ; ?ni^2=n
     ,.pf (pps⧺((n/.)'(}:? pps)))
@@ -38,7 +38,7 @@ luhn=apple.jit('''
 λxs.
   { digitSum ← [?x>10,.x-9,.x]
   ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
-  ; 10-(t|10)=}.xs
+  ; 10-t|10=}.xs
   }
 ''')
 assert luhn(np.array([4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]))
