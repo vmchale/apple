@@ -11,7 +11,7 @@ import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           Math.Hypergeometric   (erf, hypergeometric, ncdf)
 import           Math.SpecialFunction  (agm, bessel1, chisqcdf, completeElliptic, gamma, tcdf)
-import           Numeric.NumberTheory  (isPrime, radical)
+import           Numeric.NumberTheory  (isPrime, radical,tau)
 import           P
 import           System.Info           (arch)
 import           Test.QuickCheck       (property)
@@ -31,14 +31,17 @@ main :: IO ()
 main = do
     pjit <- fpn =<< BSL.readFile "test/examples/isPrime.🍏"
     rjit <- fpn =<< BSL.readFile "math/numbertheory/radical.🍎"
-    defaultMain $ testGroup "All" $ pTest pjit rjit:[rTy,tyT,allT]
+    τjit <- fpn =<< BSL.readFile "math/numbertheory/𝜏.🍏"
+    defaultMain $ testGroup "All" $ pTest pjit rjit τjit:[rTy,tyT,allT]
 
 pTest :: FunPtr (Int64 -> CUChar)
       -> FunPtr (Int64 -> Int64)
+      -> FunPtr (Int64 -> Int64)
       -> TestTree
-pTest pfn rfn = testGroup "property tests"
+pTest pfn rfn τfn = testGroup "property tests"
     [ testProperty "isPrime" $ property $ \n -> n < 2 || isPrime n == cb (ib pfn (fromIntegral n))
-    , testProperty "radical" $ property $ \n -> n < 3 || radical n == fromIntegral (ii rfn (fromIntegral n))
+    , testProperty "radical" $ property $ \n -> n < 3 || radical n == hsIi rfn n
+    , testProperty "τ" $ property $ \n -> n < 1 || tau n == hsIi τfn n
     -- TODO: consSum,
     ]
   where
@@ -283,6 +286,9 @@ wA :: Storable a => Apple a -> (U a -> IO b) -> IO b
 wA x act =
     allocaBytes (sizeOf x) $ \p ->
         poke p x *> act p
+
+hsIi :: FunPtr (Int64 -> Int64) -> Int -> Int
+hsIi f = fromIntegral.ii f.fromIntegral
 
 foreign import ccall "dynamic" ib :: FunPtr (Int64 -> CUChar) -> Int64 -> CUChar
 foreign import ccall "dynamic" ii :: FunPtr (Int64 -> Int64) -> Int64 -> Int64

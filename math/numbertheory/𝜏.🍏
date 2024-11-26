@@ -1,0 +1,2 @@
+-- number of distinct divisors
+λn. :((λk. n|k=0) #. ⍳ 1 n 1)

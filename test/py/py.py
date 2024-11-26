@@ -26,9 +26,9 @@ pf=apple.jit('''
   { ni ⟜ ⌊(√(ℝn))
   ; pns ← ⍳ 2 ni 1
   ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
-  ; pps ⟜  (λk. ((n|k)=0)) #. pns
+  ; pps ⟜  (λk. (n|k)=0) #. pns
   ; ?ni^2=n
-    ,.pf (pps⧺((n/.)'(}:? pps)))
+    ,.pf (pps⧺((n/.)'}:?pps))
     ,.pf (pps⧺(n⊳((n/.)'pps)))
   }
 ''')
