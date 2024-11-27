@@ -10,7 +10,6 @@ module P ( Err (..), FErr (..)
          , tyOf
          , tyC
          , getTy
-         , parseInline
          , parseRename
          , rwP
          , opt
