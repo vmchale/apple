@@ -11,7 +11,7 @@ import           Foreign.Storable      (Storable (..))
 import           Hs.A
 import           Math.Hypergeometric   (erf, hypergeometric, ncdf)
 import           Math.SpecialFunction  (agm, bessel1, chisqcdf, completeElliptic, gamma, tcdf)
-import           Numeric.NumberTheory  (isPrime, radical,tau)
+import           Numeric.NumberTheory  (isPrime, radical, tau)
 import           P
 import           System.Info           (arch)
 import           Test.QuickCheck       (property)
