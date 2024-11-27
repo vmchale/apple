@@ -661,9 +661,8 @@ tyB _ Re = do
     pure (Li n ~> a ~> vV n a, mempty)
 tyB _ FRange = do {n <- fti "n"; pure (F ~> F ~> Li n ~> vV n F, mempty)}
 tyB _ Fib = do
-    n <- ftie; a <- ftv "a"
-    let arrTy = Arr (n `Cons` Nil) a
-    pure (a ~> a ~> (a ~> a ~> a) ~> I ~> arrTy, mempty)
+    n <- fti "n"; m <- fti "m"; k <- fti "k"; a <- ftv "a"
+    pure (vV m a ~> (vV k a ~> a) ~> Li n ~> vV (m+:n) a, mempty)
 tyB _ IRange = do {n <- ftie; pure (I ~> I ~> I ~> vV n I, mempty)}
 tyB l Plus = tyNumBinOp l; tyB l Minus = tyNumBinOp l
 tyB l Times = tyNumBinOp l
