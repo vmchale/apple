@@ -789,6 +789,24 @@ Vec 7 [3, 4, 5, 6, 7, 8, 9]
 
 Note zipping with `cyc. ⟨2,1::int⟩ 8` to get alternating 2, 1, ... factors.
 
+## Combinatorics
+
+### A000081
+
+The number of unlabeled rooted trees with at most $n$ nodes; this [appears in
+chemistry (counting alkanes)](https://www.emis.de/journals/JIS/cayley.html), the
+study of such being initiated by Cayley in 1875.
+
+```
+λN.
+{ sum ⇐ [(+)/ₒ 0 x]
+; divisors ← λn. (λk. (n|k=0))§⍳ 1 n 1
+; 𝓕 ⟨0,1::int⟩ (λas. {n⟜ :as; sum ((λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))'⍳ 1 (n-1) 1)/.(n-1)}) N
+}
+```
+
+The use of "strong induction" provides a new take on the problem [where Python uses memoization and Haskell exploits sharing/laziness](https://oeis.org/A000081).
+
 ## Elliptic Fourier Series
 
 From [Kuhl and Giardnia](http://www.sci.utah.edu/~gerig/CS7960-S2010/handouts/Kuhl-Giardina-CGIP1982.pdf), the coefficients are given by:

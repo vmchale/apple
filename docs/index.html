@@ -278,6 +278,8 @@ id="toc-successive-application">Successive Application</a></li>
 <li><a href="#polymorphic-bind" id="toc-polymorphic-bind">Polymorphic
 Bind</a></li>
 </ul></li>
+<li><a href="#strong-induction" id="toc-strong-induction">Strong
+Induction</a></li>
 <li><a href="#rank" id="toc-rank">Rank</a></li>
 <li><a href="#random-numbers" id="toc-random-numbers">Random
 Numbers</a></li>
@@ -336,6 +338,10 @@ Multiplication</a></li>
 </ul></li>
 <li><a href="#argmax" id="toc-argmax">Argmax</a></li>
 <li><a href="#luhn-check" id="toc-luhn-check">Luhn Check</a></li>
+<li><a href="#combinatorics" id="toc-combinatorics">Combinatorics</a>
+<ul>
+<li><a href="#a000081" id="toc-a000081">A000081</a></li>
+</ul></li>
 <li><a href="#elliptic-fourier-series"
 id="toc-elliptic-fourier-series">Elliptic Fourier Series</a></li>
 <li><a href="#geography" id="toc-geography">Geography</a>
@@ -573,6 +579,14 @@ the generated assembly:</p>
 90</code></pre>
 <pre><code> &gt; {sum ← [(+)/x]; sum (irange 0 9 1)+⌊(sum(frange 0 9 10))}
 1:42: could not unify &#39;float&#39; with &#39;int&#39; in expression &#39;𝒻 0 9 10&#39;</code></pre>
+<h2 id="strong-induction">Strong Induction</h2>
+<p><code>𝓕</code> is like <code>gen.</code> but with access to all
+previously computed values.</p>
+<pre><code> &gt; :ty 𝓕
+Vec m a → (Vec k a → a) → int(n) → Vec (m + n) a</code></pre>
+<p>Fibonacci sequence:</p>
+<pre><code> &gt; 𝓕 ⟨1::int,1⟩ [}.x+}.(}:x)] 10
+Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]</code></pre>
 <h2 id="rank">Rank</h2>
 <p>Rank `<code>{i,j∘[k,l]}</code> lifts a function to operate on i,
 j-cells, optionally specifying axes k,l. Iteration is bottom-up; by
@@ -747,38 +761,38 @@ Mean</h2>
 }</code></pre>
 <p>This is equivalent to the <a
 href="https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d">Python</a>:</p>
-<div class="sourceCode" id="cb65"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid (x):</span>
-<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">1</span><span class="op">/</span>(<span class="dv">1</span> <span class="op">+</span> np.exp(<span class="op">-</span>x))</span>
-<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid_derivative(x):</span>
-<span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> x)</span>
-<span id="cb65-8"><a href="#cb65-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb65-9"><a href="#cb65-9" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> np.array([[<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">1</span>,<span class="dv">1</span>]])</span>
-<span id="cb65-10"><a href="#cb65-10" aria-hidden="true" tabindex="-1"></a>expected_output <span class="op">=</span> np.array([[<span class="dv">0</span>],[<span class="dv">1</span>],[<span class="dv">1</span>],[<span class="dv">0</span>]])</span>
-<span id="cb65-11"><a href="#cb65-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb65-12"><a href="#cb65-12" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">=</span> np.dot(inputs,hidden_weights)</span>
-<span id="cb65-13"><a href="#cb65-13" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">+=</span> hidden_bias</span>
-<span id="cb65-14"><a href="#cb65-14" aria-hidden="true" tabindex="-1"></a>hidden_layer_output <span class="op">=</span> sigmoid(hidden_layer_activation)</span>
-<span id="cb65-15"><a href="#cb65-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb65-16"><a href="#cb65-16" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">=</span> np.dot(hidden_layer_output,output_weights)</span>
-<span id="cb65-17"><a href="#cb65-17" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">+=</span> output_bias</span>
-<span id="cb65-18"><a href="#cb65-18" aria-hidden="true" tabindex="-1"></a>predicted_output <span class="op">=</span> sigmoid(output_layer_activation)</span>
-<span id="cb65-19"><a href="#cb65-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb65-20"><a href="#cb65-20" aria-hidden="true" tabindex="-1"></a><span class="co">#Backpropagation</span></span>
-<span id="cb65-21"><a href="#cb65-21" aria-hidden="true" tabindex="-1"></a>error <span class="op">=</span> expected_output <span class="op">-</span> predicted_output</span>
-<span id="cb65-22"><a href="#cb65-22" aria-hidden="true" tabindex="-1"></a>d_predicted_output <span class="op">=</span> error <span class="op">*</span> sigmoid_derivative(predicted_output)</span>
-<span id="cb65-23"><a href="#cb65-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb65-24"><a href="#cb65-24" aria-hidden="true" tabindex="-1"></a>error_hidden_layer <span class="op">=</span> d_predicted_output.dot(output_weights.T)</span>
-<span id="cb65-25"><a href="#cb65-25" aria-hidden="true" tabindex="-1"></a>d_hidden_layer <span class="op">=</span> error_hidden_layer <span class="op">*</span> sigmoid_derivative(hidden_layer_output)</span>
-<span id="cb65-26"><a href="#cb65-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb65-27"><a href="#cb65-27" aria-hidden="true" tabindex="-1"></a><span class="co">#Updating Weights and Biases</span></span>
-<span id="cb65-28"><a href="#cb65-28" aria-hidden="true" tabindex="-1"></a>output_weights <span class="op">+=</span> hidden_layer_output.T.dot(d_predicted_output)</span>
-<span id="cb65-29"><a href="#cb65-29" aria-hidden="true" tabindex="-1"></a>output_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_predicted_output,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb65-30"><a href="#cb65-30" aria-hidden="true" tabindex="-1"></a>hidden_weights <span class="op">+=</span> inputs.T.dot(d_hidden_layer)</span>
-<span id="cb65-31"><a href="#cb65-31" aria-hidden="true" tabindex="-1"></a>hidden_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_hidden_layer,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb67"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid (x):</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">1</span><span class="op">/</span>(<span class="dv">1</span> <span class="op">+</span> np.exp(<span class="op">-</span>x))</span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid_derivative(x):</span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> x)</span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> np.array([[<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">1</span>,<span class="dv">1</span>]])</span>
+<span id="cb67-10"><a href="#cb67-10" aria-hidden="true" tabindex="-1"></a>expected_output <span class="op">=</span> np.array([[<span class="dv">0</span>],[<span class="dv">1</span>],[<span class="dv">1</span>],[<span class="dv">0</span>]])</span>
+<span id="cb67-11"><a href="#cb67-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-12"><a href="#cb67-12" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">=</span> np.dot(inputs,hidden_weights)</span>
+<span id="cb67-13"><a href="#cb67-13" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">+=</span> hidden_bias</span>
+<span id="cb67-14"><a href="#cb67-14" aria-hidden="true" tabindex="-1"></a>hidden_layer_output <span class="op">=</span> sigmoid(hidden_layer_activation)</span>
+<span id="cb67-15"><a href="#cb67-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-16"><a href="#cb67-16" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">=</span> np.dot(hidden_layer_output,output_weights)</span>
+<span id="cb67-17"><a href="#cb67-17" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">+=</span> output_bias</span>
+<span id="cb67-18"><a href="#cb67-18" aria-hidden="true" tabindex="-1"></a>predicted_output <span class="op">=</span> sigmoid(output_layer_activation)</span>
+<span id="cb67-19"><a href="#cb67-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-20"><a href="#cb67-20" aria-hidden="true" tabindex="-1"></a><span class="co">#Backpropagation</span></span>
+<span id="cb67-21"><a href="#cb67-21" aria-hidden="true" tabindex="-1"></a>error <span class="op">=</span> expected_output <span class="op">-</span> predicted_output</span>
+<span id="cb67-22"><a href="#cb67-22" aria-hidden="true" tabindex="-1"></a>d_predicted_output <span class="op">=</span> error <span class="op">*</span> sigmoid_derivative(predicted_output)</span>
+<span id="cb67-23"><a href="#cb67-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-24"><a href="#cb67-24" aria-hidden="true" tabindex="-1"></a>error_hidden_layer <span class="op">=</span> d_predicted_output.dot(output_weights.T)</span>
+<span id="cb67-25"><a href="#cb67-25" aria-hidden="true" tabindex="-1"></a>d_hidden_layer <span class="op">=</span> error_hidden_layer <span class="op">*</span> sigmoid_derivative(hidden_layer_output)</span>
+<span id="cb67-26"><a href="#cb67-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-27"><a href="#cb67-27" aria-hidden="true" tabindex="-1"></a><span class="co">#Updating Weights and Biases</span></span>
+<span id="cb67-28"><a href="#cb67-28" aria-hidden="true" tabindex="-1"></a>output_weights <span class="op">+=</span> hidden_layer_output.T.dot(d_predicted_output)</span>
+<span id="cb67-29"><a href="#cb67-29" aria-hidden="true" tabindex="-1"></a>output_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_predicted_output,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb67-30"><a href="#cb67-30" aria-hidden="true" tabindex="-1"></a>hidden_weights <span class="op">+=</span> inputs.T.dot(d_hidden_layer)</span>
+<span id="cb67-31"><a href="#cb67-31" aria-hidden="true" tabindex="-1"></a>hidden_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_hidden_layer,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
 <h2 id="shoelace-theorem"><a
 href="https://artofproblemsolving.com/wiki/index.php/Shoelace_Theorem">Shoelace
 Theorem</a></h2>
@@ -836,10 +850,25 @@ href="https://en.wikipedia.org/wiki/Luhn_algorithm">Luhn Check</a></h2>
 <pre><code>λxs.
   { digitSum ← [?x&gt;10,.x-9,.x]
   ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
-  ; 10-(t|10)=}.xs
+  ; 10-t|10=}.xs
   }</code></pre>
 <p>Note zipping with <code>cyc. ⟨2,1::int⟩ 8</code> to get alternating
 2, 1, … factors.</p>
+<h2 id="combinatorics">Combinatorics</h2>
+<h3 id="a000081">A000081</h3>
+<p>The number of unlabeled rooted trees with at most <span
+class="math inline">\(n\)</span> nodes; this <a
+href="https://www.emis.de/journals/JIS/cayley.html">appears in chemistry
+(counting alkanes)</a>, the study of such being initiated by Cayley in
+1875.</p>
+<pre><code>λN.
+{ sum ⇐ [(+)/ₒ 0 x]
+; divisors ← λn. (λk. (n|k=0))§⍳ 1 n 1
+; 𝓕 ⟨0,1::int⟩ (λas. {n⟜ :as; sum ((λj.sum ((λd. d*as˙d)&#39;(divisors j))*as˙(n-j))&#39;⍳ 1 (n-1) 1)/.(n-1)}) N
+}</code></pre>
+<p>The use of “strong induction” provides a new take on the problem <a
+href="https://oeis.org/A000081">where Python uses memoization and
+Haskell exploits sharing/laziness</a>.</p>
 <h2 id="elliptic-fourier-series">Elliptic Fourier Series</h2>
 <p>From <a
 href="http://www.sci.utah.edu/~gerig/CS7960-S2010/handouts/Kuhl-Giardina-CGIP1982.pdf">Kuhl
@@ -928,10 +957,10 @@ class="math inline">\(\displaystyle \prod_{p|n} p\)</span></p>
 <pre><code>λn.
   { ni ⟜ ⌊(√(ℝn))
   ; pns ← ⍳ 2 ni 1
-  ; isPrime ← λn.¬((∨)/ₒ #f ([(n|x)=0]&#39;(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
-  ; pps ⟜  (λk. ((n|k)=0)) #. pns
+  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]&#39;⍳ 2 (⌊(√(ℝn))) 1)); pf ⇐ (isPrime #.)
+  ; pps ⟜  (λk. (n|k=0)) #. pns
   ; ?ni^2=n
-    ,.((*)/ₒ 1 (pf (pps⧺(n/.)&#39;(}:? pps))))
+    ,.((*)/ₒ 1 (pf (pps⧺(n/.)&#39;}:?pps)))
     ,.((*)/ₒ 1 (pf (n ⊲ pps⧺((n/.)&#39;pps))))
   }</code></pre>
 <p>This shows the awkwardness of an array style.</p>
