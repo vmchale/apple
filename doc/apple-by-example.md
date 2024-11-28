@@ -351,6 +351,22 @@ assembly:
 1:42: could not unify 'float' with 'int' in expression '𝒻 0 9 10'
 ```
 
+## Strong Induction
+
+`𝓕` is like `gen.` but with access to all previously computed values.
+
+```
+ > :ty 𝓕
+Vec m a → (Vec k a → a) → int(n) → Vec (m + n) a
+```
+
+Fibonacci sequence:
+
+```
+ > 𝓕 ⟨1::int,1⟩ [}.x+}.(}:x)] 10
+Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
+```
+
 ## Rank
 
 Rank ```{i,j∘[k,l]}`` lifts a function to operate on i, j-cells, optionally
