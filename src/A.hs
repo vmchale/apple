@@ -68,6 +68,7 @@ ppt = flip evalState (S.empty, IM.empty, 'a').pp where
     pp B             = pure B
     pp t@Li{}        = pure t
     pp (TVar n)      = TVar<$>fr n
+    pp (IZ i n)      = IZ i<$>fr n
     pp (Arrow t₀ t₁) = Arrow<$>pp t₀<*>pp t₁
     pp (Arr sh t)    = Arr sh<$>pp t
     pp (P ts)        = P<$>traverse pp ts
