@@ -281,6 +281,7 @@ Bind</a></li>
 <li><a href="#strong-induction" id="toc-strong-induction">Strong
 Induction</a></li>
 <li><a href="#rank" id="toc-rank">Rank</a></li>
+<li><a href="#dot-product" id="toc-dot-product">Dot Product</a></li>
 <li><a href="#random-numbers" id="toc-random-numbers">Random
 Numbers</a></li>
 <li><a href="#tuples" id="toc-tuples">Tuples</a></li>
@@ -615,6 +616,8 @@ Arr (3×2) [ [5.0, 6.0]
           , [3.0, 4.0] ]</code></pre>
 <pre><code> &gt; :ty [♭`{3∘[2,3,4]} (x :: Arr (60000 × 28 × 28 × 1) float)]
 Arr (60000 × 28 × 28 × 1) float → Arr (60000 × 784) float</code></pre>
+<h2 id="dot-product">Dot Product</h2>
+<p><code>x⋅y</code> is shorthand for <code>(+)/(*)`x y</code>.</p>
 <h2 id="random-numbers">Random Numbers</h2>
 <p><code>𝔯</code> or <code>rand.</code></p>
 <pre><code> &gt; 𝔯 0 1 :: float
@@ -835,11 +838,7 @@ Vec 7 [0, 1, 2, 3, 4, 5, 6]</code></pre>
 <pre><code> &gt; }. ([x] \`7 (irange 0 9 1))
 Vec 7 [3, 4, 5, 6, 7, 8, 9]</code></pre>
 <h3 id="matrix-vector-multiplication">Matrix-Vector Multiplication</h3>
-<pre><code>λA.λx.
-{
-  dot ⇐ [(+)/((*)`x y)];
-  (dot x)`{1∘[2]} (A::Arr (i × j) float)
-}</code></pre>
+<pre><code>λA.λx. (x⋅)`{1∘[2]} (A::Arr (i × j) float)</code></pre>
 <h3 id="filter">Filter</h3>
 <pre><code>\p.\xs. (xs˙)&#39;p⩪xs</code></pre>
 <h2 id="argmax"><a
@@ -857,10 +856,9 @@ href="https://en.wikipedia.org/wiki/Luhn_algorithm">Luhn Check</a></h2>
 <h2 id="combinatorics">Combinatorics</h2>
 <h3 id="a000081">A000081</h3>
 <p>The number of unlabeled rooted trees with at most <span
-class="math inline">\(n\)</span> nodes; this <a
+class="math inline">\(n\)</span> nodes (this <a
 href="https://www.emis.de/journals/JIS/cayley.html">appears in chemistry
-(counting alkanes)</a>, the study of such being initiated by Cayley in
-1875.</p>
+(counting alkanes)</a>).</p>
 <pre><code>λN.
 { sum ⇐ [(+)/ₒ 0 x]
 ; divisors ← λn. (λk. (n|k=0))§⍳ 1 n 1

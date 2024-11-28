@@ -418,6 +418,10 @@ Arr (3×2) [ [5.0, 6.0]
 Arr (60000 × 28 × 28 × 1) float → Arr (60000 × 784) float
 ```
 
+## Dot Product
+
+`x⋅y` is shorthand for ``(+)/(*)`x y``.
+
 ## Random Numbers
 
 `𝔯` or `rand.`
@@ -758,11 +762,7 @@ Vec 7 [3, 4, 5, 6, 7, 8, 9]
 ### Matrix-Vector Multiplication
 
 ```
-λA.λx.
-{
-  dot ⇐ [(+)/((*)`x y)];
-  (dot x)`{1∘[2]} (A::Arr (i × j) float)
-}
+λA.λx. (x⋅)`{1∘[2]} (A::Arr (i × j) float)
 ```
 
 ### Filter
@@ -793,9 +793,8 @@ Note zipping with `cyc. ⟨2,1::int⟩ 8` to get alternating 2, 1, ... factors.
 
 ### A000081
 
-The number of unlabeled rooted trees with at most $n$ nodes; this [appears in
-chemistry (counting alkanes)](https://www.emis.de/journals/JIS/cayley.html), the
-study of such being initiated by Cayley in 1875.
+The number of unlabeled rooted trees with at most $n$ nodes (this [appears in
+chemistry (counting alkanes)](https://www.emis.de/journals/JIS/cayley.html)).
 
 ```
 λN.
