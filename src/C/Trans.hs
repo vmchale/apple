@@ -1388,7 +1388,9 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     (plX, (lX, xR)) <- plA x
     (dts, plDs) <- plDim xRnk (xR, lX)
     -- TODO: div-by...
-    (tdims, dims) <- unzip <$> zipWithM (\dt i -> do {odim <- nI; pure (odim, odim =: (Tmp dt-fromIntegral (i-1)))}) dts isi
+    -- 4x4
+    -- {2∘2,2∘2} aka
+    (tdims, dims) <- unzip <$> zipWithM (\dt (i,d) -> do {odim <- nI; pure (odim, odim =: (Tmp dt-fromIntegral (i-1)))}) dts as
     io <- nIs tdims; iw <- nIs is
     let slopSz=product isi; slopRnk=length isi; slopE=fromIntegral (slopSz*fromIntegral oSz+(slopRnk+1)*8)
         rnk=KI oRnk
@@ -1530,7 +1532,7 @@ eval (Var _ x) t = do
 eval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     pure $ plE0 $ plE1 [Rnd () t, t =: (Bin IRem (Tmp t) (e1e-e0e+1) + e0e)]
-eval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arr sh _) <- eAnn e, (Arrow tX _) <- eAnn op, isI tX = do
+eval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arr sh _) <- eAnn e, (Arrow I _) <- eAnn op = do
     x <- nI; szR <- nI
     (plE, (l, aP)) <- plA e
     ss <- writeRF op [IT acc, IT x] (IT acc)
