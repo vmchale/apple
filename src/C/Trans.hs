@@ -1814,19 +1814,22 @@ feval (Id _ (FoldOfZip zop op (p:qs))) acc
     , Just (tP, pSz) <- aRr tPs
     , Just (tQs, qSzs) <- unzip<$>traverse (aRr.eAnn) qs = do
     x <- rtemp tP; ys <- traverse rtemp tQs; nR <- nI
-    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- unzip <$> traverse plA qs -- (plQ, (lQ, qR)) <- plA q
+    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- first thread.unzip <$> traverse plA qs
     ss <- writeRF op (FT acc:x:ys) (FT acc)
     let mQs at = [mt (AElem qR 1 lQ at qSz) y | (y, (lQ, qR), qSz) <- zip3 ys aQs qSzs]
     loop <- afor1 pSh 1 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mQs (Tmp i)++ss)
     seed <- writeRF zop (x:ys) (FT acc)
-    pure $plPP$thread plQs$nR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mQs 0++seed++[loop]
-feval (Id _ (FoldSOfZip seed op [p, q])) acc | tPs@(Arr pSh _) <- eAnn p, Just (tP, pSz) <- aRr tPs, Just (tQ, qSz) <- aRr (eAnn q) = do
-    x <- rtemp tP; y <- rtemp tQ; nR <- nI
+    pure $plPP$plQs$nR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mQs 0++seed++[loop]
+feval (Id _ (FoldSOfZip seed op (p:qs))) acc
+    | tPs@(Arr pSh _) <- eAnn p
+    , Just (tP, pSz) <- aRr tPs
+    , Just (tQs, qSzs) <- unzip<$>traverse (aRr.eAnn) qs = do
+    x <- rtemp tP; ys <- traverse rtemp tQs; nR <- nI
     plSeed <- feval seed acc
-    (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
-    ss <- writeRF op [FT acc, x, y] (FT acc)
-    loop <- afor pSh 0 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mt (AElem qR 1 lQ (Tmp i) qSz) y:ss)
-    pure $ plPP$plQ$nR=:ev tPs (pR,lP):plSeed++[loop]
+    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- first thread.unzip <$>traverse plA qs
+    ss <- writeRF op (FT acc:x:ys) (FT acc)
+    loop <- afor pSh 0 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:[mt (AElem qR 1 lQ (Tmp i) qSz) y | (y, (lQ, qR), qSz) <- zip3 ys aQs qSzs]++ss)
+    pure $ plPP$plQs$nR=:ev tPs (pR,lP):plSeed++[loop]
 feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca op, Just vseed <- fc c = do
     x0 <- nF; acc0 <- nF; acc2 <- nF2; x <- nF2
     i <- nI; szR <- nI
