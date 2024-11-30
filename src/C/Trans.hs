@@ -1546,6 +1546,17 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arro
     ss <- writeRF op [IT acc, x] (IT acc)
     loop <- afort tArr 0 ILt (Tmp szR) (\i -> wX i:ss)
     pure $ plE$plAcc++szR =: ev tArr (eR,l):m'p pinch [loop]
+eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | tXs@(Arr sh _) <- eAnn xs, (Arrow _ (Arrow I _)) <- eAnn op = do
+    x <- nI
+    rnkR <- nI; szR <- nI; k <- nI
+    (plE, (lX, xsR)) <- plA xs
+    plAcc <- eval seed acc
+    ss <- writeRF op [IT x, IT acc] (IT acc)
+    xsRd <- nI
+    let step=MT () x (EAt (Raw xsRd (Tmp k) lX 8)):ss
+        loop=for sh k 0 ILt (Tmp szR) step
+        plSz = case tIx tXs of {Just (_, is) -> szR=:KI (product is); Nothing -> SZ () szR xsR (Tmp rnkR) lX}
+    pure $ plE $ plAcc ++ [rnkR =: eRnk sh (xsR, lX), plSz, xsRd=:DP xsR (Tmp rnkR), loop]
 eval (EApp I (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
     (pl0,e0e) <- plC e0; (pl1,e1e) <- plC e1
     pure $ pl0 $ pl1 [t =: Bin cop e0e e1e]
@@ -1855,14 +1866,14 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arr
     let loopBody=mt (AElem eR 1 l (Tmp i) 8) x:ss++[i =: (Tmp i-1)]
         loop=While () i IGeq 0 loopBody
     pure $ plE $ plAcc++i =: (ev (eAnn e) (eR,l)-1):[loop]
-feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | tXs@(Arr sh _) <- eAnn xs, (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
-    x <- rtemp tX
+feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | tXs@(Arr sh _) <- eAnn xs, (Arrow _ (Arrow F _)) <- eAnn op = do
+    x <- nF
     rnkR <- nI; szR <- nI; k <- nI
     (plE, (lX, xsR)) <- plA xs
     plAcc <- feval seed acc
-    ss <- writeRF op [x, FT acc] (FT acc)
+    ss <- writeRF op [FT x, FT acc] (FT acc)
     xsRd <- nI
-    let step=mt (Raw xsRd (Tmp k) lX 8) x:ss
+    let step=MX () x (FAt (Raw xsRd (Tmp k) lX 8)):ss
         loop=for sh k 0 ILt (Tmp szR) step
         plSz = case tIx tXs of {Just (_, is) -> szR=:KI (product is); Nothing -> SZ () szR xsR (Tmp rnkR) lX}
     pure $ plE $ plAcc ++ [rnkR =: eRnk sh (xsR, lX), plSz, xsRd=:DP xsR (Tmp rnkR), loop]
