@@ -30,7 +30,7 @@ optA e@FLit{}              = pure e
 optA e@BLit{}              = pure e
 optA e@Var{}               = pure e
 optA (Builtin t (Rank rs)) = pure (Builtin t (Rank (g<$>rs))) where g r@(_,Just{})=r; g (cr,Nothing)=(cr, Just [1..cr])
-optA (Builtin t (Conv rs)) = pure (Builtin t (Conv (g<$>rs))) where g r@(_,Just{})=r; g (cr,Nothing)=(cr, Just 1)
+-- TODO: nicer to do fold-of-seed
 optA (Builtin ty Dot)      | Arrow tA (Arrow _ tN) <- ty = do
     a <- nextU "a" tA; b <- nextU "b" tA
     x₀ <- nextU "x₀" tN; y₀ <- nextU "y₀" tN
