@@ -1824,6 +1824,13 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tPs@(Arr pSh _) <- eAnn p, Just (tP
     loop <- afor1 pSh 1 ILt (Tmp szR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mt (AElem qR 1 lQ (Tmp i) qSz) y:ss)
     seed <- writeRF zop [x,y] (FT acc)
     pure $ plPP$plQ$szR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mt (AElem qR 1 lQ 0 qSz) y:seed++[loop]
+feval (Id _ (FoldSOfZip seed op [p, q])) acc | tPs@(Arr pSh _) <- eAnn p, Just (tP, pSz) <- aRr tPs, Just (tQ, qSz) <- aRr (eAnn q) = do
+    x <- rtemp tP; y <- rtemp tQ; nR <- nI
+    plSeed <- feval seed acc
+    (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
+    ss <- writeRF op [FT acc, x, y] (FT acc)
+    loop <- afor pSh 0 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mt (AElem qR 1 lQ (Tmp i) qSz) y:ss)
+    pure $ plPP$plQ$nR=:ev tPs (pR,lP):plSeed++[loop]
 feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca op, Just vseed <- fc c = do
     x0 <- nF; acc0 <- nF; acc2 <- nF2; x <- nF2
     i <- nI; szR <- nI
