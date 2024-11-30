@@ -62,12 +62,17 @@ $sub = [$subscript $digitsubscript]
 tokens :-
 
     <0> "["                      { mkSym LSqBracket `andBegin` dfn } -- FIXME: this doesn't allow nested
-    <0> `$white*"{"              { mkSym LRank `andBegin` braces }
+
+    <0> {
+        `$white*"{"              { mkSym LRank `andBegin` braces }
+        ⨳$white*"{"              { mkSym LConv `andBegin` braces }
+    }
 
     <dfn> {
         x                        { mkRes VarX }
         y                        { mkRes VarY }
         `$white*"{"              { mkSym LRank `andBegin` dbraces }
+        ⨳$white*"{"              { mkSym LConv `andBegin` dbraces }
     }
 
     <braces,dbraces> {
@@ -143,7 +148,6 @@ tokens :-
         ">."                     { mkSym MaxS }
         ⋊                        { mkSym MinS }
         "<."                     { mkSym MinS }
-        ⨳                        { mkSym Conv }
         ⦠                        { mkSym Focus }
         ">@"                     { mkSym Focus }
         🎱                       { mkSym Focus }
@@ -339,7 +343,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | MMap | Dot | Caret | Quot | Zip | Comma | Underscore | QuestionMark | Colon
          | CondSplit | Cor | ArrL | ArrR | SymLog | LBind | PolyBind | LRank | Compose
          | Arrow | Sig | MaxS | MinS | DIS | Succ
-         | Conv | Focus
+         | LConv | Focus
          | Access { iat :: !Int }
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | TailM | Init | InitM
@@ -396,7 +400,7 @@ instance Pretty Sym where
     pretty MinS         = "⋊"
     pretty DIS          = "\\`"
     pretty Succ         = "\\~"
-    pretty Conv         = "⨳"
+    pretty LConv        = "⨳ {"
     pretty Focus        = "⦠"
     pretty (Access i)   = "->" <> pretty i
     pretty Last         = "}."

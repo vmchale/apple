@@ -52,8 +52,7 @@ import Sh
     question { TokSym $$ QuestionMark }
     condSplit { TokSym $$ CondSplit }
     coronis { TokSym $$ Cor }
-    larr { TokSym $$ ArrL }
-    rarr { TokSym $$ ArrR }
+    larr { TokSym $$ ArrL } rarr { TokSym $$ ArrR }
     colon { TokSym $$ Colon }
     lrank { TokSym $$ LRank }
     compose { TokSym $$ Compose }
@@ -62,16 +61,12 @@ import Sh
     arrow { TokSym $$ L.Arrow }
     di { TokSym $$ DIS }
     succ { TokSym $$ L.Succ }
-    conv { TokSym $$ L.Conv }
+    lconv { TokSym $$ LConv }
     focus { TokSym $$ L.Focus }
-    last { TokSym $$ L.Last }
-    lastM { TokSym $$ L.LastM }
-    head { TokSym $$ L.Head }
-    headM { TokSym $$ L.HeadM }
-    tail { TokSym $$ L.Tail }
-    tailM { TokSym $$ L.TailM }
-    init { TokSym $$ L.Init }
-    initM { TokSym $$ L.InitM }
+    last { TokSym $$ L.Last } lastM { TokSym $$ L.LastM }
+    head { TokSym $$ L.Head } headM { TokSym $$ L.HeadM }
+    tail { TokSym $$ L.Tail } tailM { TokSym $$ L.TailM }
+    init { TokSym $$ L.Init } initM { TokSym $$ L.InitM }
     do { TokSym $$ Do }
     tensor { TokSym $$ Tensor }
     geq { TokSym $$ Geq }
@@ -248,7 +243,7 @@ BBin :: { E AlexPosn }
      | scan { Builtin $1 Scan }
      | quot { Builtin $1 Map }
      | di intLit { Builtin $1 (DI (fromInteger $ int $2)) }
-     | conv braces(sepBy(S,comma)) { Builtin $1 (A.Conv (reverse $2)) }
+     | lconv sepBy(S,comma) rbrace { Builtin $1 (Conv (reverse $2)) }
      | focus braces(sepBy(intLit,comma)) { Builtin $1 (A.Focus (reverse (map (fromInteger.int) $2)))  }
      -- FIXME: not necessarily binary operator!!
      | lrank sepBy(R,comma) rbrace { Builtin $1 (Rank (reverse $2)) }
