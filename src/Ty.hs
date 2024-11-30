@@ -20,7 +20,7 @@ import           Data.Function                    (on)
 import           Data.Functor                     (void, ($>))
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.Maybe                       (catMaybes)
+import           Data.Maybe                       (catMaybes, fromMaybe)
 import qualified Data.Text                        as T
 import           Data.Typeable                    (Typeable)
 import           GHC.Generics                     (Generic)
@@ -726,9 +726,9 @@ tyB _ (Conv as) = do
     a <- ftv "a"; b <- ftv "b"
     let nx = Ix () <$> ns
         opTy = Arr (foldr Cons sh nx) a ~> b
-        t = Arrow (Arr (foldr Cons sh (zipWith (+:) is nx)) a) (Arr (foldr Cons Nil is) b)
+        t = Arrow (Arr (foldr Cons sh (zipWith3 (\iϵ dϵ n -> StaMul () iϵ dϵ+:n) is dix nx)) a) (Arr (foldr Cons Nil is) b)
     pure (opTy ~> t, mempty)
-  where (ns,ds) = unzip as
+  where (ns,ds) = unzip as; dix=Ix ().fromMaybe 1<$>ds
 tyB _ (Focus ns) = do
     sh <- fsh "sh"
     is <- zipWithM (\_ t -> fti (T.singleton t)) ns ['i'..]
@@ -850,6 +850,7 @@ rwI (StaPlus l i0 i1) =
         (i0', i1')        -> StaPlus l i0' i1'
 rwI (StaMul l i0 i1) =
     case (rwI i0, rwI i1) of
+        (i, Ix _ 1)       -> i
         (Ix lϵ i, Ix _ j) -> Ix lϵ (i*j)
         (i0', i1')        -> StaMul l i0' i1'
 rwI i = i
