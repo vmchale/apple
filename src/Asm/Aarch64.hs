@@ -280,6 +280,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fmax2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fmin2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fsqrt2 { ann :: a, vDest, vSrc :: V2Reg freg }
+                         | Fsqrte2 { ann :: a, vDest, vSrc :: V2Reg freg }
                          | Fneg2 { ann :: a, vDest, vSrc :: V2Reg freg }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
@@ -296,6 +297,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fmadd { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
                          | Fmsub { ann :: a, dDest, dSrc1, dSrc2, dSrc3 :: freg }
                          | Fsqrt { ann :: a, dDest, dSrc :: freg }
+                         | Fsqrte { ann :: a, dDest, dSrc :: freg }
                          | Fmla { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fmls { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Frintm { ann :: a, dDest, dSrc :: freg }
@@ -380,6 +382,7 @@ mapR f (StpD l d0 d1 a)      = StpD l d0 d1 (f <$> a)
 mapR _ (Fmadd l d0 d1 d2 d3) = Fmadd l d0 d1 d2 d3
 mapR _ (Fmsub l d0 d1 d2 d3) = Fmsub l d0 d1 d2 d3
 mapR _ (Fsqrt l d0 d1)       = Fsqrt l d0 d1
+mapR _ (Fsqrte l d0 d1)      = Fsqrte l d0 d1
 mapR _ (Frintm l d0 d1)      = Frintm l d0 d1
 mapR f (MrsR l r)            = MrsR l (f r)
 mapR f (MovRCf l r cf)       = MovRCf l (f r) cf
@@ -408,6 +411,7 @@ mapR _ (Fdiv2 l x0 x1 x2)    = Fdiv2 l x0 x1 x2
 mapR _ (Fmax2 l x0 x1 x2)    = Fmax2 l x0 x1 x2
 mapR _ (Fmin2 l x0 x1 x2)    = Fmin2 l x0 x1 x2
 mapR _ (Fsqrt2 l v0 v1)      = Fsqrt2 l v0 v1
+mapR _ (Fsqrte2 l v0 v1)     = Fsqrte2 l v0 v1
 mapR _ (Fneg2 l v0 v1)       = Fneg2 l v0 v1
 mapR _ (Faddp l d v)         = Faddp l d v
 mapR _ (Fmaxp l d v)         = Fmaxp l d v
@@ -496,6 +500,7 @@ fR _ Fmaxp{}               = mempty
 fR _ Fminp{}               = mempty
 fR _ Fneg2{}               = mempty
 fR _ Fsqrt2{}              = mempty
+fR _ Fsqrte2{}             = mempty
 fR f (Scvtf _ _ r)         = f r
 fR f (Fcvtms _ r _)        = f r
 fR f (Fcvtas _ r _)        = f r
@@ -518,6 +523,7 @@ fR f (Prfm _ _ a)          = f@<>a
 fR _ Fcmp{}                = mempty
 fR _ Fneg{}                = mempty
 fR _ Fsqrt{}               = mempty
+fR _ Fsqrte{}              = mempty
 fR _ Fcsel{}               = mempty
 fR f (Cset _ r _)          = f r
 fR f (TstI _ r _)          = f r
@@ -581,6 +587,7 @@ mapFR f (LdpD l d0 d1 a)      = LdpD l (f d0) (f d1) a
 mapFR f (Fmadd l d0 d1 d2 d3) = Fmadd l (f d0) (f d1) (f d2) (f d3)
 mapFR f (Fmsub l d0 d1 d2 d3) = Fmsub l (f d0) (f d1) (f d2) (f d3)
 mapFR f (Fsqrt l d0 d1)       = Fsqrt l (f d0) (f d1)
+mapFR f (Fsqrte l d0 d1)      = Fsqrte l (f d0) (f d1)
 mapFR f (Fneg l d0 d1)        = Fneg l (f d0) (f d1)
 mapFR f (Frintm l d0 d1)      = Frintm l (f d0) (f d1)
 mapFR _ (MrsR l r)            = MrsR l r
@@ -610,6 +617,7 @@ mapFR f (Fdiv2 l x0 x1 x2)    = Fdiv2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fmax2 l x0 x1 x2)    = Fmax2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fmin2 l x0 x1 x2)    = Fmin2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fsqrt2 l v0 v1)      = Fsqrt2 l (f<$>v0) (f<$>v1)
+mapFR f (Fsqrte2 l v0 v1)     = Fsqrte2 l (f<$>v0) (f<$>v1)
 mapFR f (Fneg2 l v0 v1)       = Fneg2 l (f<$>v0) (f<$>v1)
 mapFR f (EorS l v0 v1 v2)     = EorS l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (ZeroS l v)           = ZeroS l (f<$>v)
@@ -709,6 +717,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fmax2 _ xD x0 x1)      = "fmax" <+> v3 xD x0 x1
         p4 (Fmin2 _ xD x0 x1)      = "fmin" <+> v3 xD x0 x1
         p4 (Fsqrt2 _ xD xS)        = "fsqrt" <+> av2 xD xS
+        p4 (Fsqrte2 _ xD xS)       = "fsqrte" <+> av2 xD xS
         p4 (Fneg2 _ xD xS)         = "fneg" <+> av2 xD xS
         p4 (Fadd2 _ xD x0 x1)      = "fadd" <+> v3 xD x0 x1
         p4 (Fsub2 _ xD x0 x1)      = "fsub" <+> v3 xD x0 x1
@@ -745,6 +754,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Msub _ r0 r1 r2 r3)    = "msub" <+> ar4 r0 r1 r2 r3
         p4 (Sdiv _ rD rS rS')      = "sdiv" <+> ar3 rD rS rS'
         p4 (Fsqrt _ d0 d1)         = "fsqrt" <+> ar2 d0 d1
+        p4 (Fsqrte _ d0 d1)        = "fsqrte" <+> ar2 d0 d1
         p4 (Frintm _ d0 d1)        = "frintm" <+> ar2 d0 d1
         p4 (MrsR _ r)              = "mrs" <+> pretty r <> "," <+> "rndr"
         p4 (MovRCf _ r cf)         = "mov" <+> ar2 r cf
