@@ -719,8 +719,8 @@ tyB _ ScanS = do
         arrTy = Arr (Cons i sh); rarrTy = Arr ((i+:Ix()1) `Cons` sh)
         -- FIXME: 1+1?
     pure (opTy ~> b ~> arrTy a ~> rarrTy b, mempty)
-tyB l (DI n) = tyB l (Conv [n])
-tyB _ (Conv ns) = do
+tyB l (DI n) = tyB l (Conv [(n,Just 1)])
+tyB _ (Conv as) = do
     sh <- fsh "sh"
     is <- zipWithM (\_ t -> fti (T.singleton t)) ns ['i'..]
     a <- ftv "a"; b <- ftv "b"
@@ -728,6 +728,7 @@ tyB _ (Conv ns) = do
         opTy = Arr (foldr Cons sh nx) a ~> b
         t = Arrow (Arr (foldr Cons sh (zipWith (+:) is nx)) a) (Arr (foldr Cons Nil is) b)
     pure (opTy ~> t, mempty)
+  where (ns,ds) = unzip as
 tyB _ (Focus ns) = do
     sh <- fsh "sh"
     is <- zipWithM (\_ t -> fti (T.singleton t)) ns ['i'..]

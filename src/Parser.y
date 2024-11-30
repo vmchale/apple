@@ -234,6 +234,10 @@ R :: { (Int, Maybe [Int]) }
   : intLit compose lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (fmap (fromInteger.int) $4))) }
   | intLit { (fromInteger $ int $1, Nothing) }
 
+S :: { (Int, Maybe Int) }
+  : intLit compose intLit { (fromInteger (int $1), Just (fromInteger (int $3))) }
+  | intLit { (fromInteger (int $1), Nothing) }
+
 -- binary operator
 BBin :: { E AlexPosn }
      : plus { Builtin $1 A.Plus } | minus { Builtin $1 A.Minus }
@@ -244,7 +248,7 @@ BBin :: { E AlexPosn }
      | scan { Builtin $1 Scan }
      | quot { Builtin $1 Map }
      | di intLit { Builtin $1 (DI (fromInteger $ int $2)) }
-     | conv braces(sepBy(intLit,comma)) { Builtin $1 (A.Conv (reverse (fmap (fromInteger.int) $2))) }
+     | conv braces(sepBy(S,comma)) { Builtin $1 (A.Conv (reverse $2)) }
      | focus braces(sepBy(intLit,comma)) { Builtin $1 (A.Focus (reverse (map (fromInteger.int) $2)))  }
      -- FIXME: not necessarily binary operator!!
      | lrank sepBy(R,comma) rbrace { Builtin $1 (Rank (reverse $2)) }

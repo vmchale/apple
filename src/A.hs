@@ -119,6 +119,10 @@ prettyRank :: (Int, Maybe [Int]) -> Doc ann
 prettyRank (i, Nothing) = pretty i
 prettyRank (i, Just as) = pretty i <> "∘" <> encloseSep lbracket rbracket comma (pretty<$>as)
 
+pStride :: (Int, Maybe Int) -> Doc ann
+pStride (i, Nothing) = pretty i
+pStride (i, Just d)  = pretty i <> "∘" <> pretty d
+
 nOp as = encloseSep lbrace rbrace comma as
 
 instance Pretty Builtin where
@@ -150,7 +154,7 @@ instance Pretty Builtin where
     pretty Scan       = "Λ"
     pretty ScanS      = "Λₒ"
     pretty (DI i)     = "\\`" <> pretty i
-    pretty (Conv ns)  = "⨳" <+> nOp (pretty<$>ns)
+    pretty (Conv ns)  = "⨳" <+> nOp (pStride<$>ns)
     pretty (Focus ns) = "⦠" <> nOp (pretty<$>ns)
     pretty (TAt i)    = parens ("->" <> pretty i)
     pretty Gen        = "gen."
@@ -217,7 +221,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Fold | FoldS | Foldl | Floor | ItoF | Iter
              | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- infix
-             | Conv [Int] | Focus [Int]
+             | Conv [(Int, Maybe Int)] | Focus [Int]
              | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init | RevE
              | TailM | InitM

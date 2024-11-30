@@ -1377,7 +1377,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just 
     pure (plX$kϵ=:ev tSeed (xR,lX):plN (vSz oSh t a (nE+Tmp kϵ) sz++cpy (AElem t 1 (Just a) 0) (AElem xR 1 lX 0) (Tmp kϵ) sz:sas [pinch] [loop]))
   where
     tSeed=eAnn seed
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv is)) f) x) t a
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     | (Arrow _ tC) <- eAnn f
     , Just (tX, xRnk) <- tRnk (eAnn x)
     , Just oRnk <- staRnk oSh
@@ -1404,6 +1404,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv is)) f) x) t a
         ++sac slopP slopE:Wr () (ARnk slopP Nothing) (KI$fromIntegral slopRnk):diml (slopP, Nothing) slopDims
         ++xRd=:DP xR (KI xRnk):loop
         ++[popc slopE])
+    where (is,ds)=unzip as
 aeval e _ _ = error (show e)
 
 plC :: E (T ()) -> CM ([CS ()] -> [CS ()], CE)

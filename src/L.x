@@ -146,6 +146,7 @@ tokens :-
         ⨳                        { mkSym Conv }
         ⦠                        { mkSym Focus }
         ">@"                     { mkSym Focus }
+        🎱                       { mkSym Focus }
         "{."                     { mkSym Head }
         "{.?"                    { mkSym HeadM }
         "}."                     { mkSym Last }
