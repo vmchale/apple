@@ -59,10 +59,10 @@ tuck e           = (id, e)
 ηAt (Tup l es)                                     = Tup l <$> traverse ηAt es
 ηAt e                                              = pure e
 
-ηIdm (FoldSOfZip seed op es) = FoldSOfZip <$> ηAt seed <*> ηAt op <*> traverse ηAt es
-ηIdm (FoldOfZip zop op es)   = FoldOfZip <$> ηAt zop <*> ηAt op <*> traverse ηAt es
-ηIdm (FoldGen seed g f n)    = FoldGen <$> ηAt seed <*> ηM g <*> ηM f <*> ηAt n
-ηIdm (U2 seeds gs c f n)     = U2 <$> traverse ηAt seeds <*> traverse ηM gs <*> ηAt c <*> ηM f <*> ηAt n
+ηIdm (FoldSOfZip seed op es) = FoldSOfZip <$> ηAt seed <*> η op <*> traverse ηAt es
+ηIdm (FoldOfZip zop op es)   = FoldOfZip <$> η zop <*> η op <*> traverse ηAt es
+ηIdm (FoldGen seed g f n)    = FoldGen <$> ηAt seed <*> η g <*> η f <*> ηAt n
+ηIdm (U2 seeds gs c f n)     = U2 <$> traverse ηAt seeds <*> traverse η gs <*> ηAt c <*> η f <*> ηAt n
 ηIdm (AShLit ds es)          = AShLit ds <$> traverse ηAt es
 
 -- outermost only
