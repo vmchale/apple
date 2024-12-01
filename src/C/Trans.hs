@@ -904,17 +904,13 @@ aeval (EApp oTy@(Arr oSh _) (EApp _ g@(Builtin _ CatE) x) y) t a | Just (ty, 1) 
     contents <- rfill g (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp tn)) [AI (AD xR lX Nothing Nothing Nothing (Just$Tmp xnR)), AI (AD yR lY Nothing Nothing Nothing (Just$Tmp ynR))]
     -- TODO: if size is statically known, could place y later (one less alloc...)
     pure (plX$plY$xnR =: ev (eAnn x) (xR,lX):ynR =: ev (eAnn y) (yR,lY):tn =: (Tmp xnR+Tmp ynR):vSz oSh t a (Tmp tn) sz++contents)
-aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ IRange) start) end) (ILit _ 1)) t a = do
-    n <- nI; startR <- nI; endR <- nI
-    pStart <- eval start startR; pEnd <- eval end endR
-    loop <- afor sh 0 ILt (Tmp n) (\i -> [Wr () (AElem t 1 (Just a) (Tmp i) 8) (Tmp startR), startR+=1])
-    pure (pStart++pEnd++n =: ((Tmp endR - Tmp startR)+1):v8 sh t a (Tmp n)++[loop])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t a = do
-    n <- nI; startR <- nI; endR <- nI; incrR <- nI
-    pStart <- eval start startR; pEnd <- eval end endR; pIncr <- eval incr incrR
-    let pN=n =: (Bin Op.IDiv (Tmp endR - Tmp startR) (Tmp incrR)+1)
-    loop <- afor sh 0 ILt (Tmp n) (\i -> [Wr () (AElem t 1 (Just a) (Tmp i) 8) (Tmp startR), startR+=Tmp incrR])
-    pure (pStart++pEnd++pIncr++pN:v8 sh t a (Tmp n)++[loop])
+    n <- nI; startR <- nI; endR <- nI
+    pStart <- eval start startR; pEnd <- eval end endR; (plIncr,incrE) <- plC incr
+    let factor = case incr of {(ILit _ 1) -> id; _ -> \eϵ -> Bin Op.IDiv eϵ incrE}
+        nE=factor (Tmp endR - Tmp startR)+1
+    loop <- afor sh 0 ILt (Tmp n) (\i -> [Wr () (AElem t 1 (Just a) (Tmp i) 8) (Tmp startR), startR+=incrE])
+    pure (pStart++pEnd++plIncr (n=:nE:v8 sh t a (Tmp n)++[loop]))
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ FRange) (FLit _ s)) (FLit _ e)) (ILit _ n)) t a = do
     incr2 <- nF2; acc2 <- nF2; i <- nI
     let nE=KI$fromIntegral n
