@@ -259,6 +259,14 @@ optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
     seed' <- optA seed
     opA <- optA op
     case arr' of
+        -- TODO maybe rewrite irange to gen. so cases don't proliferate?
+        (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) (EApp _ (EApp _ (EApp _ (Builtin _ Gen) gseed) u) n)) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr))
+            | (Arrow _ (Arrow _ tC)) <- eAnn f -> do
+            x <- nextU "x" uTy; k <- nextU "k" I
+            z <- nextU "z" undefined; y₀ <- nextU "y₀" uTy; y₁ <- nextU "y₁" I
+            let opZ=Lam (tC~>uTy~>I~>tC) z (Lam undefined y₀ (Lam undefined y₁ (EApp undefined (EApp undefined opA (Var tC z)) (EApp tC (EApp undefined f (Var uTy y₀)) (Var I y₁)))))
+            pure $ Id l $ U2 [gseed, start] [Lam (uTy ~> uTy) x (EApp uTy u (Var uTy x)), Lam (I ~> I) k (Var I k `iPlus` incr)] seed' opZ n
+          where uTy=eAnn gseed
         (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) xs) ys)
             | Arrow dom0 (Arrow dom1 dom2) <- eAnn f
             , Arrow _ (Arrow _ cod) <- eAnn op -> do
