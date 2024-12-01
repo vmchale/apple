@@ -7,8 +7,14 @@ import           R
 import           R.R
 import           Sh
 
+infixl 6 `iMinus`
+infixl 6 `iPlus`
+
 fop op e0 = EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) op) e0)
 eMinus = fop Minus; eDiv = fop Div
+
+iop op e0 = EApp I (EApp (I ~> I) (Builtin (I ~> I ~> I) op) e0)
+iDiv = iop IDiv; iMinus = iop Minus; iPlus = iop Plus
 
 mShLit (Id _ (AShLit is es)) = Just (is, es)
 mShLit (ALit _ es)           = Just ([length es], es)
@@ -45,6 +51,12 @@ optA (Builtin ty C)        | Arrow fTy (Arrow gTy@(Arrow _ gC) xTy@(Arrow tC tD)
 optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
+optA (EApp l0 (EApp l1 op@(Builtin l2 IDiv) e0) e1) = do
+    e0' <- optA e0; e1' <- optA e1
+    pure $ case (e0',e1') of
+        (ILit _ i, ILit _ j) -> ILit l0 (i `quot` j)
+        (x, ILit _ 1)        -> x
+        _                    -> EApp l0 (EApp l1 op e0') e1'
 optA (EApp l0 (EApp l1 op@(Builtin l2 Div) e0) e1) = do
     e0' <- optA e0
     e1' <- optA e1
@@ -250,7 +262,11 @@ optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
         (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) -> do
             incrN <- optA $ (end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)
             n <- nextU "n" F
-            pure $ Id l $ U2 [start] [(Lam (F ~> F) n (EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) Plus) incrN) (Var F n)))] seed' opA nSteps
+            pure $ Id l $ U2 [start] [Lam (F ~> F) n (EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) Plus) incrN) (Var F n))] seed' opA nSteps
+        (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) -> do
+            k <- nextU "k" I
+            n <- optA $ (end `iMinus` start `iPlus` ILit I 1) `iDiv` incr
+            pure $ Id l $ U2 [start] [Lam (I ~> I) k (EApp I (EApp (I ~> I) (Builtin (I ~> I ~> I) Plus) incr) (Var I k))] seed' opA n
         _ -> pure (EApp l (EApp t0 (EApp t1 (Builtin bt b) opA) seed') arr')
 optA (EApp l e0 e1) = EApp l <$> optA e0 <*> optA e1
 optA (ALit l es) = do

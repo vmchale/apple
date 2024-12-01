@@ -1500,6 +1500,15 @@ peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     pure $ plE $ plAcc++szR=:ev (eAnn e) (aP,l):m'p pinch [loop]
   where
     tXs=eAnn e
+peval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
+    plU <- peval c t
+    (plN,nE) <- plC n
+    k <- nI
+    xs <- traverse (rtemp.fst) e
+    plSeeds <- concat <$> zipWithM eeval seeds xs
+    usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
+    fss <- writeRF f (PT t:xs) (PT t)
+    pure $ plU ++ plN (plSeeds ++ [For () 1 k 0 ILt nE (fss++usss)])
 peval (EApp _ (Builtin _ Head) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [MB () t (PAt (AElem a 1 l 0 1))]
@@ -1635,6 +1644,15 @@ eval (Id _ (FoldOfZip zop op [p, q])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, 
     loop <- afor1 sh 1 ILt (Tmp szR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mt (AElem qR 1 lQ (Tmp i) qSz) y:ss)
     seed <- writeRF zop [x,y] (IT acc)
     pure $ plPP$plQ$szR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mt (AElem qR 1 lQ 0 qSz) y:seed++[loop]
+eval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
+    plU <- eval c t
+    (plN,nE) <- plC n
+    k <- nI
+    xs <- traverse (rtemp.fst) e
+    plSeeds <- concat <$> zipWithM eeval seeds xs
+    usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
+    fss <- writeRF f (IT t:xs) (IT t)
+    pure $ plU ++ plN (plSeeds ++ [For () 1 k 0 ILt nE (fss++usss)])
 eval e _          = error (show e)
 
 frel :: Builtin -> Maybe FRel
@@ -1870,12 +1888,6 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | tXs@(Arr sh 
         loop=for sh k 0 ILt (Tmp szR) step
         plSz = case tIx tXs of {Just (_, is) -> szR=:KI (product is); Nothing -> SZ () szR xsR (Tmp rnkR) lX}
     pure $ plE $ plAcc ++ [rnkR =: eRnk sh (xsR, lX), plSz, xsRd=:DP xsR (Tmp rnkR), loop]
-feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr)) acc = do
-    i <- nI; endR <- nI
-    (plI,iE) <- plC incr
-    plStart <- eval start i; plAcc <- feval seed acc; plEnd <- eval end endR
-    ss <- writeRF op [FT acc, IT i] (FT acc)
-    pure $ plStart ++ plAcc ++ plEnd ++ plI [While () i ILeq (Tmp endR) (ss++[i+=iE])]
 feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX = do
     szR <- nI
     (plE, (l, eR)) <- plA e
