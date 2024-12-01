@@ -221,24 +221,20 @@ optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
         (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) xs) ys)
             | Arrow dom0 (Arrow dom1 dom2) <- eAnn f
             , Arrow _ (Arrow _ cod) <- eAnn op -> do
-                f' <- optA f
-                xs' <- optA xs
-                ys' <- optA ys
                 x0 <- nextU "x" cod; x1 <- nextU "y" dom0; x2 <- nextU "z" dom1
                 let vx0 = Var cod x0; vx1 = Var dom0 x1; vx2 = Var dom1 x2
                     opTy = cod ~> dom0 ~> dom1 ~> cod
-                    op' = Lam opTy x0 (Lam undefined x1 (Lam (dom1 ~> cod) x2 (EApp cod (EApp undefined opA vx0) (EApp dom2 (EApp undefined f' vx1) vx2))))
-                pure $ Id l $ FoldSOfZip seed' op' [xs',ys']
+                    op' = Lam opTy x0 (Lam undefined x1 (Lam (dom1 ~> cod) x2 (EApp cod (EApp undefined opA vx0) (EApp dom2 (EApp undefined f vx1) vx2))))
+                pure $ Id l $ FoldSOfZip seed' op' [xs,ys]
         (EApp _ (EApp _ (Builtin _ Map) f) xs)
             | Arrow dom fCod <- eAnn f
             , Arrow _ (Arrow _ cod) <- eAnn op -> do
-                xs' <- optA xs
                 x0 <- nextU "x" cod; x1 <- nextU "y" dom
                 let vx0 = Var cod x0; vx1 = Var dom x1
                     opTy = cod ~> dom ~> cod
                     op' = Lam opTy x0 (Lam (dom ~> cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f vx1)))
-                    arrTy = eAnn xs'
-                optA (EApp l (EApp undefined (EApp (arrTy ~> l) (Builtin (opTy ~> arrTy ~> l) FoldS) op') seed) xs')
+                    arrTy = eAnn xs
+                optA (EApp l (EApp undefined (EApp (arrTy ~> l) (Builtin (opTy ~> arrTy ~> l) FoldS) op') seed) xs)
         _ -> pure (EApp l (EApp t0 (EApp t1 (Builtin bt b) opA) seed') arr')
 optA (EApp t0 (EApp t1 (Builtin bt Fold) op) arr) = do
     arr' <- optA arr
