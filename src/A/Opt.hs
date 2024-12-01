@@ -276,6 +276,10 @@ optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
                     op' = Lam opTy x0 (Lam (dom ~> cod) x1 (EApp cod (EApp undefined opA vx0) (EApp fCod f vx1)))
                     arrTy = eAnn xs
                 optA (EApp l (EApp undefined (EApp (arrTy ~> l) (Builtin (opTy ~> arrTy ~> l) FoldS) op') seed) xs)
+        (EApp _ (EApp _ (EApp _ (Builtin _ Gen) u) f) n) -> do
+            x <- nextU "x" uTy
+            pure $ Id l $ U2 [u] [Lam (uTy ~> uTy) x (EApp uTy f (Var uTy x))] seed' opA n
+          where uTy = eAnn u
         (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) -> do
             incrN <- optA $ (end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)
             n <- nextU "n" F
