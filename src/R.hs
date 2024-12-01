@@ -91,3 +91,7 @@ rE (Cond l e e' e'') = Cond l <$> rE e <*> rE e' <*> rE e''
 rE (Var l n) = Var l <$> replaceVar n
 rE (Ann l e t) = Ann l <$> rE e <*> liftR t
 rE (Id l (AShLit is es)) = Id l . AShLit is <$> traverse rE es
+rE (Id l (U2 seeds gs c f n)) = Id l <$> (U2 <$> traverse rE seeds <*> traverse rE gs <*> rE c <*> rE f <*> rE n)
+rE (Id l (FoldGen seed g f n)) = Id l <$> (FoldGen <$> rE seed <*> rE g <*> rE f <*> rE n)
+rE (Id l (FoldOfZip zop op es)) = Id l <$> (FoldOfZip <$> rE zop <*> rE op <*> traverse rE es)
+rE (Id l (FoldSOfZip seed op es)) = Id l <$> (FoldSOfZip <$> rE seed <*> rE op <*> traverse rE es)

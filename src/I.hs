@@ -32,7 +32,11 @@ inline i = runI i.iM
 β i = runI i.bM
 
 hRi :: Idiom -> Bool
-hRi (AShLit _ es) = any hR es; hRi _ = error "Internal error."
+hRi (AShLit _ es)          = any hR es
+hRi (U2 seeds gs c f n)    = any hR seeds||any hR gs||hR c||hR f||hR n
+hRi (FoldGen seed u f n)   = hR seed||hR u||hR f||hR n
+hRi (FoldOfZip zop op e)   = hR zop || hR op || any hR e
+hRi (FoldSOfZip seed op e) = hR seed || hR op || any hR e
 
 hR :: E a -> Bool
 hR (EApp _ (EApp _ (Builtin _ R) _) _) = True
