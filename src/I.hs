@@ -125,6 +125,7 @@ bid (FoldSOfZip seed op es) = FoldSOfZip <$> bM seed <*> bM op <*> traverse bM e
 bid (FoldOfZip zop op es)   = FoldOfZip <$> bM zop <*> bM op <*> traverse bM es
 bid (AShLit ds es)          = AShLit ds <$> traverse bM es
 bid (FoldGen seed f g n)    = FoldGen <$> bM seed <*> bM f <*> bM g <*> bM n
+bid (U2 seeds gs c f n)     = U2 <$> traverse bM seeds <*> traverse bM gs <*> bM c <*> bM f <*> bM n
 
 desugar :: a
 desugar = error "Internal error. Should have been desugared."

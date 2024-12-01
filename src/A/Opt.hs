@@ -269,5 +269,5 @@ optA (Cond l p e0 e1) = Cond l <$> optA p <*> optA e0 <*> optA e1
 optI (FoldSOfZip seed op es) = FoldSOfZip <$> optA seed <*> optA op <*> traverse optA es
 optI (FoldOfZip zop op es)   = FoldOfZip <$> optA zop <*> optA op <*> traverse optA es
 optI (FoldGen seed f g n)    = FoldGen <$> optA seed <*> optA f <*> optA g <*> optA n
-optI (U2 seed f g n)         = U2 <$> traverse optA seed <*> traverse optA f <*> optA g <*> optA n
+optI (U2 seed f u g n)       = U2 <$> traverse optA seed <*> traverse optA f <*> optA u <*> optA g <*> optA n
 optI (AShLit ds es)          = AShLit ds <$> traverse optA es

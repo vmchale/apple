@@ -1414,8 +1414,7 @@ aeval e _ _ = error (show e)
 
 plC :: E (T ()) -> CM ([CS ()] -> [CS ()], CE)
 plC (ILit _ i) = pure (id, KI$fromIntegral i)
-plC (Var I x)  = do {st <- gets vars; pure (id, Tmp$getT st x)}
-plC e          = do {t <- nI; pl <- eval e t; pure ((pl++), Tmp t)}
+plC e          = second Tmp <$> plEV e
 
 plD2 :: E (T ()) -> CM ([CS ()] -> [CS ()], F2Temp)
 plD2 (Var F x) = do {tϵ <- gets (getT2 x); case tϵ of {Right t2 -> pure (id, t2); Left t1 -> do {t <- nF2; pure ((DS () t t1:), t)}}}
@@ -1423,31 +1422,23 @@ plD2 e         = do {t <- nF2; pl <- f2eval e t; pure ((pl++), t)}
 
 plD :: E (T ()) -> CM ([CS ()] -> [CS ()], F1E)
 plD (FLit _ x) = pure (id, ConstF x)
-plD (Var F x)  = do {st <- gets dvars; pure (id, FTmp$getT st x)}
-plD e          = do {t <- nF; pl <- feval e t; pure ((pl++), FTmp t)}
+plD e          = second FTmp <$> plF e
 
 plP :: E (T ()) -> CM ([CS ()] -> [CS ()], PE)
 plP (BLit _ b) = pure (id, BConst b)
-plP (Var B x)  = do {st <- gets pvars; pure (id, Is$getT st x)}
-plP e          = do {t <- nBT; pl <- peval e t; pure ((pl++), Is t)}
+plP e          = second Is <$> plBV e
+
+plBV :: E (T ()) -> CM ([CS ()] -> [CS ()], BTemp)
+plBV (Var B x) = do {st <- gets pvars; pure (id, getT st x)}
+plBV e         = do {t <- nBT; pl <- peval e t; pure ((pl++), t)}
 
 plEV :: E (T ()) -> CM ([CS ()] -> [CS ()], Temp)
-plEV (Var I x) = do
-    st <- gets vars
-    pure (id, getT st x)
-plEV e = do
-    t <- nI
-    pl <- eval e t
-    pure ((pl++), t)
+plEV (Var I x) = do {st <- gets vars; pure (id, getT st x)}
+plEV e         = do {t <- nI; pl <- eval e t; pure ((pl++), t)}
 
 plF :: E (T ()) -> CM ([CS ()] -> [CS ()], FTemp)
-plF (Var F x) = do
-    st <- gets dvars
-    pure (id, getT st x)
-plF e = do
-    t <- nF
-    pl <- feval e t
-    pure ((pl++), t)
+plF (Var F x) = do {st <- gets dvars; pure (id, getT st x)}
+plF e         = do {t <- nF; pl <- feval e t; pure ((pl++), t)}
 
 plA :: E (T ()) -> CM ([CS ()] -> [CS ()], (Maybe AL, Temp))
 plA (Var _ x) = do {st <- gets avars; pure (id, getT st x)}

@@ -62,6 +62,7 @@ tuck e           = (id, e)
 ηIdm (FoldSOfZip seed op es) = FoldSOfZip <$> ηAt seed <*> ηAt op <*> traverse ηAt es
 ηIdm (FoldOfZip zop op es)   = FoldOfZip <$> ηAt zop <*> ηAt op <*> traverse ηAt es
 ηIdm (FoldGen seed g f n)    = FoldGen <$> ηAt seed <*> ηM g <*> ηM f <*> ηAt n
+ηIdm (U2 seeds gs c f n)     = U2 <$> traverse ηAt seeds <*> traverse ηM gs <*> ηAt c <*> ηM f <*> ηAt n
 ηIdm (AShLit ds es)          = AShLit ds <$> traverse ηAt es
 
 -- outermost only
@@ -73,6 +74,7 @@ tuck e           = (id, e)
 ηM e@(Id _ FoldGen{})      = pure e
 ηM e@(Id _ FoldOfZip{})    = pure e
 ηM e@(Id _ FoldSOfZip{})   = pure e
+ηM e@(Id _ U2{})           = pure e
 ηM e@Cond{}                = pure e
 ηM e@BLit{}                = pure e
 ηM e@Tup{}                 = pure e

@@ -398,7 +398,7 @@ instance Pretty ResVar where
 data Idiom = FoldSOfZip { seedI, opI :: E (T ()), esI :: [E (T ())] }
            | FoldOfZip { zopI, opI :: E (T ()), esI :: [E (T ())] }
            | FoldGen { seedG, ufG, fG, nG :: E (T ()) }
-           | U2 { seedGs, ufs :: [E (T ())], fG, nG :: E (T ()) }
+           | U2 { seedGs, ufs :: [E (T ())], seedC, fG, nG :: E (T ()) }
            | AShLit { litSh :: [Int], esLit :: [E (T ())] }
            deriving (Generic)
 
@@ -406,7 +406,7 @@ instance Pretty Idiom where
     pretty (FoldSOfZip seed op es) = parens ("foldS-of-zip" <+> vsep [pretty seed, parens (pretty op), pretty es])
     pretty (FoldOfZip zop op es)   = parens ("fold-of-zip" <+> vsep [pretty zop, parens (pretty op), pretty es])
     pretty (FoldGen seed g f n)    = parens ("fold-gen" <+> brackets (pretty seed) <+> parens (pretty g) <+> parens (pretty f) <+> parens (pretty n))
-    pretty (U2 seed gs f n)        = parens ("fold-2-ix" <+> pretty seed <+> pretty gs <+> parens (pretty f) <+> parens (pretty n))
+    pretty (U2 seed gs u f n)      = parens ("fold-2-ix" <+> pretty seed <+> pretty gs <+> parens (pretty u <> "," <+> pretty f) <+> parens (pretty n))
     pretty (AShLit re es)          = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
 
 instance Show Idiom where show=show.pretty
