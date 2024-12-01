@@ -25,8 +25,8 @@ mSz (Ix _ i `Cons` sh) = (i*)<$>mSz sh
 mSz Nil                = Just 1
 mSz _                  = Nothing
 
-ff :: Builtin -> Maybe (Integer -> Integer -> Integer, Double -> Double -> Double)
-ff Plus = Just ((+), (+)); ff Times = Just ((*), (*)); ff Minus = Just ((-), (-))
+ff :: Builtin -> Maybe (Double -> Double -> Double)
+ff Plus = Just (+); ff Times = Just (*); ff Minus = Just (-)
 ff _ = Nothing
 
 optA :: E (T ()) -> RM (E (T ()))
@@ -51,7 +51,7 @@ optA (Builtin ty C)        | Arrow fTy (Arrow gTy@(Arrow _ gC) xTy@(Arrow tC tD)
 optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
-optA (EApp l0 (EApp l1 op@(Builtin l2 IDiv) e0) e1) = do
+optA (EApp l0 (EApp l1 op@(Builtin _ IDiv) e0) e1) = do
     e0' <- optA e0; e1' <- optA e1
     pure $ case (e0',e1') of
         (ILit _ i, ILit _ j) -> ILit l0 (i `quot` j)
@@ -88,12 +88,29 @@ optA (EApp l0 (EApp l1 op@(Builtin _ Sl) e0) e1) = do
         (ILit _ m, ILit _ n) -> ILit I (m .<<. fromIntegral n)
         _                    -> EApp l0 (EApp l1 op e0') e1'
 optA (Lam l n e) = Lam l n <$> optA e
-optA (EApp l0 (EApp l1 op@(Builtin _ f) x) y) | Just (ig, g) <- ff f = do
+optA (EApp l0 (EApp l1 op@(Builtin _ Minus) x) y) = do
+    x0 <- optA x; y0 <- optA y
+    pure $ case (x0,y0) of
+        (FLit _ x', FLit _ y')                                           -> FLit F (x'-y')
+        (ILit I x', ILit I y')                                           -> ILit I (x'-y')
+        -- ((1.0+kk)-2.0)
+        (EApp l0ϵ s@(EApp _ (Builtin _ Minus) _) (FLit _ x'), FLit _ y') -> EApp l0ϵ s (FLit F (x'+y'))
+        (x', ILit _ 0)                                                   -> x'
+        _                                                                -> EApp l0 (EApp l1 op x0) y0
+optA (EApp l0 (EApp l1 op@(Builtin _ Plus) x) y) = do
+    x0 <- optA x; y0 <- optA y
+    pure $ case (x0,y0) of
+        (FLit _ x', FLit _ y')                                           -> FLit F (x'+y')
+        (ILit I x', ILit I y')                                           -> ILit I (x'+y')
+        (EApp l0ϵ a@(EApp _ (Builtin _ Minus) _) (ILit li m), ILit _  n) -> EApp l0ϵ a (ILit li (m-n))
+        (x', ILit _ 0)                                                   -> x'
+        (ILit _ 0, x')                                                   -> x'
+        _                                                                -> EApp l0 (EApp l1 op x0) y0
+optA (EApp l0 (EApp l1 op@(Builtin _ f) x) y) | Just g <- ff f = do
     xO <- optA x
     yO <- optA y
     pure $ case (xO, yO) of
         (FLit _ x', FLit _ y') -> FLit F (g x' y')
-        (ILit I x', ILit I y') -> ILit I (ig x' y')
         _                      -> EApp l0 (EApp l1 op xO) yO
 optA (EApp l0 f@(Builtin _ ItoF) x) = do
     x' <- optA x
