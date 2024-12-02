@@ -1881,15 +1881,15 @@ feval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     plSeeds <- concat <$> zipWithM eeval seeds xs
     usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     fss <- writeRF f (FT t:xs) (FT t)
-    pure $ plU ++ plN (plSeeds ++ [For () 1 k 0 ILt nE (fss++usss)])
+    pure $ (plU ++ plSeeds ++ plN [Rof () k nE (fss++usss)])
 feval (Id _ (FoldGen seed g f n)) t = do
     x <- nF; acc <- nF
-    nR <- nI; k <- nI
+    k <- nI
     (plSeed,seedR) <- plF seed
-    plN <- eval n nR
+    (plN,nE) <- plC n
     uss <- writeRF g [FT x] (FT x)
     fss <- writeRF f [FT acc, FT x] (FT acc)
-    pure $ plSeed $ plN++[MX () acc (FTmp seedR), MX () x (FTmp seedR), For () 1 k 0 ILt (Tmp nR) (fss++uss), MX () t (FTmp acc)]
+    pure $ plSeed $ plN [MX () acc (FTmp seedR), MX () x (FTmp seedR), Rof () k nE (fss++uss), MX () t (FTmp acc)]
 feval e _ = error (show e)
 
 sac t = Sa8 () t.KI
