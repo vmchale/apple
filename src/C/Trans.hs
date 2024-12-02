@@ -1334,17 +1334,18 @@ aeval (EApp _ (Builtin _ RevE) e) t a | Arr sh ty <- eAnn e, Just rnk <- staRnk 
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <- eAnn seed, Just sz <- rSz tyS = do
     acc <- rtemp tyS
     plS <- eeval seed acc
+    td <- nI
     (plN, nR) <- plEV n
     ss <- writeRF op [acc] acc
-    loop <- afor sh 0 ILt (Tmp nR) $ \i -> wt (AElem t 1 (Just a) (Tmp i) sz) acc:ss
-    pure (plN$vSz sh t a (Tmp nR) sz++plS++[loop])
+    loop <- arof sh (Tmp nR) $ wt (Raw td 0 (Just a) sz) acc:td+=KI sz:ss
+    pure (plN$vSz sh t a (Tmp nR) sz++plS++td=:DP t 1:[loop])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | isΠR (eAnn seed) = do
     (plN, nE) <- plC n
     td <- nI; acc <- nI; acc0 <- nI
     (szs,mP,_,plS) <- πe seed acc
     let πsz=last szs
     (_, ss) <- writeF op [IPA acc] (IT acc0)
-    loop <- afor sh 0 ILt nE $ \i -> Mv () (Raw td (Tmp i) (Just a) πsz) (TupM acc Nothing) πsz:ss++[Mv () (TupM acc Nothing) (TupM acc0 Nothing) πsz]
+    loop <- arof sh nE $ Mv () (Raw td 0 (Just a) πsz) (TupM acc Nothing) πsz:td+=KI πsz:ss++[Mv () (TupM acc Nothing) (TupM acc0 Nothing) πsz]
     pure (plN$vSz sh t a nE πsz++m'sa acc mP++m'sa acc0 mP++plS++td=:DP t 1:loop:m'pop mP++m'pop mP)
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just ty <- aN tSeed, sz <- bT ty = do
     (plN, nE) <- plC n
