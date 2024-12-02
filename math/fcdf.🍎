@@ -5,9 +5,8 @@
       f21 ← λa0.λa1.λb.λz.
         {
           rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-          Σ ← λN.λa. (+)/ₒ 0 (a'⍳ 0 N 1);
-          term ← λn. {nn⟜ℝ n; (rf a0 nn*(rf a1 nn)%rf b nn)*(z^n%fact nn)};
-          Σ 30 term
+          Ho ← λN.λz.λa. (+)/ₒ 0 ((*)`(gen. 1 (*z) (N+1)) (a'⍳ 0 N 1));
+          Ho 30 z (λn. {nn⟜ ℝn; rf a0 nn*rf a1 nn%(rf b nn*fact nn)})
         };
       (z**a%a)*f21 a (1-b) (a+1) z
     };

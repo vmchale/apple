@@ -6,9 +6,7 @@
       f11 ← λa.λb.λz.
       {
         rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-        Σ ← λN.λa. (+)/ₒ 0 (a'⍳ 0 N 1);
-        term ← λn. {nn⟜ℝ n; (rf a nn%rf b nn)*(z^n%fact nn)};
-        Σ 50 term
+        (+)/ₒ 0 ((*)`(gen. 1 (*z) 51) ((λn. {nn⟜ ℝn; rf a nn%(rf b nn*fact nn)})'⍳ 0 50 1))
       };
       (x**a%a)*f11 a (1+a) (_x)
     };
