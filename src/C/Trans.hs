@@ -1361,13 +1361,11 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     , Just (tX, xRnk) <- tRnk (eAnn x)
     , Just oRnk <- staRnk oSh
     , Just oSz <- nSz tC, Just xSz <- nSz tX, oRnk==xRnk = do
-    xRd <- nI; szR <- nI; slopP <- nI
+    xRd <- nI; szR <- nI; slopP <- nI; td <- nI
     (plX, (lX, xR)) <- plA x
     (dts, plDs) <- plDim xRnk (xR, lX)
-    -- TODO: div-by...
-    -- 4x4
-    -- {2∘2,2∘2} aka
-    (tdims, dims) <- unzip <$> zipWithM (\dt (i,d) -> do {odim <- nI; pure (odim, odim =: (Tmp dt-fromIntegral (i-1)))}) dts as
+    (tdims, dims) <- unzip <$> zipWithM (\dt (i,d) -> do {odim <- nI; pure (odim, odim =: (Bin Op.IDiv (Tmp dt-fromIntegral i) (maybe 1 fromIntegral d)+1))}) dts as
+    (tb,bs) <- unzip <$> zipWithM (\dt i -> do {b <- nI; pure (b, b =: (Tmp dt-(fromIntegral$i-1)))}) dts (fst<$>as)
     io <- nIs tdims; iw <- nIs is
     let slopSz=product isi; slopRnk=length isi; slopE=fromIntegral (slopSz*fromIntegral oSz+(slopRnk+1)*8)
         rnk=KI oRnk
@@ -1377,14 +1375,14 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     let _:strides = sts; sss=init plS
     extrWindow <- aall1 iw is $ \j ->
                             [mt (At xRd (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX xSz) o, wt (AElem slopP (KI$fromIntegral slopRnk) Nothing (Tmp j) oSz) o]
-    loop <- aall io ds (Tmp<$>tdims) $ \k -> extrWindow++ss++[wt (AElem t rnk (Just a) (Tmp k) oSz) z]
+    loop <- aall io ds (Tmp<$>tb) $ \k -> extrWindow++ss++[wt (AElem t rnk (Just a) (Tmp k) oSz) z]
     pure (plX$
         plDs
         ++dims
         ++sss
         ++PlProd () szR (Tmp<$>tdims):Ma () oSh a t rnk (Tmp szR) oSz:diml (t, Just a) (Tmp<$>tdims)
         ++sac slopP slopE:Wr () (ARnk slopP Nothing) (KI$fromIntegral slopRnk):diml (slopP, Nothing) is
-        ++xRd=:DP xR (KI xRnk):loop
+        ++xRd=:DP xR (KI xRnk):bs++loop
         ++[popc slopE])
     where (isi,dsi)=unzip as; is=fromIntegral<$>isi; ds=maybe 1 fromIntegral<$>dsi
 aeval e _ _ = error (show e)
