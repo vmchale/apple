@@ -1769,11 +1769,12 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n
     (plN,nE) <- plC n; (plU,x) <- plR seed
     (plYs, (lY, yR)) <- plA ys
     (plY,y) <- plR (EApp tQ (Builtin undefined Head) ys)
+    yRd <- nI
     plSeed <- writeRF zop [x, y] (FT acc)
     ss <- writeRF op [FT acc, x, y] (FT acc)
     gs <- writeRF g [x] x
-    ll <- afor1 ySh 1 ILt nE $ \i -> mt (AElem yR 1 lY (Tmp i) qSz) y:gs++ss
-    pure $ plYs $ plY $ plU plSeed ++ plN [ll]
+    ll <- arof1 ySh nE $ yRd+=KI qSz:mt (Raw yRd 0 lY qSz) y:gs++ss
+    pure $ plYs $ plY $ plU plSeed ++ plN [yRd=:DP yR 1, ll]
 feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
     acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     i <- nI; szR <- nI
