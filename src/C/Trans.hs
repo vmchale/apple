@@ -1389,6 +1389,12 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     where (isi,dsi)=unzip as; is=fromIntegral<$>isi; ds=maybe 1 fromIntegral<$>dsi
 aeval e _ _ = error (show e)
 
+plR :: E (T ()) -> CM ([CS ()] -> [CS ()], RT)
+plR e = case eAnn e of
+    I -> second IT <$> plEV e
+    F -> second FT <$> plF e
+    B -> second PT <$> plBV e
+
 plC :: E (T ()) -> CM ([CS ()] -> [CS ()], CE)
 plC (ILit _ i) = pure (id, KI$fromIntegral i)
 plC e          = second Tmp <$> plEV e
@@ -1758,41 +1764,16 @@ feval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
 feval (EApp _ (Builtin _ Last) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [MX () t (FAt (AElem a 1 l (ev (eAnn xs) (a,l)-1) 8))]
-feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) (FLit _ start)) (FLit _ end)) (ILit _ steps), ys])) acc
-    | tYs@(Arr ySh _) <- eAnn ys, Just (tQ, qSz) <- aRr tYs = do
-    x <- nF; y <- rtemp tQ
-    incrR <- nF
-    plY <- eeval (EApp tQ (Builtin undefined Head) ys) y
+feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n, ys])) acc
+    | (Arr ySh tY) <- eAnn ys, Just (tQ, qSz) <- rr tY, isR (eAnn seed) = do
+    (plN,nE) <- plC n; (plU,x) <- plR seed
     (plYs, (lY, yR)) <- plA ys
-    plIncr <- feval (FLit F$(end-start)/realToFrac (steps-1)) incrR
-    seed <- writeRF zop [FT x, y] (FT acc)
-    ss <- writeRF op [FT acc, FT x, y] (FT acc)
-    ll <- afor1 ySh 1 ILt (KI$fromIntegral steps) $ \i -> mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss
-    pure $ plYs $ plY ++ MX () x (ConstF start):seed ++ plIncr ++ [ll]
-feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) steps, ys])) acc
-    | tYs@(Arr ySh _) <- eAnn ys, Just (tQ, qSz) <- aRr tYs = do
-    x <- nF; y <- rtemp tQ
-    incrR <- nF; n <- nI
-    plX <- feval start x; plY <- eeval (EApp tQ (Builtin undefined Head) ys) y
-    (plYs, (lY, yR)) <- plA ys
-    plN <- eval steps n
-    plIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
-    seed <- writeRF zop [FT x, y] (FT acc)
-    ss <- writeRF op [FT acc, FT x, y] (FT acc)
-    ll <- afor1 ySh 1 ILt (Tmp n) $ \i -> mt (AElem yR 1 lY (Tmp i) qSz) y:MX () x (FTmp x+FTmp incrR):ss
-    pure $ plYs $ plY ++ plX ++ seed ++ plIncr ++ plN ++ [ll]
-feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr, ys])) acc
-    | tYs@(Arr ySh _) <- eAnn ys, Just (tQ, qSz) <- aRr (eAnn ys) = do
-    x <- nI; y <- rtemp tQ
-    szR <- nI
-    plX <- eval start x; plY <- eeval (EApp tQ (Builtin undefined Head) ys) y
-    (plYs, (lY, yR)) <- plA ys
-    (plI,iE) <- plC incr
-    seed <- writeRF zop [IT x, y] (FT acc)
-    ss <- writeRF op [FT acc, IT x, y] (FT acc)
-    ll <- afor1 ySh 1 ILt (Tmp szR) $ \i -> mt (AElem yR 1 lY (Tmp i) qSz) y:x+=iE:ss
-    pure $ plYs $ plY ++ plX ++ seed ++ plI (szR =: ev tYs (yR,lY):[ll])
-    -- TODO: fold-of-zip 1 SIMD
+    (plY,y) <- plR (EApp tQ (Builtin undefined Head) ys)
+    plSeed <- writeRF zop [x, y] (FT acc)
+    ss <- writeRF op [FT acc, x, y] (FT acc)
+    gs <- writeRF g [x] x
+    ll <- afor1 ySh 1 ILt nE $ \i -> mt (AElem yR 1 lY (Tmp i) qSz) y:gs++ss
+    pure $ plYs $ plY $ plU plSeed ++ plN [ll]
 feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
     acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     i <- nI; szR <- nI
