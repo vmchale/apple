@@ -1,7 +1,6 @@
 λN.λx.
 {
   fact ← [(*)/ₒ 1 (𝒻 1 x (⌊x))];
-  iix ← irange 0 N 1;
-  mkIx ← λn. (x^n)%(fact (ℝn));
-  (+)/ₒ 0 (mkIx'iix)
+  xs ← gen. x (*x) (N+1);
+  (+)/ₒ 0 ((%)`xs (fact ∴ ℝ'⍳ 0 N 1))
 }
