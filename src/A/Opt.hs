@@ -124,15 +124,21 @@ optA (EApp l op@(Builtin _ Sqrt) x) = do
         _        -> EApp l op xO
 optA (EApp _ (Builtin _ Floor) (EApp _ (Builtin _ ItoF) x)) = optA x
 optA (EApp ty (EApp _ (Builtin _ IntExp) x) (ILit _ 2)) = pure $ EApp ty (EApp (ty ~> ty) (Builtin (ty ~> ty ~> ty) Times) x) x
+optA (EApp l (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) = do
+    start' <- optA start; end' <- optA end; nSteps' <- optA nSteps
+    incr <- optA $ (end' `eMinus` start') `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps' `eMinus` FLit F 1)
+    n <- nextU "n" F
+    pure $ EApp l (EApp undefined (EApp undefined (Builtin undefined Gen) start') (Lam (F ~> F) n (Var F n `ePlus` incr))) nSteps'
+optA (EApp l (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) = do
+    start' <- optA start; end' <- optA end; incr' <- optA incr
+    k <- nextU "k" I
+    n <- optA $ (end' `iMinus` start' `iPlus` ILit I 1) `iDiv` incr'
+    pure $ EApp l (EApp undefined (EApp undefined (Builtin undefined Gen) start') (Lam (I ~> I) k (Var I k `iPlus` incr'))) n
 optA (EApp l0 (EApp l1 ho0@(Builtin _ Fold) op) e) = do
     e' <- optA e; op' <- optA op
     case e' of
         (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) f) n) ->
             pure $ Id l0 $ FoldGen seed f op' n
-        (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) -> do
-            incrN <- optA $ (end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)
-            n <- nextU "n" F
-            pure $ Id l0 $ FoldGen start (Lam (F ~> F) n (EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) Plus) incrN) (Var F n))) op' nSteps
         (EApp _ (EApp _ (Builtin _ Map) f) x)
             | fTy@(Arrow dom fCod) <- eAnn f
             , Arrow _ (Arrow _ cod) <- eAnn op' -> do
@@ -259,14 +265,13 @@ optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
     seed' <- optA seed
     opA <- optA op
     case arr' of
-        -- TODO maybe rewrite irange to gen. so cases don't proliferate?
-        (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) (EApp _ (EApp _ (EApp _ (Builtin _ Gen) gseed) u) n)) (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) _) incr))
+        (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) (EApp _ (EApp _ (EApp _ (Builtin _ Gen) gseed0) u0) n)) (EApp _ (EApp _ (EApp _ (Builtin _ Gen) gseed1) u1) _))
             | (Arrow _ (Arrow _ tC)) <- eAnn f -> do
-            x <- nextU "x" uTy; k <- nextU "k" I
-            z <- nextU "z" undefined; y₀ <- nextU "y₀" uTy; y₁ <- nextU "y₁" I
-            let opZ=Lam (tC~>uTy~>I~>tC) z (Lam undefined y₀ (Lam undefined y₁ (EApp undefined (EApp undefined opA (Var tC z)) (EApp tC (EApp undefined f (Var uTy y₀)) (Var I y₁)))))
-            pure $ Id l $ U2 [gseed, start] [Lam (uTy ~> uTy) x (EApp uTy u (Var uTy x)), Lam (I ~> I) k (Var I k `iPlus` incr)] seed' opZ n
-          where uTy=eAnn gseed
+            x0 <- nextU "x₀" u0Ty; x1 <- nextU "x₁" u1Ty
+            z <- nextU "z" undefined; y₀ <- nextU "y₀" u0Ty; y₁ <- nextU "y₁" u1Ty
+            let opZ=Lam (tC~>u0Ty~>u1Ty~>tC) z (Lam undefined y₀ (Lam undefined y₁ (EApp undefined (EApp undefined opA (Var tC z)) (EApp tC (EApp undefined f (Var u0Ty y₀)) (Var u1Ty y₁)))))
+            pure $ Id l $ U2 [gseed0, gseed1] [Lam (u0Ty ~> u0Ty) x0 (EApp u0Ty u0 (Var u0Ty x0)), Lam (u1Ty ~> u1Ty) x1 (EApp u1Ty u1 (Var u1Ty x1))] seed' opZ n
+          where u0Ty=eAnn gseed0; u1Ty=eAnn gseed1
         (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) xs) ys)
             | Arrow dom0 (Arrow dom1 dom2) <- eAnn f
             , Arrow _ (Arrow _ cod) <- eAnn op -> do
@@ -288,14 +293,6 @@ optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
             x <- nextU "x" uTy
             pure $ Id l $ U2 [u] [Lam (uTy ~> uTy) x (EApp uTy f (Var uTy x))] seed' opA n
           where uTy = eAnn u
-        (EApp _ (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) -> do
-            incrN <- optA $ (end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps `eMinus` FLit F 1)
-            n <- nextU "n" F
-            pure $ Id l $ U2 [start] [Lam (F ~> F) n (Var F n `ePlus` incrN)] seed' opA nSteps
-        (EApp _ (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) -> do
-            k <- nextU "k" I
-            n <- optA $ (end `iMinus` start `iPlus` ILit I 1) `iDiv` incr
-            pure $ Id l $ U2 [start] [Lam (I ~> I) k (Var I k `iPlus` incr)] seed' opA n
         _ -> pure (EApp l (EApp t0 (EApp t1 (Builtin bt b) opA) seed') arr')
 optA (EApp l e0 e1) = EApp l <$> optA e0 <*> optA e1
 optA (ALit l es) = do

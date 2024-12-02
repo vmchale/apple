@@ -904,26 +904,6 @@ aeval (EApp oTy@(Arr oSh _) (EApp _ g@(Builtin _ CatE) x) y) t a | Just (ty, 1) 
     contents <- rfill g (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp tn)) [AI (AD xR lX Nothing Nothing Nothing (Just$Tmp xnR)), AI (AD yR lY Nothing Nothing Nothing (Just$Tmp ynR))]
     -- TODO: if size is statically known, could place y later (one less alloc...)
     pure (plX$plY$xnR =: ev (eAnn x) (xR,lX):ynR =: ev (eAnn y) (yR,lY):tn =: (Tmp xnR+Tmp ynR):vSz oSh t a (Tmp tn) sz++contents)
-aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) t a = do
-    n <- nI; startR <- nI; endR <- nI
-    pStart <- eval start startR; pEnd <- eval end endR; (plIncr,incrE) <- plC incr
-    let factor = case incr of {(ILit _ 1) -> id; _ -> \eϵ -> Bin Op.IDiv eϵ incrE}
-        nE=factor (Tmp endR - Tmp startR)+1
-    loop <- afor sh 0 ILt (Tmp n) (\i -> [Wr () (AElem t 1 (Just a) (Tmp i) 8) (Tmp startR), startR+=incrE])
-    pure (pStart++pEnd++plIncr (n=:nE:v8 sh t a (Tmp n)++[loop]))
-aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ FRange) (FLit _ s)) (FLit _ e)) (ILit _ n)) t a = do
-    incr2 <- nF2; acc2 <- nF2; i <- nI
-    let nE=KI$fromIntegral n
-    let incF=(e-s)/(realToFrac n-1)
-        loop=f2or sh i 0 ILt nE [Wr2F () (AElem t 1 (Just a) (Tmp i) 8) (FTmp acc2), MX2 () acc2 (FBin FPlus (FTmp acc2) (FTmp incr2))] [WrF () (AElem t 1 (Just a) (Tmp i) 8) (ConstF s), MX2 () acc2 (ConstF (s+incF,s+2*incF))]
-        -- if odd: s+incF,s+2*incF
-    pure (v8 sh t a nE++MX2 () acc2 (ConstF (s,s+incF)):MX2 () incr2 (ConstF (2*incF,2*incF)):[loop])
-aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ FRange) start) end) steps) t a = do
-    startR <- nF; incrR <- nF; n <- nI
-    putStart <- feval start startR; putN <- eval steps n
-    putIncr <- feval ((end `eMinus` start) `eDiv` (EApp F (Builtin (Arrow I F) ItoF) steps `eMinus` FLit F 1)) incrR
-    loop <- afor sh 0 ILt (Tmp n) (\i -> [WrF () (AElem t 1 (Just a) (Tmp i) 8) (FTmp startR), MX () startR (FTmp startR+FTmp incrR)])
-    pure (putStart++putIncr++putN++v8 sh t a (Tmp n)++[loop])
 aeval (EApp oTy@(Arr oSh _) (EApp _ g@(Builtin _ Cyc) xs) n) t a | Just sz <- aB oTy = do
     nO <- nI; nx <- nI
     (plN, nR) <- plEV n; (plX, (lX, xR)) <- plA xs
