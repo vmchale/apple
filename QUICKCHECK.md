@@ -30,7 +30,7 @@ sum via cons and then map-sum
 ```
 
 ```
-λxs. {x ⟜ ♮'xs; x%.|:x};
-λxs. {x ⟜ ♮'xs; x%.♮xs};
+λxs. {x ⟜ ♯'xs; x%.|:x};
+λxs. {x ⟜ ♯'xs; x%.♯xs};
 [x(*)⊗x];
 ```
