@@ -103,6 +103,7 @@ asm ix st (Fdiv _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b110 
 asm ix st (Fmax _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b10010 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fmin _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b10110 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fabs _ d0 d1:asms) = [0b00011110, 0x60, 0x3 `shiftL` 6 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
+asm ix st (Fabs2 _ v0 v1:asms) = [0b01001110, 0b11100000, 0b111110 `shiftL` 2 .|. be v1 `shiftR` 3, lb v1 v0]:asm (ix+4) st asms
 -- https://stackoverflow.com/a/57312875/11296354
 -- .2D arrangement specifier = two doubles in vector register
 asm ix st (Fadd2 _ x0 x1 x2:asms) = [0b01001110, 0x3 `shiftL` 5 .|. be x2, 0b110101 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms

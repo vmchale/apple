@@ -281,6 +281,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fmin2 { ann :: a, vDest, vSrc1, vSrc2 :: V2Reg freg }
                          | Fsqrt2 { ann :: a, vDest, vSrc :: V2Reg freg }
                          | Fneg2 { ann :: a, vDest, vSrc :: V2Reg freg }
+                         | Fabs2 { ann :: a, vDest, vSrc :: V2Reg freg }
                          | FcmpZ { ann :: a, dSrc :: freg }
                          | Fcmp { ann :: a, dSrc1, dSrc2 :: freg }
                          | Fneg { ann :: a, dDest, dSrc :: freg }
@@ -408,6 +409,7 @@ mapR _ (Fdiv2 l x0 x1 x2)    = Fdiv2 l x0 x1 x2
 mapR _ (Fmax2 l x0 x1 x2)    = Fmax2 l x0 x1 x2
 mapR _ (Fmin2 l x0 x1 x2)    = Fmin2 l x0 x1 x2
 mapR _ (Fsqrt2 l v0 v1)      = Fsqrt2 l v0 v1
+mapR _ (Fabs2 l v0 v1)       = Fabs2 l v0 v1
 mapR _ (Fneg2 l v0 v1)       = Fneg2 l v0 v1
 mapR _ (Faddp l d v)         = Faddp l d v
 mapR _ (Fmaxp l d v)         = Fmaxp l d v
@@ -496,6 +498,7 @@ fR _ Fmaxp{}               = mempty
 fR _ Fminp{}               = mempty
 fR _ Fneg2{}               = mempty
 fR _ Fsqrt2{}              = mempty
+fR _ Fabs2{}               = mempty
 fR f (Scvtf _ _ r)         = f r
 fR f (Fcvtms _ r _)        = f r
 fR f (Fcvtas _ r _)        = f r
@@ -610,6 +613,7 @@ mapFR f (Fdiv2 l x0 x1 x2)    = Fdiv2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fmax2 l x0 x1 x2)    = Fmax2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fmin2 l x0 x1 x2)    = Fmin2 l (f<$>x0) (f<$>x1) (f<$>x2)
 mapFR f (Fsqrt2 l v0 v1)      = Fsqrt2 l (f<$>v0) (f<$>v1)
+mapFR f (Fabs2 l v0 v1)       = Fabs2 l (f<$>v0) (f<$>v1)
 mapFR f (Fneg2 l v0 v1)       = Fneg2 l (f<$>v0) (f<$>v1)
 mapFR f (EorS l v0 v1 v2)     = EorS l (f<$>v0) (f<$>v1) (f<$>v2)
 mapFR f (ZeroS l v)           = ZeroS l (f<$>v)
@@ -709,6 +713,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fmax2 _ xD x0 x1)      = "fmax" <+> v3 xD x0 x1
         p4 (Fmin2 _ xD x0 x1)      = "fmin" <+> v3 xD x0 x1
         p4 (Fsqrt2 _ xD xS)        = "fsqrt" <+> av2 xD xS
+        p4 (Fabs2 _ xD xS)         = "fabs" <+> pvd xD <> "," <+> pvd xS
         p4 (Fneg2 _ xD xS)         = "fneg" <+> av2 xD xS
         p4 (Fadd2 _ xD x0 x1)      = "fadd" <+> v3 xD x0 x1
         p4 (Fsub2 _ xD x0 x1)      = "fsub" <+> v3 xD x0 x1

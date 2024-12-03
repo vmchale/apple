@@ -473,6 +473,9 @@ f2eval (IR.FU Op.FSqrt e) t = do
 f2eval (IR.FU Op.FNeg e) t = do
     (plE,x) <- plF2 e
     pure$plE[Fneg2 () (f2absReg t) x]
+f2eval (IR.FU Op.FAbs e) t = do
+    (plE,x) <- plF2 e
+    pure $ plE [Fabs2 () (f2absReg t) x]
 f2eval (IR.KF (0,0)) t =
     let q=f2absReg t
     in pure [ZeroS () q]

@@ -246,7 +246,7 @@ fS _ = False
 
 bS Times = True; bS Plus = True; bS Minus = True; bS Div  = True
 bS Neg   = True; bS Max  = True; bS Min   = True; bS Sqrt = True
-bS _     = False
+bS Abs   = True; bS _    = False
 
 hasS :: E a -> Bool
 hasS (Builtin _ b)     = bS b
