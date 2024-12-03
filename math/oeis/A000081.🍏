@@ -2,5 +2,5 @@
 λN.
 { sum ⇐ [(+)/ₒ 0 x]
 ; divisors ← λn. (λk. (n|k=0))§⍳ 1 n 1
-; 𝓕 ⟨0,1::int⟩ (λas. {n⟜ :as; sum ((λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))'⍳ 1 (n-1) 1)/.(n-1)}) N
+; 𝓕 𝔸01 (λas. {n⟜ :as; sum ((λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))'⍳ 1 (n-1) 1)/.(n-1)}) N
 }

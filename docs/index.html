@@ -259,8 +259,11 @@ Range</a></li>
 <li><a href="#zip" id="toc-zip">Zip</a></li>
 <li><a href="#fold" id="toc-fold">Fold</a></li>
 <li><a href="#scan" id="toc-scan">Scan</a></li>
-<li><a href="#array-literals" id="toc-array-literals">Array
-Literals</a></li>
+<li><a href="#array-literals" id="toc-array-literals">Array Literals</a>
+<ul>
+<li><a href="#compact-numeric-literals"
+id="toc-compact-numeric-literals">Compact Numeric Literals</a></li>
+</ul></li>
 <li><a href="#reverse" id="toc-reverse">Reverse</a></li>
 <li><a href="#outer-product" id="toc-outer-product">Outer
 Product</a></li>
@@ -462,6 +465,14 @@ Vec 3 [1, 3, 6]</code></pre>
 <pre><code> &gt; ⟨⟨0,1⟩,⟨_1,0::int⟩⟩
 [ [0, 1]
 , [-1, 0] ]</code></pre>
+<h3 id="compact-numeric-literals">Compact Numeric Literals</h3>
+<pre><code>𝔸21</code></pre>
+<p>will be interpreted as</p>
+<pre><code>⟨2,1⟩</code></pre>
+<p>This only works for single-digit numbers, but cosmically justified
+numbers <a
+href="https://groups.google.com/g/shaktidb/c/sYcklkglN8w/m/Vf-qdfx3AgAJ">tend
+to be small</a>.</p>
 <h2 id="reverse">Reverse</h2>
 <p><code>~</code> reverses an array.</p>
 <pre><code> &gt; ~(irange 0 9 1)
@@ -586,7 +597,7 @@ previously computed values.</p>
 <pre><code> &gt; :ty 𝓕
 Vec m a → (Vec k a → a) → int(n) → Vec (m + n) a</code></pre>
 <p>Fibonacci sequence:</p>
-<pre><code> &gt; 𝓕 ⟨1::int,1⟩ [}.x+}.(}:x)] 10
+<pre><code> &gt; 𝓕 𝔸11 [}.x+}.(}:x)] 10
 Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]</code></pre>
 <h2 id="rank">Rank</h2>
 <p>Rank `<code>{i,j∘[k,l]}</code> lifts a function to operate on i,

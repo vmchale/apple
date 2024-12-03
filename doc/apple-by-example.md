@@ -143,6 +143,20 @@ Array literals are delineated by `⟨`...`⟩`.
 , [-1, 0] ]
 ```
 
+### Compact Numeric Literals
+
+```
+𝔸21
+```
+
+will be interpreted as
+
+```
+⟨2,1⟩
+```
+
+This only works for single-digit numbers, but cosmically justified numbers [tend to be small](https://groups.google.com/g/shaktidb/c/sYcklkglN8w/m/Vf-qdfx3AgAJ).
+
 ## Reverse
 
 `~` reverses an array.
@@ -363,7 +377,7 @@ Vec m a → (Vec k a → a) → int(n) → Vec (m + n) a
 Fibonacci sequence:
 
 ```
- > 𝓕 ⟨1::int,1⟩ [}.x+}.(}:x)] 10
+ > 𝓕 𝔸11 [}.x+}.(}:x)] 10
 Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
 ```
 
