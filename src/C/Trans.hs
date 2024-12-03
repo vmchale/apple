@@ -322,7 +322,7 @@ rW ty at | isΠ ty = do
     slopO <- nI
     pure $ let sz=bT ty in (IT slopO, \k -> Mv () (at k) (TupM slopO Nothing) sz, Just (sac slopO sz, popc sz))
 
-aiA slopD (xd,lX) i n sz = cpy (Raw slopD 0 Nothing) (Raw xd (i*n) lX) n sz
+aiA slopD (xd,lX) i n = cpy (Raw slopD 0 Nothing) (Raw xd (i*n) lX) n
 aiR (td,l) (yR,lY,yRnk) n sz = [cpy (Raw td 0 l) (AElem yR yRnk lY 0) n sz, td+=(n*KI sz)]
 
 writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
@@ -1365,7 +1365,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     (plX, (lX, xR)) <- plA x
     (dts, plDs) <- plDim xRnk (xR, lX)
     (tdims, dims) <- unzip <$> zipWithM (\dt (i,d) -> do {odim <- nI; pure (odim, odim =: (Bin Op.IDiv (Tmp dt-fromIntegral i) (maybe 1 fromIntegral d)+1))}) dts as
-    (tb,bs) <- unzip <$> zipWithM (\dt i -> do {b <- nI; pure (b, b =: (Tmp dt-(fromIntegral$i-1)))}) dts (fst<$>as)
+    (tb,bs) <- unzip <$> zipWithM (\dt i -> do {b <- nI; pure (b, b =: (Tmp dt-fromIntegral(i-1)))}) dts (fst<$>as)
     io <- nIs tdims; iw <- nIs is
     let slopSz=product isi; slopRnk=length isi; slopE=fromIntegral (slopSz*fromIntegral oSz+(slopRnk+1)*8)
         rnk=KI oRnk
@@ -1880,7 +1880,7 @@ feval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     plSeeds <- concat <$> zipWithM eeval seeds xs
     usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     fss <- writeRF f (FT t:xs) (FT t)
-    pure $ (plU ++ plSeeds ++ plN [Rof () k nE (fss++usss)])
+    pure (plU ++ plSeeds ++ plN [Rof () k nE (fss++usss)])
 feval (Id _ (FoldGen seed g f n)) t = do
     x <- nF; acc <- nF
     k <- nI

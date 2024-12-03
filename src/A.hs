@@ -123,7 +123,7 @@ pStride :: (Int, Maybe Int) -> Doc ann
 pStride (i, Nothing) = pretty i
 pStride (i, Just d)  = pretty i <> "∘" <> pretty d
 
-nOp as = encloseSep lbrace rbrace comma as
+nOp = encloseSep lbrace rbrace comma
 
 instance Pretty Builtin where
     pretty Plus       = "+"
