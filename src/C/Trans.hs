@@ -70,9 +70,6 @@ type CM = State CSt
 infix 9 +=
 (+=) t i = t =: (Tmp t+i)
 
-fop op e0 = EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) op) e0)
-eDiv = fop Div; eMinus = fop Minus
-
 isF, isI, isB, isIF :: T a -> Bool
 isF F = True; isF _ = False
 isI I = True; isI _ = False
@@ -1361,7 +1358,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     , Just (tX, xRnk) <- tRnk (eAnn x)
     , Just oRnk <- staRnk oSh
     , Just oSz <- nSz tC, Just xSz <- nSz tX, oRnk==xRnk = do
-    xRd <- nI; szR <- nI; slopP <- nI; td <- nI
+    xRd <- nI; szR <- nI; slopP <- nI
     (plX, (lX, xR)) <- plA x
     (dts, plDs) <- plDim xRnk (xR, lX)
     (tdims, dims) <- unzip <$> zipWithM (\dt (i,d) -> do {odim <- nI; pure (odim, odim =: (Bin Op.IDiv (Tmp dt-fromIntegral i) (maybe 1 fromIntegral d)+1))}) dts as
@@ -1579,8 +1576,8 @@ eval (EApp _ (Builtin _ Size) xs) t | Arr sh _ <- eAnn xs = do
     pure $ plE [rnkR =: eRnk sh (xsR,l), SZ () t xsR (Tmp rnkR) l]
 eval (EApp _ (Builtin _ Size) xs) t | nind (eAnn xs) = pure [t=:1]
 eval (EApp _ (EApp _ (Builtin _ IntExp) (FLit _ (-1))) n) t = do
-    (plR,nR) <- plEV n
-    pure $ plR [t=:1, Cmov () (IUn IOdd (Tmp nR)) t (KI (-1))]
+    (plRϵ,nR) <- plEV n
+    pure $ plRϵ [t=:1, Cmov () (IUn IOdd (Tmp nR)) t (KI (-1))]
 eval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
     xR <- nI; nR <- nI
     plX <- eval x xR; plN <- eval n nR
@@ -1735,8 +1732,8 @@ feval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just fb <- mFop op = do
     (pl0,e0e) <- plD e0; (pl1,e1R) <- plF e1
     pure $ pl0 $ pl1 [MX () t (FBin fb e0e (FTmp e1R))]
 feval (EApp _ (EApp _ (Builtin _ IntExp) (FLit _ (-1))) n) t = do
-    (plR,nR) <- plEV n
-    pure $ plR [MX () t 1, Fcmov () (IUn IOdd (Tmp nR)) t (ConstF (-1))]
+    (plRϵ,nR) <- plEV n
+    pure $ plRϵ [MX () t 1, Fcmov () (IUn IOdd (Tmp nR)) t (ConstF (-1))]
 feval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
     xR <- nF; nR <- nI
     plX <- feval x xR; plN <- eval n nR
