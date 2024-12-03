@@ -239,23 +239,23 @@ fc FPlus = Just (\_ x -> MX2 () x (ConstF (0,0))); fc FTimes = Just (\_ x -> MX2
 fc FMax = Just (\x₀ x -> DS () x x₀); fc FMin = Just (\x₀ x -> DS () x x₀)
 fc _ = Nothing
 
-bS, fS :: Builtin -> Bool
+fS :: Builtin -> Bool
 fS Times = True; fS Plus = True
 fS Max = True; fS Min = True
 fS _ = False
 
-bS Times = True; bS Plus = True; bS Minus = True; bS Div  = True
-bS Neg   = True; bS Max  = True; bS Min   = True; bS Sqrt = True
-bS Abs   = True; bS _    = False
-
 hasS :: E a -> Bool
-hasS (Builtin _ b)     = bS b
 hasS (EApp _ e0 e1)    = hasS e0&&hasS e1
 hasS (Lam _ _ e)       = hasS e
 hasS Var{}             = True
 hasS FLit{}            = True
 hasS Cond{}            = False
 hasS (LLet _ (_,e) e') = hasS e&&hasS e'
+hasS (Builtin _ b)     = bS b
+  where
+    bS Times = True; bS Plus = True; bS Minus = True; bS Div  = True
+    bS Neg   = True; bS Max  = True; bS Min   = True; bS Sqrt = True
+    bS Abs   = True; bS _    = False
 
 write2 :: E (T ()) -> [F2Temp] -> F2Temp -> CM [CS ()]
 write2 (Lam _ x e) (v:vs) vret = addD2 x v *> write2 e vs vret
