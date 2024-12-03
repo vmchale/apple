@@ -87,6 +87,10 @@ allT = testGroup "jit"
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,7,6,9::Double] }
     , testCase "luhn check" $ do { res <- fpAi "test/examples/luhn.🍎" [4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]; res @?= 1 }
+    , testCase "conv with stride" $ do
+        (AA 2 [2,2] res) <- fpAa "test/data/strideConv.🍏"
+            (AA 2 [4,4] [20::Double,200,-5,23,-13,134,119,100,120,32,49,25,-120,12,9,23])
+        res @?= [200,119,120,49::Double]
     , testCase "ISBN-13" $ do
         res <- tfpAi "test/examples/isbn13.🍎"
             [ [9,7,8,0,5,9,6,5,2,8,1,2,6]
