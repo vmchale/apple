@@ -1607,6 +1607,15 @@ eval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
     (plE, (lE, eR)) <- plA e
     (plI,iE) <- plC i
     pure $ plE $ plI [t =: EAt (AElem eR 1 lE iE 8)]
+eval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
+    (plX, (lX, xR)) <- plA xs
+    (plNs, nRs) <- first thread.unzip <$> traverse plEV ns
+    xRd <- nI
+    (dts, dss) <- plDim rnk (xR, lX)
+    (sts, sssϵ) <- offByDim (reverse dts)
+    let _:strides = sts; sss=init sssϵ
+    -- TODO: requires ns to be accessed by temps because otherwise const 0 gets optimized so that the stride is not read...
+    pure $ plX $ tail dss ++ plNs (sss++[xRd=:DP xR (KI rnk), t =: EAt (At xR (Tmp<$>strides) (Tmp<$>nRs) lX 8)])
 eval (EApp _ (Builtin _ Head) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [t =: EAt (AElem a 1 l 0 8)]
