@@ -18,6 +18,7 @@
   - [ ] A S S
   - [ ] S A S
   - [x] S S S
+- [x] gen-array
 - [ ] filter
   - [ ] array
 - [ ] scan

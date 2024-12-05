@@ -1347,6 +1347,22 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | isΠR 
     (_, ss) <- writeF op [IPA acc] (IT acc0)
     loop <- arof sh nE $ Mv () (Raw td 0 (Just a) πsz) (TupM acc Nothing) πsz:td+=KI πsz:ss++[Mv () (TupM acc Nothing) (TupM acc0 Nothing) πsz]
     pure (plN$vSz sh t a nE πsz++m'sa acc mP++m'sa acc0 mP++plS++td=:DP t 1:loop:m'pop mP++m'pop mP)
+aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr xSh tX <- eAnn seed, Just xSz <- nSz tX = do
+    (plN, nE) <- plC n
+    (seedR, lSeed, plSeed) <- maa seed
+    x <- nI; lX <- nextArr x
+    (y, lY, ss) <- writeA op [AA x (Just lX)]
+    rnk <- nI; rnkX <- nI; nX <- nI
+    let xRnkE=Tmp rnkX; rnkE=Tmp rnk; nXe=Tmp nX
+        l1=ss++[cpy (AElem y xRnkE lY 0) (AElem x xRnkE (Just lX) 0) (Tmp nX) xSz, cpy (AElem t rnkE (Just a) 0) (AElem y xRnkE lY 0) nXe xSz]
+    loop <- afor oSh 1 ILt nE $ \k -> cpy (AElem x xRnkE (Just lX) 0) (AElem y xRnkE lY 0) (Tmp nX) xSz:ss++[cpy (AElem t rnkE (Just a) (Tmp k*nXe)) (AElem y xRnkE lY 0) nXe xSz]
+    pure $
+        plN $ plSeed
+        ++rnkX=:eRnk xSh (seedR,lSeed):SZ () nX seedR xRnkE lSeed:rnk=:(xRnkE+1)
+        :Ma () oSh a t rnkE (nXe*nE) xSz:Wr () (ADim t 0 (Just a)) nE:CpyD () (ADim t 1 (Just a)) (ADim seedR 0 lSeed) xRnkE
+        :Ma () xSh lX x xRnkE nXe xSz:Wr () (ARnk x (Just lX)) xRnkE:CpyD () (ADim x 0 (Just lX)) (ADim seedR 0 lSeed) xRnkE:cpy (AElem x xRnkE (Just lX) 0) (AElem seedR xRnkE lSeed 0) nXe xSz
+        :l1++[loop]
+-- also (%.)/(re: 5 ⟨⟨1,1⟩,⟨1,0::int⟩⟩) would be nice
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just ty <- aN tSeed, sz <- bT ty = do
     (plN, nE) <- plC n
     (plX, (lX, xR)) <- plA seed; kϵ <- nI
