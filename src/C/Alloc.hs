@@ -69,12 +69,12 @@ sCF al (Liveness i o fi fo) = Liveness (al@@i) (al@@o) fi fo
 -- first cut: don't do re-fills
 {-# SCC aa #-}
 aa :: IM.IntMap Temp -> [CS Liveness] -> State Slots [CS Liveness]
-aa ts (c@(Ma a sh l t _ _ _):cs) = do
+aa ts (c@(Ma a sh l t rnk _ _):cs) = do
     s <- m'liven (ins a) l sh
     let next = case s of
-            Nothing -> c
-            Just l' -> Aa a l t (ts!l')
-    (next:) <$> aa ts cs
+            Nothing -> (c:)
+            Just l' -> (Aa a l t (ts!l'):).(Wr a (ARnk t (Just l)) rnk:)
+    next <$> aa ts cs
 aa ts (c:cs) = (c:)<$>aa ts cs
 aa _ [] = pure []
 
