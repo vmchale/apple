@@ -669,7 +669,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ A1) xs) n) t a | Just (tX, xRnk) <- t
     (dts, plDs) <- plDim xRnk (xR, lX)
     szA <- nI
     let oRnk=KI$xRnk-1
-    pure (plX$tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:plN [cpy (AElem t oRnk (Just a) 0) (AElem xR (KI xRnk) lX ((nE-1)*Tmp szA)) (Tmp szA) sz])
+    pure (plX$tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:plN [cpy (AElem t oRnk (Just a) 0) (AElem xR (KI xRnk) lX (nE*Tmp szA)) (Tmp szA) sz])
                                                           | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Last) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     (plX, (lX, xR)) <- plA xs
