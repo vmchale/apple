@@ -660,14 +660,16 @@ aeval (EApp (Arr oSh _) (Builtin _ Head) xs) t a | Just (tX, xRnk) <- tRnk (eAnn
     (plX, (lX, xR)) <- plA xs
     (dts, plDs) <- plDim xRnk (xR, lX)
     szA <- nI
-    pure (plX$tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t 1 (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (KI$xRnk-1):[cpy (AElem t 1 (Just a) 0) (AElem xR (KI xRnk) lX 0) (Tmp szA) sz])
+    let oRnk=KI$xRnk-1
+    pure (plX$tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (KI$xRnk-1):[cpy (AElem t oRnk (Just a) 0) (AElem xR (KI xRnk) lX 0) (Tmp szA) sz])
                                                | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Last) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     (plX, (lX, xR)) <- plA xs
     (dts, plDs) <- plDim xRnk (xR, lX)
     let n=head dts
     szA <- nI
-    pure (plX$plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t 1 (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (KI$xRnk):[cpy (AElem t 1 (Just a) 0) (AElem xR (KI xRnk) lX ((Tmp n-1)*Tmp szA)) (Tmp szA) sz])
+    let oRnk=KI$xRnk-1
+    pure (plX$plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:[cpy (AElem t oRnk (Just a) 0) (AElem xR (KI xRnk) lX ((Tmp n-1)*Tmp szA)) (Tmp szA) sz])
                                                | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Tail) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     (plX, (lX, xR)) <- plA xs
