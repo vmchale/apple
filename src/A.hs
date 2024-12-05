@@ -400,6 +400,7 @@ data Idiom = FoldSOfZip { seedI, opI :: E (T ()), esI :: [E (T ())] }
            | FoldGen { seedG, ufG, fG, nG :: E (T ()) }
            | U2 { seedGs, ufs :: [E (T ())], seedC, fG, nG :: E (T ()) }
            | AShLit { litSh :: [Int], esLit :: [E (T ())] }
+           | Aɴ { idArr :: E (T ()), idIxes :: [E (T ())] }
            deriving (Generic)
 
 instance Pretty Idiom where
@@ -408,6 +409,7 @@ instance Pretty Idiom where
     pretty (FoldGen seed g f n)    = parens ("fold-gen" <+> brackets (pretty seed) <+> parens (pretty g) <+> parens (pretty f) <+> parens (pretty n))
     pretty (U2 seed gs u f n)      = parens ("fold-2-ix" <+> pretty seed <+> pretty gs <+> parens (pretty u <> "," <+> pretty f) <+> parens (pretty n))
     pretty (AShLit re es)          = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
+    pretty (Aɴ ia iix)             = parens ("at" <+> pretty ia <+> pretty iix)
 
 instance Show Idiom where show=show.pretty
 

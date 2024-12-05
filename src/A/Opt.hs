@@ -51,6 +51,12 @@ optA (Builtin ty C)        | Arrow fTy (Arrow gTy@(Arrow _ gC) xTy@(Arrow tC tD)
 optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
+optA (EApp l0 (EApp l1 at@(Builtin _ A1) e) n) = do
+    e' <- optA e; n' <- optA n
+    pure $ case e' of
+        (Id _ (Aɴ e₁ ns))                      -> Id l0 $ Aɴ e₁ (ns++[n'])
+        (EApp _ (EApp _ (Builtin _ A1) e₁) n₁) -> Id l0 $ Aɴ e₁ [n₁,n']
+        _                                      -> EApp l0 (EApp l1 at e') n'
 optA (EApp l0 (EApp l1 op@(Builtin _ IDiv) e0) e1) = do
     e0' <- optA e0; e1' <- optA e1
     pure $ case (e0',e1') of
@@ -317,3 +323,4 @@ optI (FoldOfZip zop op es)   = FoldOfZip <$> optA zop <*> optA op <*> traverse o
 optI (FoldGen seed f g n)    = FoldGen <$> optA seed <*> optA f <*> optA g <*> optA n
 optI (U2 seed f u g n)       = U2 <$> traverse optA seed <*> traverse optA f <*> optA u <*> optA g <*> optA n
 optI (AShLit ds es)          = AShLit ds <$> traverse optA es
+optI (Aɴ e ix)               = Aɴ <$> optA e <*> traverse optA ix
