@@ -802,7 +802,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
 aeval e t a | (Arr oSh _) <- eAnn e, Just (f, xss) <- r00 e, all isF (unroll$eAnn f), (Arr sh _) <- eAnn (head xss), hasS f = do
     xRds <- nIs xss; tD <- nI
     rnkR <- nI; szR <- nI; i <- nI
-    (plXs, (lXs, xRs)) <- second unzip.unzip <$> traverse plA xss
+    (plXs, (lXs, xRs)) <- second unzip <$> plAs xss
     let xR=head xRs; lX=head lXs
     arg1s <- nFs xss; ret1 <- nF
     args <- nF2s xss; ret <- nF2
@@ -813,7 +813,7 @@ aeval e t a | (Arr oSh _) <- eAnn e, Just (f, xss) <- r00 e, all isF (unroll$eAn
         step1=m1s++ss1++[wr1]
         step=ms++ss++[wr]
         loop=f2or sh i 0 ILt (Tmp szR) step step1
-    pure (thread plXs$rnkR=:eRnk sh (xR,lX):SZ () szR xR (Tmp rnkR) lX:Ma () oSh a t (Tmp rnkR) (Tmp szR) 8:CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):zipWith (\xRϵ xRd -> xRd=:DP xRϵ (Tmp rnkR)) xRs xRds++tD=:DP t (Tmp rnkR):[loop])
+    pure (plXs$rnkR=:eRnk sh (xR,lX):SZ () szR xR (Tmp rnkR) lX:Ma () oSh a t (Tmp rnkR) (Tmp szR) 8:CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):zipWith (\xRϵ xRd -> xRd=:DP xRϵ (Tmp rnkR)) xRs xRds++tD=:DP t (Tmp rnkR):[loop])
 aeval e t a
     | Just (f, xss) <- r00 e
     , Just xsTys <- traverse (aN.eAnn) xss
@@ -823,11 +823,11 @@ aeval e t a
     , Arr oSh _ <- eAnn e = do
     xRds <- nIs xss; tD <- nI
     rnkR <- nI; szR <- nI
-    (plXs, (lXs, xRs)) <- second unzip.unzip <$> traverse plA xss
+    (plXs, (lXs, xRs)) <- second unzip <$> plAs xss
     let xR=head xRs; lX=head lXs
     (step, pinches) <- aS f (reverse$zipWith3 (\tXϵ xRd lXϵ -> (tXϵ, \iϵ -> Raw xRd (Tmp iϵ) lXϵ)) xsTys xRds lXs) tC (\iϵ -> Raw tD (Tmp iϵ) (Just a))
     loop <- afor sh 0 ILt (Tmp szR) (\i -> step (repeat i) i)
-    pure (thread plXs$rnkR=:eRnk sh (xR,lX):SZ () szR xR (Tmp rnkR) lX:Ma () oSh a t (Tmp rnkR) (Tmp szR) szC:CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):zipWith (\xRϵ xRd -> xRd=:DP xRϵ (Tmp rnkR)) xRs xRds++tD=:DP t (Tmp rnkR):sas pinches [loop])
+    pure (plXs$rnkR=:eRnk sh (xR,lX):SZ () szR xR (Tmp rnkR) lX:Ma () oSh a t (Tmp rnkR) (Tmp szR) szC:CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):zipWith (\xRϵ xRd -> xRd=:DP xRϵ (Tmp rnkR)) xRs xRds++tD=:DP t (Tmp rnkR):sas pinches [loop])
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs) ys) t a
     | Just (yT, yRnk) <- tRnk (eAnn ys), Just (_, xRnk) <- tRnk (eAnn xs)
     , Arrow tX (Arrow _ tCod) <- eAnn op, Just (tC, cSz) <- rr tCod
@@ -1470,6 +1470,9 @@ plA :: E (T ()) -> CM ([CS ()] -> [CS ()], (Maybe AL, Temp))
 plA (Var _ x) = do {st <- gets avars; pure (id, getT st x)}
 plA e         = do {(t,lX,plX) <- maa e; pure ((plX++), (lX, t))}
 
+plAs :: [E (T ())] -> CM ([CS ()] -> [CS ()], [(Maybe AL, Temp)])
+plAs = fmap (first thread.unzip).traverse plA
+
 peval :: E (T ()) -> BTemp -> CM [CS ()]
 peval (LLet _ b e) t = do
     ss <- llet b
@@ -1838,7 +1841,7 @@ feval (Id _ (FoldOfZip zop op (p:qs))) acc
     , Just (tP, pSz) <- aRr tPs
     , Just (tQs, qSzs) <- unzip<$>traverse (aRr.eAnn) qs = do
     x <- rtemp tP; ys <- traverse rtemp tQs; nR <- nI
-    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- first thread.unzip <$> traverse plA qs
+    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- plAs qs
     ss <- writeRF op (FT acc:x:ys) (FT acc)
     let mQs at = [mt (AElem qR 1 lQ at qSz) y | (y, (lQ, qR), qSz) <- zip3 ys aQs qSzs]
     loop <- afor1 pSh 1 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mQs (Tmp i)++ss)
@@ -1850,7 +1853,7 @@ feval (Id _ (FoldSOfZip seed op (p:qs))) acc
     , Just (tQs, qSzs) <- unzip<$>traverse (aRr.eAnn) qs = do
     x <- rtemp tP; ys <- traverse rtemp tQs; nR <- nI
     plSeed <- feval seed acc
-    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- first thread.unzip <$>traverse plA qs
+    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- plAs qs
     ss <- writeRF op (FT acc:x:ys) (FT acc)
     loop <- afor pSh 0 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:[mt (AElem qR 1 lQ (Tmp i) qSz) y | (y, (lQ, qR), qSz) <- zip3 ys aQs qSzs]++ss)
     pure $ plPP$plQs$nR=:ev tPs (pR,lP):plSeed++[loop]
