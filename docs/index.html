@@ -283,7 +283,10 @@ Bind</a></li>
 </ul></li>
 <li><a href="#strong-induction" id="toc-strong-induction">Strong
 Induction</a></li>
-<li><a href="#rank" id="toc-rank">Rank</a></li>
+<li><a href="#rank" id="toc-rank">Rank</a>
+<ul>
+<li><a href="#sum-axes" id="toc-sum-axes">Sum Axes</a></li>
+</ul></li>
 <li><a href="#dot-product" id="toc-dot-product">Dot Product</a></li>
 <li><a href="#random-numbers" id="toc-random-numbers">Random
 Numbers</a></li>
@@ -597,7 +600,7 @@ previously computed values.</p>
 <pre><code> &gt; :ty 𝓕
 Vec m a → (Vec k a → a) → int(n) → Vec (m + n) a</code></pre>
 <p>Fibonacci sequence:</p>
-<pre><code> &gt; 𝓕 𝔸11 [}.x+}.(}:x)] 10
+<pre><code> &gt; 𝓕 ⟨1::int,1⟩ [}.x+}.(}:x)]
 Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]</code></pre>
 <h2 id="rank">Rank</h2>
 <p>Rank `<code>{i,j∘[k,l]}</code> lifts a function to operate on i,
@@ -627,6 +630,26 @@ Arr (3×2) [ [5.0, 6.0]
           , [3.0, 4.0] ]</code></pre>
 <pre><code> &gt; :ty [♭`{3∘[2,3,4]} (x :: Arr (60000 × 28 × 28 × 1) float)]
 Arr (60000 × 28 × 28 × 1) float → Arr (60000 × 784) float</code></pre>
+<h3 id="sum-axes">Sum Axes</h3>
+<pre><code> &gt; {a ← ⟨⟨⟨0::int,1,2,3⟩,⟨4,5,6,7⟩,⟨8,9,10,11⟩⟩,⟨⟨12,13,14,15⟩,⟨16,17,18,19⟩,⟨20,21,22,23⟩⟩⟩; ((+)/)`{1} a}
+Arr (3×4) [ [12, 14, 16, 18]
+          , [20, 22, 24, 26]
+          , [28, 30, 32, 34] ]
+ &gt; {a ← ⟨⟨⟨0::int,1,2,3⟩,⟨4,5,6,7⟩,⟨8,9,10,11⟩⟩,⟨⟨12,13,14,15⟩,⟨16,17,18,19⟩,⟨20,21,22,23⟩⟩⟩; ((+)/)`{1∘[2]} a}
+Arr (2×4) [ [12, 15, 18, 21]
+          , [48, 51, 54, 57] ]
+ &gt; {a ← ⟨⟨⟨0::int,1,2,3⟩,⟨4,5,6,7⟩,⟨8,9,10,11⟩⟩,⟨⟨12,13,14,15⟩,⟨16,17,18,19⟩,⟨20,21,22,23⟩⟩⟩; ((+)/)`{1∘[3]} a}
+Arr (2×3) [ [6, 22, 38]
+          , [54, 70, 86] ]
+ &gt; {a ← ⟨⟨⟨0::int,1,2,3⟩,⟨4,5,6,7⟩,⟨8,9,10,11⟩⟩,⟨⟨12,13,14,15⟩,⟨16,17,18,19⟩,⟨20,21,22,23⟩⟩⟩; [(+)/* 0 x]`{2} a}
+Vec 4 [60, 66, 72, 78]
+ &gt; {a ← ⟨⟨⟨0::int,1,2,3⟩,⟨4,5,6,7⟩,⟨8,9,10,11⟩⟩,⟨⟨12,13,14,15⟩,⟨16,17,18,19⟩,⟨20,21,22,23⟩⟩⟩; [(+)/* 0 x]`{2∘[1,3]} a}
+Vec 3 [60, 92, 124]
+ &gt; {a ← ⟨⟨⟨0::int,1,2,3⟩,⟨4,5,6,7⟩,⟨8,9,10,11⟩⟩,⟨⟨12,13,14,15⟩,⟨16,17,18,19⟩,⟨20,21,22,23⟩⟩⟩; [(+)/* 0 x]`{2∘[2,3]} a}
+Vec 2 [66, 210]</code></pre>
+<p>For comparison:</p>
+<pre><code>{a ← ⟨⟨⟨0,1,2,3⟩,⟨4,5,6,7⟩,⟨8,9,10,11⟩⟩,⟨⟨12,13,14,15⟩,⟨16,17,18,19⟩,⟨20,21,22,23⟩⟩⟩; sum2 ← [(+)/* 0 (x::M int)]; sum2&#39;a}
+{a ← ⟨⟨⟨0::int,1,2,3⟩,⟨4,5,6,7⟩,⟨8,9,10,11⟩⟩,⟨⟨12,13,14,15⟩,⟨16,17,18,19⟩,⟨20,21,22,23⟩⟩⟩; (+)/* 0 a}</code></pre>
 <h2 id="dot-product">Dot Product</h2>
 <p><code>x⋅y</code> is shorthand for <code>(+)/(*)`x y</code>.</p>
 <h2 id="random-numbers">Random Numbers</h2>
@@ -775,38 +798,38 @@ Mean</h2>
 }</code></pre>
 <p>This is equivalent to the <a
 href="https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d">Python</a>:</p>
-<div class="sourceCode" id="cb67"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid (x):</span>
-<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">1</span><span class="op">/</span>(<span class="dv">1</span> <span class="op">+</span> np.exp(<span class="op">-</span>x))</span>
-<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid_derivative(x):</span>
-<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> x)</span>
-<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> np.array([[<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">1</span>,<span class="dv">1</span>]])</span>
-<span id="cb67-10"><a href="#cb67-10" aria-hidden="true" tabindex="-1"></a>expected_output <span class="op">=</span> np.array([[<span class="dv">0</span>],[<span class="dv">1</span>],[<span class="dv">1</span>],[<span class="dv">0</span>]])</span>
-<span id="cb67-11"><a href="#cb67-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-12"><a href="#cb67-12" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">=</span> np.dot(inputs,hidden_weights)</span>
-<span id="cb67-13"><a href="#cb67-13" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">+=</span> hidden_bias</span>
-<span id="cb67-14"><a href="#cb67-14" aria-hidden="true" tabindex="-1"></a>hidden_layer_output <span class="op">=</span> sigmoid(hidden_layer_activation)</span>
-<span id="cb67-15"><a href="#cb67-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-16"><a href="#cb67-16" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">=</span> np.dot(hidden_layer_output,output_weights)</span>
-<span id="cb67-17"><a href="#cb67-17" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">+=</span> output_bias</span>
-<span id="cb67-18"><a href="#cb67-18" aria-hidden="true" tabindex="-1"></a>predicted_output <span class="op">=</span> sigmoid(output_layer_activation)</span>
-<span id="cb67-19"><a href="#cb67-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-20"><a href="#cb67-20" aria-hidden="true" tabindex="-1"></a><span class="co">#Backpropagation</span></span>
-<span id="cb67-21"><a href="#cb67-21" aria-hidden="true" tabindex="-1"></a>error <span class="op">=</span> expected_output <span class="op">-</span> predicted_output</span>
-<span id="cb67-22"><a href="#cb67-22" aria-hidden="true" tabindex="-1"></a>d_predicted_output <span class="op">=</span> error <span class="op">*</span> sigmoid_derivative(predicted_output)</span>
-<span id="cb67-23"><a href="#cb67-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-24"><a href="#cb67-24" aria-hidden="true" tabindex="-1"></a>error_hidden_layer <span class="op">=</span> d_predicted_output.dot(output_weights.T)</span>
-<span id="cb67-25"><a href="#cb67-25" aria-hidden="true" tabindex="-1"></a>d_hidden_layer <span class="op">=</span> error_hidden_layer <span class="op">*</span> sigmoid_derivative(hidden_layer_output)</span>
-<span id="cb67-26"><a href="#cb67-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-27"><a href="#cb67-27" aria-hidden="true" tabindex="-1"></a><span class="co">#Updating Weights and Biases</span></span>
-<span id="cb67-28"><a href="#cb67-28" aria-hidden="true" tabindex="-1"></a>output_weights <span class="op">+=</span> hidden_layer_output.T.dot(d_predicted_output)</span>
-<span id="cb67-29"><a href="#cb67-29" aria-hidden="true" tabindex="-1"></a>output_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_predicted_output,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb67-30"><a href="#cb67-30" aria-hidden="true" tabindex="-1"></a>hidden_weights <span class="op">+=</span> inputs.T.dot(d_hidden_layer)</span>
-<span id="cb67-31"><a href="#cb67-31" aria-hidden="true" tabindex="-1"></a>hidden_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_hidden_layer,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb71"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid (x):</span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">1</span><span class="op">/</span>(<span class="dv">1</span> <span class="op">+</span> np.exp(<span class="op">-</span>x))</span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sigmoid_derivative(x):</span>
+<span id="cb71-7"><a href="#cb71-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> x)</span>
+<span id="cb71-8"><a href="#cb71-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-9"><a href="#cb71-9" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> np.array([[<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">1</span>,<span class="dv">1</span>]])</span>
+<span id="cb71-10"><a href="#cb71-10" aria-hidden="true" tabindex="-1"></a>expected_output <span class="op">=</span> np.array([[<span class="dv">0</span>],[<span class="dv">1</span>],[<span class="dv">1</span>],[<span class="dv">0</span>]])</span>
+<span id="cb71-11"><a href="#cb71-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-12"><a href="#cb71-12" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">=</span> np.dot(inputs,hidden_weights)</span>
+<span id="cb71-13"><a href="#cb71-13" aria-hidden="true" tabindex="-1"></a>hidden_layer_activation <span class="op">+=</span> hidden_bias</span>
+<span id="cb71-14"><a href="#cb71-14" aria-hidden="true" tabindex="-1"></a>hidden_layer_output <span class="op">=</span> sigmoid(hidden_layer_activation)</span>
+<span id="cb71-15"><a href="#cb71-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-16"><a href="#cb71-16" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">=</span> np.dot(hidden_layer_output,output_weights)</span>
+<span id="cb71-17"><a href="#cb71-17" aria-hidden="true" tabindex="-1"></a>output_layer_activation <span class="op">+=</span> output_bias</span>
+<span id="cb71-18"><a href="#cb71-18" aria-hidden="true" tabindex="-1"></a>predicted_output <span class="op">=</span> sigmoid(output_layer_activation)</span>
+<span id="cb71-19"><a href="#cb71-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-20"><a href="#cb71-20" aria-hidden="true" tabindex="-1"></a><span class="co">#Backpropagation</span></span>
+<span id="cb71-21"><a href="#cb71-21" aria-hidden="true" tabindex="-1"></a>error <span class="op">=</span> expected_output <span class="op">-</span> predicted_output</span>
+<span id="cb71-22"><a href="#cb71-22" aria-hidden="true" tabindex="-1"></a>d_predicted_output <span class="op">=</span> error <span class="op">*</span> sigmoid_derivative(predicted_output)</span>
+<span id="cb71-23"><a href="#cb71-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-24"><a href="#cb71-24" aria-hidden="true" tabindex="-1"></a>error_hidden_layer <span class="op">=</span> d_predicted_output.dot(output_weights.T)</span>
+<span id="cb71-25"><a href="#cb71-25" aria-hidden="true" tabindex="-1"></a>d_hidden_layer <span class="op">=</span> error_hidden_layer <span class="op">*</span> sigmoid_derivative(hidden_layer_output)</span>
+<span id="cb71-26"><a href="#cb71-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-27"><a href="#cb71-27" aria-hidden="true" tabindex="-1"></a><span class="co">#Updating Weights and Biases</span></span>
+<span id="cb71-28"><a href="#cb71-28" aria-hidden="true" tabindex="-1"></a>output_weights <span class="op">+=</span> hidden_layer_output.T.dot(d_predicted_output)</span>
+<span id="cb71-29"><a href="#cb71-29" aria-hidden="true" tabindex="-1"></a>output_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_predicted_output,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb71-30"><a href="#cb71-30" aria-hidden="true" tabindex="-1"></a>hidden_weights <span class="op">+=</span> inputs.T.dot(d_hidden_layer)</span>
+<span id="cb71-31"><a href="#cb71-31" aria-hidden="true" tabindex="-1"></a>hidden_bias <span class="op">+=</span> np.<span class="bu">sum</span>(d_hidden_layer,axis<span class="op">=</span><span class="dv">0</span>,keepdims<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
 <h2 id="shoelace-theorem"><a
 href="https://artofproblemsolving.com/wiki/index.php/Shoelace_Theorem">Shoelace
 Theorem</a></h2>
