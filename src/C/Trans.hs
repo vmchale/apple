@@ -667,7 +667,7 @@ aeval (EApp (Arr oSh _) (Builtin _ Last) xs) t a | Just (tX, xRnk) <- tRnk (eAnn
     (dts, plDs) <- plDim xRnk (xR, lX)
     let n=head dts
     szA <- nI
-    pure (plX$plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t 1 (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (KI$xRnk-1):[cpy (AElem t 1 (Just a) 0) (AElem xR (KI xRnk) lX ((Tmp n-1)*Tmp szA)) (Tmp szA) sz])
+    pure (plX$plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t 1 (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (KI$xRnk):[cpy (AElem t 1 (Just a) 0) (AElem xR (KI xRnk) lX ((Tmp n-1)*Tmp szA)) (Tmp szA) sz])
                                                | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Tail) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     (plX, (lX, xR)) <- plA xs
@@ -1378,7 +1378,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr x
         plN $ plSeed
         ++rnkX=:eRnk xSh (seedR,lSeed):SZ () nX seedR xRnkE lSeed:rnk=:(xRnkE+1)
         :Ma () oSh a t rnkE (nXe*nE) xSz:Wr () (ADim t 0 (Just a)) nE:CpyD () (ADim t 1 (Just a)) (ADim seedR 0 lSeed) xRnkE
-        :Ma () xSh lX x xRnkE nXe xSz:Wr () (ARnk x (Just lX)) xRnkE:CpyD () (ADim x 0 (Just lX)) (ADim seedR 0 lSeed) xRnkE:cpy (AElem x xRnkE (Just lX) 0) (AElem seedR xRnkE lSeed 0) nXe xSz
+        :Ma () xSh lX x xRnkE nXe xSz:CpyD () (ADim x 0 (Just lX)) (ADim seedR 0 lSeed) xRnkE:cpy (AElem x xRnkE (Just lX) 0) (AElem seedR xRnkE lSeed 0) nXe xSz
         :l1++[loop]
 -- also (%.)/(re: 5 ⟨⟨1,1⟩,⟨1,0::int⟩⟩) would be nice
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just ty <- aN tSeed, sz <- bT ty = do
