@@ -342,8 +342,8 @@ wt :: ArrAcc -> RT -> CS ()
 wt p (IT t) = Wr () p (Tmp t); wt p (FT t) = WrF () p (FTmp t)
 wt p (PT t) = WrP () p (Is t)
 
-cpy asrc dest n sz = CpyE () (asrc sz) (dest sz) n sz
-mv asrc dest sz = Mv () (asrc sz) (dest sz) sz
+cpy dest asrc n sz = CpyE () (dest sz) (asrc sz) n sz
+mv dest asrc sz = Mv () (dest sz) (asrc sz) sz
 
 ra (FT f)=FA f; ra (IT r)=IPA r; ra (PT r)=BA r
 art (IPA r)=IT r;art (FA r)=FT r; art (BA r)=PT r
@@ -1041,7 +1041,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t a
         :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t aL = do
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t aL | Arr _ F <- eAnn a = do
     m <- nI; n <- nI; o <- nI; i <- nI; j <- nI; k <- nI; l <- nI; zr <- nF2; zr₀ <- nF; z₀ <- nF2; z₁ <- nF2; z₀₀ <- nF; z₁₀ <- nF
     aRd <- nI; bRd <- nI; td <- nI; bid <- nI; bidϵ <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
