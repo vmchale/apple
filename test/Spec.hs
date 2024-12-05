@@ -135,6 +135,7 @@ allT = testGroup "jit"
         in do { res0 <- fpAa "bench/apple/evens.🍎" v; res1 <- fpAa "bench/apple/evenIx.🍎" v; (res0 :: AI) @?= res1 }
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
     , testCase "pearson r" $ do { res <- fpAaf "math/stats/r.🍎" [1,2,3,4,5,6,7] [10,9,2.5,6,4,3,2]; res @?= -0.8285038835884277 }
+    , testCase "cosim" $ do { res <- fpAaf "math/cosim.🍏" [2,45,7,2] [2,54,13,15]; res @?= 0.9726896390141451 }
     , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
     , testCase "cov" $
         let x = AA 2 [2,3] [-2.1,-1,4.3,3,1.1,0.12::Double]
