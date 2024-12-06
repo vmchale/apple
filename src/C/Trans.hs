@@ -1486,7 +1486,13 @@ peval (BLit _ b) t = pure [MB () t (BConst b)]
 peval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
     (plE, (lE, eR)) <- plA e
     (plI,iE) <- plC i
-    pure $ plE $ plI [MB () t (PAt (AElem eR 1 lE iE 8))]
+    pure $ plE $ plI [MB () t (PAt (AElem eR 1 lE iE 1))]
+peval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
+    (plX, (lX, xR)) <- plA xs
+    (plNs, nEs) <- first thread.unzip <$> traverse plC ns
+    xRd <- nI
+    (plB, b) <- off xR lX nEs
+    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MB () t (PAt (Raw xRd (Tmp b) lX 1))])
 peval (EApp _ (Builtin _ T) e) t = peval e t
 peval (EApp _ (Builtin _ Flat) e) t = peval e t
 peval (EApp _ (Builtin _ Odd) e0) t = do
@@ -1818,6 +1824,12 @@ feval (EApp _ (Builtin _ Flat) x) t = feval x t
 feval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
     (plE, (lE, eR)) <- plA e; (plI, iR) <- plC i
     pure $ plE $ plI [MX () t (FAt (AElem eR 1 lE iR 8))]
+feval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
+    (plX, (lX, xR)) <- plA xs
+    (plNs, nEs) <- first thread.unzip <$> traverse plC ns
+    xRd <- nI
+    (plB, b) <- off xR lX nEs
+    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MX () t (FAt (Raw xRd (Tmp b) lX 8))])
 feval (EApp _ (Builtin _ Last) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [MX () t (FAt (AElem a 1 l (ev (eAnn xs) (a,l)-1) 8))]
@@ -1976,8 +1988,14 @@ m'sa t = maybe [] ((:[]).sac t)
                 Arr{} -> do {(pl, (l, r)) <- plA e; pure (l, pl [Wr () (Raw t (KI off) Nothing 1) (Tmp r)])}) es offs
     pure (offs, Just sz, catMaybes ls, concat ss)
 πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs = do
-    (plI, iR) <- plEV i; (plX, (lX, xR)) <- plA e
-    pure (offs, Just sz, mempty, plX $ plI [Mv () (TupM t Nothing) (AElem xR 1 lX (Tmp iR) sz) sz])
+    (plN, n) <- plC i; (plX, (lX, xR)) <- plA e
+    pure (offs, Just sz, mempty, plX $ plN [Mv () (TupM t Nothing) (AElem xR 1 lX n sz) sz])
+πe (Id (P tys) (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh, offs <- szT tys, sz <- last offs = do
+    (plX, (lX, xR)) <- plA xs
+    (plNs, nEs) <- first thread.unzip <$> traverse plC ns
+    xRd <- nI
+    (plB, b) <- off xR lX nEs
+    pure (offs, Just sz, mempty, plX $ plNs (plB++[xRd=:DP xR (KI rnk), Mv () (TupM t Nothing) (Raw xRd (Tmp b) lX sz) sz]))
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [t =: Tmp (getT st x)])
