@@ -106,7 +106,7 @@ nt I=Just I; nt F=Just F; nt B=Just B; nt t@P{} = Just t; nt _=Nothing
 rr :: Integral b => T a -> Maybe (T a, b)
 rr I=Just (I,8); rr F=Just (F,8); rr B=Just (B,1); rr _=Nothing
 
-szT = scanl' (\off ty -> off+bT ty::Int64) 0
+szT = scanl' (\o ty -> o+bT ty::Int64) 0
 
 staRnk :: Integral b => Sh a -> Maybe b
 staRnk Nil           = Just 0
@@ -1981,12 +1981,12 @@ m'sa t = maybe [] ((:[]).sac t)
     pure (offs, Just sz, [], plX [Mv () (TupM t Nothing) (AElem xR 1 lX (ev (eAnn xs) (xR,lX)-1) sz) sz])
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- last offs = do
     (ls, ss) <- unzip <$>
-        zipWithM (\e off ->
+        zipWithM (\e o ->
             case eAnn e of
-                F     -> do {(plX, f) <- plD e; pure (Nothing, plX [WrF () (Raw t (KI off) Nothing 1) f])}
-                I     -> do {(plX, i) <- plC e; pure (Nothing, plX [Wr () (Raw t (KI off) Nothing 1) i])}
-                B     -> do {(plX, r) <- plP e; pure (Nothing, plX [WrP () (Raw t (KI off) Nothing 1) r])}
-                Arr{} -> do {(pl, (l, r)) <- plA e; pure (l, pl [Wr () (Raw t (KI off) Nothing 1) (Tmp r)])}) es offs
+                F     -> do {(plX, f) <- plD e; pure (Nothing, plX [WrF () (Raw t (KI o) Nothing 1) f])}
+                I     -> do {(plX, i) <- plC e; pure (Nothing, plX [Wr () (Raw t (KI o) Nothing 1) i])}
+                B     -> do {(plX, r) <- plP e; pure (Nothing, plX [WrP () (Raw t (KI o) Nothing 1) r])}
+                Arr{} -> do {(pl, (l, r)) <- plA e; pure (l, pl [Wr () (Raw t (KI o) Nothing 1) (Tmp r)])}) es offs
     pure (offs, Just sz, catMaybes ls, concat ss)
 πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs = do
     (plN, n) <- plC i; (plX, (lX, xR)) <- plA e

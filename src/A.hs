@@ -409,7 +409,7 @@ instance Pretty Idiom where
     pretty (FoldGen seed g f n)    = parens ("fold-gen" <+> brackets (pretty seed) <+> parens (pretty g) <+> parens (pretty f) <+> parens (pretty n))
     pretty (U2 seed gs u f n)      = parens ("fold-2-ix" <+> pretty seed <+> pretty gs <+> parens (pretty u <> "," <+> pretty f) <+> parens (pretty n))
     pretty (AShLit re es)          = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
-    pretty (Aɴ ia iix)             = parens ("at" <+> pretty ia <+> pretty iix)
+    pretty (Aɴ a iix)              = parens ("at" <+> pretty a <+> pretty iix)
 
 instance Show Idiom where show=show.pretty
 
