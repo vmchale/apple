@@ -22,3 +22,6 @@
 (def isbn-13 (apple/jit ``λxs. ((+)/(*)`xs (}:(𝔸13⊙7)))|10=0``))
 (assert (isbn-13 @[9 7 8 0 5 9 6 5 2 8 1 2 6]))
 (assert (not (isbn-13 @[9 7 8 1 7 8 8 3 9 9 0 8 3])))
+
+(def fibs (apple/jit ``λN. [x˙0˙1]'{A⟜⟨⟨1,1⟩,⟨1,0::int⟩⟩; gen. A (A%.) N}``))
+(assert (deep= (fibs 6) @[1 1 2 3 5 8]))

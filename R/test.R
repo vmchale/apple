@@ -36,6 +36,9 @@ gc()
 prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([n|x=0]'⍳ 2 (⌊(√(ℝn))) 1)))'irange 2 N 1")
 stopifnot(all(run(prime_mask,9)==c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE)))
 
+fibs<-jit("λN. [x˙0˙1]'{A⟜⟨⟨1,1⟩,⟨1,0::int⟩⟩; gen. A (A%.) N}")
+stopifnot(all(run(fibs,6)==c(1,1,2,3,5,8)))
+
 A<-matrix(runif(32,0,1),4);x<-runif(8,0,1)
 mul<-jit("[x::M float%:y]")
 run(mul,A,x)
