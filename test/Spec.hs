@@ -71,6 +71,7 @@ allT = testGroup "jit"
     , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int64,6,1] ; res @?= [0::Int64,4,6,6] }
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
     , testCase "fib" $ do { res <- fpIa "test/examples/fib.🍎" 6; res @?= [1::Int64,1,2,3,5,8,13] } --
+    , testCase "fib" $ do { res <- fpIa "test/examples/fibarr.🍎" 6; res @?= [1::Int64,1,2,3,5,8] } --
     , testCase "oeis (A000081)" $ do { res <- fpIa "math/oeis/A000081.🍏" 12; res @?= [0::Int64,1,1,2,4,9,20,48,115,286,719,1842,4766] }
     , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
