@@ -51,6 +51,7 @@ optA (Builtin ty C)        | Arrow fTy (Arrow gTy@(Arrow _ gC) xTy@(Arrow tC tD)
 optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
+-- TODO: rewrite Head to Aɴ for simplicity in C.Trans (and A1, Last when possible...)
 optA (EApp l0 (EApp l1 at@(Builtin _ A1) e) n) = do
     e' <- optA e; n' <- optA n
     pure $ case e' of
