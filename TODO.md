@@ -76,6 +76,14 @@ T16 = T13.dim[0]
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
 ```
+ > ⟨(1.0,2.0,3.0),(3,4,5)⟩˙0
+(1.0, 0.0, 3.0)
+ > ⟨(1.0,2.0,3.0,3.0),(6.0,3,4,5)⟩˙0
+(1.0, 2.0, 3.0, 3.0)
+ > ⟨(1.0,2.0,3.0,3.0,3),(6.0,3,4,5,4.0)⟩˙0
+zsh: segmentation fault  cabal run arepl
+```
+```
  > \xs.\rs. [(-y)'x]`{1∘[2],0} xs (rs::Vec 2 float)
 λxs. (λrs. ((λx. (λy. (λx. x - y) ' x)) `{1∘[2],0} xs) rs)
     : Arr (2 × j) float → Vec 2 float → Arr (sh ⧺ j) float
@@ -195,6 +203,12 @@ o → o → o
   - [ ] https://en.wikipedia.org/wiki/Rule_110
   - [ ] https://en.wikipedia.org/wiki/Rule_30
 - [ ] https://www.bathsheba.com/math/gyroid/
-- [ ] https://oeis.org/A000055
+- [x] https://oeis.org/A000081
+- [ ] https://en.wikipedia.org/wiki/Chebyshev_polynomials
+# Project Euler
+- [ ] https://projecteuler.net/problem=30
+# Rosetta Code
+- [ ] https://rosettacode.org/wiki/Jaccard_index#
+- [ ] https://rosettacode.org/wiki/Averages/Pythagorean_means
 # Debug
 - [ ] sanity check negative dims
