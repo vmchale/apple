@@ -381,8 +381,9 @@ offByDim dims = do
     pure (reverse sts, head sts =: 1:ss)
     -- drop 1 for strides
 
-off :: Temp -> Maybe AL -> [CE] -> CM ([CS ()], Temp)
-off xR lX ixs = do {s <- nI; b <- nI; pure (b=:0 : s=:1 : init (concat [[b+=(Tmp s*n), s=:(Tmp s*EAt (ADim xR (KI i) lX))] | (n,i) <- zip ixϵ [0..]]), b) }
+off :: Temp -> Maybe AL -> [CE] -> CM ([CS ()], CE)
+off _ _ [i] = pure ([], i)
+off xR lX ixs = do {s <- nI; b <- nI; pure (b=:0 : s=:1 : init (concat [[b+=(Tmp s*n), s=:(Tmp s*EAt (ADim xR (KI i) lX))] | (n,i) <- zip ixϵ [0..]]), Tmp b) }
   where
     ixϵ=reverse ixs
 
@@ -1492,7 +1493,7 @@ peval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     xRd <- nI
     (plB, b) <- off xR lX nEs
-    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MB () t (PAt (Raw xRd (Tmp b) lX 1))])
+    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MB () t (PAt (Raw xRd b lX 1))])
 peval (EApp _ (Builtin _ T) e) t = peval e t
 peval (EApp _ (Builtin _ Flat) e) t = peval e t
 peval (EApp _ (Builtin _ Odd) e0) t = do
@@ -1623,7 +1624,7 @@ eval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     xRd <- nI
     (plB, b) <- off xR lX nEs
-    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), t =: EAt (Raw xRd (Tmp b) lX 8)])
+    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), t =: EAt (Raw xRd b lX 8)])
 eval (EApp _ (Builtin _ Head) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [t =: EAt (AElem a 1 l 0 8)]
@@ -1829,7 +1830,7 @@ feval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     xRd <- nI
     (plB, b) <- off xR lX nEs
-    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MX () t (FAt (Raw xRd (Tmp b) lX 8))])
+    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MX () t (FAt (Raw xRd b lX 8))])
 feval (EApp _ (Builtin _ Last) xs) t = do
     (plX, (l, a)) <- plA xs
     pure $ plX [MX () t (FAt (AElem a 1 l (ev (eAnn xs) (a,l)-1) 8))]
@@ -1837,7 +1838,7 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n
     | (Arr ySh tY) <- eAnn ys, Just (tQ, qSz) <- rr tY, isR (eAnn seed) = do
     (plN,nE) <- plC n; (plU,x) <- plR seed
     (plYs, (lY, yR)) <- plA ys
-    (plY,y) <- plR (EApp tQ (Builtin undefined Head) ys)
+    (plY,y) <- plR (Id tQ (Aɴ ys [ILit I 0]))
     yRd <- nI
     plSeed <- writeRF zop [x, y] (FT acc)
     ss <- writeRF op [FT acc, x, y] (FT acc)
@@ -1995,7 +1996,7 @@ m'sa t = maybe [] ((:[]).sac t)
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     xRd <- nI
     (plB, b) <- off xR lX nEs
-    pure (offs, Just sz, mempty, plX $ plNs (plB++[xRd=:DP xR (KI rnk), Mv () (TupM t Nothing) (Raw xRd (Tmp b) lX sz) sz]))
+    pure (offs, Just sz, mempty, plX $ plNs (plB++[xRd=:DP xR (KI rnk), Mv () (TupM t Nothing) (Raw xRd b lX sz) sz]))
 πe (Var (P tys) x) t = do
     st <- gets vars
     pure (szT tys, Nothing, undefined, [t =: Tmp (getT st x)])
