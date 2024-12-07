@@ -239,7 +239,7 @@ optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) (EApp _ (E
             opTy = dom ~> yT ~> cod
             op' = Lam opTy x (Lam undefined y (EApp undefined (EApp undefined opA (EApp undefined f' vx)) vy))
         pure (EApp l0 (EApp undefined (EApp undefined (ho' { eAnn = undefined }) op') xs') ys')
-optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map) f) xs)) (EApp _ (EApp _ (Builtin _ Map) g) ys))
+optA (EApp l (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map) f) xs)) (EApp _ (EApp _ (Builtin _ Map) g) ys))
     | Arrow dom0 _ <- eAnn f
     , Arrow dom1 _ <- eAnn g
     , Arrow _ (Arrow _ cod) <- eAnn op = do
@@ -250,7 +250,7 @@ optA (EApp _ (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map)
         let vx0 = Var dom0 x0; vx1 = Var dom1 x1
             opTy = dom0 ~> dom1 ~> cod
             op' = Lam opTy x0 (Lam undefined x1 (EApp undefined (EApp undefined opA (EApp undefined f' vx0)) (EApp undefined g' vx1)))
-        pure (EApp undefined (EApp undefined (EApp undefined (Builtin undefined Zip) op') xs') ys')
+        pure (EApp l (EApp undefined (EApp undefined (Builtin undefined Zip) op') xs') ys')
 optA (EApp l (EApp _ (EApp _ (Builtin _ Zip) op) (EApp _ (EApp _ (Builtin _ Map) f) xs)) ys)
     | Arrow dom0 _ <- eAnn f
     , Arrow _ (Arrow dom1 cod) <- eAnn op = do
