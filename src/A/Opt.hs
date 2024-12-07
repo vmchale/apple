@@ -52,12 +52,18 @@ optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
 -- TODO: rewrite Head to Aɴ for simplicity in C.Trans (and A1, Last when possible...)
-optA (EApp l0 (EApp l1 at@(Builtin _ A1) e) n) = do
-    e' <- optA e; n' <- optA n
+optA (EApp l (Builtin l₁ Head) e) =
+    optA $ Id l (Aɴ e [ILit l₁ 0])
+optA (EApp l (Builtin _ Last) e) =
+    optA $ Id l (Aɴ e [EApp I (Builtin undefined Dim) e `iMinus` ILit I 1])
+optA (EApp l (EApp _ (Builtin _ A1) e) n) =
+    optA $ Id l (Aɴ e [n])
+optA (Id l0 (Aɴ e ns)) = do
+    e' <- optA e; ns' <- traverse optA ns
     pure $ case e' of
-        (Id _ (Aɴ e₁ ns))                      -> Id l0 $ Aɴ e₁ (ns++[n'])
-        (EApp _ (EApp _ (Builtin _ A1) e₁) n₁) -> Id l0 $ Aɴ e₁ [n₁,n']
-        _                                      -> EApp l0 (EApp l1 at e') n'
+        (Id _ (Aɴ e₁ ns₁))                     -> Id l0 $ Aɴ e₁ (ns₁++ns')
+        (EApp _ (EApp _ (Builtin _ A1) e₁) n₁) -> Id l0 $ Aɴ e₁ (n₁:ns')
+        _                                      -> Id l0 (Aɴ e' ns')
 optA (EApp l0 (EApp l1 op@(Builtin _ IDiv) e0) e1) = do
     e0' <- optA e0; e1' <- optA e1
     pure $ case (e0',e1') of

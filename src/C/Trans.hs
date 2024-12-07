@@ -662,36 +662,18 @@ aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Tail) x) t a | Just sz <- aB oTy = do
     (plX, (lX, xR)) <- plA x
     contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
     pure (plX$nR =: (ev (eAnn x) (xR,lX)-1):vSz oSh t a (Tmp nR) sz++contents)
-aeval (EApp (Arr oSh _) (Builtin _ Head) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
+aeval (Id (Arr oSh _) (Aɴ xs ns)) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
+    (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     (plX, (lX, xR)) <- plA xs
+    xRd <- nI; szA <- nI
     (dts, plDs) <- plDim xRnk (xR, lX)
-    szA <- nI
-    let oRnk=KI$xRnk-1
-    pure (plX$tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) (KI$xRnk-1):[cpy (AElem t oRnk (Just a) 0) (AElem xR (KI xRnk) lX 0) (Tmp szA) sz])
-                                               | otherwise = unsupported
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ A1) xs) n) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
-    (plN, nE) <- plC n
-    (plX, (lX, xR)) <- plA xs
-    (dts, plDs) <- plDim xRnk (xR, lX)
-    szA <- nI
-    let oRnk=KI$xRnk-1
-    pure (plX$tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:plN [cpy (AElem t oRnk (Just a) 0) (AElem xR (KI xRnk) lX (nE*Tmp szA)) (Tmp szA) sz])
-                                                          | otherwise = unsupported
-aeval (EApp (Arr oSh _) (Builtin _ Last) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
-    (plX, (lX, xR)) <- plA xs
-    (dts, plDs) <- plDim xRnk (xR, lX)
-    let n=head dts
-    szA <- nI
-    let oRnk=KI$xRnk-1
-    pure (plX$plDs++PlProd () szA (Tmp<$>tail dts):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:[cpy (AElem t oRnk (Just a) 0) (AElem xR (KI xRnk) lX ((Tmp n-1)*Tmp szA)) (Tmp szA) sz])
-                                                 | otherwise = unsupported
-aeval (EApp (Arr oSh _) (Builtin _ Tail) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
-    (plX, (lX, xR)) <- plA xs
-    (dts, plDs) <- plDim xRnk (xR, lX)
-    let n=head dts; rnkE=KI xRnk
-    szA <- nI; szz <- nI; d1 <- nI
-    pure (plX$plDs++PlProd () szz (Tmp<$>tail dts):d1=:(Tmp n-1):szA=:(Tmp szz*Tmp d1):Ma () oSh a t rnkE (Tmp szA) sz:Wr () (ADim t 0 (Just a)) (Tmp d1):CpyD () (ADim t 1 (Just a)) (ADim xR 1 lX) (KI$xRnk-1):[cpy (AElem t rnkE (Just a) 0) (AElem xR rnkE lX (Tmp szz)) (Tmp szA) sz])
-                                                 | otherwise = unsupported
+    let ots = drop k dts
+        oRnk=KI$xRnk-k
+    (plB, b) <- off xR lX nEs
+    pure (plX$drop k plDs++PlProd () szA (Tmp<$>ots):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:plNs (plB ++ [xRd=:DP xR (KI xRnk), cpy (AElem t oRnk (Just a) 0) (Raw xRd b lX) (Tmp szA) sz]))
+  where
+    k :: Integral a => a
+    k=genericLength ns
 aeval (EApp (Arr oSh _) (Builtin _ Init) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     (plX, (lX, xR)) <- plA xs
     (dts, plDs) <- plDim xRnk (xR, lX)
@@ -1484,16 +1466,13 @@ peval (LLet _ b e) t = do
     ss <- llet b
     (ss++) <$> peval e t
 peval (BLit _ b) t = pure [MB () t (BConst b)]
-peval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
-    (plE, (lE, eR)) <- plA e
-    (plI,iE) <- plC i
-    pure $ plE $ plI [MB () t (PAt (AElem eR 1 lE iE 1))]
 peval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plX, (lX, xR)) <- plA xs
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     xRd <- nI
     (plB, b) <- off xR lX nEs
     pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MB () t (PAt (Raw xRd b lX 1))])
+                          | otherwise = unsupported
 peval (EApp _ (Builtin _ T) e) t = peval e t
 peval (EApp _ (Builtin _ Flat) e) t = peval e t
 peval (EApp _ (Builtin _ Odd) e0) t = do
@@ -1550,12 +1529,6 @@ peval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     fss <- writeRF f (PT t:xs) (PT t)
     pure $ plU ++ plN (plSeeds ++ [For () 1 k 0 ILt nE (fss++usss)])
-peval (EApp _ (Builtin _ Head) xs) t = do
-    (plX, (l, a)) <- plA xs
-    pure $ plX [MB () t (PAt (AElem a 1 l 0 1))]
-peval (EApp _ (Builtin _ Last) xs) t = do
-    (plX, (l, a)) <- plA xs
-    pure $ plX [MB () t (PAt (AElem a 1 l (ev (eAnn xs) (a,l)-1) 1))]
 peval (EApp _ (Builtin _ (TAt i)) e) t = do
     k <- nI
     (offs, a, _, plT) <- πe e k
@@ -1615,22 +1588,13 @@ eval (EApp _ (EApp _ (Builtin _ Min) e0) e1) t = do
     t1 <- nI
     pl1 <- eval e1 t1
     pure $ pl0 $ pl1 ++ [t =: Tmp t0, Cmov () (IRel ILt (Tmp t1) (Tmp t0)) t (Tmp t1)]
-eval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
-    (plE, (lE, eR)) <- plA e
-    (plI,iE) <- plC i
-    pure $ plE $ plI [t =: EAt (AElem eR 1 lE iE 8)]
 eval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plX, (lX, xR)) <- plA xs
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     xRd <- nI
     (plB, b) <- off xR lX nEs
     pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), t =: EAt (Raw xRd b lX 8)])
-eval (EApp _ (Builtin _ Head) xs) t = do
-    (plX, (l, a)) <- plA xs
-    pure $ plX [t =: EAt (AElem a 1 l 0 8)]
-eval (EApp _ (Builtin _ Last) xs) t = do
-    (plX, (l, a)) <- plA xs
-    pure $ plX [t =: EAt (AElem a 1 l (ev (eAnn xs) (a,l)-1) 8)]
+                         | otherwise = unsupported
 eval (EApp _ (Builtin _ Size) xs) t | Just (_, 1) <- tRnk (eAnn xs) = do
     (plE, (l, xsR)) <- plA xs
     pure $ plE [t =: EAt (ADim xsR 0 l)]
@@ -1817,23 +1781,14 @@ feval (EApp _ (Builtin _ ItoF) e) t = do
     (pl,iE) <- plC e
     pure $ pl [MX () t (IE iE)]
 feval (Cond _ p e0 e1) t = cond p e0 e1 (FT t)
-feval (EApp _ (Builtin _ Head) xs) t = do
-    (plX, (l, a)) <- plA xs
-    pure $ plX [MX () t (FAt (AElem a 1 l 0 8))]
 feval (EApp _ (Builtin _ T) x) t = feval x t
 feval (EApp _ (Builtin _ Flat) x) t = feval x t
-feval (EApp _ (EApp _ (Builtin _ A1) e) i) t = do
-    (plE, (lE, eR)) <- plA e; (plI, iR) <- plC i
-    pure $ plE $ plI [MX () t (FAt (AElem eR 1 lE iR 8))]
 feval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plX, (lX, xR)) <- plA xs
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     xRd <- nI
     (plB, b) <- off xR lX nEs
     pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MX () t (FAt (Raw xRd b lX 8))])
-feval (EApp _ (Builtin _ Last) xs) t = do
-    (plX, (l, a)) <- plA xs
-    pure $ plX [MX () t (FAt (AElem a 1 l (ev (eAnn xs) (a,l)-1) 8))]
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n, ys])) acc
     | (Arr ySh tY) <- eAnn ys, Just (tQ, qSz) <- rr tY, isR (eAnn seed) = do
     (plN,nE) <- plC n; (plU,x) <- plR seed
@@ -1973,12 +1928,6 @@ m'pop = maybe [] ((:[]).popc)
 m'sa t = maybe [] ((:[]).sac t)
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe Int64, [AL], [CS ()]) -- element offsets, size to be popped off the stack, array labels kept live
-πe (EApp (P tys) (Builtin _ Head) xs) t | offs <- szT tys, sz <- last offs = do
-    (plX, (lX, xR)) <- plA xs
-    pure (offs, Just sz, [], plX [Mv () (TupM t Nothing) (AElem xR 1 lX 0 sz) sz])
-πe (EApp (P tys) (Builtin _ Last) xs) t | offs <- szT tys, sz <- last offs = do
-    (plX, (lX, xR)) <- plA xs
-    pure (offs, Just sz, [], plX [Mv () (TupM t Nothing) (AElem xR 1 lX (ev (eAnn xs) (xR,lX)-1) sz) sz])
 πe (Tup (P tys) es) t | offs <- szT tys, sz <- last offs = do
     (ls, ss) <- unzip <$>
         zipWithM (\e o ->
@@ -1988,9 +1937,6 @@ m'sa t = maybe [] ((:[]).sac t)
                 B     -> do {(plX, r) <- plP e; pure (Nothing, plX [WrP () (Raw t (KI o) Nothing 1) r])}
                 Arr{} -> do {(pl, (l, r)) <- plA e; pure (l, pl [Wr () (Raw t (KI o) Nothing 1) (Tmp r)])}) es offs
     pure (offs, Just sz, catMaybes ls, concat ss)
-πe (EApp (P tys) (EApp _ (Builtin _ A1) e) i) t | offs <- szT tys, sz <- last offs = do
-    (plN, n) <- plC i; (plX, (lX, xR)) <- plA e
-    pure (offs, Just sz, mempty, plX $ plN [Mv () (TupM t Nothing) (AElem xR 1 lX n sz) sz])
 πe (Id (P tys) (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh, offs <- szT tys, sz <- last offs = do
     (plX, (lX, xR)) <- plA xs
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
