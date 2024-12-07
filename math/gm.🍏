@@ -1,4 +1,1 @@
-λxs. {
-  avg ← [{n ⟜ ℝ(:xs); (+)/xs%n}];
-  e:(avg (_.'xs))
-}
+λxs. {avg ← [{n ⟜ ℝ(:xs); (+)/xs%n}]; e:(avg(_.'xs))}
