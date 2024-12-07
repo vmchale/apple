@@ -73,7 +73,7 @@ data ArrAcc = AElem Temp CE (Maybe AL) CE Int64 -- pointer, rank, label for trac
             | ARnk Temp (Maybe AL)
             | ADim Temp CE (Maybe AL) -- pointer, #, label
             -- TODO: shape information
-            | At Temp [CE] [CE] (Maybe AL) Int64 -- pointer to data, strides, indices, label, elem. size (bytes)
+            | At Temp [CE] [CE] (Maybe AL) Int64 -- data pointer, strides, indices, label, elem. size (bytes)
             | Raw Temp CE (Maybe AL) Int64 -- pointer to data, offset, label, element size
             | TupM Temp (Maybe AL)
 

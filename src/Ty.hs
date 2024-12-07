@@ -497,6 +497,7 @@ mgu _ (l, _) s t t'@(TVar (Nm _ (U i) _)) | i `IS.member` occ t = throwError $ O
                                           | otherwise = pure (t, uTS i t s)
 mgu _ (l, e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
 mgu _ (l, e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
+-- TODO: if t' is a TVar, it could be an array! (so sh could eat sh'++sh part(t'))
 mgu f l s (Arr sh t) (Arr sh' t') = do
     (t'', s0) <- mgu f l s t t'
     (sh'', s1) <- mgShPrep f (fst l) s0 sh sh'
