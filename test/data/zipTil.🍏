@@ -1,0 +1,3 @@
+⸎
+take ⇐ λn.λx. (x˙)'⍳ 0 (n-1) 1;
+λf.λxs.λys. {n ⟜ 𝓉xs<.𝓉ys; f`(take n xs) (take n ys)}
