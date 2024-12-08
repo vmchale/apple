@@ -188,6 +188,13 @@ loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
 graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, NLiveness)], CfTbl)
 graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,reconstructFlat$fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
+dead :: (ControlAnn, NLiveness) -> Bool
+dead (l, cl) = not (missingo (defsNode u) (out lv)) && not (missingo (defsFNode u) (fout lv))
+  where u=ud l
+        lv=liveness cl
+        missingo x y | IS.null x = False
+                     | otherwise = x `IS.disjoint` y
+
 {-# SCC outers #-}
 outers :: [Loop] -> [Loop]
 outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
