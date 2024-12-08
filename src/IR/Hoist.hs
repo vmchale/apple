@@ -22,7 +22,7 @@ import           IR.CF
 import           LR
 import           Q
 
-type N=Int; type IStmt = (N, Stmt)
+type N=Int
 type LTbl = A.Array Int Liveness; type CfTbl=A.Array Int (Stmt, ControlAnn); type StmtTbl=A.Array Int Stmt
 
 mapFA :: (FTemp -> FTemp) -> AE -> AE
@@ -136,16 +136,16 @@ type LM=State Label
 i1 x t = modify (\(S f1 f2 s) -> S (M.insert x t f1) f2 s); i2 x t = modify (\(S f1 f2 s) -> S f1 (M.insert x t f2) s)
 br t r (S f1 f2 s) = S f1 f2 (M.insert t r s)
 
-rwL :: LLoop -> IStmt -> IStmt
-rwL s (a, MJ e l) = (a, case M.lookup l s of {Just (lϵ,m) | a `IS.notMember` m -> MJ e lϵ; _ -> MJ e l})
-rwL _ x           = x
+rwL :: LLoop -> (Stmt, NLiveness) -> (Stmt, N)
+rwL s (MJ e l, a) = let n=nx a in (case M.lookup l s of {Just (lϵ,m) | n `IS.notMember` m -> MJ e lϵ; _ -> MJ e l}, n)
+rwL _ (ss, a)     = (ss, nx a)
 
 hoist :: Label -> [Stmt] -> ([Stmt], Label)
 hoist u ss = flip runState u $ do
     (cf, m, is, dels) <- indels ss
-    let go ((n,_):ssϵ) | n `IS.member` dels = go ssϵ
-        go ((n, s):ssϵ) | Just cs <- IM.lookup n is = let (css, S _ _ subst) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
-        go ((_,s):ssϵ) = second (s:)$go ssϵ
+    let go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
+        go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, S _ _ subst) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
+        go ((s,_):ssϵ) = second (s:)$go ssϵ
         go [] = (M.empty, [])
 
         (ts, ss') = go (rwL m<$>cf)
@@ -166,36 +166,34 @@ hoist u ss = flip runState u $ do
             Nothing -> i2 x t$>[MX2 t (KF x)]
             Just r  -> modify ((br `on` vv) t r) $> []
 
-indels :: [Stmt] -> LM ([IStmt], LLoop, IM.IntMap [CM], IS.IntSet)
+indels :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, IM.IntMap [CM], IS.IntSet)
 indels ss = do
     (c,ls,h) <- gatherLoops ss
     let ds = IS.fromList (mapMaybe snd3 h)
         is = thread ((\(n,_,s) -> n!:s)<$>h)
-        -- FIXME: l, n should come from one-next... hm
-        ua = IS.fromList [ nx l | ((_,s,_),(_,_,l)) <- zip c (tail c), not $ alive s l ]
-    pure ([(nx l,s) | (s,_,l) <- c], ls, is IM.empty, ds<>ua)
+    pure (c, ls, is IM.empty, ds)
 
-gatherLoops :: [Stmt] -> LM ([(Stmt, ControlAnn, NLiveness)], LLoop, [(N, Maybe N, CM)])
+gatherLoops :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, [(N, Maybe N, CM)])
 gatherLoops ss = let (ls, cf, dm) = loop ss
-                     mm = lm (map π₁₃ cf)
+                     mm = lm cf
                  in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
   where
     bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
-loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn, NLiveness)], CfTbl)
+loop :: [Stmt] -> ([Loop], [(Stmt, NLiveness)], CfTbl)
 loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
   where
     mkL (n, ns) = (n, IS.fromList ns)
 
-graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn, NLiveness)], CfTbl)
-graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,(\t -> zipWith (\(s,c) (_,n) -> (s,c,n)) t (reconstructFlat t))$fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
+graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, NLiveness)], CfTbl)
+graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,reconstructFlat$fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
-alive :: ControlAnn -> NLiveness -> Bool
-alive l cl = IS.null d || IS.null df || notMissing d (ins lv) && notMissing df (fins lv)
+dead :: (ControlAnn, NLiveness) -> Bool
+dead (l, cl) = not (missingo (defsNode u) (out lv)) && not (missingo (defsFNode u) (fout lv))
   where u=ud l
-        d=defsNode u; df=defsFNode u
         lv=liveness cl
-        notMissing x y | otherwise = x `IS.isSubsetOf` y
+        missingo x y | IS.null x = False
+                     | otherwise = x `IS.disjoint` y
 
 {-# SCC outers #-}
 outers :: [Loop] -> [Loop]
@@ -229,5 +227,3 @@ mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
     sa = A.array (0,m-1) ((node.snd &&& id)<$>ns)
-
-π₁₃ (x,_,z)=(x,z)
