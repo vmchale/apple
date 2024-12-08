@@ -23,7 +23,7 @@ import           LR
 import           Q
 
 type N=Int
-type LTbl = A.Array Int Liveness; type CfTbl=A.Array Int (Stmt, ControlAnn); type StmtTbl=A.Array Int Stmt
+type LTbl = A.Array N Liveness; type CfTbl=A.Array N (Stmt, ControlAnn); type StmtTbl=A.Array N Stmt
 
 mapFA :: (FTemp -> FTemp) -> AE -> AE
 mapFA f (AP t e l) = AP t (mapFE f<$>e) l
