@@ -261,16 +261,12 @@ write2 :: E (T ()) -> [F2Temp] -> F2Temp -> CM [CS ()]
 write2 (Lam _ x e) (v:vs) vret = addD2 x v *> write2 e vs vret
 write2 e [] r                  = f2eval e r
 
-writeA :: E (T ())
-       -> [Arg]
+writeA :: E (T ()) -> [Arg]
        -> CM (Temp, Maybe AL, [CS ()])
 writeA e as | isArr (codT$eAnn e) = do {r <- nI; (\(x,y) -> (r,x,y)) <$> writeF e as (IT r)}
             | otherwise = error "Internal error. writeA called on a function not returning an array."
 
-writeF :: E (T ())
-       -> [Arg]
-       -> RT
-       -> CM (Maybe AL, [CS ()])
+writeF :: E (T ()) -> [Arg] -> RT -> CM (Maybe AL, [CS ()])
 writeF (Lam _ x e) (AA r l:rs) ret = addAVar x (l,r) *> writeF e rs ret
 writeF (Lam _ x e) (IPA r:rs) ret = addVar x r *> writeF e rs ret
 writeF (Lam _ x e) (FA fr:rs) ret = addD x fr *> writeF e rs ret
