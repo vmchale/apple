@@ -4,7 +4,7 @@ import           A
 import           C
 import           CF.AL                            (AL (..))
 import qualified CF.AL                            as AL
-import           Control.Composition              (thread, (-$))
+import           Control.Composition              (thread, (-$), (.*))
 import           Control.Monad                    (zipWithM)
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor                   (first, second)
@@ -220,6 +220,8 @@ writeCM :: E (T ()) -> CM [CS ()]
 writeCM eϵ = do
     cs <- nIs [(0::Int)..5]; fs <- nFs [(0::Int)..5]
     (zipWith (\xr xr' -> MX () xr' (FTmp xr)) [F0,F1,F2,F3,F4,F5] fs ++) . (zipWith (\r r' -> r' =: Tmp r) [C0,C1,C2,C3,C4,C5] cs ++) <$> go eϵ fs cs where
+    go (Lam _ x@(Nm _ _ F) e) (_:frs) rs | not (x `Nm.member` m) = go e frs rs
+    go (Lam _ x e) frs (_:rs) | not (x `Nm.member` m) = go e frs rs
     go (Lam _ x@(Nm _ _ F) e) (fr:frs) rs = addD x fr *> go e frs rs
     go (Lam _ x@(Nm _ _ B) e) frs (r:rs) = addB x (bt r) *> go e frs rs where bt (ITemp i)=BTemp i
     go (Lam _ (Nm _ _ F) _) [] _ = error "Not enough floating-point registers."
@@ -232,6 +234,7 @@ writeCM eϵ = do
              | isArr (eAnn e) = do {(i,l,r) <- maa e; pure$r++[CRet =: Tmp i]++case l of {Just lm -> [RA () lm]; Nothing -> []}}
              | P [F,F] <- eAnn e = do {t <- nI; (_,_,_,p) <- πe e t; pure$sac t 16:p++[MX () FRet0 (FAt (Raw t 0 Nothing 8)), MX () FRet1 (FAt (Raw t 1 Nothing 8)), popc 16]}
              | ty@P{} <- eAnn e, b64 <- bT ty, (n,0) <- b64 `quotRem` 8 = do {t <- nI; a <- nextArr CRet; (_,_,ls,pl) <- πe e t; pure (sac t b64:pl++MaΠ () a CRet b64:CpyE () (TupM CRet (Just a)) (TupM t Nothing) (KI n) 8:popc b64:RA () a:(RA ()<$>ls))}
+    m=occ eϵ
 
 rtemp :: T a -> CM RT
 rtemp F=FT<$>nF; rtemp I=IT<$>nI; rtemp B=PT<$>nBT
@@ -301,9 +304,9 @@ writeW eo as rt = writeF (occ eo) eo as rt
     writeF m (Lam _ x e) (IPA r:rs) ret = addVar x r *> wa m e rs ret
     writeF m (Lam _ x e) (FA fr:rs) ret = addD x fr *> wa m e rs ret
     writeF m (Lam _ x e) (BA r:rs) ret = addB x r *> wa m e rs ret
-    writeF _ e [] (IT r) | isArr (eAnn e) = do {l <- nextArr r; ([True],Just l,)<$>aeval e r l}
-    writeF _ e [] (IT r) | isΠR (eAnn e) = (\ ~(_,_,_,ss) -> ([True], Nothing, ss))<$>πe e r
-    writeF _ e [] r = ([True],Nothing,)<$>eeval e r
+    writeF _ e [] (IT r) | isArr (eAnn e) = do {l <- nextArr r; ([],Just l,)<$>aeval e r l}
+    writeF _ e [] (IT r) | isΠR (eAnn e) = (\ ~(_,_,_,ss) -> ([], Nothing, ss))<$>πe e r
+    writeF _ e [] r = ([],Nothing,)<$>eeval e r
     wa m e rs ret = first3 (True:)<$>writeF m e rs ret
 
 m'p :: Maybe (CS (), CS ()) -> [CS ()] -> [CS ()]
@@ -313,19 +316,25 @@ m'p Nothing       = id
 sas :: [Maybe (CS (), CS ())] -> [CS ()] -> [CS ()]
 sas = thread.fmap m'p
 
+infixr 7 #
+
+(#) :: [Bool] -> [a] -> [a]
+(#) (b:bs) (x:xs) | b = x:bs#xs | otherwise = bs#xs
+(#) [] [] = []
+
 aSD :: E (T ()) -> [(T (), ArrAcc, Temp)] -> T () -> ArrAcc -> Temp -> CM ([CS ()], [Maybe (CS (), CS ())])
 aSD f as rT rAt td = do
     (args, rArgs, pinchArgs) <- unzip3 <$> traverse (\(t,r,xd) -> second3 ((:[xd=:(Tmp xd+KI (bT t))]).($undefined)) <$> arg t (\_ -> r)) as
     (r, wR, pinch) <- rW rT (\_ -> rAt)
     (m,ss) <- writeRF f args r
-    pure (concat rArgs++ss++[wR undefined, td=:(Tmp td+KI (bT rT))], pinch:pinchArgs)
+    pure (concat (m#rArgs)++ss++[wR undefined, td=:(Tmp td+KI (bT rT))], pinch:pinchArgs)
 
 aS :: E (T ()) -> [(T (), Temp -> Int64 -> ArrAcc)] -> T () -> (Temp -> Int64 -> ArrAcc) -> CM ([Temp] -> Temp -> [CS ()], [Maybe (CS (), CS ())])
 aS f as rT rAt = do
     (args, rArgs, pinchArgs) <- unzip3 <$> traverse (\(t,r) -> arg t (r-$bT t)) as
     (r, wR, pinch) <- rW rT (rAt-$bT rT)
     (m,ss) <- writeRF f args r
-    pure (\is j -> zipWith ($) rArgs is++ss++[wR j], pinch:pinchArgs)
+    pure (\is j -> zipWith ($) (m#rArgs) is++ss++[wR j], pinch:pinchArgs)
 
 type Ix'd = Temp -> ArrAcc
 
@@ -364,6 +373,11 @@ data RT = IT !Temp | FT !FTemp | PT !BTemp
 mt :: ArrAcc -> RT -> CS ()
 mt p (FT t) = MX () t (FAt p); mt p (PT t) = MB () t (PAt p)
 mt p (IT t) = t =: EAt p
+
+mr :: Bool -> ArrAcc -> RT -> ([CS ()] -> [CS ()])
+mr b = mc b.*mt
+
+mc b c | b = (c:) | otherwise = id
 
 wt :: ArrAcc -> RT -> CS ()
 wt p (IT t) = Wr () p (Tmp t); wt p (FT t) = WrF () p (FTmp t)
@@ -585,7 +599,7 @@ rfill (Builtin _ Re) (AD t lA (Just (Arr sh _)) _ (Just sz) _) [NA (IT nR), NA x
     (:[]) <$> afor sh 0 ILt (Tmp nR) (\i -> [wt (AElem t 1 lA (Tmp i) sz) xR])
 rfill (EApp _ (Builtin _ Scan) op) (AD t lA (Just (Arr oSh _)) _ (Just accSz) (Just n)) [AI (AD xR lX _ _ (Just xSz) _), NA acc, NA x] = do
     (m,ss) <- writeRF op [acc, x] acc
-    loop <- afor1 oSh 1 ILeq n (\i -> wt (AElem t 1 lA (Tmp i-1) accSz) acc:mt (AElem xR 1 lX (Tmp i) xSz) x:ss)
+    loop <- afor1 oSh 1 ILeq n (\i -> wt (AElem t 1 lA (Tmp i-1) accSz) acc:mr (thex m) (AElem xR 1 lX (Tmp i) xSz) x ss)
     pure [mt (AElem xR 1 lX 0 xSz) acc, loop]
 rfill (EApp _ (Builtin _ Outer) op) (AD t lA _ _ _ _) [AI (AD xR lX (Just tXs) _ _ (Just nx)), AI (AD yR lY (Just tYs) _ _ (Just ny))]
     | Arrow tX (Arrow tY tC) <- eAnn op = do
@@ -722,7 +736,7 @@ aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(A
     (plX, (lX, xsR)) <- plA xs
     (xR, rX, pinch) <- arg tX (\kϵ -> AElem xsR 1 lX (Tmp kϵ) sz)
     (m,ss) <- writeRF p [xR] (PT b)
-    loop <- afor sh 0 ILt (Tmp szR) $ \k -> rX k:ss++[If () (Is b) [w tX (AElem t 1 (Just a) (Tmp nR) sz) xR, nR+=1] []]
+    loop <- afor sh 0 ILt (Tmp szR) $ \k -> mc (the m) (rX k) $ ss++[If () (Is b) [w tX (AElem t 1 (Just a) (Tmp nR) sz) xR, nR+=1] []]
     pure (plX$szR =: ev tXs (xsR,lX)
         :Ma () sh a t 1 (Tmp szR) sz
         :m'p pinch [nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
@@ -734,7 +748,7 @@ aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(A
     (plX, (lX, xsR)) <- plA xs
     (xR, rX, pinch) <- arg tX (iXelem xsR 1 lX sz)
     (m,ss) <- writeRF p [xR] (PT b)
-    loop <- afor sh 0 ILt (Tmp szR) $ \k -> rX k:ss++[If () (Is b) [Wr () (AElem t 1 (Just a) (Tmp nR) 8) (Tmp k), nR+=1] []]
+    loop <- afor sh 0 ILt (Tmp szR) $ \k -> mc (the m) (rX k) $ ss++[If () (Is b) [Wr () (AElem t 1 (Just a) (Tmp nR) 8) (Tmp k), nR+=1] []]
     pure (plX$szR=:ev tXs (xsR,lX)
         :Ma () sh a t 1 (Tmp szR) 8
         :m'p pinch [nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
@@ -776,8 +790,8 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
         yDims=[EAt (ADim y0 (KI l) lY0) | l <- [0..(rnk-1)]]
         oRnk=xRnk+rnk
     loop <- afors xSh 0 ILt (Tmp szX) $ \k ->
-                wX k:ss++aiR (td,Just a) (y,lY,KI rnk) (Tmp szY) szO
-    pure (plX$m'p pinch0 (wX0 undefined:ss0)
+                mc (the m) (wX k) $ ss++aiR (td,Just a) (y,lY,KI rnk) (Tmp szY) szO
+    pure (plX$m'p pinch0 (mc (the m) (wX0 undefined) ss0)
         ++PlProd () szY yDims
         :PlProd () szX xDims
         :Ma () oSh a t (KI oRnk) (Tmp szX*Tmp szY) szO
@@ -1658,7 +1672,7 @@ eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX
     (plX, (lX, xsR)) <- plA xs
     (x, wX, pinch) <- arg tD (iXelem xsR 1 lX szX)
     (m,ss) <- writeRF p [x] (PT pR)
-    let loop=While () done INeq 1 (wX i:ss++[If () (Is pR) [t=:Tmp i, done=:1] [], i+=1, Cmov () (IRel IGeq (Tmp i) (Tmp szR)) done 1])
+    let loop=While () done INeq 1 (mc (the m) (wX i) $ ss++[If () (Is pR) [t=:Tmp i, done=:1] [], i+=1, Cmov () (IRel IGeq (Tmp i) (Tmp szR)) done 1])
     pure $ plX $ szR=:ev (eAnn xs) (xsR,lX):t=:(-1):done=:0:i=:0:m'p pinch [loop]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
     (plN,nR) <- plC n
@@ -1931,9 +1945,9 @@ feval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     (plN,nE) <- plC n
     k <- nI
     xs <- traverse (rtemp.fst) e
-    plSeeds <- concat <$> zipWithM eeval seeds xs
     (ms,usss) <- second concat.unzip <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     (m,fss) <- writeRF f (FT t:xs) (FT t)
+    plSeeds <- concat <$> zipWithM eeval seeds xs
     pure (plU ++ plSeeds ++ plN [Rof () k nE (fss++usss)])
 feval (Id _ (FoldGen seed g f n)) t = do
     x <- nF; acc <- nF
@@ -1942,7 +1956,7 @@ feval (Id _ (FoldGen seed g f n)) t = do
     (plN,nE) <- plC n
     (_,uss) <- writeRF g [FT x] (FT x)
     (m,fss) <- writeRF f [FT acc, FT x] (FT acc)
-    pure $ plSeed $ plN [MX () acc (FTmp seedR), MX () x (FTmp seedR), Rof () k nE (fss++uss), MX () t (FTmp acc)]
+    pure $ plSeed $ plN $ MX () acc (FTmp seedR) : mc (thex m) (MX () x (FTmp seedR)) [Rof () k nE (fss++uss), MX () t (FTmp acc)]
 feval e _ = error (show e)
 
 sac t = Sa8 () t.KI
@@ -1990,6 +2004,9 @@ m'sa t = maybe [] ((:[]).sac t)
 πe e _ = error (show e)
 
 unsupported = error "Requires statically known rank."
+
+the [x]=x; the _=error"Internal error."
+thex [_,x]=x; thex _=error"Internal error."
 
 fourth f ~(x,y,z,w) = (x,y,z,f w)
 
