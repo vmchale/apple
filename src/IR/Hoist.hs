@@ -136,9 +136,9 @@ type LM=State Label
 i1 x t = modify (\(S f1 f2 s) -> S (M.insert x t f1) f2 s); i2 x t = modify (\(S f1 f2 s) -> S f1 (M.insert x t f2) s)
 br t r (S f1 f2 s) = S f1 f2 (M.insert t r s)
 
-rwL :: LLoop -> (Stmt, ControlAnn) -> (Stmt, N)
-rwL s (MJ e l, a) = let n=node a in (case M.lookup l s of {Just (lϵ,m) | n `IS.notMember` m -> MJ e lϵ; _ -> MJ e l}, n)
-rwL _ (ss, a)     = (ss, node a)
+rwL :: LLoop -> (Stmt, NLiveness) -> (Stmt, N)
+rwL s (MJ e l, a) = let n=nx a in (case M.lookup l s of {Just (lϵ,m) | n `IS.notMember` m -> MJ e lϵ; _ -> MJ e l}, n)
+rwL _ (ss, a)     = (ss, nx a)
 
 hoist :: Label -> [Stmt] -> ([Stmt], Label)
 hoist u ss = flip runState u $ do
@@ -166,27 +166,27 @@ hoist u ss = flip runState u $ do
             Nothing -> i2 x t$>[MX2 t (KF x)]
             Just r  -> modify ((br `on` vv) t r) $> []
 
-indels :: [Stmt] -> LM ([(Stmt, ControlAnn)], LLoop, IM.IntMap [CM], IS.IntSet)
+indels :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, IM.IntMap [CM], IS.IntSet)
 indels ss = do
     (c,ls,h) <- gatherLoops ss
     let ds = IS.fromList (mapMaybe snd3 h)
         is = thread ((\(n,_,s) -> n!:s)<$>h)
     pure (c, ls, is IM.empty, ds)
 
-gatherLoops :: [Stmt] -> LM ([(Stmt, ControlAnn)], LLoop, [(N, Maybe N, CM)])
+gatherLoops :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, [(N, Maybe N, CM)])
 gatherLoops ss = let (ls, cf, dm) = loop ss
-                     mm = lm (reconstructFlat cf)
+                     mm = lm cf
                  in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
   where
     bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
-loop :: [Stmt] -> ([Loop], [(Stmt, ControlAnn)], CfTbl)
+loop :: [Stmt] -> ([Loop], [(Stmt, NLiveness)], CfTbl)
 loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
   where
     mkL (n, ns) = (n, IS.fromList ns)
 
-graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, ControlAnn)], CfTbl)
-graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
+graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, NLiveness)], CfTbl)
+graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,reconstructFlat$fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
 {-# SCC outers #-}
 outers :: [Loop] -> [Loop]

@@ -148,7 +148,7 @@ dumpLoop = fmap (pg.loop.π).ir where π (a,_,_)=a; pg (t,ss,_) = lir ss<#>prett
 dumpDomTree :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpDomTree = fmap (pg.graphParts.π).ir where π (a,_,_)=a; pg (_,t,asϵ,_) = lir asϵ<#>pretty (drawTree (show<$>t))
 
-lir=prettyLines.fmap (\(s,l) -> pretty (node l) <> ":" <+> pretty s)
+lir=prettyLines.fmap (\(s,l) -> pretty (nx l) <> ":" <+> pretty s)
 
 dumpIR :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpIR = fmap (prettyIR.π).ir where π (a,b,_)=(b,a)
