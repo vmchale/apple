@@ -23,7 +23,7 @@ import           LR
 import           Q
 
 type N=Int; type Tbl=A.Array N
-type LTbl=Tbl Liveness;type CfTbl=Tbl ControlAnn;type AnnTbl=Tbl (Stmt, ControlAnn)
+type LTbl=Tbl Liveness;type AnnTbl=Tbl (Stmt, ControlAnn)
 
 mapFA :: (FTemp -> FTemp) -> AE -> AE
 mapFA f (AP t e l) = AP t (mapFE f<$>e) l
@@ -168,32 +168,15 @@ hoist u ss = flip runState u $ do
 
 indels :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, IM.IntMap [CM], IS.IntSet)
 indels ss = do
-    (c,t,ls,h) <- gatherLoops ss
+    (c,ls,h) <- gatherLoops ss
     let ds = IS.fromList (mapMaybe snd3 h)
         is = thread ((\(n,_,s) -> n!:s)<$>h)
-    pure (c, ls, is IM.empty, ds<>dead t)
+    pure (c, ls, is IM.empty, ds)
 
-dead :: CfTbl -> IS.IntSet
-dead cf = IS.fromList $ filter (not.deadɴ) (A.indices cf)
-  where
-    deadɴ n = let u=ud (cf A.! n); d=defsNode u<>defsFNode u in iall (`unused` n) d
-
-    unused r n = any (inL r) $ succCf n
-    inL r l = let u=ud l in r `IS.member` (usesNode u<>usesFNode u)
-
-    succCf :: N -> [ControlAnn]
-    succCf n = g IS.empty n where
-        g m ɴ = let seen=IS.insert ɴ m
-                in c:concatMap (g seen) (filter (not.(`IS.member` seen)) (conn c))
-          where
-           c=cf A.! ɴ
-
-    iall p = IS.foldr (\k acc -> acc && p k) True
-
-gatherLoops :: [Stmt] -> LM ([(Stmt, NLiveness)], CfTbl, LLoop, [(N, Maybe N, CM)])
+gatherLoops :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, [(N, Maybe N, CM)])
 gatherLoops ss = let (ls, cf, dm) = loop ss
                      mm = lm cf
-                 in fmap ((\(x,y) -> (cf,snd<$>dm,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
+                 in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
   where
     bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
