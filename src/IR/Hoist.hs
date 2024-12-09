@@ -22,8 +22,8 @@ import           IR.CF
 import           LR
 import           Q
 
-type N=Int
-type LTbl = A.Array N Liveness; type CfTbl=A.Array N (Stmt, ControlAnn); type StmtTbl=A.Array N Stmt
+type N=Int; type Tbl=A.Array N
+type LTbl=Tbl Liveness;type CfTbl=Tbl ControlAnn;type AnnTbl=Tbl (Stmt, ControlAnn)
 
 mapFA :: (FTemp -> FTemp) -> AE -> AE
 mapFA f (AP t e l) = AP t (mapFE f<$>e) l
@@ -108,7 +108,7 @@ data CM = LL !Label | FM !FTemp !Double | F2M !F2 !(Double, Double)
 nh :: LM Label
 nh = state (\u -> (u, u+1))
 
-hl :: (Loop, CfTbl, LTbl) -> LM (LLoop, [(N, Maybe N, CM)])
+hl :: (Loop, AnnTbl, LTbl) -> LM (LLoop, [(N, Maybe N, CM)])
 hl ((n,ns), info, linfo) =
     let ss'=go ss
     in if null ss'
@@ -168,24 +168,41 @@ hoist u ss = flip runState u $ do
 
 indels :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, IM.IntMap [CM], IS.IntSet)
 indels ss = do
-    (c,ls,h) <- gatherLoops ss
+    (c,t,ls,h) <- gatherLoops ss
     let ds = IS.fromList (mapMaybe snd3 h)
         is = thread ((\(n,_,s) -> n!:s)<$>h)
-    pure (c, ls, is IM.empty, ds)
+    pure (c, ls, is IM.empty, ds<>dead t)
 
-gatherLoops :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, [(N, Maybe N, CM)])
+dead :: CfTbl -> IS.IntSet
+dead cf = IS.fromList $ filter (not.deadɴ) (A.indices cf)
+  where
+    deadɴ n = let u=ud (cf A.! n); d=defsNode u<>defsFNode u in iall (`unused` n) d
+
+    unused r n = any (inL r) $ succCf n
+    inL r l = let u=ud l in r `IS.member` (usesNode u<>usesFNode u)
+
+    succCf :: N -> [ControlAnn]
+    succCf n = g IS.empty n where
+        g m ɴ = let seen=IS.insert ɴ m
+                in c:concatMap (g seen) (filter (not.(`IS.member` seen)) (conn c))
+          where
+           c=cf A.! ɴ
+
+    iall p = IS.foldr (\k acc -> acc && p k) True
+
+gatherLoops :: [Stmt] -> LM ([(Stmt, NLiveness)], CfTbl, LLoop, [(N, Maybe N, CM)])
 gatherLoops ss = let (ls, cf, dm) = loop ss
                      mm = lm cf
-                 in fmap ((\(x,y) -> (cf,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
+                 in fmap ((\(x,y) -> (cf,snd<$>dm,x,y)) . bimerge) (traverse (\l -> hl (l,dm,mm)) (outers ls))
   where
     bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
-loop :: [Stmt] -> ([Loop], [(Stmt, NLiveness)], CfTbl)
+loop :: [Stmt] -> ([Loop], [(Stmt, NLiveness)], AnnTbl)
 loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
   where
     mkL (n, ns) = (n, IS.fromList ns)
 
-graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, NLiveness)], CfTbl)
+graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, NLiveness)], AnnTbl)
 graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,reconstructFlat$fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
 
 {-# SCC outers #-}
@@ -193,7 +210,7 @@ outers :: [Loop] -> [Loop]
 outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
 
 -- expand tree
-et :: Graph -> StmtTbl -> [N] -> Tree N -> [(N, [N])]
+et :: Graph -> Tbl Stmt -> [N] -> Tree N -> [(N, [N])]
 et g ss seen t = expandLoop t <$> loopHeads g ss seen t
 
 -- everything the start node dominates
@@ -204,7 +221,7 @@ expandLoop t s = (s, fromJust (go t))
     go (Node n tϵ) | n==s = Just$concatMap toList tϵ
     go (Node _ ns) = mh (go<$>ns) where mh xs=case catMaybes xs of {[] -> Nothing; (nϵ:_) -> Just nϵ}
 
-loopHeads :: Graph -> StmtTbl -> [N] -> Tree N -> [N]
+loopHeads :: Graph -> Tbl Stmt -> [N] -> Tree N -> [N]
 loopHeads g ss seen (Node n cs) =
     let bes=hasEdge g n #. seen
     in (if isMJ n then (bes++) else id) $ concatMap (loopHeads g ss (n:seen)) cs
@@ -215,7 +232,7 @@ loopHeads g ss seen (Node n cs) =
 hasEdge :: Graph -> Node -> Node -> Bool
 hasEdge g n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
 
-mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, CfTbl)
+mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, AnnTbl)
 mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
   where
     domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
