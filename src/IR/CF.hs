@@ -22,7 +22,15 @@ runFreshM :: FreshM a -> (a, Int)
 runFreshM = second fst3.flip runState (0, mempty, mempty)
 
 mkControlFlow :: [Stmt] -> ([(Stmt, ControlAnn)], Int)
-mkControlFlow instrs = runFreshM (brs instrs *> addCF instrs)
+mkControlFlow instrs = let instrs'=de instrs in runFreshM (brs instrs' *> addCF instrs')
+
+de :: [Stmt] -> [Stmt]
+de cs = filter allDefsUsed cs
+  where
+    allUsed = foldMap (\c -> uses c<>usesF c) cs
+    allDefsUsed c = let d=defs c<>defsF c in iall (\r -> r<0 || r `IS.member` allUsed) d
+
+    iall p = IS.foldr (\r acc -> acc&&p r) True
 
 getFresh :: FreshM N
 getFresh = state (\(i,m0,m1) -> (i,(i+1,m0,m1)))
