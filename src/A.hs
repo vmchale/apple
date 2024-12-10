@@ -210,6 +210,7 @@ instance Pretty Builtin where
     pretty C          = "∴"
     pretty Dot        = "⋅"
     pretty Outer      = "⊗"
+    pretty Ug         = "ug."
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -225,8 +226,10 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init | RevE
              | TailM | InitM
-             | Sin | Cos | Tan | Rot | Cyc | A1 | Even | Odd | IOf | Abs
+             | Sin | Cos | Tan | Rot | Cyc | A1 | Even | Odd | Abs
              | And | Or | Xor | N | Sr | Sl | C | Dot
+             | IOf | In
+             | Ug
              deriving (Generic)
              -- TODO: (feuilleter, stagger, ...) reshape...?
 

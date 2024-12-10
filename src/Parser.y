@@ -141,6 +141,7 @@ import Sh
     sqrt { TokB $$ BuiltinSqrt }
     pi { TokB $$ BuiltinPi }
     gen { TokB $$ BuiltinGen }
+    ug { TokB $$ BuiltinUg }
     log { TokSym $$ SymLog }
     re { TokB $$ BuiltinRep }
     diag { TokB $$ BuiltinD }
@@ -302,6 +303,7 @@ E :: { E AlexPosn }
   | floor { Builtin $1 Floor } | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
   | underscore { Builtin $1 Neg }
   | gen { Builtin $1 Gen }
+  | ug { Builtin $1 Ug }
   | colon { Builtin $1 Size }
   | i { Builtin $1 ItoF }
   | t { Builtin $1 Dim }

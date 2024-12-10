@@ -22,6 +22,7 @@ isBinOp LastM  = False
 isBinOp Head   = False
 isBinOp HeadM  = False
 isBinOp Gen    = False
+isBinOp Ug     = False
 isBinOp TAt{}  = False
 isBinOp Outer  = False
 isBinOp R      = False

@@ -803,6 +803,9 @@ tyB _ Size = do
 tyB _ Gen = do
     a <- ftv "a"; n <- fti "n"
     pure (a ~> (a ~> a) ~> Li n ~> vV n a, mempty)
+tyB _ Ug = do
+    a <- ftv "a"; b <- ftv "b"; n <- fti "n"
+    pure ((b ~> P [b,a]) ~> b ~> Li n ~> vV n a, mempty)
 tyB l Mul = do
     a <- fc "a" l IsNum
     i <- fti "i"; j <- fti "j"; k <- fti "k"
