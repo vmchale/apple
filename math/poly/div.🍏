@@ -1,0 +1,14 @@
+λp.λq. {
+  take ⇐ λn.λx. (x˙)'⍳ 0 (n-1) 1;
+  zipPad ← λf.λxs.λys. {l_x ⟜ 𝓉xs; l_y ⟜  𝓉ys; f`xs (?l_x≥l_y,.ys⧺re: 0 (l_x-l_y),.take (l_y-l_x) ys)};
+  q₀ ⟜ {:q;i ← :p-:q₀;k ⟜ _'q₀;
+  go ← λp. {h ⟜ {.p; t ← }:?p; (zipPad (+) ((h*)'k) t, h)};
+  ug. go p i
+}
+
+-- shortDiv :: [Integer] -> [Integer] -> [Integer]
+-- shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
+  -- where
+    -- go (0, _) = Nothing
+    -- go (i, h:t) = Just (h, (i-1, zipWith (+) (map (h *) ker) t))
+    -- ker = negate <$> p2 ++ repeat 0
