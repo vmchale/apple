@@ -621,6 +621,9 @@ tyB l Snoc = tyB l ConsE
 tyB _ A1 = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
     pure (Arr (i `Cons` sh) a ~> I ~> Arr sh a, mempty)
+tyB _ I1 = do
+    a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
+    pure (vV n I ~> Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
 tyB _ IOf = do
     a <- ftv "a"; i <- fti "i"
     pure ((a ~> B) ~> vV i a ~> I, mempty)
@@ -829,6 +832,9 @@ tyB _ Filt = do
 tyB _ C = do
     a <- ftv "a"; b <- ftv "b"; c <- ftv "c"
     pure ((b ~> c) ~> (a ~> b) ~> a ~> c, mempty)
+tyB _ S' = do
+    a <- ftv "a"; b <- ftv "b"; c <- ftv "c"
+    pure ((b ~> b ~> c) ~> (a ~> b) ~> a ~> a ~> c, mempty)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do

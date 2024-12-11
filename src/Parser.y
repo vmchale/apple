@@ -99,8 +99,10 @@ import Sh
     consS { TokSym $$ L.Cons }
     snoc { TokSym $$ L.Snoc }
     trans { TokSym $$ Transp }
+    fork { TokSym $$ Fork }
     bcyc { TokSym $$ L.Cyc }
     iat { TokSym $$ L.A1 }
+    sub { TokSym $$ Sub }
     mod { TokSym $$ L.Mod }
     atDot { TokSym $$ AtDot }
     -- weier { TokSym $$ Weier }
@@ -262,6 +264,7 @@ BBin :: { E AlexPosn }
      | fold { Builtin $1 A.Fold }
      | bcyc { Builtin $1 A.Cyc }
      | iat { Builtin $1 A.A1 }
+     | sub { Builtin $1 I1 }
      | mod { Builtin $1 A.Mod }
      | atDot { Builtin $1 IOf }
      | and { Builtin $1 A.And } | or { Builtin $1 A.Or }
@@ -269,7 +272,8 @@ BBin :: { E AlexPosn }
      | ice { Builtin $1 Ices }
      | para { Builtin $1 Filt }
      | sr { Builtin $1 A.Sr } | sl { Builtin $1 A.Sl }
-     | therefore { Builtin $1 C } | dp { Builtin $1 A.Dot }
+     | therefore { Builtin $1 C } | fork { Builtin $1 S' }
+     | dp { Builtin $1 A.Dot }
 
 B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }

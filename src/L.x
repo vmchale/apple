@@ -182,6 +182,7 @@ tokens :-
         ">>"                     { mkSym Sr }
         "<<"                     { mkSym Sl }
         ∴                        { mkSym Therefore }
+        ⑂                        { mkSym Fork }
         ⋅                        { mkSym Dp }
         ⊖                        { mkSym Rotate }
         ⊙                        { mkSym Cyc }
@@ -201,6 +202,7 @@ tokens :-
         ∨                        { mkSym Or }
         ¬                        { mkSym Not }
         ⅟                        { mkSym Inv }
+        ⊂                        { mkSym Sub }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -349,10 +351,10 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | TailM | Init | InitM
          | Geq | Gt | Eq | Neq | Leq | Lt
-         | FoldA | FoldS | Tilde | Cyc | A1 | Mod
+         | FoldA | FoldS | Tilde | Cyc | A1 | Sub
          | AtDot | Eye | Para | Weier | Ice | B | Sharp
-         | And | Or | Xor | Not | Sr | Sl | IDiv | Inv
-         | Therefore | Dp
+         | And | Or | Xor | Not | Sr | Sl | IDiv | Inv | Mod
+         | Therefore | Fork | Dp
          deriving (Generic, NFData)
 
 instance Pretty Sym where
@@ -444,6 +446,8 @@ instance Pretty Sym where
     pretty Sr           = ">>"
     pretty Sl           = "<<"
     pretty Therefore    = "∴"
+    pretty Fork         = "⑂"
+    pretty Sub          = "⊂"
     pretty Inv          = "⅟"
 
 -- | Reserved/special variables

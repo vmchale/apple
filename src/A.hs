@@ -189,6 +189,7 @@ instance Pretty Builtin where
     pretty Rot        = "⊖"
     pretty Cyc        = "⊙"
     pretty A1         = "˙"
+    pretty I1         = "⊂"
     pretty Even       = "even."
     pretty Odd        = "odd."
     pretty Mod        = "|"
@@ -211,6 +212,7 @@ instance Pretty Builtin where
     pretty Dot        = "⋅"
     pretty Outer      = "⊗"
     pretty Ug         = "ug."
+    pretty S'         = "⑂"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -226,10 +228,11 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | R | Head | HeadM | Tail | Init | RevE
              | TailM | InitM
-             | Sin | Cos | Tan | Rot | Cyc | A1 | Even | Odd | Abs
+             | Sin | Cos | Tan | Abs | Even | Odd
+             | Rot | Cyc | A1 | I1 | IOf
              | And | Or | Xor | N | Sr | Sl | C | Dot
-             | IOf | In
              | Ug
+             | S'
              deriving (Generic)
              -- TODO: (feuilleter, stagger, ...) reshape...?
 
@@ -323,6 +326,7 @@ isBinOp Fold    = True
 isBinOp Map     = True
 isBinOp Cyc     = True
 isBinOp A1      = True
+isBinOp I1      = True
 isBinOp Mod     = True
 isBinOp IOf     = True
 isBinOp And     = True
@@ -333,6 +337,7 @@ isBinOp Ices    = True
 isBinOp Sr      = True
 isBinOp Sl      = True
 isBinOp Dot     = True
+isBinOp S'      = True
 isBinOp _       = False
 
 data B = L | D | Λ
