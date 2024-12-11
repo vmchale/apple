@@ -37,7 +37,9 @@ isBinOp Eye    = False
 isBinOp Flat   = False
 isBinOp AddDim = False
 isBinOp RevE   = False
+isBinOp S      = False
 isBinOp Re     = False
+isBinOp K      = False
 isBinOp _      = True
 
 fi :: Builtin -> Int
