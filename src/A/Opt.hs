@@ -60,6 +60,10 @@ optA (Builtin ty S')       | Arrow fTy (Arrow gTy@(Arrow tX _) _) <- ty = do
     f <- nextU "f" fTy; g <- nextU "g" gTy; x <- nextU "x" tX; y <- nextU "x" tX
     let gE=v g
     pure $ Lam ty f (λ g (λ x (λ y (Var fTy f$$(gE$$v x)$$(gE$$v y)))))
+optA (Builtin ty S)        | Arrow fTy (Arrow gTy@(Arrow tX _) _) <- ty = do
+    f <- nextU "f" fTy; g <- nextU "g" gTy; x <- nextU "x" tX
+    let xE=v x
+    pure $ Lam ty f (λ g (λ x (v f$$xE$$(v g$$xE))))
 optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)

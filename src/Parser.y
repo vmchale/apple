@@ -168,6 +168,8 @@ import Sh
     even { TokB $$ BuiltinEven }
     odd { TokB $$ BuiltinOdd }
     abs { TokB $$ BuiltinAbs }
+    sks { TokB $$ BuiltinS }
+    skk { TokB $$ BuiltinK }
 
 %right semicolon mmap
 %nonassoc leq geq gt lt neq eq
@@ -340,13 +342,13 @@ E :: { E AlexPosn }
   | tan { Builtin $1 Tan }
   | cyc { Builtin $1 A.Cyc }
   | tilde { Builtin $1 RevE }
-  | odd { Builtin $1 Odd }
-  | even { Builtin $1 Even }
+  | odd { Builtin $1 Odd } | even { Builtin $1 Even }
   | abs { Builtin $1 Abs }
   | flat { Builtin $1 Flat }
   | addd { Builtin $1 AddDim }
   | not { Builtin $1 N }
   | eye { Builtin $1 A.Eye }
+  | sks { Builtin $1 S } | skk { Builtin $1 K }
 
 {
 

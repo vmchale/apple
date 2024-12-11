@@ -203,6 +203,7 @@ tokens :-
         ¬                        { mkSym Not }
         ⅟                        { mkSym Inv }
         ⊂                        { mkSym Sub }
+        〃                       { mkSym Ditto }
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
@@ -251,6 +252,8 @@ tokens :-
         "odd."                   { mkB BuiltinOdd }
         "even."                  { mkB BuiltinEven }
         "abs."                   { mkB BuiltinAbs }
+        𝐒                        { mkB BuiltinS }
+        𝐊                        { mkB BuiltinK }
 
         _$digit+                 { tok (\p s -> alex $ TokInt p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
         "0x"$hexit+              { tok (\p s -> alex $ TokInt p (hexP $ BSL.drop 2 s)) }
@@ -351,7 +354,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | TailM | Init | InitM
          | Geq | Gt | Eq | Neq | Leq | Lt
-         | FoldA | FoldS | Tilde | Cyc | A1 | Sub
+         | FoldA | FoldS | Tilde | Cyc | Ditto | A1 | Sub
          | AtDot | Eye | Para | Weier | Ice | B | Sharp
          | And | Or | Xor | Not | Sr | Sl | IDiv | Inv | Mod
          | Therefore | Fork | Dp
@@ -429,6 +432,7 @@ instance Pretty Sym where
     pretty InitM        = "}:?"
     pretty Rotate       = "⊖"
     pretty Cyc          = "⊙"
+    pretty Ditto        = "〃"
     pretty A1           = "˙"
     pretty Mod          = "|"
     pretty AtDot        = "@."
@@ -464,13 +468,14 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
              | BuiltinD | BuiltinVec | BuiltinM | BuiltinBool
+             | BuiltinS | BuiltinK
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
     pretty BuiltinFRange = "frange"
     pretty BuiltinIota   = "⍳"
     pretty BuiltinFloor  = "⌊"
-    pretty BuiltinE      = "ℯ"
+    pretty BuiltinE      = "e:"
     pretty BuiltinI      = "ℝ"
     pretty BuiltinF      = "𝓕"
     pretty BuiltinTrue   = "#t"
@@ -502,6 +507,8 @@ instance Pretty Builtin where
     pretty BuiltinEven   = "even."
     pretty BuiltinAbs    = "abs."
     pretty BuiltinD      = "di."
+    pretty BuiltinS      = "𝐒"
+    pretty BuiltinK      = "𝐊"
 
 data Tok = EOF { loc :: AlexPosn }
          | TokSym { loc :: AlexPosn, sym :: !Sym }

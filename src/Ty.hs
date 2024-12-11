@@ -835,6 +835,12 @@ tyB _ C = do
 tyB _ S' = do
     a <- ftv "a"; b <- ftv "b"; c <- ftv "c"
     pure ((b ~> b ~> c) ~> (a ~> b) ~> a ~> a ~> c, mempty)
+tyB _ S = do
+    a <- ftv "a"; b <- ftv "b"; c <- ftv "c"
+    pure ((a ~> b ~> c) ~> (a ~> b) ~> a ~> c, mempty)
+tyB _ K = do
+    a <- ftv "a"; b <- ftv "b"
+    pure (b ~> (a ~> b), mempty)
 
 liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
 liftCloneTy t = do
