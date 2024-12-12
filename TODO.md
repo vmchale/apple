@@ -205,10 +205,8 @@ o → o → o
 - [ ] https://www.bathsheba.com/math/gyroid/
 - [x] https://oeis.org/A000081
 - [ ] https://en.wikipedia.org/wiki/Chebyshev_polynomials
-# Project Euler
-- [ ] https://projecteuler.net/problem=30
+- [ ] https://cran.r-project.org/web/packages/glmm/index.html
 # Rosetta Code
-- [ ] https://rosettacode.org/wiki/Jaccard_index#
 - [ ] https://rosettacode.org/wiki/Averages/Pythagorean_means
 # Debug
 - [ ] sanity check negative dims
