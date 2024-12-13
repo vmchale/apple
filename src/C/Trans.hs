@@ -618,6 +618,12 @@ aeval (EApp (Arr sh I) (EApp _ (Builtin _ A.R) e0) e1) t a | Just ixs <- staIx s
     loop <- afors sh 0 ILt (KI n) $ \k ->
               [Rnd () iR, iR =: (Bin IRem (Tmp iR) (Tmp scaleR) + e0e), Wr () (AElem t rnk (Just a) (Tmp k) 8) (Tmp iR)]
     pure (plE0$plE1$Ma () sh a t rnk (KI n) 8:diml (t, Just a) (KI<$>ixs)++scaleR=:(e1e-e0e+1):[loop])
+aeval (EApp _ (EApp _ (Builtin _ I1) i1) e) t a | iT@(Arr iSh _) <- eAnn i1, Just eSz <- aB (eAnn e) = do
+    n <- nI
+    (plX, (lX, xR)) <- plA e
+    (plI, (lI, iR)) <- plA i1
+    loop <- afors iSh 0 ILt (Tmp n) $ \k -> [mv (AElem t 1 (Just a) (Tmp k)) (AElem xR 1 lX (EAt$AElem iR 1 lI (Tmp k) 8)) eSz]
+    pure $ plX$plI$n=:ev iT (iR,lI):vSz iSh t a (Tmp n) eSz++[loop]
 aeval (EApp (Arr oSh ty) (Builtin _ Di) e) t a | Just sz <- nSz ty = do
     (plX, (lX, xR)) <- plA e
     td <- nI; xRd <- nI; n <- nI
