@@ -8,13 +8,13 @@
     xl1p ⟜ x%.l1;
     xSigmoid ← [1%(1+ℯ(_x))]`{0} xl1p;
     xl2p ⟜ xSigmoid%.l2;
-    m ⟜ (⋉)/* _1 xl2p; a ⟜ [e:(x-m)]`{0} xl2p;
+    a ⟜ {m ⟜ (⋉)/* _1 xl2p; [e:(x-m)]`{0} xl2p};
     sum ← [(+)/x];
     n ⟜ sum`{1} (a::M float);
     out ⟜ ⍉([(%x)'y]`{0,1} n a);
     dsoftmax_l2 ← [x*(1-x)]`{0} out;
     -- bw
-    error ⟜ (*)`{0,0} ({n⟜2%(ℝ(𝓉out)); [x*n]`{0} ((-)`{0,0} out targets)}) dsoftmax_l2;
+    error ⟜ (*)`{0,0} ({n⟜2%ℝ(𝓉out); [x*n]`{0} ((-)`{0,0} out targets)}) dsoftmax_l2;
     ul2 ← (⍉xSigmoid)%.error;
     ul1 ← (⍉x)%.((*)`{0,0} (⍉(l2%.(⍉error))) (dsigmoid xl1p));
     ((+)`{0,0} l1 ul1, (+)`{0,0} l2 ul2)
