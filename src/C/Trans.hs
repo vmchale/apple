@@ -271,6 +271,10 @@ writeF (Lam _ x e) (AA r l:rs) ret = addAVar x (l,r) *> writeF e rs ret
 writeF (Lam _ x e) (IPA r:rs) ret = addVar x r *> writeF e rs ret
 writeF (Lam _ x e) (FA fr:rs) ret = addD x fr *> writeF e rs ret
 writeF (Lam _ x e) (BA r:rs) ret = addB x r *> writeF e rs ret
+writeF (Var ty x) [] (IT r) | isArr ty = do
+    st <- gets avars
+    let (l,t) = {-# SCC "getA" #-} getT st x
+    pure (l,[r=:Tmp t])
 writeF e [] (IT r) | isArr (eAnn e) = do {l <- nextArr r; (Just l,)<$>aeval e r l}
 writeF e [] (IT r) | isΠR (eAnn e) = (\ ~(_,_,_,ss) -> (Nothing, ss))<$>πe e r
 writeF e [] r = (Nothing,)<$>eeval e r
@@ -550,8 +554,6 @@ rfill (Builtin _ Cyc) (AD t lA (Just (Arr oSh _)) _ (Just sz) _) [AI (AD xR lX _
     ix <- nI
     loop <- arof oSh (Tmp nR) [cpy (AElem t 1 lA (Tmp ix)) (AElem xR 1 lX 0) nx sz, ix+=nx]
     pure [ix=:0, loop]
-rfill (Builtin _ Re) (AD t lA (Just (Arr sh _)) _ (Just sz) _) [NA (IT nR), NA xR] =
-    (:[]) <$> afor sh 0 ILt (Tmp nR) (\i -> [wt (AElem t 1 lA (Tmp i) sz) xR])
 rfill (EApp _ (Builtin _ Scan) op) (AD t lA (Just (Arr oSh _)) _ (Just accSz) (Just n)) [AI (AD xR lX _ _ (Just xSz) _), NA acc, NA x] = do
     ss <- writeRF op [acc, x] acc
     loop <- afor1 oSh 1 ILeq n (\i -> wt (AElem t 1 lA (Tmp i-1) accSz) acc:mt (AElem xR 1 lX (Tmp i) xSz) x:ss)
@@ -565,8 +567,6 @@ rfill (EApp _ (Builtin _ Outer) op) (AD t lA _ _ _ _) [AI (AD xR lX (Just tXs) _
 rfill (Builtin _ Rot) (AD t lA _ _ _ _) [AI (AD xsR lX _ _ (Just sz) (Just nx)), NA (IT nR)] = do
     c <- nI
     pure [Ifn't () (IRel IGeq (Tmp nR) 0) [nR+=nx], c =: (nx-Tmp nR), cpy (AElem t 1 lA 0) (AElem xsR 1 lX (Tmp nR)) (Tmp c) sz, cpy (AElem t 1 lA (Tmp c)) (AElem xsR 1 lX 0) (Tmp nR) sz]
-rfill (Builtin _ Re) (AD t lA (Just (Arr sh _)) _ (Just sz) _) [NA (IT nR), ΠA xR] =
-    (:[]) <$> afor sh 0 ILt (Tmp nR) (\k -> [Mv () (AElem t 1 lA (Tmp k) sz) (TupM xR Nothing) sz])
 rfill (Builtin _ RevE) (AD t lA (Just (Arr oSh _)) _ (Just sz) _) [AI (AD xR lX _ _ _ (Just n))] =
     (:[]) <$> afor oSh 0 ILt n (\i -> [mv (AElem t 1 lA (Tmp i)) (AElem xR 1 lX (n-Tmp i-1)) sz])
 rfill (Builtin _ AddDim) (AD t lA _ (Just rnk) (Just sz) _) [AI (AD xR lX _ (Just xRnk) _ (Just n))] = do
@@ -1135,17 +1135,6 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t a | Just (tX, xRnk) <-
     let rnkE=KI xsRnk; szX=bT tX
     pure (plXs$plX$d1R=:ev tXs (xsR,lXs):dss++d1'R=:(Tmp d1R+1):PlProd () nX (Tmp<$>dts):szR=:(Tmp d1'R*Tmp nX):Ma () oSh a t rnkE (Tmp szR) szX:Wr () (ADim t 0 (Just a)) (Tmp d1'R):CpyD () (ADim t 1 (Just a)) (ADim xsR 1 lXs) (KI$xsRnk-1):[cpy (AElem t rnkE (Just a) (Tmp d1R*Tmp nX)) (AElem xR (KI xRnk) lX 0) (Tmp nX) szX, cpy (AElem t rnkE (Just a) 0) (AElem xsR (KI xsRnk) lXs 0) (Tmp d1R*Tmp nX) szX])
                                                           | otherwise = unsupported
-aeval (EApp oTy@(Arr sh _) (EApp _ g@(Builtin _ Re) n) x) t a | tX <- eAnn x, Just xSz <- rSz tX = do
-    (plN, nR) <- plEV n
-    xR <- rtemp tX; putX <- eeval x xR
-    contents <- rfill g (AD t (Just a) (Just oTy) Nothing (Just xSz) Nothing) [NA$IT nR, NA xR]
-    pure (plN$vSz sh t a (Tmp nR) xSz++putX++contents)
-aeval (EApp oTy@(Arr sh _) (EApp _ g@(Builtin _ Re) n) x) t a | tX <- eAnn x, isΠ tX, sz <- bT tX = do
-    xR <- nI
-    (plN, nR) <- plEV n
-    (_, mSz, _, plX) <- πe x xR
-    contents <- rfill g (AD t (Just a) (Just oTy) Nothing (Just sz) Nothing) [NA (IT nR), ΠA xR]
-    pure (plN$vSz sh t a (Tmp nR) sz++m'sa xR mSz++plX++contents++m'pop mSz)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Re) n) x) t a | (Arr sh tO) <- eAnn x, sz <- bT tO = do
     (plN, nR) <- plEV n; (plX, (lX, xR)) <- plA x
     xRnk <- nI; oRnk <- nI; td <- nI; xRd <- nI; szX <- nI
