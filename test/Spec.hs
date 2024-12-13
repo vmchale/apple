@@ -57,16 +57,16 @@ rTy = testGroup "Regression tests"
 
 allT :: TestTree
 allT = testGroup "jit"
-    [ testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
-    , testCase "dotprod" $ do { res <- fpVvf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
-    , testCase "euclidean" $ do { res <- fpVvf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
-    , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
-    , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
+    [ testCase "exp (series)" $ do { res <- fpIff "test/examples/exp.🍏" 20 1 ; res .?= exp 1 }
+    , testCase "dotprod" $ do { res <- fpVvf "test/examples/dotprod.🍏" [1,2,3::Double] [2,4,6] ; res @?= 28 }
+    , testCase "euclidean" $ do { res <- fpVvf "test/examples/dist.🍎" [0,0,0::Double] [3,4,5] ; res @?= sqrt 50 }
+    , testCase "ncdf" $ do { res <- fpFf "math/ncdf.🍎" 2 ; res .?= ncdf 2 }
+    , testCase "erf" $ do { res <- fpFf "math/erf.🍏" 2 ; res .?= erf 2 }
     , testCase "primes" $ do { res <- fpIa "test/data/primes.🍏" 30; res @?= [T,T,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,F,F,F,F,T,F] }
     , testCase "primes-up-to" $ do { res <- fpIa "test/examples/primes.🍎" 100; res @?= [2::Int64,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97] }
-    , testCase "shoelace" $ do { res <- fpVvf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
+    , testCase "shoelace" $ do { res <- fpVvf "test/examples/shoelace.🍎" [0,1,1::Double] [0,0,1] ; res @?= 0.5 }
     , testCase "maxscan" $ do { res <- fpVv "bench/apple/scanmax.🍏" [4::Int64,6,1] ; res @?= [0::Int64,4,6,6] }
-    , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
+    , testCase "b" $ do { res <- fpVvf "test/examples/b.🍎" [1::Double,2,3] [2::Double,4,6] ; res @?= 2 }
     , testCase "fib" $ do { res <- fpIa "test/examples/fib.🍎" 6; res @?= [1::Int64,1,2,3,5,8,13] } --
     , testCase "fib" $ do { res <- fpIa "test/examples/fibarr.🍎" 6; res @?= [1::Int64,1,2,3,5,8] } --
     , testCase "oeis (A000081)" $ do { res <- fpIa "math/oeis/A000081.🍏" 12; res @?= [0::Int64,1,1,2,4,9,20,48,115,286,719,1842,4766] }
@@ -85,7 +85,7 @@ allT = testGroup "jit"
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,7,6,9::Double] }
     , testCase "luhn check" $ do { res <- fpAi "test/examples/luhn.🍎" [4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]; res @?= 1 }
-    , testCase "zipTil" $ do { res <- fpVvf "test/data/dotTil.🍏" [3,2,1,0,8] [4,5,5]; res @?= 27 }
+    , testCase "zipTil" $ do { res <- fpVvf "test/data/dotTil.🍏" [3,2,1,0,8::Double] [4,5,5]; res @?= 27 }
     , testCase "conv with stride" $ do
         (AA 2 [2,2] res) <- fpAa "test/data/strideConv.🍏"
             (AA 2 [4,4] [20::Double,200,-5,23,-13,134,119,100,120,32,49,25,-120,12,9,23])
@@ -116,11 +116,11 @@ allT = testGroup "jit"
         last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)
     , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "ℯ" $ do { f <- fpn "e:"; ff f 2.5 @?= exp 2.5 }
-    , testCase "k-l" $ do { res <- jitKl [0.25, 0.25, 0.5] [0.66, 0.33, 0] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
+    , testCase "k-l" $ do { res <- fpVvf "test/examples/kl.🍎" [0.25, 0.25, 0.5::Double] [0.66, 0.33, 0::Double] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
     , testCase "fizzbuzz" $ do { (AA 1 [10] res) <- fpAa "test/examples/fizzbuzz.🍎" (AA 1 [10] [0..9::Double]); res @?= [15.0,3.0,0.0,3.0,5.0,3.0,0.0,0.0,3.0,0.0::Double] }
     , testCase "filt" $ do { (AA 1 [10] res) <- fpAa "test/examples/partition.🍏" (AA 1 [10] [0..9::Double]); res @?= [F,F,F,F,F,F,T,T,T,T] }
     , testCase "softmax" $ do { (AA 2 [2,2] res) <- fpAa "test/data/softmax.🍎" (AA 2 [2,2] [0.25,0.75,0.3,0.5::Double]); res @?= [0.4875026035157896,0.5621765008857981,0.5124973964842103,0.4378234991142019::Double] }
-    , testCase "gamma" $ do { res <- gammaJit (-3.5) ; res @?= gamma (-3.5) }
+    , testCase "gamma" $ do { res <- fpFf "math/gamma.🍏" (-3.5) ; res @?= gamma (-3.5) }
     , testCase "tcdf" $ do { res <- fpFff "math/tcdf.🍎" 2 12 ; res ≈ tcdf 12 2 }
     , testCase "fcdf" $ do { res <- fpFfff "math/fcdf.🍎" 5 2 2 ; res .?= 0.6339381452606089 }
     , testCase "chi-squared cdf" $ do { res <- fpFff "math/chisqcdf.🍎" 2 2 ; res @?= chisqcdf 2 2 }
@@ -133,13 +133,13 @@ allT = testGroup "jit"
         let v = AA 1 [20] [1..20::Int64]
         in do { res0 <- fpAa "bench/apple/evens.🍎" v; res1 <- fpAa "bench/apple/evenIx.🍎" v; (res0 :: AI) @?= res1 }
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
-    , testCase "pearson r" $ do { res <- fpVvf "math/stats/r.🍎" [1,2,3,4,5,6,7] [10,9,2.5,6,4,3,2]; res @?= -0.8285038835884277 }
-    , testCase "cosim" $ do { res <- fpVvf "math/cosim.🍏" [2,45,7,2] [2,54,13,15]; res @?= 0.9726896390141451 }
-    , testCase "foldl" $ do { res <- fpVf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
+    , testCase "pearson r" $ do { res <- fpVvf "math/stats/r.🍎" [1,2,3,4,5,6,7::Double] [10,9,2.5,6,4,3,2::Double]; res @?= -0.8285038835884277 }
+    , testCase "cosim" $ do { res <- fpVvf "math/cosim.🍏" [2,45,7,2::Double] [2,54,13,15::Double]; res @?= 0.9726896390141451 }
+    , testCase "foldl" $ do { res <- fpVf "test/data/cfLeft.🍏" (4:replicate 5 (8::Double)); res ≈ sqrt 17 }
     , testCase "cov" $
         let x = AA 2 [2,3] [-2.1,-1,4.3,3,1.1,0.12::Double]
         in do { (AA 2 [2,2] res) <- fpAa "math/stats/covar.🍏" x ; res @?= [11.71,-4.286,-4.286,2.144133::Double] }
-    , rfTest
+    , testCase "rf" $ do { res <- fpIii "test/examples/risingFactorial.🍎" 5 15 ; res @?= 5068545850368000 }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
@@ -155,15 +155,16 @@ cvf src xs = wA (v1 xs) $ \p -> do {f <- af<$>fpn src; pure (f p)}
 cvvf src xs ys = wA (v1 xs) $ \pX -> wA (v1 ys) $ \pY -> do {f <- aaf<$>fpn src; pure (f pX pY)}
 cvv src xs = wA (v1 xs) $ \pX -> do {f <- aa<$>fpn src; asN (f pX)}
 
+fpIii fp m n = do {f <- fmap iii.fpn =<< BSL.readFile fp; pure (f m n)}
+fpFf fp x = do {f <- fmap ff.fpn =<< BSL.readFile fp; pure (f x)}
+fpFff fp x y = do {f <- fmap fff.fpn =<< BSL.readFile fp; pure (f x y)}
+fpFfff fp x y z = do {f <- fmap ffff.fpn =<< BSL.readFile fp; pure (f x y z)}
+
 fpAa fp x = do {c <- BSL.readFile fp;caa c x}
 fpAaa fp x y = do {c <- BSL.readFile fp; caaa c x y}
 
-fpVf :: FilePath -> [Double] -> IO Double
 fpVf fp xs = do {c <- BSL.readFile fp; cvf c xs}
-
-fpVvf :: FilePath -> [Double] -> [Double] -> IO Double
 fpVvf fp xs ys = do {c <- BSL.readFile fp; cvvf c xs ys}
-
 fpVv fp xs = do {c <- BSL.readFile fp; cvv c xs}
 
 tyF :: FilePath -> TestTree
@@ -172,14 +173,6 @@ tyF fp = testCase fp $ do
     case res of
         Left err -> assertFailure (show err)
         Right{}  -> assertBool "Passes" True
-
-rfTest :: TestTree
-rfTest = testCase "rising factorial" $ do
-    res <- jitRF 5 15
-    res @?= 5068545850368000
-
-jitKl = fpVvf "test/examples/kl.🍎"
-jitB = fpVvf "test/examples/b.🍎"
 
 tfpAi :: FilePath -> [[Int64]] -> IO [Int64]
 tfpAi fp aas = do
@@ -220,14 +213,6 @@ fpAaff fp xs ys z = do
   where
     a=v1 xs; b=v1 ys
 
-jitExp :: Int64 -> Double -> IO Double
-jitExp = fpIff "test/examples/exp.🍏"
-
-fpFf :: FilePath -> Double -> IO Double
-fpFf fp x = do
-    f <- fpn =<< BSL.readFile fp
-    pure $ ff f x
-
 fpIff :: FilePath -> Int64 -> Double -> IO Double
 fpIff fp x y = do
     f <- fpn =<< BSL.readFile fp
@@ -242,27 +227,6 @@ fpFfa :: Storable a => FilePath -> Double -> Double -> IO [a]
 fpFfa fp x y = do
     f <- fpn =<< BSL.readFile fp
     asN (ffa f x y)
-
-fpFff :: FilePath -> Double -> Double -> IO Double
-fpFff fp x y = do
-    f <- fpn =<< BSL.readFile fp
-    pure $ fff f x y
-
-fpFfff :: FilePath -> Double -> Double -> Double -> IO Double
-fpFfff fp x y z = do
-    f <- fpn =<< BSL.readFile fp
-    pure $ ffff f x y z
-
-gammaJit = fpFf "math/gamma.🍏"
-ncdfJit = fpFf "math/ncdf.🍎"
-
-erfJit :: Double -> IO Double
-erfJit = fpFf "math/erf.🍏"
-
-jitRF :: Int -> Int -> IO Int
-jitRF m n = do
-    fp <- fpn =<< BSL.readFile "test/examples/risingFactorial.🍎"
-    pure $ runRF fp m n
 
 wA :: Storable a => Apple a -> (U a -> IO b) -> IO b
 wA x act =
@@ -284,7 +248,7 @@ foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Dou
 foreign import ccall "dynamic" ffff :: FunPtr (Double -> Double -> Double -> Double) -> Double -> Double -> Double -> Double
 foreign import ccall "dynamic" ffa :: FunPtr (Double -> Double -> U a) -> Double -> Double -> U a
 foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double
-foreign import ccall "dynamic" runRF :: FunPtr (Int -> Int -> Int) -> (Int -> Int -> Int)
+foreign import ccall "dynamic" iii :: FunPtr (Int64 -> Int64 -> Int64) -> (Int64 -> Int64 -> Int64)
 foreign import ccall "dynamic" aa :: FunPtr (U a -> U b) -> U a -> U b
 foreign import ccall "dynamic" aaa :: FunPtr (U a -> U b -> U c) -> U a -> U b -> U c
 foreign import ccall "dynamic" aaafp4 :: FunPtr (U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)) -> U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)
