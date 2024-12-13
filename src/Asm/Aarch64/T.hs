@@ -266,20 +266,18 @@ ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | (n', 0) <-
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 2, n' <= 4 = do
     t0 <- nR; t1 <- nR
     pure $ concat [ [Ldp () t0 t1 (RP (absReg tS) (i*16)), Stp () t0 t1 (RP (absReg tD) (i*16))] | i <- fromIntegral<$>[0..(n'-1)] ]
-ir (IR.Mv (IR.AP tD eD _) (IR.AP tS eS _) n) | (n', 0) <- n `quotRem` 16 = do
+ir (IR.Mv (IR.AP tD eD _) (IR.AP tS eS _) n) | Just (q5,q4,q3,n1) <- bv n = do
     rD <- nextI; rS <- nextI
-    t₀ <- nR; t₁ <- nR
+    t₀ <- nR; t₁ <- nR; q₀ <- nQ; q₁ <- nQ
     plED <- eval (maybe id (+) eD (IR.Reg tD)) (IR.ITemp rD)
     plES <- eval (maybe id (+) eS (IR.Reg tS)) (IR.ITemp rS)
     let rDA=IReg rD; rSA=IReg rS
-    pure $ plED ++ plES ++ concat [ [ Ldp () t₀ t₁ (RP rSA (i*16)), Stp () t₀ t₁ (RP rDA (i*16)) ] | i <- fromIntegral<$>[0..(n'-1)] ]
-ir (IR.Mv (IR.AP tD eD _) (IR.AP tS eS _) n) | (n', 0) <- n `quotRem` 8 = do
-    rD <- nextI; rS <- nextI
-    t <- nR
-    plED <- eval (maybe id (+) eD (IR.Reg tD)) (IR.ITemp rD)
-    plES <- eval (maybe id (+) eS (IR.Reg tS)) (IR.ITemp rS)
-    let rDA=IReg rD; rSA=IReg rS
-    pure $ plED ++ plES ++ concat [ [ Ldr () t (RP rSA (i*16)), Str () t (RP rDA (i*16)) ] | i <- fromIntegral<$>[0..(n'-1)] ]
+        s5=32*fromIntegral q5;s4=16*fromIntegral q4
+    pure $ plED ++ plES
+        ++ concat [ [ Ldp2 () q₀ q₁ (RP rSA (i*32)), Stp2 () q₀ q₁ (RP rDA (i*32)) ] | i <- fromIntegral<$>[0..q5-1] ]
+        ++ concat [ let ix=i*16+s5 in [ Ldp () t₀ t₁ (RP rSA ix), Stp () t₀ t₁ (RP rDA ix) ] | i <- fromIntegral<$>[0..q4-1] ]
+        ++ concat [ let ix=i*8+s4+s5 in [ Ldr () t₀ (RP rSA ix), Str () t₀ (RP rDA ix) ] | i <- fromIntegral<$>[0..q3-1] ]
+        ++ concat [ let ix=i+8*fromIntegral q3+s4+s5 in [ LdrB () t₀ (RP rSA ix), StrB () t₀ (RP rDA ix) ] | i <- fromIntegral<$>[0..n1-1] ]
 ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) (IR.ConstI n)) | n <= 4 = do
     rD <- nextI; rS <- nextI
     t <- nR
@@ -679,3 +677,7 @@ mu16 i | i > fromIntegral (maxBound :: Word16) || i < fromIntegral (minBound :: 
 
 mp :: Integral a => a -> Maybe Word16
 mp i | i `rem` 8 == 0 && i >= 0 && i <= 32760 = Just (fromIntegral i) | otherwise = Nothing
+
+-- 32,16,8,1
+bv n | (q5, r5) <- n `quotRem` 32, q5 <= 4 = let (q4,r4) = r5 `quotRem` 16; (q3,r3) = r4 `quotRem` 8 in Just (q5,q4,q3,r3)
+     | otherwise = Nothing
