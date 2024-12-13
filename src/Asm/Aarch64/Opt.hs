@@ -7,6 +7,7 @@ opt=pe.mvs
   where
     pe (AddRC _ r0 r0' 0 _:asms) | r0==r0' = pe asms
     pe (SubRC _ r0 r0' 0 _:asms) | r0==r0' = pe asms
+    pe (Ldr _ r0 (RP b0 i0):Ldr _ r1 (RP b1 i1):asms) | b0==b1 && i1==i0+8 = Ldp () r0 r1 (RP b0 i0):pe asms
     pe (Stp x r0 r1 (RP ar 0):AddRC _ r2 r3 u IZero:asms) | ar==r2&&r2==r3 = Stp x r0 r1 (Po ar (fromIntegral u)):pe asms
     pe (Str x r0 (RP ar 0):AddRC _ r1 r2 u IZero:asms) | ar==r1&&r1==r2 = Str x r0 (Po ar (fromIntegral u)):pe asms
     pe (Str x r0 (R ar):AddRC _ r1 r2 u IZero:asms) | ar==r1&&r1==r2 = Str x r0 (Po ar (fromIntegral u)):pe asms
@@ -22,5 +23,5 @@ opt=pe.mvs
     pe (asm:asms) = asm : pe asms
     pe [] = []
 
-mvs :: (Eq reg, Eq freg) => [AArch64 reg freg ()] -> [AArch64 reg freg ()]
+mvs :: (Eq reg, Eq freg) => [AArch64 reg freg a] -> [AArch64 reg freg a]
 mvs = filter (not.isMv) where isMv (MovRR _ r0 r1) | r0==r1 = True; isMv (MovQQ _ v0 v1) | v0==v1 = True; isMv (FMovXX _ r0 r1) | r0==r1 = True; isMv _=False
