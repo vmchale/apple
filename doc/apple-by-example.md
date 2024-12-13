@@ -622,6 +622,8 @@ In the REPL, one can use `⏱` in place of `:bench`, i.e.
 `𝟘` can be used in place of `int`, viz.
 
 ```
+ > 17*3::𝟘
+51
  > 𝔯 1 6::𝟘
 5
  > 𝔯 1 6::Vec 6 𝟘
