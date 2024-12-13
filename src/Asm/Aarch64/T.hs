@@ -260,17 +260,22 @@ ir (IR.Fcmov (IR.IU Op.IOdd e0) t e) = do
 ir (IR.Fcmov (IR.IU Op.IEven e0) t e) = do
     (plE0,r0) <- plI e0; (plE,i) <- plF e
     pure $ plE $ plE0 [TstI () r0 (BM 1 0), Fcsel () (fabsReg t) i (fabsReg t) Eq]
-ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 4, n' <= 4 = do
-    q0 <- nQ; q1 <- nQ
-    pure $ concat [ [Ldp2 () q0 q1 (RP (absReg tS) (i*32)), Stp2 () q0 q1 (RP (absReg tD) (i*32))] | i <- fromIntegral<$>[0..(n'-1)] ]
-ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 2, n' <= 4 = do
-    t0 <- nR; t1 <- nR
-    pure $ concat [ [Ldp () t0 t1 (RP (absReg tS) (i*16)), Stp () t0 t1 (RP (absReg tD) (i*16))] | i <- fromIntegral<$>[0..(n'-1)] ]
+ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) (IR.ConstI n)) | Just (q32,q16,q8) <- bv8 n = do
+    rD <- nextI; rS <- nextI
+    t₀ <- nR; t₁ <- nR; q₀ <- nQ; q₁ <- nQ
+    plED <- eval (mBase eD tD) (IR.ITemp rD)
+    plES <- eval (mBase eS tS) (IR.ITemp rS)
+    let rDA=IReg rD; rSA=IReg rS
+        s32=32*fromIntegral q32; s16=16*fromIntegral q16
+    pure $ plED ++ plES
+        ++ concat [ [ Ldp2 () q₀ q₁ (RP rSA (i*32)), Stp2 () q₀ q₁ (RP rDA (i*32)) ] | i <- fromIntegral<$>[0..q32-1] ]
+        ++ concat [ let ix=i*16+s32 in [ Ldp () t₀ t₁ (RP rSA ix), Stp () t₀ t₁ (RP rDA ix) ] | i <- fromIntegral<$>[0..q16-1] ]
+        ++ concat [ let ix=i*8+s16+s32 in [ Ldr () t₀ (RP rSA ix), Str () t₀ (RP rDA ix) ] | i <- fromIntegral<$>[0..q8-1] ]
 ir (IR.Mv (IR.AP tD eD _) (IR.AP tS eS _) n) | Just (q5,q4,q3,n1) <- bv n = do
     rD <- nextI; rS <- nextI
     t₀ <- nR; t₁ <- nR; q₀ <- nQ; q₁ <- nQ
-    plED <- eval (maybe id (+) eD (IR.Reg tD)) (IR.ITemp rD)
-    plES <- eval (maybe id (+) eS (IR.Reg tS)) (IR.ITemp rS)
+    plED <- eval (mBase eD tD) (IR.ITemp rD)
+    plES <- eval (mBase eS tS) (IR.ITemp rS)
     let rDA=IReg rD; rSA=IReg rS
         s5=32*fromIntegral q5;s4=16*fromIntegral q4
     pure $ plED ++ plES
@@ -281,50 +286,10 @@ ir (IR.Mv (IR.AP tD eD _) (IR.AP tS eS _) n) | Just (q5,q4,q3,n1) <- bv n = do
 ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) (IR.ConstI n)) | n <= 4 = do
     rD <- nextI; rS <- nextI
     t <- nR
-    plED <- eval (maybe id (+) eD (IR.Reg tD)) (IR.ITemp rD)
-    plES <- eval (maybe id (+) eS (IR.Reg tS)) (IR.ITemp rS)
+    plED <- eval (mBase eD tD) (IR.ITemp rD)
+    plES <- eval (mBase eS tS) (IR.ITemp rS)
     let rDA=IReg rD; rSA=IReg rS
     pure $ plED ++ plES ++ concat [ [Ldr () t (RP rSA (i*8)), Str () t (RP rDA (i*8))] | i <- fromIntegral<$>[0..(n-1)] ]
-ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS (Just eS) _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 2, n' <= 4 = do
-    rD <- nextI; rS <- nextI
-    t0 <- nR; t1 <- nR
-    plED <- eval (IR.Reg tD) (IR.ITemp rD)
-    plES <- eval (IR.Reg tS+eS) (IR.ITemp rS)
-    pure $ plED ++ plES ++ concat [ [Ldp () t0 t1 (RP (IReg rS) (i*16)), Stp () t0 t1 (RP (IReg rD) (i*16))] | i <- fromIntegral<$>[0..(n'-1)] ]
-ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS Nothing _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 2, n' <= 4 = do
-    rD <- nextI; rS <- nextI
-    t0 <- nR; t1 <- nR
-    plED <- eval (IR.Reg tD+eD) (IR.ITemp rD)
-    plES <- eval (IR.Reg tS) (IR.ITemp rS)
-    pure $ plED ++ plES ++ concat [ [Ldp () t0 t1 (RP (IReg rS) (i*16)), Stp () t0 t1 (RP (IReg rD) (i*16))] | i <- fromIntegral<$>[0..(n'-1)] ]
-ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) (IR.ConstI n)) | (n', 0) <- n `quotRem` 2, n' <= 4 = do
-    rD <- nextI; rS <- nextI
-    t0 <- nR; t1 <- nR
-    plED <- eval (IR.Reg tD+eD) (IR.ITemp rD)
-    plES <- eval (IR.Reg tS+eS) (IR.ITemp rS)
-    pure $ plED ++ plES ++ concat [ [Ldp () t0 t1 (RP (IReg rS) (i*16)), Stp () t0 t1 (RP (IReg rD) (i*16))] | i <- fromIntegral<$>[0..(n'-1)] ]
-ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) (IR.ConstI n)) | (n', 1) <- n `quotRem` 4, n' <= 4 = do
-    rD <- nextI; rS <- nextI
-    t <- nR; q0 <- nQ; q1 <- nQ
-    plED <- eval (IR.Reg tD+eD) (IR.ITemp rD)
-    plES <- eval (IR.Reg tS+eS) (IR.ITemp rS)
-    let li=fromIntegral$(n-1)*8
-    pure $ plED ++ plES ++ concat [ [Ldp2 () q0 q1 (RP (IReg rS) (i*32)), Stp2 () q0 q1 (RP (IReg rD) (i*32))] | i <- fromIntegral<$>[0..(n'-1)] ] ++ [Ldr () t (RP (IReg rS) li), Str () t (RP (IReg rD) li)]
-ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) (IR.ConstI n)) | (n', 3) <- n `quotRem` 4, n' <= 4 = do
-    rD <- nextI; rS <- nextI
-    t0 <- nR; t1 <- nR
-    q0 <- nQ; q1 <- nQ
-    plED <- eval (IR.Reg tD+eD) (IR.ITemp rD)
-    plES <- eval (IR.Reg tS+eS) (IR.ITemp rS)
-    let pix=fromIntegral$(n-3)*8; li=pix+16
-    pure $ plED ++ plES ++ concat [ [Ldp2 () q0 q1 (RP (IReg rS) (i*32)), Stp2 () q0 q1 (RP (IReg rD) (i*32))] | i <- fromIntegral<$>[0..(n'-1)] ] ++ [Ldp () t0 t1 (RP (IReg rS) pix), Stp () t0 t1 (RP (IReg rD) pix), Ldr () t0 (RP (IReg rS) li), Str () t0 (RP (IReg rD) li)]
-ir (IR.Cpy (IR.AP tD (Just eD) _) (IR.AP tS (Just eS) _) (IR.ConstI n)) | (n', 1) <- n `quotRem` 2, n' <= 4 = do
-    rD <- nextI; rS <- nextI
-    t0 <- nR; t1 <- nR
-    plED <- eval (IR.Reg tD+eD) (IR.ITemp rD)
-    plES <- eval (IR.Reg tS+eS) (IR.ITemp rS)
-    let li=fromIntegral$(n-1)*8
-    pure $ plED ++ plES ++ concat [ [Ldp () t0 t1 (RP (IReg rS) (i*16)), Stp () t0 t1 (RP (IReg rD) (i*16))] | i <- fromIntegral<$>[0..(n'-1)] ] ++ [Ldr () t0 (RP (IReg rS) li), Str () t0 (RP (IReg rD) li)]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI oD)) _) (IR.AP tS (Just (IR.ConstI oS)) _) eN) | Just uS <- mu16 oS, Just uD <- mu16 oD, oD `rem` 16 == 0 && oS `rem` 16 == 0 = do
     rD <- nextI; rS <- nextI; i <- nR
     t0 <- nR; t1 <- nR
@@ -340,7 +305,7 @@ ir (IR.Cpy (IR.AP tD (Just (IR.ConstI oD)) _) (IR.AP tS eS _) eN) | Just uD <- m
     t0 <- nR; t1 <- nR
     q0 <- nQ; q1 <- nQ
     plED <- eval (IR.Reg tD) (IR.ITemp rD)
-    plES <- eval (maybe id (+) eS$IR.Reg tS) (IR.ITemp rS)
+    plES <- eval (mBase eS tS) (IR.ITemp rS)
     (plEN, rN) <- plI eN
     let rDA=IReg rD; rSA=IReg rS
     l <- nextL; l2 <- nextL; eL <- nextL
@@ -349,7 +314,7 @@ ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS (Just (IR.ConstI oS)) _) eN) | Just uS <- m
     rD <- nextI; rS <- nextI; i <- nR
     t0 <- nR; t1 <- nR
     q0 <- nQ; q1 <- nQ
-    plED <- eval (maybe id (+) eD$IR.Reg tD) (IR.ITemp rD)
+    plED <- eval (mBase eD tD) (IR.ITemp rD)
     plES <- eval (IR.Reg tS) (IR.ITemp rS)
     (plEN, rN) <- plI eN
     let rDA=IReg rD; rSA=IReg rS
@@ -358,8 +323,8 @@ ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS (Just (IR.ConstI oS)) _) eN) | Just uS <- m
 ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) eN) = do
     rD <- nextI; rS <- nextI; i <- nR
     q0 <- nQ; q1 <- nQ; t0 <- nR; t1 <- nR
-    plED <- eval (maybe id (+) eD$IR.Reg tD) (IR.ITemp rD)
-    plES <- eval (maybe id (+) eS$IR.Reg tS) (IR.ITemp rS)
+    plED <- eval (mBase eD tD) (IR.ITemp rD)
+    plES <- eval (mBase eS tS) (IR.ITemp rS)
     (plEN, rN) <- plI eN
     let rDA=IReg rD; rSA=IReg rS
     l <- nextL; l2 <- nextL; eL <- nextL
@@ -373,14 +338,14 @@ ir (IR.Cpy1 (IR.AP tD (Just (IR.ConstI di)) _) (IR.AP tS (Just (IR.ConstI si)) _
 ir (IR.Cpy1 (IR.AP tD eD _) (IR.AP tS eS _) (IR.ConstI 1)) = do
     rD <- nextI; rS <- nextI
     t <- nR
-    plED <- eval (maybe id (+) eD$IR.Reg tD) (IR.ITemp rD)
-    plES <- eval (maybe id (+) eS$IR.Reg tS) (IR.ITemp rS)
+    plED <- eval (mBase eD tD) (IR.ITemp rD)
+    plES <- eval (mBase eS tS) (IR.ITemp rS)
     let rDA=IReg rD; rSA=IReg rS
     pure $ plED ++ plES ++ [LdrB () t (R rSA), StrB () t (R rDA)]
 ir (IR.Cpy1 (IR.AP tD eD _) (IR.AP tS eS _) eN) = do
     rD <- nextI; rS <- nextI; i <- nR; t <- nR
-    plED <- eval (maybe id (+) eD$IR.Reg tD) (IR.ITemp rD)
-    plES <- eval (maybe id (+) eS$IR.Reg tS) (IR.ITemp rS)
+    plED <- eval (mBase eD tD) (IR.ITemp rD)
+    plES <- eval (mBase eS tS) (IR.ITemp rS)
     (plEN, rN) <- plI eN
     l <- nextL; eL <- nextL
     let rDA=IReg rD; rSA=IReg rS
@@ -677,6 +642,11 @@ mu16 i | i > fromIntegral (maxBound :: Word16) || i < fromIntegral (minBound :: 
 
 mp :: Integral a => a -> Maybe Word16
 mp i | i `rem` 8 == 0 && i >= 0 && i <= 32760 = Just (fromIntegral i) | otherwise = Nothing
+
+-- flip so it's i<-sp; i<-i+2 instead of sp<-sp+2;i<-sp
+mBase e r = maybe id (flip (+)) e (IR.Reg r)
+
+bv8 n | (q32,r32) <- n `quotRem` 4, q32 <= 4 = let (q16,r16) = r32 `quotRem` 2 in Just (q32,q16,r16) | otherwise = Nothing
 
 -- 32,16,8,1
 bv n | (q5, r5) <- n `quotRem` 32, q5 <= 4 = let (q4,r4) = r5 `quotRem` 16; (q3,r3) = r4 `quotRem` 8 in Just (q5,q4,q3,r3)
