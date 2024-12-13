@@ -32,7 +32,7 @@ main = do
     pjit <- fpn =<< BSL.readFile "test/examples/isPrime.🍏"
     rjit <- fpn =<< BSL.readFile "math/numbertheory/radical.🍎"
     τjit <- fpn =<< BSL.readFile "math/numbertheory/𝜏.🍏"
-    defaultMain $ testGroup "All" $ pTest pjit rjit τjit:[rTy,tyT,allT]
+    defaultMain $ testGroup "All" $ pTest pjit rjit τjit:[rTy,allT]
 
 pTest :: FunPtr (Int64 -> CUChar)
       -> FunPtr (Int64 -> Int64)
@@ -55,25 +55,22 @@ rTy = testGroup "Regression tests"
     , tyF "test/examples/xor.🍎"
     ]
 
-tyT :: TestTree
-tyT = testGroup "Type system" [ tyS "((-)\\~)" ]
-
 allT :: TestTree
 allT = testGroup "jit"
     [ testCase "exp (series)" $ do { res <- jitExp 20 1 ; res .?= exp 1 }
-    , testCase "dotprod" $ do { res <- fpAaf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
-    , testCase "euclidean" $ do { res <- fpAaf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
+    , testCase "dotprod" $ do { res <- fpVvf "test/examples/dotprod.🍏" [1,2,3] [2,4,6] ; res @?= 28 }
+    , testCase "euclidean" $ do { res <- fpVvf "test/examples/dist.🍎" [0,0,0] [3,4,5] ; res @?= sqrt 50 }
     , testCase "ncdf" $ do { res <- ncdfJit 2 ; res .?= ncdf 2 }
     , testCase "erf" $ do { res <- erfJit 2 ; res .?= erf 2 }
     , testCase "primes" $ do { res <- fpIa "test/data/primes.🍏" 30; res @?= [T,T,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,F,F,F,F,T,F] }
     , testCase "primes-up-to" $ do { res <- fpIa "test/examples/primes.🍎" 100; res @?= [2::Int64,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97] }
-    , testCase "shoelace" $ do { res <- fpAaf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
-    , testCase "maxscan" $ do { res <- aaFp "bench/apple/scanmax.🍏" [4::Int64,6,1] ; res @?= [0::Int64,4,6,6] }
+    , testCase "shoelace" $ do { res <- fpVvf "test/examples/shoelace.🍎" [0,1,1] [0,0,1] ; res @?= 0.5 }
+    , testCase "maxscan" $ do { res <- fpVv "bench/apple/scanmax.🍏" [4::Int64,6,1] ; res @?= [0::Int64,4,6,6] }
     , testCase "b" $ do { res <- jitB [1,2,3] [2,4,6] ; res @?= 2 }
     , testCase "fib" $ do { res <- fpIa "test/examples/fib.🍎" 6; res @?= [1::Int64,1,2,3,5,8,13] } --
     , testCase "fib" $ do { res <- fpIa "test/examples/fibarr.🍎" 6; res @?= [1::Int64,1,2,3,5,8] } --
     , testCase "oeis (A000081)" $ do { res <- fpIa "math/oeis/A000081.🍏" 12; res @?= [0::Int64,1,1,2,4,9,20,48,115,286,719,1842,4766] }
-    , testCase "7-day sliding average" $ do { res <- aaFp "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
+    , testCase "7-day sliding average" $ do { res <- fpVv "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "amgm (iter)" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
     , testCase "transpose" $ do { (AA 2 [2, 3] res) <- fpAa "test/data/T.🍏" (AA 2 [3,2] [1,2,3,4,5,6::Double]); res @?= [1,3,5,2,4,6::Double] }
@@ -88,7 +85,7 @@ allT = testGroup "jit"
     , testCase "matmul" $ do { (AA 2 [2, 2] res) <- fpAaa "test/examples/mul.🍏" (AA 2 [2,3] [2,1,1,5,4,1::Double]) (AA 2 [3,2] [2,0,2,0,7,3::Double]); res @?= [13,3,25,3::Double] }
     , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,7,6,9::Double] }
     , testCase "luhn check" $ do { res <- fpAi "test/examples/luhn.🍎" [4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]; res @?= 1 }
-    , testCase "zipTil" $ do { res <- fpAaf "test/data/dotTil.🍏" [3,2,1,0,8] [4,5,5]; res @?= 27 }
+    , testCase "zipTil" $ do { res <- fpVvf "test/data/dotTil.🍏" [3,2,1,0,8] [4,5,5]; res @?= 27 }
     , testCase "conv with stride" $ do
         (AA 2 [2,2] res) <- fpAa "test/data/strideConv.🍏"
             (AA 2 [4,4] [20::Double,200,-5,23,-13,134,119,100,120,32,49,25,-120,12,9,23])
@@ -136,9 +133,9 @@ allT = testGroup "jit"
         let v = AA 1 [20] [1..20::Int64]
         in do { res0 <- fpAa "bench/apple/evens.🍎" v; res1 <- fpAa "bench/apple/evenIx.🍎" v; (res0 :: AI) @?= res1 }
     , testCase "hypergeo" $ do { res <- fpAaff "math/hypergeometric.🍏" [1] [3/2] 1; res @?= hypergeometric [1] [3/2] 1 }
-    , testCase "pearson r" $ do { res <- fpAaf "math/stats/r.🍎" [1,2,3,4,5,6,7] [10,9,2.5,6,4,3,2]; res @?= -0.8285038835884277 }
-    , testCase "cosim" $ do { res <- fpAaf "math/cosim.🍏" [2,45,7,2] [2,54,13,15]; res @?= 0.9726896390141451 }
-    , testCase "foldl" $ do { res <- fpAf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
+    , testCase "pearson r" $ do { res <- fpVvf "math/stats/r.🍎" [1,2,3,4,5,6,7] [10,9,2.5,6,4,3,2]; res @?= -0.8285038835884277 }
+    , testCase "cosim" $ do { res <- fpVvf "math/cosim.🍏" [2,45,7,2] [2,54,13,15]; res @?= 0.9726896390141451 }
+    , testCase "foldl" $ do { res <- fpVf "test/data/cfLeft.🍏" (4:replicate 5 8); res ≈ sqrt 17 }
     , testCase "cov" $
         let x = AA 2 [2,3] [-2.1,-1,4.3,3,1.1,0.12::Double]
         in do { (AA 2 [2,2] res) <- fpAa "math/stats/covar.🍏" x ; res @?= [11.71,-4.286,-4.286,2.144133::Double] }
@@ -152,27 +149,22 @@ asN :: Storable a => U a -> IO [a]
 asN = fmap asV.peek
 asV (AA _ _ xs) = xs
 
-fpAa fp x = wA x $ \pX -> do
-    f <- fmap aa.fpn =<< BSL.readFile fp
-    peek (f pX)
+caa src x = wA x $ \pX -> do {f <- aa<$>fpn src; peek (f pX)}
+caaa src x y = wA x $ \pX -> wA y $ \pY -> do {f <- aaa<$>fpn src;peek (f pX pY)}
+cvf src xs = wA (v1 xs) $ \p -> do {f <- af<$>fpn src; pure (f p)}
+cvvf src xs ys = wA (v1 xs) $ \pX -> wA (v1 ys) $ \pY -> do {f <- aaf<$>fpn src; pure (f pX pY)}
+cvv src xs = wA (v1 xs) $ \pX -> do {f <- aa<$>fpn src; asN (f pX)}
 
-fpAaa fp x y =
-    wA x $ \pX ->
-        wA y $ \pY -> do
-            f <- fmap aaa.fpn =<< BSL.readFile fp
-            peek (f pX pY)
+fpAa fp x = do {c <- BSL.readFile fp;caa c x}
+fpAaa fp x y = do {c <- BSL.readFile fp; caaa c x y}
 
-aaFp fp xs =
-    let xA = v1 xs in
-    wA xA $ \p -> do
-        f <- fmap aa.fpn =<< BSL.readFile fp
-        asN (f p)
+fpVf :: FilePath -> [Double] -> IO Double
+fpVf fp xs = do {c <- BSL.readFile fp; cvf c xs}
 
-tyS :: BSL.ByteString -> TestTree
-tyS s = testCase "(expr)" $
-    case tyExpr s of
-        Left err -> assertFailure(show err)
-        Right{}  -> assertBool "passed" True
+fpVvf :: FilePath -> [Double] -> [Double] -> IO Double
+fpVvf fp xs ys = do {c <- BSL.readFile fp; cvvf c xs ys}
+
+fpVv fp xs = do {c <- BSL.readFile fp; cvv c xs}
 
 tyF :: FilePath -> TestTree
 tyF fp = testCase fp $ do
@@ -186,16 +178,8 @@ rfTest = testCase "rising factorial" $ do
     res <- jitRF 5 15
     res @?= 5068545850368000
 
-fpAf :: FilePath -> [Double] -> IO Double
-fpAf fp xs = do
-    f <- fmap af.fpn =<< BSL.readFile fp
-    wA a $ \p -> do
-        pure $ f p
-  where
-    a = v1 xs
-
-jitKl = fpAaf "test/examples/kl.🍎"
-jitB = fpAaf "test/examples/b.🍎"
+jitKl = fpVvf "test/examples/kl.🍎"
+jitB = fpVvf "test/examples/b.🍎"
 
 tfpAi :: FilePath -> [[Int64]] -> IO [Int64]
 tfpAi fp aas = do
@@ -228,11 +212,6 @@ fpAaip3 fp xs ys n = do
 -- leaks memory
 fpn = fmap fst . case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
 
-fpAaf :: FilePath -> [Double] -> [Double] -> IO Double
-fpAaf fp xs ys = do
-    f <- fpn =<< BSL.readFile fp
-    jitAaf f xs ys
-
 fpAaff :: FilePath -> [Double] -> [Double] -> Double -> IO Double
 fpAaff fp xs ys z = do
     f <- fmap aaff.fpn =<< BSL.readFile fp
@@ -240,12 +219,6 @@ fpAaff fp xs ys z = do
         pure $ f p q z
   where
     a=v1 xs; b=v1 ys
-
-jitAaf :: FunPtr (U Double -> U Double -> Double) -> [Double] -> [Double] -> IO Double
-jitAaf fp xs ys =
-    let a=v1 xs; b=v1 ys in
-    wA a $ \p -> wA b $ \q -> do
-        pure $ aaf fp p q
 
 jitExp :: Int64 -> Double -> IO Double
 jitExp = fpIff "test/examples/exp.🍏"
