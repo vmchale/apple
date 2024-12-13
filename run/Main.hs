@@ -232,7 +232,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "_" "negate" ":" "size"
     , lOption "𝓉" "dimension" "{x⟜y;z}" "no inline"
     , lOption "->n" "select" "**" "power"
-    , lOption "re:" "repeat" "}." "last"
+    , lOption "⊂" "scatter" "}." "last"
     , lOption "⊲" "cons" "⊳" "snoc"
     , lOption "^:" "iterate" "%." "matmul"
     , lOption "⊗" "outer product" "⍉, |:" "transpose"

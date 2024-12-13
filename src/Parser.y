@@ -101,6 +101,7 @@ import Sh
     trans { TokSym $$ Transp }
     fork { TokSym $$ Fork }
     bcyc { TokSym $$ L.Cyc }
+    ditto { TokSym $$ L.Ditto }
     iat { TokSym $$ L.A1 }
     sub { TokSym $$ Sub }
     mod { TokSym $$ L.Mod }
@@ -145,7 +146,6 @@ import Sh
     gen { TokB $$ BuiltinGen }
     ug { TokB $$ BuiltinUg }
     log { TokSym $$ SymLog }
-    re { TokB $$ BuiltinRep }
     diag { TokB $$ BuiltinD }
     nil { TokB $$ BuiltinNil }
     cons { TokB $$ BuiltinCons }
@@ -269,6 +269,7 @@ BBin :: { E AlexPosn }
      | sub { Builtin $1 I1 }
      | mod { Builtin $1 A.Mod }
      | atDot { Builtin $1 IOf }
+     | ditto { Builtin $1 Re }
      | and { Builtin $1 A.And } | or { Builtin $1 A.Or }
      | xor { Builtin $1 A.Xor }
      | ice { Builtin $1 Ices }
@@ -326,7 +327,6 @@ E :: { E AlexPosn }
   | head { Builtin $1 A.Head } | headM { Builtin $1 A.HeadM }
   | tail { Builtin $1 A.Tail } | tailM { Builtin $1 A.TailM }
   | init { Builtin $1 A.Init } | initM { Builtin $1 A.InitM }
-  | re { Builtin $1 Re }
   | diag { Builtin $1 Di }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 $3 }

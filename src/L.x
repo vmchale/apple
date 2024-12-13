@@ -226,7 +226,6 @@ tokens :-
         "gen."                   { mkB BuiltinGen }
         "ug."                    { mkB BuiltinUg }
         "cyc."                   { mkB BuiltinCyc }
-        "re:"                    { mkB BuiltinRep }
         "di."                    { mkB BuiltinD }
         Λ                        { mkB BuiltinScan }
         Λₒ                       { mkB BuiltinScanS }
@@ -463,7 +462,7 @@ instance Pretty Var where
 
 data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
-             | BuiltinGen | BuiltinRep | BuiltinUg | BuiltinScan | BuiltinCons | BuiltinNil
+             | BuiltinGen | BuiltinUg | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
@@ -484,7 +483,6 @@ instance Pretty Builtin where
     pretty BuiltinPi     = "𝜋"
     pretty BuiltinGen    = "gen."
     pretty BuiltinUg     = "ug."
-    pretty BuiltinRep    = "re:"
     pretty BuiltinScan   = "Λ"
     pretty BuiltinScanS  = "Λₒ"
     pretty BuiltinCons   = "`Cons`"

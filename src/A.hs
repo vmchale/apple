@@ -147,7 +147,7 @@ instance Pretty Builtin where
     pretty Neg        = "_"
     pretty Sqrt       = "√"
     pretty Log        = "_."
-    pretty Re         = "re:"
+    pretty Re         = "〃"
     pretty Size       = ":"
     pretty (Rank as)  = "`" <> nOp (prettyRank<$>as)
     pretty IDiv       = "/."
@@ -340,6 +340,7 @@ isBinOp Sr      = True
 isBinOp Sl      = True
 isBinOp Dot     = True
 isBinOp S'      = True
+isBinOp Re      = True
 isBinOp _       = False
 
 data B = L | D | Λ

@@ -38,7 +38,7 @@ isBinOp Flat   = False
 isBinOp AddDim = False
 isBinOp RevE   = False
 isBinOp S      = False
-isBinOp Re     = False
+isBinOp Re     = True
 isBinOp K      = False
 isBinOp _      = True
 
@@ -48,6 +48,7 @@ fi Succ = 9; fi Fold = 9
 fi IntExp = 8; fi Exp = 8
 fi Times = 7; fi Div = 7; fi Mod = 7
 fi Mul = 7; fi VMul = 7
+fi Re = 6
 fi Plus = 6; fi Minus = 6
 fi Max = 6; fi Min = 6
 fi And = 3; fi Or = 2; fi Xor = 6

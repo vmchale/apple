@@ -26,7 +26,7 @@ stopifnot(all(run(any1,matrix(c(FALSE,FALSE,FALSE,TRUE),2))==c(FALSE,TRUE)))
 any<-jit("λbs. (∨)/ₒ #f bs :: bool")
 stopifnot(run(any,c(FALSE,FALSE,FALSE,TRUE)))
 
-stopifnot(all(const("re: 2 (even.'irange 0 2 1)")==matrix(c(TRUE,FALSE,TRUE,TRUE,FALSE,TRUE),2,byrow=TRUE)))
+stopifnot(all(const("(even.'irange 0 2 1)〃2")==matrix(c(TRUE,FALSE,TRUE,TRUE,FALSE,TRUE),2,byrow=TRUE)))
 
 isbn<-jit('λxs. ((+)/ (*)`xs (}:(𝔸13⊙7)))|10=0')
 stopifnot(run(isbn,as.integer(c(9,7,8,0,5,9,6,5,2,8,1,2,6))));stopifnot(!run(isbn,as.integer(c(9,7,8,1,7,8,8,3,9,9,0,8,3))))

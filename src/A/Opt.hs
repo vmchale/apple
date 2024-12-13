@@ -64,7 +64,7 @@ optA (Builtin ty S)        | Arrow fTy (Arrow gTy@(Arrow tX _) _) <- ty = do
     f <- nextU "f" fTy; g <- nextU "g" gTy; x <- nextU "x" tX
     let xE=v x
     pure $ Lam ty f (λ g (λ x (v f$$xE$$(v g$$xE))))
-optA (EApp oTy (EApp _ (Builtin _ Re) n) e) | tX <- eAnn e = do
+optA (EApp oTy (EApp _ (Builtin _ Re) e) n) | tX <- eAnn e = do
     x <- nextU "x" tX
     let idX=λ x (v x)
     optA $ Builtin (tX~>(tX~>tX)~>I~>oTy) Gen$$e$$idX$$n

@@ -662,7 +662,7 @@ tyB _ HeadM = do
     pure (Arr (i `Cons` sh) a ~> Arr sh a, mempty)
 tyB _ Re = do
     a <- ftv "a"; n <- fti "n"
-    pure (Li n ~> a ~> vV n a, mempty)
+    pure (a ~> Li n ~> vV n a, mempty)
 tyB _ FRange = do {n <- fti "n"; pure (F ~> F ~> Li n ~> vV n F, mempty)}
 tyB _ Fib = do
     n <- fti "n"; m <- fti "m"; k <- fti "k"; a <- ftv "a"
