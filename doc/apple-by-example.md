@@ -617,6 +617,17 @@ In the REPL, one can use `⏱` in place of `:bench`, i.e.
 ⏱ [(+)/x%ℝ(:x)]\`7 (𝒻 0 999 1000)
 ```
 
+### Integer Type
+
+`𝟘` can be used in place of `int`, viz.
+
+```
+ > 𝔯 1 6::𝟘
+5
+ > 𝔯 1 6::Vec 6 𝟘
+Vec 6 [6, 2, 1, 5, 5, 3]
+```
+
 # Examples
 
 ## Cross Product
