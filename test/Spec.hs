@@ -156,6 +156,7 @@ cvvf src xs ys = wA (v1 xs) $ \pX -> wA (v1 ys) $ \pY -> do {f <- aaf<$>fpn src;
 cvv src xs = wA (v1 xs) $ \pX -> do {f <- aa<$>fpn src; asN (f pX)}
 
 fpIii fp m n = do {f <- fmap iii.fpn =<< BSL.readFile fp; pure (f m n)}
+fpIff fp n x = do {f <- fmap iff.fpn =<< BSL.readFile fp; pure (f n x)}
 fpFf fp x = do {f <- fmap ff.fpn =<< BSL.readFile fp; pure (f x)}
 fpFff fp x y = do {f <- fmap fff.fpn =<< BSL.readFile fp; pure (f x y)}
 fpFfff fp x y z = do {f <- fmap ffff.fpn =<< BSL.readFile fp; pure (f x y z)}
@@ -212,11 +213,6 @@ fpAaff fp xs ys z = do
         pure $ f p q z
   where
     a=v1 xs; b=v1 ys
-
-fpIff :: FilePath -> Int64 -> Double -> IO Double
-fpIff fp x y = do
-    f <- fpn =<< BSL.readFile fp
-    pure $ iff f x y
 
 fpIa :: Storable a => FilePath -> Int64 -> IO [a]
 fpIa fp n = do
