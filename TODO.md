@@ -185,16 +185,15 @@ o → o → o
 - [ ] https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
 - [ ] https://prng.di.unimi.it/splitmix64.c
 - [ ] https://github.com/tonio-m/python_neural_network/blob/main/main.py
-- [ ] https://github.com/profConradi/Python_Simulations/blob/main/Nice_orbits.ipynb
 - [ ] https://github.com/profConradi?tab=repositories
-- [ ] `isPrime`
 - [ ] factors : int -> [(int, int)]
-- [ ] https://x.com/cneuralnetwork/status/1831994612426387833
 - [ ] https://www.infinitepartitions.com/art001.html
 - [ ] https://en.wikipedia.org/wiki/Bhattacharyya_distance
+- [ ] better mnist
+  - [ ] https://github.com/eliot-tron/curvcomputenn/blob/89410f64030e8b07434c30f7752b163df6e97f28/mnist_networks.py#L5
+    - [ ] torch's Linear, Conv2d, Affine, ReLU, MaxPool2d
 - [ ] multivariate adaptive regression spline
 - [ ] https://github.com/rougier/scientific-visualization-book
-- [ ] covariance: https://code.jsoftware.com/wiki/User:Devon_McCormick/myStats
 - [ ] https://www.2dcurves.com/derived/caustic.html
   - [ ] https://mathworld.wolfram.com/Hippopede.html
 - [ ] https://en.wikipedia.org/wiki/Mahalanobis_distance
