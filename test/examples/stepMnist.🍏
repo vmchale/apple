@@ -6,7 +6,7 @@
     dsigmoid ← ((λx.⸎x⟜ℯ(_x);x%(1+x)^2)`{0});
     -- fw
     xl1p ⟜ x%.l1;
-    xSigmoid ← [1%(1+ℯ(_x))]`{0} xl1p;
+    xSigmoid ⟜ [1%(1+ℯ(_x))]`{0} xl1p;
     xl2p ⟜ xSigmoid%.l2;
     a ⟜ {m ⟜ (⋉)/* _1 xl2p; [e:(x-m)]`{0} xl2p};
     sum ← [(+)/x];
