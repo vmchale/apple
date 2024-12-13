@@ -283,13 +283,6 @@ ir (IR.Mv (IR.AP tD eD _) (IR.AP tS eS _) n) | Just (q5,q4,q3,n1) <- bv n = do
         ++ concat [ let ix=i*16+s5 in [ Ldp () t₀ t₁ (RP rSA ix), Stp () t₀ t₁ (RP rDA ix) ] | i <- fromIntegral<$>[0..q4-1] ]
         ++ concat [ let ix=i*8+s4+s5 in [ Ldr () t₀ (RP rSA ix), Str () t₀ (RP rDA ix) ] | i <- fromIntegral<$>[0..q3-1] ]
         ++ concat [ let ix=i+8*fromIntegral q3+s4+s5 in [ LdrB () t₀ (RP rSA ix), StrB () t₀ (RP rDA ix) ] | i <- fromIntegral<$>[0..n1-1] ]
-ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) (IR.ConstI n)) | n <= 4 = do
-    rD <- nextI; rS <- nextI
-    t <- nR
-    plED <- eval (mBase eD tD) (IR.ITemp rD)
-    plES <- eval (mBase eS tS) (IR.ITemp rS)
-    let rDA=IReg rD; rSA=IReg rS
-    pure $ plED ++ plES ++ concat [ [Ldr () t (RP rSA (i*8)), Str () t (RP rDA (i*8))] | i <- fromIntegral<$>[0..(n-1)] ]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI oD)) _) (IR.AP tS (Just (IR.ConstI oS)) _) eN) | Just uS <- mu16 oS, Just uD <- mu16 oD, oD `rem` 16 == 0 && oS `rem` 16 == 0 = do
     rD <- nextI; rS <- nextI; i <- nR
     t0 <- nR; t1 <- nR
