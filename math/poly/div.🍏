@@ -1,5 +1,5 @@
 λp.λq. {
-  take ⇐ λn.λx. (x˙)'⍳ 0 (n-1) 1;
+  take ⇐ λn.λx. ⍳ 0 (n-1) 1⊂x;
   zipPad ← λf.λxs.λys. {l_x ⟜ 𝓉xs; l_y ⟜  𝓉ys; f`xs (?l_x≥l_y,.ys⧺re: 0 (l_x-l_y),.take (l_y-l_x) ys)};
   q₀ ⟜ {:q;i ← :p-:q₀;k ⟜ _'q₀;
   go ← λp. {h ⟜ {.p; t ← }:?p; (zipPad (+) ((h*)'k) t, h)};
