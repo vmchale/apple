@@ -1571,6 +1571,9 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | tXs@(Arr sh _
         loop=for sh k 0 ILt (Tmp szR) step
         plSz = case tIx tXs of {Just (_, is) -> szR=:KI (product is); Nothing -> SZ () szR xsR (Tmp rnkR) lX}
     pure $ plE $ plAcc ++ [rnkR =: eRnk sh (xsR, lX), plSz, xsRd=:DP xsR (Tmp rnkR), loop]
+eval (EApp _ (Builtin _ Neg) e) t = do
+    (plE,i) <- plC e
+    pure $ plE [t=:negate i]
 eval (EApp I (EApp _ (Builtin _ op) e0) e1) t | Just cop <- mOp op = do
     (pl0,e0e) <- plC e0; (pl1,e1e) <- plC e1
     pure $ pl0 $ pl1 [t =: Bin cop e0e e1e]
@@ -1772,9 +1775,6 @@ feval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
 feval (EApp _ (Builtin _ f) e) t | Just ff <- mFun f = do
     (plE,eC) <- plD e
     pure $ plE [MX () t (FUn ff eC)]
-feval (EApp _ (Builtin _ Neg) x) t = do
-    (plE,f) <- plD x
-    pure $ plE [MX () t (negate f)]
 feval (EApp _ (Builtin _ ItoF) e) t = do
     (pl,iE) <- plC e
     pure $ pl [MX () t (IE iE)]
