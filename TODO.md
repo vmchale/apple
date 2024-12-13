@@ -8,7 +8,8 @@
   - [x] § is fun I love typographers
   - [ ] ℘
     - [ ] span/break?
-  - [ ] ⊲ ⊳ ⪫ ⪪
+  - [½] ⊲ ⊳ ⪫ ⪪
+  - [ ]〔〖【
   - [ ] ⫛ for J's oblique
   - [x] ⸎
   - [ ] ‰
@@ -16,6 +17,7 @@
   - [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
   - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
   - [ ] https://www.compart.com/en/unicode/block/U+2A00
+  - [ ] https://www.compart.com/en/unicode/block/U+2440
   - [x] dfns like k, APL (J)
 - [ ] mapMaybe hm
 - [ ] numpy einstein summation
@@ -51,6 +53,7 @@
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
 - [ ] https://en.wikipedia.org/wiki/Arabic_script_in_Unicode#Punctuation_and_ornaments
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
+  - [ ] ☉
 - [ ] https://www.compart.com/en/unicode/U+1D66
   - [ ] Ϟ (koppa), Ϡ (sampi)
 ## Optimization
@@ -75,6 +78,11 @@ T16 = T13.dim[0]
 - [ ] Use `Word64` for sets of registers
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+- [ ]
+```
+ > irange 10 0 _1
+Vec 9 [10, 9, 8, 7, 6, 5, 4, 3, 2]
+```
 ```
  > ⟨(1.0,2.0,3.0),(3,4,5)⟩˙0
 (1.0, 0.0, 3.0)
@@ -162,6 +170,7 @@ o → o → o
 - [ ] https://palaiologos.rocks/posts/linalg-apl/
 - [ ] FFI https://code.jsoftware.com/wiki/Guides/DLLs/Calling_DLLs
 - [ ] https://code.jsoftware.com/wiki/Essays
+  - [ ] https://oeis.org/A006257
 - [ ] J integration:
   - [ ] `viewmat 100 100 $ 1 2 1` `viewmat */~i:5` `viewmat +/~i.10`
 - [ ] https://www.cygnus-software.com/downloads/downloads.htm
@@ -203,8 +212,25 @@ o → o → o
   - [ ] https://en.wikipedia.org/wiki/Rule_30
 - [ ] https://www.bathsheba.com/math/gyroid/
 - [x] https://oeis.org/A000081
+- [ ] https://code.jsoftware.com/wiki/Essays
 - [ ] https://en.wikipedia.org/wiki/Chebyshev_polynomials
 - [ ] https://cran.r-project.org/web/packages/glmm/index.html
+- [ ] https://www.jsoftware.com/papers/50/
+  - [ ] APL "index-of" dyad: array of indices where item in right appears in
+    left
+- [ ] https://aplwiki.com/wiki/FinnAPL_idiom_library
+- [ ] https://rosettacode.org/wiki/Cyclotomic_polynomial#Haskell
+  - [ ] synthetic division alone would be good...
+```haskell
+shortDiv :: [Integer] -> [Integer] -> [Integer]
+shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
+  where
+    go (0, _) = Nothing
+    go (i, h:t) = Just (h, (i-1, zipWith (+) (map (h *) ker) t))
+    ker = negate <$> p2 ++ repeat 0
+```
+# Project Euler
+- [ ] https://projecteuler.net/problem=30
 # Rosetta Code
 - [ ] https://rosettacode.org/wiki/Averages/Pythagorean_means
 # Debug
