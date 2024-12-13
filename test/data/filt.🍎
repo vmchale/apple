@@ -1,1 +1,1 @@
-\p.\xs. (xs˙)'p⩪xs
+\p.\xs. (p⩪xs)⊂xs
