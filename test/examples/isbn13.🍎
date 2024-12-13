@@ -1,2 +1,2 @@
 -- https://rosettacode.org/wiki/ISBN13_check_digit
-xs ↦ {t ← (+)/ (*)`xs (}:(𝔸13⊙7)); t|10=0}
+xs ↦ (xs⋅(}:(𝔸13⊙7)))|10=0
