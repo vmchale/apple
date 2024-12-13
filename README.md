@@ -52,6 +52,14 @@ Apple tends to be faster than R; the JIT'ed moving average in Apple is substanti
 the [zoo package](https://cran.r-project.org/web/packages/zoo/index.html) and
 matrix multiplication is also faster.
 
+### JIT'ed Calculator
+
+There are no imports.
+
+Recursive functions are not allowed.
+
+Sorting is not implemented (this is a defect and may be fixed in the future).
+
 ## Dimension As a Functor
 
 This is based on J (and APL?). Looping is replaced by functoriality (rerank).
