@@ -160,7 +160,7 @@ fpFf fp x = do {f <- fmap ff.fpn =<< BSL.readFile fp; pure (f x)}
 fpFff fp x y = do {f <- fmap fff.fpn =<< BSL.readFile fp; pure (f x y)}
 fpFfff fp x y z = do {f <- fmap ffff.fpn =<< BSL.readFile fp; pure (f x y z)}
 fpIv fp n = do {f <- fmap ia.fpn =<< BSL.readFile fp; asN (f n)}
-fpFfv fp x y = do {f <- fmap ffa.fpn =<< BSL.readFile fp; asN (ffa f x y)}
+fpFfv fp x y = do {f <- fmap ffa.fpn =<< BSL.readFile fp; asN (f x y)}
 
 fpAa fp x = do {c <- BSL.readFile fp;caa c x}
 fpAaa fp x y = do {c <- BSL.readFile fp; caaa c x y}

@@ -76,8 +76,6 @@ main = do
     mulrank <- fmap aaa . leakFp =<< BSL.readFile "test/examples/mul.🍏"
     catFp <- fmap aaa . leakFp =<< BSL.readFile "bench/apple/cat.🍏"
     softmax <- fmap aa . leakFp =<< BSL.readFile "test/data/softmax.🍎"
-    amgm <- fmap fff.leakFp =<< BSL.readFile "math/amgm.🍏"
-    amgmG <- fmap fff.leakFp =<< BSL.readFile "test/data/amgmGen.🍏"
     defaultMain [ env files $ \ ~(m, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (mnist)" $ nf tyParse m
@@ -159,8 +157,6 @@ main = do
                       [ bench "conv (1-d)" $ nfIO (do {p <- withForeignPtr f cMax; free p})
                       , bench "even (filt)" $ nfIO (do {p <- withForeignPtr i filt; free p})
                       , bench "even (map-ix)" $ nfIO (do {p <- withForeignPtr i ixfilt; free p})
-                      , bench "amgm" $ nf (amgm 1) 2
-                      , bench "amgm (gen.)" $ nf (amgmG 1) 2
                       ]
                 , env eEnv $ \ ~(p0,p1) ->
                   bgroup "elliptic"
