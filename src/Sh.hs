@@ -28,7 +28,7 @@ instance PS (I a) where
     ps _ (Ix _ i)                   = pretty i
     ps _ (IVar _ n)                 = pretty n
     ps _ ip                         | Just (i,pp) <- pv ip = maybe mempty pretty i <> pp
-    ps d (StaPlus _ i j)            = parensp (d>5) (ps 6 i <> "+" <> ps 6 j)
+    ps d (StaPlus _ i j)            = parensp (d>5) (ps 6 i <+> "+" <+> ps 6 j)
     ps d (StaMul _ i j)             = parensp (d>7) (ps 8 i <> "*" <> ps 8 j)
     ps _ (IEVar _ n)                = "#" <> pretty n
 
