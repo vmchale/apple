@@ -1,5 +1,6 @@
+-- https://mathworld.wolfram.com/Nome.html
 λk.
 {
-  agm ← λx.λy.((λ(a,g). ((a+g)%2,√(a*g)))^:6 (x,y))->1;
-  𝜋%(2*agm 1 (√(1-k^2)))
+  agm ← λx.λy.(}.(gen. (x,y) (λ(a,g).((a+g)%2,√(a*g))) 15))->1;
+  e:(_𝜋*agm 1 (√(1-k^2))%agm 1 k)
 }
