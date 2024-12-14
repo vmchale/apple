@@ -12,12 +12,25 @@ instance Pretty (I a) where pretty=ps 0
 
 pg True=group.parens; pg False=id
 
+pv i@Ix{}         = Just (Just i, mempty)
+pv i@IVar{}       = Just (Nothing, pretty i)
+pv (StaMul _ i j) = do
+    (i',vs₀) <- pv i
+    (j',vs₁) <- pv j
+    case (i',j') of
+        (Nothing, Nothing) -> Just (Nothing, vs₀<>vs₁)
+        (_, Nothing)       -> Just (i',vs₀<>vs₁)
+        (Nothing,_)        -> Just (j',vs₀<>vs₁)
+        (Just{}, Just{})   -> Nothing
+pv _              = Nothing
+
 instance PS (I a) where
-    ps _ (Ix _ i)        = pretty i
-    ps _ (IVar _ n)      = pretty n
-    ps d (StaPlus _ i j) = parensp (d>5) (ps 6 i <+> "+" <+> ps 6 j)
-    ps d (StaMul _ i j)  = parensp (d>7) (ps 8 i <+> "*" <+> ps 8 j)
-    ps _ (IEVar _ n)     = "#" <> pretty n
+    ps _ (Ix _ i)                   = pretty i
+    ps _ (IVar _ n)                 = pretty n
+    ps _ ip                         | Just (i,pp) <- pv ip = maybe mempty pretty i <> pp
+    ps d (StaPlus _ i j)            = parensp (d>5) (ps 6 i <> "+" <> ps 6 j)
+    ps d (StaMul _ i j)             = parensp (d>7) (ps 8 i <> "*" <> ps 8 j)
+    ps _ (IEVar _ n)                = "#" <> pretty n
 
 data I a = Ix { ia :: a, ii :: !Int }
          | IVar { ia :: a, ixn :: Nm a }
