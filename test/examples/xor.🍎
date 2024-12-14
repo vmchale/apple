@@ -26,5 +26,5 @@
     ; (wha,woa,bha,boa)
     };
   wh ⟜ 𝔯_1 1;wo ⟜ 𝔯_1 1;bh ⟜ 𝔯_1 1;bo ⟜ 𝔯_1 1;
-  train^:10000 (wh,wo,bh,bo)
+  gen. (wh,wo,bh,bo) train 1000
 }

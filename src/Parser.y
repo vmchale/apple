@@ -67,7 +67,6 @@ import Sh
     head { TokSym $$ L.Head } headM { TokSym $$ L.HeadM }
     tail { TokSym $$ L.Tail } tailM { TokSym $$ L.TailM }
     init { TokSym $$ L.Init } initM { TokSym $$ L.InitM }
-    do { TokSym $$ Do }
     tensor { TokSym $$ Tensor }
     geq { TokSym $$ Geq }
     gt { TokSym $$ L.Gt }
@@ -319,7 +318,6 @@ E :: { E AlexPosn }
   | E foldA E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldA) $1) $3) $4 }
   | E scanS E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 ScanS) $1) $3) $4 }
   | E zip E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Zip) $1) $3) $4 }
-  | E do E E { EApp (eAnn $1) (EApp $2 (EApp $2 (Builtin $2 Iter) $1) $3) $4 }
   | E E { EApp (eAnn $1) $1 $2 }
   | x { ResVar $1 X } | y { ResVar $1 Y }
   | f { Builtin $1 Fib }

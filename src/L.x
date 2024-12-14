@@ -163,7 +163,6 @@ tokens :-
         "<|"                     { mkSym Cons }
         ⊳                        { mkSym Snoc }
         "|>"                     { mkSym Snoc }
-        "^:"                     { mkSym Do }
         ⊗                        { mkSym Tensor }
         "|:"                     { mkSym Transp }
         ⍉                        { mkSym Transp }
@@ -350,7 +349,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Arrow | Sig | MaxS | MinS | DIS | Succ
          | LConv | Focus
          | Access { iat :: !Int }
-         | TSig | Cons | Snoc | Do | Tensor | Transp | PlusPlus | Rotate
+         | TSig | Cons | Snoc | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | TailM | Init | InitM
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | FoldS | Tilde | Cyc | Ditto | A1 | Sub
@@ -414,7 +413,6 @@ instance Pretty Sym where
     pretty HeadM        = "{.?"
     pretty Cons         = "⊲"
     pretty Snoc         = "⊳"
-    pretty Do           = "^:"
     pretty Tensor       = "⊗"
     pretty Transp       = ":|"
     pretty Geq          = "≥"

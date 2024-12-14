@@ -1634,7 +1634,7 @@ eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX
     ss <- writeRF p [x] (PT pR)
     let loop=While () done INeq 1 (wX i:ss++[If () (Is pR) [t=:Tmp i, done=:1] [], i+=1, Cmov () (IRel IGeq (Tmp i) (Tmp szR)) done 1])
     pure $ plX $ szR=:ev (eAnn xs) (xsR,lX):t=:(-1):done=:0:i=:0:m'p pinch [loop]
-eval (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
+eval (Id _ (Iter f n x)) t = do
     (plN,nR) <- plC n
     plX <- eval x t
     ss <- writeRF f [IT t] (IT t)
@@ -1880,7 +1880,7 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     pure $ plE $ plAcc++szR =: ev tArr (eR,l):m'p pinch [loop]
   where
     tArr=eAnn e
-feval (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
+feval (Id _ (Iter f n x)) t = do
     (plN,nR) <- plC n
     plX <- feval x t
     ss <- writeRF f [FT t] (FT t)
@@ -1949,7 +1949,7 @@ m'sa t = maybe [] ((:[]).sac t)
 πe (LLet _ b e) t = do
     ss <- llet b
     fourth (ss++) <$> πe e t
-πe (EApp _ (EApp _ (EApp _ (Builtin _ Iter) f) n) x) t = do
+πe (Id _ (Iter f x n)) t = do
     pre <- nI; ttemp <- nI
     (plN,nR) <- plC n
     (offs, mSz, _, plX) <- πe x pre

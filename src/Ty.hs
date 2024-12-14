@@ -613,7 +613,6 @@ tyB _ Sr = pure (I ~> I ~> I, mempty); tyB _ Sl = pure (I ~> I ~> I, mempty)
 tyB l R = do
     n <- fc "a" l IsNum; sh <- fsh "sh"
     pure (n ~> n ~> Arr sh n, mempty)
-tyB _ Iter = do{a <- ftv "a"; let s = Arrow a a in pure (s ~> I ~> s, mempty)}
 tyB _ ConsE = do
     a <- ftv "a"; i <- fti "i"
     pure (a ~> vV i a ~> vV (i+:Ix()1) a, mempty)

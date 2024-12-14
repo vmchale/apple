@@ -170,7 +170,6 @@ instance Pretty Builtin where
     pretty Snoc       = "⊳"
     pretty Mul        = "%."
     pretty VMul       = "%:"
-    pretty Iter       = "^:"
     pretty Succ       = "\\~"
     pretty T          = "|:"
     pretty Fib        = "𝓕"
@@ -223,7 +222,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | IRange | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
-             | Fold | FoldS | Foldl | Floor | ItoF | Iter
+             | Fold | FoldS | Foldl | Floor | ItoF
              | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- infix
              | Conv [(Int, Maybe Int)] | Focus [Int]
@@ -368,7 +367,6 @@ instance PS (E a) where
     ps _ (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (ps 10 e0 <> pretty op)
     ps d (EApp _ (EApp _ (Builtin _ op) e0) e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <> pretty op <> ps (d'+1) e1)
     ps _ (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (ps 10 e0 <> pretty op <> ps 10 e1)
-    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Iter) e0) e1) e2)     = parens (ps 10 e0 <> "^:" <+> ps 10 e1 <+> ps 11 e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)    = parens (pretty e0 <> "/ₒ" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
@@ -412,6 +410,7 @@ data Idiom = FoldSOfZip { seedI, opI :: E (T ()), esI :: [E (T ())] }
            | U2 { seedGs, ufs :: [E (T ())], seedC, fG, nG :: E (T ()) }
            | AShLit { litSh :: [Int], esLit :: [E (T ())] }
            | Aɴ { idArr :: E (T ()), idIxes :: [E (T ())] }
+           | Iter { ugI, seedI, nG :: E (T ()) }
            deriving (Generic)
 
 instance Pretty Idiom where
@@ -421,6 +420,7 @@ instance Pretty Idiom where
     pretty (U2 seed gs u f n)      = parens ("fold-2-ix" <+> pretty seed <+> pretty gs <+> parens (pretty u <> "," <+> pretty f) <+> parens (pretty n))
     pretty (AShLit re es)          = parens ("re" <+> hsep (pretty <$> re) <+> "|" <+> pretty es)
     pretty (Aɴ a iix)              = parens ("at" <+> pretty a <+> pretty iix)
+    pretty (Iter g seed n)         = parens (pretty g <+> "^:" <> pretty n <+> pretty seed)
 
 instance Show Idiom where show=show.pretty
 

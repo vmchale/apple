@@ -102,7 +102,7 @@ allT = testGroup "jit"
     , testCase "consSum" $ do { (AA 1 [3] res) <- fpAaa "test/data/consSum.🍏" (AA 1 [3] [1,0,0::Double]) (AA 2 [3,2] [2,3,4,5,6,9::Double]); res @?= [6,9,15::Double] }
     , testCase "cross" $ do { (AA 1 [3] res) <- fpAaa "test/data/cross.🍏" (AA 1 [3] [3,4,5::Double]) (AA 1 [3] [4,3,5::Double]); res @?= [5,5,-7::Double] }
     , testCase "gen." $ do { res <- fpFfa "test/data/gen.🍎" 1 (sqrt 2) ; last (hs2 <$> res) @?= (1.1981402347355923 :: Double, 1.1981402347355923 :: Double ) }
-    , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍎" 0.8 ; res .?= completeElliptic 0.8 }
+    , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍏" 0.8 ; res .?= completeElliptic 0.8 }
     , testCase "trainXor" $ do
         (AA 2 [2,2] res0, AA 1 [2] res1, AA 1 [2] res2, x) <- fpAaafp4 "test/data/trainXor.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493]) (AA 1 [2] [0.14801747,0.37182892]) (AA 1 [2] [0.79726405,0.67601843]) 0.57823076
         res0 @?= [0.5130108836813994,0.563839153826952,0.48606794571593476,0.1463165649068566]
