@@ -24,10 +24,10 @@ class HasRs a where
 instance HasRs Rs where rename=id
 
 maxLens :: Lens' Rs Int
-maxLens f s = fmap (\x -> s { max_ = x }) (f (max_ s))
+maxLens f (Rs m b) = (\x -> Rs x b) <$> f m
 
 boundLens :: Lens' Rs (IM.IntMap Int)
-boundLens f s = fmap (\x -> s { bound = x }) (f (bound s))
+boundLens f (Rs m b) = Rs m <$> f b
 
 -- Make sure you don't have cycles in the renames map!
 replaceUnique :: (Monad m, HasRs s) => U -> StateT s m U

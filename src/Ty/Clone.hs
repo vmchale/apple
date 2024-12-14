@@ -17,12 +17,12 @@ data TR = TR { maxT :: Int, boundTV, boundSh, boundIx :: IM.IntMap Int }
 type CM = State TR
 
 maxTLens :: Lens' TR Int
-maxTLens f s = fmap (\x -> s { maxT = x }) (f (maxT s))
+maxTLens f (TR m t s i) = (\x -> TR x t s i) <$> f m
 
 boundTVLens, boundShLens, boundIxLens :: Lens' TR (IM.IntMap Int)
-boundTVLens f s = fmap (\x -> s { boundTV = x }) (f (boundTV s))
-boundShLens f s = fmap (\x -> s { boundSh = x }) (f (boundSh s))
-boundIxLens f s = fmap (\x -> s { boundIx = x }) (f (boundIx s))
+boundTVLens f (TR m t s i) = (\x -> TR m x s i) <$> f t
+boundShLens f (TR m t s i) = (\x -> TR m t x i) <$> f s
+boundIxLens f (TR m t s i) = TR m t s <$> f i
 
 -- for clone
 freshen :: Lens' TR (IM.IntMap Int) -- ^ TVars, shape var, etc.
