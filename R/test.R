@@ -17,6 +17,9 @@ run(tcdf,2,12);pt(2,12)
 sliding_mean<-jit("([(+)/x%ℝ(:x)]\\`7)")
 stopifnot(all(run(sliding_mean,seq(0,10,1.0))==c(3,4,5,6,7)))
 
+ruffini<-jit("λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::Vec n 𝟘))")
+stopifnot(all(run(ruffini,as.integer(c(1,2,1)),-1)==as.integer(c(1,1,0))))
+
 cat<-jit("[x++(y::Vec n int)]")
 stopifnot(all(run(cat,as.integer(c(1,1)),as.integer(c(0,2,3)))==c(1,1,0,2,3)))
 

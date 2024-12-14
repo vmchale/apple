@@ -9,6 +9,9 @@ assert (moving_avg(np.arange(0.,10))==np.array([3,4,5,6])).all()
 
 xs=np.array([[0.,4,2],[0,1,3]])
 
+ruffini=apple.jit("λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::Vec n 𝟘))")
+assert (ruffini(np.array([1,2,1]),-1)==np.array([1,1,0])).all()
+
 def softmax(x):
     exp_element=np.exp(x-x.max())
     return exp_element/np.sum(exp_element,axis=0)
