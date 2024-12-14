@@ -16,6 +16,7 @@
   * No longer segfault when `irange` is specified backwards
   * Store functions in REPL
   * Fix bug in parsing curried binary operators
+  * Remove `re:` in favor of infix 〃
 
 # 0.3.0.0
 
