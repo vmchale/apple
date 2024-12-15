@@ -21,6 +21,9 @@ The Vim plugin for Apple provides the following |digraphs|:
 ⧺   ++
 𝓉   tt
 ⅟   1%
+𝞈   fw
+𝟘   0t
+𝟙   1t
 
 Additionally the following digraphs are provided by Vim:
 
