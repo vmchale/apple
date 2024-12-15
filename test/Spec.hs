@@ -47,11 +47,12 @@ pTest pfn rfn τfn = testGroup "property tests"
   where
     cb 0=False; cb 1=True
 
+    hsIi f = fromIntegral.ii f.fromIntegral
+
 rTy :: TestTree
 rTy = testGroup "Regression tests"
     [ tyF "test/data/polymorphic.🍎"
     , tyF "test/examples/regress.🍎"
-    , tyF "test/examples/convolve.🍎"
     , tyF "test/examples/xor.🍎"
     ]
 
@@ -86,6 +87,10 @@ allT = testGroup "jit"
     , testCase "map" $ do { (AA 2 [2, 2] res) <- fpAaa "test/data/map.🍏" (AA 2 [2,2] [1,2,3,4::Double]) (AA 1 [2] [3,5::Double]); res @?= [4,7,6,9::Double] }
     , testCase "luhn check" $ do { res <- fpAi "test/examples/luhn.🍎" [4,0,1,2,8,8,8,8,8,8,8,8,1,8,8,1]; res @?= 1 }
     , testCase "zipTil" $ do { res <- fpVvf "test/data/dotTil.🍏" [3,2,1,0,8::Double] [4,5,5]; res @?= 27 }
+    , testCase "conv" $ do
+        (AA 2 [2,2] res) <- fpAa "test/examples/convolve.🍎"
+            (AA 2 [3,3] [1..9::Double])
+        res @?= [3.0,4.0,6.0,7.0::Double]
     , testCase "conv with stride" $ do
         (AA 2 [2,2] res) <- fpAa "test/data/strideConv.🍏"
             (AA 2 [4,4] [20::Double,200,-5,23,-13,134,119,100,120,32,49,25,-120,12,9,23])
@@ -145,8 +150,7 @@ allT = testGroup "jit"
 x ≈ y = assertBool ("expected " ++ show y ++ ", got " ++ show x) ((x-y)/y<1e-4&&(y-x)/y<1e-4)
 
 asN :: Storable a => U a -> IO [a]
-asN = fmap asV.peek
-asV (AA _ _ xs) = xs
+asN = fmap asV.peek; asV (AA _ _ xs) = xs
 
 caa src x = wA x $ \pX -> do {f <- aa<$>fpn src; peek (f pX)}
 caaa src x y = wA x $ \pX -> wA y $ \pY -> do {f <- aaa<$>fpn src;peek (f pX pY)}
@@ -160,7 +164,6 @@ fpFf fp x = do {f <- fmap ff.fpn =<< BSL.readFile fp; pure (f x)}
 fpFff fp x y = do {f <- fmap fff.fpn =<< BSL.readFile fp; pure (f x y)}
 fpFfff fp x y z = do {f <- fmap ffff.fpn =<< BSL.readFile fp; pure (f x y z)}
 fpIv fp n = do {f <- fmap ia.fpn =<< BSL.readFile fp; asN (f n)}
-fpFfv fp x y = do {f <- fmap ffa.fpn =<< BSL.readFile fp; asN (f x y)}
 
 fpAa fp x = do {c <- BSL.readFile fp;caa c x}
 fpAaa fp x y = do {c <- BSL.readFile fp; caaa c x y}
@@ -216,12 +219,8 @@ fpAaff fp xs ys z = do
     a=v1 xs; b=v1 ys
 
 wA :: Storable a => Apple a -> (U a -> IO b) -> IO b
-wA x act =
-    allocaBytes (sizeOf x) $ \p ->
-        poke p x *> act p
-
-hsIi :: FunPtr (Int64 -> Int64) -> Int -> Int
-hsIi f = fromIntegral.ii f.fromIntegral
+wA x act = allocaBytes (sizeOf x) $ \p ->
+    do {poke p x; act p}
 
 foreign import ccall "dynamic" ib :: FunPtr (Int64 -> CUChar) -> Int64 -> CUChar
 foreign import ccall "dynamic" ii :: FunPtr (Int64 -> Int64) -> Int64 -> Int64
@@ -233,7 +232,6 @@ foreign import ccall "dynamic" aaff :: FunPtr (U a -> U a -> Double -> Double) -
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
 foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
 foreign import ccall "dynamic" ffff :: FunPtr (Double -> Double -> Double -> Double) -> Double -> Double -> Double -> Double
-foreign import ccall "dynamic" ffa :: FunPtr (Double -> Double -> U a) -> Double -> Double -> U a
 foreign import ccall "dynamic" iff :: FunPtr (Int64 -> Double -> Double) -> Int64 -> Double -> Double
 foreign import ccall "dynamic" iii :: FunPtr (Int64 -> Int64 -> Int64) -> (Int64 -> Int64 -> Int64)
 foreign import ccall "dynamic" aa :: FunPtr (U a -> U b) -> U a -> U b
