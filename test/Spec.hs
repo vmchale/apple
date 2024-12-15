@@ -114,10 +114,10 @@ allT = testGroup "jit"
         res2 @?= [0.7927996818471371, 0.6633059586618876]
         x @?= 0.39886112498846815
     , testCase "elliptic fourier" $ do
-        (AA 1 [2] coeffs, a, c) <- fpAaip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] 2
-        a @?= 2.5000000000000004
-        c @?= 1.0
-        last coeffs @?= (-0.28876537338066266,-0.02632401569273178,0.10638724282445484,0.342212204005514)
+        (AA 1 [2] coeffs, a, c) <- fpVvip3 "test/examples/ellipticFourier.🍎" [0,4,4::Double] [0,0,3::Double] (2::Int64)
+        (a::Double) @?= 2.5000000000000004
+        (c::Double) @?= 1.0
+        last coeffs @?= (-0.28876537338066266::Double,-0.02632401569273178::Double,0.10638724282445484::Double,0.342212204005514::Double)
     , testCase "ℯ_" $ do { fp <- fpn "[e:(_x)]"; ff fp 1 @?= exp (-1) }
     , testCase "ℯ" $ do { f <- fpn "e:"; ff f 2.5 @?= exp 2.5 }
     , testCase "k-l" $ do { res <- fpVvf "test/examples/kl.🍎" [0.25, 0.25, 0.5::Double] [0.66, 0.33, 0::Double] ; res @?= kl [0.25, 0.25, 0.5] [0.66, 0.33, 0] }
@@ -157,6 +157,8 @@ caaa src x y = wA x $ \pX -> wA y $ \pY -> do {f <- aaa<$>fpn src;peek (f pX pY)
 cvf src xs = wA (v1 xs) $ \p -> do {f <- af<$>fpn src; pure (f p)}
 cvvf src xs ys = wA (v1 xs) $ \pX -> wA (v1 ys) $ \pY -> do {f <- aaf<$>fpn src; pure (f pX pY)}
 cvv src xs = wA (v1 xs) $ \pX -> do {f <- aa<$>fpn src; asN (f pX)}
+cvvip3 src xs ys n = wA a $ \p -> wA b $ \q -> do {f <- aaip3<$> fpn src; (P3 pa x0 x1) <- peek (f p q n); c <- peek pa; pure (hs4<$>c,x0,x1)}
+  where a=v1 xs;b=v1 ys
 
 fpIii fp m n = do {f <- fmap iii.fpn =<< BSL.readFile fp; pure (f m n)}
 fpIff fp n x = do {f <- fmap iff.fpn =<< BSL.readFile fp; pure (f n x)}
@@ -167,6 +169,7 @@ fpIv fp n = do {f <- fmap ia.fpn =<< BSL.readFile fp; asN (f n)}
 
 fpAa fp x = do {c <- BSL.readFile fp;caa c x}
 fpAaa fp x y = do {c <- BSL.readFile fp; caaa c x y}
+fpVvip3 fp xs ys n = do {c <- BSL.readFile fp; cvvip3 c xs ys n}
 
 fpVf fp xs = do {c <- BSL.readFile fp; cvf c xs}
 fpVvf fp xs ys = do {c <- BSL.readFile fp; cvvf c xs ys}
@@ -196,16 +199,6 @@ fpAaafp4 fp xs ys zs w = do
     wA xs $ \pX -> wA ys $ \pY -> wA zs $ \pZ -> do
         (P4 pa0 pa1 pa2 x) <- peek (aaafp4 f pX pY pZ w)
         (,,,) <$> peek pa0 <*> peek pa1 <*> peek pa2 <*> pure x
-
-fpAaip3 :: FilePath -> [Double] -> [Double] -> Int -> IO (Apple (Double, Double, Double, Double), Double, Double)
-fpAaip3 fp xs ys n = do
-    f <- fpn =<< BSL.readFile fp
-    let a=v1 xs; b=v1 ys
-    wA a $ \p ->
-        wA b $ \q -> do
-            (P3 pa x0 x1) <- peek (aaip3 f p q n)
-            c <- peek pa
-            pure (hs4<$>c, x0, x1)
 
 -- leaks memory
 fpn = fmap fst . case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
@@ -237,4 +230,4 @@ foreign import ccall "dynamic" iii :: FunPtr (Int64 -> Int64 -> Int64) -> (Int64
 foreign import ccall "dynamic" aa :: FunPtr (U a -> U b) -> U a -> U b
 foreign import ccall "dynamic" aaa :: FunPtr (U a -> U b -> U c) -> U a -> U b -> U c
 foreign import ccall "dynamic" aaafp4 :: FunPtr (U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)) -> U a -> U b -> U c -> Double -> Ptr (P4 (U d) (U e) (U f) g)
-foreign import ccall "dynamic" aaip3 :: FunPtr (U a -> U b -> Int -> Ptr (P3 c d e)) -> U a -> U b -> Int -> Ptr (P3 c d e)
+foreign import ccall "dynamic" aaip3 :: FunPtr (U a -> U b -> Int64 -> Ptr (P3 c d e)) -> U a -> U b -> Int64 -> Ptr (P3 c d e)
