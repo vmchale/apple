@@ -1,2 +1,2 @@
 -- "iterate over second axis" (i.e. columns)
-λA.λx. (x⋅)`{1∘[2]} (A::Arr (i × j) float)
+λA.λx. (x⋅)`{1∘[2]} (A::Arr (i × j) 𝞈)
