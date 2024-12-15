@@ -152,6 +152,7 @@ import Sh
     ixTimes { TokSym $$ IxTimes }
     vec { TokB $$ BuiltinVec }
     matrix { TokB $$ BuiltinM }
+    vector { TokB $$ BuiltinV }
     int { TokB $$ BuiltinInt }
     bool { TokB $$ BuiltinBool }
     float { TokB $$ BuiltinFloat }
@@ -223,6 +224,7 @@ T :: { T AlexPosn }
   | vec I T { Arr ($2 `Sh.Cons` Nil) $3 }
   | matrix six comma six T { Arr ((Ix (loc $2) (six $2)) `Sh.Cons` (Ix (loc $4) (six $4)) `Sh.Cons` Nil) $5 }
   | matrix T {% do {i <- lift $ freshName "i"; j <- lift $ freshName "j"; pure $ Arr (IVar $1 i `Sh.Cons` IVar $1 j `Sh.Cons` Nil) $2 } }
+  | vector T {% do {i <- lift $ freshName "n"; pure (Arr (IVar $1 i `Sh.Cons` Nil) $2) } }
   | int { I } | bool { A.B } | float { F }
   | parens(T) { $1 }
   | T arrow T { A.Arrow $1 $3 }

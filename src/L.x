@@ -237,6 +237,8 @@ tokens :-
         Arr                      { mkB BuiltinArr }
         Vec                      { mkB BuiltinVec }
         M                        { mkB BuiltinM }
+        𝟙                        { mkB BuiltinV }
+        𝟚                        { mkB BuiltinM }
         𝟘                        { mkB BuiltinInt }
         𝞈                        { mkB BuiltinFloat }
         float                    { mkB BuiltinFloat }
@@ -461,7 +463,7 @@ instance Pretty Var where
 data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
              | BuiltinGen | BuiltinUg | BuiltinScan | BuiltinCons | BuiltinNil
-             | BuiltinMMul | BuiltinArr | BuiltinInt | BuiltinFloat | BuiltinT
+             | BuiltinMMul | BuiltinArr | BuiltinV | BuiltinInt | BuiltinFloat | BuiltinT
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
              | BuiltinD | BuiltinVec | BuiltinM | BuiltinBool
@@ -490,6 +492,7 @@ instance Pretty Builtin where
     pretty BuiltinArr    = "Arr"
     pretty BuiltinVec    = "Vec"
     pretty BuiltinM      = "M"
+    pretty BuiltinV      = "𝟙"
     pretty BuiltinInt    = "int"
     pretty BuiltinFloat  = "float"
     pretty BuiltinBool   = "bool"
