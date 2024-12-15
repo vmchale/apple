@@ -347,3 +347,4 @@ optI (FoldGen seed f g n)    = FoldGen <$> optA seed <*> optA f <*> optA g <*> o
 optI (U2 seed f u g n)       = U2 <$> traverse optA seed <*> traverse optA f <*> optA u <*> optA g <*> optA n
 optI (AShLit ds es)          = AShLit ds <$> traverse optA es
 optI (Aɴ e ix)               = Aɴ <$> optA e <*> traverse optA ix
+optI (Iter f x n)            = Iter <$> optA f <*> optA x <*> optA n

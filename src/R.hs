@@ -98,3 +98,4 @@ rId (FoldGen seed g f n)    = FoldGen <$> rE seed <*> rE g <*> rE f <*> rE n
 rId (FoldOfZip zop op es)   = FoldOfZip <$> rE zop <*> rE op <*> traverse rE es
 rId (FoldSOfZip seed op es) = FoldSOfZip <$> rE seed <*> rE op <*> traverse rE es
 rId (Aɴ e ns)               = Aɴ <$> rE e <*> traverse rE ns
+rId (Iter f x n)            = Iter <$> rE f <*> rE x <*> rE n

@@ -65,6 +65,7 @@ tuck e           = (id, e)
 ηIdm (U2 seeds gs c f n)     = U2 <$> traverse ηAt seeds <*> traverse η gs <*> ηAt c <*> η f <*> ηAt n
 ηIdm (AShLit ds es)          = AShLit ds <$> traverse ηAt es
 ηIdm (Aɴ e ixs)              = Aɴ <$> ηAt e <*> traverse ηAt ixs
+ηIdm (Iter g seed n)         = Iter <$> η g <*> ηAt seed <*> ηAt n
 
 -- outermost only
 ηM :: E (T ()) -> RM (E (T ()))
@@ -77,6 +78,7 @@ tuck e           = (id, e)
 ηM e@(Id _ FoldSOfZip{})   = pure e
 ηM e@(Id _ U2{})           = pure e
 ηM e@(Id _ Aɴ{})           = pure e
+ηM e@(Id _ Iter{})         = pure e
 ηM e@Cond{}                = pure e
 ηM e@BLit{}                = pure e
 ηM e@Tup{}                 = pure e

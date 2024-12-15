@@ -38,6 +38,7 @@ hRi (FoldGen seed u f n)   = hR seed||hR u||hR f||hR n
 hRi (FoldOfZip zop op e)   = hR zop || hR op || any hR e
 hRi (FoldSOfZip seed op e) = hR seed || hR op || any hR e
 hRi (Aɴ e n)               = hR e || any hR n
+hRi (Iter f x n)           = hR f || hR x || hR n
 
 hR :: E a -> Bool
 hR (EApp _ (EApp _ (Builtin _ R) _) _) = True
@@ -132,6 +133,7 @@ bid (AShLit ds es)          = AShLit ds <$> traverse bM es
 bid (FoldGen seed f g n)    = FoldGen <$> bM seed <*> bM f <*> bM g <*> bM n
 bid (U2 seeds gs c f n)     = U2 <$> traverse bM seeds <*> traverse bM gs <*> bM c <*> bM f <*> bM n
 bid (Aɴ e ix)               = Aɴ <$> bM e <*> traverse bM ix
+bid (Iter f seed n)         = Iter <$> bM f <*> bM seed <*> bM n
 
 desugar :: a
 desugar = error "Internal error. Should have been desugared."
