@@ -1464,6 +1464,9 @@ peval (LLet _ b e) t = do
     ss <- llet b
     (ss++) <$> peval e t
 peval (BLit _ b) t = pure [MB () t (BConst b)]
+peval (Var _ x) t = do
+    st <- gets pvars
+    pure [MB () t (Is $ getT st x)]
 peval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plX, (lX, xR)) <- plA xs
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
