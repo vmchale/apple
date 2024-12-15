@@ -1,5 +1,0 @@
-λa.λb.λz.
-⸎
-  rf ← [(*)/ₒ 1 (frange x (x+y-1) (⌊y))]; fact ← rf 1;
-  Σ ← λN.λa. (+)/ₒ 0 (a'⍳ 0 N 1);
-  Σ 30 (λn. {nn⟜ℝ n; (rf a nn%rf b nn)*(z^n%fact nn)})
