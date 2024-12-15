@@ -253,6 +253,8 @@ langHelp = liftIO $ putStr $ concat
     , lOption "👁️" "identity matrix" "(i × j)" "dimensions"
     , lOption "gen." "generate" "}:?" "init"
     , lOption "{:?" "tail" "∴" "compose"
+    , lOption "𝔸" "digit literal" "⊂" "scatter"
+    , lOption "〃" "ditto" "𝐒,𝐊" "combinators"
     ]
 
 lOption op0 desc0 op1 desc1 =
