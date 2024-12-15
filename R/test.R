@@ -17,7 +17,7 @@ run(tcdf,2,12);pt(2,12)
 sliding_mean<-jit("([(+)/x%ℝ(:x)]\\`7)")
 stopifnot(all(run(sliding_mean,seq(0,10,1.0))==c(3,4,5,6,7)))
 
-ruffini<-jit("λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::Vec n 𝟘))")
+ruffini<-jit("λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::𝟙𝟘))")
 stopifnot(all(run(ruffini,as.integer(c(1,2,1)),-1)==as.integer(c(1,1,0))))
 
 cat<-jit("[x++(y::Vec n int)]")
@@ -54,10 +54,10 @@ run(dp,x,y)
 # LOL stopifnot((x%*%y)[,1]==sum(x*y))
 
 B<-matrix(runif(4096,0,1),64);C<-matrix(runif(4096,0,1),64)
-m6<-jit("[(x::(Arr (64×64) float))%.(y::Arr (64×64) float)]")
+m6<-jit("[(x::(Arr (64×64) 𝞈))%.(y::Arr (64×64) 𝞈)]")
 stopifnot(all(B%*%C==run(m6,B,C)))
 
-mT6<-jit("[(x::(Arr (64×64) float))%.|:(y::Arr (64×64) float)]")
+mT6<-jit("[(x::(Arr (64×64) 𝞈))%.|:(y::Arr (64×64) 𝞈)]")
 (B%*%t(C))[,55]
 run(mT6,B,C)[,55]
 

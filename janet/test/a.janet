@@ -1,6 +1,6 @@
 (import apple)
 
-(def dp (apple/jit "[(+)/(*)`(x::Vec n float) y]"))
+(def dp (apple/jit "[(+)/(*)`(x::𝟙𝞈) y]"))
 (assert (= (dp @[1.0 3.0 5.0] @[2.0 4.0 6.0]) 44.0))
 
 (def moving-average (apple/jit ``([(+)/x%ℝ(:x)]\`7)``))
@@ -13,10 +13,10 @@
 (def prime-mask (apple/jit ``λN. (λn.¬((∨)/ₒ #f ([n|x=0]'⍳ 2 (⌊(√(ℝn))) 1)))'irange 2 N 1``))
 (assert (deep= (prime-mask 9) @[true true false true false true false false]))
 
-(def ruffini (apple/jit ``λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::Vec n 𝟘))``))
+(def ruffini (apple/jit ``λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::𝟙𝟘))``))
 (assert (deep= (ruffini @[1 2 1] -1) @[1 1 0]))
 
-(def cat (apple/jit ``[(x::Vec n int)++y]``))
+(def cat (apple/jit ``[x::𝟙𝟘++y]``))
 (assert (deep= (cat @[1 2] @[4 3]) @[1 2 4 3]))
 
 (def any (apple/jit ``λbs. (∨)/ₒ #f bs :: bool``))

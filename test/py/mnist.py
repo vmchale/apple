@@ -29,7 +29,7 @@ train=apple.jit('''
     xl2p ⟜ xSigmoid%.l2;
     m ⟜ (⋉)/* _1 xl2p; a ⟜ [e:(x-m)]`{0} xl2p;
     sum ← [(+)/x];
-    n ← sum`{1} (a::M float);
+    n ← sum`{1} (a::M𝞈);
     out ⟜ ⍉([(%x)'y]`{0,1} n a);
     dsoftmax_l2 ← [x*(1-x)]`{0} out;
     -- bw
