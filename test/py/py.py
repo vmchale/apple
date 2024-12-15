@@ -52,6 +52,9 @@ def unstring(isbn):
 
 isbn13=apple.jit("xs ↦ (xs⋅(}:(𝔸13⊙7)))|10=0")
 
+dec=apple.jit("λn. (⊻)/ₒ n ((n>>)'⍳ 1 63 1)")
+assert dec(8)==15
+
 assert isbn13(unstring("978-0596528126"))
 assert not(isbn13(unstring("978-1788399083")))
 del isbn13

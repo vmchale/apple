@@ -263,6 +263,8 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | SubsRC { ann :: a, rDest, rSrc :: reg, rC :: Word16 }
                          | Lsl { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
                          | Asr { ann :: a, rDest, rSrc :: reg, sC :: Word8 }
+                         | LslR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
+                         | AsrR { ann :: a, rDest, rSrc1, rSrc2 :: reg }
                          | CmpRC { ann :: a, rSrc :: reg, cSrc :: Word16 }
                          | CmpRR { ann :: a, rSrc1, rSrc2 :: reg }
                          | Neg { ann :: a, rDest, rSrc :: reg }
@@ -349,6 +351,8 @@ mapR f (Eor l r0 r1 r2)      = Eor l (f r0) (f r1) (f r2)
 mapR f (Eon l r0 r1 r2)      = Eon l (f r0) (f r1) (f r2)
 mapR f (Lsl l r0 r1 s)       = Lsl l (f r0) (f r1) s
 mapR f (Asr l r0 r1 s)       = Asr l (f r0) (f r1) s
+mapR f (LslR l r0 r1 r2)     = LslR l (f r0) (f r1) (f r2)
+mapR f (AsrR l r0 r1 r2)     = AsrR l (f r0) (f r1) (f r2)
 mapR f (CmpRR l r0 r1)       = CmpRR l (f r0) (f r1)
 mapR f (CmpRC l r c)         = CmpRC l (f r) c
 mapR f (Neg l r0 r1)         = Neg l (f r0) (f r1)
@@ -452,6 +456,8 @@ fR f (Eon _ r0 r1 r2)      = f r0<>f r1<>f r2
 fR f (EorI _ r0 r1 _)      = f r0<>f r1
 fR f (Lsl _ r0 r1 _)       = f r0<>f r1
 fR f (Asr _ r0 r1 _)       = f r0<>f r1
+fR f (LslR _ r0 r1 r2)     = f r0<>f r1<>f r2
+fR f (AsrR _ r0 r1 r2)     = f r0<>f r1<>f r2
 fR f (CmpRR _ r0 r1)       = f r0<>f r1
 fR f (CmpRC _ r _)         = f r
 fR f (Neg _ r0 r1)         = f r0<>f r1
@@ -555,6 +561,8 @@ mapFR _ (Eon l r0 r1 r2)      = Eon l r0 r1 r2
 mapFR _ (EorI l r0 r1 i)      = EorI l r0 r1 i
 mapFR _ (Lsl l r0 r1 s)       = Lsl l r0 r1 s
 mapFR _ (Asr l r0 r1 s)       = Asr l r0 r1 s
+mapFR _ (LslR l r0 r1 r2)     = LslR l r0 r1 r2
+mapFR _ (AsrR l r0 r1 r2)     = AsrR l r0 r1 r2
 mapFR _ (CmpRC l r c)         = CmpRC l r c
 mapFR _ (CmpRR l r0 r1)       = CmpRR l r0 r1
 mapFR _ (Neg l r0 r1)         = Neg l r0 r1
@@ -701,6 +709,8 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (AddRC _ rD rS u s)     = "add" <+> r2i rD rS u <> "," <+> pretty s
         p4 (Lsl _ rD rS u)         = "lsl" <+> r2i rD rS u
         p4 (Asr _ rD rS u)         = "asr" <+> r2i rD rS u
+        p4 (AsrR _ rD r0 r1)       = "asr" <+> ar3 rD r0 r1
+        p4 (LslR _ rD r0 r1)       = "lsl" <+> ar3 rD r0 r1
         p4 (CmpRC _ r u)           = "cmp" <+> pretty r <> "," <+> hexd u
         p4 (CmpRR _ r0 r1)         = "cmp" <+> ar2 r0 r1
         p4 (Neg _ rD rS)           = "neg" <+> ar2 rD rS

@@ -36,6 +36,8 @@ mIop Op.IPlus  = Just AddRR
 mIop Op.IMinus = Just SubRR
 mIop Op.ITimes = Just MulRR
 mIop Op.IDiv   = Just Sdiv
+mIop Op.IAsr   = Just AsrR
+mIop Op.IAsl   = Just LslR
 mIop (Op.BI b) = mB b
 mIop _         = Nothing
 
@@ -569,6 +571,9 @@ eval (IR.IB Op.IMinus e (IR.ConstI i)) t | 0 <- i .&. 4095, Just u <- m12 (i `sh
 eval (IR.IB Op.IAsl e (IR.ConstI i)) t = do
     (plE,r) <- plI e
     pure $ plE [Lsl () (absReg t) r (fromIntegral (i `mod` 64))]
+eval (IR.IB Op.IAsr e (IR.ConstI i)) t | Just s <- ms i = do
+    (plE,r) <- plI e
+    pure $ plE [Asr () (absReg t) r s]
 eval (IR.IB Op.IMinus (IR.ConstI 0) e) t = do
     (plE,r) <- plI e
     pure $ plE [Neg () (absReg t) r]
@@ -617,9 +622,6 @@ eval (IR.EAt (IR.AP rB (Just e) _)) t = do
 eval (IR.BAt (IR.AP rB (Just e) _)) t = do
     (plE,i) <- plI e
     pure $ plE [LdrB () (absReg t) (BI (absReg rB) i Zero)]
-eval (IR.IB Op.IAsr e (IR.ConstI i)) t | Just s <- ms i = do
-    (plE,r) <- plI e
-    pure $ plE [Asr () (absReg t) r s]
 eval (IR.LA n) t = pure [LdrRL () (absReg t) n]
 eval (IR.BU Op.BNeg (IR.Is r)) t = pure [EorI () (absReg t) (absReg r) (BM 1 0)]
 eval e _            = error (show e)
