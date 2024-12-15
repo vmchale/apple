@@ -74,8 +74,11 @@ optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ I
 -- TODO: rewrite Head to Aɴ for simplicity in C.Trans (and A1, Last when possible...)
 optA (EApp l (Builtin l₁ Head) e) =
     optA $ Id l (Aɴ e [ILit l₁ 0])
-optA (EApp l (Builtin _ Last) e) =
-    optA $ Id l (Aɴ e [EApp I (Builtin undefined Dim) e `iMinus` ILit I 1])
+optA (EApp l (Builtin _ Last) e) = do
+    e' <- optA e
+    case e' of
+        (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) f) n) -> pure $ Id l (Iter f seed n)
+        _                                                   -> optA $ Id l (Aɴ e [EApp I (Builtin undefined Dim) e `iMinus` ILit I 1])
 optA (EApp l (EApp _ (Builtin _ A1) e) n) =
     optA $ Id l (Aɴ e [n])
 optA (Id l0 (Aɴ e ns)) = do
