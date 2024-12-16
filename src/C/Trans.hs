@@ -1110,6 +1110,22 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t aL | Just (I, _) <- tRnk
         :[loop])
   where
     tA=eAnn a; tB=eAnn b
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t aL | Just (I, _) <- tRnk tA = do
+    i <- nI; j <- nI; m <- nI; n <- nI; z <- nI
+    aRd <- nI; xRd <- nI; td <- nI
+    (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
+    let loop = fort tA i 0 ILt (Tmp m)
+                  [ z=:0,
+                    fort tX j 0 ILt (Tmp n)
+                        [ z+=(EAt (Raw aRd (Tmp n*Tmp i+Tmp j) lA 8)*EAt (Raw xRd (Tmp j) lX 8)) ]
+                  , Wr () (Raw td (Tmp i) (Just aL) 8) (Tmp z)
+                  ]
+    pure (plAA$plX$
+        n=:ev tX (xR,lX):v8 oSh t aL (Tmp n)
+        ++aRd=:DP aR 2:xRd=:DP xR 1:td=:DP t 1
+        :m=:ev tA (aR,lA):[loop])
+  where
+    tA=eAnn a; tX=eAnn x
 aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t a | tX <- eAnn x, Just sz <- rSz tX = do
     xR <- rtemp tX; nR <- nI; nϵR <- nI
     plX <- eeval x xR
