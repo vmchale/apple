@@ -404,16 +404,16 @@ data ResVar = X | Y deriving (Generic)
 instance Pretty ResVar where
     pretty X = "x"; pretty Y = "y"
 
-data Idiom = FoldSOfZip { seedI, opI :: E (T ()), esI :: [E (T ())] }
-           | FoldOfZip { zopI, opI :: E (T ()), esI :: [E (T ())] }
-           | FoldGen { seedG, ufG, fG, nG :: E (T ()) }
-           | U2 { seedGs, ufs :: [E (T ())], seedC, fG, nG :: E (T ()) }
-           | AShLit { litSh :: [Int], esLit :: [E (T ())] }
-           | Aɴ { idArr :: E (T ()), idIxes :: [E (T ())] }
-           | Iter { ugI, seedI, nG :: E (T ()) }
-           deriving (Generic)
+data Idiom a = FoldSOfZip { seedI, opI :: E a, esI :: [E a] }
+             | FoldOfZip { zopI, opI :: E a, esI :: [E a] }
+             | FoldGen { seedG, ufG, fG, nG :: E a }
+             | U2 { seedGs, ufs :: [E a], seedC, fG, nG :: E a }
+             | AShLit { litSh :: [Int], esLit :: [E a] }
+             | Aɴ { idArr :: E a, idIxes :: [E a] }
+             | Iter { ugI, seedI, nG :: E a }
+             deriving (Generic, Functor)
 
-instance Pretty Idiom where
+instance Pretty (Idiom a) where
     pretty (FoldSOfZip seed op es) = parens ("foldS-of-zip" <+> vsep [pretty seed, parens (pretty op), pretty es])
     pretty (FoldOfZip zop op es)   = parens ("fold-of-zip" <+> vsep [pretty zop, parens (pretty op), pretty es])
     pretty (FoldGen seed g f n)    = parens ("fold-gen" <+> brackets (pretty seed) <+> parens (pretty g) <+> parens (pretty f) <+> parens (pretty n))
@@ -422,7 +422,7 @@ instance Pretty Idiom where
     pretty (Aɴ a iix)              = parens ("at" <+> pretty a <+> pretty iix)
     pretty (Iter g seed n)         = parens (pretty g <+> "^:" <> pretty n <+> pretty seed)
 
-instance Show Idiom where show=show.pretty
+instance Show (Idiom a) where show=show.pretty
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          -- TODO: bool array
@@ -442,13 +442,13 @@ data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          | ResVar { eAnn :: a, eXY :: ResVar }
          | Parens { eAnn :: a, eExp :: E a }
          | Ann { eAnn :: a, eEe :: E a, eTy :: T a }
-         | Id { eAnn :: a, eIdiom :: Idiom }
+         | Id { eAnn :: a, eIdiom :: Idiom a }
          deriving (Functor, Generic)
 
 bimap12 f g ~(x,y,z) = (f x,g y,z)
 
 instance NFData Builtin where
 instance NFData ResVar where
-instance NFData Idiom where
+instance NFData a => NFData (Idiom a) where
 instance NFData a => NFData (E a) where
 instance NFData a => NFData (T a) where
