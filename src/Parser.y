@@ -133,6 +133,7 @@ import Sh
 
     frange { TokB $$ BuiltinFRange }
     iota { TokB $$ BuiltinIota }
+    ix { TokB $$ BuiltinIi }
     floor { TokB $$ BuiltinFloor }
     e { TokB $$ BuiltinE }
     i { TokB $$ BuiltinI }
@@ -286,6 +287,7 @@ B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
 
 E :: { E AlexPosn }
   : name { Var (Nm.loc $1) $1 }
+  | E ix { EApp (eAnn $1) (Builtin $2 Ix'd) $1 }
   | intLit { ILit (loc $1) (int $1) }
   | floatLit { FLit (loc $1) (float $1) }
   | pi { FLit $1 pi }

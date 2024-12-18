@@ -210,6 +210,7 @@ tokens :-
         𝒻                        { mkB BuiltinFRange }
         irange                   { mkB BuiltinIota }
         ⍳                        { mkB BuiltinIota }
+        ᶥ                        { mkB BuiltinIi }
         ⌊                        { mkB BuiltinFloor }
         "|."                     { mkB BuiltinFloor }
         ℯ                        { mkB BuiltinE }
@@ -460,7 +461,7 @@ instance Pretty Var where
     pretty VarX     = "x"
     pretty VarY     = "y"
 
-data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
+data Builtin = BuiltinFRange | BuiltinIota | BuiltinIi | BuiltinFloor | BuiltinE | BuiltinI
              | BuiltinF | BuiltinTrue | BuiltinFalse | BuiltinSqrt | BuiltinPi
              | BuiltinGen | BuiltinUg | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinV | BuiltinInt | BuiltinFloat | BuiltinT
@@ -473,6 +474,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinFloor | BuiltinE | BuiltinI
 instance Pretty Builtin where
     pretty BuiltinFRange = "frange"
     pretty BuiltinIota   = "⍳"
+    pretty BuiltinIi     = "ᶥ"
     pretty BuiltinFloor  = "⌊"
     pretty BuiltinE      = "e:"
     pretty BuiltinI      = "ℝ"

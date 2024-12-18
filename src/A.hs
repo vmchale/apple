@@ -214,12 +214,13 @@ instance Pretty Builtin where
     pretty S'         = "⑂"
     pretty S          = "𝐒"
     pretty K          = "𝐊"
+    pretty Ix'd       = "ᶥ"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
              | Max | Min | Neg | Sqrt | T | Di
              | Flat | AddDim | Ices | Filt | Eye
-             | IRange | FRange
+             | IRange | Ix'd | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
              | Fold | FoldS | Foldl | Floor | ItoF
@@ -380,6 +381,7 @@ instance PS (E a) where
     ps _ (EApp _ (EApp _ (Builtin _ (DI i)) e0) e1)               = parens (pretty e0 <+> "\\`" <> pretty i <+> pretty e1)
     ps _ (EApp _ (EApp _ (Builtin _ Succ) e0) e1)                 = parens (pretty e0 <+> "\\~" <+> pretty e1)
     ps d (EApp _ e0@Builtin{} e1@Var{})                           = parensp (d>10) (ps 10 e0 <> ps 11 e1)
+    ps _ (EApp _ (Builtin _ Ix'd) e)                              = ps 10 e <> "ᶥ"
     ps d (EApp _ e0 e1)                                           = parensp (d>10) (ps 10 e0 <+> ps 11 e1)
     ps _ (FLit _ x)                                               = pretty x
     ps _ (ILit _ n)                                               = pretty n

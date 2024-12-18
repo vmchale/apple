@@ -40,6 +40,7 @@ isBinOp RevE   = False
 isBinOp S      = False
 isBinOp Re     = True
 isBinOp K      = False
+isBinOp Ix'd   = False
 isBinOp _      = True
 
 fi :: Builtin -> Int
@@ -107,6 +108,7 @@ rw (EApp l e0 e') =
         (EApp lϵ (EApp lϵϵ e3@(Builtin _ op) e4) e2) | isBinOp op -> EApp l (EApp lϵϵ e3 (rw $ EApp lϵ e0 e4)) e2
         (Ann lϵ e1 t)                                             -> Ann lϵ (rw $ EApp l e0 e1) t
         (EApp lϵ e1@EApp{} e2)                                    -> EApp l (rw $ EApp lϵ e0 e1) e2
+        e1@(EApp _ (Builtin _ Ix'd) _)                            -> EApp l (rw e0) e1
         (EApp lϵ e1 e2)                                           -> EApp l (EApp lϵ (rw e0) e1) e2
         eRw                                                       -> EApp l (rw e0) eRw
 rw (Let l (n, e') e) = Let l (n, rw e') (rw e)
