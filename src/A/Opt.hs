@@ -72,6 +72,7 @@ optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
 optA (EApp oTy@(Arr (Ix _ i `Cons` Nil) _) (Builtin _ Ix'd) _) = optA $ Builtin (I~>I~>I~>oTy) IRange $$ ILit I 1 $$ ILit I (fromIntegral i) $$ ILit I 1
+optA (EApp oTy (Builtin _ Ix'd) e) = optA $ Builtin (I~>I~>I~>oTy) IRange $$ ILit I 1 $$ (Builtin (eAnn e~>I) Dim$$e) $$ ILit I 1
 -- TODO: rewrite Head to Aɴ for simplicity in C.Trans (and A1, Last when possible...)
 optA (EApp l (Builtin l₁ Head) e) =
     optA $ Id l (Aɴ e [ILit l₁ 0])
