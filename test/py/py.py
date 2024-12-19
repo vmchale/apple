@@ -7,7 +7,8 @@ moving_avg=apple.jit('([(+)/x%ℝ(:x)]⑄7)')
 assert repr(moving_avg)=='<fn : Vec (i + 7) float → Vec i float>'
 assert (moving_avg(np.arange(0.,10))==np.array([3,4,5,6])).all()
 
-xs=np.array([[0.,4,2],[0,1,3]])
+bit_matrix=apple.jit("[x (=)⊗ xᶥ]");i_vec=apple.jit("(([x]@.)')")
+assert (i_vec(bit_matrix(np.array([2,0,1])))==np.array([2,0,1])).all()
 
 ruffini=apple.jit("λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::𝟙𝟘))")
 assert (ruffini(np.array([1,2,1]),-1)==np.array([1,1,0])).all()
@@ -15,6 +16,8 @@ assert (ruffini(np.array([1,2,1]),-1)==np.array([1,1,0])).all()
 def softmax(x):
     exp_element=np.exp(x-x.max())
     return exp_element/np.sum(exp_element,axis=0)
+
+xs=np.array([[0.,4,2],[0,1,3]])
 
 ssoftmax=apple.jit('''
 λxs.
