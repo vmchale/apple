@@ -36,6 +36,10 @@ stopifnot(run(isbn,as.integer(c(9,7,8,0,5,9,6,5,2,8,1,2,6))));stopifnot(!run(isb
 rm(isbn)
 gc()
 
+# https://code.jsoftware.com/wiki/Essays/Inverse_Permutation#Boolean_Matrices
+bmat<-jit("[x (=)⊗ xᶥ]");pv<-jit("(([x]@.)')")
+stopifnot(all(run(pv,run(bmat,as.integer(c(1,0,2))))==as.integer(c(1,0,2))))
+
 prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([n|x=0]'⍳ 2 (⌊(√(ℝn))) 1)))'irange 2 N 1")
 stopifnot(all(run(prime_mask,9)==c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE)))
 
