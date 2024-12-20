@@ -92,7 +92,7 @@ bPrec AndB=3; bPrec OrB=2; bPrec XorB=6; bPrec BEq=4
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing; mPrec (BI p) = Just$bPrec p
 fprec FPlus=Just 6;fprec FMinus=Just 6;fprec FTimes=Just 7; fprec FDiv=Just 7; fprec FExp=Just 8; fprec FMax=Nothing; fprec FMin=Nothing
 
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | KI !Int64 | CFloor (CFE FTemp Double CE)
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | KI !Int64 | CFloor F1E
         | LA !Int -- assembler data
         | DP Temp CE -- pointer, rank
 
@@ -126,7 +126,7 @@ instance Fractional (CFE t Double e) where
 instance (Pretty x, PS e, Pretty t, Pretty e) => Pretty (CFE t x e) where pretty=ps 0
 
 data PE = IRel IRel CE CE
-        | FRel FRel (CFE FTemp Double CE) (CFE FTemp Double CE)
+        | FRel FRel F1E F1E
         | Boo BBin PE PE
         | BConst Bool
         | IUn IUn CE
@@ -178,15 +178,15 @@ data CS a = For { lann :: a, tck :: CE, ixVar :: Temp, eLow :: CE, loopCond :: I
           | While { lann :: a, iVar :: Temp, loopCond :: IRel, eDone :: CE, body :: [CS a] }
           | WT { lann :: a, bE :: PE, body :: [CS a] }
           | MT { lann :: a, tDest :: Temp, tSrc :: CE }
-          | MX { lann :: a, ftDest :: FTemp, ftSrc :: CFE FTemp Double CE }
-          | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: CFE F2Temp (Double, Double) Void }
+          | MX { lann :: a, ftDest :: FTemp, ftSrc :: F1E }
+          | MX2 { lann :: a, f2tDest :: F2Temp, f2tSrc :: F2E }
           | ATT { lann :: a, πDest :: TStore, addr :: ArrAcc }
           | Comb { lann :: a, op2 :: FBin, ftDest :: FTemp, f2Src :: F2Temp }
           | DS { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp } | Ins { lann :: a, f2dest :: F2Temp, fSrc :: FTemp }
           | MB { lann :: a, bDest :: BTemp, pSrc :: PE }
           | Wr { lann :: a, addr :: ArrAcc, wrE :: CE }
-          | WrF { lann :: a, addr :: ArrAcc, wrF :: CFE FTemp Double CE }
-          | Wr2F { lann :: a, addr :: ArrAcc, wrF2 :: CFE F2Temp (Double, Double) Void }
+          | WrF { lann :: a, addr :: ArrAcc, wrF :: F1E }
+          | Wr2F { lann :: a, addr :: ArrAcc, wrF2 :: F2E }
           | WrP { lann :: a, addr :: ArrAcc , wrB :: PE }
           | WrT { lann :: a, addr :: ArrAcc, wrT :: TStore }
           | Ma { lann :: a, ash :: Sh (), label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
@@ -202,7 +202,7 @@ data CS a = For { lann :: a, tck :: CE, ixVar :: Temp, eLow :: CE, loopCond :: I
           | Sa8 { lann :: a, temp :: Temp, alloc8 :: CE } | Pop8 { lann :: a, aeBytes :: CE }
           | Sa { lann :: a, temp :: Temp, allocBytes :: CE } | Pop { lann :: a, aeBytes :: CE }
           | Cmov { lann :: a, scond :: PE, tdest :: Temp, src :: CE }
-          | Fcmov { lann :: a, scond :: PE, fdest :: FTemp, fsrc :: CFE FTemp Double CE }
+          | Fcmov { lann :: a, scond :: PE, fdest :: FTemp, fsrc :: F1E }
           -- TODO: Fcneg?
           | Cset { lann :: a, scond :: PE, bdest :: BTemp }
           | SZ { lann :: a, szDest, arr :: Temp, rank :: CE, mLabel :: Maybe AL }
