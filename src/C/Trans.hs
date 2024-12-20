@@ -1653,9 +1653,8 @@ eval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
 eval (EApp _ (Builtin _ T) x) t = eval x t
 eval (EApp _ (Builtin _ Flat) x) t = eval x t
 eval (EApp _ (Builtin _ Floor) x) t = do
-    xR <- nF
-    plX <- feval x xR
-    pure $ plX ++ [t =: CFloor (FTmp xR)]
+    (plX,e) <- plD x
+    pure $ plX [t =: CFloor e]
 eval (EApp _ e@(Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
     pure [t=:unIA aa]
