@@ -9,7 +9,7 @@ import Control.Exception (Exception)
 import Control.Monad.Except (ExceptT, runExceptT, throwError)
 import Control.Monad.Trans.Class (lift)
 import Control.DeepSeq (NFData)
-import Data.Bifunctor (first)
+import Data.Bifunctor (first, second)
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as ASCII
 import Data.Functor (void)
@@ -286,6 +286,10 @@ B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   | name lbind E { (LL, ($1, $3)) }
   | name polybind E { (D, ($1, $3)) }
 
+Lam :: { [(AlexPosn, [Nm AlexPosn])] }
+    : lam tupled(name) dot { [$2] }
+    | lam tupled(name) dot Lam { $2 : $4 }
+
 E :: { E AlexPosn }
   : name { Var (Nm.loc $1) $1 }
   | E ix { EApp (eAnn $1) (Builtin $2 Ix'd) $1 }
@@ -305,7 +309,7 @@ E :: { E AlexPosn }
   | il { let l=loc $1 in ALit l (map (ILit l.fromInteger) (ints $1)) }
   | lam name dot E { A.Lam $1 $2 $4 }
   | name mmap E { A.Lam $2 $1 $3 }
-  | lam tupled(name) dot E {% bindΠ $1 (reverse (snd $2)) $4 }
+  | Lam E {% bindΠ (reverse $1) $2 }
   | tupled(E) { Tup (fst $1) (reverse (snd $1)) }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
   | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
@@ -361,11 +365,15 @@ parseErr tok = throwError . Unexpected tok
 
 data Bnd = L | LL | D
 
-bindΠ :: AlexPosn -> [(Nm AlexPosn)] -> E AlexPosn -> Parse (E AlexPosn)
-bindΠ l ns e = do
-    ρ <- lift $ freshName "ρ"
-    let bΡs = thread (zipWith (\n i -> let lϵϵ=Nm.loc n in (LLet lϵϵ (n, EApp lϵϵ (Builtin lϵϵ (TAt i)) (Var lϵϵ ρ)))) ns [1..])
-    pure $ A.Lam l ρ (bΡs e)
+bindΠ :: [(AlexPosn, [Nm AlexPosn])] -> E AlexPosn -> Parse (E AlexPosn)
+bindΠ vs e = do
+    (lams, bΡ) <- unzip <$> traverse (uncurry b) vs
+    pure $ thread lams $ thread bΡ e
+  where
+    b l ns = do
+        ρ <- lift $ freshName "ρ"
+        let bΡs = thread (zipWith (\n i -> let lϵϵ=Nm.loc n in (LLet lϵϵ (n, EApp lϵϵ (Builtin lϵϵ (TAt i)) (Var lϵϵ ρ)))) (reverse ns) [1..])
+        pure (A.Lam l ρ, bΡs)
 
 mkLet :: a -> [(Bnd, (Nm a, E a))] -> E a -> E a
 mkLet _ [] e            = e
