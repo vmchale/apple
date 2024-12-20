@@ -2,16 +2,21 @@
 - ignore: {name: Avoid lambda, within: [Asm.LI, C.Trans]}
 - ignore: {name: Use const}
 
-- fixity: infixr 7 @<>
-- fixity: infixr 8 `Cons`
-- fixity: infixr 4 !>
-- fixity: infixl 7 \-
-- fixity: infixr 0 ~>
-- fixity: infixl 4 $>
 - fixity: "infixl 6 +:"
+- fixity: infixr 8 `Cons`
+- fixity: infixr 0 ~>
 - fixity: infix 9 +=
-- fixity: infix 9 :=
+- fixity: infixr 8 .%
+- fixity: infixl 1 .?=
 - fixity: infixr 6 <#>
 - fixity: infixr 5 <?>
-- fixity: infixl 5 .|.
-- fixity: infixl 7 .&.
+- fixity: infixr 5 <!>
+- fixity: infixl 6 `iMinus`
+- fixity: infixl 6 `iPlus`
+- fixity: infixl 9 $$
+- fixity: infixl 7 \-
+- fixity: infixl 6 @@
+- fixity: infixr 4 !>
+- fixity: infixr 7 @<>
+- fixity: "infixr 4 #."
+- fixity: "infix 9 =:"
