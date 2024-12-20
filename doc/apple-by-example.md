@@ -157,6 +157,23 @@ will be interpreted as
 
 This only works for single-digit numbers, but cosmically justified numbers [tend to be small](https://groups.google.com/g/shaktidb/c/sYcklkglN8w/m/Vf-qdfx3AgAJ).
 
+## Axis
+
+`ᶥ` (postfix) returns a vector of indices with the same length as the leading
+axis of its argument.
+
+```
+ > :ty [xᶥ]
+Vec i a → Vec i int
+```
+
+```
+ > frange _10 0 11
+Vec 11 [-10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0]
+ > (frange _10 0 11)ᶥ
+Vec 11 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+```
+
 ## Reverse
 
 `~` reverses an array.
@@ -381,6 +398,15 @@ Fibonacci sequence:
 Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
 ```
 
+## Unfold
+
+`ug.` unfolds from a seed.
+
+```
+ > :ty ug.
+(b → (b * a)) → b → int(n) → Vec n a
+```
+
 ## Rank
 
 Rank ```{i,j∘[k,l]}`` lifts a function to operate on i, j-cells, optionally
@@ -512,6 +538,33 @@ Arr (3×2) [ [0.5, 1.1666666666666665]
           , [3.1666666666666665, 2.5] ]
 ```
 
+## Combinators
+
+### S, K
+
+```
+ > :ty 𝐒
+(a → b → c) → (a → b) → a → c
+ > :ty 𝐊
+b → a → b
+```
+
+### Fork
+
+Haskell's [`on`](https://hackage.haskell.org/package/base-4.21.0.0/docs/Data-Function.html#v:on), Curry's Φ combinator ([rediscovered by Conor Hoekstra](https://dl.acm.org/doi/10.1145/3520306.3534504)).
+
+```
+ > :ty (⑂)
+(b → b → c) → (a → b) → a → a → c
+```
+
+One can define the logarithm in any base from the natural logarithm `_.`, viz.
+
+```
+ > ([y%x]⑂_.) 2 8
+3.0
+```
+
 ## REPL Functionality
 
 ### Load
@@ -617,7 +670,7 @@ In the REPL, one can use `⏱` in place of `:bench`, i.e.
 ⏱ [(+)/x%ℝ(:x)]\`7 (𝒻 0 999 1000)
 ```
 
-### Integer Type
+### Type Shorthands
 
 `𝟘` can be used in place of `int`, viz.
 
@@ -744,6 +797,43 @@ output_weights += hidden_layer_output.T.dot(d_predicted_output)
 output_bias += np.sum(d_predicted_output,axis=0,keepdims=True)
 hidden_weights += inputs.T.dot(d_hidden_layer)
 hidden_bias += np.sum(d_hidden_layer,axis=0,keepdims=True)
+```
+
+## Permutations
+
+### Inverse
+
+We will [convert a permutation represented as a vector of integers into a Boolean matrix](https://code.jsoftware.com/wiki/Essays/Inverse_Permutation#Boolean_Matrices); then the transpose of this will be the inverse permutation (as a Boolean matrix).
+
+To convert a permutation to its Boolean matrix representation:
+
+```
+[x (=)⊗ xᶥ]
+```
+
+```
+ > [x (=)⊗ xᶥ] 𝔸021
+Arr (3×3) [ [#t, #f, #f]
+          , [#f, #f, #t]
+          , [#f, #t, #f] ]
+```
+
+To convert back:
+
+```
+(([x]@.)')
+```
+
+```
+ > ([x]@.)'([x (=)⊗ xᶥ] 𝔸021)
+Vec 3 [0, 2, 1]
+```
+
+Putting it all together to get the inverse:
+
+```
+ > ([x]@.)'(⍉([x (=)⊗ xᶥ] 𝔸120))
+Vec 3 [2, 0, 1]
 ```
 
 ## [Shoelace Theorem](https://artofproblemsolving.com/wiki/index.php/Shoelace_Theorem)
