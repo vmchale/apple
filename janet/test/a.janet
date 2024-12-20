@@ -16,6 +16,9 @@
 (def ruffini (apple/jit ``λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::𝟙𝟘))``))
 (assert (deep= (ruffini @[1 2 1] -1) @[1 1 0]))
 
+(def base (apple/jit ``λa.λn. {log ← (%)⑂_.; N ⟜ ⌊((log⑂ℝ) a n)+1; ~(ug. (λs. (s/.n, s|n)) a N)}``))
+(assert (deep= (base 15 5) @[3 0]))
+
 (def cat (apple/jit ``[x::𝟙𝟘++y]``))
 (assert (deep= (cat @[1 2] @[4 3]) @[1 2 4 3]))
 

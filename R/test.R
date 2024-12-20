@@ -20,6 +20,9 @@ stopifnot(all(run(sliding_mean,seq(0,10,1.0))==c(3,4,5,6,7)))
 ruffini<-jit("λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::𝟙𝟘))")
 stopifnot(all(run(ruffini,as.integer(c(1,2,1)),-1)==as.integer(c(1,1,0))))
 
+base<-jit("λa.λn. {log ← (%)⑂_.; N ⟜ ⌊((log⑂ℝ) a n)+1; ~(ug. (λs. (s/.n, s|n)) a N)}")
+stopifnot(all(run(base,15,4)==as.integer(c(3,3))))
+
 cat<-jit("[x++(y::Vec n int)]")
 stopifnot(all(run(cat,as.integer(c(1,1)),as.integer(c(0,2,3)))==c(1,1,0,2,3)))
 

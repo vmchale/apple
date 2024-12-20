@@ -10,6 +10,9 @@ assert (moving_avg(np.arange(0.,10))==np.array([3,4,5,6])).all()
 bit_matrix=apple.jit("[x (=)⊗ xᶥ]");i_vec=apple.jit("(([x]@.)')")
 assert (i_vec(bit_matrix(np.array([2,0,1])))==np.array([2,0,1])).all()
 
+base=apple.jit("λa.λn. {log ← (%)⑂_.; N ⟜ ⌊((log⑂ℝ) a n)+1; ~(ug. (λs. (s/.n, s|n)) a N)}")
+assert (base(17,3)==np.array([1,2,2])).all()
+
 ruffini=apple.jit("λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 (p::𝟙𝟘))")
 assert (ruffini(np.array([1,2,1]),-1)==np.array([1,1,0])).all()
 
