@@ -40,8 +40,8 @@ cToIR (LSt ls ts) cs = runState (foldMapM cToIRM cs) (WSt ls ts)
 
 tick reg = IR.MT reg (Reg reg+1); untick r=IR.MT r (Reg r-1)
 
-aeplus (AP t (Just o) l) i = AP t (Just$o+i) l
-aeplus (AP t Nothing l) i  = AP t (Just i) l
+aeplus (AP t (Just o) l) i = AP t (Just$o+ConstI i) l
+aeplus (AP t Nothing l) i  = AP t (Just (ConstI i)) l
 
 nr IGeq=ILt; nr IGt=ILeq; nr ILt=IGeq; nr ILeq=IGt; nr IEq=INeq; nr INeq=IEq
 
@@ -56,6 +56,12 @@ cToIRM (C.PlProd _ t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT
 cToIRM (C.MT _ t e)        = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX _ t e)        = pure [IR.MX (fx t) (irX e)]
 cToIRM (C.MX2 _ t e)       = pure [IR.MX2 (f2x t) (irX2 e)]
+cToIRM (C.ATT _ ts a)      = pure $ zipWith g ts (toffs ts)
+  where
+    g (TI r) i   = IR.MT (ctemp r) (IR.EAt (irAt a `aeplus` i))
+    g (TF r) i   = IR.MX (fx r) (IR.FAt (irAt a `aeplus` i))
+    g (TB r) i   = IR.MT (cbtemp r) (IR.BAt (irAt a `aeplus` i))
+    g (TA r _) i = IR.MT (ctemp r) (IR.EAt (irAt a `aeplus` i))
 cToIRM (C.Comb _ o t r)    = pure [IR.S2 o (fx t) (f2x r)]
 cToIRM (C.DS _ r t)        = pure [IR.Fill2 (f2x r) (fx t)]
 cToIRM (C.Ins _ r t)       = pure [IR.Ins (f2x r) (fx t)]
@@ -72,14 +78,12 @@ cToIRM (C.Wr _ a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF _ a x)         = pure [IR.WrF (irAt a) (irX x)]
 cToIRM (C.Wr2F _ a v)        = pure [IR.WrF2 (irAt a) (irX2 v)]
 cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]
-cToIRM (C.WrT _ a ts)        = pure $ zipWith g ts offs
+cToIRM (C.WrT _ a ts)        = pure $ zipWith g ts (toffs ts)
   where
     g (TI r) i   = IR.Wr (irAt a `aeplus` i) (Reg$ctemp r)
     g (TF r) i   = IR.WrF (irAt a `aeplus` i) (FReg$fx r)
     g (TB r) i   = IR.WrB (irAt a `aeplus` i) (IR.Is$cbtemp r)
     g (TA r _) i = IR.Wr (irAt a `aeplus` i) (Reg$ctemp r)
-    offs = scanl' (\o r -> o+szt r) 0 ts
-    szt TB{}=1; szt _=8
 cToIRM (Rof _ t ec s)        = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
@@ -239,5 +243,8 @@ irX (C.FAt a)       = IR.FAt (irAt a)
 irX (FBin op x0 x1) = FB op (irX x0) (irX x1)
 irX (IE e)          = FConv (irE e)
 irX (FUn f e)       = FU f (irX e)
+
+toffs = scanl' (\o r -> o+szt r) 0
+  where szt TB{}=1; szt _=8
 
 foldMapM f = foldM (\x y -> (x `mappend`) <$> f y) mempty
