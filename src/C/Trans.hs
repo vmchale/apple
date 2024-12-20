@@ -341,8 +341,8 @@ wt p (PT t) = WrP () p (Is t); wt p (ΠT rs) = WrT () p (rp<$>rs)
 cpy dest asrc n sz = CpyE () (dest sz) (asrc sz) n sz
 mv dest asrc sz = Mv () (dest sz) (asrc sz) sz
 
-ra (FT f)=FA f; ra (IT r)=IA r; ra (PT r)=BA r
-art (IA r)=IT r;art (FA r)=FT r; art (BA r)=PT r
+ra (FT f)=FA f; ra (IT r)=IA r; ra (PT r)=BA r; ra (ΠT rs) = ΠArg (rp<$>rs)
+art (IA r)=IT r;art (FA r)=FT r; art (BA r)=PT r; art (ΠArg rs)=ΠT (tr<$>rs)
 tr (TF x)=FT x; tr (TI r)=IT r; tr (TB r)=PT r
 rp (FT x)=TF x; rp (IT r)=TI r; rp (PT r)=TB r
 
