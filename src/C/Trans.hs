@@ -7,7 +7,7 @@ import qualified CF.AL                            as AL
 import           Control.Composition              (thread, (-$))
 import           Control.Monad                    (zipWithM)
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
-import           Data.Bifunctor                   (first, second)
+import           Data.Bifunctor                   (bimap, first, second)
 import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
@@ -640,9 +640,8 @@ aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t a | Just (ty,sz) <- rr (eAnn x) =
     plX <- eeval x xR
     pure (plX++vSz sh t a 1 sz++[wt (AElem t 1 (Just a) 0 8) xR])
 aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t a | ty@P{} <- eAnn x, Just sz <- nSz ty = do
-    xR <- nI
-    (as,plX) <- plΠ x
-    pure (plX++vSz sh t a 1 sz++[Mv () (AElem t 1 (Just a) 0 sz) (TupM xR Nothing) sz])
+    (plX,as) <- plΠ x
+    pure (plX++vSz sh t a 1 sz++[WrT () (AElem t 1 (Just a) 0 sz) as])
 aeval (EApp (Arr oSh _) g@(Builtin _ AddDim) xs) t a | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty = do
     (plX, (lX, xR)) <- plA xs
     xRnk <- nI; szR <- nI; rnk <- nI
@@ -1132,8 +1131,7 @@ aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t a | tX <- eAnn x, J
     pure (plX++plXs (nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents))
 aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t a | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     nR <- nI; nϵR <- nI
-    (as,plX) <- plΠ x
-    (plXs, (lX, xsR)) <- plA xs
+    (plX,as) <- plΠ x; (plXs, (lX, xsR)) <- plA xs
     contents <- rfill g (AD t (Just a) Nothing Nothing (Just sz) Nothing) [NA (ΠT (tr<$>as)), AI (AD xsR lX Nothing Nothing (Just sz) (Just$Tmp nϵR))]
     pure (plX++plXs (nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents))
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t a | Just (tX, xRnk) <- tRnk (eAnn x), tXs <- eAnn xs, Just (_, xsRnk) <- tRnk tXs = do
@@ -1151,7 +1149,7 @@ aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t a | tX <- eAnn x, Ju
     pure (plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents)
 aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t a | tX <- eAnn x, isΠ tX, sz <- bT tX = do
     nR <- nI; nϵR <- nI
-    (as,plX) <- plΠ x
+    (plX,as) <- plΠ x
     (plXs, (lX, xsR)) <- plA xs
     contents <- rfill g (AD t (Just a) Nothing Nothing Nothing Nothing) [NA (ΠT (tr<$>as)), AI (AD xsR lX Nothing Nothing (Just sz) (Just$Tmp nϵR))]
     pure (plXs$plX++nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents)
@@ -1195,7 +1193,7 @@ aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ ScanS) op) seed) e) t a | (
     tXs=eAnn e
 aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ ScanS) op) seed) e) t a | (Arrow tX (Arrow tY _)) <- eAnn op, isΠ tX, xSz <- bT tX, nind tY = do
     n <- nI
-    (as,plS) <- plΠ seed
+    (plS,as) <- plΠ seed
     (plE, (l, aP)) <- plA e
     -- TODO: tup-of-arrays would get discarded hm
     loop <- fill g (AD t (Just a) Nothing Nothing Nothing (Just$Tmp n)) [NA (ΠT (tr<$>as)), AI (AD aP l (Just tXs) Nothing (Just xSz) Nothing)]
@@ -1384,7 +1382,7 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <-
     pure (plN$vSz sh t a (Tmp nR) sz++plS++td=:DP t 1:[loop])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | seedTy <- eAnn seed, isΠR seedTy, Just πsz <- nSz seedTy = do
     (plN, nE) <- plC n
-    (as,plS) <- plΠ seed
+    (plS,as) <- plΠ seed
     td <- nI; as0 <- frts as
     -- TODO: discards arrays
     (_, ss) <- writeF op [ΠArg as] (ΠT (tr<$>as0))
@@ -1448,9 +1446,10 @@ aeval e _ _ = error (show e)
 
 plR :: E (T ()) -> CM ([CS ()] -> [CS ()], RT)
 plR e = case eAnn e of
-    I -> second IT <$> plEV e
-    F -> second FT <$> plF e
-    B -> second PT <$> plBV e
+    I   -> second IT <$> plEV e
+    F   -> second FT <$> plF e
+    B   -> second PT <$> plBV e
+    P{} -> bimap (\cs -> (cs++)) (ΠT . map tr) <$> plΠ e
 
 plC :: E (T ()) -> CM ([CS ()] -> [CS ()], CE)
 plC (ILit _ i) = pure (id, KI$fromIntegral i)
@@ -1484,8 +1483,8 @@ plA :: E (T ()) -> CM ([CS ()] -> [CS ()], (Maybe AL, Temp))
 plA (Var _ x) = do {st <- gets avars; pure (id, getT st x)}
 plA e         = do {(t,lX,plX) <- maa e; pure ((plX++), (lX, t))}
 
-plΠ :: E (T ()) -> CM (TStore, [CS ()])
-plΠ e = do {as <- πts e; ss <- πr e as; pure (as,ss)}
+plΠ :: E (T ()) -> CM ([CS ()], TStore)
+plΠ e = do {as <- πts e; ss <- πr e as; pure (ss,as)}
 
 plAs :: [E (T ())] -> CM ([CS ()] -> [CS ()], [(Maybe AL, Temp)])
 plAs = fmap (first thread.unzip).traverse plA
@@ -1565,7 +1564,7 @@ peval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
     pure [MB () t (unBA aa)]
 peval (EApp _ (Builtin _ (TAt i)) e) t = do
-    (as, ss) <- plΠ e
+    (ss, as) <- plΠ e
     pure (ss++[MB () t (unBA (as!!(i-1)))])
 peval e _ = error (show e)
 
@@ -1662,7 +1661,7 @@ eval (EApp _ e@(Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
     pure [t=:unIA aa]
 eval (EApp _ (Builtin _ (TAt i)) e) t = do
-    (as, ss) <- plΠ e
+    (ss, as) <- plΠ e
     pure (ss++[t=:(unIA (as!!(i-1)))])
 eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX <- nSz tD = do
     pR <- nBT
@@ -1929,7 +1928,7 @@ feval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
     pure [MX () t (unFA aa)]
 feval (EApp _ (Builtin _ (TAt i)) e) t = do
-    (as, ss) <- plΠ e
+    (ss, as) <- plΠ e
     pure (ss++[MX () t (unFA (as!!(i-1)))])
 feval (EApp _ (Var _ f) x) t | isR (eAnn x) = do
     st <- gets fvars
@@ -1973,7 +1972,8 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
             case (eAnn e, a) of
                 (I, TI t)              -> do {(plX,i) <- plC e; pure (plX [t=:i])}
                 (Arr{}, TA t (Just l)) -> aeval e t l
-                (F, TF x)              -> do {(plX,eR) <- plF e; pure (plX [MX () x (FTmp eR)])}) es ts
+                (B, TB t)              -> do {(plX,v) <- plP e; pure (plX [MB () t v])}
+                (F, TF x)              -> do {(plX,v) <- plD e; pure (plX [MX () x v])}) es ts
 πr (Id _ (Iter f x n)) ts = do
     (plN,nR) <- plC n
     ats <- frts ts
@@ -1992,7 +1992,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe Int64, [AL], [CS ()])
 πe e t | P tys <- eAnn e, offs <- szT tys, sz <- last offs = do
-    (as,pl) <- plΠ e
+    (pl,as) <- plΠ e
     pure (offs, Just sz, catt as, pl++[WrT () (TupM t Nothing) as])
   where
     catt = mapMaybe g where g (TA _ l)=l; g _=Nothing
