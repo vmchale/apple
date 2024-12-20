@@ -42,7 +42,7 @@ pTest pfn rfn τfn = testGroup "property tests"
     [ testProperty "isPrime" $ property $ \n -> n < 2 || isPrime n == cb (ib pfn (fromIntegral n))
     , testProperty "radical" $ property $ \n -> n < 3 || radical n == hsIi rfn n
     , testProperty "τ" $ property $ \n -> n < 1 || tau n == hsIi τfn n
-    -- TODO: consSum,
+    -- TODO: consSum
     ]
   where
     cb 0=False; cb 1=True
@@ -71,7 +71,7 @@ allT = testGroup "jit"
     , testCase "fib" $ do { res <- fpIv "test/examples/fib.🍎" 6; res @?= [1::Int64,1,2,3,5,8,13] } --
     , testCase "fib" $ do { res <- fpIv "test/examples/fibarr.🍎" 6; res @?= [1::Int64,1,2,3,5,8] } --
     , testCase "oeis (A000081)" $ do { res <- fpIv "math/oeis/A000081.🍏" 12; res @?= [0::Int64,1,1,2,4,9,20,48,115,286,719,1842,4766] }
-    , testCase "base" $ do { res <- fpIiv "test/examples/base.🍏" 15 3; res @?= [1,2,0::Int64] }
+    , testCase "base" $ do { res <- fpIiv "examples/base.🍏" 15 3; res @?= [1,2,0::Int64] }
     , testCase "7-day sliding average" $ do { res <- fpVv "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "amgm (iter)" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
