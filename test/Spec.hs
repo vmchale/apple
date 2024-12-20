@@ -71,6 +71,7 @@ allT = testGroup "jit"
     , testCase "fib" $ do { res <- fpIv "test/examples/fib.🍎" 6; res @?= [1::Int64,1,2,3,5,8,13] } --
     , testCase "fib" $ do { res <- fpIv "test/examples/fibarr.🍎" 6; res @?= [1::Int64,1,2,3,5,8] } --
     , testCase "oeis (A000081)" $ do { res <- fpIv "math/oeis/A000081.🍏" 12; res @?= [0::Int64,1,1,2,4,9,20,48,115,286,719,1842,4766] }
+    , testCase "base" $ do { res <- fpIiv "test/examples/base.🍏" 15 3; res @?= [1,2,0::Int64] }
     , testCase "7-day sliding average" $ do { res <- fpVv "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "amgm (iter)" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
@@ -106,6 +107,7 @@ allT = testGroup "jit"
     , testCase "mapAa" $ do { (AA 2 [3,2] res) <- fpAa "test/data/mfa.🍎" (AA 1 [3] [1,2,3::Double]); res @?= [1,1,2,2,3,3::Double] }
     , testCase "consSum" $ do { (AA 1 [3] res) <- fpAaa "test/data/consSum.🍏" (AA 1 [3] [1,0,0::Double]) (AA 2 [3,2] [2,3,4,5,6,9::Double]); res @?= [6,9,15::Double] }
     , testCase "cross" $ do { (AA 1 [3] res) <- fpAaa "test/data/cross.🍏" (AA 1 [3] [3,4,5::Double]) (AA 1 [3] [4,3,5::Double]); res @?= [5,5,-7::Double] }
+    , testCase "polynomial mul (Iverson)" $ do { (AA 1 [6] res) <- fpAaa "math/poly/mul.🍏" (AA 1 [3] [1,2,1::Int]) (AA 1 [4] [1,3,3,1::Int]); res @?= [1,5,10,10,5,1::Int64] }
     , testCase "completeElliptic" $ do { res <- fpFf "math/completeElliptic.🍏" 0.8 ; res .?= completeElliptic 0.8 }
     , testCase "trainXor" $ do
         (AA 2 [2,2] res0, AA 1 [2] res1, AA 1 [2] res2, x) <- fpAaafp4 "test/data/trainXor.🍎" (AA 2 [2,2] [0.51426693,0.56885825,0.48725347,0.15041493]) (AA 1 [2] [0.14801747,0.37182892]) (AA 1 [2] [0.79726405,0.67601843]) 0.57823076
@@ -166,6 +168,7 @@ fpFf fp x = do {f <- fmap ff.fpn =<< BSL.readFile fp; pure (f x)}
 fpFff fp x y = do {f <- fmap fff.fpn =<< BSL.readFile fp; pure (f x y)}
 fpFfff fp x y z = do {f <- fmap ffff.fpn =<< BSL.readFile fp; pure (f x y z)}
 fpIv fp n = do {f <- fmap ia.fpn =<< BSL.readFile fp; asN (f n)}
+fpIiv fp m n = do {f <- fmap iia.fpn =<< BSL.readFile fp; asN (f m n)}
 
 fpAa fp x = do {c <- BSL.readFile fp;caa c x}
 fpAaa fp x y = do {c <- BSL.readFile fp; caaa c x y}
@@ -218,6 +221,7 @@ wA x act = allocaBytes (sizeOf x) $ \p ->
 foreign import ccall "dynamic" ib :: FunPtr (Int64 -> CUChar) -> Int64 -> CUChar
 foreign import ccall "dynamic" ii :: FunPtr (Int64 -> Int64) -> Int64 -> Int64
 foreign import ccall "dynamic" ia :: FunPtr (Int64 -> U a) -> Int64 -> U a
+foreign import ccall "dynamic" iia :: FunPtr (Int64 -> Int64 -> U a) -> Int64 -> Int64 -> U a
 foreign import ccall "dynamic" ai :: FunPtr (U a -> Int64) -> U a -> Int64
 foreign import ccall "dynamic" af :: FunPtr (U a -> Double) -> U a -> Double
 foreign import ccall "dynamic" aaf :: FunPtr (U a -> U a -> Double) -> U a -> U a -> Double
