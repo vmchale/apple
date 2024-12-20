@@ -54,7 +54,7 @@ namesStr :: StateT Env IO [String]
 namesStr = gets ((++bn) . fmap (T.unpack.name.fst) . ee)
 
 bn :: [String]
-bn = ["frange", "irange", "itof", "gen.", "di.", "sin.", "cos.", "rand.", "eye.", "cyc.", "odd.", "even.", "abs.", "re:"]
+bn = ["frange", "irange", "itof", "gen.", "di.", "sin.", "cos.", "rand.", "cyc.", "odd.", "even.", "abs.", "ug."]
 
 data Arch = X64 | AArch64 !MCtx
 
@@ -250,11 +250,12 @@ langHelp = liftIO $ putStr $ concat
     , lOption "~" "reverse" "¬,⊻,∧,∨" "logical"
     , lOption "♭" "flatten" "♯" "add dimension"
     , lOption "⩪" "indices of" "§, #." "filter"
-    , lOption "👁️" "identity matrix" "(i × j)" "dimensions"
+    , lOption "ug." "unfold" "(i × j)" "dimensions"
     , lOption "gen." "generate" "}:?" "init"
     , lOption "{:?" "tail" "∴" "compose"
     , lOption "𝔸" "digit literal" "⊂" "scatter"
     , lOption "〃" "ditto" "𝐒,𝐊" "combinators"
+    , lOption "⑂" "fork" "𝞈,𝟘,𝟙,𝟚" "fancy types"
     ]
 
 lOption op0 desc0 op1 desc1 =
