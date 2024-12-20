@@ -1503,8 +1503,7 @@ peval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plB, b) <- off xR lX nEs
     pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MB () t (PAt (Raw xRd b lX 1))])
                           | otherwise = unsupported
-peval (EApp _ (Builtin _ T) e) t = peval e t
-peval (EApp _ (Builtin _ Flat) e) t = peval e t
+peval (EApp _ (Builtin _ T) e) t = peval e t; peval (EApp _ (Builtin _ Flat) e) t = peval e t
 peval (EApp _ (Builtin _ Odd) e0) t = do
     (pl,eR) <- plEV e0
     pure $ pl [Cset () (IUn IOdd (Tmp eR)) t]
@@ -1650,8 +1649,7 @@ eval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
     xR <- nI; nR <- nI
     plX <- eval x xR; plN <- eval n nR
     pure $ plX ++ plN ++ [t=:1, While () nR IGt 0 [Ifn't () (IUn IEven (Tmp nR)) [t=:(Tmp t*Tmp xR)], nR =: Bin IAsr (Tmp nR) 1, MT () xR (Tmp xR*Tmp xR)]]
-eval (EApp _ (Builtin _ T) x) t = eval x t
-eval (EApp _ (Builtin _ Flat) x) t = eval x t
+eval (EApp _ (Builtin _ T) x) t = eval x t; eval (EApp _ (Builtin _ Flat) x) t = eval x t
 eval (EApp _ (Builtin _ Floor) x) t = do {(plX,e) <- plD x; pure (plX [t =: CFloor e])}
 eval (EApp _ (Builtin _ Ceil) x) t = do {(plX, e) <- plD x; pure (plX [t =: CCeil e])}
 eval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do {aa <- tat e; pure [t=:unIA aa]}
@@ -1809,8 +1807,7 @@ feval (EApp _ (Builtin _ ItoF) e) t = do
     (pl,iE) <- plC e
     pure $ pl [MX () t (IE iE)]
 feval (Cond _ p e0 e1) t = cond p e0 e1 (FT t)
-feval (EApp _ (Builtin _ T) x) t = feval x t
-feval (EApp _ (Builtin _ Flat) x) t = feval x t
+feval (EApp _ (Builtin _ T) x) t = feval x t; feval (EApp _ (Builtin _ Flat) x) t = feval x t
 feval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plX, (lX, xR)) <- plA xs
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
@@ -1979,8 +1976,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
 πr (LLet _ b e) ts = do
     ss <- llet b
     (ss++) <$> πr e ts
-πr (EApp _ (Builtin _ T) e) ts = πr e ts
-πr (EApp _ (Builtin _ Flat) e) ts = πr e ts
+πr (EApp _ (Builtin _ T) e) ts = πr e ts; πr (EApp _ (Builtin _ Flat) e) ts = πr e ts
 πr e _ = error (show e)
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe Int64, [AL], [CS ()])
