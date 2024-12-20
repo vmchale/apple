@@ -311,8 +311,6 @@ Functionality</a>
 <li><a href="#coronis" id="toc-coronis">Coronis</a></li>
 <li><a href="#matrix-dimensions" id="toc-matrix-dimensions">Matrix
 Dimensions</a></li>
-<li><a href="#identity-matrix" id="toc-identity-matrix">Identity
-Matrix</a></li>
 <li><a href="#identifiers" id="toc-identifiers">Identifiers</a></li>
 <li><a href="#vulgar-fractions" id="toc-vulgar-fractions">Vulgar
 Fractions</a></li>
@@ -759,9 +757,6 @@ subscript digits separated by a comma.</p>
 <pre><code>𝔯 0 1 :: M ₁₂,₁₂ float</code></pre>
 <p>is equivalent to</p>
 <pre><code>𝔯 0 1 :: Arr (12 × 12) float</code></pre>
-<h3 id="identity-matrix">Identity Matrix</h3>
-<p>👁️ can be used in place of <code>eye.</code> for the identity
-matrix.</p>
 <h3 id="identifiers">Identifiers</h3>
 <p>Identifiers may be latin or greek characters, or a single character
 from the mathematical greek or mathematical latin unicode block,
@@ -901,6 +896,8 @@ Vec 3 [0, 2, 1]</code></pre>
 <p>Putting it all together to get the inverse:</p>
 <pre><code> &gt; ([x]@.)&#39;(⍉([x (=)⊗ xᶥ] 𝔸120))
 Vec 3 [2, 0, 1]</code></pre>
+<p>This uses <code>@.</code> (index-of), showing off an array style that
+is not typical in functional programming.</p>
 <h2 id="shoelace-theorem"><a
 href="https://artofproblemsolving.com/wiki/index.php/Shoelace_Theorem">Shoelace
 Theorem</a></h2>

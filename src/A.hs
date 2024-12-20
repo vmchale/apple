@@ -205,7 +205,6 @@ instance Pretty Builtin where
     pretty Or         = "∨"
     pretty N          = "¬"
     pretty Ices       = "⩪"
-    pretty Eye        = "👁️"
     pretty Sr         = ">>"
     pretty Sl         = "<<"
     pretty C          = "∴"
@@ -220,7 +219,7 @@ instance Pretty Builtin where
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
              | Max | Min | Neg | Sqrt | T | Di
-             | Flat | AddDim | Ices | Filt | Eye
+             | Flat | AddDim | Ices | Filt
              | IRange | Ix'd | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]

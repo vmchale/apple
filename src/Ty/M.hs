@@ -10,7 +10,7 @@ import           GHC.Generics        (Generic)
 import           Prettyprinter       (Pretty (..), squotes, (<+>))
 import           Sh
 
-data RE = MR (E (T ())) (T ()) | Unflat (E (T ())) (T ()) | UT (E (T ())) (T ()) | IS (Sh ()) | ES (Sh ()) deriving (Generic)
+data RE = MR (E (T ())) (T ()) | Unflat (E (T ())) (T ()) | UT (E (T ())) (T ()) | IS (Sh ()) deriving (Generic)
 
 instance NFData RE where
 
@@ -19,7 +19,6 @@ instance Pretty RE where
     pretty (Unflat e t) = "Error in expression" <+> squotes (pretty e) <+> "of type" <+> squotes (pretty t) <> ": arrays of functions are not supported."
     pretty (UT e t)     = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "tuples of arrays of tuples are not supported"
     pretty (IS s)       = "𝔯 requires statically known dimensions; inferred shape" <+> squotes (pretty s)
-    pretty (ES s)       = "👁️ requires statically known dimensions; inferred shape" <+> squotes (pretty s)
 
 check = cM
 
@@ -28,7 +27,6 @@ cM e | Just t <- mrT (eAnn e) = Just (MR e t)
 cM e | Just t <- flT (eAnn e) = Just (Unflat e t)
 cM e | Just t <- ata (eAnn e) = Just (UT e t)
 cM (Builtin (Arrow _ (Arrow _ (Arr sh _))) R) | dynSh sh = Just (IS sh)
-cM (Builtin (Arr sh _) Eye) | dynSh sh = Just (ES sh)
 cM (Let _ (_, e) e') = cM e <|> cM e'
 cM (LLet _ (_, e) e') = cM e <|> cM e'
 cM (Def _ _ e') = cM e' -- FIXME hm

@@ -108,7 +108,6 @@ import Sh
     -- weier { TokSym $$ Weier }
     ice { TokSym $$ Ice }
     para { TokSym $$ Para }
-    eye { TokSym $$ L.Eye }
 
     folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
@@ -355,7 +354,6 @@ E :: { E AlexPosn }
   | flat { Builtin $1 Flat }
   | addd { Builtin $1 AddDim }
   | not { Builtin $1 N }
-  | eye { Builtin $1 A.Eye }
   | sks { Builtin $1 S } | skk { Builtin $1 K }
 
 {

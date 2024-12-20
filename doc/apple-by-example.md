@@ -633,10 +633,6 @@ is equivalent to
 𝔯 0 1 :: Arr (12 × 12) float
 ```
 
-### Identity Matrix
-
-👁️ can be used in place of `eye.` for the identity matrix.
-
 ### Identifiers
 
 Identifiers may be latin or greek characters, or a single character from the
@@ -835,6 +831,9 @@ Putting it all together to get the inverse:
  > ([x]@.)'(⍉([x (=)⊗ xᶥ] 𝔸120))
 Vec 3 [2, 0, 1]
 ```
+
+This uses `@.` (index-of), showing off an array style that is not typical in
+functional programming.
 
 ## [Shoelace Theorem](https://artofproblemsolving.com/wiki/index.php/Shoelace_Theorem)
 

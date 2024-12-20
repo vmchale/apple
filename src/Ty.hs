@@ -819,9 +819,6 @@ tyB l VMul = do
     a <- fc "a" l IsNum
     i <- fti "i"; j <- fti "j"
     pure (Arr (i `Cons` j `Cons` Nil) a ~> vV j a ~> vV i a, mempty)
-tyB l Eye = do
-    a <- fc "a" l IsNum; i <- fti "i"
-    pure (Arr (i `Cons` i `Cons` Nil) a, mempty)
 tyB _ Sin = pure (F ~> F, mempty)
 tyB _ Cos = pure (F ~> F, mempty)
 tyB _ Tan = pure (F ~> F, mempty)

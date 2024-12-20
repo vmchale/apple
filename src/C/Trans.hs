@@ -510,15 +510,6 @@ fill (EApp _ (Builtin _ ScanS) op) (AD t lA _ _ _ (Just n)) [NA acc, AI (AD aP l
     (:[]) <$> afort tXs 0 ILt n (\i -> wt (AElem t 1 lA (Tmp i) xSz) acc:wX i:ss)
 
 rfill :: E (T ()) -> AD -> [RA] -> CM [CS ()]
-rfill (Builtin (Arr sh F) Eye) (AD t lA _ _ _ _) [] | Just [i,_] <- staIx sh = do
-    td <- nI
-    loop <- afors sh 0 ILt (KI i) $ \k -> [WrF () (At td [KI i, 1] [Tmp k, Tmp k] lA 8) (ConstF 1)]
-    -- could use cache instruction here?
-    pure [td=:DP t 2, loop]
-rfill (Builtin (Arr sh I) Eye) (AD t lA _ _ _ _) [] | Just [i,_] <- staIx sh = do
-    td <- nI
-    loop <- afors sh 0 ILt (KI i) $ \k -> [Wr () (At td [KI i, 1] [Tmp k, Tmp k] lA 8) (KI 1)]
-    pure [td=:DP t 2, loop]
 rfill (Builtin _ Init) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) n sz]
 rfill (Builtin _ InitM) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
@@ -631,10 +622,6 @@ aeval (EApp (Arr oSh ty) (Builtin _ Di) e) t a | Just sz <- nSz ty = do
     ll <- afor oSh 0 ILt (Tmp n) $ \i ->
             [mv (Raw td 0 (Just a)) (At xRd [Tmp n, 1] [Tmp i, Tmp i] lX) sz, td+=KI sz]
     pure $ plX$n=:ev (eAnn e) (xR,lX):vSz oSh t a (Tmp n) sz++[xRd=:DP xR 2, td=:DP t 1, ll]
-aeval e@(Builtin (Arr sh _) Eye) t a | Just ixs <- staIx sh = do
-    let n=product ixs
-    contents <- rfill e (AD t (Just a) Nothing Nothing Nothing (Just$KI n)) []
-    pure (Ma () sh a t 2 (KI n) 8:diml (t, Just a) (KI<$>ixs)++contents)
 aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t a | Just (ty,sz) <- rr (eAnn x) = do
     xR <- rtemp ty
     plX <- eeval x xR
