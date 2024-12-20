@@ -1390,10 +1390,10 @@ aeval (EApp (Arr sh tX) (EApp _ (EApp _ (Builtin _ Ug) g) seed) n) t a
     plSeed <- eeval seed acc
     ss <- writeRF g [acc] (ΠT tts)
     let [next,x]=tts
-    loop <- afor sh 0 ILt (Tmp nR) $ \i -> ss++[wt (AElem t 1 (Just a) (Tmp i) sze) x]
+    loop <- afor sh 0 ILt (Tmp nR) $ \i -> ss++[mvrt acc next, wt (AElem t 1 (Just a) (Tmp i) sze) x]
     pure $ plN (vSz sh t a (Tmp nR) sz++plSeed++[loop])
   where
-    mvrt (IT i0) (IT i1) = i0=:Tmp i1
+    mvrt (IT i0) (IT i1) = i0=:Tmp i1; mvrt (FT x0) (FT x1) = MX () x0 (FTmp x1); mvrt (PT b0) (PT b1) = MB () b0 (Is b1)
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <- eAnn seed, Just sz <- rSz tyS = do
     acc <- rtemp tyS
     plS <- eeval seed acc
