@@ -230,7 +230,7 @@ writeCM eϵ = do
              | isI (eAnn e) = do {t <- nI; (++[CRet =: Tmp t]) <$> eval e t} -- avoid clash when calling functions
              | isB (eAnn e) = do {t <- nBT; (++[MB () CBRet (Is t)]) <$> peval e t}
              | isArr (eAnn e) = do {(i,l,r) <- maa e; pure$r++[CRet =: Tmp i]++case l of {Just m -> [RA () m]; Nothing -> []}}
-             | P [F,F] <- eAnn e = do {t <- nI; (_,_,_,p) <- πe e t; pure$sac t 16:p++[MX () FRet0 (FAt (Raw t 0 Nothing 8)), MX () FRet1 (FAt (Raw t 1 Nothing 8)), popc 16]}
+             | P [F,F] <- eAnn e = do {f0 <- nF; f1 <- nF; (++[MX () FRet0 (FTmp f0), MX () FRet1 (FTmp f1)]) <$> πr e [TF f0, TF f1]}
              | ty@P{} <- eAnn e, b64 <- bT ty, (n,0) <- b64 `quotRem` 8 = do {t <- nI; a <- nextArr CRet; (_,_,ls,pl) <- πe e t; pure (sac t b64:pl++MaΠ () a CRet b64:CpyE () (TupM CRet (Just a)) (TupM t Nothing) (KI n) 8:popc b64:RA () a:(RA ()<$>ls))}
 
 rtemp :: T a -> CM RT
@@ -494,7 +494,7 @@ data AD = AD { eigen :: !Temp, alabel :: !(Maybe AL), eit :: Maybe (T ())
 
 data RA = AI !AD | NA !RT
 
-fill :: E (T ()) -> AD -> [RA] -> CM ([CS ()])
+fill :: E (T ()) -> AD -> [RA] -> CM [CS ()]
 fill (EApp _ (Builtin _ Zip) op) (AD t lA (Just (Arr sh _)) _ _ _) [AI (AD aPX lX _ _ _ (Just n)), AI (AD aPY lY _ _ _ _)]
     | (Arrow tX (Arrow tY tC)) <- eAnn op, nind tX && nind tY && nind tC = do
     step <- aS op [(tX, ixarg aPX 1 lX), (tY, ixarg aPY 1 lY)] tC (ixarg t 1 lA)
@@ -1661,7 +1661,7 @@ eval (EApp _ e@(Builtin _ TAt{}) Var{}) t = do
     pure [t=:unIA aa]
 eval (EApp _ (Builtin _ (TAt i)) e) t = do
     (ss, as) <- plΠ e
-    pure (ss++[t=:(unIA (as!!(i-1)))])
+    pure (ss++[t=:unIA (as!!(i-1))])
 eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX <- nSz tD = do
     pR <- nBT
     szR <- nI; i <- nI; done <- nI
@@ -1965,7 +1965,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     pure(getT st n!!(i-1))
 
 -- update IPA/how we pass args! (multiple returns...)
-πr :: E (T ()) -> TStore -> CM ([CS ()])
+πr :: E (T ()) -> TStore -> CM [CS ()]
 πr (Tup _ es) ts = do
     concat <$> zipWithM (\e a ->
             case (eAnn e, a) of
