@@ -289,6 +289,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fneg { ann :: a, dDest, dSrc :: freg }
                          | Scvtf { ann :: a, dDest :: freg, rSrc :: reg }
                          | Fcvtms { ann :: a, rDest :: reg, dSrc :: freg }
+                         | Fcvtps { ann :: a, rDest :: reg, dSrc :: freg }
                          | Fcvtas { ann :: a, rDest :: reg, dSrc :: freg }
                          | Stp { ann :: a, rSrc1, rSrc2 :: reg, aDest :: Addr reg }
                          | Ldp { ann :: a, rDest1, rDest2 :: reg, aSrc :: Addr reg }
@@ -373,6 +374,7 @@ mapR f (StrD l d a)          = StrD l d (f <$> a)
 mapR _ (Fdiv l d0 d1 d2)     = Fdiv l d0 d1 d2
 mapR f (Scvtf l d r)         = Scvtf l d (f r)
 mapR f (Fcvtms l r d)        = Fcvtms l (f r) d
+mapR f (Fcvtps l r d)        = Fcvtps l (f r) d
 mapR f (Fcvtas l r d)        = Fcvtas l (f r) d
 mapR f (MovK l r u s)        = MovK l (f r) u s
 mapR f (MovZ l r u s)        = MovZ l (f r) u s
@@ -507,6 +509,7 @@ fR _ Fsqrt2{}              = mempty
 fR _ Fabs2{}               = mempty
 fR f (Scvtf _ _ r)         = f r
 fR f (Fcvtms _ r _)        = f r
+fR f (Fcvtps _ r _)        = f r
 fR f (Fcvtas _ r _)        = f r
 fR f (Stp _ r0 r1 a)       = f r0<>f r1<>f@<>a
 fR f (Ldp _ r0 r1 a)       = f r0<>f r1<>f@<>a
@@ -580,6 +583,7 @@ mapFR _ (Sdiv l r0 r1 r2)     = Sdiv l r0 r1 r2
 mapFR f (StrD l d a)          = StrD l (f d) a
 mapFR f (Scvtf l d r)         = Scvtf l (f d) r
 mapFR f (Fcvtms l r d)        = Fcvtms l r (f d)
+mapFR f (Fcvtps l r d)        = Fcvtps l r (f d)
 mapFR f (Fcvtas l r d)        = Fcvtas l r (f d)
 mapFR _ (MovK l r u s)        = MovK l r u s
 mapFR _ (MovZ l r u s)        = MovZ l r u s
@@ -740,6 +744,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 RetL{}                  = "ret"
         p4 (Scvtf _ d r)           = "scvtf" <+> ar2 d r
         p4 (Fcvtms _ r d)          = "fcvtms" <+> ar2 r d
+        p4 (Fcvtps _ r d)          = "fcvtps" <+> ar2 r d
         p4 (Fcvtas _ r d)          = "fcvtas" <+> ar2 r d
         p4 (MovK _ r i s)          = "movk" <+> ri r i <> "," <+> "LSL" <+> "#" <> pretty s
         p4 (MovZ _ r i s)          = "movz" <+> ri r i <> "," <+> "LSL" <+> "#" <> pretty s

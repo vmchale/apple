@@ -225,6 +225,7 @@ asm ix st (SubsRC _ r0 r1 u:asms) = [0b11110001, fromIntegral (u `shiftR` 6), (0
 asm ix st (Bfc _ r l w:asms) | l >= 0 && l <= 64 && w >= 1 && w <= 63 = [0b10110011, 0x1 `shiftL` 6 .|. ((-l) `mod` 64), (w-1) `shiftL` 2 .|. 0b11, 0b111 `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (Scvtf _ d r:asms) = [0b10011110, 0b01100010, be r `shiftR` 3, lb r d]:asm (ix+4) st asms
 asm ix st (Fcvtms _ r d:asms) = [0x9e, 0b01110000, be d `shiftR` 3, lb d r]:asm (ix+4) st asms
+asm ix st (Fcvtps _ r d:asms) = [0x9e, 0b01101000, be d `shiftR` 3, lb d r]:asm (ix+4) st asms
 asm ix st (Fcvtas _ r d:asms) = [0x9e, 0b01100100, be d `shiftR` 3, lb d r]:asm (ix+4) st asms
 asm ix st (Fsqrt _ d0 d1:asms) = [0b00011110, 0b01100001, 0x3 `shiftL` 6 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fneg _ d0 d1:asms) = [0b00011110, 0b01100001, 0x1 `shiftL` 6 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
