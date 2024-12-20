@@ -225,7 +225,7 @@ optA (EApp l0 (EApp _ (Builtin _ (Rank [(0,_)])) f) (EApp _ (EApp _ (EApp _ ho@(
         let vx=Var dom0 x; vy=Var dom1 y
             opTy = dom0 ~> dom1 ~> cod
             op' = Lam opTy x (λ y (f'$$(opA$$vx$$vy)))
-        pure (EApp l0 (ho' { eAnn = undefined } $$ op' $$ xs') ys')
+        pure (EApp l0 (ho' { eAnn = eAnn op'~>eAnn xs'~>eAnn ys'~>l0 } $$ op' $$ xs') ys')
 optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) f) xs)) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) g) ys))
     | Arrow dom0 _ <- eAnn f
     , Arrow dom1 _ <- eAnn g
@@ -237,7 +237,7 @@ optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) (EApp _ (E
         let vx = Var dom0 x; vy = Var dom1 y
             opTy = dom0 ~> dom1 ~> cod
             op' = Lam opTy x (λ y (opA $$ (f'$$vx) $$ (g'$$vy)))
-        pure (EApp l0 (ho' { eAnn = undefined } $$ op' $$ xs') ys')
+        pure (ho' { eAnn = eAnn op'~>eAnn xs~>eAnn ys'~>l0 } $$ op' $$ xs' $$ ys')
 optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) xs) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) g) ys))
     | Arrow dom _ <- eAnn g
     , Arrow xT (Arrow _ cod) <- eAnn op = do
@@ -248,7 +248,7 @@ optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) xs) (EApp 
         let vx = Var xT x; vy = Var dom y
             opTy = xT ~> dom ~> cod
             op' = Lam opTy x (λ y (opA $$ vx $$ (g'$$vy)))
-        pure (EApp l0 ((ho' { eAnn = undefined }) $$ op' $$ xs') ys')
+        pure (ho' { eAnn = eAnn op'~>eAnn xs'~>eAnn ys'~>l0 } $$ op' $$ xs' $$ ys')
 optA (EApp l0 (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) (EApp _ (EApp _ (Builtin _ (Rank [(0,_)])) f) xs)) ys)
     | Arrow dom _ <- eAnn f
     , Arrow _ (Arrow yT _) <- eAnn op = do
