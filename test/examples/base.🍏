@@ -1,1 +1,1 @@
-λa.λn. {log ← (%)⑂(_.∴ℝ); N ⟜ ⌈(log a n); ug. (λs. (s/.n, s|n)) a N}
+λa.λn. {log ← (%)⑂(_.∴ℝ); N ⟜ ⌊(log a n)+1; ~(ug. (λs. (s/.n, s|n)) a N)}
