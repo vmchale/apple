@@ -118,12 +118,14 @@ uE (IU _ e)       = uE e
 uE (BU _ e)       = uE e
 uE LA{}           = IS.empty
 uE (IRFloor x)    = uFR x
+uE (IRCeil x)     = uFR x
 uE (EAt a)        = uA a
 uE (BAt a)        = uA a
 uE (FRel _ x0 x1) = uFR x0<>uFR x1
 
 uFF :: Exp -> IS.IntSet
 uFF (IRFloor e)    = uF e
+uFF (IRCeil e)     = uF e
 uFF ConstI{}       = IS.empty
 uFF Reg{}          = IS.empty
 uFF (IB _ e0 e1)   = uFF e0<>uFF e1

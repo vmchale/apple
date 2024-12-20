@@ -274,6 +274,7 @@ uE (EAt a)       = uA a
 uE Tmp{}         = IS.empty
 uE (Bin _ e0 e1) = uE e0<>uE e1
 uE (CFloor e0)   = uF e0
+uE (CCeil e0)    = uF e0
 uE (DP _ e)      = uE e
 
 uF :: CFE FTemp x CE -> IS.IntSet

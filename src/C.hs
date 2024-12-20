@@ -92,7 +92,7 @@ bPrec AndB=3; bPrec OrB=2; bPrec XorB=6; bPrec BEq=4
 mPrec IPlus=Just 6;mPrec ITimes=Just 7;mPrec IMinus=Just 6;mPrec IDiv=Nothing;mPrec IRem=Nothing;mPrec IAsl=Nothing; mPrec IMax=Nothing; mPrec IMin=Nothing; mPrec IAsr=Nothing; mPrec (BI p) = Just$bPrec p
 fprec FPlus=Just 6;fprec FMinus=Just 6;fprec FTimes=Just 7; fprec FDiv=Just 7; fprec FExp=Just 8; fprec FMax=Nothing; fprec FMin=Nothing
 
-data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | KI !Int64 | CFloor F1E
+data CE = EAt ArrAcc | Bin IBin CE CE | Tmp Temp | KI !Int64 | CFloor F1E | CCeil F1E
         | LA !Int -- assembler data
         | DP Temp CE -- pointer, rank
 
@@ -107,6 +107,7 @@ instance PS CE where
     ps _ (LA n)         = "A_" <> pretty n
     ps _ (DP t _)       = "DATA" <> parens (pretty t)
     ps _ (CFloor x)     = "⌊" <> pretty x
+    ps _ (CCeil x)      = "⌈" <> pretty x
 
 instance Show CE where show=show.pretty
 
@@ -156,6 +157,7 @@ instance (Pretty x, Pretty e, Pretty t, PS e) => PS (CFE t x e) where
 
 instance (Pretty x, PS e, Pretty t, Pretty e) => Show (CFE t x e) where show=show.pretty
 
+-- TODO: tuples-of-tuples would be easy?
 data TT = TI !Temp | TA !Temp (Maybe AL) | TF !FTemp | TB !BTemp
 type TStore = [TT]
 

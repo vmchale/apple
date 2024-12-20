@@ -30,6 +30,7 @@ mapFA f (AP t e l) = AP t (mapFE f<$>e) l
 
 mapFE :: (FTemp -> FTemp) -> Exp -> Exp
 mapFE f (IRFloor x)      = IRFloor (mapFF f x)
+mapFE f (IRCeil x)       = IRCeil (mapFF f x)
 mapFE f (EAt a)          = EAt (mapFA f a)
 mapFE f (BAt a)          = BAt (mapFA f a)
 mapFE _ e@ConstI{}       = e

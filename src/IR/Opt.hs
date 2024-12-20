@@ -40,6 +40,7 @@ optE (IRel rel e e')         = IRel rel (optE e) (optE e')
 optE (FRel rel fe fe')       = FRel rel (optF fe) (optF fe')
 optE (IU u e)                = IU u (optE e)
 optE (IRFloor fe)            = IRFloor (optF fe)
+optE (IRCeil fe)             = IRCeil (optF fe)
 optE (EAt p)                 = EAt (optP p)
 optE (BAt p)                 = BAt (optP p)
 optE e                       = e
