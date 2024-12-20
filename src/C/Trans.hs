@@ -13,7 +13,6 @@ import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
 import           Data.List                        (find, genericLength, scanl')
-import           Data.Maybe                       (catMaybes)
 import           Data.Tuple.Extra                 (second3)
 import           Data.Word                        (Word64)
 import           GHC.Float                        (castDoubleToWord64)
@@ -235,10 +234,10 @@ writeCM eϵ = do
              | ty@P{} <- eAnn e, b64 <- bT ty, (n,0) <- b64 `quotRem` 8 = do {t <- nI; a <- nextArr CRet; (_,_,ls,pl) <- πe e t; pure (sac t b64:pl++MaΠ () a CRet b64:CpyE () (TupM CRet (Just a)) (TupM t Nothing) (KI n) 8:popc b64:RA () a:(RA ()<$>ls))}
 
 rtemp :: T a -> CM RT
-rtemp F=FT<$>nF; rtemp I=IT<$>nI; rtemp B=PT<$>nBT; rtemp (P ts)=ΠT<$>traverse rtemp ts
+rtemp F=FT<$>nF; rtemp I=IT<$>nI; rtemp B=PT<$>nBT -- ; rtemp (P ts)=ΠT<$>traverse rtemp ts
 
 πts :: E (T ()) -> CM [TT]
-πts e₀ | P tys <- eAnn e₀ = traverse g tys where g I=TI<$>nI; g F=TF<$>nF; g B=TB<$>nBT
+πts e₀ | P tys <- eAnn e₀ = traverse g tys where g I=TI<$>nI; g F=TF<$>nF; g B=TB<$>nBT; g Arr{} = do {t <- nI; a <- nextArr t; pure $ TA t (Just a)}
 
 fc :: FBin -> Maybe (FTemp -> F2Temp -> CS ())
 fc FPlus = Just (\_ x -> MX2 () x (ConstF (0,0))); fc FTimes = Just (\_ x -> MX2 () x (ConstF (1,1)))
@@ -347,6 +346,7 @@ mt :: ArrAcc -> RT -> CS ()
 mt p (FT t) = MX () t (FAt p); mt p (PT t) = MB () t (PAt p)
 mt p (IT t) = t =: EAt p; mt p (ΠT rs) = ATT () (rp<$>rs) p
 
+-- TODO: is this good
 mvts = zipWith mvt where mvt (TI t0) (TI t1) = t0=:Tmp t1; mvt (TF x0) (TF x1) = MX () x0 (FTmp x1); mvt (TB t0) (TB t1) = MB () t0 (Is t1)
 
 wt :: ArrAcc -> RT -> CS ()
@@ -367,7 +367,7 @@ unBA (TB p)=Is p; unBA _=error"internal error."
 
 eeval :: E (T ()) -> RT -> CM [CS ()]
 eeval e (IT t) = eval e t; eeval e (FT t) = feval e t
-eeval e (PT t) = peval e t
+eeval e (PT t) = peval e t; eeval e (ΠT t) = πr e (rp<$>t)
 
 data RI a b = Cell a | Index b
 
@@ -1382,16 +1382,18 @@ aeval (EApp _ (Builtin _ RevE) e) t a | Arr sh ty <- eAnn e, Just rnk <- staRnk 
                                     | otherwise = unsupported
 aeval (EApp (Arr sh tX) (EApp _ (EApp _ (Builtin _ Ug) g) seed) n) t a
     | tyS <- eAnn seed
-    , Just seedSz <- rSz tyS, Just sz <- rSz tX
-    , Arrow _ (P tC) <- eAnn g
-    , szs <- szT tC, psz <- seedSz+sz = do
+    , Just sz <- rSz tX
+    , Arrow _ (P tys@[_, tC1]) <- eAnn g
+    , Just sze <- rSz tC1 = do
     (plN,nR) <- plEV n
-    acc <- rtemp tyS; x <- nI
+    acc <- rtemp tyS; tts <- traverse rtemp tys
     plSeed <- eeval seed acc
-    ss <- writeRF g [acc] (IT x)
-    loop <- afor sh 0 ILt (Tmp nR) $ \i -> undefined
-    -- need to stack allocate smh
-    pure $ plN (vSz sh t a (Tmp nR) sz++plSeed++sac x psz:undefined++[popc psz])
+    ss <- writeRF g [acc] (ΠT tts)
+    let [next,x]=tts
+    loop <- afor sh 0 ILt (Tmp nR) $ \i -> ss++[wt (AElem t 1 (Just a) (Tmp i) sze) x]
+    pure $ plN (vSz sh t a (Tmp nR) sz++plSeed++[loop])
+  where
+    mvrt (IT i0) (IT i1) = i0=:Tmp i1
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <- eAnn seed, Just sz <- rSz tyS = do
     acc <- rtemp tyS
     plS <- eeval seed acc
@@ -1989,8 +1991,9 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
 πr (Tup _ es) ts = do
     concat <$> zipWithM (\e a ->
             case (eAnn e, a) of
-                (I, TI t) -> do {(plX,i) <- plC e; pure (plX [t=:i])}
-                (F, TF x) -> do {(plX,eR) <- plF e; pure (plX [MX () x (FTmp eR)])}) es ts
+                (I, TI t)              -> do {(plX,i) <- plC e; pure (plX [t=:i])}
+                (Arr{}, TA t (Just l)) -> aeval e t l
+                (F, TF x)              -> do {(plX,eR) <- plF e; pure (plX [MX () x (FTmp eR)])}) es ts
 πr (Id _ (Iter f x n)) ts = do
     (plN,nR) <- plC n
     ats <- frts ts
