@@ -706,8 +706,7 @@ aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(A
         :Ma () sh a t 1 (Tmp szR) sz
         :[nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
   where
-    w ty at tt      | isR ty = wt at tt
-    w ty at (IT tt) | isΠ ty = Mv () at (TupM tt Nothing) (bT ty)
+    w ty at tt | nind ty = wt at tt
 aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(Arr sh _) <- eAnn xs, Just sz <- nSz tX = do
     szR <- nI; nR <- nI; b <- nBT
     (plX, (lX, xsR)) <- plA xs
