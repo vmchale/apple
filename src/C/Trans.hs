@@ -285,13 +285,6 @@ writeF e [] (IT r) | isArr (eAnn e) = do {l <- nextArr r; (Just l,)<$>aeval e r 
 writeF e [] (ΠT rs) = (Nothing,)<$>πr e (rp<$>rs)
 writeF e [] r = (Nothing,)<$>eeval e r
 
-m'p :: Maybe (CS (), CS ()) -> [CS ()] -> [CS ()]
-m'p (Just (a,pϵ)) = (++[pϵ]).(a:)
-m'p Nothing       = id
-
-sas :: [Maybe (CS (), CS ())] -> [CS ()] -> [CS ()]
-sas = thread.fmap m'p
-
 aSD :: E (T ()) -> [(T (), ArrAcc, Temp)] -> T () -> ArrAcc -> Temp -> CM [CS ()]
 aSD f as rT rAt td = do
     (args, rArgs) <- unzip <$> traverse (\(t,r,xd) -> second ((:[xd=:(Tmp xd+KI (bT t))]).($undefined)) <$> arg t (\_ -> r)) as
