@@ -135,6 +135,7 @@ instance Pretty Builtin where
     pretty FRange     = "𝒻"
     pretty IRange     = "⍳"
     pretty Floor      = "⌊"
+    pretty Ceil       = "⌈"
     pretty Minus      = "-"
     pretty Max        = "⋉"
     pretty Min        = "⋊"
@@ -223,7 +224,8 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | IRange | Ix'd | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
-             | Fold | FoldS | Foldl | Floor | ItoF
+             | Fold | FoldS | Foldl
+             | Floor | ItoF | Ceil
              | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- infix
              | Conv [(Int, Maybe Int)] | Focus [Int]

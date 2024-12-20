@@ -33,6 +33,7 @@ Additionally the following digraphs are provided by Vim:
 ⋅   .P
 ∴   .:
 ⌊   7<
+⌈   <7
 ¬   NO
 ∧   AN
 ∨   OR

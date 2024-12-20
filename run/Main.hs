@@ -223,7 +223,7 @@ langHelp :: Repl AlexPosn ()
 langHelp = liftIO $ putStr $ concat
     [ lOption "Λ" "scan" "√" "sqrt"
     , lOption "⋉"  "max" "⋊"  "min"
-    , lOption "⍳" "integer range" "⌊" "floor"
+    , lOption "⍳" "integer range" "⌊, ⌈" "floor, ceiling"
     , lOption "e:" "exp" "⨳ {m,n}" "convolve"
     , lOption "\\~" "successive application" "\\`n" "infix"
     , lOption "_." "log" "'" "map"

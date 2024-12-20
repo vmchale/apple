@@ -135,6 +135,7 @@ import Sh
     iota { TokB $$ BuiltinIota }
     ix { TokB $$ BuiltinIi }
     floor { TokB $$ BuiltinFloor }
+    ceil { TokB $$ BuiltinCeil }
     e { TokB $$ BuiltinE }
     i { TokB $$ BuiltinI }
     f { TokB $$ BuiltinF }
@@ -310,7 +311,8 @@ E :: { E AlexPosn }
   | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
   | lsqbracket E rsqbracket { Dfn $1 $2 }
   | frange { Builtin $1 FRange } | iota { Builtin $1 IRange }
-  | floor { Builtin $1 Floor } | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
+  | floor { Builtin $1 Floor } | ceil { Builtin $1 Ceil }
+  | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
   | underscore { Builtin $1 Neg }
   | gen { Builtin $1 Gen }
   | ug { Builtin $1 Ug }
