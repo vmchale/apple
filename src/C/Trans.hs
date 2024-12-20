@@ -325,7 +325,7 @@ writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
 data Arg = IA !Temp | FA !FTemp | AA !Temp !(Maybe AL) | BA !BTemp | ΠArg TStore
-data RT = IT !Temp | FT !FTemp | PT !BTemp | ΠT [RT]
+data RT = IT !Temp | FT !FTemp | PT !BTemp | ΠT [RT] -- this is kinda wack
 
 mt :: ArrAcc -> RT -> CS ()
 mt p (FT t) = MX () t (FAt p); mt p (PT t) = MB () t (PAt p)
@@ -1371,7 +1371,7 @@ aeval (EApp (Arr sh tX) (EApp _ (EApp _ (Builtin _ Ug) g) seed) n) t a
     pure $ plN (vSz sh t a (Tmp nR) sz++plSeed++[loop])
   where
     mvrt (IT i0) (IT i1) = i0=:Tmp i1; mvrt (FT x0) (FT x1) = MX () x0 (FTmp x1); mvrt (PT b0) (PT b1) = MB () b0 (Is b1)
-aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <- eAnn seed, Just sz <- rSz tyS = do
+aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <- eAnn seed, Just sz <- nSz tyS = do
     acc <- rtemp tyS
     plS <- eeval seed acc
     td <- nI
@@ -1379,14 +1379,6 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <-
     ss <- writeRF op [acc] acc
     loop <- arof sh (Tmp nR) $ wt (Raw td 0 (Just a) sz) acc:td+=KI sz:ss
     pure (plN$vSz sh t a (Tmp nR) sz++plS++td=:DP t 1:[loop])
-aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | seedTy <- eAnn seed, isΠR seedTy, Just πsz <- nSz seedTy = do
-    (plN, nE) <- plC n
-    (plS,as) <- plΠ seed
-    td <- nI; as0 <- frts as
-    -- TODO: discards arrays
-    (_, ss) <- writeF op [ΠArg as] (ΠT (tr<$>as0))
-    loop <- arof sh nE $ WrT () (Raw td 0 (Just a) πsz) as:td+=KI πsz:ss++mvts as as0
-    pure (plN$vSz sh t a nE πsz++plS++td=:DP t 1:[loop])
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr xSh tX <- eAnn seed, Just xSz <- nSz tX = do
     (plN, nE) <- plC n
     (seedR, lSeed, plSeed) <- maa seed
@@ -1968,7 +1960,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     (plN,nR) <- plC n
     ats <- frts ts
     plS <- πr x ats
-    -- TODO: array labels are lost here uh-oh
+    -- TODO: array labels would be lost here, is that a problem?
     (_, ss) <- writeF f [ΠArg ats] (ΠT (tr<$>ts))
     i <- nI
     let loop=For () 1 i 0 ILt nR (ss++mvts ats ts)
@@ -1977,6 +1969,12 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     ss <- llet b
     (ss++) <$> πr e ts
 πr (EApp _ (Builtin _ T) e) ts = πr e ts; πr (EApp _ (Builtin _ Flat) e) ts = πr e ts
+πr (Id ty (Aɴ xs ns)) ts | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh, Just sz <- nSz ty = do
+    (plX, (lX, xR)) <- plA xs
+    (plNs, nEs) <- first thread.unzip <$> traverse plC ns
+    xRd <- nI
+    (plB, b) <- off xR lX nEs
+    pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), ATT () ts (Raw xRd b lX sz)])
 πr e _ = error (show e)
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe Int64, [AL], [CS ()])
