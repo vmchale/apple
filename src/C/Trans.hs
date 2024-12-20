@@ -1654,7 +1654,7 @@ eval (EApp _ (Builtin _ T) x) t = eval x t
 eval (EApp _ (Builtin _ Flat) x) t = eval x t
 eval (EApp _ (Builtin _ Floor) x) t = do {(plX,e) <- plD x; pure (plX [t =: CFloor e])}
 eval (EApp _ (Builtin _ Ceil) x) t = do {(plX, e) <- plD x; pure (plX [t =: CCeil e])}
-eval (EApp _ e@(Builtin _ TAt{}) Var{}) t = do {aa <- tat e; pure [t=:unIA aa]}
+eval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do {aa <- tat e; pure [t=:unIA aa]}
 eval (EApp _ (Builtin _ (TAt i)) e) t = do {(ss, as) <- plΠ e; pure (ss++[t=:unIA (as!!(i-1))])}
 eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX <- nSz tD = do
     pR <- nBT
