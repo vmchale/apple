@@ -551,7 +551,7 @@ b → a → b
 
 ### Fork
 
-Haskell's [`on`](https://hackage.haskell.org/package/base-4.21.0.0/docs/Data-Function.html#v:on), Curry's Φ combinator ([rediscovered by Conor Hoekstra](https://dl.acm.org/doi/10.1145/3520306.3534504)).
+Haskell's [`on`](https://hackage.haskell.org/package/base-4.21.0.0/docs/Data-Function.html#v:on), [Curry's Φ combinator](https://dl.acm.org/doi/10.1145/3520306.3534504)):
 
 ```
  > :ty (⑂)
