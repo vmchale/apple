@@ -345,6 +345,8 @@ Theorem</a></li>
 <ul>
 <li><a href="#evaluation" id="toc-evaluation">Evaluation</a></li>
 </ul></li>
+<li><a href="#base-n-representation"
+id="toc-base-n-representation">Base-n representation</a></li>
 <li><a href="#covariance-matrix" id="toc-covariance-matrix">Covariance
 Matrix</a></li>
 <li><a href="#array" id="toc-array">Array</a>
@@ -915,6 +917,8 @@ eschew pointful definitions.</p>
 <h2 id="polynomials">Polynomials</h2>
 <h3 id="evaluation">Evaluation</h3>
 <pre><code>λp.λx. ~p⋅gen. 1 (*x) (𝓉p)</code></pre>
+<h2 id="base-n-representation">Base-n representation</h2>
+<pre><code>λa.λn. {log ← λb.λx. _.x%_.b;N ⟜ ⌊(log (ℝn) (ℝa))+1;~(ug. (λs. (s/.n, s|n)) a N)}</code></pre>
 <h2 id="covariance-matrix">Covariance Matrix</h2>
 <p>Given a <span class="math inline">\(K \times N\)</span> matrix of
 <span class="math inline">\(N\)</span> obervations on <span

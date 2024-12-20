@@ -858,6 +858,12 @@ Note the array style: `⊖`, ` (zip), and fold are enough to eschew pointful def
 λp.λx. ~p⋅gen. 1 (*x) (𝓉p)
 ```
 
+## Base-n representation
+
+```
+λa.λn. {log ← λb.λx. _.x%_.b;N ⟜ ⌊(log (ℝn) (ℝa))+1;~(ug. (λs. (s/.n, s|n)) a N)}
+```
+
 ## Covariance Matrix
 
 Given a $K \times N$ matrix of $N$ obervations on $K$ variables, we can compute
