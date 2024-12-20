@@ -2,23 +2,6 @@
 - [ ] serialize (save on disk) REPL states
 - [ ] documentation generated from types
 - [ ] idioms... deforestation
-- [x] `.🍎` file extension (`.🍏`)
-  - [x] ⍳ (apl iota)
-  - [x] ⩪ for filter
-  - [x] § is fun I love typographers
-  - [ ] ℘
-    - [ ] span/break?
-  - [½] ⊲ ⊳ ⪫ ⪪
-  - [ ]〔〖【
-  - [ ] ⫛ for J's oblique
-  - [x] ⸎
-  - [ ] ‰
-  - [ ] https://en.wikipedia.org/wiki/Guillemet#Encoding
-  - [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
-  - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
-  - [ ] https://www.compart.com/en/unicode/block/U+2A00
-  - [ ] https://www.compart.com/en/unicode/block/U+2440
-  - [x] dfns like k, APL (J)
 - [ ] mapMaybe hm
 - [ ] numpy einstein summation
   - [ ] https://ajcr.net/Basic-guide-to-einsum/
@@ -43,13 +26,21 @@
 - [ ] generalize "diagonal"?
 - [ ] fold-along-diagonal for poly mult. https://code.jsoftware.com/wiki/Vocabulary/slashdot
 ## Syntax
-- [ ] · for dot product?
 - [ ] https://en.wiktionary.org/wiki/Appendix:APL
-- [x] `Mᵢⱼ` should parse as `Arr (i `Cons` j `Cons` Nil)` maybe? (subscript
-  unicode block)
-- [x] more laconic syntax for type signatures (no Arr... Cons) (`Vec`) (`M` for matrix)
-- [x] `zipWith` builtin (2-ary)
-  - [x] rename ` because it's only used as `2 1 anyway
+### Unicode
+- [ ] ℘
+  - [ ] span/break?
+- [½] ⊲ ⊳ ⪫ ⪪
+- [ ]〔〖【
+- [ ] ⫛ for J's oblique
+- [ ] ‰
+- [ ] https://en.wikipedia.org/wiki/Guillemet#Encoding
+- [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
+- [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
+- [ ] https://www.compart.com/en/unicode/block/U+2A00
+- [ ] https://www.compart.com/en/unicode/block/U+2440
+- [x] dfns like k, APL (J)
+- [ ] https://en.wikipedia.org/wiki/Hwair
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
 - [ ] https://en.wikipedia.org/wiki/Arabic_script_in_Unicode#Punctuation_and_ornaments
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
@@ -78,6 +69,27 @@ T16 = T13.dim[0]
 - [ ] Use `Word64` for sets of registers
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+```
+λa.λn. {log ← (%)⑂(_.∴ℝ); N ⟜ ⌊(log a n)+1; ~(ug. (λs. (s/.n, s|n)) a N)}
+```
+has universally quantified return type, should be existential!
+```
+ > :enc'irange 0 10 1
+Vec 11 [ 87960950128712
+       , 131941424177260
+```
+```
+ > (#f⊳)'⟨⟨#f,#f⟩,⟨#t,#f⟩,⟨#t,#t⟩,⟨#f,#t⟩⟩
+Arr (4×3) [ [#f, #f, #f]
+          , [#t, #f, #f]
+          , [#t, #t, #f]
+          , [#f, #t, #f] ]
+ > (#f⊲)'⟨⟨#f,#f⟩,⟨#t,#f⟩,⟨#t,#t⟩,⟨#f,#t⟩⟩
+Arr arepl: src/Hs/A.hs:35:15-34: Non-exhaustive patterns in \case
+
+HasCallStack backtrace:
+  bracket, called at libraries/haskeline/System/Console/Haskeline/InputT.hs:157:33 in haskeline-0.8.2.1-c961:System.Console.Haskeline.InputT
+```
 - [ ]
 ```
  > irange 10 0 _1
@@ -145,16 +157,15 @@ o → o → o
 - [ ] https://mathworld.wolfram.com/MotzkinNumber.html
 - [ ] perceptual hash
   - [ ] median lol (indexing?)
-- [ ] Pascal's triangle
 - [ ] FFT
 - [ ] generating functions
-- [x] continued fractions
 - [ ] `+//. y` in J... maybe `/.` takes `∀n. (Arr (n `Cons` Nil)) -> ...`
 - [ ] https://www.labri.fr/perso/nrougier/from-python-to-numpy/
 - [ ] neural net!
 - [ ] think: inner/outer product, wedge products (?)
   - [ ] permutations/indices (determinant...)
-  - [ ] discrete cosine transformation (gen2.)
+  - [x] discrete cosine transformation (gen2.) 
+    - [ ] outer-ix idiom?
 - [ ] https://en.wikipedia.org/wiki/Arithmetic–geometric_mean#Complete_elliptic_integral_K(sinα)
 - [ ] https://github.com/justin2004/image-processing#image-processing-with-apl
 - [ ] http://shvbsle.in/computers-are-fast-but-you-dont-know-it-p1/
@@ -202,7 +213,6 @@ o → o → o
   - [ ] https://github.com/eliot-tron/curvcomputenn/blob/89410f64030e8b07434c30f7752b163df6e97f28/mnist_networks.py#L5
     - [ ] torch's Linear, Conv2d, Affine, ReLU, MaxPool2d
 - [ ] multivariate adaptive regression spline
-- [ ] https://github.com/rougier/scientific-visualization-book
 - [ ] https://www.2dcurves.com/derived/caustic.html
   - [ ] https://mathworld.wolfram.com/Hippopede.html
 - [ ] https://en.wikipedia.org/wiki/Mahalanobis_distance
@@ -212,13 +222,14 @@ o → o → o
   - [ ] https://en.wikipedia.org/wiki/Rule_30
 - [ ] https://www.bathsheba.com/math/gyroid/
 - [x] https://oeis.org/A000081
-- [ ] https://code.jsoftware.com/wiki/Essays
+- [ ] https://oeis.org/A227503
 - [ ] https://en.wikipedia.org/wiki/Chebyshev_polynomials
 - [ ] https://cran.r-project.org/web/packages/glmm/index.html
 - [ ] https://www.jsoftware.com/papers/50/
   - [ ] APL "index-of" dyad: array of indices where item in right appears in
     left
 - [ ] https://aplwiki.com/wiki/FinnAPL_idiom_library
+- [ ] https://code.jsoftware.com/wiki/User:John_Randall/FourierTransformAndPolynomialMultiplication
 - [ ] https://rosettacode.org/wiki/Cyclotomic_polynomial#Haskell
   - [ ] synthetic division alone would be good...
 ```haskell
@@ -229,6 +240,10 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
     go (i, h:t) = Just (h, (i-1, zipWith (+) (map (h *) ker) t))
     ker = negate <$> p2 ++ repeat 0
 ```
+# Visual/Art
+- [ ] https://github.com/rougier/scientific-visualization-book
+  - [ ] https://github.com/rougier/scientific-visualization-book/blob/master/code/scales-projections/polar-patterns.py
+- [ ] https://lodev.org/cgtutor/xortexture.html
 # Project Euler
 - [ ] https://projecteuler.net/problem=30
 # Rosetta Code
