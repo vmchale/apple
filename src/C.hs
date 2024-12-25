@@ -206,7 +206,7 @@ data CS a = For { lann :: a, tck :: CE, ixVar :: Temp, eLow :: CE, loopCond :: I
           | Cmov { lann :: a, scond :: PE, tdest :: Temp, src :: CE }
           | Fcmov { lann :: a, scond :: PE, fdest :: FTemp, fsrc :: F1E }
           -- TODO: Fcneg?
-          | Cset { lann :: a, scond :: PE, bdest :: BTemp }
+          | Cset { lann :: a, scond :: PE, bdest :: BTemp } | CsetI { lann :: a, scond :: PE, idest :: Temp }
           | SZ { lann :: a, szDest, arr :: Temp, rank :: CE, mLabel :: Maybe AL }
           | PlProd { lann :: a, nDest :: Temp, pdims :: [CE] }
           | Rnd { lann :: a, rndDest :: Temp }
@@ -264,6 +264,7 @@ pL f (Pop l e)             = "pop" <+> pretty e <> f l
 pL f (Cmov l p t e)        = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace <> f l
 pL f (Fcmov l p t e)       = "if" <+> parens (pretty p) <+> lbrace <#> indent 4 (pretty t <+> "=" <+> pretty e) <#> rbrace <> f l
 pL f (Cset l p t)          = pretty t <+> "=" <+> pretty p <> f l
+pL f (CsetI l p t)         = pretty t <+> "=" <+> pretty p <> f l
 pL f (SZ l td t _ _)       = pretty td <+> "=" <+> "SIZE" <> parens (pretty t) <> f l
 pL f (PlProd l t ts)       = pretty t <+> "=" <+> "PRODUCT" <> tupled (pretty<$>ts) <> f l
 pL f (Rnd l t)             = pretty t <+> "=" <+> "(rnd)" <> f l

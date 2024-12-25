@@ -175,6 +175,7 @@ cToIRM (If _ p s0 s1) = do
 cToIRM (C.Cmov _ p t e) = pure [IR.Cmov (irp p) (ctemp t) (irE e)]
 cToIRM (C.Fcmov _ p t e) = pure [IR.Fcmov (irp p) (fx t) (irX e)]
 cToIRM (C.Cset _ p t) = pure [IR.Cset (cbtemp t) (irp p)]
+cToIRM (C.CsetI _ p t) = pure [IR.Cset (ctemp t) (irp p)]
 cToIRM (SZ _ td t rnk l) = do
     i <- nextI
     foldMapM cToIRM

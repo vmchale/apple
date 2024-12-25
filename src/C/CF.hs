@@ -320,6 +320,7 @@ uses (Fcmov _ e0 _ e1)     = uB e0<>uF e1
 uses (WrF _ a e)           = uA a <> uF e
 uses (Wr2F _ a e)          = uA a <> uF2 e
 uses (Cset _ e _)          = uB e
+uses (CsetI _ e _)         = uB e
 uses (MT _ _ e)            = uE e
 uses (MB _ _ e)            = uB e
 uses (ATT _ rs a)          = uT@<>rs<>uA a

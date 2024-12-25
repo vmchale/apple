@@ -217,6 +217,7 @@ tokens :-
         "e:"                     { mkB BuiltinE }
         itof                     { mkB BuiltinI }
         ℝ                        { mkB BuiltinI }
+        𝔹                        { mkB BuiltinBb }
         𝓕                        { mkB BuiltinF }
         𝓉                        { mkB BuiltinT }
         "#t"                     { mkB BuiltinTrue }
@@ -461,7 +462,7 @@ instance Pretty Var where
     pretty VarY     = "y"
 
 data Builtin = BuiltinFRange | BuiltinIota | BuiltinIi | BuiltinFloor | BuiltinCeil | BuiltinE
-             | BuiltinI | BuiltinF | BuiltinSqrt | BuiltinPi
+             | BuiltinI | BuiltinF | BuiltinBb | BuiltinSqrt | BuiltinPi
              | BuiltinTrue | BuiltinFalse
              | BuiltinGen | BuiltinUg | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinV | BuiltinInt | BuiltinFloat | BuiltinT
@@ -479,6 +480,7 @@ instance Pretty Builtin where
     pretty BuiltinCeil   = "⌈"
     pretty BuiltinE      = "e:"
     pretty BuiltinI      = "ℝ"
+    pretty BuiltinBb     = "𝔹"
     pretty BuiltinF      = "𝓕"
     pretty BuiltinTrue   = "#t"
     pretty BuiltinFalse  = "#f"

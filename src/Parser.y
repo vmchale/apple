@@ -137,6 +137,7 @@ import Sh
     ceil { TokB $$ BuiltinCeil }
     e { TokB $$ BuiltinE }
     i { TokB $$ BuiltinI }
+    b { TokB $$ BuiltinBb }
     f { TokB $$ BuiltinF }
     t { TokB $$ BuiltinT }
     tt { TokB $$ BuiltinTrue }
@@ -317,10 +318,9 @@ E :: { E AlexPosn }
   | floor { Builtin $1 Floor } | ceil { Builtin $1 Ceil }
   | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
   | underscore { Builtin $1 Neg }
-  | gen { Builtin $1 Gen }
-  | ug { Builtin $1 Ug }
+  | gen { Builtin $1 Gen } | ug { Builtin $1 Ug }
   | colon { Builtin $1 Size }
-  | i { Builtin $1 ItoF }
+  | i { Builtin $1 ItoF } | b { Builtin $1 Bit }
   | t { Builtin $1 Dim }
   | E folds E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldS) $1) $3) $4 }
   | E foldl E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Foldl) $1) $3) $4 }
