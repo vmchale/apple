@@ -80,7 +80,6 @@ isArr Arr{}=True; isArr _=False
 isIF I=True; isIF F=True; isIF _=False
 isR B=True; isR t=isIF t
 nind I=True; nind F=True; nind P{}=True; nind B{}=True; nind _=False
-isΠR (P ts)=all isR ts; isΠR _=False
 isΠ P{}=True; isΠ _=False
 
 rel :: Builtin -> Maybe IRel
