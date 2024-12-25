@@ -858,6 +858,18 @@ Note the array style: `⊖`, ` (zip), and fold are enough to eschew pointful def
 λp.λx. ~p⋅gen. 1 (*x) (𝓉p)
 ```
 
+### [Ruffini's Rule](https://en.wikipedia.org/wiki/Synthetic_division#Regular_synthetic_division)
+
+To compute
+
+$\displaystyle \frac{p(x)}{x-a}$
+
+for $p$ a polynomial:
+
+```
+λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 p)
+```
+
 ## Base-n representation
 
 ```
