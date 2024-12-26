@@ -49,6 +49,14 @@ mFop Op.FMax   = Just Fmax
 mFop Op.FMin   = Just Fmin
 mFop _         = Nothing
 
+mf2 Op.FPlus  = Just Fadd2; mf2 Op.FMinus = Just Fsub2
+mf2 Op.FTimes = Just Fmul2; mf2 Op.FDiv   = Just Fdiv2
+mf2 Op.FMax   = Just Fmax2; mf2 Op.FMin   = Just Fmin2
+mf2 _         = Nothing
+
+mf2U Op.FSqrt = Just Fsqrt2; mf2U Op.FAbs = Just Fabs2
+mf2U Op.FNeg = Just Fneg2; mf2U _ = Nothing
+
 frel :: Op.FRel -> Cond
 frel Op.FGeq = Geq
 frel Op.FLeq = Leq
@@ -398,9 +406,6 @@ f2eval (IR.FB Op.FMinus e0 (IR.FB Op.FTimes e1 e2)) t = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1; (plE2,x2) <- plF2 e2
     let va=f2absReg t
     pure$plE0$plE1$plE2 [MovQQ () va x0, Fmls () va x1 x2]
-f2eval (IR.FB Op.FPlus e0 e1) t = do
-    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1 [Fadd2 () (f2absReg t) x0 x1]
 f2eval (IR.FB Op.FMinus (IR.KF (0,0)) e1) t = do
     (plE1,x1) <- plF2 e1
     pure$plE1 [Fneg2 () (f2absReg t) x1]
@@ -410,30 +415,12 @@ f2eval (IR.FB Op.FTimes (IR.KF (-1,-1)) e1) t = do
 f2eval (IR.FB Op.FTimes e0 (IR.KF (-1,-1))) t = do
     (plE,x) <- plF2 e0
     pure$plE [Fneg2 () (f2absReg t) x]
-f2eval (IR.FB Op.FMinus e0 e1) t = do
+f2eval (IR.FB op e0 e1) t | Just vx <- mf2 op = do
     (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1 [Fsub2 () (f2absReg t) x0 x1]
-f2eval (IR.FB Op.FTimes e0 e1) t = do
-    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1 [Fmul2 () (f2absReg t) x0 x1]
-f2eval (IR.FB Op.FDiv e0 e1) t = do
-    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1 [Fdiv2 () (f2absReg t) x0 x1]
-f2eval (IR.FB Op.FMax e0 e1) t = do
-    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1 [Fmax2 () (f2absReg t) x0 x1]
-f2eval (IR.FB Op.FMin e0 e1) t = do
-    (plE0,x0) <- plF2 e0; (plE1,x1) <- plF2 e1
-    pure$plE0$plE1 [Fmin2 () (f2absReg t) x0 x1]
-f2eval (IR.FU Op.FSqrt e) t = do
+    pure$plE0$plE1 [vx () (f2absReg t) x0 x1]
+f2eval (IR.FU u e) t | Just vu <- mf2U u = do
     (plE,x) <- plF2 e
-    pure$plE[Fsqrt2 () (f2absReg t) x]
-f2eval (IR.FU Op.FNeg e) t = do
-    (plE,x) <- plF2 e
-    pure$plE[Fneg2 () (f2absReg t) x]
-f2eval (IR.FU Op.FAbs e) t = do
-    (plE,x) <- plF2 e
-    pure $ plE [Fabs2 () (f2absReg t) x]
+    pure$plE[vu () (f2absReg t) x]
 f2eval (IR.KF (0,0)) t =
     let q=f2absReg t
     in pure [ZeroS () q]
