@@ -385,8 +385,7 @@ offByDim dims = do
 off :: Temp -> Maybe AL -> [CE] -> CM ([CS ()], CE)
 off _ _ [i] = pure ([], i)
 off xR lX ixs = do {s <- nI; b <- nI; pure (b=:0 : s=:1 : init (concat [[b+=(Tmp s*n), s=:(Tmp s*EAt (ADim xR (KI i) lX))] | (n,i) <- zip ixϵ [0..]]), Tmp b) }
-  where
-    ixϵ=reverse ixs
+  where ixϵ=reverse ixs
 
 data Cell a b = Fixed -- set by the larger procedure
               | Bound b -- to be iterated over
@@ -1314,15 +1313,14 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t a
                ] ++ ss ++ [wZ di, di+=1]
     (dtxs,dxss) <- plDim (xRnk-xERnk) (xR,lX)
     (dtys,dyss) <- plDim (yRnk-yERnk) (yR,lY)
-    pure (plX$plY$
-         dxss++dyss
+    pure (plX$plY$dxss++dyss
         ++PlProd () nX (Tmp<$>dtxs):PlProd () nY (Tmp<$>dtys)
-        :Ma () oSh a t (KI oRnk) (Tmp nX*Tmp nY) szZ
-        :diml (t, Just a) (Tmp<$>(dtxs++dtys))
+        :Ma () oSh a t (KI oRnk) (Tmp nX*Tmp nY) szZ:diml (t, Just a) (Tmp<$>(dtxs++dtys))
         ++plSlopX++plSlopY
-        ++slopXd=:DP slopX (KI xERnk):slopYd=:DP slopY (KI yERnk)
-        :[xd=:DP xR (KI xRnk), yd=:DP yR (KI yRnk), di=:0, For () 1 i 0 ILt (Tmp nX) [For () 1 j 0 ILt (Tmp nY) loop]]
-        ++[popSlopX,popSlopY])
+          ++[ slopXd=:DP slopX (KI xERnk), slopYd=:DP slopY (KI yERnk)
+            , xd=:DP xR (KI xRnk), yd=:DP yR (KI yRnk)
+            , di=:0, For () 1 i 0 ILt (Tmp nX) [For () 1 j 0 ILt (Tmp nY) loop]
+            , popSlopX, popSlopY])
   where
     tXs=eAnn xs; tYs=eAnn ys
 aeval (EApp oTy@(Arr sh _) g@(EApp _ (Builtin _ Succ) op) xs) t a | Arrow tX (Arrow _ tZ) <- eAnn op, Just zSz <- nSz tZ, nind tX = do
@@ -1374,8 +1372,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr x
     let xRnkE=Tmp rnkX; rnkE=Tmp rnk; nXe=Tmp nX
         l1=ss++[cpy (AElem y xRnkE lY 0) (AElem x xRnkE (Just lX) 0) nXe xSz, cpy (AElem t rnkE (Just a) 0) (AElem y xRnkE lY 0) nXe xSz]
     loop <- afor oSh 1 ILt nE $ \k -> cpy (AElem x xRnkE (Just lX) 0) (AElem y xRnkE lY 0) (Tmp nX) xSz:ss++[cpy (AElem t rnkE (Just a) (Tmp k*nXe)) (AElem y xRnkE lY 0) nXe xSz]
-    pure $
-        plN $ plSeed
+    pure $plN$plSeed
         ++rnkX=:eRnk xSh (seedR,lSeed):SZ () nX seedR xRnkE lSeed:rnk=:(xRnkE+1)
         :Ma () oSh a t rnkE (nXe*nE) xSz:Wr () (ADim t 0 (Just a)) nE:CpyD () (ADim t 1 (Just a)) (ADim seedR 0 lSeed) xRnkE
         :Ma () xSh lX x xRnkE nXe xSz:CpyD () (ADim x 0 (Just lX)) (ADim seedR 0 lSeed) xRnkE:cpy (AElem x xRnkE (Just lX) 0) (AElem seedR xRnkE lSeed 0) nXe xSz
@@ -1556,8 +1553,8 @@ eval (EApp _ (Builtin _ Bit) (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1)) t
     (plC0,c0e) <- plC c0; (plC1,c1e) <- plC c1
     pure $ plC0 $ plC1 [CsetI () (IRel cmp c0e c1e) t]
 eval (EApp _ (Builtin _ Bit) b) t = do
-    (plB,bE) <- plP b
-    pure $ plB [CsetI () bE t]
+    (plB,eB) <- plP b
+    pure $ plB [CsetI () eB t]
 eval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     pure $ plE0 $ plE1 [Rnd () t, t =: (Bin IRem (Tmp t) (e1e-e0e+1) + e0e)]
