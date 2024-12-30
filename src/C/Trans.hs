@@ -1398,7 +1398,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     (tdims, dims) <- unzip <$> zipWithM (\dt (i,d) -> do {odim <- nI; pure (odim, odim =: (Bin Op.IDiv (Tmp dt-fromIntegral i) (maybe 1 fromIntegral d)+1))}) dts as
     (tb,bs) <- unzip <$> zipWithM (\dt i -> do {b <- nI; pure (b, b =: (Tmp dt-fromIntegral(i-1)))}) dts (fst<$>as)
     io <- nIs tdims; iw <- nIs is
-    let slopSz=product isi; slopRnk=length isi; slopE=fromIntegral (slopSz*fromIntegral oSz+(slopRnk+1)*8)
+    let slopSz=product isi; slopRnk=length isi; slopE=fromIntegral (slopSz*fromIntegral xSz+(slopRnk+1)*8)
         rnk=KI oRnk
     z <- rtemp tC; o <- rtemp tX
     (_, ss) <- writeF f [AA slopP Nothing] z
