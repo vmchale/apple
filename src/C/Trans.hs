@@ -1405,7 +1405,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     let _:strides = sts; sss=init plS
     extrWindow <- aall1 iw is $ \j ->
                             [ mt (At xRd (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX xSz) o
-                            , wt (AElem slopP (KI$fromIntegral slopRnk) Nothing (Tmp j) oSz) o
+                            , wt (AElem slopP (KI$fromIntegral slopRnk) Nothing (Tmp j) xSz) o
                             ]
     loop <- aall io ds (Tmp<$>tb) $ \k -> extrWindow++ss++[wt (AElem t rnk (Just a) (Tmp k) oSz) z]
     pure (plX$
