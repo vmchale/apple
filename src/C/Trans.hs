@@ -1404,12 +1404,12 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     (sts, plS) <- offByDim (reverse dts)
     let _:strides = sts; sss=init plS
     extrWindow <- aall1 iw is $ \j ->
-                            [mt (At xRd (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX xSz) o, wt (AElem slopP (KI$fromIntegral slopRnk) Nothing (Tmp j) oSz) o]
+                            [ mt (At xRd (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX xSz) o
+                            , wt (AElem slopP (KI$fromIntegral slopRnk) Nothing (Tmp j) oSz) o
+                            ]
     loop <- aall io ds (Tmp<$>tb) $ \k -> extrWindow++ss++[wt (AElem t rnk (Just a) (Tmp k) oSz) z]
     pure (plX$
-        plDs
-        ++dims
-        ++sss
+        plDs++dims++sss
         ++PlProd () szR (Tmp<$>tdims):Ma () oSh a t rnk (Tmp szR) oSz:diml (t, Just a) (Tmp<$>tdims)
         ++sac slopP slopE:Wr () (ARnk slopP Nothing) (KI$fromIntegral slopRnk):diml (slopP, Nothing) is
         ++xRd=:DP xR (KI xRnk):bs++loop
