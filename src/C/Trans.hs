@@ -92,11 +92,10 @@ mAA _             = Nothing
 bT :: Integral b => T a -> b
 bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT B=1; bT Arr{}=8
 
-rSz, nSz :: Integral b => T a -> Maybe b
+rSz, nSz :: T a -> Maybe Int64
 rSz F=Just 8; rSz I=Just 8; rSz B=Just 1; rSz _=Nothing
 nSz F=Just 8; nSz I=Just 8; nSz B=Just 1; nSz (P ts)=sum<$>traverse nSz ts; nSz _=Nothing
 
-aB :: Integral b => T a -> Maybe b
 aB (Arr (_ `Cons` Nil) t) = nSz t; aB _ = Nothing
 aRr (Arr (_ `Cons` Nil) t) = rr t; aRr _ = Nothing
 aN (Arr _ t) = nt t; aN _=Nothing
@@ -104,7 +103,7 @@ aN (Arr _ t) = nt t; aN _=Nothing
 nt :: T a -> Maybe (T a)
 nt I=Just I; nt F=Just F; nt B=Just B; nt t@P{} = Just t; nt _=Nothing
 
-rr :: Integral b => T a -> Maybe (T a, b)
+rr :: T a -> Maybe (T a, Int64)
 rr I=Just (I,8); rr F=Just (F,8); rr B=Just (B,1); rr _=Nothing
 
 szT = scanl' (\o ty -> o+bT ty::Int64) 0
