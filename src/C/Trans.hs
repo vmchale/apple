@@ -1395,22 +1395,22 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     let _:strides = sts; sss=init plS
     (tdims, dims) <- unzip <$> zipWithM (\dt (i,d) -> do {odim <- nI; pure (odim, odim =: (Bin Op.IDiv (Tmp dt-fromIntegral i) (maybe 1 fromIntegral d)+1))}) dts as
     (tb,bs) <- unzip <$> zipWithM (\dt i -> do {b <- nI; pure (b, b =: (Tmp dt-fromIntegral(i-1)))}) dts (fst<$>as)
+    m <- mdn oSh t a oRnk tdims xSz
     io <- nIs tdims; iw <- nIs is
-    let slopSz=product isi; slopRnk=length isi; slopE=fromIntegral (slopSz*fromIntegral xSz+(slopRnk+1)*8)
+    let slopSz=fromIntegral$product isi; slopRnk=genericLength isi; slopB=slopSz*xSz+(slopRnk+1)*8
         rnk=KI oRnk
     z <- rtemp tC; o <- rtemp tX
     (_, ss) <- writeF f [AA slopP Nothing] z
     extrWindow <- aall1 iw is $ \j ->
-                            [ mt (At xRd (Tmp<$>strides) (zipWith (\jϵ iϵ -> Tmp jϵ+Tmp iϵ) iw io) lX xSz) o
-                            , wt (AElem slopP (KI$fromIntegral slopRnk) Nothing (Tmp j) xSz) o
+                            [ mt (At xRd (Tmp<$>strides) (zipWith (+) (Tmp<$>iw) (Tmp<$>io)) lX xSz) o
+                            , wt (AElem slopP (KI slopRnk) Nothing (Tmp j) xSz) o
                             ]
     loop <- aall io ds (Tmp<$>tb) $ \k -> extrWindow++ss++[wt (AElem t rnk (Just a) (Tmp k) oSz) z]
-    m <- mdn oSh t a oRnk tdims xSz
-    pure (plX$plDs++dims++sss++m
-        ++sac slopP slopE:Wr () (ARnk slopP Nothing) (KI$fromIntegral slopRnk):diml (slopP, Nothing) is
-        ++xRd=:DP xR (KI xRnk):bs++loop
-        ++[popc slopE])
-    where (isi,dsi)=unzip as; is=fromIntegral<$>isi; ds=maybe 1 fromIntegral<$>dsi
+    pure (plX$plDs++dims++sss
+        ++sac slopP slopB:Wr () (ARnk slopP Nothing) (KI slopRnk):diml (slopP, Nothing) is
+        ++m++xRd=:DP xR (KI xRnk):bs++loop
+        ++[popc slopB])
+  where (isi,dsi)=unzip as; is=fromIntegral<$>isi; ds=maybe 1 fromIntegral<$>dsi
 aeval e _ _ = error (show e)
 
 plR :: E (T ()) -> CM ([CS ()] -> [CS ()], RT)
