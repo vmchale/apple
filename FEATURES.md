@@ -11,7 +11,7 @@
 - [x] convolve
 ## Add Features
 - [x] outer product
-- [½] reverse
+- [x] reverse
 - [ ] `reshape`
 - [½] random
 - [x] at/index of
@@ -30,4 +30,4 @@
 # Register Allocation
 - [x] Finish graph-based allocator
   - [x] analyze clobbers in `call`s
-  - [?] spill
+  - [x] spill
