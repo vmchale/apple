@@ -1417,6 +1417,39 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
         ++m++xRd=:DP xR (KI xRnk):bs++loop
         ++[popc slopB])
   where (isi,dsi)=unzip as; is=fromIntegral<$>isi; ds=maybe 1 fromIntegral<$>dsi
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
+    | Just (_, (tC, cRnk)) <- mAA (eAnn f)
+    , Just (tX, xRnk) <- tRnk (eAnn x)
+    , Just oRnk <- staRnk oSh
+    , Just zSz <- nSz tC, Just xSz <- nSz tX = do
+    xRd <- nI; td <- nI; nO <- nI; nZ <- nI; slopP <- nI
+    (plX, (lX, xR)) <- plA x
+    (dts, plDs) <- plDim xRnk (xR, lX)
+    (tdims, dims) <- unzip <$> zipWithM (\dt (i,d) -> do {odim <- nI; pure (odim, odim =: (Bin Op.IDiv (Tmp dt-fromIntegral i) (maybe 1 fromIntegral d)+1))}) dts as
+    (sts, plS) <- offByDim (reverse dts)
+    let _:strides = sts; sss=init plS
+    (tb,bs) <- unzip <$> zipWithM (\dt i -> do {b <- nI; pure (b, b =: (Tmp dt-fromIntegral(i-1)))}) dts (fst<$>as)
+    io <- nIs tdims; iw <- nIs is
+    let slopSz=fromIntegral$product isi; slopRnk=genericLength isi; slopRnkE=KI slopRnk; slopB=slopSz*xSz+(1+slopRnk)*8; rnk=KI oRnk; nE=Tmp nZ
+    o <- rtemp tX
+    (z0, lZ0, ss0) <- writeA f [AA slopP Nothing]
+    (z, lZ, ss) <- writeA f [AA slopP Nothing]
+    (dots, plOds) <- plDim cRnk (z0, lZ0)
+    extrWindow <- aall1 iw is $ \j ->
+                            [ mt (At xRd (Tmp<$>strides) (zipWith (+) (Tmp<$>iw) (Tmp<$>io)) lX xSz) o
+                            , wt (AElem slopP slopRnkE Nothing (Tmp j) xSz) o
+                            ]
+    loop <- aall io ds (Tmp<$>tb) $ \k -> extrWindow++ss++[cpy (AElem t rnk (Just a) (Tmp k*Tmp nO)) (AElem z (KI cRnk) lZ 0) nE zSz]
+    pure (plX$
+        plDs++dims++sss
+        ++sac slopP slopB:Wr () (ARnk slopP Nothing) slopRnkE:diml (slopP, Nothing) is
+        ++[ioϵ=:0 | ioϵ <- io]++extrWindow++ss0
+        ++plOds
+        ++PlProd () nO (Tmp<$>dots)
+        :PlProd () nZ (Tmp<$>nO:tdims):md oSh t a rnk nE (Tmp<$>(tdims++dots)) zSz
+        ++xRd=:DP xR (KI xRnk):td=:DP t rnk:bs++loop
+        ++[popc slopB])
+  where (isi,dsi)=unzip as; is=fromIntegral<$>isi; ds=maybe 1 fromIntegral<$>dsi
 aeval e _ _ = error (show e)
 
 plR :: E (T ()) -> CM ([CS ()] -> [CS ()], RT)
