@@ -111,6 +111,7 @@ tokens :-
         "/"                      { mkSym Fold }
         "/ₒ"                     { mkSym FoldS }
         "/o"                     { mkSym FoldS }
+        "/₊"                     { mkSym FoldSt }
         "/l"                     { mkSym Foldl }
         "/*"                     { mkSym FoldA }
         '                        { mkSym Quot }
@@ -356,7 +357,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | TSig | Cons | Snoc | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | TailM | Init | InitM
          | Geq | Gt | Eq | Neq | Leq | Lt
-         | FoldA | FoldS | Tilde | Cyc | Ditto | A1 | Sub
+         | FoldA | FoldS | FoldSt | Tilde | Cyc | Ditto | A1 | Sub
          | AtDot | Para | Weier | Ice | B | Sharp
          | And | Or | Xor | Not | Sr | Sl | IDiv | Inv | Mod
          | Therefore | Fork | Dp
@@ -369,6 +370,7 @@ instance Pretty Sym where
     pretty IDiv         = "/."
     pretty Fold         = "/"
     pretty FoldS        = "/ₒ"
+    pretty FoldSt       = "/₊"
     pretty Foldl        = "/l"
     pretty FoldA        = "/*"
     pretty Pow          = "**"

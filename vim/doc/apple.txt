@@ -43,3 +43,4 @@ Additionally the following digraphs are provided by Vim:
 §   SE
 Λ   L*
 ˙   '.
+₊   +s

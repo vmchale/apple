@@ -111,6 +111,7 @@ import Sh
 
     folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
+    foldst { TokSym $$ L.FoldSt }
     foldl { TokSym $$ L.Foldl }
     foldA { TokSym $$ L.FoldA }
     quot { TokSym $$ Quot }
@@ -323,6 +324,7 @@ E :: { E AlexPosn }
   | i { Builtin $1 ItoF } | b { Builtin $1 Bit }
   | t { Builtin $1 Dim }
   | E folds E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldS) $1) $3) $4 }
+  | E foldst E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldSt) $1) $3) $4 }
   | E foldl E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.Foldl) $1) $3) $4 }
   | E foldA E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 A.FoldA) $1) $3) $4 }
   | E scanS E E { EApp (eAnn $1) (EApp (eAnn $1) (EApp $2 (Builtin $2 ScanS) $1) $3) $4 }
