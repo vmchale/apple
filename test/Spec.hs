@@ -70,7 +70,7 @@ allT = testGroup "jit"
     , testCase "b" $ do { res <- fpVvf "test/examples/b.🍎" [1::Double,2,3] [2::Double,4,6] ; res @?= 2 }
     , testCase "fib" $ do { res <- fpIv "test/examples/fib.🍎" 6; res @?= [1::Int64,1,2,3,5,8,13] }
     , testCase "fib" $ do { res <- fpIv "test/examples/fibarr.🍎" 6; res @?= [1::Int64,1,2,3,5,8] }
-    , testCase "hms" $ do { res <- fpIv "test/examples/hms.🍏" 86399; res @?= [23::Int64,59,59] }
+    , testCase "odo" $ do { (AA 2 [6,3] res) <- fpIa "test/examples/r.🍏" 3; res @?= [0::Int64,0,0,0,1,0,1,0,0,1,1,0,2,0,0,2,1,0] }
     , testCase "oeis (A000081)" $ do { res <- fpIv "math/oeis/A000081.🍏" 12; res @?= [0::Int64,1,1,2,4,9,20,48,115,286,719,1842,4766] }
     , testCase "base" $ do { res <- fpIiv "examples/base.🍏" 15 3; res @?= [1,2,0::Int64] }
     , testCase "7-day sliding average" $ do { res <- fpVv "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
@@ -168,6 +168,7 @@ fpIff fp n x = do {f <- fmap iff.fpn =<< BSL.readFile fp; pure (f n x)}
 fpFf fp x = do {f <- fmap ff.fpn =<< BSL.readFile fp; pure (f x)}
 fpFff fp x y = do {f <- fmap fff.fpn =<< BSL.readFile fp; pure (f x y)}
 fpFfff fp x y z = do {f <- fmap ffff.fpn =<< BSL.readFile fp; pure (f x y z)}
+fpIa fp n = do {f <- fmap ia.fpn =<< BSL.readFile fp; peek (f n)}
 fpIv fp n = do {f <- fmap ia.fpn =<< BSL.readFile fp; asN (f n)}
 fpIiv fp m n = do {f <- fmap iia.fpn =<< BSL.readFile fp; asN (f m n)}
 
