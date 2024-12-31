@@ -504,7 +504,7 @@ fill (EApp _ (Builtin _ Succ) op) (AD t lA (Just (Arr sh _)) _ _ (Just n')) [AI 
     step <- aS op [(tX, \iϵ -> AElem xR 1 lX (Tmp iϵ+1)), (tX, ixarg xR 1 lX)] tZ (ixarg t 1 lA)
     (:[]) <$> afor sh 0 ILt n' (\i -> step (repeat i) i)
 fill (EApp _ (Builtin _ ScanS) op) (AD t lA _ _ _ (Just n)) [NA acc, AI (AD aP l (Just tXs) _ _ _)]
-    | Arrow tX (Arrow tY _) <- eAnn op, Just xSz <- rSz tX, Just ySz <- nSz tY = do
+    | Arrow tX (Arrow tY _) <- eAnn op, Just xSz <- nSz tX, Just ySz <- nSz tY = do
     (x, wX) <- arg tY (iXelem aP 1 l ySz)
     ss <- writeRF op [acc, x] acc
     (:[]) <$> afort tXs 0 ILt n (\i -> wt (AElem t 1 lA (Tmp i) xSz) acc:wX i:ss)
@@ -1893,7 +1893,7 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e = 
     ss <- writeRF op [FT acc, FT x] (FT acc)
     loop <- afor1 xSh 1 ILt (Tmp szR) (\i -> MX () x (FAt (AElem aP 1 l (Tmp i) 8)):ss)
     pure $ plE$szR =: ev tXs (aP,l):MX () acc (FAt (AElem aP 1 l 0 8)):[loop]
-feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, isIF tX = do
+feval (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, nind tX = do
     x <- rtemp tX
     i <- nI
     (plE, (l, eR)) <- plA e

@@ -721,10 +721,8 @@ tyB _ Scan = do
 tyB _ ScanS = do
     a <- ftv "a"; b <- ftv "b"
     i <- fti "i"; sh <- fsh "sh"
-    let opTy = b ~> a ~> b
-        arrTy = Arr (Cons i sh); rarrTy = Arr ((i+:Ix()1) `Cons` sh)
-        -- FIXME: 1+1?
-    pure (opTy ~> b ~> arrTy a ~> rarrTy b, mempty)
+    let rarrTy = Arr ((i+:Ix()1) `Cons` sh)
+    pure ((b~>a~>b) ~> b ~> Arr (i `Cons` sh) a ~> rarrTy b, mempty)
 tyB l (DI n) = tyB l (Conv [(n,Just 1)])
 tyB _ (Conv as) = do
     sh <- fsh "sh"
@@ -784,15 +782,15 @@ tyB _ Fold = do
     let sh1 = (i+:Ix()1) `Cons` sh
     pure ((a ~> a ~> a) ~> Arr sh1 a ~> Arr sh a, mempty)
 tyB _ FoldS = do
-    i <- fti "i"; sh <- fsh "sh"; a <- ftv "a"
-    pure ((a ~> a ~> a) ~> a ~> Arr (i `Cons` sh) a ~> Arr sh a, mempty)
-tyB _ Foldl = do
-    ix <- fti "i"; sh <- fsh "sh"; a <- ftv "a"
-    pure ((a ~> a ~> a) ~> a ~> Arr (ix `Cons` sh) a ~> Arr sh a, mempty)
-tyB _ FoldSt = do
     i <- fti "i"; sh <- fsh "sh"; a <- ftv "a"; b <- ftv "b"
+    pure ((a ~> b ~> b) ~> b ~> Arr (i `Cons` sh) a ~> Arr sh b, mempty)
+tyB _ Foldl = do
+    ix <- fti "i"; sh <- fsh "sh"; a <- ftv "a"; b <- ftv "b"
+    pure ((b ~> a ~> b) ~> b ~> Arr (ix `Cons` sh) a ~> Arr sh b, mempty)
+tyB _ FoldSt = do
+    i <- fti "i"; sh <- fsh "sh"; a <- ftv "a"; s <- ftv "s"
     let sh1 = (i+:Ix()1) `Cons` sh
-    pure ((b ~> a ~> a ~> P [a,b]) ~> b ~> Arr sh1 a ~> Arr sh a, mempty)
+    pure ((s ~> a ~> a ~> P [a,s]) ~> s ~> Arr sh1 a ~> Arr sh a, mempty)
 tyB _ FoldA = do
     sh <- fsh "sh"
     a <- ftv "a"
