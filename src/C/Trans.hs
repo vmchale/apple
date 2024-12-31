@@ -650,6 +650,12 @@ aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Tail) x) t a | Just sz <- aB oTy = do
     (plX, (lX, xR)) <- plA x
     contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
     pure (plX$nR =: (ev (eAnn x) (xR,lX)-1):vSz oSh t a (Tmp nR) sz++contents)
+aeval (EApp (Arr oSh _) (Builtin _ Tail) x) t a | Just (tX, rnk) <- tRnk (eAnn x), Just sz <- nSz tX = do
+    d0 <- nI; n <- nI
+    (plX, (lX, xR)) <- plA x
+    (dtx,ss) <- plDim rnk (xR,lX)
+    let dx0=head dtx; dts=Tmp<$>(d0:tail dtx)
+    pure (plX$ss++d0=:(Tmp dx0-1):PlProd () n dts:md oSh t a (KI rnk) (Tmp n) dts sz++[cpy (AElem t (KI rnk) (Just a) 0) (AElem xR (KI rnk) lX (Tmp dx0)) (Tmp n) sz])
 aeval (EApp oTy@(Arr oSh _) e@(Builtin _ TailM) x) t a | Just sz <- aB oTy = do
     nR <- nI
     (plX, (lX, xR)) <- plA x
