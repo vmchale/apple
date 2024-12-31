@@ -31,3 +31,6 @@
 
 (def fibs (apple/jit ``λN. [x˙0˙1]'{A⟜⟨⟨1,1⟩,⟨1,0::int⟩⟩; gen. A (A%.) N}``))
 (assert (deep= (fibs 6) @[1 1 2 3 5 8]))
+
+(def hms (apple/jit ``λs. (->1)'({: ((λqr.λb. (qr->2|b, qr->2/.b)) Λₒ (0,s) ⟨24,60,60⟩))``))
+(assert (deep= (hms 86399) @[23 59 59]))

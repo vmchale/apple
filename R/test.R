@@ -71,3 +71,6 @@ run(mT6,B,C)[,55]
 covar<-lafile("../math/stats/covar.🍏")
 X <- matrix(rnorm(60),15,4);XT<-t(X)
 cov(X);run(covar,XT)
+
+hms<-jit("λs. (->1)'({: ((λqr.λb. (qr->2|b, qr->2/.b)) Λₒ (0,s) ⟨24,60,60⟩))")
+stopifnot(all(run(hms,86399)==as.integer(c(23,59,59))))
