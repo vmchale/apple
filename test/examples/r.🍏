@@ -1,0 +1,9 @@
+-- enumerate permutations in reduced form
+-- https://dl.acm.org/doi/10.1145/114054.114077
+λn.
+{
+  fact ← [(*)/ₒ 1 (irange 1 x 1)];
+  antibase ← λk.λbs. (->1)'({: ((λqr.λb. {s ⟜ qr->2; (s|b, s/.b)}) Λₒ (0,k) bs));
+    bs ⟜ irange 1 n 1;
+  (λk. ~(antibase k bs))'(irange 0 (fact n-1) 1)
+}
