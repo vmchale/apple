@@ -667,12 +667,12 @@ aeval (Id (Arr oSh _) (Aɴ xs ns)) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just
   where
     k :: Integral a => a
     k=genericLength ns
-aeval (EApp (Arr oSh _) (Builtin _ Init) xs) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
+aeval (EApp (Arr oSh _) (Builtin _ Init) xs) t a | Just (tX, rnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
+    d0 <- nI; n <- nI
     (plX, (lX, xR)) <- plA xs
-    (dts, plDs) <- plDim xRnk (xR, lX)
-    let n=head dts; rnkE=KI xRnk
-    szA <- nI; d1 <- nI
-    pure (plX$plDs++d1=:(Tmp n-1):PlProd () szA (Tmp<$>d1:tail dts):Ma () oSh a t rnkE (Tmp szA) sz:Wr () (ADim t 0 (Just a)) (Tmp d1):CpyD () (ADim t 1 (Just a)) (ADim xR 1 lX) (KI$xRnk-1):[cpy (AElem t rnkE (Just a) 0) (AElem xR rnkE lX 0) (Tmp szA) sz])
+    (dtx, plDs) <- plDim rnk (xR, lX)
+    let dx0=head dtx; dts=Tmp<$>(d0:tail dtx)
+    pure (plX$plDs++d0=:(Tmp dx0-1):PlProd () n dts:md oSh t a (KI rnk) (Tmp n) dts sz++[cpy (AElem t (KI rnk) (Just a) 0) (AElem xR (KI rnk) lX 0) (Tmp n) sz])
                                                  | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Tail) x) t a | Just (tX, rnk) <- tRnk (eAnn x), Just sz <- nSz tX = do
     d0 <- nI; n <- nI
