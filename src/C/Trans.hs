@@ -880,8 +880,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Rank [(cr, Just ixs)])) f) xs) t a
     pure (plX$pinchC$
         [tϵ=:0 | tϵ <- complts]
         ++ds++copyCell
-        ++ss
-        ++doss
+        ++ss++doss
         ++PlProd () ySz (Tmp<$>dots)
         :PlProd () oSz (Tmp<$>(ySz:oDims))
             :md oSh t a oRnk (Tmp oSz) (Tmp<$>(oDims++dots)) cSz
