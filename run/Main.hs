@@ -253,7 +253,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "ug." "unfold" "(i × j)" "dimensions"
     , lOption "gen." "generate" "}:?" "init"
     , lOption "{:?" "tail" "∴" "compose"
-    , lOption "𝔸" "digit literal" "⊂" "scatter"
+    , lOption "𝔸" "digit literal" "𝔹" "convert->bool"
     , lOption "〃" "ditto" "𝐒,𝐊" "combinators"
     , lOption "⑂" "fork" "𝞈,𝟘,𝟙,𝟚" "fancy types"
     ]
