@@ -132,6 +132,8 @@ mI LF i0@IEVar{} i1@Ix{} = Left $ MatchIFailed LF i0 i1
 mI LF i0@Ix{} i1@IEVar{} = Left $ MatchIFailed LF i0 i1
 mI f (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI f i (Ix l (iϵ-j))
+mI f (StaPlus _ (Ix _ iϵ) i) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
+mI f (Ix l iϵ) (StaPlus _ (Ix _ j) i) | iϵ >= j = mI f i (Ix l (iϵ-j))
 mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent, should enter confessional error context
 mI f (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent
 
