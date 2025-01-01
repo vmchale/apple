@@ -835,6 +835,39 @@ Vec 3 [2, 0, 1]
 This uses `@.` (index-of), showing off an array style that is not typical in
 functional programming.
 
+### Reduced Representation
+
+[Hui, Iverson, and McDonnell](https://dl.acm.org/doi/10.1145/114054.114077) give
+the lovely enumeration of permutations in reduced form:
+
+```
+λn.
+{
+  fact ← [(*)/ₒ 1 (irange 1 x 1)];
+  antibase ← λk.λbs. (->1)'({: ((λqr.λb. {s ⟜ qr->2; (s|b, s/.b)}) Λₒ (0,k) bs));
+    bs ⟜ irange 1 n 1;
+  (λk. ~(antibase k bs))'(irange 0 (fact n-1) 1)
+}
+```
+
+```
+ > r 3
+Arr (6×3) [ [0, 0, 0]
+          , [0, 1, 0]
+          , [1, 0, 0]
+          , [1, 1, 0]
+          , [2, 0, 0]
+          , [2, 1, 0] ]
+```
+
+[`antibase`](https://code.jsoftware.com/wiki/Vocabulary/numberco#dyadic) can be
+used to convert seconds to hours-minutes-seconds:
+
+```
+ > {antibase ← λk.λbs. (->1)'({: ((λqr.λb. {s ⟜ qr->2; (s|b, s/.b)}) Λₒ (0,k) bs)); antibase 86399 ⟨24,60,60⟩}
+Vec 3 [23, 59, 59]
+```
+
 ## [Shoelace Theorem](https://artofproblemsolving.com/wiki/index.php/Shoelace_Theorem)
 
 If a polygon has vertices at $x_n$, $y_n$, then its area is given by
