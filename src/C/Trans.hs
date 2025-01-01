@@ -72,13 +72,11 @@ type CM = State CSt
 infix 9 +=
 (+=) t i = t =: (Tmp t+i)
 
-isF, isI, isB, isIF :: T a -> Bool
+isF, isI, isB :: T a -> Bool
 isF F = True; isF _ = False
 isI I = True; isI _ = False
 isB B = True; isB _ = False
 isArr Arr{}=True; isArr _=False
-isIF I=True; isIF F=True; isIF _=False
-isR B=True; isR t=isIF t
 nind I=True; nind F=True; nind P{}=True; nind B{}=True; nind _=False
 isΠ P{}=True; isΠ _=False
 
@@ -475,7 +473,7 @@ llet (n,e') | isArr (eAnn e') = do
 llet (n,e') | isI (eAnn e') = do {eR <- bI n; eval e' eR}
 llet (n,e') | isF (eAnn e') = do {eR <- bD n; feval e' eR}
 llet (n,e') | isB (eAnn e') = do {eR <- bB n; peval e' eR}
-llet (n,e') | (tArgs, tC) <- ur (eAnn e'), all isR tArgs && isR tC = do
+llet (n,e') | (tArgs, tC) <- ur (eAnn e'), all nind (tC:tArgs) = do
     l <- neL
     xs <- traverse rtemp tArgs; y <- rtemp tC
     let rrs=ra<$>xs
@@ -1525,7 +1523,7 @@ peval (EApp _ (EApp _ (Builtin (Arrow I _) op) e0) e1) t | Just iop <- rel op = 
 peval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op = do
     (plE0,e0e) <- plD e0; (plE1, e1e) <- plD e1
     pure $ plE0 $ plE1 [Cset () (FRel fop' e0e e1e) t]
-peval (EApp _ (EApp _ (Builtin (Arrow (Arr _ ty) _) Eq) e0) e1) t | Arr sh _ <- eAnn e0, isR ty =do
+peval (EApp _ (EApp _ (Builtin (Arrow (Arr _ ty) _) Eq) e0) e1) t | Arr sh _ <- eAnn e0, nind ty =do
     (plX0, (lX0, x0R)) <- plA e0; (plX1, (lX1, x1R)) <- plA e1
     rnkR <- nI; szR <- nI
     i <- nI; j <- nI
@@ -1741,7 +1739,7 @@ cond (EApp _ (EApp _ (Builtin (Arrow F _) op) c0) c1) e e1 (FT t) | Just cmp <- 
     eR <- nF; fe <- cfe
     plE <- feval e eR
     pure (plC0 ++ plC1 ++ [MX () t fe] ++ plE ++ [Fcmov () (FRel cmp (FTmp c0R) (FTmp c1R)) t (FTmp eR)])
-cond (EApp _ (EApp _ (Builtin (Arrow F _) o) c0) c1) e0 e1 t | Just f <- frel o, isIF (eAnn e0) = do
+cond (EApp _ (EApp _ (Builtin (Arrow F _) o) c0) c1) e0 e1 t | Just f <- frel o, nind (eAnn e0) = do
     c0R <- nF; c1R <- nF
     plC0 <- feval c0 c0R; plC1 <- feval c1 c1R
     plE0 <- eeval e0 t; plE1 <- eeval e1 t
@@ -1753,12 +1751,12 @@ cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e e1 (FT t) | Just cmp <- 
     eR <- nF; fe <- cfe
     plE <- feval e eR
     pure (plC0 ++ plC1 ([MX () t fe] ++ plE ++ [Fcmov () (IRel cmp (Tmp c0R) c1e) t (FTmp eR)]))
-cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e0 e1 t | Just cmp <- rel op, isIF (eAnn e0) = do
+cond (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) e0 e1 t | Just cmp <- rel op, nind (eAnn e0) = do
     c0R <- nI; c1R <- nI
     plC0 <- eval c0 c0R; plC1 <- eval c1 c1R
     plE0 <- eeval e0 t; plE1 <- eeval e1 t
     pure (plC0 ++ plC1 ++ [If () (IRel cmp (Tmp c0R) (Tmp c1R)) plE0 plE1])
-cond p e0 e1 t | isIF (eAnn e0) = do
+cond p e0 e1 t | nind (eAnn e0) = do
     pR <- nBT
     plPP <- peval p pR; plE0 <- eeval e0 t; plE1 <- eeval e1 t
     pure (plPP ++ [If () (Is pR) plE0 plE1])
@@ -1830,7 +1828,7 @@ feval (Id _ (Aɴ xs ns)) t | Arr sh _ <- eAnn xs, Just rnk <- staRnk sh = do
     (plB, b) <- off xR lX nEs
     pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), MX () t (FAt (Raw xRd b lX 8))])
 feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n, ys])) acc
-    | (Arr ySh tY) <- eAnn ys, Just (tQ, qSz) <- rr tY, isR (eAnn seed) = do
+    | (Arr ySh tY) <- eAnn ys, Just (tQ, qSz) <- rr tY, nind (eAnn seed) = do
     (plN,nE) <- plC n; (plU,x) <- plR seed
     (plYs, (lY, yR)) <- plA ys
     (plY,y) <- plR (Id tQ (Aɴ ys [ILit I 0]))
@@ -1935,7 +1933,7 @@ feval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
 feval (EApp _ (Builtin _ (TAt i)) e) t = do
     (ss, as) <- plΠ e
     pure (ss++[MX () t (unFA (as!!(i-1)))])
-feval (EApp _ (Var _ f) x) t | isR (eAnn x) = do
+feval (EApp _ (Var _ f) x) t | nind (eAnn x) = do
     st <- gets fvars
     let (l, [a], FT r) = getT st f
     plX <- eeval x (art a)
