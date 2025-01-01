@@ -90,19 +90,6 @@ Arr arepl: src/Hs/A.hs:35:15-34: Non-exhaustive patterns in \case
 HasCallStack backtrace:
   bracket, called at libraries/haskeline/System/Console/Haskeline/InputT.hs:157:33 in haskeline-0.8.2.1-c961:System.Console.Haskeline.InputT
 ```
-- [ ]
-```
- > irange 10 0 _1
-Vec 9 [10, 9, 8, 7, 6, 5, 4, 3, 2]
-```
-```
- > ⟨(1.0,2.0,3.0),(3,4,5)⟩˙0
-(1.0, 0.0, 3.0)
- > ⟨(1.0,2.0,3.0,3.0),(6.0,3,4,5)⟩˙0
-(1.0, 2.0, 3.0, 3.0)
- > ⟨(1.0,2.0,3.0,3.0,3),(6.0,3,4,5,4.0)⟩˙0
-zsh: segmentation fault  cabal run arepl
-```
 ```
  > \xs.\rs. [(-y)'x]`{1∘[2],0} xs (rs::Vec 2 float)
 λxs. (λrs. ((λx. (λy. (λx. x - y) ' x)) `{1∘[2],0} xs) rs)
@@ -117,7 +104,6 @@ zsh: segmentation fault  cabal run arepl
  > :ix ⟨1.0,3,4⟩
 zsh: illegal hardware instruction  cabal run arepl
 ```
-- [ ] (rand. 0 1::Arr (2×10) int)
 - [ ] `irange 0 0 0` crashes
 - [x]  `}:? ((<0)#.irange 0 4 1)` segfaults
 - [ ] :cmm \xs. [⟨x->1,x->2⟩]'(xs::Vec n (float, float))
@@ -130,7 +116,6 @@ a → a → a
  > :ty (⋉)
 o → o → o
 ```
-- [ ]  `> (𝔯 _10 10) :: int 26`
 - [ ] `:asm [x(%.)(y::Arr(i`Cons`j`Cons`Nil)float)]` type inference??
 - [ ] `xmm0` and `xmm1` incorrectly marked as clobbered when return value is not
   actually in `xmm0`/`xmm1` or whatever
@@ -140,7 +125,6 @@ o → o → o
 - [ ] `itof (:xs)` - would prefer w/o parens?
 - [x] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
 - [ ] match doesn't check constraints on annotations
-- [ ] check in assembler phase for labels not being duplicate
 ## Type system
 - [ ] diagonal on higher-rank?
 - [x] Check that bindings are not too polymorphic
@@ -182,6 +166,7 @@ o → o → o
 - [ ] FFI https://code.jsoftware.com/wiki/Guides/DLLs/Calling_DLLs
 - [ ] https://code.jsoftware.com/wiki/Essays
   - [ ] https://oeis.org/A006257
+  - [ ] https://code.jsoftware.com/wiki/Essays/Dendrite
 - [ ] J integration:
   - [ ] `viewmat 100 100 $ 1 2 1` `viewmat */~i:5` `viewmat +/~i.10`
 - [ ] https://www.cygnus-software.com/downloads/downloads.htm
@@ -228,7 +213,10 @@ o → o → o
 - [ ] https://www.jsoftware.com/papers/50/
   - [ ] APL "index-of" dyad: array of indices where item in right appears in
     left
-- [ ] https://aplwiki.com/wiki/FinnAPL_idiom_library
+- [ ] https://2π.com/22/approximation/index.html
+  - [ ] https://www.boost.org/doc/libs/1_78_0/libs/math/doc/html/math_toolkit/remez.html
+  - [ ] https://github.com/ARM-software/optimized-routines/blob/4c32619682de9d8632fe039153a3e26a6f095482/math/tools/remez.jl
+- [ ] https://www.skybluetrades.net/blog/category/data-analysis.html
 - [ ] https://code.jsoftware.com/wiki/User:John_Randall/FourierTransformAndPolynomialMultiplication
 - [ ] https://rosettacode.org/wiki/Cyclotomic_polynomial#Haskell
   - [ ] synthetic division alone would be good...
@@ -244,6 +232,7 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [ ] https://github.com/rougier/scientific-visualization-book
   - [ ] https://github.com/rougier/scientific-visualization-book/blob/master/code/scales-projections/polar-patterns.py
 - [ ] https://lodev.org/cgtutor/xortexture.html
+- [ ] https://x.com/yuruyurau/status/1873400073255800891
 # Project Euler
 - [ ] https://projecteuler.net/problem=30
 # Rosetta Code
