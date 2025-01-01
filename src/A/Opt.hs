@@ -170,7 +170,7 @@ optA (EApp l (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) = do
 optA (EApp l (EApp _ (EApp _ (Builtin _ IRange) start) end) incr) = do
     start' <- optA start; end' <- optA end; incr' <- optA incr
     k <- nextU "k" I
-    n <- optA $ (end' `iMinus` start') `iDiv` incr' `iPlus` (ILit I 1)
+    n <- optA $ (end' `iMinus` start') `iDiv` incr' `iPlus` ILit I 1
     pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ start' $$ λ k (v k `iPlus` incr') $$ n
 optA (EApp l0 (EApp l1 ho0@(Builtin _ Fold) op) e) = do
     e' <- optA e; op' <- optA op
