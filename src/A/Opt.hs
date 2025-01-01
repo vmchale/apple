@@ -215,7 +215,7 @@ optA (EApp l0 (EApp _ (Builtin _ Map) f) (EApp _ (EApp _ (Builtin _ Map) g) xs))
         x <- nextU "x" gDom
         let vx=Var gDom x
             fog=λ x (f'$$(g'$$vx))
-        pure (EApp l0 (Builtin undefined Map $$ fog) xs')
+        pure (Builtin (eAnn fog~>eAnn xs'~>l0) Map $$ fog $$ xs')
 optA (EApp l0 (EApp _ (Builtin _ (Rank [(0,_)])) f) (EApp _ (EApp _ (EApp _ ho@(Builtin _ (Rank [(0,_),(0,_)])) op) xs) ys))
     | Arrow _ cod <- eAnn f
     , Arrow dom0 (Arrow dom1 _) <- eAnn op = do
@@ -300,8 +300,8 @@ optA (EApp l (EApp t0 (EApp t1 (Builtin bt b@FoldS) op) seed) arr) = do
         (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) (EApp _ (EApp _ (EApp _ (Builtin _ Gen) gseed0) u0) n)) (EApp _ (EApp _ (EApp _ (Builtin _ Gen) gseed1) u1) _))
             | (Arrow _ (Arrow _ tC)) <- eAnn f -> do
             x0 <- nextU "x₀" u0Ty; x1 <- nextU "x₁" u1Ty
-            z <- nextU "z" undefined; y₀ <- nextU "y₀" u0Ty; y₁ <- nextU "y₁" u1Ty
-            let opZ=Lam (tC~>u0Ty~>u1Ty~>tC) z (λ y₀ (λ y₁ (opA $$ Var tC z $$ EApp tC (f $$ Var u0Ty y₀) (Var u1Ty y₁))))
+            z <- nextU "z" tC; y₀ <- nextU "y₀" u0Ty; y₁ <- nextU "y₁" u1Ty
+            let opZ=λ z (λ y₀ (λ y₁ (opA $$ Var tC z $$ EApp tC (f $$ v y₀) (v y₁))))
             pure $ Id l $ U2 [gseed0, gseed1] [Lam (u0Ty ~> u0Ty) x0 (EApp u0Ty u0 (Var u0Ty x0)), Lam (u1Ty ~> u1Ty) x1 (EApp u1Ty u1 (Var u1Ty x1))] seed' opZ n
           where u0Ty=eAnn gseed0; u1Ty=eAnn gseed1
         (EApp _ (EApp _ (EApp _ (Builtin _ Zip) f) xs) ys)
