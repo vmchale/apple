@@ -167,8 +167,9 @@
       vertical-align: middle;
     }
     /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
     pre > code.sourceCode { white-space: pre; position: relative; }
-    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
     pre > code.sourceCode > span:empty { height: 1.2em; }
     .sourceCode { overflow: visible; }
     code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -179,7 +180,7 @@
     }
     @media print {
     pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
     }
     pre.numberSource code
       { counter-reset: source-line 0; }
@@ -338,12 +339,16 @@ Neural Network</a></li>
 <li><a href="#permutations" id="toc-permutations">Permutations</a>
 <ul>
 <li><a href="#inverse" id="toc-inverse">Inverse</a></li>
+<li><a href="#reduced-representation"
+id="toc-reduced-representation">Reduced Representation</a></li>
 </ul></li>
 <li><a href="#shoelace-theorem" id="toc-shoelace-theorem">Shoelace
 Theorem</a></li>
 <li><a href="#polynomials" id="toc-polynomials">Polynomials</a>
 <ul>
 <li><a href="#evaluation" id="toc-evaluation">Evaluation</a></li>
+<li><a href="#ruffinis-rule" id="toc-ruffinis-rule">Ruffini’s
+Rule</a></li>
 </ul></li>
 <li><a href="#base-n-representation"
 id="toc-base-n-representation">Base-n representation</a></li>
@@ -900,6 +905,29 @@ Vec 3 [0, 2, 1]</code></pre>
 Vec 3 [2, 0, 1]</code></pre>
 <p>This uses <code>@.</code> (index-of), showing off an array style that
 is not typical in functional programming.</p>
+<h3 id="reduced-representation">Reduced Representation</h3>
+<p><a href="https://dl.acm.org/doi/10.1145/114054.114077">Hui, Iverson,
+and McDonnell</a> give the lovely enumeration of permutations in reduced
+form:</p>
+<pre><code>λn.
+{
+  fact ← [(*)/ₒ 1 (irange 1 x 1)];
+  antibase ← λk.λbs. (-&gt;1)&#39;({: ((λqr.λb. {s ⟜ qr-&gt;2; (s|b, s/.b)}) Λₒ (0,k) bs));
+    bs ⟜ irange 1 n 1;
+  (λk. ~(antibase k bs))&#39;(irange 0 (fact n-1) 1)
+}</code></pre>
+<pre><code> &gt; r 3
+Arr (6×3) [ [0, 0, 0]
+          , [0, 1, 0]
+          , [1, 0, 0]
+          , [1, 1, 0]
+          , [2, 0, 0]
+          , [2, 1, 0] ]</code></pre>
+<p><a
+href="https://code.jsoftware.com/wiki/Vocabulary/numberco#dyadic"><code>antibase</code></a>
+can be used to convert seconds to hours-minutes-seconds:</p>
+<pre><code> &gt; {antibase ← λk.λbs. (-&gt;1)&#39;({: ((λqr.λb. {s ⟜ qr-&gt;2; (s|b, s/.b)}) Λₒ (0,k) bs)); antibase 86399 ⟨24,60,60⟩}
+Vec 3 [23, 59, 59]</code></pre>
 <h2 id="shoelace-theorem"><a
 href="https://artofproblemsolving.com/wiki/index.php/Shoelace_Theorem">Shoelace
 Theorem</a></h2>
@@ -917,6 +945,14 @@ eschew pointful definitions.</p>
 <h2 id="polynomials">Polynomials</h2>
 <h3 id="evaluation">Evaluation</h3>
 <pre><code>λp.λx. ~p⋅gen. 1 (*x) (𝓉p)</code></pre>
+<h3 id="ruffinis-rule"><a
+href="https://en.wikipedia.org/wiki/Synthetic_division#Regular_synthetic_division">Ruffini’s
+Rule</a></h3>
+<p>To compute</p>
+<p><span class="math inline">\(\displaystyle
+\frac{p(x)}{x-a}\)</span></p>
+<p>for <span class="math inline">\(p\)</span> a polynomial:</p>
+<pre><code>λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 p)</code></pre>
 <h2 id="base-n-representation">Base-n representation</h2>
 <pre><code>λa.λn. {log ← λb.λx. _.x%_.b;N ⟜ ⌊(log (ℝn) (ℝa))+1;~(ug. (λs. (s/.n, s|n)) a N)}</code></pre>
 <h2 id="covariance-matrix">Covariance Matrix</h2>
