@@ -308,8 +308,8 @@ mguI RF inp (Ix l _) Ix{} = do {m <- nIe l; pure (m, inp)}
 mguI _ _ i0@(Ix l _) i1@Ix{} = throwError $ UI l i0 i1
 mguI _ inp i0@(IEVar _ i) (IEVar _ j) | i == j = pure (i0, inp)
 mguI RF inp (IEVar l _) (IEVar _ _) = do {m <- nIe l; pure (m, inp)}
-mguI RF inp i@IEVar{} j@Ix{} = pure (i, inp)
-mguI RF inp i@Ix{} j@IEVar{} = mguI RF inp j i
+mguI RF inp i@IEVar{} Ix{} = pure (i, inp)
+mguI RF inp Ix{} j@IEVar{} = pure (j, inp)
 mguI _ _ i0@(IEVar l _) i1@IEVar{} = throwError $ UI l i0 i1
 mguI _ inp i0@(IVar _ i) (IVar _ j) | i == j = pure (i0, inp)
 mguI _ inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = throwError $ OI l iix ix
@@ -1020,8 +1020,7 @@ tyE s (EApp l e0 e1) = do
     a <- ft "a" l; b <- ft "b" l
     (e0', s0) <- tyE s e0
     (e1', s1) <- tyE s0 e1
-    let e0Ty = a ~> b
-    s2 <- liftU $ mp (l,e0) LF s1 (eAnn e0'$>l) e0Ty
+    s2 <- liftU $ mp (l,e0) LF s1 (eAnn e0'$>l) (a~>b)
     s3 <- liftU $ mp (l,e1) RF s2 (eAnn e1'$>l) a
     pure (EApp (void b) e0' e1', s3)
 tyE s (Cond l p e0 e1) = do
