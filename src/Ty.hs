@@ -415,7 +415,7 @@ mgSh f l s sh0@Cons{} sh1@(Cat shh shϵ) | (is, Nil) <- unroll sh0, (isϵ, Nil) 
               (_, s0) <- mgSh f l s shh (roll Nil ish)
               (_, s1) <- mgShPrep f l s0 (roll Nil isϵ') shϵ
               pure (sh0, s1)
-mgSh f l s sh1@Cat{} sh0@Cons{} = mgSh f l s sh1 sh0
+mgSh f l s sh0@Cat{} sh1@Cons{} = mgSh f l s sh1 sh0
 mgSh _ l _ sh0@Cons{} sh1 = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0 sh1@Cons{} = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0@Π{} sh1@Cat{} = throwError $ UShD l sh0 sh1
