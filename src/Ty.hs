@@ -321,6 +321,8 @@ mguI f inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguI f i
 mguI f inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguI f inp i (Ix lk (j-k))
                                                   | otherwise = throwError $ UI l i0 i1
 mguI f inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguI f inp i1 i0
+mguI f inp (StaPlus l i@Ix{} j) k@Ix{} = mguI f inp (StaPlus l j i) k
+mguI f inp i@Ix{} (StaPlus l j@Ix{} k) = mguI f inp i (StaPlus l k j)
 mguI f inp (StaPlus l i0 i1) (StaPlus _ j0 j1) = do
     -- FIXME: too stringent
     (k, s) <- mguI f inp i0 j0
