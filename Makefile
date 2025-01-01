@@ -57,6 +57,11 @@ test-pyc: install-py
 	python3 test/py/xor/m.py
 	python3 test/py/py.py
 
+test-r: libapple$(EXT)
+	make -C Rc
+	sudo make -C Rc install
+	make -C R test
+
 clean:
 	make -C pyc clean
 	make -C vscode clean
@@ -76,3 +81,4 @@ tags: $(HS_SRC)
 	ghc-tags --ctags
 	ctags --append=yes --languages=ALEX,HAPPY -R src
 	fd '\.(h|c)$$' pyc Rc janet include c | ctags --append=yes -L -
+	sort $@ -o $@
