@@ -72,6 +72,7 @@ allT = testGroup "jit"
     , testCase "fib" $ do { res <- fpIv "test/examples/fibarr.🍎" 6; res @?= [1::Int64,1,2,3,5,8] }
     , testCase "odo" $ do { (AA 2 [6,3] res) <- fpIa "test/examples/r.🍏" 3; res @?= [0::Int64,0,0,0,1,0,1,0,0,1,1,0,2,0,0,2,1,0] }
     , testCase "oeis (A000081)" $ do { res <- fpIv "math/oeis/A000081.🍏" 12; res @?= [0::Int64,1,1,2,4,9,20,48,115,286,719,1842,4766] }
+    , testCase "part" $ do { res <- fpIv "math/oeis/A000041.🍏" 12; res @?= [1::Int64,1,2,3,5,7,11,15,22,30,42,56,77]}
     , testCase "base" $ do { res <- fpIiv "examples/base.🍏" 15 3; res @?= [1,2,0::Int64] }
     , testCase "7-day sliding average" $ do { res <- fpVv "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }

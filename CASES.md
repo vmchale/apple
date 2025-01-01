@@ -1,12 +1,15 @@
 - [ ] fold-of-seed on scalar?
 - [ ] fold
   - [ ] array
+    - [ ] "cat" "dim-reduce-1" is ((++)/)
   - [ ] Π
 - [ ] zip
   - [ ] A A A
   - [ ] A S A
   - [ ] A S S
   - [ ] S A S
+- [ ] "at"
+  - [ ] array
 - [ ] succ
   - [ ] array
 - [ ] fold-of-zip
@@ -23,7 +26,7 @@
   - [ ] array
 - [ ] scan
   - [ ] array
-  - [ ] Π
+  - [x] Π
 ```
  > \xs.\ys.[(+)`x y]Λ xs
 λxs. (λys. ((λx. (λy. ((+) ` x y))) Λ xs)) : ( IsNum c ) :=> Arr (i + 1 `Cons` sh) (Vec i c) → a → Arr (i + 1 `Cons` sh) (Vec i c)
