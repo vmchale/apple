@@ -986,20 +986,37 @@ Note zipping with `cyc. ⟨2,1::int⟩ 8` to get alternating 2, 1, ... factors.
 
 ## Combinatorics
 
+### Catalan Numbers
+
+The Catalan numbers [satisfy](https://www.whitman.edu/mathematics/cgt_online/book/section03.05.html)
+
+$$C_n=\sum_{i=0}^{n-1}C_iC_{n-i-1}$$
+
+where $C_0=1,C_1=1,C_2=2$.
+
+We can compute them in Apple with:
+
+```
+{ Σ ← λl.λu.λf.(+)/(f'irange l u 1)
+; 𝓕 ⟨1::int,1,2⟩ (λC. {n⟜ 𝓉C; Σ 0 (n-1) (λi. (C˙i*C˙(n-i-1)))})
+}
+```
+
+The use of "strong induction" provides a new take on the problem where Python uses memoization.
+
 ### A000081
 
 The number of unlabeled rooted trees with at most $n$ nodes (this [appears in
 chemistry (counting alkanes)](https://www.emis.de/journals/JIS/cayley.html)).
 
 ```
-λN.
-{ sum ⇐ [(+)/ₒ 0 x]
+{ sum ⇐ [(+)/x]; Σ ⇐ λl.λu.λf. (+)/(f'irange l u 1)
 ; divisors ← λn. (λk. (n|k=0))§⍳ 1 n 1
-; 𝓕 ⟨0,1::int⟩ (λas. {n⟜ :as; sum ((λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))'⍳ 1 (n-1) 1)/.(n-1)}) N
+; 𝓕 𝔸01 (λas. {n⟜ 𝓉as; Σ 1 (n-1) (λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))/.(n-1)})
 }
 ```
 
-The use of "strong induction" provides a new take on the problem [where Python uses memoization and Haskell exploits sharing/laziness](https://oeis.org/A000081).
+Cf. Reinhard Zumkeller's [Haskell solution](https://oeis.org/A000081) by sharing/laziness.
 
 ## Elliptic Fourier Series
 

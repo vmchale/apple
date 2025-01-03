@@ -1,5 +1,4 @@
 -- https://code.jsoftware.com/wiki/Essays/Partitions#The_Number_of_Partitions
-λN.
-{ sum ⇐ [(+)/ₒ 0 x]
-; 𝓕 ⟨1::int,1⟩ (λas. {n⟜ 𝓉as; part ← λm. ?m≥0,.as˙m,.0; sum ((λk. _1^(k+1)*(part (n-(k*(3*k-1)/.2)) + part (n-(k*(3*k+1)/.2))))'irange 1 n 1)}) N
+{ Σ ⇐ λl.λu.λf. (+)/(f'irange l u 1)
+; 𝓕 ⟨1::int,1⟩ (λas. {n⟜ 𝓉as; part ← λm. ?m≥0,.as˙m,.0; Σ 1 n ((λk. _1^(k+1)*(part (n-(k*(3*k-1)/.2)) + part (n-(k*(3*k+1)/.2)))))})
 }

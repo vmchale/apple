@@ -365,6 +365,8 @@ Multiplication</a></li>
 <li><a href="#luhn-check" id="toc-luhn-check">Luhn Check</a></li>
 <li><a href="#combinatorics" id="toc-combinatorics">Combinatorics</a>
 <ul>
+<li><a href="#catalan-numbers" id="toc-catalan-numbers">Catalan
+Numbers</a></li>
 <li><a href="#a000081" id="toc-a000081">A000081</a></li>
 </ul></li>
 <li><a href="#elliptic-fourier-series"
@@ -996,19 +998,29 @@ href="https://en.wikipedia.org/wiki/Luhn_algorithm">Luhn Check</a></h2>
 <p>Note zipping with <code>cyc. ⟨2,1::int⟩ 8</code> to get alternating
 2, 1, … factors.</p>
 <h2 id="combinatorics">Combinatorics</h2>
+<h3 id="catalan-numbers">Catalan Numbers</h3>
+<p>The Catalan numbers <a
+href="https://www.whitman.edu/mathematics/cgt_online/book/section03.05.html">satisfy</a></p>
+<p><span
+class="math display">\[C_n=\sum_{i=0}^{n-1}C_iC_{n-i-1}\]</span></p>
+<p>where <span class="math inline">\(C_0=1,C_1=1,C_2=2\)</span>.</p>
+<p>We can compute this in Apple with:</p>
+<pre><code>{ Σ ← λl.λu.λf.(+)/(f&#39;irange l u 1)
+; 𝓕 ⟨1::int,1,2⟩ (λC. {n⟜ 𝓉C; Σ 0 (n-1) (λi. (C˙i*C˙(n-i-1)))})
+}</code></pre>
+<p>The use of “strong induction” provides a new take on the problem
+where Python uses memoization.</p>
 <h3 id="a000081">A000081</h3>
 <p>The number of unlabeled rooted trees with at most <span
 class="math inline">\(n\)</span> nodes (this <a
 href="https://www.emis.de/journals/JIS/cayley.html">appears in chemistry
 (counting alkanes)</a>).</p>
-<pre><code>λN.
-{ sum ⇐ [(+)/ₒ 0 x]
+<pre><code>{ sum ⇐ [(+)/x]; Σ ⇐ λl.λu.λf. (+)/(f&#39;irange l u 1)
 ; divisors ← λn. (λk. (n|k=0))§⍳ 1 n 1
-; 𝓕 ⟨0,1::int⟩ (λas. {n⟜ :as; sum ((λj.sum ((λd. d*as˙d)&#39;(divisors j))*as˙(n-j))&#39;⍳ 1 (n-1) 1)/.(n-1)}) N
+; 𝓕 𝔸01 (λas. {n⟜ 𝓉as; Σ 1 (n-1) (λj.sum ((λd. d*as˙d)&#39;(divisors j))*as˙(n-j))/.(n-1)})
 }</code></pre>
-<p>The use of “strong induction” provides a new take on the problem <a
-href="https://oeis.org/A000081">where Python uses memoization and
-Haskell exploits sharing/laziness</a>.</p>
+<p>Cf. Reinhard Zumkeller’s <a href="https://oeis.org/A000081">Haskell
+solution</a> by sharing/laziness.</p>
 <h2 id="elliptic-fourier-series">Elliptic Fourier Series</h2>
 <p>From <a
 href="http://www.sci.utah.edu/~gerig/CS7960-S2010/handouts/Kuhl-Giardina-CGIP1982.pdf">Kuhl
