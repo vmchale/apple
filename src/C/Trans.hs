@@ -660,8 +660,8 @@ aeval (Id (Arr oSh _) (Aɴ xs ns)) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just
     (dts, plDs) <- plDim xRnk (xR, lX)
     let ots = drop k dts
         oRnk=KI$xRnk-k
-    (plB, b) <- off xR lX nEs
-    pure (plX$drop k plDs++PlProd () szA (Tmp<$>ots):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:plNs (plB ++ [xRd=:DP xR (KI xRnk), cpy (AElem t oRnk (Just a) 0) (Raw xRd b lX) (Tmp szA) sz]))
+    (plB, b) <- off xR lX nEs -- TODO: might be possible to reuse plDs?
+    pure (plX$drop k plDs++PlProd () szA (Tmp<$>ots):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:plNs (plB ++ [xRd=:DP xR (KI xRnk), cpy (AElem t oRnk (Just a) 0) (Raw xRd (b*Tmp szA) lX) (Tmp szA) sz]))
   where
     k :: Integral a => a
     k=genericLength ns
