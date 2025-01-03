@@ -828,7 +828,7 @@ Putting it all together to get the inverse:
 Vec 3 [2, 0, 1]
 ```
 
-This uses `@.` (index-of), showing off an array style that is not typical in
+This uses `@.` (index-of), showing an array style that is not appreciated in
 functional programming.
 
 ### Reduced Representation
