@@ -23,8 +23,8 @@ stopifnot(all(run(ruffini,as.integer(c(1,2,1)),-1)==as.integer(c(1,1,0))))
 base<-jit("λa.λn. {log ← (%)⑂_.; N ⟜ ⌊((log⑂ℝ) a n)+1; ~(ug. (λs. (s/.n, s|n)) a N)}")
 stopifnot(all(run(base,15,4)==as.integer(c(3,3))))
 
-cat<-jit("[x++(y::Vec n int)]")
-stopifnot(all(run(cat,as.integer(c(1,1)),as.integer(c(0,2,3)))==c(1,1,0,2,3)))
+last7<-jit("λas.}. ([x]\\`7 (as::Vec n int))")
+stopifnot(all(run(last7,seq(0,9))==seq(3,9)))
 
 any1<-jit("(λa. (λbs. (∨)/ₒ #f bs)`{1∘[2]} (a::M bool))")
 stopifnot(all(run(any1,matrix(c(FALSE,FALSE,FALSE,TRUE),2))==c(FALSE,TRUE)))
