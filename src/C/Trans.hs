@@ -314,7 +314,7 @@ rW ty at | nind ty = do
     t <- rtemp ty
     pure (t, (wt.%at) t)
 
-aiA slopD (xd,lX) i n = cpy (Raw slopD 0 Nothing) (Raw xd (i*n) lX) n
+aiA slopD (xd,lX) i n = cpy (Raw slopD 0 Nothing) (Raw xd i lX) n
 aiR (td,l) (yR,lY,yRnk) n sz = [cpy (Raw td 0 l) (AElem yR yRnk lY 0) n sz, td+=(n*KI sz)]
 
 writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
