@@ -677,6 +677,16 @@ In the REPL, one can use `⏱` in place of `:bench`, i.e.
 Vec 6 [6, 2, 1, 5, 5, 3]
 ```
 
+`𝞈` is shorthand for `float`.
+
+```
+ > 𝔯 0 1::𝞈
+0.8404853694114252
+```
+
+`𝟙` is shorthand for `Vec n`, `n` an index variable. `𝟚` is a synonym for
+[`M`](#matrix-dimensions).
+
 # Examples
 
 ## Cross Product
