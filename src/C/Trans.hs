@@ -84,8 +84,7 @@ rel :: Builtin -> Maybe IRel
 rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Just ILeq; rel Gte=Just IGeq; rel _=Nothing
 
 mAA :: T a -> Maybe ((T a, Int64), (T a, Int64))
-mAA (Arrow t0 t1) = (,) <$> tRnk t0 <*> tRnk t1
-mAA _             = Nothing
+mAA (Arrow t0 t1) = (,) <$> tRnk t0 <*> tRnk t1; mAA _ = Nothing
 
 bT :: Integral b => T a -> b
 bT (P ts)=sum (bT<$>ts); bT F=8; bT I=8; bT B=1; bT Arr{}=8
