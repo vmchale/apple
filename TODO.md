@@ -74,7 +74,7 @@ T16 = T13.dim[0]
 ```
 has universally quantified return type, should be existential!
 ```
- > :enc'irange 0 10 1
+ > enc'irange 0 10
 Vec 11 [ 87960950128712
        , 131941424177260
 ```
@@ -104,10 +104,7 @@ HasCallStack backtrace:
  > :ix ⟨1.0,3,4⟩
 zsh: illegal hardware instruction  cabal run arepl
 ```
-- [ ] `irange 0 0 0` crashes
-- [x]  `}:? ((<0)#.irange 0 4 1)` segfaults
 - [ ] :cmm \xs. [⟨x->1,x->2⟩]'(xs::Vec n (float, float))
-- [ ] {. ⟨⟨1,1.0⟩,⟨2,3⟩⟩ type
 - [ ] segfault when `aso` is called pre-register allocation (arm)
 - [ ] Should display constraints
 ```
