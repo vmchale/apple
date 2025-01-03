@@ -1210,7 +1210,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (DI n)) op) xs) t a | Just ((_, 1), (
                 :ss++aiR (td,Just a) (zR,lZ,KI cRnk) (Tmp nC) szO
     pure (plX$
         d1x=:ev tXs (xR,lX)
-        :d1=:(Tmp d1x-(neϵ-1))
+        :d1=:(Tmp d1x-(fromIntegral$n-1))
         :aSlop
         ++slopPd=:DP slopP 1:xRd=:DP xR 1
         :aiA slopPd (xRd,lX) 0 neϵ szX:ss0
