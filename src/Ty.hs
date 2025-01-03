@@ -732,7 +732,7 @@ tyB _ (Conv as) = do
     a <- ftv "a"; b <- ftv "b"
     let nx = Ix () <$> ns
         opTy = Arr (foldr Cons sh nx) a ~> b
-        t = Arrow (Arr (foldr Cons sh (zipWith3 (\iϵ dϵ n -> StaMul () iϵ dϵ+:n) is dix nx)) a) (Arr (foldr Cons Nil is) b)
+        t = Arrow (Arr (foldr Cons sh (zipWith3 (\iϵ dϵ n -> StaMul () iϵ dϵ+:n) is dix nx)) a) (Arr (foldr Cons Nil ((+:Ix()1)<$>is)) b)
     pure (opTy ~> t, mempty)
   where (ns,ds) = unzip as; dix=Ix ().fromMaybe 1<$>ds
 tyB _ (Focus ns) = do
