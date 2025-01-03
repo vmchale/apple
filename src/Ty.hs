@@ -488,6 +488,8 @@ mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguI f 
 mgu _ _ s (IZ _ n0@(Nm _ (U j) _)) t1@(TVar n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu _ _ s t0@(TVar n0) (IZ _ n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
+mgu RF _ s t@Li{} (TVar (Nm _ (U u) _)) = pure (t, uTS u t s)
+mgu RF _ s (TVar (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
 mgu _ _ s Li{} (TVar (Nm _ (U u) _)) = pure (I, uTS u I s)
 mgu _ _ s (TVar (Nm _ (U u) _)) Li{} = pure (I, uTS u I s)
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
@@ -1020,8 +1022,8 @@ tyE s (EApp l e0 e1) = do
     a <- ft "a" l; b <- ft "b" l
     (e0', s0) <- tyE s e0
     (e1', s1) <- tyE s0 e1
-    s2 <- liftU $ mp (l,e0) LF s1 (eAnn e0'$>l) (a~>b)
-    s3 <- liftU $ mp (l,e1) RF s2 (eAnn e1'$>l) a
+    s2 <- liftU $ mp (l,e0) RF s1 (eAnn e0'$>l) (a~>b)
+    s3 <- liftU $ mp (l,e1) LF s2 (eAnn e1'$>l) a
     pure (EApp (void b) e0' e1', s3)
 tyE s (Cond l p e0 e1) = do
     (p',sP) <- tyE s p
