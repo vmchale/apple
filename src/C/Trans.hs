@@ -1675,12 +1675,12 @@ eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX
     ss <- writeRF p [x] (PT pR)
     let loop=While () done INeq 1 (wX i:ss++[If () (Is pR) [t=:Tmp i, done=:1] [], i+=1, Cmov () (IRel IGeq (Tmp i) (Tmp szR)) done 1])
     pure $ plX $ szR=:ev (eAnn xs) (xsR,lX):t=:(-1):done=:0:i=:0:[loop]
-eval (Id _ (Iter f n x)) t = do
+eval (Id _ (Iter f x n)) t = do
     (plN,nR) <- plC n
     plX <- eval x t
     ss <- writeRF f [IT t] (IT t)
     i <- nI
-    let loop=For () 1 i 0 ILt nR ss
+    let loop=For () 1 i 1 ILt nR ss
     pure $ plX++plN [loop]
 eval (Cond _ p e0 e1) t = cond p e0 e1 (IT t)
 eval (Id _ (FoldOfZip zop op [p])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz) <- aRr (eAnn p) = do
@@ -1920,12 +1920,12 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     pure $ plE $ plAcc++szR =: ev tArr (eR,l):[loop]
   where
     tArr=eAnn e
-feval (Id _ (Iter f n x)) t = do
+feval (Id _ (Iter f x n)) t = do
     (plN,nR) <- plC n
     plX <- feval x t
     ss <- writeRF f [FT t] (FT t)
     i <- nI
-    let loop=For () 1 i 0 ILt nR ss
+    let loop=For () 1 i 1 ILt nR ss
     pure $ plX ++ plN [loop]
 feval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
@@ -1984,7 +1984,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     -- TODO: array labels would be lost here, is that a problem?
     (_, ss) <- writeF f [ΠArg ats] (ΠT (tr<$>ts))
     i <- nI
-    let loop=For () 1 i 0 ILt nR (ss++mvts ats ts)
+    let loop=For () 1 i 1 ILt nR (ss++mvts ats ts)
     pure $ plN (plS ++ [loop])
 πr (LLet _ b e) ts = do
     ss <- llet b
