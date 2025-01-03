@@ -36,8 +36,8 @@ assert (ssoftmax(xs)==softmax(xs)).all()
 pf=apple.jit('''
 λn.
   { ni ⟜ ⌊(√(ℝn))
-  ; pns ← ⍳ 2 ni 1
-  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'(⍳ 2 (⌊(√(ℝn))) 1))); pf ⇐ (isPrime #.)
+  ; pns ← ⍳ 2 ni
+  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'(⍳ 2 (⌊(√(ℝn)))))); pf ⇐ (isPrime #.)
   ; pps ⟜  (λk. (n|k)=0) #. pns
   ; ?ni^2=n
     ,.pf (pps⧺((n/.)'}:?pps))
@@ -61,7 +61,7 @@ def unstring(isbn):
 
 isbn13=apple.jit("xs ↦ (xs⋅(}:(𝔸13⊙7)))|10=0")
 
-dec=apple.jit("λn. (⊻)/ₒ n ((n>>)'⍳ 1 63 1)")
+dec=apple.jit("λn. (⊻)/ₒ n ((n>>)'⍳ 1 63)")
 assert dec(8)==15
 
 assert isbn13(unstring("978-0596528126"))
@@ -72,5 +72,5 @@ any_v=apple.jit("λbs. (∨)/ₒ #f bs :: bool")
 assert any_v(np.array([False,False,False,True]))
 assert not(any_v(np.array([False,False,False])))
 
-prime_mask=apple.jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))) 1)))'irange 2 N 1")
+prime_mask=apple.jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))))))'irange 2 N")
 assert (prime_mask(9)==np.array([True,True,False,True,False,True,False,False])).all()

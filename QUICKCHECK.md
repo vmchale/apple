@@ -1,3 +1,4 @@
+- [ ] gray code enc<->dec roundtrip
 - [ ] amgm is between its arguments
 - [ ] [(+)/x%ℝ(:x)]'([x]\`7 (frange 0 9 10)) equal to [(+)/x%ℝ(:x)]\` 7
 - [ ] ~`{1∘[2]}⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩ vs ~'⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩
@@ -34,3 +35,23 @@ sum via cons and then map-sum
 λxs. {x ⟜ ♯'xs; x%.♯xs};
 [x(*)⊗x];
 ```
+
+gen. / iter
+
+# take/drop
+
+```
+λn.λx. (x˙)'⍳ 0 (n-1) 1
+```
+
+also tail/init ^
+
+(windowed id+elem)
+
+# Identity-fill
+
+(\n. [?x=n,.1::int,.0]'(⍳ 0 9 1))'⍳ 0 9
+
+# Identities
+
+n choose k = (n-1) choose (k-1) + (n-1) choose k

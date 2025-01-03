@@ -17,6 +17,7 @@
   * Store functions in REPL
   * Fix bug in parsing curried binary operators
   * Remove `re:` in favor of infix 〃
+  * `irange`, ⍳ always step by 1
 
 # 0.3.0.0
 

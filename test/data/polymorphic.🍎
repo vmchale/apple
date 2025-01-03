@@ -1,5 +1,5 @@
 ⸎
   sum ⇐ [(+)/x];
-  sumI ← sum (⍳ 1 1 10);
+  sumI ← sum (⍳ 1 10);
   sumF ← sum (𝒻 1 10 10);
   sumI + ⌊sumF

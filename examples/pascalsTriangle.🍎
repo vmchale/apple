@@ -1,6 +1,6 @@
 -- https://code.jsoftware.com/wiki/Essays/Pascal's_Triangle
 λN.
 {
-  choose ← λn.λk. {Π ← [(*)/ₒ 1 (irange x y 1)]; (Π (n-k+1) n)/.(Π 1 k)};
-  (irange 0 N 1) [?y>x,.0,.choose x y]⊗ (irange 0 N 1)
+  choose ← λn.λk. {Π ← [(*)/ₒ 1 (irange x y)]; (Π (n-k+1) n)/.(Π 1 k)};
+  (⍳ 0 N) [?y>x,.0,.choose x y]⊗ (⍳ 0 N)
 }

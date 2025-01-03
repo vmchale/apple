@@ -1,2 +1,2 @@
 -- https://en.wikipedia.org/wiki/Gray_code#Converting_to_and_from_Gray_code
-λn. (⊻)/ₒ n ((n>>)'irange 1 63 1)
+λn. (⊻)/ₒ n ((n>>)'irange 1 63)

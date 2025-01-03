@@ -1,2 +1,2 @@
 -- https://code.jsoftware.com/wiki/Essays/Pascal's_Triangle
-λn.λk. {Π ← [(*)/ₒ 1 (irange x y 1)]; (Π (n-k+1) n)/.(Π 1 k)}
+λn.λk. {Π ← [(*)/ₒ 1 (⍳ x y)]; (Π (n-k+1) n)/.(Π 1 k)}

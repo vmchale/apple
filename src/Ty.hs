@@ -671,7 +671,7 @@ tyB _ FRange = do {n <- fti "n"; pure (F ~> F ~> Li n ~> vV n F, mempty)}
 tyB _ Fib = do
     n <- fti "n"; m <- fti "m"; k <- fti "k"; a <- ftv "a"
     pure (vV m a ~> (vV k a ~> a) ~> Li n ~> vV (m+:n) a, mempty)
-tyB _ IRange = do {n <- ftie; pure (I ~> I ~> I ~> vV n I, mempty)}
+tyB _ IRange = do {n <- ftie; pure (I ~> I ~> vV n I, mempty)}
 tyB l Plus = tyNumBinOp l; tyB l Minus = tyNumBinOp l
 tyB l Times = tyNumBinOp l
 tyB l Dot = do
@@ -963,19 +963,19 @@ tyClosed u e = do
     chkE (eAnn eS) $> (eS, nubOrd scs', i)
 
 tyE :: Subst a -> E a -> TyM a (E (T ()), Subst a)
-tyE s (EApp _ (EApp _ (EApp _ (Builtin l IRange) lb) ub) n) = do
-    (lbϵ,s0) <- tyE s lb; (ubϵ,s1) <- tyE s0 ub; (nϵ,s2) <- tyE s1 n
-    let lbTy0=eAnn lbϵ; ubTy0=eAnn ubϵ; nTy0=eAnn nϵ
+tyE s (EApp _ (EApp _ (Builtin l IRange) lb) ub) = do
+    (lbϵ,s0) <- tyE s lb; (ubϵ,s1) <- tyE s0 ub
+    let lbTy0=eAnn lbϵ; ubTy0=eAnn ubϵ
         iLoc sϵ t lϵ = second void$iv sϵ (aT sϵ (t$>eAnn lϵ))
-        (s3,lbTy) = iLoc s2 lbTy0 lb; (s4,ubTy) = iLoc s3 ubTy0 ub; (s5,niTy) = iLoc s4 nTy0 n
-    m <- case (lbTy, ubTy, niTy) of
-        (Li (Ix _ lbi), Li (Ix _ ubi), Li (Ix _ ni)) -> do
-            let m=(ubi-lbi) `quot` ni+1
+        (s3,lbTy) = iLoc s1 lbTy0 lb; (s4,ubTy) = iLoc s3 ubTy0 ub
+    m <- case (lbTy, ubTy) of
+        (Li (Ix _ lbi), Li (Ix _ ubi)) -> do
+            let m=ubi-lbi+1
             when (m<0) $ throwError (NegIx l m)
             pure (Ix () m)
         _ -> ftie
     let arrTy = vV m I
-    pure (EApp arrTy (EApp (nTy0 ~> arrTy) (EApp (ubTy0 ~> nTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> nTy0 ~> arrTy) IRange) lbϵ) ubϵ) nϵ, s5)
+    pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) IRange) lbϵ) ubϵ, s4)
   where iv sϵ (IZ i nm)   = let t=Li i in (iTS nm t sϵ, t)
         iv sϵ t@(TVar nm) = (iTS nm I sϵ, t)
         iv sϵ _           = (sϵ, I)
