@@ -7,16 +7,27 @@
 \maketitle
 
 \begin{abstract}
-  The C compilation model has dominated compilers literature but it opposes
+  The C compilation model has dominated compilers literature but it opposes Single-Intruction, Multiple Data (SIMD). We articulate the assumptions behind the
 \end{abstract}
+
+% array languages are a good candidate
 
 \section{Background}
 
 \subsection{The C Compilation Model}
 
+Kell \cite{kell2017} points out that C implementations, in practice, offer something that
+
+% elegance: compile code/function to assembly
+
 \section{Functions in Theory}
 
+% log is not a "parallel" function b/c conditional... hardware detail?
+
 \section{Compiler Users}
+
+% wrong to expect compiler to optimize code (widespread!), rather, one wants languages/compilers that are amenable to performance.
+% really "no big hammers" theorem, not a terrible fundamental... also nothing says high-level can't be performant!
 
 \subsection{Typing}
 
