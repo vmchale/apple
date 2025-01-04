@@ -1,0 +1,4 @@
+{ rf ←  [(*)/ₒ 1 (⍳ x y)]; fact ← λn. rf 1 n
+; choose ← λn.λk. rf (n-k+1) n/.fact k
+; 𝓕 𝔸1 (λB. {n⟜ 𝓉B; (+)/ₒ 0 ((λk. choose (n-1) k*B˙k)'⍳ 0 n)})
+}
