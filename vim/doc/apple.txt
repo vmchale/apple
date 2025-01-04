@@ -38,3 +38,4 @@ Additionally the following digraphs are provided by Vim:
 ⊙   0.
 §   SE
 Λ   L*
+˙   '.
