@@ -313,7 +313,7 @@ rW ty at | nind ty = do
     t <- rtemp ty
     pure (t, (wt.%at) t)
 
-aiA slopD (xd,lX) i n = cpy (Raw slopD 0 Nothing) (Raw xd i lX) n
+aiA slopD (xd,lX) i = cpy (Raw slopD 0 Nothing) (Raw xd i lX)
 aiR (td,l) (yR,lY,yRnk) n sz = [cpy (Raw td 0 l) (AElem yR yRnk lY 0) n sz, td+=(n*KI sz)]
 
 writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
@@ -1209,7 +1209,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (DI n)) op) xs) t a | Just ((_, 1), (
                 :ss++aiR (td,Just a) (zR,lZ,KI cRnk) (Tmp nC) szO
     pure (plX$
         d1x=:ev tXs (xR,lX)
-        :d1=:(Tmp d1x-(fromIntegral$n-1))
+        :d1=:(Tmp d1x-fromIntegral(n-1))
         :aSlop
         ++slopPd=:DP slopP 1:xRd=:DP xR 1
         :aiA slopPd (xRd,lX) 0 neϵ szX:ss0
