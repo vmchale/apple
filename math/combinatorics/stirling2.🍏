@@ -1,0 +1,5 @@
+λn.λk. {
+  rf ←  [(*)/ₒ 1 (⍳ x y)]; fact ← λn. rf 1 n;
+  choose ← λn.λk. rf (n-k+1) n/.fact k;
+  ((+)/ₒ 0 ((λi. _1^(k-i)*choose k i*i^n)'⍳ 0 k))/.fact k
+}

@@ -150,7 +150,7 @@ allT = testGroup "jit"
     , testCase "cov" $
         let x = AA 2 [2,3] [-2.1,-1,4.3,3,1.1,0.12::Double]
         in do { (AA 2 [2,2] res) <- fpAa "math/stats/covar.🍏" x ; res @?= [11.71,-4.286,-4.286,2.144133::Double] }
-    , testCase "rf" $ do { res <- fpIii "test/examples/risingFactorial.🍎" 5 15 ; res @?= 5068545850368000 }
+    , testCase "stirling2" $ do { res <- fpIii "math/combinatorics/stirling2.🍏" 6 4 ; res @?= 65 }
     ]
 
 (≈) :: (Show a, Ord a, Floating a) => a -> a -> Assertion
