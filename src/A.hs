@@ -57,7 +57,7 @@ data T a = Arr (Sh a) (T a)
 
 instance Show (T a) where show=show.pretty
 
-tl = (\(x,_,_,_) -> T.singleton x, first4 succ)
+tl = LC (\(CT x _ _ _) -> T.singleton x) (\(CT v i e s) -> CT (succ v) i e s)
 
 instance PT (T a) where
     pp F             = pure F
@@ -440,5 +440,3 @@ instance NFData ResVar where
 instance NFData a => NFData (Idiom a) where
 instance NFData a => NFData (E a) where
 instance NFData a => NFData (T a) where
-
-first4 f ~(x,y,z,w) = (f x,y,z,w)

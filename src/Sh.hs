@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Sh (I (..), Sh (..), PT (..), ppt, fr, (+:)) where
+module Sh (I (..), Sh (..), PT (..), CT (..), ppt, LC (..), fr, (+:)) where
 
 import           Control.DeepSeq           (NFData)
 import           Control.Monad.Trans.State (State, evalState, get, modify, put)
@@ -15,15 +15,16 @@ import           Prettyprinter             (Pretty (pretty), group, parens, (<+>
 import           Prettyprinter.Ext
 import           U
 
-type C = (Char, Char, Char, Int); type LC=(C->T.Text, C->C)
+data CT = CT !Char !Char !Char !Int
+data LC = LC (CT->T.Text) (CT->CT)
 
 class PT a where
-    pp :: a -> State (S.Set T.Text, IM.IntMap T.Text, C) a
+    pp :: a -> State (S.Set T.Text, IM.IntMap T.Text, CT) a
 
 ppt :: PT a => a -> a
-ppt = flip evalState (S.empty, IM.empty, ('a', 'i', 'm', 0)).pp
+ppt = flip evalState (S.empty, IM.empty, (CT 'a' 'i' 'm' 0)).pp
 
-fr :: LC -> Nm a -> State (S.Set T.Text, IM.IntMap T.Text, C) (Nm a)
+fr :: LC -> Nm a -> State (S.Set T.Text, IM.IntMap T.Text, CT) (Nm a)
 fr s (Nm t (U i) x) = do
     (ms,u,c) <- get
     case IM.lookup i u of
@@ -31,7 +32,7 @@ fr s (Nm t (U i) x) = do
         _ | t `S.notMember` ms -> put (S.insert t ms, IM.insert i t u, c) $> Nm t (U i) x
         _                      -> do {t' <- next s; modify (bimap12 (S.insert t') (IM.insert i t')) $> Nm t' (U i) x}
 
-next l@(g,s) = do
+next l@(LC g s) = do
     (ms,_,c) <- get
     let t=(g c)
     if t `S.notMember` ms
@@ -54,8 +55,8 @@ pv (StaMul _ i j) = do
         (Just{}, Just{})   -> Nothing
 pv _              = Nothing
 
-il = (\(_,y,_,_) -> T.singleton y, second4 succ)
-el = (\(_,_,z,_) -> T.singleton z, third4 succ)
+il = LC (\(CT _ y _ _) -> T.singleton y) (\(CT v i e s) -> CT v (succ i) e s)
+el = LC (\(CT _ _ z _) -> T.singleton z) (\(CT v i e s) -> CT v i (succ e) s)
 
 instance PT (I a) where
     pp i@Ix{}          = pure i
@@ -97,7 +98,7 @@ unroll Nil         = Just []
 unroll (Cons i sh) = (i:)<$>unroll sh
 unroll _           = Nothing
 
-sl=((\(_,_,_,w) -> "sh" <> T.pack (show w)), fourth succ)
+sl=LC (\(CT _ _ _ k) -> "sh"<>T.pack (show k)) (\(CT v i e s) -> CT v i e (succ s))
 
 instance PT (Sh a) where
     pp Nil = pure Nil; pp (SVar n) = SVar<$>fr sl n
@@ -120,9 +121,5 @@ instance Show (Sh a) where show=show.pretty
 
 instance NFData a => NFData (I a) where
 instance NFData a => NFData (Sh a) where
-
-second4 f ~(x,y,z,w) = (x,f y,z,w)
-third4 f ~(x,y,z,w) = (x,y,f z,w)
-fourth f ~(x,y,z,w) = (x,y,z,f w)
 
 bimap12 f g ~(x,y,z) = (f x,g y,z)
