@@ -285,7 +285,8 @@ Bind</a></li>
 </ul></li>
 <li><a href="#strong-induction" id="toc-strong-induction">Strong
 Induction</a></li>
-<li><a href="#unfold-1" id="toc-unfold-1">Unfold</a></li>
+<li><a href="#unfold-with-state" id="toc-unfold-with-state">Unfold With
+State</a></li>
 <li><a href="#rank" id="toc-rank">Rank</a>
 <ul>
 <li><a href="#sum-axes" id="toc-sum-axes">Sum Axes</a></li>
@@ -628,8 +629,7 @@ Vec m a → (Vec k a → a) → int(n) → Vec (m + n) a</code></pre>
 <p>Fibonacci sequence:</p>
 <pre><code> &gt; 𝓕 ⟨1::int,1⟩ [}.x+}.(}:x)]
 Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]</code></pre>
-<h2 id="unfold-1">Unfold</h2>
-<p><code>ug.</code> unfolds from a seed.</p>
+<h2 id="unfold-with-state">Unfold With State</h2>
 <pre><code> &gt; :ty ug.
 (b → (b * a)) → b → int(n) → Vec n a</code></pre>
 <h2 id="rank">Rank</h2>
