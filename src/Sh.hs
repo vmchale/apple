@@ -1,14 +1,44 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Sh (I (..), Sh (..), (+:)) where
+module Sh (I (..), Sh (..), PT (..), ppt, fr, (+:)) where
 
-import           Control.DeepSeq   (NFData)
-import           GHC.Generics      (Generic)
+import           Control.DeepSeq           (NFData)
+import           Control.Monad.Trans.State (State, evalState, get, modify, put)
+import           Data.Functor              (($>))
+import qualified Data.IntMap               as IM
+import qualified Data.Set                  as S
+import qualified Data.Text                 as T
+import           Data.Tuple.Extra          (third3)
+import           GHC.Generics              (Generic)
 import           Nm
-import           Prettyprinter     (Pretty (pretty), group, parens, (<+>))
+import           Prettyprinter             (Pretty (pretty), group, parens, (<+>))
 import           Prettyprinter.Ext
+import           U
 
-instance Pretty (I a) where pretty=ps 0
+type C = (Char, Char, Char, Int); type LC=(C->T.Text, C->C)
+
+class PT a where
+    pp :: a -> State (S.Set T.Text, IM.IntMap T.Text, C) a
+
+ppt :: PT a => a -> a
+ppt = flip evalState (S.empty, IM.empty, ('a', 'i', 'm', 0)).pp
+
+fr :: LC -> Nm a -> State (S.Set T.Text, IM.IntMap T.Text, C) (Nm a)
+fr s (Nm t (U i) x) = do
+    (ms,u,c) <- get
+    case IM.lookup i u of
+        Just n                 -> pure (Nm n (U i) x)
+        _ | t `S.notMember` ms -> put (S.insert t ms, IM.insert i t u, c) $> Nm t (U i) x
+        _                      -> do {t' <- next s; modify (bimap12 (S.insert t') (IM.insert i t')) $> Nm t' (U i) x}
+
+next l@(g,s) = do
+    (ms,_,c) <- get
+    let t=(g c)
+    if t `S.notMember` ms
+        then pure t
+        else modify (third3 s) *> next l
+
+instance Pretty (I a) where pretty=ps 0.ppt
 
 pg True=group.parens; pg False=id
 
@@ -24,10 +54,20 @@ pv (StaMul _ i j) = do
         (Just{}, Just{})   -> Nothing
 pv _              = Nothing
 
+il = (\(_,y,_,_) -> T.singleton y, second4 succ)
+el = (\(_,_,z,_) -> T.singleton z, third4 succ)
+
+instance PT (I a) where
+    pp i@Ix{}          = pure i
+    pp (IVar x n)      = IVar x<$>fr il n
+    pp (IEVar x n)     = IEVar x<$>fr el n
+    pp (StaPlus x i j) = StaPlus x<$>pp i<*>pp j
+    pp (StaMul x i j)  = StaMul x<$>pp i<*>pp j
+
 instance PS (I a) where
     ps _ (Ix _ i)                   = pretty i
     ps _ (IVar _ n)                 = pretty n
-    ps _ ip                         | Just (i,pp) <- pv ip = maybe mempty pretty i <> pp
+    ps _ ip                         | Just (i,d) <- pv ip = maybe mempty pretty i <> d
     ps d (StaPlus _ i j)            = parensp (d>5) (ps 6 i <+> "+" <+> ps 6 j)
     ps d (StaMul _ i j)             = parensp (d>7) (ps 8 i <> "*" <> ps 8 j)
     ps _ (IEVar _ n)                = "#" <> pretty n
@@ -57,6 +97,13 @@ unroll Nil         = Just []
 unroll (Cons i sh) = (i:)<$>unroll sh
 unroll _           = Nothing
 
+sl=((\(_,_,_,w) -> "sh" <> T.pack (show w)), fourth succ)
+
+instance PT (Sh a) where
+    pp Nil = pure Nil; pp (SVar n) = SVar<$>fr sl n
+    pp (Cons i sh) = Cons<$>pp i<*>pp sh; pp (Cat s0 s1) = Cat<$>pp s0<*>pp s1
+    pp (Rev s) = Rev<$>pp s; pp (Π s) = Π<$>pp s
+
 instance PS (Sh a) where
     ps _ (SVar n)    = pretty n
     ps _ sh@Cons{}   | Just is <- unroll sh = case is of {[i] -> pretty i; _ -> tupledBy " × " (pretty <$> is)}
@@ -66,10 +113,16 @@ instance PS (Sh a) where
     ps d (Rev s)     = parensp (d>appPrec) ("rev" <+> ps (appPrec+1) s)
     ps d (Π s)       = group (parensp (d>appPrec) ("Π" <+> ps (appPrec+1) s))
 
-instance Pretty (Sh a) where pretty=ps 0
+instance Pretty (Sh a) where pretty=ps 0.ppt
 
 instance Show (I a) where show=show.pretty
 instance Show (Sh a) where show=show.pretty
 
 instance NFData a => NFData (I a) where
 instance NFData a => NFData (Sh a) where
+
+second4 f ~(x,y,z,w) = (x,f y,z,w)
+third4 f ~(x,y,z,w) = (x,y,f z,w)
+fourth f ~(x,y,z,w) = (x,y,z,f w)
+
+bimap12 f g ~(x,y,z) = (f x,g y,z)
