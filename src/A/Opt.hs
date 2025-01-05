@@ -15,7 +15,7 @@ fop op e0 = EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) op) e0)
 eMinus = fop Minus; eDiv = fop Div; ePlus = fop Plus
 
 iop op e0 = EApp I (EApp (I ~> I) (Builtin (I ~> I ~> I) op) e0)
-iDiv = iop IDiv; iMinus = iop Minus; iPlus = iop Plus
+iMinus = iop Minus; iPlus = iop Plus
 
 mShLit (Id _ (AShLit is es)) = Just (is, es)
 mShLit (ALit _ es)           = Just ([length es], es)
