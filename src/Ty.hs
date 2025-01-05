@@ -152,7 +152,7 @@ mSh _ Nil (Cat Nil Nil)             = Right mempty
 mSh _ sh sh'                        = Left $ MatchShFailed sh sh'
 
 match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
-match t t' = either throw id (maM LF t t')
+match t t' = either throw id (maM RF t t')
 
 maM :: Focus -> T a -> T a -> Either (TyE a) (Subst a)
 maM f (Li n) (Li m)                 = mI f m n
@@ -778,7 +778,7 @@ tyB l (Rank as) = do
         fTy = foldr (~>) cod $ zipWith3 (\ax sh t -> case ax of {(_,Nothing) -> Arr (trim sh) t;(_,Just axs) -> Arr (sel axs sh) t}) as shs vs
         rTy = foldr (~>) codTy mArrs
         shsU = zipWith (\ax sh -> case ax of {(n,Nothing) -> tydrop n sh;(_,Just axs) -> del axs sh}) as shs
-        shUHere sh sh' = fmap snd (liftU $ mgShPrep LF l mempty (sh$>l) (sh'$>l))
+        shUHere sh sh' = fmap snd (liftU $ mgShPrep RF l mempty (sh$>l) (sh'$>l))
     s <- zipWithM shUHere shsU (tail shsU++[codSh])
     pure (fTy ~> rTy, mconcat s)
 tyB _ Fold = do
@@ -1046,7 +1046,7 @@ tyE s (Tup _ es) = do
     pure (Tup (P eTys) es', s')
 tyE s (Ann l e t) = do
     (e', s') <- tyE s e
-    s'' <- liftEither $ maM LF (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
+    s'' <- liftEither $ maM RF (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
     pure (e', s'<>s'')
 tyE _ Dfn{} = desugar
 tyE _ ResVar{} = desugar
