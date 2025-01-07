@@ -318,6 +318,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | EorI { ann :: a, rDest, rSrc :: reg, imm :: BM }
                          | Bfc { ann :: a, rDest :: reg, lsb :: Word8, width :: Word8 }
                          | Prfm { ann :: a, pro :: !Pfop, aSrc :: Addr reg }
+                         | Clz { ann :: a, rDest, rSrc :: reg } | Cnt { ann :: a, rDest, rSrc :: reg }
                          deriving (Functor, Generic)
 
 instance (NFData r, NFData d, NFData a) => NFData (AArch64 r d a) where
@@ -429,6 +430,8 @@ mapR _ (DupD l v0 v1 i)      = DupD l v0 v1 i
 mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
 mapR f (Prfm l po r)         = Prfm l po (f<$>r)
+mapR f (Clz l r0 r1)         = Clz l (f r0) (f r1)
+mapR f (Cnt l r0 r1)         = Cnt l (f r0) (f r1)
 
 fR :: Monoid m => (areg -> m) -> AArch64 areg afreg a -> m
 fR _ Label{}               = mempty
@@ -535,6 +538,8 @@ fR f (Cset _ r _)          = f r
 fR f (TstI _ r _)          = f r
 fR f (StpD _ _ _ a)        = f@<>a
 fR f (LdpD _ _ _ a)        = f@<>a
+fR f (Clz _ r0 r1)         = f r0<>f r1
+fR f (Cnt _ r0 r1)         = f r0<>f r1
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -641,6 +646,8 @@ mapFR f (DupD l v0 v1 i)      = DupD l (f<$>v0) (f<$>v1) i
 mapFR f (ZeroD l d)           = ZeroD l (f d)
 mapFR f (EorD l d0 d1 d2)     = EorD l (f d0) (f d1) (f d2)
 mapFR _ (Prfm l po a)         = Prfm l po a
+mapFR _ (Clz l r0 r1)         = Clz l r0 r1
+mapFR _ (Cnt l r0 r1)         = Cnt l r0 r1
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -666,9 +673,9 @@ hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")
 pvd v = pv v <> ".2d"
 pvv v = pv v <> ".16b"; pvs v = pv v <> ".8b"
 
-ar2 r0 r1 = pretty r0 <> "," <+> pretty r1; aw r a = pw r <> "," <+> pretty a
-ar3 r0 r1 r2 = pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2
-ar4 r0 r1 r2 r3 = pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3
+ar2 isn r0 r1 = isn <+> pretty r0 <> "," <+> pretty r1; aw r a = pw r <> "," <+> pretty a
+ar3 isn r0 r1 r2 = isn <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2
+ar4 isn r0 r1 r2 r3 = isn <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3
 ri r u = pretty r <> "," <+> hexd u
 r2i r0 r1 u = pretty r0 <> "," <+> pretty r1 <> "," <+> hexd u
 av2 q0 q1 = pvd q0 <> "," <+> pvd q1
@@ -686,26 +693,26 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (C _ l)                 = "call" <+> pretty l
         p4 (Bc _ c l)              = "b." <> pretty c <+> prettyLabel l
         p4 (MovQQ _ v0 v1)         = "mov" <+> pvv v0 <> "," <+> pvv v1
-        p4 (FMovXX _ xr0 xr1)      = "fmov" <+> ar2 xr0 xr1
-        p4 (FMovDR _ d r)          = "fmov" <+> ar2 d r
-        p4 (MovRR _ r0 r1)         = "mov" <+> ar2 r0 r1
+        p4 (FMovXX _ xr0 xr1)      = ar2 "fmov" xr0 xr1
+        p4 (FMovDR _ d r)          = ar2 "fmov" d r
+        p4 (MovRR _ r0 r1)         = ar2 "mov" r0 r1
         p4 (MovRC _ r u)           = "mov" <+> ri r u
-        p4 (Ldr _ r a)             = "ldr" <+> ar2 r a
+        p4 (Ldr _ r a)             = ar2 "ldr" r a
         p4 (LdrB _ r a)            = "ldrb" <+> aw r a
-        p4 (Str _ r a)             = "str" <+> ar2 r a
+        p4 (Str _ r a)             = ar2 "str" r a
         p4 (StrB _ r a)            = "strb" <+> aw r a
-        p4 (LdrD _ xr a)           = "ldr" <+> ar2 xr a
-        p4 (StrD _ xr a)           = "str" <+> ar2 xr a
-        p4 (AddRRS _ rD rS rS' s)  = "add" <+> ar3 rD rS rS' <> "," <+> "LSL" <+> "#" <> pretty s
-        p4 (AddRR _ rD rS rS')     = "add" <+> ar3 rD rS rS'
-        p4 (SubRR _ rD rS rS')     = "sub" <+> ar3 rD rS rS'
-        p4 (AndRR _ rD rS rS')     = "and" <+> ar3 rD rS rS'
-        p4 (OrRR _ rD rS rS')      = "orr" <+> ar3 rD rS rS'
-        p4 (Eor _ rD rS rS')       = "eor" <+> ar3 rD rS rS'
-        p4 (Eon _ rD rS rS')       = "eon" <+> ar3 rD rS rS'
-        p4 (EorI _ rD rS i)        = "eor" <+> ar2 rD rS <> "," <+> pretty i
-        p4 (ZeroR _ rD)            = "eor" <+> ar3 rD rD rD
-        p4 (MulRR _ rD rS rS')     = "mul" <+> ar3 rD rS rS'
+        p4 (LdrD _ xr a)           = ar2 "ldr" xr a
+        p4 (StrD _ xr a)           = ar2 "str" xr a
+        p4 (AddRRS _ rD rS rS' s)  = ar3 "add" rD rS rS' <> "," <+> "LSL" <+> "#" <> pretty s
+        p4 (AddRR _ rD rS rS')     = ar3 "add" rD rS rS'
+        p4 (SubRR _ rD rS rS')     = ar3 "sub" rD rS rS'
+        p4 (AndRR _ rD rS rS')     = ar3 "and" rD rS rS'
+        p4 (OrRR _ rD rS rS')      = ar3 "orr" rD rS rS'
+        p4 (Eor _ rD rS rS')       = ar3 "eor" rD rS rS'
+        p4 (Eon _ rD rS rS')       = ar3 "eon" rD rS rS'
+        p4 (EorI _ rD rS i)        = ar2 "eor" rD rS <> "," <+> pretty i
+        p4 (ZeroR _ rD)            = ar3 "eor" rD rD rD
+        p4 (MulRR _ rD rS rS')     = ar3 "mul" rD rS rS'
         p4 (SubRC _ rD rS u IZero) = "sub" <+> r2i rD rS u
         p4 (SubRC _ rD rS u s)     = "sub" <+> r2i rD rS u <> "," <+> pretty s
         p4 (SubsRC _ rD rS u)      = "subs" <+> r2i rD rS u
@@ -713,15 +720,15 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (AddRC _ rD rS u s)     = "add" <+> r2i rD rS u <> "," <+> pretty s
         p4 (Lsl _ rD rS u)         = "lsl" <+> r2i rD rS u
         p4 (Asr _ rD rS u)         = "asr" <+> r2i rD rS u
-        p4 (AsrR _ rD r0 r1)       = "asr" <+> ar3 rD r0 r1
-        p4 (LslR _ rD r0 r1)       = "lsl" <+> ar3 rD r0 r1
+        p4 (AsrR _ rD r0 r1)       = ar3 "asr" rD r0 r1
+        p4 (LslR _ rD r0 r1)       = ar3 "lsl" rD r0 r1
         p4 (CmpRC _ r u)           = "cmp" <+> pretty r <> "," <+> hexd u
-        p4 (CmpRR _ r0 r1)         = "cmp" <+> ar2 r0 r1
-        p4 (Neg _ rD rS)           = "neg" <+> ar2 rD rS
-        p4 (Fmul _ rD r0 r1)       = "fmul" <+> ar3 rD r0 r1
-        p4 (Fadd _ rD r0 r1)       = "fadd" <+> ar3 rD r0 r1
-        p4 (Fsub _ rD r0 r1)       = "fsub" <+> ar3 rD r0 r1
-        p4 (Fdiv _ rD r0 r1)       = "fdiv" <+> ar3 rD r0 r1
+        p4 (CmpRR _ r0 r1)         = ar2 "cmp" r0 r1
+        p4 (Neg _ rD rS)           = ar2 "neg" rD rS
+        p4 (Fmul _ rD r0 r1)       = ar3 "fmul" rD r0 r1
+        p4 (Fadd _ rD r0 r1)       = ar3 "fadd" rD r0 r1
+        p4 (Fsub _ rD r0 r1)       = ar3 "fsub" rD r0 r1
+        p4 (Fdiv _ rD r0 r1)       = ar3 "fdiv" rD r0 r1
         p4 (Fmul2 _ xD x0 x1)      = "fmul" <+> v3 xD x0 x1
         p4 (Fdiv2 _ xD x0 x1)      = "fdiv" <+> v3 xD x0 x1
         p4 (Fmax2 _ xD x0 x1)      = "fmax" <+> v3 xD x0 x1
@@ -739,52 +746,54 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (ZeroD _ d)             = let q=V2Reg d in "eor" <+> pvs q <> "," <> pvs q <> "," <+> pvs q
         p4 (EorD _ d0 d1 d2)       = "eor" <+> pvs (V2Reg d0) <> "," <+> pvs (V2Reg d1) <> "," <+> pvs (V2Reg d2)
         p4 (FcmpZ _ xr)            = "fcmp" <+> pretty xr <> "," <+> "#0.0"
-        p4 (Fneg _ d0 d1)          = "fneg" <+> ar2 d0 d1
+        p4 (Fneg _ d0 d1)          = ar2 "fneg" d0 d1
         p4 Ret{}                   = "ret"
         p4 RetL{}                  = "ret"
-        p4 (Scvtf _ d r)           = "scvtf" <+> ar2 d r
-        p4 (Fcvtms _ r d)          = "fcvtms" <+> ar2 r d
-        p4 (Fcvtps _ r d)          = "fcvtps" <+> ar2 r d
-        p4 (Fcvtas _ r d)          = "fcvtas" <+> ar2 r d
+        p4 (Scvtf _ d r)           = ar2 "scvtf" d r
+        p4 (Fcvtms _ r d)          = ar2 "fcvtms" r d
+        p4 (Fcvtps _ r d)          = ar2 "fcvtps" r d
+        p4 (Fcvtas _ r d)          = ar2 "fcvtas" r d
         p4 (MovK _ r i s)          = "movk" <+> ri r i <> "," <+> "LSL" <+> "#" <> pretty s
         p4 (MovZ _ r i s)          = "movz" <+> ri r i <> "," <+> "LSL" <+> "#" <> pretty s
-        p4 (Fcmp _ d0 d1)          = "fcmp" <+> ar2 d0 d1
-        p4 (Stp _ r0 r1 a)         = "stp" <+> ar3 r0 r1 a
-        p4 (Ldp _ r0 r1 a)         = "ldp" <+> ar3 r0 r1 a
+        p4 (Fcmp _ d0 d1)          = ar2 "fcmp" d0 d1
+        p4 (Stp _ r0 r1 a)         = ar3 "stp" r0 r1 a
+        p4 (Ldp _ r0 r1 a)         = ar3 "ldp" r0 r1 a
         p4 (Ldp2 _ q0 q1 a)        = "ldp" <+> qa q0 q1 a
         p4 (Stp2 _ q0 q1 a)        = "stp" <+> qa q0 q1 a
         p4 (LdrS _ q a)            = "ldr" <+> pq q <> "," <+> pretty a
         p4 (StrS _ q a)            = "str" <+> pq q <> "," <+> pretty a
-        p4 (StpD _ d0 d1 a)        = "stp" <+> ar3 d0 d1 a
-        p4 (LdpD _ d0 d1 a)        = "ldp" <+> ar3 d0 d1 a
-        p4 (Fmadd _ d0 d1 d2 d3)   = "fmadd" <+> ar4 d0 d1 d2 d3
-        p4 (Fmsub _ d0 d1 d2 d3)   = "fmsub" <+> ar4 d0 d1 d2 d3
+        p4 (StpD _ d0 d1 a)        = ar3 "stp" d0 d1 a
+        p4 (LdpD _ d0 d1 a)        = ar3 "ldp" d0 d1 a
+        p4 (Fmadd _ d0 d1 d2 d3)   = ar4 "fmadd" d0 d1 d2 d3
+        p4 (Fmsub _ d0 d1 d2 d3)   = ar4 "fmsub" d0 d1 d2 d3
         p4 (Fmla _ v0 v1 v2)       = "fmla" <+> v3 v0 v1 v2
         p4 (Fmls _ v0 v1 v2)       = "fmls" <+> v3 v0 v1 v2
-        p4 (Madd _ r0 r1 r2 r3)    = "madd" <+> ar4 r0 r1 r2 r3
-        p4 (Msub _ r0 r1 r2 r3)    = "msub" <+> ar4 r0 r1 r2 r3
-        p4 (Sdiv _ rD rS rS')      = "sdiv" <+> ar3 rD rS rS'
-        p4 (Fsqrt _ d0 d1)         = "fsqrt" <+> ar2 d0 d1
-        p4 (Frintm _ d0 d1)        = "frintm" <+> ar2 d0 d1
+        p4 (Madd _ r0 r1 r2 r3)    = ar4 "madd" r0 r1 r2 r3
+        p4 (Msub _ r0 r1 r2 r3)    = ar4 "msub" r0 r1 r2 r3
+        p4 (Sdiv _ rD rS rS')      = ar3 "sdiv" rD rS rS'
+        p4 (Fsqrt _ d0 d1)         = ar2 "fsqrt" d0 d1
+        p4 (Frintm _ d0 d1)        = ar2 "frintm" d0 d1
         p4 (MrsR _ r)              = "mrs" <+> pretty r <> "," <+> "rndr"
-        p4 (MovRCf _ r cf)         = "mov" <+> ar2 r cf
+        p4 (MovRCf _ r cf)         = ar2 "mov" r cf
         p4 (LdrRL _ r l)           = "ldr" <+> pretty r <> "," <+> "=arr_" <> pretty l
-        p4 (Fmax _ d0 d1 d2)       = "fmax" <+> ar3 d0 d1 d2
-        p4 (Fmin _ d0 d1 d2)       = "fmin" <+> ar3 d0 d1 d2
-        p4 (Fabs _ d0 d1)          = "fabs" <+> ar2 d0 d1
-        p4 (Csel _ r0 r1 r2 p)     = "csel" <+> ar3 r0 r1 r2 <> "," <+> pretty p
+        p4 (Fmax _ d0 d1 d2)       = ar3 "fmax" d0 d1 d2
+        p4 (Fmin _ d0 d1 d2)       = ar3 "fmin" d0 d1 d2
+        p4 (Fabs _ d0 d1)          = ar2 "fabs" d0 d1
+        p4 (Csel _ r0 r1 r2 p)     = ar3 "csel" r0 r1 r2 <> "," <+> pretty p
         p4 (Tbnz _ r n l)          = "tbnz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l
         p4 (Tbz _ r n l)           = "tbz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l
         p4 (Cbnz _ r l)            = "cbnz" <+> pretty r <> "," <+> prettyLabel l
         p4 (Cbz _ r l)             = "cbz" <+> pretty r <> "," <+> prettyLabel l
-        p4 (Fcsel _ d0 d1 d2 p)    = "fcsel" <+> ar3 d0 d1 d2 <> "," <+> pretty p
+        p4 (Fcsel _ d0 d1 d2 p)    = ar3 "fcsel" d0 d1 d2 <> "," <+> pretty p
         p4 (TstI _ r i)            = "tst" <+> pretty r <> "," <+> pretty i
-        p4 (Cset _ r c)            = "cset" <+> ar2 r c
+        p4 (Cset _ r c)            = ar2 "cset" r c
         p4 (Bfc _ r l w)           = "bfc" <+> pretty r <> "," <+> pretty l <> "," <+> pretty w
         p4 (Dup _ v r)             = "dup" <+> pvd v <> "," <+> pretty r
         p4 (Ins _ v i r)           = "ins" <+> pvd v <> brackets (pretty i) <> "," <+> pretty r
         p4 (DupD _ v0 v1 i)        = "dup" <+> pvd v0 <> "," <+> pvd v1 <> brackets (pretty i)
-        p4 (Prfm _ po r)           = "prfm" <+> ar2 po r
+        p4 (Prfm _ po r)           = ar2 "prfm" po r
+        p4 (Clz _ r0 r1)           = ar2 "clz" r0 r1
+        p4 (Cnt _ r0 r1)           = ar2 "cnt" r0 r1
 
 instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty
 
