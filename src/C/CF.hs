@@ -309,7 +309,7 @@ uT (TA _ (Just l)) = singleton l; uT _ = IS.empty
 
 uses :: CS a -> IS.IntSet
 uses (Ma _ _ _ _ r n _)    = uE r<>uE n
-uses MaΠ{}                 = IS.empty
+uses MaB{}                 = IS.empty
 uses (MX _ _ e)            = uF e
 uses (MX2 _ _ e)           = uF2 e
 uses (Wr _ a e)            = uA a <> uE e
@@ -354,7 +354,7 @@ uB (BU _ e)       = uB e
 
 defs :: CS a -> IS.IntSet
 defs (Ma _ _ a _ _ _ _) = singleton a
-defs (MaΠ _ a _ _)      = singleton a
+defs (MaB _ a _ _)      = singleton a
 defs _                  = IS.empty
 
 next :: [CS a] -> FreshM ([N] -> [N], [CS ControlAnn])

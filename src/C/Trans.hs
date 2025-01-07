@@ -226,7 +226,7 @@ writeCM eϵ = do
              | isB (eAnn e) = do {t <- nBT; (++[MB () CBRet (Is t)]) <$> peval e t}
              | isArr (eAnn e) = do {(i,l,r) <- maa e; pure$r++[CRet =: Tmp i]++case l of {Just m -> [RA () m]; Nothing -> []}}
              | P [F,F] <- eAnn e = do {f0 <- nF; f1 <- nF; (++[MX () FRet0 (FTmp f0), MX () FRet1 (FTmp f1)]) <$> πr e [TF f0, TF f1]}
-             | ty@P{} <- eAnn e, b64 <- bT ty, (n,0) <- b64 `quotRem` 8 = do {t <- nI; a <- nextArr CRet; (_,_,ls,pl) <- πe e t; pure (sac t b64:pl++MaΠ () a CRet b64:CpyE () (TupM CRet (Just a)) (TupM t Nothing) (KI n) 8:popc b64:RA () a:(RA ()<$>ls))}
+             | ty@P{} <- eAnn e, b64 <- bT ty, (n,0) <- b64 `quotRem` 8 = do {t <- nI; a <- nextArr CRet; (_,_,ls,pl) <- πe e t; pure (sac t b64:pl++MaB () a CRet b64:CpyE () (TupM CRet (Just a)) (TupM t Nothing) (KI n) 8:popc b64:RA () a:(RA ()<$>ls))}
 
 rtemp :: T a -> CM RT
 rtemp F=FT<$>nF; rtemp I=IT<$>nI; rtemp B=PT<$>nBT; rtemp (P ts)=ΠT<$>traverse rtemp ts
@@ -269,7 +269,7 @@ writeA e as | isArr (codT$eAnn e) = do {r <- nI; (\(x,y) -> (r,x,y)) <$> writeF 
 writeF :: E (T ()) -> [Arg] -> RT -> CM (Maybe AL, [CS ()])
 writeF (Lam _ x e) (AA r l:rs) ret = addAVar x (l,r) *> writeF e rs ret
 writeF (Lam _ x e) (IA r:rs) ret = addVar x r *> writeF e rs ret
-writeF (Lam _ x e) (FA fr:rs) ret = addD x fr *> writeF e rs ret
+writeF (Lam _ x e) (FA xr:rs) ret = addD x xr *> writeF e rs ret
 writeF (Lam _ x e) (BA r:rs) ret = addB x r *> writeF e rs ret
 writeF (Lam _ x e) (ΠArg r:rs) ret = addΠ x r *> writeF e rs ret
 writeF (Var ty x) [] (IT r) | isArr ty = do
