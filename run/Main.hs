@@ -247,7 +247,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "˙" "at" "|" "rem"
     , lOption "@." "index of" "/." "idiv"
     , lOption "%:" "vector mul" "odd." "parity"
-    , lOption "𝓕" "course-of-value recursion" "𝔹" "convert->bool"
+    , lOption "⍋" "sort" "𝓕" "course-of-value recursion"
     , lOption "~" "reverse" "¬,⊻,∧,∨" "logical"
     , lOption "♭" "flatten" "♯" "add dimension"
     , lOption "⩪" "indices of" "§, #." "filter"

@@ -215,7 +215,7 @@ writeCM :: E (T ()) -> CM [CS ()]
 writeCM eϵ = do
     cs <- nIs [(0::Int)..5]; fs <- nFs [(0::Int)..5]
     (zipWith (\xr xr' -> MX () xr' (FTmp xr)) [F0,F1,F2,F3,F4,F5] fs ++) . (zipWith (\r r' -> r' =: Tmp r) [C0,C1,C2,C3,C4,C5] cs ++) <$> go eϵ fs cs where
-    go (Lam _ x@(Nm _ _ F) e) (fr:frs) rs = addD x fr *> go e frs rs
+    go (Lam _ x@(Nm _ _ F) e) (xr:frs) rs = addD x xr *> go e frs rs
     go (Lam _ x@(Nm _ _ B) e) frs (r:rs) = addB x (bt r) *> go e frs rs where bt (ITemp i)=BTemp i
     go (Lam _ (Nm _ _ F) _) [] _ = error "Not enough floating-point registers."
     go (Lam _ x@(Nm _ _ I) e) frs (r:rs) = addVar x r *> go e frs rs

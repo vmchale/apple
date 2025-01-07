@@ -190,6 +190,7 @@ tokens :-
         "|"                      { mkSym Mod }
         "@."                     { mkSym AtDot }
         ℘                        { mkSym Weier }
+        ⍋                        { mkSym Up }
         ⩪                        { mkSym Ice }
         §                        { mkSym Para }
         "#."                     { mkSym Para }
@@ -358,7 +359,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | Last | LastM | Head | HeadM | Tail | TailM | Init | InitM
          | Geq | Gt | Eq | Neq | Leq | Lt
          | FoldA | FoldS | FoldSt | Tilde | Cyc | Ditto | A1 | Sub
-         | AtDot | Para | Weier | Ice | B | Sharp
+         | AtDot | Para | Weier | Ice | Up | B | Sharp
          | And | Or | Xor | Not | Sr | Sl | IDiv | Inv | Mod
          | Therefore | Fork | Dp
          deriving (Generic, NFData)
@@ -446,6 +447,7 @@ instance Pretty Sym where
     pretty Or           = "∨"
     pretty Not          = "¬"
     pretty Weier        = "℘"
+    pretty Up           = "⍋"
     pretty Ice          = "⩪"
     pretty Para         = "§"
     pretty IxTimes      = "×"

@@ -200,6 +200,7 @@ instance Pretty Builtin where
     pretty S          = "𝐒"
     pretty K          = "𝐊"
     pretty Ix'd       = "ᶥ"
+    pretty Sort       = "⍋"
 
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
@@ -219,7 +220,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Sin | Cos | Tan | Abs | Even | Odd
              | Rot | Cyc | A1 | I1 | IOf
              | And | Or | Xor | N | Sr | Sl | C | Dot
-             | Ug
+             | Ug | Sort
              | S' | S | K
              deriving (Generic)
              -- TODO: (feuilleter, stagger, ...) reshape...?

@@ -106,6 +106,7 @@ import Sh
     mod { TokSym $$ L.Mod }
     atDot { TokSym $$ AtDot }
     -- weier { TokSym $$ Weier }
+    up { TokSym $$ Up }
     ice { TokSym $$ Ice }
     para { TokSym $$ Para }
 
@@ -351,6 +352,7 @@ E :: { E AlexPosn }
   | tan { Builtin $1 Tan }
   | cyc { Builtin $1 A.Cyc }
   | tilde { Builtin $1 RevE }
+  | up { Builtin $1 Sort }
   | odd { Builtin $1 Odd } | even { Builtin $1 Even }
   | abs { Builtin $1 Abs }
   | flat { Builtin $1 Flat }

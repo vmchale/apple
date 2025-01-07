@@ -621,6 +621,9 @@ tyB _ ConsE = do
     a <- ftv "a"; i <- fti "i"
     pure (a ~> vV i a ~> vV (i+:Ix()1) a, mempty)
 tyB l Snoc = tyB l ConsE
+tyB l Sort = do
+    o <- fc "o" l IsOrd; i <- fti "i"
+    pure (vV i o~>vV i o, mempty)
 tyB _ A1 = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
     pure (Arr (i `Cons` sh) a ~> I ~> Arr sh a, mempty)
