@@ -160,6 +160,7 @@ asm ix st (ZeroR _ r:asms) = [0b11001010, be r, be r `shiftR` 3, lb r r]:asm (ix
 asm ix st (Csel _ r0 r1 r2 p:asms) = [0b10011010, 0x1 `shiftL` 7 .|. be r2, bp p `shiftL` 4 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Cset _ r p:asms) = [0b10011010, 0b10011111, ip p `shiftL` 4 .|. 0x7, 0x7 `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (TstI _ r (BM 1 ro):asms) | ro <= 0b111111 = [0b11110010, 0x1 `shiftL` 6 .|. (0b111111 .&. (-ro)), be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5 .|. 0b11111]:asm (ix+4) st asms
+asm ix st (Clz _ r0 r1:asms) = [0xda, 0xc0, 0x4 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (EorI _ r0 r1 (BM 1 0):asms) = [0b11010010, 0x1 `shiftL` 6, be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Fcsel _ d0 d1 d2 p:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, bp p `shiftL` 4 .|. 0x3 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fcmp _ d0 d1:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d1, 0b1000 `shiftL` 2 .|. be d0 `shiftR` 3, be d0 `shiftL` 5]:asm (ix+4) st asms
