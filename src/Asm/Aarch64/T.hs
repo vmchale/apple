@@ -32,6 +32,9 @@ mB Op.BEq  = Nothing
 f2absReg :: IR.F2 -> V2Reg FAbsReg
 f2absReg (IR.F2Temp i) = V2Reg (FReg i)
 
+iun Op.Clz = Clz
+iun Op.Cnt = Cnt
+
 mIop Op.IPlus  = Just AddRR
 mIop Op.IMinus = Just SubRR
 mIop Op.ITimes = Just MulRR
@@ -542,16 +545,18 @@ eval (IR.ConstI i) tD | Just u <- mu16 i = pure [MovRC () (absReg tD) u]
 eval (IR.ConstI i) tD | Just u <- mu16 (-i) = let t=absReg tD in pure [MovRC () t u, Neg () t t]
 eval (IR.ConstI i) tD = pure $ mw64 (fromIntegral i) (absReg tD)
 eval (IR.Is p) tD = pure [MovRR () (absReg tD) (absReg p)]
+eval (IR.IU un e) t = do
+    (plE,r) <- plI e
+    pure (plE [iun un () (absReg t) r])
 eval (IR.IB Op.IPlus (IR.IB Op.IAsl e0 (IR.ConstI i)) e1) t | Just u <- ms i = do
-    r0 <- nextI; r1 <- nextI
-    plE0 <- eval e0 (IR.ITemp r0); plE1 <- eval e1 (IR.ITemp r1)
-    pure $ plE0 ++ plE1 ++ [AddRRS () (absReg t) (IReg r1) (IReg r0) u]
+    (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
+    pure $ plE0 $ plE1 [AddRRS () (absReg t) r1 r0 u]
 eval (IR.IB Op.IPlus e (IR.ConstI i)) t | Just u <- m12 i = do
-    r <- nextI; plE <- eval e (IR.ITemp r)
-    pure $ plE ++ [AddRC () (absReg t) (IReg r) u IZero]
+    (plE,r) <- plI e
+    pure $ plE [AddRC () (absReg t) r u IZero]
 eval (IR.IB Op.IPlus e (IR.ConstI i)) t | 0 <- i .&. 4095, Just u <- m12 (i `shiftR` 12) = do
-    r <- nextI; plE <- eval e (IR.ITemp r)
-    pure $ plE ++ [AddRC () (absReg t) (IReg r) u Twelve]
+    (plE,r) <- plI e
+    pure $ plE [AddRC () (absReg t) r u Twelve]
 eval (IR.IB Op.IMinus e (IR.ConstI i)) t | Just u <- m12 i = do
     (plE,r) <- plI e
     pure $ plE [SubRC () (absReg t) r u IZero]
