@@ -213,6 +213,9 @@ ir (IR.MJ (IR.Is r) l) =
 ir (IR.MJ (IR.IU Op.IEven e) l) = do
     (plE,r) <- plI e
     pure $ plE [Tbz () r 0 l]
+ir (IR.MJ (IR.IU Op.IOdd e) l) = do
+    (plE,r) <- plI e
+    pure $ plE [Tbnz () r 0 l]
 ir (IR.MJ (IR.IRel op e (IR.ConstI i)) l) | c <- iop op, Just u <- m12 i = do
     (plE,r) <- plI e
     pure $ plE [CmpRC () r u, Bc () c l]
