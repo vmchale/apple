@@ -152,7 +152,7 @@ data Exp = ConstI Int64
          | IB IBin Exp Exp
          | FRel FRel FE FE
          | IRel IRel Exp Exp | Is Temp
-         | IU IP Exp
+         | IP IP Exp | IU IUn Exp
          | BU BUn Exp
          | IRFloor FE | IRCeil FE
          | EAt AE | BAt AE
@@ -174,6 +174,7 @@ instance Pretty Exp where
     pretty (IRel op e e') = parens (pretty op <+> pretty e <+> pretty e')
     pretty (IB op e e')   = parens (pretty op <+> pretty e <+> pretty e')
     pretty (IU op e)      = parens (pretty op <+> pretty e)
+    pretty (IP op e)      = parens (pretty op <+> pretty e)
     pretty (BU op e)      = pretty op <> pretty e
     pretty (IRFloor e)    = parens ("floor" <+> pretty e)
     pretty (IRCeil e)     = parens ("ceil" <+> pretty e)

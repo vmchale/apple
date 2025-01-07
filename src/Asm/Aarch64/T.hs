@@ -210,10 +210,10 @@ ir (IR.MJ (IR.IRel Op.INeq e (IR.ConstI 0)) l) = do
     pure $ plE [Cbnz () r l]
 ir (IR.MJ (IR.Is r) l) =
     pure [Cbnz () (absReg r) l]
-ir (IR.MJ (IR.IU Op.IEven e) l) = do
+ir (IR.MJ (IR.IP Op.IEven e) l) = do
     (plE,r) <- plI e
     pure $ plE [Tbz () r 0 l]
-ir (IR.MJ (IR.IU Op.IOdd e) l) = do
+ir (IR.MJ (IR.IP Op.IOdd e) l) = do
     (plE,r) <- plI e
     pure $ plE [Tbnz () r 0 l]
 ir (IR.MJ (IR.IRel op e (IR.ConstI i)) l) | c <- iop op, Just u <- m12 i = do
@@ -247,10 +247,10 @@ ir (IR.Cset t (IR.IRel op e0 e1)) | c <- iop op = do
 ir (IR.Cset t (IR.FRel op e0 e1)) | c <- frel op = do
     (plE0,r0) <- plF e0; (plE1,r1) <- plF e1
     pure $ plE0 $ plE1 [Fcmp () r0 r1, Cset () (absReg t) c]
-ir (IR.Cset t (IR.IU Op.IOdd e0)) = do
+ir (IR.Cset t (IR.IP Op.IOdd e0)) = do
     (plE0,r0) <- plI e0
     pure $ plE0 [TstI () r0 (BM 1 0), Cset () (absReg t) Neq]
-ir (IR.Cset t (IR.IU Op.IEven e0)) = do
+ir (IR.Cset t (IR.IP Op.IEven e0)) = do
     (plE0,r0) <- plI e0
     pure $ plE0 [TstI () r0 (BM 1 0), Cset () (absReg t) Eq]
 ir (IR.Cset t b) = do
@@ -267,10 +267,10 @@ ir (IR.Fcmov (IR.FRel op e0 e1) t e) | c <- frel op = do
     (plE0,r0) <- plF e0; (plE1,r1) <- plF e1
     (plE,i) <- plF e
     pure $ plE $ plE0 $ plE1 [Fcmp () r0 r1, Fcsel () (fabsReg t) i (fabsReg t) c]
-ir (IR.Fcmov (IR.IU Op.IOdd e0) t e) = do
+ir (IR.Fcmov (IR.IP Op.IOdd e0) t e) = do
     (plE0,r0) <- plI e0; (plE,i) <- plF e
     pure $ plE $ plE0 [TstI () r0 (BM 1 0), Fcsel () (fabsReg t) i (fabsReg t) Neq]
-ir (IR.Fcmov (IR.IU Op.IEven e0) t e) = do
+ir (IR.Fcmov (IR.IP Op.IEven e0) t e) = do
     (plE0,r0) <- plI e0; (plE,i) <- plF e
     pure $ plE $ plE0 [TstI () r0 (BM 1 0), Fcsel () (fabsReg t) i (fabsReg t) Eq]
 ir (IR.Cpy (IR.AP tD eD _) (IR.AP tS eS _) (IR.ConstI n)) | Just (q32,q16,q8) <- bv8 n = do

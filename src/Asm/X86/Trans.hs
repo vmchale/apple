@@ -106,10 +106,10 @@ ir (IR.MJ (IR.FRel fop (IR.FReg r0) e1) l) = do
     f <- nextF; r <- nextR
     pure $ plE1 [Vcmppd () f (fabsReg r0) i1 (opPred fop), MovqRX () r f, TestI () r maxBound, Jne () l]
 ir (IR.MJ (IR.Is p) l) = pure [TestI () (absReg p) 1, Jne () l]
-ir (IR.MJ (IR.IU Op.IOdd e) l) = do
+ir (IR.MJ (IR.IP Op.IOdd e) l) = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (IReg i) 1, Jne () l]
-ir (IR.MJ (IR.IU Op.IEven e) l) = do
+ir (IR.MJ (IR.IP Op.IEven e) l) = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (IReg i) 1, Je () l]
 ir (IR.J l)                                             = pure [J () l]
@@ -154,13 +154,13 @@ ir (IR.WrF (IR.AP m Nothing _) (IR.KF x)) = do
     iR <- nextR
     pure [MovRI () iR (fI64 x), MovAR () (R (absReg m)) iR]
 ir (IR.Cset t p) = foldMapA ir [IR.MT t 0, IR.Cmov p t 1]
-ir (IR.Fcmov (IR.IU Op.IOdd (IR.Reg r0)) t e) = do
+ir (IR.Fcmov (IR.IP Op.IOdd (IR.Reg r0)) t e) = do
     plE <- feval e t; l <- nextL
     pure $ [TestI () (absReg r0) 1, Je () l] ++ plE ++ [Label () l]
-ir (IR.Cmov (IR.IU Op.IEven (IR.Reg r)) rD e) = do
+ir (IR.Cmov (IR.IP Op.IEven (IR.Reg r)) rD e) = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (absReg r) 1, Cmove () (absReg rD) (IReg i)]
-ir (IR.Cmov (IR.IU Op.IOdd (IR.Reg r)) rD e) = do
+ir (IR.Cmov (IR.IP Op.IOdd (IR.Reg r)) rD e) = do
     i <- nextI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (absReg r) 1, Cmovne () (absReg rD) (IReg i)]
 ir (IR.Fcmov (IR.IRel Op.IEq (IR.Reg r0) (IR.Reg r1)) t e) = do
