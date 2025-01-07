@@ -217,6 +217,7 @@ irE (DP t (C.KI rnk)) = Reg (ctemp t)+IR.ConstI (8*(1+rnk))
 irE (DP t e)          = Reg (ctemp t)+IB IAsl (irE e) 3+8
 irE (CFloor e)        = IRFloor (irX e)
 irE (CCeil e)         = IRCeil (irX e)
+irE (C.IU op e)       = IR.IU op (irE e)
 
 irp :: PE -> Exp
 irp (C.IRel rel e0 e1) = IR.IRel rel (irE e0) (irE e1)
