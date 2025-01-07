@@ -1,15 +1,13 @@
 # Apple Array System
 
-Some cases are not implemented. This is provided as an artefact.
+This is an experimental compiler for an array domain-specific language (DSL) targeting Aarch64.
 
 See [Apple by Example](https://vmchale.github.io/apple/) for a tour of the
 language.
 
 The compiler will bail out with arcane error messages rather than
-produce an incorrect result, except that the Python/R extension modules do not
+produce an incorrect result (some cases are not implemented), except that the Python/R extension modules do not
 enforce type safety and thus may mysteriously segfault or produce unpredictable corrupt results.
-
-Spilling (during register allocation) is not implemented for Arm.
 
 ## Compiler-As-a-Library
 
@@ -57,8 +55,8 @@ matrix multiplication is also faster.
 
 There are no imports.
 
-Recursive functions are not allowed. The DSL is still useful in providing fast
-map, etc. to host languages.
+Recursive functions are not allowed. The DSL is still useful in that it compiles array
+constructs for the host languages.
 
 ## Dimension As a Functor
 
