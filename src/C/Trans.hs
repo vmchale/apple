@@ -636,12 +636,11 @@ aeval (EApp oTy@(Arr oSh I) (Builtin _ Sort) x) t a = do
     (plX, (lX, xR)) <- plA x
     ph <- nI; bl <- nI; nB <- nI; i₀ <- nI; i₁ <- nI; iₒ <- nI; bl₀ <- nI; bl₁ <- nI
     e₀ <- nI; e₁ <- nI
-    n <- nI; np <- nI; pad <- nI; steps <- nI; i <- nI
+    n <- nI; np <- nI; pad <- nI; blSz <- nI; blOSz <- nI; steps <- nI; i <- nI
     slop <- nI; lS <- nextArr slop
     inP <- nI; oP <- nI
-    let blSz=Bin IAsl 1 (Tmp ph-1); blOSz=Bin IAsl 1 (Tmp ph)
-        iAt0=EAt (Raw inP (Tmp bl₀*blSz+Tmp i₀) (Just lS) 8); iAt1=EAt (Raw inP (Tmp bl₁*blSz+Tmp i₁) (Just lS) 8)
-        iAtO=Raw oP (Tmp bl*blOSz+Tmp iₒ) (Just lS) 8
+    let iAt0=EAt (Raw inP (Tmp bl₀*Tmp blSz+Tmp i₀) (Just lS) 8); iAt1=EAt (Raw inP (Tmp bl₁*Tmp blSz+Tmp i₁) (Just lS) 8)
+        iAtO=Raw oP (Tmp bl*Tmp blOSz+Tmp iₒ) (Just lS) 8
     pure (plX$
          n=:ev oTy (xR,lX)
         :steps=:(63-IU Clz (Tmp n)):np=:Bin IAsl 2 (Tmp steps):Cmov () (IRel INeq (Tmp n) (Tmp np)) steps (Tmp steps+1)
@@ -650,15 +649,15 @@ aeval (EApp oTy@(Arr oSh I) (Builtin _ Sort) x) t a = do
         :MaB () lS slop (Tmp np*(Tmp steps+1)*8)
         :For () 1 i 0 ILt (Tmp pad) [Wr () (Raw slop (Tmp i) (Just lS) 8) (KI$minBound)]
         :cpy (Raw slop (Tmp pad) (Just lS)) (AElem xR 1 lX 0) (Tmp n) 8
-        :i₀=:0:i₁=:0:inP=:Tmp slop:oP=:(Tmp slop+Tmp np*8):nB=:Bin IAsr (Tmp np) 1
+        :i₀=:0:i₁=:0:inP=:Tmp slop:oP=:(Tmp slop+Tmp np*8):blSz=:1:blOSz=:2:nB=:Bin IAsr (Tmp np) 1
         :For () 1 ph 1 ILeq (Tmp steps)
             [ For () 1 bl 0 ILt (Tmp nB) [
                 i₀=:0, i₁=:0, bl₀=:(Tmp bl*2), bl₁=:(Tmp bl₀+1),
                 -- fill out-block/next slab
-                For () 1 iₒ 0 ILt blOSz
-                    [ If () (IRel IGeq (Tmp i₀) blSz)
+                For () 1 iₒ 0 ILt (Tmp blOSz)
+                    [ If () (IRel IGeq (Tmp i₀) (Tmp blSz))
                         [ Wr () iAtO iAt1, i₁+=1 ]
-                        [ If () (IRel IGeq (Tmp i₁) blSz)
+                        [ If () (IRel IGeq (Tmp i₁) (Tmp blSz))
                           [ Wr () iAtO iAt0, i₀+=1 ]
                           [ MT () e₀ iAt0, MT () e₁ iAt1
                           , If () (IRel ILt (Tmp e₀) (Tmp e₁)) [Wr () iAtO (Tmp e₀), i₀+=1] [Wr () iAtO (Tmp e₁), i₁+=1]
@@ -667,6 +666,7 @@ aeval (EApp oTy@(Arr oSh I) (Builtin _ Sort) x) t a = do
                     ]
                 ]
             , inP=:Tmp oP, oP+=(Tmp np*8)
+            , blSz=:(Tmp blSz*2), blOSz=:(Tmp blOSz*2)
             , nB=:Bin IAsr (Tmp nB) 1
             ]
         :v8 oSh t a (Tmp n)
