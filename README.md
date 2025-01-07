@@ -2,7 +2,8 @@
 
 Some cases are not implemented. This is provided as an artefact.
 
-See [Apple by Example](https://vmchale.github.io/apple/) for a demonstration of capabilities.
+See [Apple by Example](https://vmchale.github.io/apple/) for a tour of the
+language.
 
 The compiler will bail out with arcane error messages rather than
 produce an incorrect result, except that the Python/R extension modules do not
@@ -56,9 +57,8 @@ matrix multiplication is also faster.
 
 There are no imports.
 
-Recursive functions are not allowed.
-
-Sorting is not implemented (this is a defect and may be fixed in the future).
+Recursive functions are not allowed. The DSL is still useful in providing fast
+map, etc. to host languages.
 
 ## Dimension As a Functor
 
@@ -156,22 +156,20 @@ Type `\l` in the REPL to show the reference card:
  > \l
 Λ             scan                     √             sqrt
 ⋉             max                      ⋊             min
-⍳             integer range            ⌊             floor
-ℯ             exp                      ⨳ {m,n}       convolve
-\~            successive application   \`n           dyadic infix
-_.            log                      'n            map
+⍳             integer range            ⌊, ⌈          floor, ceiling
+e:            exp                      ⨳ {m,n}       convolve
+\~            successive application   \`n           infix
+_.            log                      '             map
 `             zip                      `{i,j∘[k,l]}  rank
 𝒻             range (real)             𝜋             pi
 _             negate                   :             size
-𝓉             dimension                }.?           last
+𝓉             dimension                {x⟜y;z}       no inline
 ->n           select                   **            power
-gen.          generate                 𝓕             fibonacci
-re:           repeat                   }.            typesafe last
+⊂             scatter                  }.            last
 ⊲             cons                     ⊳             snoc
 ^:            iterate                  %.            matmul
-⊗             outer product            |:            transpose
-{.?           head                     {.            typesafe head
-}.?           last                     }:            typesafe init
+⊗             outer product            ⍉, |:         transpose
+{.            head                     }:            typesafe init
 ⟨z,w⟩         array literal            ?p,.e1,.e2    conditional
 ...
 ```
@@ -181,7 +179,10 @@ Enter `:help` in REPL:
 ```
  > :help
 :help, :h                    Show this help
+:yank, :y      <fn> <file>   Read file
+:store, :st    <name> <expresAdd to environment
 :ty            <expression>  Display the type of an expression
+:ann           <expression>  Annotate with types
 ...
 ```
 
