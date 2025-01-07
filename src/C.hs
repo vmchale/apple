@@ -194,7 +194,7 @@ data CS a = For { lann :: a, tck :: CE, ixVar :: Temp, eLow :: CE, loopCond :: I
           | Ma { lann :: a, ash :: Sh (), label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
           | Aa { lann :: a, label :: AL, dTemp, srcTemp :: Temp }
           | Free Temp
-          | MaB { lann :: a, label :: AL, temp :: Temp, aBytes :: Int64 }
+          | MaB { lann :: a, label :: AL, temp :: Temp, aBytes :: CE }
           | RA { lann :: a, label :: !AL } -- return array no-op (takes label)
           | CpyE { lann :: a, aDest, aSrc :: ArrAcc, nElem :: CE, elemSz :: !Int64 } -- copy elems
           | CpyD { lann :: a, aDest, aSrc :: ArrAcc, nDims :: CE } -- copy dims

@@ -309,7 +309,7 @@ uT (TA _ (Just l)) = singleton l; uT _ = IS.empty
 
 uses :: CS a -> IS.IntSet
 uses (Ma _ _ _ _ r n _)    = uE r<>uE n
-uses MaB{}                 = IS.empty
+uses (MaB _ _ _ n)         = uE n
 uses (MX _ _ e)            = uF e
 uses (MX2 _ _ e)           = uF2 e
 uses (Wr _ a e)            = uA a <> uE e
