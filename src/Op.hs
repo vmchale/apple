@@ -12,7 +12,7 @@ import           Prettyprinter (Pretty (..))
 
 data FUn = FSqrt | FLog | FSin | FCos | FAbs | FNeg
 
-data IUn = IEven | IOdd
+data IUn = IEven | IOdd | Clz | Cnt
 
 data BUn = BNeg
 
@@ -67,3 +67,4 @@ instance Pretty FUn where
 
 instance Pretty IUn where
     pretty IEven = "even"; pretty IOdd = "odd"
+    pretty Clz = "clz"; pretty Cnt = "cnt"
