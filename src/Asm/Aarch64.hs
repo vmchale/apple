@@ -318,7 +318,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | EorI { ann :: a, rDest, rSrc :: reg, imm :: BM }
                          | Bfc { ann :: a, rDest :: reg, lsb :: Word8, width :: Word8 }
                          | Prfm { ann :: a, pro :: !Pfop, aSrc :: Addr reg }
-                         | Clz { ann :: a, rDest, rSrc :: reg } | Cnt { ann :: a, rDest, rSrc :: reg }
+                         | Clz { ann :: a, rDest, rSrc :: reg }
                          deriving (Functor, Generic)
 
 instance (NFData r, NFData d, NFData a) => NFData (AArch64 r d a) where
@@ -431,7 +431,6 @@ mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
 mapR f (Prfm l po r)         = Prfm l po (f<$>r)
 mapR f (Clz l r0 r1)         = Clz l (f r0) (f r1)
-mapR f (Cnt l r0 r1)         = Cnt l (f r0) (f r1)
 
 fR :: Monoid m => (areg -> m) -> AArch64 areg afreg a -> m
 fR _ Label{}               = mempty
@@ -539,7 +538,6 @@ fR f (TstI _ r _)          = f r
 fR f (StpD _ _ _ a)        = f@<>a
 fR f (LdpD _ _ _ a)        = f@<>a
 fR f (Clz _ r0 r1)         = f r0<>f r1
-fR f (Cnt _ r0 r1)         = f r0<>f r1
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -647,7 +645,6 @@ mapFR f (ZeroD l d)           = ZeroD l (f d)
 mapFR f (EorD l d0 d1 d2)     = EorD l (f d0) (f d1) (f d2)
 mapFR _ (Prfm l po a)         = Prfm l po a
 mapFR _ (Clz l r0 r1)         = Clz l r0 r1
-mapFR _ (Cnt l r0 r1)         = Cnt l r0 r1
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -793,7 +790,6 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (DupD _ v0 v1 i)        = "dup" <+> pvd v0 <> "," <+> pvd v1 <> brackets (pretty i)
         p4 (Prfm _ po r)           = ar2 "prfm" po r
         p4 (Clz _ r0 r1)           = ar2 "clz" r0 r1
-        p4 (Cnt _ r0 r1)           = ar2 "cnt" r0 r1
 
 instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty
 

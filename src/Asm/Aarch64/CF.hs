@@ -184,7 +184,6 @@ uses DupD{}               = IS.empty
 uses ZeroD{}              = IS.empty
 uses EorD{}               = IS.empty
 uses (Prfm _ _ a)         = uA a
-uses (Cnt _ _ r)          = singleton r
 uses (Clz _ _ r)          = singleton r
 
 defs FMovXX{}            = IS.empty
@@ -294,7 +293,6 @@ defs ZeroD{}             = IS.empty
 defs EorD{}              = IS.empty
 defs Prfm{}              = IS.empty
 defs (Clz _ r _)         = singleton r
-defs (Cnt _ r _)         = singleton r
 
 defsF :: (E freg) => AArch64 reg freg ann -> IS.IntSet
 defsF (FMovXX _ r _)     = singleton r
@@ -406,7 +404,6 @@ defsF (ZeroD _ v)        = singleton v
 defsF (EorD _ v _ _)     = singleton v
 defsF Prfm{}             = IS.empty
 defsF Clz{}              = IS.empty
-defsF Cnt{}              = IS.empty
 
 usesF :: (E freg, Eq freg) => AArch64 reg freg ann -> IS.IntSet
 usesF (FMovXX _ _ r)       = singleton r
@@ -519,7 +516,6 @@ usesF (DupD _ _ r _)       = singleton r
 usesF (ZeroD _ d)          = singleton d
 usesF Prfm{}               = IS.empty
 usesF Clz{}                = IS.empty
-usesF Cnt{}                = IS.empty
 
 next :: (E reg, E freg, Eq freg) => [BB AArch64 reg freg () ()] -> FreshM ([N] -> [N], [BB AArch64 reg freg () ControlAnn])
 next bbs = do
