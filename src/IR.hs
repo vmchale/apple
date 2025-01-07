@@ -152,7 +152,7 @@ data Exp = ConstI Int64
          | IB IBin Exp Exp
          | FRel FRel FE FE
          | IRel IRel Exp Exp | Is Temp
-         | IU IUn Exp
+         | IU IP Exp
          | BU BUn Exp
          | IRFloor FE | IRCeil FE
          | EAt AE | BAt AE

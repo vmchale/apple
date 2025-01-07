@@ -1,6 +1,7 @@
 module Op ( FUn (..)
           , FBin (..)
           , IUn (..)
+          , IP (..)
           , BUn (..)
           , IBin (..)
           , BBin (..)
@@ -12,7 +13,8 @@ import           Prettyprinter (Pretty (..))
 
 data FUn = FSqrt | FLog | FSin | FCos | FAbs | FNeg
 
-data IUn = IEven | IOdd | Clz | Cnt
+data IP = IEven | IOdd
+data IUn = Clz | Cnt
 
 data BUn = BNeg
 
@@ -65,6 +67,5 @@ instance Pretty FUn where
     pretty FAbs  = "abs"
     pretty FNeg = "¬"
 
-instance Pretty IUn where
-    pretty IEven = "even"; pretty IOdd = "odd"
-    pretty Clz = "clz"; pretty Cnt = "cnt"
+instance Pretty IP where pretty IEven = "even"; pretty IOdd = "odd"
+instance Pretty IUn where pretty Clz = "clz"; pretty Cnt = "cnt"

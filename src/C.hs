@@ -131,7 +131,7 @@ data PE = IRel IRel CE CE
         | FRel FRel F1E F1E
         | Boo BBin PE PE
         | BConst Bool
-        | IUn IUn CE
+        | IUn IP CE
         | Is BTemp
         | PAt ArrAcc
         | BU BUn PE
