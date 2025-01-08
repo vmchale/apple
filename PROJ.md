@@ -1,7 +1,7 @@
 - [x] tuples in C's FnTy
 - [½] slotted/efficient array allocations
 - [ ] Abstract function intermediates
-  - [ ] better tuple-iteration
+  - [x] better tuple-iteration
   - [ ] write-to-destination without allocation for arrays
     (separate `fill` function)
       - [ ] also when passing array args, dim &c. in an `AD` structure
@@ -16,3 +16,9 @@
 - [ ] C type
 - [ ] Einstein notation
 - [ ] specify iteration by wallpaper group...
+- [ ] simd exp by polynomial...?
+- [ ] assembly "prettyprinter" class
+- [ ] map, zip as rank...
+- [ ] optimize sort
+  - [ ] no padding?
+  - [ ] don't copy in/out from slab
