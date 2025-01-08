@@ -74,3 +74,8 @@ assert not(any_v(np.array([False,False,False])))
 
 prime_mask=apple.jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))))))'irange 2 N")
 assert (prime_mask(9)==np.array([True,True,False,True,False,True,False,False])).all()
+
+xs=np.random.rand(100)
+sort=apple.jit("[⍋(x::Vec n float)]")
+res=sort(xs);xs.sort()
+assert (res==xs).all()
