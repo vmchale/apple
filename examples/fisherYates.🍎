@@ -1,0 +1,5 @@
+λa.
+{
+  del ← λi.λxs. ((≠i)#.xsᶥ)⊂xs;
+  ug. (λB. {n ← 𝓉B; ix ⟜ rand. 0 (n-1); (del ix B, B˙ix)}) a (𝓉 a)
+}
