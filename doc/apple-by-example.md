@@ -153,6 +153,15 @@ will be interpreted as
 
 This only works for single-digit numbers, but cosmically justified numbers [tend to be small](https://groups.google.com/g/shaktidb/c/sYcklkglN8w/m/Vf-qdfx3AgAJ).
 
+## Sort
+
+`⍋` sorts a numeric array.
+
+```
+ > ⍋ (rand. _20 20 :: Vec 13 int)
+Vec 13 [-17, -13, -10, -9, -7, -7, -7, -5, 2, 3, 4, 12, 17]
+```
+
 ## Axis
 
 `ᶥ` (postfix) returns a vector of indices with the same length as the leading
