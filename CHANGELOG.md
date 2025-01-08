@@ -18,6 +18,8 @@
   * Fix bug in parsing curried binary operators
   * Remove `re:` in favor of infix 〃
   * `irange`, ⍳ always step by 1
+  * Drop support for X86 backend
+  * Add sort to language
 
 # 0.3.0.0
 
