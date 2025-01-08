@@ -632,14 +632,14 @@ aeval (EApp (Arr oSh _) g@(Builtin _ AddDim) xs) t a | (Arr sh ty) <- eAnn xs, J
     contents <- rfill g (AD t (Just a) Nothing (Just$Tmp rnk) (Just sz) Nothing) [AI (AD xR lX Nothing (Just$Tmp xRnk) Nothing (Just$Tmp szR))]
     pure (plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:rnk =: (Tmp xRnk+1):Ma () oSh a t (Tmp rnk) (Tmp szR) sz:
            [Wr () (ADim t 0 (Just a)) 1, CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)]++contents)
-aeval (EApp oTy@(Arr oSh I) (Builtin _ Sort) x) t a = do
+aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just lt <- cr tX = do
     (plX, (lX, xR)) <- plA x
     ph <- nI; bl <- nI; nB <- nI; i₀ <- nI; i₁ <- nI; iₒ <- nI; bl₀ <- nI; bl₁ <- nI
-    e₀ <- nI; e₁ <- nI
+    e₀ <- rtemp tX; e₁ <- rtemp tX
     n <- nI; np <- nI; pad <- nI; blSz <- nI; blOSz <- nI; steps <- nI; i <- nI
     slop <- nI; lS <- nextArr slop
     inP <- nI; oP <- nI
-    let iAt0=EAt (Raw inP (Tmp bl₀*Tmp blSz+Tmp i₀) (Just lS) 8); iAt1=EAt (Raw inP (Tmp bl₁*Tmp blSz+Tmp i₁) (Just lS) 8)
+    let iAt0=Raw inP (Tmp bl₀*Tmp blSz+Tmp i₀) (Just lS) 8; iAt1=Raw inP (Tmp bl₁*Tmp blSz+Tmp i₁) (Just lS) 8
         iAtO=Raw oP (Tmp bl*Tmp blOSz+Tmp iₒ) (Just lS) 8
     pure (plX$
          n=:ev oTy (xR,lX)
@@ -656,11 +656,11 @@ aeval (EApp oTy@(Arr oSh I) (Builtin _ Sort) x) t a = do
                 -- fill out-block/next slab
                 For () 1 iₒ 0 ILt (Tmp blOSz)
                     [ If () (IRel IGeq (Tmp i₀) (Tmp blSz))
-                        [ Wr () iAtO iAt1, i₁+=1 ]
+                        [ Wr () iAtO (EAt iAt1), i₁+=1 ]
                         [ If () (IRel IGeq (Tmp i₁) (Tmp blSz))
-                          [ Wr () iAtO iAt0, i₀+=1 ]
-                          [ MT () e₀ iAt0, MT () e₁ iAt1
-                          , If () (IRel ILt (Tmp e₀) (Tmp e₁)) [Wr () iAtO (Tmp e₀), i₀+=1] [Wr () iAtO (Tmp e₁), i₁+=1]
+                          [ Wr () iAtO (EAt iAt0), i₀+=1 ]
+                          [ mt iAt0 e₀, mt iAt1 e₁
+                          , If () (lt e₀ e₁) [wt iAtO e₀, i₀+=1] [wt iAtO e₁, i₁+=1]
                           ]
                         ]
                     ]
@@ -670,8 +670,9 @@ aeval (EApp oTy@(Arr oSh I) (Builtin _ Sort) x) t a = do
             , nB=:Bin IAsr (Tmp nB) 1
             ]
         :v8 oSh t a (Tmp n)
-        ++[cpy (AElem t 1 (Just a) 0) (Raw slop (Tmp np*Tmp steps+Tmp pad) (Just lS)) (Tmp n) 8]
-        )
+        ++[cpy (AElem t 1 (Just a) 0) (Raw slop (Tmp np*Tmp steps+Tmp pad) (Just lS)) (Tmp n) 8])
+  where
+    cr I=Just (\(IT r0) (IT r1) -> IRel ILt (Tmp r0) (Tmp r1)); cr F=Just (\(FT x0) (FT x1) -> FRel FLt (FTmp x0) (FTmp x1)); cr _=Nothing
 aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Init) x) t a | Just sz <- aB oTy = do
     nR <- nI
     (plX, (lX, xR)) <- plA x
