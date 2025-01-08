@@ -15,16 +15,16 @@ The REPL and typechecker are available on the [release page](https://github.com/
 In the REPL, type `\l`.
 
 ```
+vanessa@MacBookAir apple % arepl
  > \l
 Λ             scan                     √             sqrt
 ⋉             max                      ⋊             min
-⍳             integer range            ⌊             floor
-ℯ             exp                      ⨳ {m,n}       convolve
+⍳             integer range            ⌊, ⌈          floor, ceiling
+e:            exp                      ⨳ {m,n}       convolve
 \~            successive application   \`n           infix
-_.            log                      'n            map
+_.            log                      '             map
 `             zip                      `{i,j∘[k,l]}  rank
 𝒻             range (real)             𝜋             pi
-
 ⋮
 ```
 
