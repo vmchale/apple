@@ -30,23 +30,9 @@ sum via cons and then map-sum
 λa.λb. [(+)/x]`{1∘[2]} ((<|)`{0,1∘[2]} a (b::M float))
 ```
 
-```
-λxs. {x ⟜ ♯'xs; x%.|:x};
-λxs. {x ⟜ ♯'xs; x%.♯xs};
-[x(*)⊗x];
-```
-
 gen. / iter
 
-# take/drop
-
-```
-λn.λx. (x˙)'⍳ 0 (n-1) 1
-```
-
 also tail/init ^
-
-(windowed id+elem)
 
 # Identity-fill
 
@@ -55,3 +41,4 @@ also tail/init ^
 # Identities
 
 n choose k = (n-1) choose (k-1) + (n-1) choose k
+https://en.wikipedia.org/wiki/Stirling_numbers_of_the_second_kind#Recurrence_relation
