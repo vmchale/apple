@@ -1335,7 +1335,7 @@ aeval (EApp (Arr sh tX) (EApp _ (EApp _ (Builtin _ Ug) g) seed) n) t a
     pure $ plN (vSz sh t a (Tmp nR) sz++plSeed++[loop])
   where
     mvrt (IT i0) (IT i1) = i0=:Tmp i1; mvrt (FT x0) (FT x1) = MX () x0 (FTmp x1); mvrt (PT b0) (PT b1) = MB () b0 (Is b1)
-aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <- eAnn seed, Just sz <- nSz tyS = do
+aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <- eAnn seed, Just sz <- rSz tyS = do
     acc <- rtemp tyS
     plS <- eeval seed acc
     td <- nI
@@ -1343,6 +1343,14 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | tyS <-
     ss <- writeRF op [acc] acc
     loop <- arof sh (Tmp nR) $ wt (Raw td 0 (Just a) sz) acc:td+=KI sz:ss
     pure (plN$vSz sh t a (Tmp nR) sz++plS++td=:DP t 1:[loop])
+aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | seedTy@P{} <- eAnn seed, Just πsz <- nSz seedTy = do
+    (plN, nE) <- plC n
+    (plS,as) <- plΠ seed
+    td <- nI; as0 <- frts as
+    -- TODO: discards arrays
+    (_, ss) <- writeF op [ΠArg as] (ΠT (tr<$>as0))
+    loop <- arof sh nE $ WrT () (Raw td 0 (Just a) πsz) as:td+=KI πsz:ss++mvts as as0
+    pure (plN$vSz sh t a nE πsz++plS++td=:DP t 1:[loop])
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr xSh tX <- eAnn seed, Just xSz <- nSz tX = do
     (plN, nE) <- plC n
     (seedR, lSeed, plSeed) <- maa seed
