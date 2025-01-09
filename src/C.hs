@@ -158,11 +158,13 @@ instance (Pretty x, Pretty e, Pretty t, PS e) => PS (CFE t x e) where
 
 instance (Pretty x, PS e, Pretty t, Pretty e) => Show (CFE t x e) where show=show.pretty
 
--- TODO: tuples-of-tuples would be easy?
-data TT = TI !Temp | TA !Temp (Maybe AL) | TF !FTemp | TB !BTemp
+data TT = TI !Temp | TA !Temp (Maybe AL) | TF !FTemp | TB !BTemp | TΠ TStore
 type TStore = [TT]
 
-prettyTS = tupled.fmap (\case {TI t -> pretty t; TA t _ -> pretty t; TF t -> pretty t; TB b -> pretty b})
+instance Pretty TT where
+    pretty = \case {TI t -> pretty t; TA t _ -> pretty t; TF t -> pretty t; TB b -> pretty b; TΠ tt -> tupled (pretty<$>tt)}
+
+prettyTS = tupled.fmap pretty
 
 infix 9 =:
 
