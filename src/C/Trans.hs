@@ -292,8 +292,8 @@ mv dest asrc sz = Mv () (dest sz) (asrc sz) sz
 
 ra (FT f)=FA f; ra (IT r)=IA r; ra (PT r)=BA r; ra (ΠT rs) = ΠArg (rp<$>rs)
 art (IA r)=IT r;art (FA r)=FT r; art (BA r)=PT r; art (ΠArg rs)=ΠT (tr<$>rs)
-tr (TF x)=FT x; tr (TI r)=IT r; tr (TB r)=PT r
-rp (FT x)=TF x; rp (IT r)=TI r; rp (PT r)=TB r
+tr (TF x)=FT x; tr (TI r)=IT r; tr (TB r)=PT r; tr (TΠ rs)=ΠT (tr<$>rs)
+rp (FT x)=TF x; rp (IT r)=TI r; rp (PT r)=TB r; rp (ΠT rs)=TΠ (rp<$>rs)
 
 unFA (TF x)=FTmp x; unFA _=error "internal error :("
 unIA (TI r)=Tmp r; unIA _=error "internal error."
@@ -577,9 +577,6 @@ aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t a | Just (ty,sz) <- rr (eAnn x) =
     xR <- rtemp ty
     plX <- eeval x xR
     pure (plX++vSz sh t a 1 sz++[wt (AElem t 1 (Just a) 0 8) xR])
-aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t a | ty@P{} <- eAnn x, Just sz <- nSz ty = do
-    (plX,as) <- plΠ x
-    pure (plX++vSz sh t a 1 sz++[WrT () (AElem t 1 (Just a) 0 sz) as])
 aeval (EApp (Arr oSh _) g@(Builtin _ AddDim) xs) t a | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty = do
     (plX, (lX, xR)) <- plA xs
     xRnk <- nI; szR <- nI; rnk <- nI
@@ -826,7 +823,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs) ys) t a
     | Just (yT, yRnk) <- tRnk (eAnn ys), Just (_, xRnk) <- tRnk (eAnn xs)
     , (Arrow tX (Arrow _ tCod)) <- eAnn op, Just (tC, opRnk) <- tRnk tCod
-    , Just xSz <- nSz tX, Just cSz <- rSz tC, Just ySz <- nSz yT = do
+    , Just xSz <- nSz tX, Just cSz <- nSz tC, Just ySz <- nSz yT = do
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
     oSz <- nI; zSz <- nI
     td <- nI
@@ -1098,17 +1095,12 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t aL | Just (I, _) <- tRn
         :m=:ev tA (aR,lA):[loop])
   where
     tA=eAnn a; tX=eAnn x
-aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t a | tX <- eAnn x, Just sz <- rSz tX = do
+aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t a | tX <- eAnn x, Just sz <- nSz tX = do
     xR <- rtemp tX; nR <- nI; nϵR <- nI
     plX <- eeval x xR
     (plXs, (l, xsR)) <- plA xs
     contents <- rfill g (AD t (Just a) Nothing Nothing (Just sz) Nothing) [NA xR, AI (AD xsR l Nothing Nothing Nothing (Just$Tmp nϵR))]
     pure (plX++plXs (nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents))
-aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ ConsE) x) xs) t a | tX <- eAnn x, isΠ tX, sz <- bT tX = do
-    nR <- nI; nϵR <- nI
-    (plX,as) <- plΠ x; (plXs, (lX, xsR)) <- plA xs
-    contents <- rfill g (AD t (Just a) Nothing Nothing (Just sz) Nothing) [NA (ΠT (tr<$>as)), AI (AD xsR lX Nothing Nothing (Just sz) (Just$Tmp nϵR))]
-    pure (plX++plXs (nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents))
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t a | Just (tX, xRnk) <- tRnk (eAnn x), tXs <- eAnn xs, Just (_, xsRnk) <- tRnk tXs = do
     (plX, (lX, xR)) <- plA x; (plXs, (lXs, xsR)) <- plA xs
     (dts,dss) <- plDim xRnk (xR, lX)
@@ -1116,18 +1108,12 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ ConsE) x) xs) t a | Just (tX, xRnk) <
     let rnkE=KI xsRnk; szX=bT tX
     pure (plXs$plX$d1R=:ev tXs (xsR,lXs):dss++d1'R=:(Tmp d1R+1):PlProd () nX (Tmp<$>dts):szR=:(Tmp d1'R*Tmp nX):Ma () oSh a t rnkE (Tmp szR) szX:Wr () (ADim t 0 (Just a)) (Tmp d1'R):CpyD () (ADim t 1 (Just a)) (ADim xsR 1 lXs) (KI$xsRnk-1):[cpy (AElem t rnkE (Just a) 0) (AElem xR (KI xRnk) lX 0) (Tmp nX) szX, cpy (AElem t rnkE (Just a) (Tmp nX)) (AElem xsR (KI xsRnk) lXs 0) (Tmp d1R*Tmp nX) szX])
                                                            | otherwise = unsupported
-aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t a | tX <- eAnn x, Just sz <- rSz tX = do
+aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t a | tX <- eAnn x, Just sz <- nSz tX = do
     xR <- rtemp tX; nR <- nI; nϵR <- nI
     plX <- eeval x xR
     (plXs, (l, xsR)) <- plA xs
     contents <- rfill g (AD t (Just a) Nothing Nothing (Just sz) Nothing) [NA xR, AI (AD xsR l Nothing Nothing Nothing (Just$Tmp nϵR))]
     pure (plXs$plX++nϵR =: ev (eAnn xs) (xsR,l):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents)
-aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Snoc) x) xs) t a | tX <- eAnn x, isΠ tX, sz <- bT tX = do
-    nR <- nI; nϵR <- nI
-    (plX,as) <- plΠ x
-    (plXs, (lX, xsR)) <- plA xs
-    contents <- rfill g (AD t (Just a) Nothing Nothing Nothing Nothing) [NA (ΠT (tr<$>as)), AI (AD xsR lX Nothing Nothing (Just sz) (Just$Tmp nϵR))]
-    pure (plXs$plX++nϵR =: ev (eAnn xs) (xsR,lX):nR =: (Tmp nϵR+1):vSz oSh t a (Tmp nR) sz++contents)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Snoc) x) xs) t a | Just (tX, xRnk) <- tRnk (eAnn x), tXs <- eAnn xs, Just (_, xsRnk) <- tRnk tXs = do
     (plX, (lX, xR)) <- plA x; (plXs, (lXs, xsR)) <- plA xs
     (dts,dss) <- plDim xRnk (xR, lX)
@@ -1684,6 +1670,7 @@ eval (Id _ (FoldOfZip zop op [p])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz
     loop <- afor1 sh 1 ILt (Tmp szR) (\i -> mt (AElem  pR 1 lP (Tmp i) pSz) x:ss)
     sseed <- writeRF zop [x] (IT acc)
     pure $ plPP$szR =:ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:sseed++[loop]
+    -- FIXME: work for all p:qs like feval does
 eval (Id _ (FoldOfZip zop op [p, q])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz) <- aRr tPs, Just (tQ, qSz) <- aRr (eAnn q) = do
     x <- rtemp tP; y <- rtemp tQ; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
