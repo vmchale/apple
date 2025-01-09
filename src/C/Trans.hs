@@ -46,7 +46,7 @@ nI = ITemp <$> nextI; nBT = BTemp <$> nextI
 nF = FTemp <$> nextI; nF2 = F2Temp <$> nextI
 
 nIs = traverse (\_ -> nI); nFs = traverse (\_ -> nF); nF2s = traverse (\_ -> nF2)
-frts = traverse frt where frt TI{}=TI<$>nI; frt TF{}=TF<$>nF; frt TB{}=TB<$>nBT
+frts = traverse frt where frt TI{}=TI<$>nI; frt TF{}=TF<$>nF; frt TB{}=TB<$>nBT; frt (TΠ ts)=TΠ<$>traverse frt ts
 
 addAA i aa = modify (\(CSt t ar as l v b d d2 π a f aas ts) -> CSt t ar as l v b d d2 π a f (IM.insert i aa aas) ts)
 addVar n r = modify (\(CSt t ar as l v b d d2 π a f aas ts) -> CSt t ar as l (insert n r v) b d d2 π a f aas ts)
@@ -95,7 +95,7 @@ rSz F=Just 8; rSz I=Just 8; rSz B=Just 1; rSz _=Nothing
 nSz F=Just 8; nSz I=Just 8; nSz B=Just 1; nSz (P ts)=sum<$>traverse nSz ts; nSz _=Nothing
 
 aB (Arr (_ `Cons` Nil) t) = nSz t; aB _ = Nothing
-aRr (Arr (_ `Cons` Nil) t) = rr t; aRr _ = Nothing
+aBs (Arr (_ `Cons` Nil) t) = (t,)<$>nSz t; aBs _ = Nothing
 aN (Arr _ t) = nt t; aN _=Nothing
 
 nt :: T a -> Maybe (T a)
@@ -806,7 +806,7 @@ aeval e t a
     pure (plXs$rnkR=:eRnk sh (xR,lX):SZ () szR xR (Tmp rnkR) lX:Ma () oSh a t (Tmp rnkR) (Tmp szR) szC:CpyD () (ADim t 0 (Just a)) (ADim xR 0 lX) (Tmp rnkR):zipWith (\xRϵ xRd -> xRd=:DP xRϵ (Tmp rnkR)) xRs xRds++tD=:DP t (Tmp rnkR):[loop])
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)])) op) xs) ys) t a
     | Just (yT, yRnk) <- tRnk (eAnn ys), Just (_, xRnk) <- tRnk (eAnn xs)
-    , Arrow tX (Arrow _ tCod) <- eAnn op, Just (tC, cSz) <- rr tCod
+    , Arrow tX (Arrow _ tC) <- eAnn op, Just cSz <- nSz tC
     , Just xSz <- nSz tX, Just ySz <- nSz yT = do
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
     zR <- rtemp tC
@@ -1166,7 +1166,7 @@ aeval (EApp oTy@(Arr sh _) g@(EApp _ (Builtin _ Scan) op) xs) t a | (Arrow tAcc 
     (plE, (l, aP)) <- plA xs
     contents <- rfill g (AD t (Just a) (Just oTy) Nothing (Just accSz) (Just$Tmp n)) [AI (AD aP l Nothing Nothing (Just xSz) Nothing), NA acc, NA x]
     pure (plE$n =: ev (eAnn xs) (aP,l):vSz sh t a (Tmp n) accSz++contents)
-aeval (EApp oTy@(Arr oSh _) (EApp _ (Builtin _ (DI n)) op) xs) t a | Just (ot, oSz) <- aRr oTy, tXs <- eAnn xs, Just xSz <- aB tXs = do
+aeval (EApp oTy@(Arr oSh _) (EApp _ (Builtin _ (DI n)) op) xs) t a | Just (ot, oSz) <- aBs oTy, tXs <- eAnn xs, Just xSz <- aB tXs = do
     szR <- nI; sz'R <- nI; fR <- rtemp ot
     (slopP, aSlop, pops) <- vslop xSz n
     td <- nI
@@ -1671,7 +1671,7 @@ eval (Id _ (Iter f x n)) t = do
     let loop=For () 1 i 1 ILt nR ss
     pure $ plX++plN [loop]
 eval (Cond _ p e0 e1) t = cond p e0 e1 (IT t)
-eval (Id _ (FoldOfZip zop op [p])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz) <- aRr (eAnn p) = do
+eval (Id _ (FoldOfZip zop op [p])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz) <- aBs (eAnn p) = do
     x <- rtemp tP; szR <- nI
     (plPP, (lP, pR)) <- plA p
     ss <- writeRF op [IT acc, x] (IT acc)
@@ -1679,7 +1679,7 @@ eval (Id _ (FoldOfZip zop op [p])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz
     sseed <- writeRF zop [x] (IT acc)
     pure $ plPP$szR =:ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:sseed++[loop]
     -- FIXME: work for all p:qs like feval does
-eval (Id _ (FoldOfZip zop op [p, q])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz) <- aRr tPs, Just (tQ, qSz) <- aRr (eAnn q) = do
+eval (Id _ (FoldOfZip zop op [p, q])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz) <- aBs tPs, Just (tQ, qSz) <- aBs (eAnn q) = do
     x <- rtemp tP; y <- rtemp tQ; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
     ss <- writeRF op [IT acc, x, y] (IT acc)
@@ -1845,8 +1845,8 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP <- eAnn p, Arr _ F <- eAnn q, J
     e1 (Arr (Ix x i `Cons` _) _) = ip (Ix x (i-1)); e1 _ = U
 feval (Id _ (FoldOfZip zop op (p:qs))) acc
     | tPs@(Arr pSh _) <- eAnn p
-    , Just (tP, pSz) <- aRr tPs
-    , Just (tQs, qSzs) <- unzip<$>traverse (aRr.eAnn) qs = do
+    , Just (tP, pSz) <- aBs tPs
+    , Just (tQs, qSzs) <- unzip<$>traverse (aBs.eAnn) qs = do
     x <- rtemp tP; ys <- traverse rtemp tQs; nR <- nI
     (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- plAs qs
     ss <- writeRF op (FT acc:x:ys) (FT acc)
@@ -1856,8 +1856,8 @@ feval (Id _ (FoldOfZip zop op (p:qs))) acc
     pure $plPP$plQs$nR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mQs 0++seed++[loop]
 feval (Id _ (FoldSOfZip seed op (p:qs))) acc
     | tPs@(Arr pSh _) <- eAnn p
-    , Just (tP, pSz) <- aRr tPs
-    , Just (tQs, qSzs) <- unzip<$>traverse (aRr.eAnn) qs = do
+    , Just (tP, pSz) <- aBs tPs
+    , Just (tQs, qSzs) <- unzip<$>traverse (aBs.eAnn) qs = do
     x <- rtemp tP; ys <- traverse rtemp tQs; nR <- nI
     plSeed <- feval seed acc
     (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- plAs qs
