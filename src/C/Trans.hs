@@ -1987,6 +1987,18 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     xRd <- nI
     (plB, b) <- off xR lX nEs
     pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), ATT () ts (Raw xRd b lX sz)])
+πr (Id _ (FoldOfZip zop op (p:qs))) acc
+    | tPs@(Arr pSh _) <- eAnn p
+    , Just (tP, pSz) <- aBs tPs
+    , Just (tQs, qSzs) <- unzip<$>traverse (aBs.eAnn) qs = do
+    x <- rtemp tP; ys <- traverse rtemp tQs; nR <- nI; acc0 <- frts acc
+    let rts=ΠT (tr<$>acc); rts0=ΠT (tr<$>acc0)
+    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- plAs qs
+    ss <- writeRF op (rts:x:ys) rts0
+    let mQs at = [mt (AElem qR 1 lQ at qSz) y | (y, (lQ, qR), qSz) <- zip3 ys aQs qSzs]
+    loop <- afor1 pSh 1 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mQs (Tmp i)++ss++mvts acc acc0)
+    seed <- writeRF zop (x:ys) rts
+    pure $plPP$plQs$nR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mQs 0++seed++[loop]
 πr e _ = error (show e)
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe Int64, [AL], [CS ()])
