@@ -16,6 +16,7 @@ import           Data.List                        (find, genericLength, scanl')
 import           Data.Maybe                       (mapMaybe)
 import           Data.Word                        (Word64)
 import           GHC.Float                        (castDoubleToWord64)
+import           Ix
 import           Nm
 import           Nm.IntMap                        as Nm
 import           Op
@@ -134,17 +135,6 @@ nz (StaPlus _ i0 i1) = nz i0 || nz i1 -- no negative dims
 nz (StaMul _ i0 i1) = nz i0 && nz i1
 nz _ = False
 
-ipe, ipo :: I a -> Bool
-ipe (Ix _ i)          = i > 0 && even i
-ipe (StaPlus _ i0 i1) = ipe i0&&ipe i1||ipo i0&&ipo i1
-ipe (StaMul _ i0 i1)  = ipe i0 || ipe i1
-ipe _                 = False
-
-ipo (Ix _ i)          = odd i
-ipo (StaPlus _ i0 i1) = ipe i0&&ipo i1||ipo i0&&ipe i1
-ipo (StaMul _ i0 i1)  = ipo i0 && ipo i1
-ipo _                 = False
-
 nzSh :: Sh a -> Bool
 nzSh (i `Cons` Nil) = nz i
 nzSh (i `Cons` sh)  = nz i && nzSh sh
@@ -161,49 +151,15 @@ ni1 _ = False
 nec :: T a -> Bool
 nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
 
-ro,re,ce,ao,ae :: Sh a -> Bool
-ro (i `Cons` _) = ipo i; ro _ = False
-re (i `Cons` _) = ipe i; re _ = False
-ce (_ `Cons` i `Cons` _) = ipe i; ce _ = False
-ao (i `Cons` Nil) = ipo i; ao (i `Cons` sh) = ipo i && ao sh; ao _ = False
-ae (i `Cons` Nil) = ipe i; ae (i `Cons` sh) = ipe i || ae sh; ae _ = False
-
-ter,tor,toc,tec :: T a -> Bool
-ter (Arr sh _) = re sh; ter _ = False
-tor (Arr sh _) = ro sh; tor _ = False
-tec (Arr (_ `Cons` i `Cons` _) _) = ipe i; tec _ = False
-toc (Arr (_ `Cons` i `Cons` _) _) = ipo i; toc _ = False
-
 for (i `Cons` _) | nz i = For1 () 1; for _ = For () 1
 
 rof sh = if nzSh sh then Rof1 () else Rof (); rof1 sh = if n1 sh then Rof1 () else Rof ()
 fort (Arr sh _) = for sh; fort _ = For () 1
 forc t = if nec t then For1 () 1 else For () 1
 
-f21o (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
-                                 | even i = F2orO ()
-f21o _                           = F2or ()
+r2of sh = R2of () (psh sh); r2r sh = R2of () (pr sh)
 
-r21 (Arr (Ix _ i `Cons` Nil) _) | odd i = \tϵ c ss _ -> R2ofE () tϵ c ss | even i = R2ofO ()
-r21 _                           = R2of ()
-
-r2of ty | tor ty = R2ofO ()
-        | ter ty = \tϵ c ss _ -> R2ofE () tϵ c ss
-        | otherwise = R2of ()
-
-f2or sh | ro sh = F2orO ()
-        | re sh = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
-        | otherwise = F2or ()
-
-f2ort (Arr sh _) = f2or sh; f2ort _ = F2or ()
-
-f2orc ty | toc ty = F2orO ()
-         | tec ty = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
-         | otherwise = F2or ()
-
-f2ors sh | ao sh = F2or ()
-         | ae sh = \tϵ el c eu ss _ -> F2orE () tϵ el c eu ss
-         | otherwise = F2or ()
+f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh); f2ors sh = F2or () (psh sh)
 
 mIFs :: [E a] -> Maybe [Word64]
 mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
@@ -514,14 +470,14 @@ rfill (Builtin _ Tail) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] 
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 1) n sz]
 rfill (Builtin _ TailM) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 1) n sz]
-rfill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just tXs) _ _ _)] | Arrow F F <- eAnn f, hasS f = do
+rfill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just (Arr xSh _)) _ _ _)] | Arrow F F <- eAnn f, hasS f = do
     td <- nI; xRd <- nI; i <- nI
     x <- nF2; y <- nF2; x₀ <- nF; y₀ <- nF
     ss <- write2 f [x] y
     s1 <- writeRF f [FT x₀] (FT y₀)
     let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+16):ss++[Wr2F () (Raw td 0 lA 8) (FTmp y), td=:(Tmp td+16)]
         step1=MX () x₀ (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+8):s1++[WrF () (Raw td 0 lA 8) (FTmp y₀), td=:(Tmp td+8)]
-        loop=r2of tXs i n step step1
+        loop=r2of xSh i n step step1
     pure [xRd=:DP xR 1,td=:DP t 1, loop]
 rfill (EApp _ (Builtin _ Map) op) (AD t lA (Just (Arr sh _)) _ _ (Just n)) [AI (AD xR l _ _ _ _)] | (Arrow tD tC) <- eAnn op, nind tD = do
     xRd <- nI; td <- nI;
@@ -973,7 +929,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t aL | Arr xSh F <- tX = 
     i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; z <- nF2
     aRd <- nI; xRd <- nI; td <- nI
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    (prologue, et, ~(Just zs)) <- if re xSh then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    (prologue, et, ~(Just zs)) <- case pr xSh of E -> pure (id, FTmp z0, Nothing); _ -> do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop = fort tA i 0 ILt (Tmp m) $ prologue
                   [ MX2 () z (ConstF (0,0))
                   , f2or xSh j 0 ILt (Tmp n)
@@ -1029,13 +985,13 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t a
     tA=eAnn a; tB=eAnn b
     mT n | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
     rot1 xs = take (length xs) $ drop 1 $ cycle xs
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t aL | Arr _ F <- tA, Arr bSh _ <- tB = do
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t aL | Arr bSh F <- tB = do
     i <- nI; j <- nI; k <- nI; m <- nI; l <- nI; n <- nI; o <- nI
     z <- nF2; z0 <- nF; za <- nF2; zb <- nF2; za1 <- nF; zb1 <- nF
     aRd <- nI; bRd <- nI; td <- nI
     tid <- nI; bid <- nI; aid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    (prologue, et, ~(Just zs)) <- if ce bSh then pure (id, FTmp z0, Nothing) else do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    (prologue, et, ~(Just zs)) <- case pc bSh of E -> pure (id, FTmp z0, Nothing); _ -> do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let zero=f2ors oSh l 0 ILt (Tmp m*Tmp o)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
@@ -1045,7 +1001,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t a
                     [ MX2 () z (ConstF (0,0))
                     , MT () aid (Tmp aRd+(Tmp n*Tmp i)*8)
                     , MT () bid (Tmp bRd+(Tmp n*Tmp j)*8)
-                    , f2orc tB k 0 ILt (Tmp n)
+                    , f2orc bSh k 0 ILt (Tmp n)
                             [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
                             , MX2 () zb (FAt (Raw bid 0 lB 8)), bid+=16
                             , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zb)))]
@@ -1065,20 +1021,20 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t a
         :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
-aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t aL | Arr _ F <- eAnn a = do
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t aL | Arr bSh F <- tB = do
     m <- nI; n <- nI; o <- nI; i <- nI; j <- nI; k <- nI; l <- nI; zr <- nF2; zr₀ <- nF; z₀ <- nF2; z₁ <- nF2; z₀₀ <- nF; z₁₀ <- nF
     aRd <- nI; bRd <- nI; td <- nI; bid <- nI; bidϵ <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
     let zero=f2ors oSh l 0 ILt (Tmp m*Tmp o)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        kjloop = f2ort tB k 0 ILt (Tmp n)
+        kjloop = f2or bSh k 0 ILt (Tmp n)
                     [ MX () z₀₀ (FAt (Raw aRd (Tmp k) lA 8))
                     , MX () z₁₀ (FAt (Raw aRd (Tmp k+1) lA 8))
                     -- thabove could be a single fetch (dup works on indexed SIMD registers)
                     , DS () z₀ z₀₀, DS () z₁ z₁₀
                     , let za=Raw td (Tmp j) (Just aL) 8 in
-                        f2orc tB j 0 ILt (Tmp o)
+                        f2orc bSh j 0 ILt (Tmp o)
                             [ MX2 () zr (FAt za)
                             , MX2 () zr (FBin FPlus (FTmp zr) (FBin FTimes (FTmp z₀) (FAt (Raw bid (Tmp j) lB 8))))
                             , MX2 () zr (FBin FPlus (FTmp zr) (FBin FTimes (FTmp z₁) (FAt (Raw bidϵ (Tmp j) lB 8))))
@@ -1095,7 +1051,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) b) t aL | Arr _ F <- eAnn a =
                     [ MX () z₀₀ (FAt (Raw aRd (Tmp k) lA 8))
                     , DS () z₀ z₀₀
                     , let za=Raw td (Tmp j) (Just aL) 8 in
-                        f2orc tB j 0 ILt (Tmp o)
+                        f2orc bSh j 0 ILt (Tmp o)
                           [ Wr2F () za (FBin FPlus (FAt za) (FBin FTimes (FTmp z₀) (FAt (Raw bid (Tmp j) lB 8)))) ]
                           [ WrF () za (FAt za+FTmp z₀₀*FAt (Raw bid (Tmp j) lB 8))]
                     , bid+=(Tmp o*8)
@@ -1187,7 +1143,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Re) n) x) t a | (Arr sh tO) <- eAnn x
     pure (plX$xRnk=:eRnk sh (xR,lX):oRnk=:(Tmp xRnk+1):SZ () szX xR (Tmp xRnk) lX
         :plN (Ma () oSh a t (Tmp oRnk) (Tmp szX*Tmp nR) sz:Wr () (ADim t 0 (Just a)) (Tmp nR):CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)
         :td=:DP t (Tmp oRnk):xRd=:DP xR (Tmp xRnk):[loop]))
-aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t a | Arrow F (Arrow F F) <- eAnn op, tXs <- eAnn xs, hasS op = do
+aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t a | Arrow F (Arrow F F) <- eAnn op, tXs@(Arr xSh _) <- eAnn xs, hasS op = do
     nR <- nI; i <- nI
     (plEX, (lX, xR)) <- plA xs; (plEY, (lY, yR)) <- plA ys
     xRd <- nI; yRd <- nI; td <- nI
@@ -1196,7 +1152,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t a | Arrow 
     s1 <- writeRF op (FT<$>[x0,y0]) (FT z0)
     let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+16):MX2 () y (FAt (Raw yRd 0 lY 8)):yRd=:(Tmp yRd+16):ss++[Wr2F () (Raw td 0 (Just a) 8) (FTmp z), td=:(Tmp td+16)]
         step1=MX () x0 (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+8):MX () y0 (FAt (Raw yRd 0 lY 8)):yRd=:(Tmp yRd+8):s1++[WrF () (Raw td 0 (Just a) 8) (FTmp z0), td=:(Tmp td+8)]
-        loop=r2of tXs i (Tmp nR) step step1
+        loop=r2of xSh i (Tmp nR) step step1
     pure (plEX$plEY$nR=:ev tXs (xR,lX):v8 oSh t a (Tmp nR)++xRd=:DP xR 1:yRd=:DP yR 1:td=:DP t 1:[loop])
 aeval (EApp oTy@(Arr sh _) (EApp _ g@(EApp _ (Builtin _ Zip) op) xs) ys) t a | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
     nR <- nI
@@ -1877,7 +1833,7 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n
     gs <- writeRF g [x] x
     ll <- arof1 ySh nE $ yRd+=KI qSz:mt (Raw yRd 0 lY qSz) y:gs++ss
     pure $ plYs $ plY $ plU plSeed ++ plN [yRd=:DP yR 1, ll]
-feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
+feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr pSh F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
     acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     i <- nI; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
@@ -1887,7 +1843,7 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr _ F) <- eAnn p, Arr _ F <-
     seed <- writeRF zop (FT<$>[x0,y0]) (FT acc0)
     let step1 = MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):ss1
         step = MX2 () x (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+16):MX2 () y (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+16):ss
-        loop = r21 tyP i (Tmp szR) step step1
+        loop = r2r pSh i (Tmp szR) step step1
     pure $ plPP$plQ$szR=:ev tyP (pR,lP):pD=:DP pR 1:MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):qD=:DP qR 1:MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):seed++[szR=:(Tmp szR-1), vseed acc acc2, loop, Comb () c0 acc acc2, MX () acc (FTmp acc+FTmp acc0)]
   where
     fz (Lam _ _ (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b0) _) (EApp _ (EApp _ (Builtin _ b1) _) _))))) | fS b0, fS b1 = (,) <$> mFop b0 <*> mFop b1
@@ -1913,13 +1869,13 @@ feval (Id _ (FoldSOfZip seed op (p:qs))) acc
     ss <- writeRF op (FT acc:x:ys) (FT acc)
     loop <- afor pSh 0 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:[mt (AElem qR 1 lQ (Tmp i) qSz) y | (y, (lQ, qR), qSz) <- zip3 ys aQs qSzs]++ss)
     pure $ plPP$plQs$nR=:ev tPs (pR,lP):plSeed++[loop]
-feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs <- eAnn e, Just c <- fca op, Just vseed <- fc c = do
+feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e, Just c <- fca op, Just vseed <- fc c = do
     x0 <- nF; acc0 <- nF; acc2 <- nF2; x <- nF2
     i <- nI; szR <- nI
     (plX, (lX, xR)) <- plA e
     ss1 <- writeRF op [FT acc, FT x0] (FT acc)
     ss <- write2 op [acc2, x] acc2
-    let loop = f21o tXs i 1 ILt (Tmp szR) (MX2 () x (FAt (AElem xR 1 lX (Tmp i) 8)):ss) (MX () x0 (FAt (AElem xR 1 lX (Tmp i) 8)):ss1)
+    let loop = F2or () (pr xSh) i 1 ILt (Tmp szR) (MX2 () x (FAt (AElem xR 1 lX (Tmp i) 8)):ss) (MX () x0 (FAt (AElem xR 1 lX (Tmp i) 8)):ss1)
     pure $ plX$szR=:ev tXs (xR,lX):MX () acc (FAt (AElem xR 1 lX 0 8)):vseed acc acc2:[loop, Comb () c acc0 acc2, MX () acc (FBin c (FTmp acc) (FTmp acc0))]
   where
     fca (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b) _) _))) | fS b = mFop b; fca _ = Nothing
