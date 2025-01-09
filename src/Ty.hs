@@ -890,7 +890,7 @@ rwSh (Π s) | Nil <- rwSh s = Nil
 rwSh (Π s) | Just i <- iunroll (rwSh s) = rwI i `Cons` Nil
            | otherwise = Π (rwSh s)
 
--- TODO: (∃a. t a) → r ≡ ∀a. t a → r
+-- TODO: (∃a. t a) → r ≡ ∀a. t a → r (make sure not bound on right by occI)
 rwArr :: T a -> T a
 rwArr (Arrow t t')  = Arrow (rwArr t) (rwArr t')
 rwArr I             = I

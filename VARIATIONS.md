@@ -51,6 +51,15 @@ Map (`'`) has type
 
 It cuts across the leading axis.
 
+# Sum Augmented Axis
+
+```
+ > (λa.λb. [(+)/ₒ x y]`{0,1∘[2]} a (b::M float)) ⟨1,2,3⟩ ⟨⟨4.0,5⟩,⟨6,7⟩,⟨8,9⟩⟩
+Vec 3 [10.0, 15.0, 20.0]
+ > (λa.λb. [(+)/x]`{1∘[2]} ((<|)`{0,1∘[2]} a (b::M float))) ⟨1,2,3⟩ ⟨⟨4.0,5⟩,⟨6,7⟩,⟨8,9⟩⟩
+Vec 3 [10.0, 15.0, 20.0]
+```
+
 # Infix, Convolve
 
 ```
