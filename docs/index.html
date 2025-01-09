@@ -414,16 +414,16 @@ not-perfectly-designed typed frontend.</p>
 href="https://github.com/vmchale/apple/releases">release page</a>.</p>
 <h2 id="reference-card">Reference Card</h2>
 <p>In the REPL, type <code>\l</code>.</p>
-<pre><code> &gt; \l
+<pre><code>vanessa@MacBookAir apple % arepl
+ &gt; \l
 Λ             scan                     √             sqrt
 ⋉             max                      ⋊             min
-⍳             integer range            ⌊             floor
-ℯ             exp                      ⨳ {m,n}       convolve
+⍳             integer range            ⌊, ⌈          floor, ceiling
+e:            exp                      ⨳ {m,n}       convolve
 \~            successive application   \`n           infix
-_.            log                      &#39;n            map
+_.            log                      &#39;             map
 `             zip                      `{i,j∘[k,l]}  rank
 𝒻             range (real)             𝜋             pi
-
 ⋮</code></pre>
 <p>Use <code>:ty</code> for more:</p>
 <pre><code> &gt; :ty (⊲)
