@@ -1,0 +1,2 @@
+-- roots of unity
+λn. {nn⟜ ℝn; (λk. (cos. 2*𝜋*k%nn, sin. 2*𝜋*k%nn))'frange 0 (nn-1) n}
