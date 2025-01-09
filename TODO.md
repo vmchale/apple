@@ -203,8 +203,11 @@ o → o → o
   - [ ] https://en.wikipedia.org/wiki/Rule_110
   - [ ] https://en.wikipedia.org/wiki/Rule_30
 - [ ] https://www.bathsheba.com/math/gyroid/
+- [ ] https://www2.cs.arizona.edu/patterns/weaving/webdocs/wa_sbks.pdf
+- [ ] https://www2.cs.arizona.edu/patterns/weaving/webdocs/gre_frnd.pdf
 - [x] https://oeis.org/A000081
 - [ ] https://oeis.org/A227503
+- [ ] https://oeis.org/A099174
 - [ ] https://en.wikipedia.org/wiki/Chebyshev_polynomials
 - [ ] https://cran.r-project.org/web/packages/glmm/index.html
 - [ ] https://www.jsoftware.com/papers/50/
@@ -215,6 +218,7 @@ o → o → o
   - [ ] https://github.com/ARM-software/optimized-routines/blob/4c32619682de9d8632fe039153a3e26a6f095482/math/tools/remez.jl
 - [ ] https://www.skybluetrades.net/blog/category/data-analysis.html
 - [ ] https://code.jsoftware.com/wiki/User:John_Randall/FourierTransformAndPolynomialMultiplication
+- [ ] cute. https://en.wikipedia.org/wiki/Stirling_number#As_inverse_matrices
 - [ ] https://rosettacode.org/wiki/Cyclotomic_polynomial#Haskell
   - [ ] synthetic division alone would be good...
 ```haskell
@@ -230,9 +234,8 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
   - [ ] https://github.com/rougier/scientific-visualization-book/blob/master/code/scales-projections/polar-patterns.py
 - [ ] https://lodev.org/cgtutor/xortexture.html
 - [ ] https://x.com/yuruyurau/status/1873400073255800891
-# Project Euler
-- [ ] https://projecteuler.net/problem=30
 # Rosetta Code
+- [ ] https://cses.fi/problemset/
 - [ ] https://rosettacode.org/wiki/Averages/Pythagorean_means
 # Debug
 - [ ] sanity check negative dims
