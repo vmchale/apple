@@ -1,4 +1,4 @@
-module Ix ( L (..), pr, pc, psh ) where
+module Ix ( L (..), ip, pr, pc, psh ) where
 
 import           Sh
 

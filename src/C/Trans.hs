@@ -157,9 +157,8 @@ rof sh = if nzSh sh then Rof1 () else Rof (); rof1 sh = if n1 sh then Rof1 () el
 fort (Arr sh _) = for sh; fort _ = For () 1
 forc t = if nec t then For1 () 1 else For () 1
 
-r2of sh = R2of () (psh sh); r2r sh = R2of () (pr sh)
-
 f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh); f2ors sh = F2or () (psh sh)
+r2of sh = R2of () (psh sh)
 
 mIFs :: [E a] -> Maybe [Word64]
 mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
@@ -1833,7 +1832,7 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n
     gs <- writeRF g [x] x
     ll <- arof1 ySh nE $ yRd+=KI qSz:mt (Raw yRd 0 lY qSz) y:gs++ss
     pure $ plYs $ plY $ plU plSeed ++ plN [yRd=:DP yR 1, ll]
-feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr pSh F) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
+feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
     acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     i <- nI; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
@@ -1843,11 +1842,12 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr pSh F) <- eAnn p, Arr _ F 
     seed <- writeRF zop (FT<$>[x0,y0]) (FT acc0)
     let step1 = MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):ss1
         step = MX2 () x (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+16):MX2 () y (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+16):ss
-        loop = r2r pSh i (Tmp szR) step step1
+        loop = R2of () (e1 tyP) i (Tmp szR) step step1
     pure $ plPP$plQ$szR=:ev tyP (pR,lP):pD=:DP pR 1:MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):qD=:DP qR 1:MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):seed++[szR=:(Tmp szR-1), vseed acc acc2, loop, Comb () c0 acc acc2, MX () acc (FTmp acc+FTmp acc0)]
   where
     fz (Lam _ _ (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b0) _) (EApp _ (EApp _ (Builtin _ b1) _) _))))) | fS b0, fS b1 = (,) <$> mFop b0 <*> mFop b1
     fz _ = Nothing
+    e1 (Arr (Ix x i `Cons` _) _) = ip (Ix x (i-1)); e1 _ = U
 feval (Id _ (FoldOfZip zop op (p:qs))) acc
     | tPs@(Arr pSh _) <- eAnn p
     , Just (tP, pSz) <- aRr tPs
