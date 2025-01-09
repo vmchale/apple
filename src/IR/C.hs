@@ -56,12 +56,14 @@ cToIRM (C.PlProd _ t (e:es)) = let t' = ctemp t in pure (IR.MT t' (irE e):[IR.MT
 cToIRM (C.MT _ t e)        = pure [IR.MT (ctemp t) (irE e)]
 cToIRM (C.MX _ t e)        = pure [IR.MX (fx t) (irX e)]
 cToIRM (C.MX2 _ t e)       = pure [IR.MX2 (f2x t) (irX2 e)]
-cToIRM (C.ATT _ ts a)      = pure $ zipWith g ts (toffs ts)
+cToIRM (C.ATT _ ts a)      = pure (gs ts 0)
   where
-    g (TI r) i   = IR.MT (ctemp r) (IR.EAt (irAt a `aeplus` i))
-    g (TF r) i   = IR.MX (fx r) (IR.FAt (irAt a `aeplus` i))
-    g (TB r) i   = IR.MT (cbtemp r) (IR.BAt (irAt a `aeplus` i))
-    g (TA r _) i = IR.MT (ctemp r) (IR.EAt (irAt a `aeplus` i))
+    gs td ϵ = concat (zipWith g td [o+ϵ|o<-toffs td])
+    g (TI r) i   = [IR.MT (ctemp r) (IR.EAt (irAt a `aeplus` i))]
+    g (TF r) i   = [IR.MX (fx r) (IR.FAt (irAt a `aeplus` i))]
+    g (TB r) i   = [IR.MT (cbtemp r) (IR.BAt (irAt a `aeplus` i))]
+    g (TA r _) i = [IR.MT (ctemp r) (IR.EAt (irAt a `aeplus` i))]
+    g (TΠ rs) i  = gs rs i
 cToIRM (C.Comb _ o t r)    = pure [IR.S2 o (fx t) (f2x r)]
 cToIRM (C.DS _ r t)        = pure [IR.Fill2 (f2x r) (fx t)]
 cToIRM (C.Ins _ r t)       = pure [IR.Ins (f2x r) (fx t)]
@@ -78,12 +80,14 @@ cToIRM (C.Wr _ a e)          = pure [IR.Wr (irAt a) (irE e)]
 cToIRM (C.WrF _ a x)         = pure [IR.WrF (irAt a) (irX x)]
 cToIRM (C.Wr2F _ a v)        = pure [IR.WrF2 (irAt a) (irX2 v)]
 cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]
-cToIRM (C.WrT _ a ts)        = pure $ zipWith g ts (toffs ts)
+cToIRM (C.WrT _ a ts)        = pure (gs ts 0)
   where
-    g (TI r) i   = IR.Wr (irAt a `aeplus` i) (Reg$ctemp r)
-    g (TF r) i   = IR.WrF (irAt a `aeplus` i) (FReg$fx r)
-    g (TB r) i   = IR.WrB (irAt a `aeplus` i) (IR.Is$cbtemp r)
-    g (TA r _) i = IR.Wr (irAt a `aeplus` i) (Reg$ctemp r)
+    gs td ϵ = concat (zipWith g td [ϵ+o|o<-toffs td])
+    g (TI r) i   = [IR.Wr (irAt a `aeplus` i) (Reg$ctemp r)]
+    g (TF r) i   = [IR.WrF (irAt a `aeplus` i) (FReg$fx r)]
+    g (TB r) i   = [IR.WrB (irAt a `aeplus` i) (IR.Is$cbtemp r)]
+    g (TA r _) i = [IR.Wr (irAt a `aeplus` i) (Reg$ctemp r)]
+    g (TΠ rs) i  = gs rs i
 cToIRM (Rof _ t ec s)        = do
     l <- nextL; eL <- nextL
     irs <- foldMapM cToIRM s
@@ -247,6 +251,6 @@ irX (IE e)          = FConv (irE e)
 irX (FUn f e)       = FU f (irX e)
 
 toffs = scanl' (\o r -> o+szt r) 0
-  where szt TB{}=1; szt _=8
+  where szt TB{}=1; szt (TΠ tt)=sum (szt<$>tt); szt _=8
 
 foldMapM f = foldM (\x y -> (x `mappend`) <$> f y) mempty

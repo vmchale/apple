@@ -4,7 +4,7 @@ import           A
 import           C
 import           CF.AL                            (AL (..))
 import qualified CF.AL                            as AL
-import           Control.Composition              (thread, (-$))
+import           Control.Composition              (thread, (-$), (.*))
 import           Control.Monad                    (zipWithM)
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor                   (bimap, first, second)
@@ -320,14 +320,13 @@ writeRF :: E (T ()) -> [RT] -> RT -> CM [CS ()]
 writeRF e args = fmap snd.writeF e (ra<$>args)
 
 data Arg = IA !Temp | FA !FTemp | AA !Temp !(Maybe AL) | BA !BTemp | ΠArg TStore
-data RT = IT !Temp | FT !FTemp | PT !BTemp | ΠT [RT] -- this is kinda wack
+data RT = IT !Temp | FT !FTemp | PT !BTemp | ΠT [RT]
 
 mt :: ArrAcc -> RT -> CS ()
 mt p (FT t) = MX () t (FAt p); mt p (PT t) = MB () t (PAt p)
 mt p (IT t) = t =: EAt p; mt p (ΠT rs) = ATT () (rp<$>rs) p
 
--- TODO: is this good
-mvts = zipWith mvt where mvt (TI t0) (TI t1) = t0=:Tmp t1; mvt (TF x0) (TF x1) = MX () x0 (FTmp x1); mvt (TB t0) (TB t1) = MB () t0 (Is t1)
+mvts = concat.*zipWith mvt where mvt (TI t0) (TI t1)=[t0=:Tmp t1]; mvt (TF x0) (TF x1)=[MX () x0 (FTmp x1)]; mvt (TB t0) (TB t1)=[MB () t0 (Is t1)]; mvt (TΠ tt0) (TΠ tt1)=mvts tt0 tt1
 
 wt :: ArrAcc -> RT -> CS ()
 wt p (IT t) = Wr () p (Tmp t); wt p (FT t) = WrF () p (FTmp t)
@@ -2016,7 +2015,8 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
                 (I, TI t)              -> do {(plX,i) <- plC e; pure (plX [t=:i])}
                 (Arr{}, TA t (Just l)) -> aeval e t l
                 (B, TB t)              -> do {(plX,v) <- plP e; pure (plX [MB () t v])}
-                (F, TF x)              -> do {(plX,v) <- plD e; pure (plX [MX () x v])}) es ts
+                (F, TF x)              -> do {(plX,v) <- plD e; pure (plX [MX () x v])}
+                (P{}, TΠ td)           -> do {(plX,tt) <- plΠ e; pure (plX++mvts td tt)}) es ts
 πr (Id _ (Iter f x n)) ts = do
     (plN,nR) <- plC n
     ats <- frts ts
