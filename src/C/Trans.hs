@@ -1987,6 +1987,13 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     xRd <- nI
     (plB, b) <- off xR lX nEs
     pure $ plX $ plNs (plB++[xRd=:DP xR (KI rnk), ATT () ts (Raw xRd b lX sz)])
+πr (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh tX) <- eAnn e, Just xSz <- nSz tX = do
+    x <- frts acc; szR <- nI; acc0 <- frts acc
+    (plE, (l, aP)) <- plA e
+    let xa=ΠT (tr<$>x); rts=ΠT (tr<$>acc); rts0=ΠT (tr<$>acc0)
+    ss <- writeRF op [rts, xa] rts0
+    loop <- afor1 xSh 1 ILt (Tmp szR) (\i -> ATT () x (AElem aP 1 l (Tmp i) xSz):ss++mvts acc acc0)
+    pure $ plE$szR=:ev tXs (aP,l):ATT () acc (AElem aP 1 l 0 xSz):[loop]
 πr (Id _ (FoldOfZip zop op (p:qs))) acc
     | tPs@(Arr pSh _) <- eAnn p
     , Just (tP, pSz) <- aBs tPs
