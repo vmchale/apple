@@ -1556,6 +1556,7 @@ peval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
 peval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
     pure [MB () t (unBA aa)]
+peval (EApp _ (Builtin _ (TAt i)) (Tup _ es)) t = peval (es!!(i-1)) t
 peval (EApp _ (Builtin _ (TAt i)) e) t = do
     (ss, as) <- plΠ e
     pure (ss++[MB () t (unBA (as!!(i-1)))])
@@ -1654,6 +1655,7 @@ eval (EApp _ (Builtin _ T) x) t = eval x t; eval (EApp _ (Builtin _ Flat) x) t =
 eval (EApp _ (Builtin _ Floor) x) t = do {(plX,e) <- plD x; pure (plX [t =: CFloor e])}
 eval (EApp _ (Builtin _ Ceil) x) t = do {(plX, e) <- plD x; pure (plX [t =: CCeil e])}
 eval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do {aa <- tat e; pure [t=:unIA aa]}
+eval (EApp _ (Builtin _ (TAt i)) (Tup _ es)) t = eval (es!!(i-1)) t
 eval (EApp _ (Builtin _ (TAt i)) e) t = do {(ss, as) <- plΠ e; pure (ss++[t=:unIA (as!!(i-1))])}
 eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX <- nSz tD = do
     pR <- nBT
@@ -1920,6 +1922,7 @@ feval (Id _ (Iter f x n)) t = do
 feval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
     pure [MX () t (unFA aa)]
+feval (EApp _ (Builtin _ (TAt i)) (Tup _ es)) t = feval (es!!(i-1)) t
 feval (EApp _ (Builtin _ (TAt i)) e) t = do
     (ss, as) <- plΠ e
     pure (ss++[MX () t (unFA (as!!(i-1)))])
@@ -2006,6 +2009,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     loop <- afor1 pSh 1 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mQs (Tmp i)++ss++mvts acc acc0)
     seed <- writeRF zop (x:ys) rts
     pure $plPP$plQs$nR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mQs 0++seed++[loop]
+πr (EApp _ (Builtin _ (TAt i)) (Tup _ es)) t = πr (es!!(i-1)) t
 πr e _ = error (show e)
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe Int64, [AL], [CS ()])
