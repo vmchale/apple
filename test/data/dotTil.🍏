@@ -1,3 +1,1 @@
-⸎
-take ⇐ λn.λx. ⍳ 0 (n-1)⊂x;
-λxs.λys. {n ⟜ 𝓉xs<.𝓉ys; (+)/ₒ 0.0 ((*)`(take n xs) (take n ys))}
+λxs.λys. {n ⟜ 𝓉xs<.𝓉ys; (+)/ₒ 0.0 ((*)`(take# n xs) (take# n ys))}
