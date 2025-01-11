@@ -54,7 +54,7 @@ namesStr :: StateT Env IO [String]
 namesStr = gets ((++bn) . fmap (T.unpack.name.fst) . ee)
 
 bn :: [String]
-bn = ["frange", "irange", "itof", "gen.", "di.", "sin.", "cos.", "rand.", "cyc.", "odd.", "even.", "abs.", "ug."]
+bn = ["frange", "irange", "itof", "gen.", "di.", "sin.", "cos.", "rand.", "cyc.", "odd.", "even.", "abs.", "ug.", "take#", "drop#"]
 
 data Arch = X64 | AArch64 !MCtx
 

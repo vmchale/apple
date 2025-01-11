@@ -664,6 +664,14 @@ aeval (EApp oTy@(Arr oSh _) (EApp _ e@(Builtin _ Del) x) j) t a | Just sz <- aB 
     (plX, (lX, xR)) <- plA x; (plN,jR) <- plEV j
     contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing), NA (IT jR)]
     pure (plX$nR=:(ev (eAnn x) (xR,lX)-1):vSz oSh t a (Tmp nR) sz++plN contents)
+aeval (EApp oTy@(Arr oSh _) (EApp _ (Builtin _ DelM) x) j) t a | Just sz <- aB oTy = do
+    nR <- nI
+    (plX, (lX, xR)) <- plA x; (plN,jR) <- plEV j
+    pure (plX$nR=:ev (eAnn x) (xR,lX):Ma () oSh a t 1 (Tmp nR) sz:plN
+        [ If () (IRel ILt (Tmp jR) (Tmp nR))
+            [ Wr () (ADim t 0 (Just a)) (Tmp nR-1), cpy (AElem t 1 (Just a) 0) (AElem xR 1 lX 0) (Tmp jR) sz, cpy (AElem t 1 (Just a) (Tmp jR)) (AElem xR 1 lX (Tmp jR+1)) (Tmp nR-Tmp jR) sz]
+            [ Wr () (ADim t 0 (Just a)) (Tmp nR), cpy (AElem t 1 (Just a) 0) (AElem xR 1 lX 0) (Tmp nR) sz]
+        ])
 aeval (Id (Arr oSh _) (Aɴ xs ns)) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     (plX, (lX, xR)) <- plA xs

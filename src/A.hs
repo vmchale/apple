@@ -197,7 +197,8 @@ instance Pretty Builtin where
     pretty Outer      = "⊗"
     pretty Take       = "take#"
     pretty Drop       = "drop#"
-    pretty Del        = "\\\\"
+    pretty Del        = "\\-"
+    pretty DelM       = "\\\\"
     pretty Ug         = "ug."
     pretty S'         = "⑂"
     pretty S          = "𝐒"
@@ -221,7 +222,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Mul | VMul | Outer | RevE | R
              | Head | HeadM | Tail | Init | TailM | InitM
              | Sin | Cos | Tan | Abs | Even | Odd
-             | Rot | Cyc | A1 | I1 | IOf | Del
+             | Rot | Cyc | A1 | I1 | IOf | Del | DelM
              | And | Or | Xor | N | Sr | Sl | C | Dot
              | Take | Drop | Ug | Sort
              | S' | S | K
@@ -278,9 +279,17 @@ mPrec IntExp = Just 8
 mPrec Mod    = Just 7
 mPrec Succ   = Just 9
 mPrec Fold   = Just 9
+mPrec Del    = Just 9
+mPrec DelM   = Just 9
+mPrec IOf    = Just 8
 mPrec C      = Just 9
 mPrec Ices   = Just 6
 mPrec Filt   = Just 6
+mPrec Mul    = Just 7
+mPrec VMul   = Just 7
+mPrec Re     = Just 6
+mPrec A1     = Just 9
+mPrec I1     = Just 8
 mPrec Map    = Just 5
 mPrec ConsE  = Just 4
 mPrec Snoc   = Just 4
@@ -333,6 +342,7 @@ isBinOp Dot     = True
 isBinOp S'      = True
 isBinOp Re      = True
 isBinOp Del     = True
+isBinOp DelM    = True
 isBinOp _       = False
 
 data B = L | D | Λ

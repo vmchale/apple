@@ -81,7 +81,7 @@ lassoc Minus  = True
 lassoc C      = True
 lassoc ConsE  = False
 lassoc Snoc   = False
-lassoc Del    = True
+lassoc Del = True; lassoc DelM = True
 lassoc A1     = True
 lassoc IOf    = False
 lassoc Cyc = True; lassoc Rot = True
