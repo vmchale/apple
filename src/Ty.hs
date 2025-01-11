@@ -384,8 +384,8 @@ mgSh f l inp (Cat sh0 sh0') (Cat sh1 sh1') = do
     pure (Cat sh' sh'', s')
 mgSh f l inp (Rev sh) sh' | (is, Nil) <- unroll sh' =
     mgSh f l inp sh (roll Nil$reverse is)
-mgSh f l inp sh (Rev sh') | (is, Nil) <- unroll sh' =
-    mgSh f l inp (roll Nil$reverse is) sh
+mgSh f l inp sh (Rev sh') | (is, Nil) <- unroll sh =
+    mgSh f l inp (roll Nil$reverse is) sh'
 mgSh f l inp (Rev sh) Nil = mgSh f l inp sh Nil
 mgSh f l inp Nil (Rev sh) = mgSh f l inp Nil sh
 mgSh f l inp (Π sh) Nil = mgSh f l inp sh Nil
@@ -1027,12 +1027,11 @@ tyE s e@(ALit l es) = do
     ss' <- liftU $ zS uHere s' eTys (tail eTys)
     pure (ALit (vV (Ix () $ length es) a) es', ss')
 tyE s (EApp l e0 e1) = do
-    a <- ft "a" l; b <- ft "b" l
+    c <- ft "c" l
     (e0', s0) <- tyE s e0
     (e1', s1) <- tyE s0 e1
-    s2 <- liftU $ mp (l,e0) RF s1 (eAnn e0'$>l) (a~>b)
-    s3 <- liftU $ mp (l,e1) LF s2 (eAnn e1'$>l) a
-    pure (EApp (void b) e0' e1', s3)
+    s2 <- liftU $ mp (l,e0) RF s1 (eAnn e0'$>l) (eAnn e1'$>l~>c)
+    pure (EApp (void c) e0' e1', s2)
 tyE s (Cond l p e0 e1) = do
     (p',sP) <- tyE s p
     (e0',s0) <- tyE sP e0
