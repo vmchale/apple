@@ -33,7 +33,6 @@
 - [½] ⊲ ⊳ ⪫ ⪪
 - [ ]〔〖【
 - [ ] ⫛ for J's oblique
-- [ ] ‰
 - [ ] https://en.wikipedia.org/wiki/Guillemet#Encoding
 - [ ] https://en.wikipedia.org/wiki/Prime_(symbol)#Computer_encodings
 - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
@@ -73,11 +72,6 @@ T16 = T13.dim[0]
 λa.λn. {log ← (%)⑂(_.∴ℝ); N ⟜ ⌊(log a n)+1; ~(ug. (λs. (s/.n, s|n)) a N)}
 ```
 has universally quantified return type, should be existential!
-```
- > enc'irange 0 10
-Vec 11 [ 87960950128712
-       , 131941424177260
-```
 ```
  > (#f⊳)'⟨⟨#f,#f⟩,⟨#t,#f⟩,⟨#t,#t⟩,⟨#f,#t⟩⟩
 Arr (4×3) [ [#f, #f, #f]
