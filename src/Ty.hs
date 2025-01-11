@@ -468,8 +468,16 @@ scalar sv = mapShSubst (insert sv Nil)
 σ (Li IEVar{}) = I; σ (IZ IEVar{} t) = TVar t; σ t = t
 
 mgu :: Focus -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
-mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
+mgu f l s (Arrow t0@Arrow{} t1) (Arrow t0' t1') = do
     (t0'', s0) <- mgu LF l s t0 t0'
+    (t1'', s1) <- mguPrep f l s0 t1 t1'
+    pure (Arrow t0'' t1'', s1)
+mgu f l s (Arrow t0 t1) (Arrow t0'@Arrow{} t1') = do
+    (t0'', s0) <- mgu LF l s t0 t0'
+    (t1'', s1) <- mguPrep f l s0 t1 t1'
+    pure (Arrow t0'' t1'', s1)
+mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
+    (t0'', s0) <- mgu f l s t0 t0'
     (t1'', s1) <- mguPrep f l s0 t1 t1'
     pure (Arrow t0'' t1'', s1)
 mgu _ _ s I I = pure (I, s)
@@ -485,17 +493,17 @@ mgu f _ s (Li i0) (IZ i1 (Nm _ (U j) _)) = do {(i',iS) <- mguI f (iSubst s) i0 i
 mgu f _ s (IZ i0 (Nm _ (U j) _)) (Li i1) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
 mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, uTS u t$wI iS s)}
-mgu RF _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
-mgu RF _ s (TVar n0@(Nm _ (U j) _)) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu LF _ s (IZ _ n0@(Nm _ (U j) _)) t1@(TVar n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu LF _ s t0@(TVar n0) (IZ _ n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
+mgu _ _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
+mgu _ _ s (TVar n0@(Nm _ (U j) _)) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
-mgu RF _ s t@Li{} (TVar (Nm _ (U u) _)) = pure (t, uTS u t s)
-mgu RF _ s (TVar (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
--- we can't do this correctly cause ug. should have higher-rank type 😬
--- really depends on where variable comes from, can't be a unification-context?
 mgu LF _ s Li{} (TVar (Nm _ (U u) _)) = pure (I, uTS u I s)
 mgu LF _ s (TVar (Nm _ (U u) _)) Li{} = pure (I, uTS u I s)
+mgu _ _ s t@Li{} (TVar (Nm _ (U u) _)) = pure (t, uTS u t s)
+mgu _ _ s (TVar (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
+-- ug. kinda higher-rank type 😬
+-- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
 mgu _ _ s t@(TVar n) (Arr (SVar i) (TVar n')) | n'==n = pure (t, scalar i s)
 mgu _ _ s (Arr (SVar i) t@(TVar n)) (TVar n') | n'==n = pure (t, scalar i s)
@@ -562,8 +570,7 @@ tS f s (t:ts) = do{(tϵ, next) <- f s t; first (tϵ:) <$> tS f next ts}
 vx = (`Cons` Nil)
 vV i = Arr (vx i)
 
--- TODO: (+) applied to num(n) should be int(i)->int(j)->int(#n)...
--- Maybe IZ #n a?
+-- TODO: (+) applied to num(n) could be num(i)->num(j)->num(i+j)...
 tyNumBinOp :: a -> TyM a (T (), Subst a)
 tyNumBinOp l = do
     n <- fc "a" l IsNum
