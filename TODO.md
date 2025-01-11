@@ -93,11 +93,6 @@ HasCallStack backtrace:
     : Arr (2 × j) float → Vec 2 float → Arr (2 × j) float
 ```
 - [ ]
-```
- > :yank ix test/data/ixGen.🍏
- > :ix ⟨1.0,3,4⟩
-zsh: illegal hardware instruction  cabal run arepl
-```
 - [ ] :cmm \xs. [⟨x->1,x->2⟩]'(xs::Vec n (float, float))
 - [ ] segfault when `aso` is called pre-register allocation (arm)
 - [ ] Should display constraints
