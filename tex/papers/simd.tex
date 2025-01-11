@@ -7,7 +7,7 @@
 \maketitle
 
 \begin{abstract}
-  The C compilation model has dominated compilers literature but it opposes Single-Intruction, Multiple Data (SIMD). We articulate the assumptions behind the
+  The C compilation model has dominated compilers literature but it opposes Single-Intruction, Multiple Data (SIMD). We articulate the assumptions behind textbook methods, where new CPUs diverge, and give a first cut of a solution with examples from the Apple Array System. By reconsidering expectations about compiler optimization, we give a program for high-level languages to offer performant SIMD. Array languages turn out to be an especially good candidate; we point out that it is possible for the programmer to expect good performance with examples in Apple.
 \end{abstract}
 
 % array languages are a good candidate
@@ -29,10 +29,12 @@ Kell \cite{kell2017} points out that C implementations, in practice, offer somet
 
 % wrong to expect compiler to optimize code (widespread!), rather, one wants languages/compilers that are amenable to performance.
 % really "no big hammers" theorem, not a terrible fundamental... also nothing says high-level can't be performant!
+% no "spiritual optimization" but our problem at hand is actually a programmer sitting, writing code. As long as our burden is no more than writing assembly, we offer something as a high-level language
+% actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 
 \subsection{Typing}
 
-% indexing by for-loops is elegant but index information (parity!) doesn't propagate so easily
+% indexing by for-loops is elegant but index information (parity!) doesn't propagate so easily (optimization is "internal" rather than specified system)
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
