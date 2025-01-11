@@ -91,7 +91,7 @@ library
         A.Eta
         A.Opt
         Op
-        Ix
+        E
         C
         C.Alloc
         C.CF

@@ -19,7 +19,7 @@ import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Void         (Void)
 import           Data.Word         (Word64)
-import           Ix
+import           E
 import           Op
 import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, hardline, indent, lbrace, parens, rbrace, tupled, (<+>))
 import           Prettyprinter.Ext

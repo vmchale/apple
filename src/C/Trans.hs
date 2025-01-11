@@ -15,8 +15,8 @@ import qualified Data.IntSet                      as IS
 import           Data.List                        (find, genericLength, scanl')
 import           Data.Maybe                       (mapMaybe)
 import           Data.Word                        (Word64)
+import           E
 import           GHC.Float                        (castDoubleToWord64)
-import           Ix
 import           Nm
 import           Nm.IntMap                        as Nm
 import           Op

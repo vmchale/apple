@@ -12,7 +12,7 @@ import           Data.List                        (uncons)
 import qualified Data.Map                         as M
 import           Data.Tuple.Extra                 (second3, snd3, thd3, third3)
 import           Data.Void                        (Void, absurd)
-import           Ix
+import           E
 import           Q
 
 type N=Int

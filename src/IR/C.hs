@@ -6,8 +6,8 @@ import           Control.Monad                    (foldM)
 import           Control.Monad.Trans.State.Strict (State, runState, state)
 import           Data.List                        (scanl')
 import           Data.Void                        (absurd)
+import           E
 import           IR
-import           Ix
 import           Op
 
 type IRM = State WSt
