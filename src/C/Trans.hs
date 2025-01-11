@@ -473,6 +473,8 @@ rfill (Builtin _ Drop) (AD t lA _ _ (Just sz) (Just ne)) [AI (AD xR lX _ _ _ _),
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX (Tmp n)) ne sz]
 rfill (Builtin _ TailM) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 1) n sz]
+rfill (Builtin _ Del) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _), NA (IT j)] =
+    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) (Tmp j) sz, cpy (AElem t 1 lA (Tmp j)) (AElem xR 1 lX (Tmp j+1)) (n-Tmp j) sz]
 rfill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just (Arr xSh _)) _ _ _)] | Arrow F F <- eAnn f, hasS f = do
     td <- nI; xRd <- nI; i <- nI
     x <- nF2; y <- nF2; x₀ <- nF; y₀ <- nF
@@ -657,6 +659,11 @@ aeval (EApp oTy@(Arr oSh _) e@(Builtin _ TailM) x) t a | Just sz <- aB oTy = do
     (plX, (lX, xR)) <- plA x
     contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
     pure (plX$nR =: Bin IMax (ev (eAnn x) (xR,lX)-1) 0:vSz oSh t a (Tmp nR) sz++contents)
+aeval (EApp oTy@(Arr oSh _) (EApp _ e@(Builtin _ Del) x) j) t a | Just sz <- aB oTy = do
+    nR <- nI
+    (plX, (lX, xR)) <- plA x; (plN,jR) <- plEV j
+    contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing), NA (IT jR)]
+    pure (plX$nR=:(ev (eAnn x) (xR,lX)-1):vSz oSh t a (Tmp nR) sz++plN contents)
 aeval (Id (Arr oSh _) (Aɴ xs ns)) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
     (plNs, nEs) <- first thread.unzip <$> traverse plC ns
     (plX, (lX, xR)) <- plA xs

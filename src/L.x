@@ -186,6 +186,7 @@ tokens :-
         ⋅                        { mkSym Dp }
         ⊖                        { mkSym Rotate }
         ⊙                        { mkSym Cyc }
+        \\\\                     { mkSym Del }
         ˙                        { mkSym A1 }
         "|"                      { mkSym Mod }
         "@."                     { mkSym AtDot }
@@ -360,7 +361,7 @@ data Sym = Plus | Minus | Fold | Foldl | Percent | Times | Semicolon | Bind | Po
          | TSig | Cons | Snoc | Tensor | Transp | PlusPlus | Rotate
          | Last | LastM | Head | HeadM | Tail | TailM | Init | InitM
          | Geq | Gt | Eq | Neq | Leq | Lt
-         | FoldA | FoldS | FoldSt | Tilde | Cyc | Ditto | A1 | Sub
+         | FoldA | FoldS | FoldSt | Tilde | Cyc | Ditto | Del | A1 | Sub
          | AtDot | Para | Weier | Ice | Up | B | Sharp
          | And | Or | Xor | Not | Sr | Sl | IDiv | Inv | Mod
          | Therefore | Fork | Dp
@@ -438,6 +439,7 @@ instance Pretty Sym where
     pretty InitM        = "}:?"
     pretty Rotate       = "⊖"
     pretty Cyc          = "⊙"
+    pretty Del          = "\\\\"
     pretty Ditto        = "〃"
     pretty A1           = "˙"
     pretty Mod          = "|"

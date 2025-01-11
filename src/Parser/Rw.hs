@@ -46,7 +46,7 @@ isBinOp _      = True
 
 fi :: Builtin -> Int
 fi C = 9; fi Dot = 8
-fi Succ = 9; fi Fold = 9
+fi Del = 9; fi Succ = 9; fi Fold = 9
 fi IntExp = 8; fi Exp = 8
 fi Times = 7; fi Div = 7; fi Mod = 7
 fi Mul = 7; fi VMul = 7
@@ -81,6 +81,7 @@ lassoc Minus  = True
 lassoc C      = True
 lassoc ConsE  = False
 lassoc Snoc   = False
+lassoc Del    = True
 lassoc A1     = True
 lassoc IOf    = False
 lassoc Cyc = True; lassoc Rot = True

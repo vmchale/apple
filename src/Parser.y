@@ -173,6 +173,7 @@ import Sh
     odd { TokB $$ BuiltinOdd }
     take { TokB $$ BuiltinTake }
     drop { TokB $$ BuiltinDrop }
+    del { TokSym $$ L.Del }
     abs { TokB $$ BuiltinAbs }
     sks { TokB $$ BuiltinS }
     skk { TokB $$ BuiltinK }
@@ -284,6 +285,7 @@ BBin :: { E AlexPosn }
      | sr { Builtin $1 A.Sr } | sl { Builtin $1 A.Sl }
      | therefore { Builtin $1 C } | fork { Builtin $1 S' }
      | dp { Builtin $1 A.Dot }
+     | del { Builtin $1 A.Del }
 
 B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   : name bind E { (L, ($1, $3)) }
