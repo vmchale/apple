@@ -463,10 +463,14 @@ fill (EApp _ (Builtin _ ScanS) op) (AD t lA _ _ _ (Just n)) [NA acc, AI (AD aP l
 rfill :: E (T ()) -> AD -> [RA] -> CM [CS ()]
 rfill (Builtin _ Init) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) n sz]
+rfill (Builtin _ Take) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
+    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) n sz]
 rfill (Builtin _ InitM) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) n sz]
 rfill (Builtin _ Tail) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 1) n sz]
+rfill (Builtin _ Drop) (AD t lA _ _ (Just sz) (Just ne)) [AI (AD xR lX _ _ _ _), NA (IT n)] =
+    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX (Tmp n)) ne sz]
 rfill (Builtin _ TailM) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 1) n sz]
 rfill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just (Arr xSh _)) _ _ _)] | Arrow F F <- eAnn f, hasS f = do
@@ -629,6 +633,15 @@ aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Init) x) t a | Just sz <- aB oTy = do
     (plX, (lX, xR)) <- plA x
     contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nR)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
     pure (plX$nR =: (ev (eAnn x) (xR,lX)-1):vSz oSh t a (Tmp nR) sz++contents)
+aeval (EApp oTy@(Arr oSh _) (EApp _ e@(Builtin _ Take) n) x) t a | Just sz <- aB oTy = do
+    (plX, (lX, xR)) <- plA x; (plN,nE) <- plC n
+    contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$nE)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
+    pure (plX$plN$vSz oSh t a nE sz++contents)
+aeval (EApp oTy@(Arr oSh _) (EApp _ e@(Builtin _ Drop) n) x) t a | Just sz <- aB oTy = do
+    (plX, (lX, xR)) <- plA x; (plN,nR) <- plEV n
+    nO <- nI
+    contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$Tmp nO)) [AI (AD xR lX Nothing Nothing Nothing Nothing), NA (IT nR)]
+    pure (plX$plN$nO=:(ev (eAnn x) (xR,lX)-Tmp nR):vSz oSh t a (Tmp nO) sz++contents)
 aeval (EApp oTy@(Arr oSh _) e@(Builtin _ InitM) x) t a | Just sz <- aB oTy = do
     nR <- nI
     (plX, (lX, xR)) <- plA x
