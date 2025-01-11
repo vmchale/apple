@@ -171,6 +171,8 @@ import Sh
     cyc { TokB $$ BuiltinCyc }
     even { TokB $$ BuiltinEven }
     odd { TokB $$ BuiltinOdd }
+    take { TokB $$ BuiltinTake }
+    drop { TokB $$ BuiltinDrop }
     abs { TokB $$ BuiltinAbs }
     sks { TokB $$ BuiltinS }
     skk { TokB $$ BuiltinK }
@@ -354,6 +356,7 @@ E :: { E AlexPosn }
   | tilde { Builtin $1 RevE }
   | up { Builtin $1 Sort }
   | odd { Builtin $1 Odd } | even { Builtin $1 Even }
+  | drop { Builtin $1 Drop } | take { Builtin $1 Take }
   | abs { Builtin $1 Abs }
   | flat { Builtin $1 Flat }
   | addd { Builtin $1 AddDim }

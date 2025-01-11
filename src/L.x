@@ -255,6 +255,8 @@ tokens :-
         "tan."                   { mkB BuiltinTan }
         "odd."                   { mkB BuiltinOdd }
         "even."                  { mkB BuiltinEven }
+        "take#"                  { mkB BuiltinTake }
+        "drop#"                  { mkB BuiltinDrop }
         "abs."                   { mkB BuiltinAbs }
         𝐒                        { mkB BuiltinS }
         𝐊                        { mkB BuiltinK }
@@ -473,7 +475,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinIi | BuiltinFloor | BuiltinC
              | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
              | BuiltinD | BuiltinVec | BuiltinM | BuiltinBool
-             | BuiltinS | BuiltinK
+             | BuiltinTake | BuiltinDrop | BuiltinS | BuiltinK
              deriving (Generic, NFData)
 
 instance Pretty Builtin where
@@ -517,6 +519,8 @@ instance Pretty Builtin where
     pretty BuiltinD      = "di."
     pretty BuiltinS      = "𝐒"
     pretty BuiltinK      = "𝐊"
+    pretty BuiltinTake   = "take#"
+    pretty BuiltinDrop   = "drop#"
 
 data Tok = EOF { loc :: AlexPosn }
          | TokSym { loc :: AlexPosn, sym :: !Sym }

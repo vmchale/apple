@@ -40,6 +40,8 @@ isBinOp S      = False
 isBinOp Re     = True
 isBinOp K      = False
 isBinOp Ix'd   = False
+isBinOp Take   = False
+isBinOp Drop   = False
 isBinOp _      = True
 
 fi :: Builtin -> Int

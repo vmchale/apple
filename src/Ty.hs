@@ -425,7 +425,6 @@ mgSh _ l _ sh0@Cat{} sh1@Π{} = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0@Rev{} sh1@Cat{} = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0@Cat{} sh1@Rev{} = throwError $ UShD l sh0 sh1
 -- TODO: enter confessional context (error messages)
-mgSh f l inp (Π t0) (Π t1) = undefined
 
 mguPrep :: Focus -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mguPrep f l s t0 t1 =
@@ -485,13 +484,17 @@ mgu f _ s (Li i0) (IZ i1 (Nm _ (U j) _)) = do {(i',iS) <- mguI f (iSubst s) i0 i
 mgu f _ s (IZ i0 (Nm _ (U j) _)) (Li i1) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
 mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, uTS u t$wI iS s)}
-mgu _ _ s (IZ _ n0@(Nm _ (U j) _)) t1@(TVar n1) | n0/=n1 = pure (t1, uTS j t1 s)
-mgu _ _ s t0@(TVar n0) (IZ _ n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
+mgu RF _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
+mgu RF _ s (TVar n0@(Nm _ (U j) _)) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
+mgu LF _ s (IZ _ n0@(Nm _ (U j) _)) t1@(TVar n1) | n0/=n1 = pure (t1, uTS j t1 s)
+mgu LF _ s t0@(TVar n0) (IZ _ n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
 mgu RF _ s t@Li{} (TVar (Nm _ (U u) _)) = pure (t, uTS u t s)
 mgu RF _ s (TVar (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
-mgu _ _ s Li{} (TVar (Nm _ (U u) _)) = pure (I, uTS u I s)
-mgu _ _ s (TVar (Nm _ (U u) _)) Li{} = pure (I, uTS u I s)
+-- we can't do this correctly cause ug. should have higher-rank type 😬
+-- really depends on where variable comes from, can't be a unification-context?
+mgu LF _ s Li{} (TVar (Nm _ (U u) _)) = pure (I, uTS u I s)
+mgu LF _ s (TVar (Nm _ (U u) _)) Li{} = pure (I, uTS u I s)
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
 mgu _ _ s t@(TVar n) (Arr (SVar i) (TVar n')) | n'==n = pure (t, scalar i s)
 mgu _ _ s (Arr (SVar i) t@(TVar n)) (TVar n') | n'==n = pure (t, scalar i s)
@@ -501,7 +504,7 @@ mgu _ (l, _) s t t'@(TVar (Nm _ (U i) _)) | i `IS.member` occ t = throwError $ O
                                           | otherwise = pure (t, uTS i t s)
 mgu _ (l, e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
 mgu _ (l, e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
--- TODO: if t' is a TVar, it could be an array! (so sh could eat sh'++sh part(t'))
+-- TODO: if t' is a TVar, it could be an array! (so sh could eat sh'++sh part of t')
 mgu f l s (Arr sh t) (Arr sh' t') = do
     (t'', s0) <- mgu f l s t t'
     (sh'', s1) <- mgShPrep f (fst l) s0 sh sh'
@@ -639,21 +642,21 @@ tyB _ Di = do
 tyB _ LastM = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
     pure (Arr (i `Cons` sh) a ~> Arr sh a, mempty)
-tyB _ Last = do
-    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr ((i+:Ix()1) `Cons` sh) a ~> Arr sh a, mempty)
 tyB _ Head = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
     pure (Arr ((i+:Ix()1) `Cons` sh) a ~> Arr sh a, mempty)
+tyB l Last = tyB l Head
 tyB _ Init = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
     pure (Arr ((i+:Ix()1) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
 tyB _ InitM = do
     a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
     pure (Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
-tyB _ Tail = do
-    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr ((i+:Ix()1) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
+tyB l Tail = tyB l Init
+tyB _ Take = do
+    a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
+    pure (Li n ~> Arr ((i+:n) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
+tyB l Drop = tyB l Take
 tyB _ Ix'd = do
     a <- ftv "a"; i <- fti "i"
     pure (vV i a ~> vV i I, mempty)
@@ -890,7 +893,7 @@ rwSh (Π s) | Nil <- rwSh s = Nil
 rwSh (Π s) | Just i <- iunroll (rwSh s) = rwI i `Cons` Nil
            | otherwise = Π (rwSh s)
 
--- TODO: (∃a. t a) → r ≡ ∀a. t a → r (make sure not bound on right by occI)
+-- FIXME: (∃a. t a) → r ≡ ∀a. t a → r (make sure not bound on right by occI)
 rwArr :: T a -> T a
 rwArr (Arrow t t')  = Arrow (rwArr t) (rwArr t')
 rwArr I             = I

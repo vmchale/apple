@@ -195,6 +195,8 @@ instance Pretty Builtin where
     pretty C          = "∴"
     pretty Dot        = "⋅"
     pretty Outer      = "⊗"
+    pretty Take       = "take#"
+    pretty Drop       = "drop#"
     pretty Ug         = "ug."
     pretty S'         = "⑂"
     pretty S          = "𝐒"
@@ -220,7 +222,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Sin | Cos | Tan | Abs | Even | Odd
              | Rot | Cyc | A1 | I1 | IOf
              | And | Or | Xor | N | Sr | Sl | C | Dot
-             | Ug | Sort
+             | Take | Drop | Ug | Sort
              | S' | S | K
              deriving (Generic)
              -- TODO: (feuilleter, stagger, ...) reshape...?
