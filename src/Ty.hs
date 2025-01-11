@@ -664,7 +664,9 @@ tyB l Tail = tyB l Init
 tyB _ Take = do
     a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
     pure (Li n ~> Arr ((i+:n) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
-tyB l Drop = tyB l Take
+tyB _ Drop = do
+    a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
+    pure (Li n ~> Arr ((i+:n) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
 tyB _ Ix'd = do
     a <- ftv "a"; i <- fti "i"
     pure (vV i a ~> vV i I, mempty)
