@@ -1673,21 +1673,17 @@ eval (Id _ (Iter f x n)) t = do
     let loop=For () 1 i 1 ILt nR ss
     pure $ plX++plN [loop]
 eval (Cond _ p e0 e1) t = cond p e0 e1 (IT t)
-eval (Id _ (FoldOfZip zop op [p])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz) <- aBs (eAnn p) = do
-    x <- rtemp tP; szR <- nI
-    (plPP, (lP, pR)) <- plA p
-    ss <- writeRF op [IT acc, x] (IT acc)
-    loop <- afor1 sh 1 ILt (Tmp szR) (\i -> mt (AElem  pR 1 lP (Tmp i) pSz) x:ss)
-    sseed <- writeRF zop [x] (IT acc)
-    pure $ plPP$szR =:ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:sseed++[loop]
-    -- FIXME: work for all p:qs like feval does
-eval (Id _ (FoldOfZip zop op [p, q])) acc | tPs@(Arr sh _) <- eAnn p, Just (tP, pSz) <- aBs tPs, Just (tQ, qSz) <- aBs (eAnn q) = do
-    x <- rtemp tP; y <- rtemp tQ; szR <- nI
-    (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
-    ss <- writeRF op [IT acc, x, y] (IT acc)
-    loop <- afor1 sh 1 ILt (Tmp szR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mt (AElem qR 1 lQ (Tmp i) qSz) y:ss)
-    seed <- writeRF zop [x,y] (IT acc)
-    pure $ plPP$plQ$szR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mt (AElem qR 1 lQ 0 qSz) y:seed++[loop]
+eval (Id _ (FoldOfZip zop op (p:qs))) acc
+    | tPs@(Arr sh _) <- eAnn p
+    , Just (tP, pSz) <- aBs tPs
+    , Just (tQs, qSzs) <- unzip<$>traverse (aBs.eAnn) qs = do
+    x <- rtemp tP; ys <- traverse rtemp tQs; szR <- nI
+    (plPP, (lP, pR)) <- plA p; (plQs, aQs) <- plAs qs
+    ss <- writeRF op (IT acc:x:ys) (IT acc)
+    let mQs at = [mt (AElem qR 1 lQ at qSz) y | (y, (lQ, qR), qSz) <- zip3 ys aQs qSzs]
+    loop <- afor1 sh 1 ILt (Tmp szR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mQs (Tmp i)++ss)
+    seed <- writeRF zop (x:ys) (IT acc)
+    pure $ plPP$plQs$szR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mQs 0++seed++[loop]
 eval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     plU <- eval c t
     (plN,nE) <- plC n
