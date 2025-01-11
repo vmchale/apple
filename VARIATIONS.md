@@ -17,6 +17,17 @@ Take 7:
 Vec 7 [0, 1, 2, 3, 4, 5, 6]
 ```
 
+## Delete
+
+Delete the `i`th element of vector `xs`:
+
+```
+ > ⍳ 0 9 \\ 4
+Vec 9 [0, 1, 2, 3, 5, 6, 7, 8, 9]
+ > {del ← λi.λxs. ((≠i)#.xsᶥ)⊂xs; del 4 (irange 0 9)}
+Vec 9 [0, 1, 2, 3, 5, 6, 7, 8, 9]
+```
+
 ## Scatter
 
 We can imitate scatter (`⊂`) with
