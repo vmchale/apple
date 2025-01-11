@@ -125,8 +125,9 @@ mI f i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
 mI _ (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI _ ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI _ (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
+-- TODO: propagate?
+mI RF Ix{} IEVar{} = Right mempty
 mI RF IEVar{} IEVar{} = Right mempty
--- TODO: Ix should match against ∃ (on the right only), also propagate!
 mI LF i0@IEVar{} i1@IEVar{} = Left $ MatchIFailed LF i0 i1
 mI LF i0@IEVar{} i1@Ix{} = Left $ MatchIFailed LF i0 i1
 mI LF i0@Ix{} i1@IEVar{} = Left $ MatchIFailed LF i0 i1
