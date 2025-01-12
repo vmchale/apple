@@ -13,8 +13,7 @@ module Dbg ( dumpAAbs
            , dumpALiveness
            , dumpAIntervals
            , dumpX86Ass
-           , printParsed
-           , printTypes
+           , ann
            , topt
            , nasm
            , pBIO, dtxt, dAtxt
@@ -171,12 +170,8 @@ x86Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToX86 st x))) . ir
 aarch64Iv :: BSL.ByteString -> Either (Err AlexPosn) [Aarch64.AArch64 Aarch64.AbsReg Aarch64.FAbsReg Live]
 aarch64Iv = fmap (mkIntervals . (\(x,_,st) -> snd (irToAarch64 st x))) . ir
 
-printParsed :: BSL.ByteString -> Doc ann
-printParsed = pretty . fst . either throw id . parseRename
-
--- throws exception
-printTypes :: BSL.ByteString -> Doc ann
-printTypes bsl =
+ann :: BSL.ByteString -> Doc ann
+ann bsl =
     case parseRename bsl of
         Left err       -> throw err
         Right (ast, m) -> either throw (prettyTyped.fst3) $ tyClosed m ast
