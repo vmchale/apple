@@ -676,8 +676,8 @@ tyB _ Drop = do
     a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
     pure (Li n ~> Arr ((i+:n) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
 tyB _ Del = do
-    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr ((i+:Ix()1) `Cons` sh) a ~> I ~> Arr (i `Cons` sh) a, mempty)
+    a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
+    pure (Arr ((i+:n+:Ix()1) `Cons` sh) a ~> Li n ~> Arr ((i+:n) `Cons` sh) a, mempty)
 tyB _ DelM = do
     a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
     pure (Arr (i `Cons` sh) a ~> I ~> Arr (n `Cons` sh) a, mempty)
