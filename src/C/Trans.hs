@@ -60,6 +60,7 @@ addF n f = modify (\(CSt t ar as l v b d d2 π a fs aas ts) -> CSt t ar as l v b
 bI n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=ITemp t in (r, CSt (t+1) ar as l (insert n r v) b d d2 π a f aas ts))
 bD n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=FTemp t in (r, CSt (t+1) ar as l v b (insert n r d) d2 π a f aas ts))
 bB n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=BTemp t in (r, CSt (t+1) ar as l v (insert n r b) d d2 π a f aas ts))
+bp n e = do {r <- πts e; addΠ n r $> r}
 
 {-# SCC getT2 #-}
 getT2 :: Nm a -> CSt -> Either FTemp F2Temp
@@ -420,12 +421,13 @@ unroll (Arrow t t') = t:unroll t'
 unroll t            = [t]
 
 llet :: (Nm (T ()), E (T ())) -> CM [CS ()]
-llet (n,e') | isArr (eAnn e') = do
+llet (n,e') | Arr{} <- eAnn e' = do
     (eR,l,ss) <- maa e'
     addAVar n (l,eR) $> ss
-llet (n,e') | isI (eAnn e') = do {eR <- bI n; eval e' eR}
-llet (n,e') | isF (eAnn e') = do {eR <- bD n; feval e' eR}
-llet (n,e') | isB (eAnn e') = do {eR <- bB n; peval e' eR}
+llet (n,e') | I <- eAnn e' = do {eR <- bI n; eval e' eR}
+llet (n,e') | F <- eAnn e' = do {eR <- bD n; feval e' eR}
+llet (n,e') | B <- eAnn e' = do {eR <- bB n; peval e' eR}
+llet (n,e') | P{} <- eAnn e' = do {eR <- bp n e'; πr e' eR}
 llet (n,e') | (tArgs, tC) <- ur (eAnn e'), all nind (tC:tArgs) = do
     l <- neL
     xs <- traverse rtemp tArgs; y <- rtemp tC
@@ -2047,8 +2049,19 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     loop <- afor1 pSh 1 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mQs (Tmp i)++ss++mvts acc acc0)
     seed <- writeRF zop (x:ys) rts
     pure $plPP$plQs$nR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mQs 0++seed++[loop]
+πr e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
+    aa <- tat e
+    pure (mvts t (gpt aa))
 πr (EApp _ (Builtin _ (TAt i)) (Tup _ es)) t = πr (es!!(i-1)) t
+πr (EApp _ (Builtin _ (TAt i)) e) t = do
+    (ss, as) <- plΠ e
+    pure (ss++mvts t (gpt (as!!(i-1))))
+πr (Var _ x) t = do
+    st <- gets πvars
+    pure (mvts t (getT st x))
 πr e _ = error (show e)
+
+gpt (TΠ rs)=rs
 
 πe :: E (T ()) -> Temp -> CM ([Int64], Maybe Int64, [AL], [CS ()])
 πe e t | P tys <- eAnn e, offs <- szT tys, sz <- last offs = do
