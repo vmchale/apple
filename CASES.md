@@ -2,6 +2,11 @@
 - [ ] fold
   - [ ] array
     - [ ] "cat" "dim-reduce-1" is ((++)/)
+- [ ] fold-gen
+  - [ ] Π
+  - [ ] arr
+- [ ] take, drop
+  - [ ] A
 - [ ] zip
   - [ ] A A A
   - [ ] A S A
@@ -19,6 +24,8 @@
   - [x] A A S
   - [ ] A S S
   - [ ] S A S
+  - [x] A S A
+  - [ ] S A A
   - [x] S S S
 - [ ] filter
   - [ ] array
