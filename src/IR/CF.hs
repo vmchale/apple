@@ -3,11 +3,11 @@ module IR.CF ( rToInt, fToInt
              ) where
 
 import           CF
--- seems to pretty clearly be faster
 import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
 import           Data.Bifunctor                   (second)
 import           Data.Functor                     (($>))
 import qualified Data.IntSet                      as IS
+import           Data.List                        (partition)
 import qualified Data.Map                         as M
 import           Data.Tuple.Extra                 (fst3, second3, snd3, thd3, third3)
 import           Data.Void                        (absurd)
@@ -25,7 +25,7 @@ mkControlFlow :: [Stmt] -> ([(Stmt, ControlAnn)], Int)
 mkControlFlow instrs = let instrs'=de instrs in runFreshM (brs instrs' *> addCF instrs')
 
 de :: [Stmt] -> [Stmt]
-de cs = filter allDefsUsed cs
+de cs = let (res, del) = partition allDefsUsed cs in if null del then res else de res
   where
     allUsed = foldMap (\c -> uses c<>usesF c) cs
     allDefsUsed c = let d=defs c<>defsF c in iall (\r -> r<0 || r `IS.member` allUsed) d
