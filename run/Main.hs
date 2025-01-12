@@ -371,7 +371,7 @@ inspect s = do
 eCtx :: String -> BSL.ByteString -> Repl AlexPosn ()
 eCtx f bs = do
     st <- lg _lex
-    case tyParse bs of
+    case tyParseCtx st bs of
         Left err -> pErr err
         Right (_,i) ->
             let (st', n) = newIdent (AlexPn 0 0 0) (T.pack f) (setM i st)
