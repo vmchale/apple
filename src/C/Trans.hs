@@ -1972,7 +1972,7 @@ feval (Id _ (FoldGen seed g f n)) t = do
     (plN,nE) <- plC n
     uss <- writeRF g [FT x] (FT x)
     fss <- writeRF f [FT acc, FT x] (FT acc)
-    pure $ plSeed $ plN [MX () acc (FTmp seedR), MX () x (FTmp seedR), Rof () k nE (fss++uss), MX () t (FTmp acc)]
+    pure $ plSeed $ plN ([MX () acc (FTmp seedR), MX () x (FTmp seedR)] ++ uss ++ [Rof () k (nE-1) (fss++uss), MX () t (FTmp acc)])
 feval e _ = error (show e)
 
 sac t = Sa8 () t.KI
