@@ -1721,6 +1721,14 @@ eval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     fss <- writeRF f (IT t:xs) (IT t)
     pure $ plU ++ plN (plSeeds ++ [For () 1 k 0 ILt nE (fss++usss)])
+eval (Id _ (FoldGen seed g f n)) t = do
+    x <- nI; acc <- nI
+    k <- nI
+    (plSeed,seedR) <- plEV seed
+    (plN,nE) <- plC n
+    uss <- writeRF g [IT x] (IT x)
+    fss <- writeRF f [IT acc, IT x] (IT acc)
+    pure $ plSeed $ plN ([acc=:Tmp seedR, x=:Tmp seedR] ++ uss ++ [Rof () k (nE-1) (fss++uss), t=:Tmp acc])
 eval e _          = error (show e)
 
 frel :: Builtin -> Maybe FRel
