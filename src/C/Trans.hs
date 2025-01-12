@@ -1588,6 +1588,12 @@ peval (EApp _ (Builtin _ (TAt i)) (Tup _ es)) t = peval (es!!(i-1)) t
 peval (EApp _ (Builtin _ (TAt i)) e) t = do
     (ss, as) <- plΠ e
     pure (ss++[MB () t (unBA (as!!(i-1)))])
+peval (Id _ (FoldGen seed g f n)) t = do
+    x <- nBT; acc <- nBT; k <- nI
+    (plSeed,seedR) <- plBV seed; (plN,nE) <- plC n
+    uss <- writeRF g [PT x] (PT x)
+    fss <- writeRF f [PT acc, PT x] (PT acc)
+    pure $ plSeed $ plN ([MB () acc (Is seedR), MB () x (Is seedR)] ++ uss ++ [Rof () k (nE-1) (fss++uss), MB () t (Is acc)])
 peval e _ = error (show e)
 
 eval :: E (T ()) -> Temp -> CM [CS ()]
