@@ -296,9 +296,7 @@ art (IA r)=IT r;art (FA r)=FT r; art (BA r)=PT r; art (ΠArg rs)=ΠT (tr<$>rs)
 tr (TF x)=FT x; tr (TI r)=IT r; tr (TB r)=PT r; tr (TΠ rs)=ΠT (tr<$>rs)
 rp (FT x)=TF x; rp (IT r)=TI r; rp (PT r)=TB r; rp (ΠT rs)=TΠ (rp<$>rs)
 
-unFA (TF x)=FTmp x; unFA _=error "internal error :("
-unIA (TI r)=Tmp r; unIA _=error "internal error."
-unBA (TB p)=Is p; unBA _=error"internal error."
+unFA (TF x)=FTmp x; unIA (TI r)=Tmp r; unBA (TB p)=Is p
 
 eeval :: E (T ()) -> RT -> CM [CS ()]
 eeval e (IT t) = eval e t; eeval e (FT t) = feval e t
@@ -1466,7 +1464,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
         ++xRd=:DP xR (KI xRnk):td=:DP t rnk:bs++loop
         ++[popc slopB])
   where (isi,dsi)=unzip as; is=fromIntegral<$>isi; ds=maybe 1 fromIntegral<$>dsi
-aeval e _ _ = error (show e)
+aeval e _ _ = nyi e
 
 plR :: E (T ()) -> CM ([CS ()] -> [CS ()], RT)
 plR e = case eAnn e of
@@ -1596,7 +1594,7 @@ peval (Id _ (FoldGen seed g f n)) t = do
     uss <- writeRF g [PT x] (PT x)
     fss <- writeRF f [PT acc, PT x] (PT acc)
     pure $ plSeed $ plN ([MB () acc (Is seedR), MB () x (Is seedR)] ++ uss ++ [Rof () k (nE-1) (fss++uss), MB () t (Is acc)])
-peval e _ = error (show e)
+peval e _ = nyi e
 
 eval :: E (T ()) -> Temp -> CM [CS ()]
 eval (LLet _ b e) t = do
@@ -1737,7 +1735,7 @@ eval (Id _ (FoldGen seed g f n)) t = do
     uss <- writeRF g [IT x] (IT x)
     fss <- writeRF f [IT acc, IT x] (IT acc)
     pure $ plSeed $ plN ([acc=:Tmp seedR, x=:Tmp seedR] ++ uss ++ [Rof () k (nE-1) (fss++uss), t=:Tmp acc])
-eval e _          = error (show e)
+eval e _          = nyi e
 
 frel :: Builtin -> Maybe FRel
 frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; frel Lt=Just FLt; frel Gt=Just FGt; frel _=Nothing
@@ -1807,7 +1805,7 @@ f2eval (EApp _ (Builtin _ f) e) t | Just ff <- mFun f = do
     (plE,eC) <- plD2 e
     pure $ plE [MX2 () t (FUn ff (FTmp eC))]
 f2eval (FLit _ x) t = pure [MX2 () t (ConstF (x,x))]
-f2eval e _ = error (show e)
+f2eval e _ = nyi e
 
 feval :: E (T ()) -> FTemp -> CM [CS ()]
 feval (LLet _ b e) t = do
@@ -1989,7 +1987,7 @@ feval (Id _ (FoldGen seed g f n)) t = do
     uss <- writeRF g [FT x] (FT x)
     fss <- writeRF f [FT acc, FT x] (FT acc)
     pure $ plSeed $ plN ([MX () acc (FTmp seedR), MX () x (FTmp seedR)] ++ uss ++ [Rof () k (nE-1) (fss++uss), MX () t (FTmp acc)])
-feval e _ = error (show e)
+feval e _ = nyi e
 
 sac t = Sa8 () t.KI
 popc = Pop8().KI
@@ -2059,7 +2057,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
 πr (Var _ x) t = do
     st <- gets πvars
     pure (mvts t (getT st x))
-πr e _ = error (show e)
+πr e _ = nyi e
 
 gpt (TΠ rs)=rs
 
@@ -2073,3 +2071,5 @@ gpt (TΠ rs)=rs
 unsupported = error "Requires statically known rank."
 
 qmap f g h k ~(x,y,z,w) = (f x, g y, h z, k w)
+
+nyi e = error ("Not yet implemented: " ++ show e)
