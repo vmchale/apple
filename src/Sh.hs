@@ -22,7 +22,7 @@ class PT a where
     pp :: a -> State (S.Set T.Text, IM.IntMap T.Text, CT) a
 
 ppt :: PT a => a -> a
-ppt = flip evalState (S.empty, IM.empty, (CT 'a' 'i' 'm' 0)).pp
+ppt = flip evalState (S.empty, IM.empty, CT 'a' 'i' 'm' 0).pp
 
 fr :: LC -> Nm a -> State (S.Set T.Text, IM.IntMap T.Text, CT) (Nm a)
 fr s (Nm t (U i) x) = do
@@ -34,10 +34,9 @@ fr s (Nm t (U i) x) = do
 
 next l@(LC g s) = do
     (ms,_,c) <- get
-    let t=(g c)
-    if t `S.notMember` ms
-        then pure t
-        else modify (third3 s) *> next l
+    let t=g c in if t `S.notMember` ms
+                      then pure t
+                      else modify (third3 s) *> next l
 
 instance Pretty (I a) where pretty=ps 0.ppt
 

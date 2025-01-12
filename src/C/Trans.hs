@@ -637,7 +637,7 @@ aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Init) x) t a | Just sz <- aB oTy = do
     pure (plX$nR =: (ev (eAnn x) (xR,lX)-1):vSz oSh t a (Tmp nR) sz++contents)
 aeval (EApp oTy@(Arr oSh _) (EApp _ e@(Builtin _ Take) n) x) t a | Just sz <- aB oTy = do
     (plX, (lX, xR)) <- plA x; (plN,nE) <- plC n
-    contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just$nE)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
+    contents <- rfill e (AD t (Just a) Nothing Nothing (Just sz) (Just nE)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
     pure (plX$plN$vSz oSh t a nE sz++contents)
 aeval (EApp oTy@(Arr oSh _) (EApp _ e@(Builtin _ Drop) n) x) t a | Just sz <- aB oTy = do
     (plX, (lX, xR)) <- plA x; (plN,nR) <- plEV n
