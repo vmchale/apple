@@ -1,0 +1,11 @@
+-- Grimaldi http://www.cut-the-knot.org/arithmetic/algebra/CatalanInPascal.shtml
+λN.
+{
+  pascalsTriangle ← λn.
+    { choose ← λn.λk. {Π ← [(*)/ₒ 1 (irange x y)]; (Π (n-k+1) n)/.(Π 1 k)}
+    ; (⍳ 0 n) [?y>x,.0,.choose x y]⊗ (⍳ 0 n)
+    };
+  sift ← [(even.§xᶥ)⊂x];
+  Δ ← λA. {nr ⟜ 𝓉 A;take# nr'A};
+  Δ (sift (pascalsTriangle N))
+}
