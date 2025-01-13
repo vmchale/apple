@@ -674,8 +674,8 @@ tyB _ DelM = do
     a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
     pure (Arr (i `Cons` sh) a ~> I ~> Arr (n `Cons` sh) a, mempty)
 tyB _ Ix'd = do
-    a <- ftv "a"; i <- fti "i"
-    pure (vV i a ~> vV i I, mempty)
+    a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
+    pure (Arr (i `Cons` sh) a ~> vV i I, mempty)
 tyB _ TailM = do
     a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
     pure (Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
