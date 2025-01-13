@@ -142,6 +142,7 @@ tokens :-
         ⇐                        { mkSym PolyBind }
         →                        { mkSym Arrow }
         "->"                     { mkSym Arrow }
+        →$digit+                 { tok (\p s -> alex $ TokSym p (Access (read $ ASCII.unpack $ BSL.drop 3 s))) }
         "->"$digit+              { tok (\p s -> alex $ TokSym p (Access (read $ ASCII.unpack $ BSL.drop 2 s))) }
         ::                       { mkSym Sig }
         ":~"                     { mkSym TSig }
