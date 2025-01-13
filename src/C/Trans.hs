@@ -573,6 +573,14 @@ aeval (EApp _ (EApp _ (Builtin _ I1) i1) e) t a | iT@(Arr iSh _) <- eAnn i1, Jus
     (plI, (lI, iR)) <- plA i1
     loop <- afors iSh 0 ILt (Tmp n) $ \k -> [mv (AElem t 1 (Just a) (Tmp k)) (AElem xR 1 lX (EAt$AElem iR 1 lI (Tmp k) 8)) eSz]
     pure $ plX$plI$n=:ev iT (iR,lI):vSz iSh t a (Tmp n) eSz++[loop]
+aeval (EApp (Arr oSh _) (EApp _ (Builtin _ I1) i1) e) t a | iT@(Arr iSh _) <- eAnn i1, Just (tX, rnk) <- tRnk (eAnn e), Just sz <- nSz tX = do
+    n <- nI; nA <- nI
+    (plX, (lX, xR)) <- plA e
+    (plI, (lI, iR)) <- plA i1
+    (dts, dss) <- plDim rnk (xR, lX)
+    let ts=tail dts
+    loop <- afors iSh 0 ILt (Tmp n) $ \k -> [cpy (AElem t 1 (Just a) (Tmp k*Tmp nA)) (AElem xR 1 lX (Tmp nA*EAt (AElem iR 1 lI (Tmp k) 8))) (Tmp nA) sz]
+    pure $ plX$plI$n=:ev iT (iR,lI):tail dss++PlProd () nA (Tmp<$>ts):md oSh t a (KI rnk) (Tmp n*Tmp nA) (Tmp<$>n:ts) sz++[loop]
 aeval (EApp (Arr oSh ty) (Builtin _ Di) e) t a | Just sz <- nSz ty = do
     (plX, (lX, xR)) <- plA e
     td <- nI; xRd <- nI; n <- nI
@@ -715,6 +723,20 @@ aeval (EApp (Arr oSh _) (Builtin _ Tail) x) t a | Just (tX, rnk) <- tRnk (eAnn x
     (dtx,ss) <- plDim rnk (xR,lX)
     let dx0=head dtx; dts=Tmp<$>(d0:tail dtx)
     pure (plX$ss++d0=:(Tmp dx0-1):PlProd () n dts:md oSh t a (KI rnk) (Tmp n) dts sz++[cpy (AElem t (KI rnk) (Just a) 0) (AElem xR (KI rnk) lX (Tmp dx0)) (Tmp n) sz])
+                                                | otherwise = unsupported
+aeval (EApp (Arr oSh _) (Builtin _ InitM) xs) t a | Just (tX, rnk) <- tRnk (eAnn xs), Just sz <- nSz tX = do
+    d0 <- nI; n <- nI
+    (plX, (lX, xR)) <- plA xs
+    (dtx, plDs) <- plDim rnk (xR, lX)
+    let dx0=head dtx; dts=Tmp<$>(d0:tail dtx)
+    pure (plX$plDs++d0=:Bin IMax (Tmp dx0-1) 0:PlProd () n dts:md oSh t a (KI rnk) (Tmp n) dts sz++[cpy (AElem t (KI rnk) (Just a) 0) (AElem xR (KI rnk) lX 0) (Tmp n) sz])
+                                                 | otherwise = unsupported
+aeval (EApp (Arr oSh _) (Builtin _ TailM) x) t a | Just (tX, rnk) <- tRnk (eAnn x), Just sz <- nSz tX = do
+    d0 <- nI; n <- nI
+    (plX, (lX, xR)) <- plA x
+    (dtx,ss) <- plDim rnk (xR,lX)
+    let dx0=head dtx; dts=Tmp<$>(d0:tail dtx)
+    pure (plX$ss++d0=:Bin IMax (Tmp dx0-1) 0:PlProd () n dts:md oSh t a (KI rnk) (Tmp n) dts sz++[cpy (AElem t (KI rnk) (Just a) 0) (AElem xR (KI rnk) lX (Tmp dx0)) (Tmp n) sz])
                                                 | otherwise = unsupported
 aeval (EApp (Arr oSh _) (Builtin _ Flat) xs) t a | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty = do
     (plX, (lX, xR)) <- plA xs
