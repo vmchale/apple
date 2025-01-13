@@ -1,0 +1,2 @@
+-- sum of divisors
+λn. (+)/ₒ 0 ((λk. n|k=0) #. ⍳ 1 n)
