@@ -421,11 +421,6 @@ mgSh f l s sh0@Cons{} sh1@(Cat shh shϵ) | (is, Nil) <- unroll sh0, (isϵ, Nil) 
 mgSh f l s sh0 (Cat sh1 sh2) | (i0, Nil) <- unroll sh0, (i1, shϵ) <- unroll sh2, length i1==length i0 = do
     (_, s0) <- mgSh f l s sh1 Nil
     mgShPrep f l s0 (roll Nil i0) (roll shϵ i1)
-mgSh f l s sh0 (Cat sh1 sh2) | (i0, Nil) <- unroll sh0, (i1, shϵ) <- unroll sh1, length i1==length i0 = do
-    (_, s0) <- mgSh f l s sh2 Nil
-    mgShPrep f l s0 (roll Nil i0) (roll shϵ i1)
-mgSh f l s sh@(Cat _ sh1) sh2 | (i2, Nil) <- unroll sh2, (i1, _) <- unroll sh1, length i1==length i2 = mgSh f l s sh2 sh
-mgSh f l s sh@(Cat sh0 _) sh2 | (i2, Nil) <- unroll sh2, (i0, _) <- unroll sh0, length i0==length i2 = mgSh f l s sh2 sh
 mgSh f l s sh0@Cat{} sh1@Cons{} = mgSh f l s sh1 sh0
 mgSh _ l _ sh0@Cons{} sh1 = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0 sh1@Cons{} = throwError $ UShD l sh0 sh1
