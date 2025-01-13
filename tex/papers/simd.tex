@@ -7,18 +7,19 @@
 \maketitle
 
 \begin{abstract}
-  The C compilation model has dominated compilers literature but it opposes Single-Intruction, Multiple Data (SIMD). We articulate the assumptions behind textbook methods, where new CPUs diverge, and give a first cut of a solution with examples from the Apple Array System. By reconsidering expectations about compiler optimization, we give a program for high-level languages to offer performant SIMD. Array languages turn out to be an especially good candidate; we point out that it is possible for the programmer to expect good performance with examples in Apple.
+  The C compilation model has dominated compilers literature but it opposes Single-Intruction, Multiple Data (SIMD). We articulate the assumptions behind textbook methods, where new CPUs diverge, and give a first cut of a better approach used in the Apple Array System. By reconsidering expectations about compiler optimization, we give a program for high-level languages to offer performant SIMD. Array languages turn out to be an especially good candidate, expressing efficient operations in a high-level language; we give examples in Apple.
 \end{abstract}
-
-% array languages are a good candidate
 
 \section{Background}
 
 \subsection{The C Compilation Model}
 
-Kell \cite{kell2017} points out that C implementations, in practice, offer something that
+C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant, but has not kept up
 
-% elegance: compile code/function to assembly
+% Kell \cite{kell2017} points out that C implementations, in practice, offer something that other languages do not---its constructs (functions) are compiled into corresponding sequences of assembly instructions and stored in object files usable from other languages.
+
+% sequence of (single-threaded...) compilation
+
 % https://fabiensanglard.net/dc/
 
 \section{Functions in Theory}
@@ -29,7 +30,7 @@ Kell \cite{kell2017} points out that C implementations, in practice, offer somet
 
 % wrong to expect compiler to optimize code (widespread!), rather, one wants languages/compilers that are amenable to performance.
 % really "no big hammers" theorem, not a terrible fundamental... also nothing says high-level can't be performant!
-% no "spiritual optimization" but our problem at hand is actually a programmer sitting, writing code. As long as our burden is no more than writing assembly, we offer something as a high-level language
+% no "spiritual optimization" but our problem at hand is actually a programmer sitting, writing code. As long as our burden is no more than writing assembly, we offer something as a high-level language, does entail constraint on the source language hm
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 
 \subsection{Typing}
