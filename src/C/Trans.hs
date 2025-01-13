@@ -2065,6 +2065,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     loop <- afor1 pSh 1 ILt (Tmp nR) (\i -> mt (AElem pR 1 lP (Tmp i) pSz) x:mQs (Tmp i)++ss++mvts acc acc0)
     seed <- writeRF zop (x:ys) rts
     pure $plPP$plQs$nR =: ev tPs (pR,lP):mt (AElem pR 1 lP 0 pSz) x:mQs 0++seed++[loop]
+πr (Cond _ p e0 e1) t = cond p e0 e1 (ΠT (tr<$>t))
 πr e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
     pure (mvts t (gpt aa))
