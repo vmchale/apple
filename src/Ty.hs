@@ -1045,7 +1045,7 @@ tyE s (EApp l e0 e1) = do
     a <- ft "a" l; b <- ft "b" l
     (e0', s0) <- tyE s e0
     (e1', s1) <- tyE s0 e1
-    s2 <- liftU $ mp (l,e0) RF s1 (eAnn e0'$>l) (a~>b)
+    s2 <- liftU $ mp (l,e0) LF s1 (eAnn e0'$>l) (a~>b)
     s3 <- liftU $ mp (l,e1) LF s2 (eAnn e1'$>l) a
     pure (EApp (void b) e0' e1', s3)
 tyE s (Cond l p e0 e1) = do

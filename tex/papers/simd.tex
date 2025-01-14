@@ -12,9 +12,17 @@
 
 \section{Background}
 
-\subsection{The C Compilation Model}
+\subsection{Textbook Compilation Models}
 
-C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant, but has not kept up
+C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant, but not suited to SIMD. Consider
+
+\begin{verbatim}
+λas. (λx. x*2)'as
+\end{verbatim}
+
+which maps (\verb|'|) over a vector, multiplying by two.
+
+% when compiling map, we cannot recursively resort to the compiled (*2)
 
 % Kell \cite{kell2017} points out that C implementations, in practice, offer something that other languages do not---its constructs (functions) are compiled into corresponding sequences of assembly instructions and stored in object files usable from other languages.
 
@@ -22,7 +30,7 @@ C implementations compile the language's constructs (functions) to sequences of 
 
 % https://fabiensanglard.net/dc/
 
-\section{Functions in Theory}
+\subsection{Functions in Theory}
 
 % log is not a "parallel" function b/c conditional... hardware detail?
 
