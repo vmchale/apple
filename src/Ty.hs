@@ -1014,8 +1014,7 @@ tyE s (Lam _ nϵ e) = do
     n <- ftv "a"
     addStaEnv nϵ n
     (e', s') <- tyE s e
-    let lamTy = n ~> eAnn e'
-    pure (Lam lamTy (nϵ { loc = n }) e', s')
+    pure (Lam (n~>eAnn e') (nϵ { loc = n }) e', s')
 tyE s (Let _ (n, e') e) = do
     (e'Res, s') <- tyE s e'
     let e'Ty = eAnn e'Res
