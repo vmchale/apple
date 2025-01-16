@@ -43,7 +43,7 @@ main = do
             , ccOut pwd "test/data/bha.🍏" "bha" sys "1 2\n0.792800,0.663306\n"
             , ccOut pwd "test/data/mfa.🍎" "a" sys "2 4,2\n1.000000,1.000000,3.000000,3.000000,2.000000,2.000000,5.000000,5.000000\n"
             , ccOut pwd "test/data/sin.🍏" "ff" sys "-1.000000\n"
-            , ccOut pwd "test/data/conv.🍏" "conv" sys "2 3,3\n9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000\n"
+            , ccOut pwd "test/examples/convolve.🍎" "conv" sys "2 3,3\n9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000,9.000000\n"
             , ccOut pwd "math/hypergeometric.🍏" "hyper" sys "2.030078"
             , ccOut pwd "math/numbertheory/radical.🍎" "ii" sys "30"
             , ccOut pwd "math/numbertheory/factors.🍏" "ia" sys "1 3\n2,3,5\n"
