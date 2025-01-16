@@ -612,7 +612,7 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just lt <- cr tX = do
         :pad=:(Tmp np-Tmp n)
         -- pad it to a power of 2
         :MaB () lS slop (Tmp np*(Tmp steps+1)*8)
-        :For () 1 i 0 ILt (Tmp pad) [Wr () (Raw slop (Tmp i) (Just lS) 8) (KI$minBound)]
+        :For () 1 i 0 ILt (Tmp pad) [Wr () (Raw slop (Tmp i) (Just lS) 8) (KI minBound)]
         :cpy (Raw slop (Tmp pad) (Just lS)) (AElem xR 1 lX 0) (Tmp n) 8
         :i₀=:0:i₁=:0:inP=:Tmp slop:oP=:(Tmp slop+Tmp np*8):blSz=:1:blOSz=:2:nB=:Bin IAsr (Tmp np) 1
         :For () 1 ph 1 ILeq (Tmp steps)
@@ -705,7 +705,7 @@ aeval (Id (Arr oSh _) (Aɴ xs ns)) t a | Just (tX, xRnk) <- tRnk (eAnn xs), Just
     (dts, plDs) <- plDim xRnk (xR, lX)
     let ots = drop k dts
         oRnk=KI$xRnk-k
-    (plB, b) <- off xR lX nEs -- TODO: might be possible to reuse plDs?
+    (plB, b) <- off xR lX nEs
     pure (plX$drop k plDs++PlProd () szA (Tmp<$>ots):Ma () oSh a t oRnk (Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim xR 1 lX) oRnk:plNs (plB ++ [xRd=:DP xR (KI xRnk), cpy (AElem t oRnk (Just a) 0) (Raw xRd (b*Tmp szA) lX) (Tmp szA) sz]))
   where
     k :: Integral a => a
