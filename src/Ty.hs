@@ -499,17 +499,19 @@ mgu f _ s (Li i0) (IZ i1 (Nm _ (U j) _)) = do {(i',iS) <- mguI f (iSubst s) i0 i
 mgu f _ s (IZ i0 (Nm _ (U j) _)) (Li i1) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
 mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, uTS u t$wI iS s)}
+mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
+-- FIXME ug. is higher-rank on indices 😬
+-- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
 mgu LF _ s (IZ _ n0@(Nm _ (U j) _)) t1@(TVar n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu LF _ s t0@(TVar n0) (IZ _ n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu _ _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu _ _ s (TVar n0@(Nm _ (U j) _)) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
-mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
+-- (+) : o -> o -> o would work w/ right-focus?
+-- in some cases we want to propagate information, e.g. λN. (irange 0 N)
 mgu LF _ s Li{} (TVar (Nm _ (U u) _)) = pure (I, uTS u I s)
 mgu LF _ s (TVar (Nm _ (U u) _)) Li{} = pure (I, uTS u I s)
 mgu _ _ s t@Li{} (TVar (Nm _ (U u) _)) = pure (t, uTS u t s)
 mgu _ _ s (TVar (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
--- ug. kinda higher-rank type 😬
--- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
 mgu _ _ s t@(TVar n) (Arr (SVar i) (TVar n')) | n'==n = pure (t, scalar i s)
 mgu _ _ s (Arr (SVar i) t@(TVar n)) (TVar n') | n'==n = pure (t, scalar i s)
@@ -1005,6 +1007,10 @@ tyE s (EApp _ (EApp _ (Builtin l IRange) lb) ub) = do
             let m=ubi-lbi+1
             when (m<0) $ throwError (NegIx l m)
             pure (Ix () m)
+        -- (Li (Ix _ 0), TVar n) -> do
+            -- k <- fti "n"
+            -- let x=eAnn lb; ix=(k+:Ix () 1)$>x
+            -- pure (void ix, iTS n (Li ix) s4)
         _ -> ftie
     let arrTy = vV m I
     pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) IRange) lbϵ) ubϵ, s4)
