@@ -192,6 +192,7 @@ tokens :-
         ˙                        { mkSym A1 }
         "|"                      { mkSym Mod }
         "@."                     { mkSym AtDot }
+        "⸮"                      { mkSym AtDot }
         ℘                        { mkSym Weier }
         ⍋                        { mkSym Up }
         ⩪                        { mkSym Ice }
