@@ -30,8 +30,10 @@ which maps (\verb|'|) over a vector, multiplying by two.
 Suppose our compiler has a function:
 
 \begin{verbatim}
-writeASM :: Expr -> [Temp] -> Temp -> [Stmt]
+writeFn :: Expr -> [Temp] -> Temp -> [Stmt]
 \end{verbatim}
+
+which takes a function,
 
 % when compiling map, we cannot recursively resort to the compiled (*2)
 
@@ -42,6 +44,10 @@ writeASM :: Expr -> [Temp] -> Temp -> [Stmt]
 % https://fabiensanglard.net/dc/
 
 \subsection{Functions in Theory}
+
+Landin \cite{landin1965} points out that Algol
+
+% http://blog.vmchale.com/article/intuitionist-c
 
 % log is not a "parallel" function b/c conditional... hardware detail?
 
