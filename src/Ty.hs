@@ -46,7 +46,7 @@ data Subst a = Subst { tySubst :: IM.IntMap (T a)
 
 data TyE a = IllScoped a !(Nm a)
            | UF a (E a) !(T a) !(T a)
-           | UI a !(I a) !(I a)
+           | UI a !F !(I a) !(I a)
            | USh a !(Sh a) !(Sh a)
            | UShD a !(Sh a) !(Sh a)
            | OT a !(T a) !(T a)
@@ -55,7 +55,7 @@ data TyE a = IllScoped a !(Nm a)
            | ExistentialArg (T ())
            | MatchFailed !(T ()) !(T ())
            | MatchShFailed !(Sh a) !(Sh a)
-           | MatchIFailed !Focus !(I a) !(I a)
+           | MatchIFailed !F !(I a) !(I a)
            | Doesn'tSatisfy a (T a) !C
            | NegIx a Int
            deriving (Generic)
@@ -69,13 +69,14 @@ instance Monoid (Subst a) where
 instance NFData a => NFData (TyE a) where
 
 located l p = pretty l <> ":" <+> p
+lf l f p = pretty l <> ":" <+> pretty f <+> p
 
 instance Pretty a => Pretty (TyE a) where
     pretty (IllScoped l n)         = located l$ squotes (pretty n) <+> "is not in scope."
     pretty (UF l e ty ty')         = located l$ "could not unify" <+> squotes (pretty ty) <+> "with" <+> squotes (pretty ty') <+> "in expression" <+> squotes (pretty e)
     pretty (USh l sh sh')          = located l$ "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
     pretty (UShD l sh sh')         = located l$ "unification gave up on" <+> squotes (pretty sh) <+> squotes (pretty sh')
-    pretty (UI l ix ix')           = located l$ "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
+    pretty (UI l f ix ix')         = lf l f$ "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
     pretty (OT l ty ty')           = located l$ "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
     pretty (OI l i j)              = located l$ "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
     pretty (OSh l s0 s1)           = located l$ "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
@@ -119,7 +120,7 @@ liftU a = do
 
 wI iS (Subst t i sh) = Subst t (iS<>i) sh
 
-mI :: Focus -> I a -> I a -> Either (TyE a) (Subst a)
+mI :: F -> I a -> I a -> Either (TyE a) (Subst a)
 mI f i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
                              | otherwise = Left $ MatchIFailed f i0 i1
 mI _ (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
@@ -138,7 +139,7 @@ mI f (Ix l iϵ) (StaPlus _ (Ix _ j) i) | iϵ >= j = mI f i (Ix l (iϵ-j))
 mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent, should enter confessional error context
 mI f (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent
 
-mSh :: Focus -> Sh a -> Sh a -> Either (TyE a) (Subst a)
+mSh :: F -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mSh _ (SVar (Nm _ (U i) _)) sh      = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
 mSh _ Nil Nil                       = Right mempty
 mSh f (Cons i sh) (Cons i' sh')     = (<>) <$> mI f i i' <*> mSh f sh sh'
@@ -155,7 +156,7 @@ mSh _ sh sh'                        = Left $ MatchShFailed sh sh'
 match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
 match t t' = either throw id (maM RF t t')
 
-maM :: Focus -> T a -> T a -> Either (TyE a) (Subst a)
+maM :: F -> T a -> T a -> Either (TyE a) (Subst a)
 maM f (Li n) (Li m)                 = mI f m n
 maM _ (IZ _ (Nm _ (U u) _)) I       = Right $ Subst (IM.singleton u I) IM.empty IM.empty
 maM _ (IZ _ (Nm _ (U u) _)) F       = Right $ Subst (IM.singleton u F) IM.empty IM.empty
@@ -294,24 +295,24 @@ iTS n t = mapTySubst (insert n t)
 uTS u n = mapTySubst (IM.insert u n)
 iSh u sh = mapShSubst (IM.insert u sh)
 
-data Focus = LF | RF
+data F = LF | RF
 
-instance NFData Focus where rnf LF=(); rnf RF=()
+instance NFData F where rnf LF=(); rnf RF=()
 
-instance Pretty Focus where pretty LF="⦠"; pretty RF="∢"
+instance Pretty F where pretty LF="⦠"; pretty RF="∢"
 
-mguIPrep :: Focus -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
+mguIPrep :: F -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
 mguIPrep f is = mguI f is `on` rwI.(is!>)
 
-mguI :: Focus -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
+mguI :: F -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
 mguI _ inp i0@(Ix _ i) (Ix _ j) | i == j = pure (i0, inp)
 mguI RF inp (Ix l _) Ix{} = do {m <- nIe l; pure (m, inp)}
-mguI _ _ i0@(Ix l _) i1@Ix{} = throwError $ UI l i0 i1
+mguI f _ i0@(Ix l _) i1@Ix{} = throwError $ UI l f i0 i1
 mguI _ inp i0@(IEVar _ i) (IEVar _ j) | i == j = pure (i0, inp)
 mguI RF inp (IEVar l _) (IEVar _ _) = do {m <- nIe l; pure (m, inp)}
 mguI RF inp i@IEVar{} Ix{} = pure (i, inp)
 mguI RF inp Ix{} j@IEVar{} = pure (j, inp)
-mguI _ _ i0@(IEVar l _) i1@IEVar{} = throwError $ UI l i0 i1
+mguI f _ i0@(IEVar l _) i1@IEVar{} = throwError $ UI l f i0 i1
 mguI _ inp i0@(IVar _ i) (IVar _ j) | i == j = pure (i0, inp)
 mguI _ inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = throwError $ OI l iix ix
                                           | otherwise = pure (ix, IM.insert i ix inp)
@@ -320,7 +321,7 @@ mguI _ inp ix iix@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $
 mguI f inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguI f inp i0 i1
 mguI f inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguI f inp i0 i1
 mguI f inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguI f inp i (Ix lk (j-k))
-                                                  | otherwise = throwError $ UI l i0 i1
+                                                  | otherwise = throwError $ UI l f i0 i1
 mguI f inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguI f inp i1 i0
 mguI f inp (StaPlus l i@Ix{} j) k@Ix{} = mguI f inp (StaPlus l j i) k
 mguI f inp i@Ix{} (StaPlus l j@Ix{} k) = mguI f inp i (StaPlus l k j)
@@ -334,12 +335,13 @@ mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
     (k, s) <- mguI f inp i0 j0
     (m, s') <- mguIPrep f s i1 j1
     pure (StaMul l k m, s')
-mguI LF _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l i0 i1
-mguI LF _ i0@(Ix l _) i1@IEVar{} = throwError $ UI l i0 i1
+-- TODO: rewrite existential vars on the left...
+mguI LF _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l LF i0 i1
+mguI LF _ i0@(Ix l _) i1@IEVar{} = throwError $ UI l LF i0 i1
 mguI RF inp (IEVar l (Nm _ (U i) _)) j@StaPlus{} | i `IS.notMember` occI j = do {m <- nIe l; pure (m, inp)}
 mguI RF inp i@StaPlus{} j@IEVar{} = mguI RF inp j i
-mguI _ _ i0@(IEVar l _) i1@StaPlus{} = throwError $ UI l i0 i1
-mguI _ _ i0@(StaPlus l _ _) i1@IEVar{} = throwError $ UI l i0 i1
+mguI f _ i0@(IEVar l _) i1@StaPlus{} = throwError $ UI l f i0 i1
+mguI f _ i0@(StaPlus l _ _) i1@IEVar{} = throwError $ UI l f i0 i1
 mguI f inp (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
     k <- IVar l <$> nI l
     (_,s0) <- mguI f inp n (k+:Ix l₀ (c`div`m))
@@ -361,10 +363,10 @@ mguI _ _ i0 i1 = error (show (i0,i1))
 splitFromLeft :: Int -> [a] -> ([a], [a])
 splitFromLeft n xs | nl <- length xs = splitAt (nl-n) xs
 
-mgShPrep :: Focus -> a -> Subst a -> Sh a -> Sh a -> UM a (Sh a, Subst a)
+mgShPrep :: F -> a -> Subst a -> Sh a -> Sh a -> UM a (Sh a, Subst a)
 mgShPrep f l s = mgSh f l s `on` shSubst s.rwSh
 
-mgSh :: Focus -> a -> Subst a -> Sh a -> Sh a -> UM a (Sh a, Subst a)
+mgSh :: F -> a -> Subst a -> Sh a -> Sh a -> UM a (Sh a, Subst a)
 mgSh _ _ inp Nil Nil = pure (Nil, inp)
 mgSh f l inp (Cons i sh) (Cons i' sh') = do
     (i'', sI) <- mguI f (iSubst inp) i i'
@@ -427,13 +429,13 @@ mgSh _ l _ sh0@Rev{} sh1@Cat{} = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0@Cat{} sh1@Rev{} = throwError $ UShD l sh0 sh1
 -- TODO: enter confessional context (error messages)
 
-mguPrep :: Focus -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
+mguPrep :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mguPrep f l s t0 t1 =
     let t0' = aT s t0
         t1' = aT s t1
     in mgu f l s ({-# SCC "rwArr" #-} rwArr t0') ({-# SCC "rwArr" #-} rwArr t1')
 
-mp :: (a, E a) -> Focus -> Subst a -> T a -> T a -> UM a (Subst a)
+mp :: (a, E a) -> F -> Subst a -> T a -> T a -> UM a (Subst a)
 mp l f s t0 t1 = snd <$> mguPrep f l s t0 t1
 
 occSh :: Sh a -> IS.IntSet
@@ -467,7 +469,7 @@ scalar sv = mapShSubst (insert sv Nil)
 
 σ (Li IEVar{}) = I; σ (IZ IEVar{} t) = TVar t; σ t = t
 
-mgu :: Focus -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
+mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0@Arrow{} t1) (Arrow t0' t1') = do
     (t0'', s0) <- mgu LF l s t0 t0'
     (t1'', s1) <- mguPrep f l s0 t1 t1'
