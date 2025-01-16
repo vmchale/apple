@@ -1,8 +1,11 @@
 \documentclass{article}
 
+\usepackage{fontspec}
 \usepackage{hyperref}
 
 \begin{document}
+
+\setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
 
 \author{V. E. McHale}
 \title{Array Language Compilers for SIMD}
@@ -23,6 +26,12 @@ C implementations compile the language's constructs (functions) to sequences of 
 \end{verbatim}
 
 which maps (\verb|'|) over a vector, multiplying by two.
+
+Suppose our compiler has a function:
+
+\begin{verbatim}
+writeASM :: Expr -> [Temp] -> Temp -> [Stmt]
+\end{verbatim}
 
 % when compiling map, we cannot recursively resort to the compiled (*2)
 
