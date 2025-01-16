@@ -485,6 +485,10 @@ mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
 mgu _ _ s I I = pure (I, s)
 mgu _ _ s F F = pure (F, s)
 mgu _ _ s B B = pure (B, s)
+-- problem: (+) : o -> o -> o applied to num(0)... don't propagate!
+-- could not unify 'int' with 'int(n)' in expression '⌊y'
+--
+-- basically irange : int(n) -> Vec n int and if we supply int then it can be Vec #n int
 mgu _ _ s Li{} I = pure (I, s)
 mgu _ _ s I Li{} = pure (I, s)
 mgu _ _ s (IZ _ (Nm _ (U j) _)) I = pure (I, uTS j I s)
@@ -572,7 +576,7 @@ tS f s (t:ts) = do{(tϵ, next) <- f s t; first (tϵ:) <$> tS f next ts}
 vx = (`Cons` Nil)
 vV i = Arr (vx i)
 
--- TODO: (+) applied to num(n) could be num(i)->num(j)->num(i+j)...
+-- FIXME: (+) applied to num(n) could be num(i)->num(j)->num(i+j)...
 tyNumBinOp :: a -> TyM a (T (), Subst a)
 tyNumBinOp l = do
     n <- fc "a" l IsNum
@@ -802,6 +806,7 @@ tyB l (Rank as) = do
         fTy = foldr (~>) cod $ zipWith3 (\ax sh t -> case ax of {(_,Nothing) -> Arr (trim sh) t;(_,Just axs) -> Arr (sel axs sh) t}) as shs vs
         rTy = foldr (~>) codTy mArrs
         shsU = zipWith (\ax sh -> case ax of {(n,Nothing) -> tydrop n sh;(_,Just axs) -> del axs sh}) as shs
+        -- wait right-focus?
         shUHere sh sh' = fmap snd (liftU $ mgShPrep RF l mempty (sh$>l) (sh'$>l))
     s <- zipWithM shUHere shsU (tail shsU++[codSh])
     pure (fTy ~> rTy, mconcat s)
