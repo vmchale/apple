@@ -1,5 +1,7 @@
 \documentclass{article}
 
+\usepackage{hyperref}
+
 \begin{document}
 
 \author{V. E. McHale}
@@ -14,7 +16,7 @@
 
 \subsection{Textbook Compilation Models}
 
-C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant, but not suited to SIMD. Consider
+C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant \footnote{Kell \cite{kell2017} points out that C is uniquely suited to interfacing with other languages, in part because of this compilation practice.}, but not suited to SIMD. Consider
 
 \begin{verbatim}
 λas. (λx. x*2)'as
