@@ -24,8 +24,8 @@
   };
   f21 ← λa0.λa1.λb.λz. {
     rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-    Ho ← λN.λz.λa. (+)/ₒ 0 ((*)`(gen. 1 (*z) (N+1)) (a'⍳ 0 N));
-    Ho 50 z (λn. {nn⟜ ℝn; rf a0 nn*rf a1 nn%(rf b nn*fact nn)})
+    Σ ← λlb.λub.λa. (+)/ₒ 0 (a'(⍳ lb ub));
+    Σ 0 50 (λn. {nn⟜ℝ n; rf a0 nn*(rf a1 nn%rf b nn)*(z^n%fact nn)})
   };
   0.5+x*e:(gammaln(0.5*(ν+1))-gammaln(ν*0.5))%(√(𝜋*ν))*f21 ½ ((ν+1)%2) 1.5 (_(x^2%ν))
 }
