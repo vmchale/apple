@@ -1,4 +1,3 @@
--- not fast
 λA.
 {
   N ← 𝓉A; 
@@ -6,6 +5,5 @@
   c ← λk. (cos. (C*k), sin. (C*k));
   add ← λ(r₀,i₀).λ(r₁,i₁). (r₀+r₁,i₀+i₁);
   mul ← λ(r₀,i₀).λ(r₁,i₁). (r₀*r₁-i₀*i₁,r₀*i₁+r₁*i₀);
-  -- (c'frange 0 (n-1) N)
   (λj. (add/(mul`(A::Vec n (𝞈,𝞈)) ((λk. c (j*k))'frange 0 (n-1) N))))'frange 0 (n-1) N
 }
