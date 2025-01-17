@@ -76,11 +76,11 @@ iop Op.ILt  = Lt
 nR :: WM AbsReg
 nR = IReg <$> nextI
 
-nextF :: WM FAbsReg
-nextF = FReg <$> nextI
+nF :: WM FAbsReg
+nF = FReg <$> nextI
 
 nQ :: WM (V2Reg FAbsReg)
-nQ = V2Reg<$>nextF
+nQ = V2Reg<$>nF
 
 irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
 irToAarch64 st = swap . second IR.wtemps . flip runState st . foldMapA ir
@@ -377,7 +377,7 @@ mw64 w r =
 
 ssin :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 ssin t = do
-    d1 <- nextF; d2 <- nextF; d3 <- nextF
+    d1 <- nF; d2 <- nF; d3 <- nF
     tsI <- nextI
     let tsIR=IR.FTemp tsI; tsC=FReg tsI
     pl3 <- feval (IR.KF$ -(1/6)) tsIR; pl5 <- feval (IR.KF$1/120) tsIR; pl7 <- feval (IR.KF$ -(1/5040)) tsIR
@@ -387,7 +387,7 @@ ssin t = do
 
 cosϵ :: IR.FTemp -> WM [AArch64 AbsReg FAbsReg ()]
 cosϵ t = do
-    d1 <- nextF; d2 <- nextF; d3 <- nextF
+    d1 <- nF; d2 <- nF; d3 <- nF
     tsI <- nextI
     let tsIR=IR.FTemp tsI; tsC=FReg tsI
     pl0 <- feval 1 tsIR; pl2 <- feval (IR.KF$ -(1/2)) tsIR; pl4 <- feval (IR.KF$1/24) tsIR; pl6 <- feval (IR.KF$ -(1/720)) tsIR
@@ -458,10 +458,10 @@ feval (IR.FU Op.FSin e) t = do
     let d0=fabsReg t
     s <- ssin t; c <- cosϵ t
     lc <- nextL; endL <- nextL
-    i <- nR; d2 <- nextF; i7 <- nextI
+    i <- nR; d2 <- nF; i7 <- nextI
     π4i<-nextI; plπ4 <- feval (IR.KF$pi/4) (IR.FTemp π4i); pl7 <- eval (IR.ConstI 7) (IR.ITemp i7)
     let π4=FReg π4i
-    dRot <- nextF; nres <- nextF
+    dRot <- nF; nres <- nF
     pure $
         plE
         ++plπ4
