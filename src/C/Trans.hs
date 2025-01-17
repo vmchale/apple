@@ -445,20 +445,20 @@ data AD = AD { eigen :: !Temp, alabel :: !(Maybe AL), eit :: Maybe (T ())
 
 data RA = AI !AD | NA !RT
 
-fill :: E (T ()) -> AD -> [RA] -> CM [CS ()]
+fill :: E (T ()) -> AD -> [RA] -> CM (CS ())
 fill (EApp _ (Builtin _ Zip) op) (AD t lA (Just (Arr sh _)) _ _ _) [AI (AD aPX lX _ _ _ (Just n)), AI (AD aPY lY _ _ _ _)]
     | (Arrow tX (Arrow tY tC)) <- eAnn op, nind tX && nind tY && nind tC = do
     step <- aS op [(tX, ixarg aPX 1 lX), (tY, ixarg aPY 1 lY)] tC (ixarg t 1 lA)
-    (:[]) <$> afor sh 0 ILt n (\i -> step (repeat i) i)
+    afor sh 0 ILt n (\i -> step (repeat i) i)
 fill (EApp _ (Builtin _ Succ) op) (AD t lA (Just (Arr sh _)) _ _ (Just n')) [AI (AD xR lX _ _ _ _)]
     | Arrow tX (Arrow _ tZ) <- eAnn op = do
     step <- aS op [(tX, \iϵ -> AElem xR 1 lX (Tmp iϵ+1)), (tX, ixarg xR 1 lX)] tZ (ixarg t 1 lA)
-    (:[]) <$> afor sh 0 ILt n' (\i -> step (repeat i) i)
+    afor sh 0 ILt n' (\i -> step (repeat i) i)
 fill (EApp _ (Builtin _ ScanS) op) (AD t lA _ _ _ (Just n)) [NA acc, AI (AD aP l (Just tXs) _ _ _)]
     | Arrow tX (Arrow tY _) <- eAnn op, Just xSz <- nSz tX, Just ySz <- nSz tY = do
     (x, wX) <- arg tY (iXelem aP 1 l ySz)
     ss <- writeRF op [acc, x] acc
-    (:[]) <$> afort tXs 0 ILt n (\i -> wt (AElem t 1 lA (Tmp i) xSz) acc:wX i:ss)
+    afort tXs 0 ILt n (\i -> wt (AElem t 1 lA (Tmp i) xSz) acc:wX i:ss)
 
 rfill :: E (T ()) -> AD -> [RA] -> CM [CS ()]
 rfill (Builtin _ Init) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
@@ -1211,13 +1211,13 @@ aeval (EApp oTy@(Arr sh _) (EApp _ g@(EApp _ (Builtin _ Zip) op) xs) ys) t a | (
     nR <- nI
     (plEX, (lX, aPX)) <- plA xs; (plEY, (lY, aPY)) <- plA ys
     contents <- fill g (AD t (Just a) (Just oTy) Nothing Nothing Nothing) [AI (AD aPX lX Nothing Nothing Nothing (Just$Tmp nR)), AI (AD aPY lY Nothing Nothing Nothing Nothing)]
-    pure (plEX$plEY$nR =: ev (eAnn xs) (aPX,lX):vSz sh t a (Tmp nR) zSz++contents)
+    pure (plEX$plEY$nR =: ev (eAnn xs) (aPX,lX):vSz sh t a (Tmp nR) zSz++[contents])
 aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ ScanS) op) seed) e) t a | (Arrow tX (Arrow tY _)) <- eAnn op, Just xSz <- rSz tX, nind tY = do
     acc <- rtemp tX; n <- nI
     plS <- eeval seed acc
     (plE, (l, aP)) <- plA e
     loop <- fill g (AD t (Just a) Nothing Nothing Nothing (Just$Tmp n)) [NA acc, AI (AD aP l (Just tXs) Nothing Nothing Nothing)]
-    pure (plE$n =: (ev tXs (aP,l)+1):vSz oSh t a (Tmp n) xSz++plS++loop)
+    pure (plE$n =: (ev tXs (aP,l)+1):vSz oSh t a (Tmp n) xSz++plS++[loop])
   where
     tXs=eAnn e
 aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ ScanS) op) seed) e) t a | (Arrow tX (Arrow tY _)) <- eAnn op, isΠ tX, xSz <- bT tX, nind tY = do
@@ -1226,7 +1226,7 @@ aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ ScanS) op) seed) e) t a | (
     (plE, (l, aP)) <- plA e
     -- TODO: tup-of-arrays would get discarded hm
     loop <- fill g (AD t (Just a) Nothing Nothing Nothing (Just$Tmp n)) [NA (ΠT (tr<$>as)), AI (AD aP l (Just tXs) Nothing (Just xSz) Nothing)]
-    pure (plE$n =: (ev tXs (aP,l)+1):vSz oSh t a (Tmp n) xSz++plS++loop)
+    pure (plE$n =: (ev tXs (aP,l)+1):vSz oSh t a (Tmp n) xSz++plS++[loop])
   where
     tXs=eAnn e
 aeval (EApp oTy@(Arr sh _) g@(EApp _ (Builtin _ Scan) op) xs) t a | (Arrow tAcc (Arrow tX _)) <- eAnn op, Just accSz <- rSz tAcc, Just xSz <- rSz tX = do
@@ -1375,7 +1375,7 @@ aeval (EApp oTy@(Arr sh _) g@(EApp _ (Builtin _ Succ) op) xs) t a | Arrow tX (Ar
     szR <- nI; sz'R <- nI
     (plX, (lX, xR)) <- plA xs
     loop <- fill g (AD t (Just a) (Just oTy) Nothing Nothing (Just$Tmp sz'R)) [AI (AD xR lX Nothing Nothing Nothing Nothing)]
-    pure (plX$szR =: ev (eAnn xs) (xR,lX):sz'R =: (Tmp szR-1):vSz sh t a (Tmp sz'R) zSz++loop)
+    pure (plX$szR =: ev (eAnn xs) (xR,lX):sz'R =: (Tmp szR-1):vSz sh t a (Tmp sz'R) zSz++[loop])
 aeval (EApp oTy@(Arr oSh _) g@(Builtin _ RevE) e) t a | Just sz <- aB oTy = do
     n <- nI
     (plE, (lE, eR)) <- plA e
