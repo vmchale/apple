@@ -27,13 +27,16 @@ C implementations compile the language's constructs (functions) to sequences of 
 
 which maps (\verb|'|) over a vector, multiplying by two.
 
-Suppose our compiler has a function:
+Consider a compiler written as mutually recursive functions:
 
 \begin{verbatim}
+writeExpr :: Expr -> Temp -> [Stmt]
+
 writeFn :: Expr -> [Temp] -> Temp -> [Stmt]
 \end{verbatim}
 
-which takes a function,
+The first function takes an expression and a register and creates a series of statements that will write that its value to the given register. The second takes an expression representing a function, registers to read arguments from, and a register to write the return value, and returns a series of statements. This is used in Appel \cite{appel1998}
+% Cite Appel
 
 % when compiling map, we cannot recursively resort to the compiled (*2)
 
