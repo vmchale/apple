@@ -8,7 +8,7 @@
 \setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
 
 \author{V. E. McHale}
-\title{Array Language Compilers for SIMD}
+\title{Compiling Array Languages for SIMD}
 \maketitle
 
 \begin{abstract}
@@ -19,13 +19,7 @@
 
 \subsection{Textbook Compilation Models}
 
-C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant \footnote{Kell \cite{kell2017} points out that C is uniquely suited to interfacing with other languages, in part because of this compilation practice.}, but not suited to SIMD. Consider
-
-\begin{verbatim}
-λas. (λx. x*2)'as
-\end{verbatim}
-
-which maps (\verb|'|) over a vector, multiplying by two.
+C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant \footnote{Kell \cite{kell2017} points out that C is uniquely suited to interfacing with other languages, in part because of this compilation practice.}, but not suited to SIMD.
 
 Consider a compiler written as mutually recursive functions:
 
@@ -35,26 +29,48 @@ writeExpr :: Expr -> Temp -> [Stmt]
 writeFn :: Expr -> [Temp] -> Temp -> [Stmt]
 \end{verbatim}
 
-The first function takes an expression and a register and creates a series of statements that will write that its value to the given register. The second takes an expression representing a function, registers to read arguments from, and a register to write the return value, and returns a series of statements. This is used in Appel \cite{appel1998}
-% Cite Appel
+The first function takes an expression and a register and creates a series of statements that will write that its value to the given register. The second takes an expression representing a function, registers to read arguments from, and a register to write the return value, and returns a series of statements. This is used in Appel \cite{appel1998}[pp.~148-169], for instance.
 
-% when compiling map, we cannot recursively resort to the compiled (*2)
+Na\"ively\footnote{This was the approach taken in the Apple array system at first.}, we might try to compile \verb|λas. map (λx. f x)'as|, which maps over a vector, as follows:
 
-% Kell \cite{kell2017} points out that C implementations, in practice, offer something that other languages do not---its constructs (functions) are compiled into corresponding sequences of assembly instructions and stored in object files usable from other languages.
+\begin{itemize}
+  \item Generate temporaries \verb|x|, \verb|y| for the argument and return value of \verb|f|, respectively.
+  \item Compile \verb|λx. f x| using \verb|writeFn|.
+  \item Generate code to loop over the input vector's elements, reading from the input and putting the value in \verb|x|, and then storing the result \verb|y| in the output vector.
+\end{itemize}
 
-% sequence of (single-threaded...) compilation
+This is appealing because of its simplicity, and also has the advantage that \verb|f| can be defined in another language. However in the case of
+
+\begin{verbatim}
+λas. map (λx. x*2) as
+\end{verbatim}
+
+it would step over the input vector's elements one at a time. This is not as efficient as it could be---SIMD instructions can multiply several elements at once. Thus compiling \verb|map| should not resort to a single canonical compiled version of \verb|f|.
 
 % https://fabiensanglard.net/dc/
 
 \subsection{Functions in Theory}
 
-Landin \cite{landin1965} points out that Algol
+Landin \cite{landin1965} points out that Algol corresponds to the lambda calculus. Functions in the lambda have a formal definition and are applicable to programming in practice---this
+
+% easy enough to check parallelizability at least?
 
 % http://blog.vmchale.com/article/intuitionist-c
 
 % log is not a "parallel" function b/c conditional... hardware detail?
 
+\subsection{Limits of C}
+
+What makes C special in practice is that functions, which can be composed, are compiled to sequences of assembly instructions stored in object files; compositionality is borne through until linking. This compositionality is at odds with
+% Apple includes vexp for instance... but yeah
+
+% functions-in-compiler vs. procedure-ABIs must be different... thus compiler-as-a-library is appealing
+
 \section{Compiler Users}
+
+The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but that is not the problem sitting before us.
+% IR for interprocedural analysis is mentioned by Appel, actually!
+% also: how to make high-level languages efficient... no one is writing convoluted jumps anyway so procedural languages don't need to care really
 
 % wrong to expect compiler to optimize code (widespread!), rather, one wants languages/compilers that are amenable to performance.
 % really "no big hammers" theorem, not a terrible fundamental... also nothing says high-level can't be performant!
@@ -64,6 +80,8 @@ Landin \cite{landin1965} points out that Algol
 \subsection{Typing}
 
 % indexing by for-loops is elegant but index information (parity!) doesn't propagate so easily (optimization is "internal" rather than specified system)
+% contract with compiler vs. ??? internals,
+% good b/c the information is high-level/at the language level so
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
