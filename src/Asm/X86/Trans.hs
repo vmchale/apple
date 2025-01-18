@@ -47,7 +47,7 @@ irToX86 :: IR.WSt -> [IR.Stmt] -> (Int, [X86 AbsReg FAbsReg ()])
 irToX86 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
 nR :: WM AbsReg
-nR = IReg <$> nI; nextF = FReg <$> nI
+nR = IReg <$> nI; nF = FReg <$> nI
 
 mi8 :: Int64 -> Maybe Int8
 mi8 i | i <= fromIntegral (maxBound :: Int8) && i >= fromIntegral (minBound :: Int8) = Just $ fromIntegral i
@@ -103,7 +103,7 @@ ir (IR.MJ (IR.IRel Op.ILt (IR.Reg r0) e1) l) = do
     pure $ plE1 ++ [CmpRR () (absReg r0) (IReg i1), Jl () l]
 ir (IR.MJ (IR.FRel fop (IR.FReg r0) e1) l) = do
     (plE1,i1) <- plF e1
-    f <- nextF; r <- nR
+    f <- nF; r <- nR
     pure $ plE1 [Vcmppd () f (fabsReg r0) i1 (opPred fop), MovqRX () r f, TestI () r maxBound, Jne () l]
 ir (IR.MJ (IR.Is p) l) = pure [TestI () (absReg p) 1, Jne () l]
 ir (IR.MJ (IR.IP Op.IOdd e) l) = do
@@ -186,11 +186,11 @@ ir (IR.Cmov (IR.IRel Op.ILt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovl () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.FRel fop (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
     i1 <- nI; plE <- evalE e (IR.ITemp i1)
-    f <- nextF; r <- nR
+    f <- nF; r <- nR
     pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) (opPred fop), MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
 ir (IR.Fcmov (IR.FRel fop (IR.FReg xr0) (IR.FReg xr1)) t e) = do
     plE <- feval e t; l <- nL
-    f <- nextF; r <- nR
+    f <- nF; r <- nR
     pure $ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) (nopPred fop), MovqRX () r f, TestI () r maxBound, Jne () l] ++ plE ++ [Label () l]
 ir (IR.Fcmov (IR.IRel Op.IEq (IR.Reg r0) (IR.ConstI n)) t e) | Just i32 <- mi32 n = do
     plE <- feval e t; l <- nL

@@ -1,8 +1,19 @@
 module A.Eta ( η ) where
 
 import           A
-import           Control.Monad ((<=<))
-import           R.M
+import           Control.Monad                    ((<=<))
+import           Control.Monad.Trans.State.Strict (State, state)
+import qualified Data.Text                        as T
+import           Nm
+import           U
+
+type RM = State Int
+
+nU :: T.Text -> a -> RM (Nm a)
+nU n l = state (\i -> let j=i+1 in (Nm n (U j) l, j))
+
+nN :: a -> RM (Nm a)
+nN = nU "x"
 
 -- domains
 doms :: T a -> [T a]
@@ -17,7 +28,7 @@ thread = foldr (.) id
 
 unseam :: [T ()] -> RM (E (T ()) -> E (T ()), E (T ()) -> E (T ()))
 unseam ts = do
-    lApps <- traverse (\t -> do { n <- nextN t ; pure (\e' -> let t' = eAnn e' in Lam (t ~> t') n e', \e' -> let Arrow _ cod = eAnn e' in EApp cod e' (Var t n)) }) ts
+    lApps <- traverse (\t -> do {n <- nN t ; pure (\e' -> let t' = eAnn e' in Lam (t ~> t') n e', \e' -> let Arrow _ cod = eAnn e' in EApp cod e' (Var t n))}) ts
     let (ls, eApps) = unzip lApps
     pure (thread ls, thread (reverse eApps))
 
