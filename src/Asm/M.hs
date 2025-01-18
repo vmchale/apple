@@ -3,8 +3,8 @@
 module Asm.M ( CFunc (..)
              , WM
              , Label
-             , nextI
-             , nextL
+             , nI
+             , nL
              , foldMapA
              , prettyLabel
              , i4
@@ -44,11 +44,11 @@ prettyAsm (ds,is) = pAD ds <#> pAsm is
 pAsm :: Pretty isn => [isn] -> Doc ann
 pAsm = prettyLines.fmap pretty
 
-nextI :: WM Int
-nextI = state (\(IR.WSt l i) -> (i, IR.WSt l (i+1)))
+nI :: WM Int
+nI = state (\(IR.WSt l i) -> (i, IR.WSt l (i+1)))
 
-nextL :: WM Label
-nextL = state (\(IR.WSt i t) -> (i, IR.WSt (i+1) t))
+nL :: WM Label
+nL = state (\(IR.WSt i t) -> (i, IR.WSt (i+1) t))
 
 data CFunc = Malloc | Free | JR | DR | Exp | Log | Pow deriving (Generic)
 

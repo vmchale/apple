@@ -501,7 +501,11 @@ mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
 mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, uTS u t$wI iS s)}
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
 -- FIXME ug. is higher-rank on indices 😬
+-- maybe we could mark "stateful" context when we enter lol? for index variables
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
+--
+-- lots of things are allowed (int(0) + int(1)) but we want to propagate as much information as possible
+-- also some index-things are more strict... addition not at all!
 mgu LF _ s (IZ _ n0@(Nm _ (U j) _)) t1@(TVar n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu LF _ s t0@(TVar n0) (IZ _ n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu _ _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)

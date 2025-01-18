@@ -15,11 +15,11 @@ import qualified Op
 
 plF :: IR.FE -> WM ([X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ()], FAbsReg)
 plF (IR.FReg t) = pure (id, fabsReg t)
-plF e           = do {i <- nextI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
+plF e           = do {i <- nI; pl <- feval e (IR.FTemp i); pure ((pl++), FReg i)}
 
 plI :: IR.Exp -> WM ([X86 AbsReg FAbsReg ()] -> [X86 AbsReg FAbsReg ()], AbsReg)
 plI (IR.Reg t) = pure (id, absReg t)
-plI e          = do {i <- nextI; pl <- evalE e (IR.ITemp i); pure ((pl++), IReg i)}
+plI e          = do {i <- nI; pl <- evalE e (IR.ITemp i); pure ((pl++), IReg i)}
 
 absReg :: IR.Temp -> AbsReg
 absReg (IR.ITemp i) = IReg i
@@ -46,8 +46,8 @@ fabsReg IR.FRet1     = FRet1
 irToX86 :: IR.WSt -> [IR.Stmt] -> (Int, [X86 AbsReg FAbsReg ()])
 irToX86 st = swap . second IR.wtemps . flip runState st . foldMapA ir
 
-nextR :: WM AbsReg
-nextR = IReg <$> nextI; nextF = FReg <$> nextI
+nR :: WM AbsReg
+nR = IReg <$> nI; nextF = FReg <$> nI
 
 mi8 :: Int64 -> Maybe Int8
 mi8 i | i <= fromIntegral (maxBound :: Int8) && i >= fromIntegral (minBound :: Int8) = Just $ fromIntegral i
@@ -93,24 +93,24 @@ ir (IR.MJ (IR.IRel Op.IEq (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = p
 ir (IR.MJ (IR.IRel Op.IGeq (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jge () l]
 ir (IR.MJ (IR.IRel Op.IGt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jg () l]
 ir (IR.MJ (IR.IRel Op.IGeq (IR.Reg r0) e1) l) = do
-    i1 <- nextI; plE1 <- evalE e1 (IR.ITemp i1)
+    i1 <- nI; plE1 <- evalE e1 (IR.ITemp i1)
     pure $ plE1 ++ [CmpRR () (absReg r0) (IReg i1), Jge () l]
 ir (IR.MJ (IR.IRel Op.IGt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jg () l]
 ir (IR.MJ (IR.IRel Op.ILt (IR.Reg r0) (IR.Reg r1)) l)   = pure [CmpRR () (absReg r0) (absReg r1), Jl () l]
 ir (IR.MJ (IR.IRel Op.ILt (IR.Reg r0) (IR.ConstI i)) l) | Just i32 <- mi32 i = pure [CmpRI () (absReg r0) i32, Jl () l]
 ir (IR.MJ (IR.IRel Op.ILt (IR.Reg r0) e1) l) = do
-    i1 <- nextI; plE1 <- evalE e1 (IR.ITemp i1)
+    i1 <- nI; plE1 <- evalE e1 (IR.ITemp i1)
     pure $ plE1 ++ [CmpRR () (absReg r0) (IReg i1), Jl () l]
 ir (IR.MJ (IR.FRel fop (IR.FReg r0) e1) l) = do
     (plE1,i1) <- plF e1
-    f <- nextF; r <- nextR
+    f <- nextF; r <- nR
     pure $ plE1 [Vcmppd () f (fabsReg r0) i1 (opPred fop), MovqRX () r f, TestI () r maxBound, Jne () l]
 ir (IR.MJ (IR.Is p) l) = pure [TestI () (absReg p) 1, Jne () l]
 ir (IR.MJ (IR.IP Op.IOdd e) l) = do
-    i <- nextI; plE <- evalE e (IR.ITemp i)
+    i <- nI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (IReg i) 1, Jne () l]
 ir (IR.MJ (IR.IP Op.IEven e) l) = do
-    i <- nextI; plE <- evalE e (IR.ITemp i)
+    i <- nI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (IReg i) 1, Je () l]
 ir (IR.J l)                                             = pure [J () l]
 -- see https://www.agner.org/optimize/optimizing_assembly.pdf, p. 125
@@ -125,178 +125,178 @@ ir (IR.Wr (IR.AP m Nothing _) (IR.ConstI i)) | Just i32 <- mi32 i = pure [MovAI3
 ir (IR.Wr (IR.AP m Nothing _) (IR.Reg r))               = pure [MovAR () (R$absReg m) (absReg r)]
 ir (IR.Wr (IR.AP m (Just (IR.ConstI i)) _) (IR.Reg r)) | Just i8 <- mi8 i = pure [MovAR () (RC (absReg m) i8) (absReg r)]
 ir (IR.Wr (IR.AP m (Just (IR.ConstI i)) _) e) | Just i8 <- mi8 i = do
-    iT <- nextI
+    iT <- nI
     plE <- evalE e (IR.ITemp iT)
     pure $ plE ++ [MovAR () (RC (absReg m) i8) (IReg iT)]
 ir (IR.Wr (IR.AP m (Just (IR.Reg ix)) _) (IR.Reg r)) = pure [MovAR () (RS (absReg m) One (absReg ix)) (absReg r)]
 ir (IR.Wr (IR.AP m (Just (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3))) _) (IR.Reg r)) = pure [MovAR () (RS (absReg m) Eight (absReg i)) (absReg r)]
 ir (IR.Wr (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI j))) _) (IR.Reg r)) | Just i8 <- mi8 j = pure [MovAR () (RSD (absReg m) Eight (absReg i) i8) (absReg r)]
 ir (IR.Wr (IR.AP m Nothing _) e) = do
-    eR <- nextI
+    eR <- nI
     plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovAR () (R (absReg m)) (IReg eR)]
 ir (IR.Wr (IR.AP m (Just ei) _) e) = do
-    eR <- nextI; eiR <- nextI
+    eR <- nI; eiR <- nI
     plE <- evalE e (IR.ITemp eR); plE' <- evalE ei (IR.ITemp eiR)
     pure $ plE ++ plE' ++ [MovAR () (RS (absReg m) One (IReg eiR)) (IReg eR)]
 ir (IR.WrF (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl ei (IR.ConstI 3)) (IR.ConstI d))) _) (IR.FReg fr)) | Just d8 <- mi8 d = do
-    i <- nextI; plEI <- evalE ei (IR.ITemp i)
+    i <- nI; plEI <- evalE ei (IR.ITemp i)
     pure $ plEI ++ [MovqAX () (RSD (absReg m) Eight (IReg i) d8) (fabsReg fr)]
 ir (IR.WrF (IR.AP m (Just (IR.ConstI i)) _) (IR.FReg r)) | Just d8 <- mi8 i = pure [MovqAX () (RC (absReg m) d8) (fabsReg r)]
 ir (IR.WrF (IR.AP m (Just ei) _) (IR.FReg r)) = do
     let m' = absReg m
-    eR <- nextI
+    eR <- nI
     plE <- evalE ei (IR.ITemp eR)
     pure $ plE ++ [IAddRR () (IReg eR) m', MovqAX () (R (IReg eR)) (fabsReg r)]
 ir (IR.WrF (IR.AP m Nothing _) (IR.FReg r)) =
     pure [MovqAX () (R (absReg m)) (fabsReg r)]
 ir (IR.WrF (IR.AP m Nothing _) (IR.KF x)) = do
-    iR <- nextR
+    iR <- nR
     pure [MovRI () iR (fI64 x), MovAR () (R (absReg m)) iR]
 ir (IR.Cset t p) = foldMapA ir [IR.MT t 0, IR.Cmov p t 1]
 ir (IR.Fcmov (IR.IP Op.IOdd (IR.Reg r0)) t e) = do
-    plE <- feval e t; l <- nextL
+    plE <- feval e t; l <- nL
     pure $ [TestI () (absReg r0) 1, Je () l] ++ plE ++ [Label () l]
 ir (IR.Cmov (IR.IP Op.IEven (IR.Reg r)) rD e) = do
-    i <- nextI; plE <- evalE e (IR.ITemp i)
+    i <- nI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (absReg r) 1, Cmove () (absReg rD) (IReg i)]
 ir (IR.Cmov (IR.IP Op.IOdd (IR.Reg r)) rD e) = do
-    i <- nextI; plE <- evalE e (IR.ITemp i)
+    i <- nI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [TestI () (absReg r) 1, Cmovne () (absReg rD) (IReg i)]
 ir (IR.Fcmov (IR.IRel Op.IEq (IR.Reg r0) (IR.Reg r1)) t e) = do
-    plE <- feval e t; l <- nextL
+    plE <- feval e t; l <- nL
     pure $ [CmpRR () (absReg r0) (absReg r1), Jne () l] ++ plE ++ [Label () l]
 ir (IR.Cmov (IR.IRel Op.IGt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
-    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    iS <- nI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovnle () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.IRel Op.IGeq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
-    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    iS <- nI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovnl () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.IRel Op.INeq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
-    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    iS <- nI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovne () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.IRel Op.IEq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
-    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    iS <- nI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmove () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.IRel Op.ILeq (IR.Reg r0) (IR.Reg r1)) rD eS) = do
-    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    iS <- nI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovle () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.IRel Op.ILt (IR.Reg r0) (IR.Reg r1)) rD eS) = do
-    iS <- nextI; plES <- evalE eS (IR.ITemp iS)
+    iS <- nI; plES <- evalE eS (IR.ITemp iS)
     pure $ plES ++ [CmpRR () (absReg r0) (absReg r1), Cmovl () (absReg rD) (IReg iS)]
 ir (IR.Cmov (IR.FRel fop (IR.FReg xr0) (IR.FReg xr1)) rD e) = do
-    i1 <- nextI; plE <- evalE e (IR.ITemp i1)
-    f <- nextF; r <- nextR
+    i1 <- nI; plE <- evalE e (IR.ITemp i1)
+    f <- nextF; r <- nR
     pure $ plE ++ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) (opPred fop), MovqRX () r f, TestI () r maxBound, Cmovne () (absReg rD) (IReg i1)]
 ir (IR.Fcmov (IR.FRel fop (IR.FReg xr0) (IR.FReg xr1)) t e) = do
-    plE <- feval e t; l <- nextL
-    f <- nextF; r <- nextR
+    plE <- feval e t; l <- nL
+    f <- nextF; r <- nR
     pure $ [Vcmppd () f (fabsReg xr0) (fabsReg xr1) (nopPred fop), MovqRX () r f, TestI () r maxBound, Jne () l] ++ plE ++ [Label () l]
 ir (IR.Fcmov (IR.IRel Op.IEq (IR.Reg r0) (IR.ConstI n)) t e) | Just i32 <- mi32 n = do
-    plE <- feval e t; l <- nextL
+    plE <- feval e t; l <- nL
     pure $ [CmpRI () (absReg r0) i32, Jne () l] ++ plE ++ [Label () l]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just eI) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just sd8 <- mi8 sD = do
-    iT <- nextI
+    iT <- nI
     plE <- evalE (IR.IB Op.IPlus (IR.Reg tS) eI) (IR.ITemp iT)
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
     pure $ plE ++ [MovRI () i 0, CmpRI () i (n32-1), Jg () eL, Label () l, MovRA () t (RS (IReg iT) Eight i), MovAR () (RSD (absReg tD) Eight i sd8) t, IAddRI () i 1, CmpRI () i (n32-1), Jle () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just (IR.ConstI sI)) _) (IR.ConstI n)) | Just sd8 <- mi8 sD, Just si8 <- mi8 sI = do
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
     pure [MovRI () i (n-1), CmpRI () i 0, Jl () eL, Label () l, MovRA () t (RSD (absReg tS) Eight i si8), MovAR () (RSD (absReg tD) Eight i sd8) t, ISubRI () i 1, CmpRI () i 0, Jge () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI sD)) _) (IR.AP tS (Just (IR.ConstI sI)) _) e) | Just sd8 <- mi8 sD, Just si8 <- mi8 sI = do
-    ii <- nextI; t <- nextR
+    ii <- nI; t <- nR
     plE <- evalE e (IR.ITemp ii)
     let i = IReg ii
-    l <- nextL; endL <- nextL
+    l <- nL; endL <- nL
     pure $ plE ++ [ISubRI () i 1, Label () l, CmpRI () i 0, Jl () endL, MovRA () t (RSD (absReg tS) Eight i si8), MovAR () (RSD (absReg tD) Eight i sd8) t, ISubRI () i 1, J () l, Label () endL]
 ir (IR.Cpy (IR.AP tD Nothing _ ) (IR.AP tS Nothing _) (IR.ConstI n)) | n <= 4 = do
-    t <- nextR
+    t <- nR
     pure $ concat [ [ MovRA () t (RC (absReg tS) (i*8)), MovAR () (RC (absReg tD) (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
 ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) (IR.ConstI n)) | n <= 4 = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    t <- nextR
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    t <- nR
     pure $ plE ++ IAddRR () (IReg iR) (absReg tD):concat [ [MovRA () t (RC (absReg tS) (i*8)), MovAR () (RC (IReg iR) (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS (Just e) _) (IR.ConstI n)) | n <= 4 = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    t <- nextR
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    t <- nR
     pure $ plE ++ IAddRR () (IReg iR) (absReg tS):concat [ [MovRA () t (RC (IReg iR) (i*8)), MovAR () (RC (absReg tD) (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
 ir (IR.Cpy (IR.AP tD (Just (IR.IB Op.IPlus (IR.IB Op.IAsl eid (IR.ConstI 3)) (IR.ConstI sS))) _) (IR.AP tS (Just (IR.IB Op.IPlus (IR.IB Op.IAsl eis (IR.ConstI 3)) (IR.ConstI dS))) _) n) | Just ds8 <- mi8 dS, Just sS8 <- mi8 sS = do
     (plD,diR) <- plI eid; (plS,siR) <- plI eis
-    (plN,nR) <- plI n
-    t <- nextR; i <- nextR
-    l <- nextL; eL <- nextL
-    pure $ plN $ plD $ plS [IAddRR () diR (absReg tD), IAddRR () siR (absReg tS), MovRI () i 0, CmpRR () i nR, Jge () eL, Label () l, MovRA () t (RSD siR Eight i ds8), MovAR () (RSD diR Eight i sS8) t, IAddRI () i 1, CmpRR () i nR, Jl () l, Label () eL]
+    (plN,eR) <- plI n
+    t <- nR; i <- nR
+    l <- nL; eL <- nL
+    pure $ plN $ plD $ plS [IAddRR () diR (absReg tD), IAddRR () siR (absReg tS), MovRI () i 0, CmpRR () i eR, Jge () eL, Label () l, MovRA () t (RSD siR Eight i ds8), MovAR () (RSD diR Eight i sS8) t, IAddRI () i 1, CmpRR () i eR, Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just (IR.IB Op.IAsl eid (IR.ConstI 3))) _) (IR.AP tS (Just (IR.IB Op.IAsl eis (IR.ConstI 3))) _) (IR.ConstI n)) | n <= 4 = do
     (plD,diR) <- plI eid; (plS,siR) <- plI eis
-    t <- nextR
+    t <- nR
     pure $ plD $ plS $ concat [ [ MovRA () t (RSD (absReg tS) Eight siR (i*8)), MovAR () (RSD (absReg tD) Eight diR (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
 ir (IR.Cpy (IR.AP tD (Just ed) _) (IR.AP tS (Just es) _) (IR.ConstI n)) | n <= 4 = do
-    dR <- nextI; sR <- nextI
+    dR <- nI; sR <- nI
     plD <- evalE ed (IR.ITemp dR); plS <- evalE es (IR.ITemp sR)
-    t <- nextR
+    t <- nR
     pure $ plD ++ plS ++ IAddRR () (IReg dR) (absReg tD):IAddRR () (IReg sR) (absReg tS):concat [ [MovRA () t (RC (IReg sR) (i*8)), MovAR () (RC (IReg dR) (i*8)) t ] | i <- [0..(fromIntegral n-1)] ]
 ir (IR.Cpy (IR.AP tD (Just (IR.IB Op.IPlus ed (IR.ConstI sS))) _) (IR.AP tS (Just (IR.ConstI dS)) _) k) | Just dS8 <- mi8 dS, Just sS8 <- mi8 sS = do
-    dR <- nextI; kR <- nextI
+    dR <- nI; kR <- nI
     plK <- evalE k (IR.ITemp kR); plD <- evalE ed (IR.ITemp dR)
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
     pure $ plD ++ plK ++ IAddRR () (IReg dR) (absReg tD):[MovRI () i 0, CmpRR () i (IReg kR), Jge () eL, Label () l, MovRA () t (RSD (absReg tS) Eight i dS8), MovAR () (RSD (IReg dR) Eight i sS8) t, IAddRI () i 1, CmpRR () i (IReg kR), Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just ed) _) (IR.AP tS (Just (IR.ConstI dS)) _) k) | Just dS8 <- mi8 dS = do
-    dR <- nextI; kR <- nextI
+    dR <- nI; kR <- nI
     plK <- evalE k (IR.ITemp kR); plD <- evalE ed (IR.ITemp dR)
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
     pure $ plD ++ plK ++ IAddRR () (IReg dR) (absReg tD):[MovRI () i 0, CmpRR () i (IReg kR), Jge () eL, Label () l, MovRA () t (RSD (absReg tS) Eight i dS8), MovAR () (RS (IReg dR) Eight i) t, IAddRI () i 1, CmpRR () i (IReg kR), Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) (IR.ConstI n)) | Just n32 <- mi32 n = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
     pure $ plE ++ [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, CmpRI () i (n32-1), Jg () eL, Label () l, MovRA () t (RS (absReg tS) Eight i), MovAR () (RS (IReg iR) Eight i) t, IAddRI () i 1, CmpRI () i (n32-1), Jle () l, Label () eL]
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS (Just e) _) (IR.ConstI n)) | Just n32 <- mi32 n = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
     pure $ plE ++ [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, CmpRI () i (n32-1), Jg () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tD) Eight i) t, IAddRI () i 1, CmpRI () i (n32-1), Jle () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS (Just (IR.ConstI d)) _) (IR.ConstI n)) | Just n32 <- mi32 n, Just d8 <- mi8 d = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
     pure $ plE ++ [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, CmpRI () i (n32-1), Jg () eL, Label () l, MovRA () t (RSD (absReg tS) Eight i d8), MovAR () (RS (IReg iR) Eight i) t, IAddRI () i 1, CmpRI () i (n32-1), Jle () l, Label () eL]
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS (Just e) _) ne) = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    (plN,nR) <- plI ne
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
-    pure $ plE ++ plN [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, CmpRR () i nR, Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tD) Eight i) t, IAddRI () i 1, CmpRR () i nR, Jl () l, Label () eL]
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    (plN,eR) <- plI ne
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
+    pure $ plE ++ plN [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, CmpRR () i eR, Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tD) Eight i) t, IAddRI () i 1, CmpRR () i eR, Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just e) _) (IR.AP tS Nothing _) ne) = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    (plN,nR) <- plI ne
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
-    pure $ plE ++ plN [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, CmpRR () i nR, Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tS) Eight i) t, IAddRI () i 1, CmpRR () i nR, Jl () l, Label () eL]
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    (plN,eR) <- plI ne
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
+    pure $ plE ++ plN [IAddRR () (IReg iR) (absReg tD), MovRI () i 0, CmpRR () i eR, Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RS (absReg tS) Eight i) t, IAddRI () i 1, CmpRR () i eR, Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD Nothing _) (IR.AP tS Nothing _) ne) = do
-    (plN,nR) <- plI ne
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
-    pure $ plN [MovRI () i 0, CmpRR () i nR, Jge () eL, Label () l, MovRA () t (RS (absReg tS) Eight i), MovAR () (RS (absReg tD) Eight i) t, IAddRI () i 1, CmpRR () i nR, Jl () l, Label () eL]
+    (plN,eR) <- plI ne
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
+    pure $ plN [MovRI () i 0, CmpRR () i eR, Jge () eL, Label () l, MovRA () t (RS (absReg tS) Eight i), MovAR () (RS (absReg tD) Eight i) t, IAddRI () i 1, CmpRR () i eR, Jl () l, Label () eL]
 ir (IR.Cpy (IR.AP tD (Just (IR.ConstI n)) _) (IR.AP tS (Just e) _) ne) | Just n8 <- mi8 n = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    (plN,nR) <- plI ne
-    i <- nextR; t <- nextR
-    l <- nextL; eL <- nextL
-    pure $ plE ++ plN [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, CmpRR () i nR, Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RSD (absReg tD) Eight i n8) t, IAddRI () i 1, CmpRR () i nR, Jl () l, Label () eL]
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    (plN,eR) <- plI ne
+    i <- nR; t <- nR
+    l <- nL; eL <- nL
+    pure $ plE ++ plN [IAddRR () (IReg iR) (absReg tS), MovRI () i 0, CmpRR () i eR, Jge () eL, Label () l, MovRA () t (RS (IReg iR) Eight i), MovAR () (RSD (absReg tD) Eight i n8) t, IAddRI () i 1, CmpRR () i eR, Jl () l, Label () eL]
 -- https://www.cs.uaf.edu/2015/fall/cs301/lecture/09_23_allocation.html
 ir (IR.Sa8 t (IR.ConstI i))                              = pure [ISubRI () SP (saI$i+8), MovRR () (absReg t) SP]
 ir (IR.Pop8 (IR.ConstI i))                               = pure [IAddRI () SP (saI$i+8)]
 ir (IR.Sa8 t e)                                          = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    l <- nextL
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    l <- nL
     pure $ plE ++ [TestI () (IReg iR) 0x8, Je () l, IAddRI () (IReg iR) 8, Label () l, ISubRR () SP (IReg iR), MovRR () (absReg t) SP]
 ir (IR.Pop8 e)                                           = do
-    iR <- nextI; plE <- evalE e (IR.ITemp iR)
-    l <- nextL
+    iR <- nI; plE <- evalE e (IR.ITemp iR)
+    l <- nL
     pure $ plE ++ [TestI () (IReg iR) 0x8, Je () l, IAddRI () (IReg iR) 8, Label () l, IAddRR () SP (IReg iR)]
 ir (IR.FRnd t) =
     pure [Call () DR, Movapd () (fabsReg t) FRet0]
@@ -336,11 +336,11 @@ feval (IR.FB fop e0 e1) t | Just isn <- mSse fop = do
     (plR0,i0) <- plF e0; (plR1,i1) <- plF e1
     pure $ plR0 $ plR1 [isn () (fabsReg t) i0 i1]
 feval (IR.KF x) t = do
-    iR <- nextR
+    iR <- nR
     pure [MovRI () iR (fI64 x), MovqXR () (fabsReg t) iR]
 feval (IR.FU Op.FAbs e) t = do
     plE <- feval e t
-    l <- nextL
+    l <- nL
     let nextIR=[IR.MJ (IR.FRel Op.FGeq (IR.FReg t) 0) l, IR.MX t (negate (IR.FReg t)), IR.L l]
     nextX86 <- foldMapA ir nextIR
     pure $ plE ++ nextX86
@@ -369,10 +369,10 @@ feval (IR.FU Op.FSqrt (IR.FReg r)) t =
     pure [Sqrtsd () (fabsReg t) (fabsReg r)]
 feval (IR.FAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = pure [MovqXA () (fabsReg rD) (RSD (absReg m) Eight (absReg i) i8)]
 feval (IR.FAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl e (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = do
-    i <- nextI; plE <- evalE e (IR.ITemp i)
+    i <- nI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [MovqXA () (fabsReg rD) (RSD (absReg m) Eight (IReg i) i8)]
 feval (IR.FAt (IR.AP m (Just (IR.IB Op.IAsl e (IR.ConstI 3))) _)) rD = do
-    i <- nextI; plE <- evalE e (IR.ITemp i)
+    i <- nI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [MovqXA () (fabsReg rD) (RS (absReg m) Eight (IReg i))]
 feval e _                                           = error (show e)
 
@@ -385,11 +385,11 @@ evalE (IR.IB Op.ITimes (IR.Reg r0) (IR.Reg r1)) rD | r1 /= rD = let rD' = absReg
                                                    | otherwise = pure [IMulRR () (absReg rD) (absReg r0)]
 evalE (IR.IB Op.IAsl e (IR.ConstI i)) rD | Just i8 <- mi8 i = do
     let rD' = absReg rD
-    eR <- nextI; plE <- evalE e (IR.ITemp eR)
+    eR <- nI; plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (IReg eR), Sal () rD' i8]
 evalE (IR.IB Op.IAsr e (IR.ConstI i)) rD | Just i8 <- mi8 i = do
     let rD' = absReg rD
-    eR <- nextI; plE <- evalE e (IR.ITemp eR)
+    eR <- nI; plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (IReg eR), Sar () rD' i8]
 evalE (IR.IB Op.IMinus (IR.ConstI 0) e) rD           = do
     let rD' = absReg rD
@@ -397,7 +397,7 @@ evalE (IR.IB Op.IMinus (IR.ConstI 0) e) rD           = do
     pure $ plE ++ [Neg () rD']
 evalE (IR.IB Op.IMinus e (IR.ConstI i)) rD           = do
     let rD' = absReg rD
-    eR <- nextI
+    eR <- nI
     plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (IReg eR), ISubRI () rD' i]
 evalE (IR.IB Op.IMinus e e') rD                      = do
@@ -414,22 +414,22 @@ evalE (IR.IB Op.IPlus e e') rD                       = do
     pure $ plE $ plE' [MovRR () rD' eR, IAddRR () rD' e'R]
 evalE (IR.IB Op.ITimes e (IR.EAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _))) rD | Just d8 <- mi8 d = do
     let rD'=absReg rD
-    eR <- nextI; plE <- evalE e (IR.ITemp eR)
+    eR <- nI; plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () rD' (IReg eR), IMulRA () rD' (RSD (absReg m) Eight (absReg i) d8)]
 evalE (IR.IB Op.ITimes e0 e1) rD = do
     let rD' = absReg rD
-    e0R <- nextI; plE0 <- evalE e0 (IR.ITemp e0R)
-    e1R <- nextI; plE1 <- evalE e1 (IR.ITemp e1R)
+    e0R <- nI; plE0 <- evalE e0 (IR.ITemp e0R)
+    e1R <- nI; plE1 <- evalE e1 (IR.ITemp e1R)
     pure $ plE0 ++ plE1 ++ [MovRR () rD' (IReg e0R), IMulRR () rD' (IReg e1R)]
 evalE (IR.IB Op.IDiv e0 e1) rD                       = do
     let rD' = absReg rD
-    e0R <- nextI; e1R <- nextI
+    e0R <- nI; e1R <- nI
     plE0 <- evalE e0 (IR.ITemp e0R)
     plE1 <- evalE e1 (IR.ITemp e1R)
     pure $ plE0 ++ plE1 ++ [XorRR () Rem Rem, MovRR () Quot (IReg e0R), IDiv () (IReg e1R), MovRR () rD' Quot]
 evalE (IR.IB Op.IRem e0 e1) rD                       = do
     let rD' = absReg rD
-    e0R <- nextI; e1R <- nextI
+    e0R <- nI; e1R <- nI
     plE0 <- evalE e0 (IR.ITemp e0R); plE1 <- evalE e1 (IR.ITemp e1R)
     pure $ plE0 ++ plE1 ++ [XorRR () Rem Rem, MovRR () Quot (IReg e0R), IDiv () (IReg e1R), MovRR () rD' Rem]
 evalE (IR.IRFloor (IR.FReg r)) t                     = let r' = fabsReg r in pure [Roundsd () r' r' RDown, Cvttsd2si () (absReg t) r']
@@ -439,13 +439,13 @@ evalE (IR.EAt (IR.AP m (Just (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3))) _)) rD = 
 evalE (IR.IB (Op.BI Op.AndB) (IR.Reg r0) (IR.Reg r1)) rD     = let rD' = absReg rD in pure [MovRR () rD' (absReg r0), And () rD' (absReg r1)]
 evalE (IR.EAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl (IR.Reg i) (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = pure [MovRA () (absReg rD) (RSD (absReg m) Eight (absReg i) i8)]
 evalE (IR.EAt (IR.AP m (Just (IR.IB Op.IPlus (IR.IB Op.IAsl e (IR.ConstI 3)) (IR.ConstI d))) _)) rD | Just i8 <- mi8 d = do
-    i <- nextI; plE <- evalE e (IR.ITemp i)
+    i <- nI; plE <- evalE e (IR.ITemp i)
     pure $ plE ++ [MovRA () (absReg rD) (RSD (absReg m) Eight (IReg i) i8)]
 evalE (IR.EAt (IR.AP m Nothing _)) rD =
     let rD'=absReg rD in pure [MovRA () rD' (R$absReg m)]
 evalE (IR.EAt (IR.AP m (Just e) _)) rD = do
     let rD'=absReg rD;m'=absReg m
-    r <- nextR; eR <- nextI; plE <- evalE e (IR.ITemp eR)
+    r <- nR; eR <- nI; plE <- evalE e (IR.ITemp eR)
     pure $ plE ++ [MovRR () r m', IAddRR () r (IReg eR), MovRA () rD' (R r)]
 evalE (IR.LA i) rD                                   = pure [MovRL () (absReg rD) i]
 evalE e _                                            = error (show e)

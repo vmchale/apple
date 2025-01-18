@@ -372,6 +372,7 @@ parseErr tok = throwError . Unexpected tok
 
 data Bnd = L | LL | D
 
+-- TODO: maybe do something like this after inlining?
 bindΠ :: [(AlexPosn, [Nm AlexPosn])] -> E AlexPosn -> Parse (E AlexPosn)
 bindΠ vs e = do
     (lams, bΡ) <- unzip <$> traverse (uncurry b) vs
