@@ -1496,11 +1496,12 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (Conv as)) f) x) t a
     pure (plX$
         plDs++dims++sss
         ++sac slopP slopB:Wr () (ARnk slopP Nothing) slopRnkE:diml (slopP, Nothing) is
-        ++[ioϵ=:0 | ioϵ <- io]++extrWindow++ss0
+        ++xRd=:DP xR (KI xRnk)
+        :[ioϵ=:0 | ioϵ <- io]++extrWindow++ss0
         ++plOds
         ++PlProd () nO (Tmp<$>dots)
         :PlProd () nZ (Tmp<$>nO:tdims):md oSh t a rnk nE (Tmp<$>(tdims++dots)) zSz
-        ++xRd=:DP xR (KI xRnk):td=:DP t rnk:bs++loop
+        ++td=:DP t rnk:bs++loop
         ++[popc slopB])
   where (isi,dsi)=unzip as; is=fromIntegral<$>isi; ds=maybe 1 fromIntegral<$>dsi
 aeval e _ _ = nyi e
