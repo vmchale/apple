@@ -772,13 +772,16 @@ subscript digits separated by a comma.</p>
 <h3 id="identifiers">Identifiers</h3>
 <p>Identifiers may be latin or greek characters, or a single character
 from the mathematical greek or mathematical latin unicode block,
-optionally followed by some subscript alphanumeric characters. The
-single-character lambda <code>λ</code> is reserved. <code>∫</code>,
-<code>𝛻</code>, and <code>∇</code> are also identifiers but may not be
-followed by a subscript.</p>
+optionally followed by some subscript alphanumeric characters.
+<code>∂</code> may appear at the beginning of multi-character
+identifiers or on its own. The single-character lambda <code>λ</code> is
+reserved. <code>∫</code>, <code>𝛻</code>, and <code>∇</code> are also
+identifiers but may not be followed by a subscript.</p>
 <p>Thus <code>pxs</code>, <code>aₙ</code>, <code>sn₁</code>,
-<code>𝐶</code>, <code>φs</code>, <code>𝜉</code>, and <code>𝜌₀</code> are
-valid identifiers but <code>𝜉s</code> is not.</p>
+<code>𝐶</code>, <code>φs</code>, <code>∂f</code>, <code>𝜉</code>, and
+<code>𝜌₀</code> are valid identifiers but <code>𝜉s</code>,
+<code>𝜉∂</code>, and <code>f∂</code> are parsed as application of one
+identifier to another.</p>
 <h3 id="vulgar-fractions">Vulgar Fractions</h3>
 <p>Unicode vulgar fractions are considered float literals:</p>
 <pre><code> &gt; ⅚
@@ -8443,6 +8446,7 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -16075,6 +16079,7 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -23758,6 +23763,7 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true

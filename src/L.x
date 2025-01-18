@@ -54,7 +54,7 @@ $sub = [$subscript $digitsubscript]
 @follow_char = [$letter $digit \_]
 
 -- TODO: M₂,₂ without the space
-@name = ($letter#[Λλ] @follow_char* $sub* | $mathgreek $sub* | $mathlatin $sub* | ∫ | 𝛻 | ∇) [′″‴⁗]?
+@name = ([$letter ∂]#[Λλ] @follow_char* $sub* | $mathgreek $sub* | $mathlatin $sub* | ∫ | 𝛻 | ∇) [′″‴⁗]?
 
 @exp = e\-?$digit+
 @float = ($digit+\.$digit+@exp? | $digit+@exp)

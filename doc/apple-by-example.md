@@ -642,10 +642,10 @@ is equivalent to
 
 Identifiers may be latin or greek characters, or a single character from the
 mathematical greek or mathematical latin unicode block, optionally followed by
-some subscript alphanumeric characters. The single-character lambda `λ` is reserved. `∫`, `𝛻`,
+some subscript alphanumeric characters. `∂` may appear at the beginning of multi-character identifiers or on its own. The single-character lambda `λ` is reserved. `∫`, `𝛻`,
 and `∇` are also identifiers but may not be followed by a subscript.
 
-Thus `pxs`, `aₙ`, `sn₁`, `𝐶`, `φs`, `𝜉`, and `𝜌₀` are valid identifiers but `𝜉s` is not.
+Thus `pxs`, `aₙ`, `sn₁`, `𝐶`, `φs`, `∂f`, `𝜉`, and `𝜌₀` are valid identifiers but `𝜉s`, `𝜉∂`, and `f∂` are parsed as application of one identifier to another.
 
 ### Vulgar Fractions
 
