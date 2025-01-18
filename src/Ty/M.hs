@@ -35,11 +35,8 @@ cM (ALit _ es) = cM ||> es
 cM (Lam _ _ e) = cM e
 cM (Cond _ p e e') = cM p <|> cM e <|> cM e'
 cM (Tup _ es) = cM ||> es
-cM Builtin{} = Nothing
-cM ILit{} = Nothing
-cM FLit{} = Nothing
-cM BLit{} = Nothing
-cM Var{} = Nothing
+cM Builtin{} = Nothing; cM Var{} = Nothing
+cM ILit{} = Nothing; cM FLit{} = Nothing; cM BLit{} = Nothing
 cM Dfn{} = desugar; cM ResVar{} = desugar; cM Parens{} = desugar
 cM Id{} = error "Internal error."; cM Ann{} = error "Internal error."
 
