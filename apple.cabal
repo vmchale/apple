@@ -84,7 +84,6 @@ library
         R
         LR
         R.Dfn
-        R.M
         R.R
         Parser.Rw
         Ty.Clone
