@@ -1011,9 +1011,9 @@ tyE s (EApp _ (EApp _ (Builtin l IRange) lb) ub) = do
             pure (Ix () m,s4)
         (Li (Ix _ 0), TVar n) -> do
             k <- fti "n"
-            pure (k, iTS n (Li$k$>x) s4)
+            pure (k+:Ix()1, iTS n (Li$k$>x) s4)
         _ -> (,s4)<$>ftie
-    let arrTy = vV (m+:Ix()1) I
+    let arrTy = vV m I
     pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) IRange) lbϵ) ubϵ, s5)
   where iv sϵ (IZ i nm)   = let t=Li i in (iTS nm t sϵ, t)
         iv sϵ t@(TVar nm) = (iTS nm I sϵ, t)
