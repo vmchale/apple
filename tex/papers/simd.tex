@@ -64,18 +64,20 @@ Landin \cite{landin1965} points out that Algol corresponds to the lambda calculu
 What makes C special in practice is that functions, which can be composed, are compiled to sequences of assembly instructions stored in object files; compositionality is borne through until linking. This compositionality is at odds with
 % Apple includes vexp for instance... but yeah
 
+% actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 % functions-in-compiler vs. procedure-ABIs must be different... thus compiler-as-a-library is appealing
 
 \section{Compiler Users}
 
-The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but that is not the problem sitting before us.
+The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but that is not the problem sitting before us. We wish to generate efficient code from
+% different pipeline... idk if optimization
 % IR for interprocedural analysis is mentioned by Appel, actually!
-% also: how to make high-level languages efficient... no one is writing convoluted jumps anyway so procedural languages don't need to care really
+% also: how to make high-level languages efficient... no one is writing convoluted jumps anyway so procedural languages don't need to care really.
 
 % wrong to expect compiler to optimize code (widespread!), rather, one wants languages/compilers that are amenable to performance.
 % really "no big hammers" theorem, not a terrible fundamental... also nothing says high-level can't be performant!
 % no "spiritual optimization" but our problem at hand is actually a programmer sitting, writing code. As long as our burden is no more than writing assembly, we offer something as a high-level language, does entail constraint on the source language hm
-% actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
+% narrower: for languages amenable to such, generate optimal code. (array languages!)
 
 \subsection{Typing}
 
