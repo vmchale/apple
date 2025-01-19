@@ -489,10 +489,6 @@ mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
 mgu _ _ s I I = pure (I, s)
 mgu _ _ s F F = pure (F, s)
 mgu _ _ s B B = pure (B, s)
--- problem: (+) : o -> o -> o applied to num(0)... don't propagate!
--- could not unify 'int' with 'int(n)' in expression '⌊y'
---
--- basically irange : int(n) -> Vec n int and if we supply int then it can be Vec #n int
 mgu _ _ s Li{} I = pure (I, s)
 mgu _ _ s I Li{} = pure (I, s)
 mgu _ _ s (IZ _ (Nm _ (U j) _)) I = pure (I, uTS j I s)
@@ -517,12 +513,11 @@ mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li
 -- FIXME ug. is higher-rank on indices 😬
 -- maybe we could mark "stateful" context when we enter lol? for index variables
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
---
--- lots of things are allowed (int(0) + int(1)) but we want to propagate as much information as possible
 -- also some index-things are more strict... addition not at all!
 mgu _ _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu _ _ s (TVar n0@(Nm _ (U j) _)) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
--- in some cases we want to propagate information, e.g. λN. (irange 0 N)
+mgu _ _ s t0@(Z n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
+mgu _ _ s (TVar n0@(Nm _ (U j) _)) t1@(Z n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu _ _ s t@Li{} (TVar (Nm _ (U u) _)) = pure (t, uTS u t s)
 mgu _ _ s (TVar (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
@@ -1084,9 +1079,7 @@ tyE s (Ann l e t) = do
     (e', s') <- tyE s e
     s'' <- liftEither $ maM RF (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
     pure (e', s'<>s'')
-tyE _ Dfn{} = desugar
-tyE _ ResVar{} = desugar
-tyE _ Parens{} = desugar
+tyE _ Dfn{} = desugar; tyE _ ResVar{} = desugar; tyE _ Parens{} = desugar
 
 desugar :: a
 desugar = error "Internal error. Should have been desugared by now."
