@@ -160,10 +160,14 @@ maM :: F -> T a -> T a -> Either (TyE a) (Subst a)
 maM f (Li n) (Li m)                 = mI f m n
 maM _ (IZ _ (Nm _ (U u) _)) I       = Right $ Subst (IM.singleton u I) IM.empty IM.empty
 maM _ (IZ _ (Nm _ (U u) _)) F       = Right $ Subst (IM.singleton u F) IM.empty IM.empty
+maM _ (Z (Nm _ (U u) _)) I          = Right $ Subst (IM.singleton u I) IM.empty IM.empty
+maM _ (Z (Nm _ (U u) _)) F          = Right $ Subst (IM.singleton u F) IM.empty IM.empty
 maM _ I I                           = Right mempty
 maM _ F F                           = Right mempty
 maM _ B B                           = Right mempty
 maM _ (TVar n) (TVar n') | n == n'  = Right mempty
+maM _ (Z n) (Z n') | n == n'        = Right mempty
+maM _ (Z (Nm _ (U i) _)) t@Z{}      = Right $ Subst (IM.singleton i t) IM.empty IM.empty
 maM _ (TVar (Nm _ (U i) _)) t       = Right $ Subst (IM.singleton i t) IM.empty IM.empty
 maM _ (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM LF t0 t0' <*> maM RF t1 t1' -- TODO: use <\> over <>
 maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
@@ -206,14 +210,7 @@ s@@t= aT (void s) t
 aT :: Subst a -> T a -> T a
 aT s (Arr sh ty) = Arr (shSubst s sh) (aT s ty)
 aT s (Arrow t₁ t₂) = Arrow (aT s t₁) (aT s t₂)
-aT s@(Subst ts _ _) ty'@(TVar n) =
-    let u = unU $ unique n in
-    case IM.lookup u ts of
-        Just ty@TVar{} -> aT (s\-u) ty
-        Just ty@IZ{}   -> aT (s\-u) ty
-        Just ty@Ρ{}    -> aT (s\-u) ty
-        Just ty        -> aT s ty
-        Nothing        -> ty'
+aT s ty'@(TVar n) = aTi ty' n s
 aT s (P ts) = P (aT s <$> ts)
 aT s@(Subst ts _ _) (Ρ n rs) =
     let u = unU (unique n) in
@@ -221,17 +218,22 @@ aT s@(Subst ts _ _) (Ρ n rs) =
         Just ty@Ρ{}    -> aT (s\-u) ty
         Just ty@TVar{} -> aT (s\-u) ty
         Just ty@IZ{}   -> aT (s\-u) ty
+        Just ty@Z{}    -> aT (s\-u) ty
         Just ty        -> aT s ty
         Nothing        -> Ρ n (aT s<$>rs)
-aT s@(Subst ts _ _) ty'@(IZ _ n) =
-    let u = unU $ unique n in
+aT s ty'@(IZ _ n) = aTi ty' n s
+aT s ty'@(Z n) = aTi ty' n s
+aT _ ty = ty
+
+aTi ty' n s@(Subst ts _ _) =
+    let u=unU$unique n in
     case IM.lookup u ts of
         Just ty@TVar{} -> aT (s\-u) ty
         Just ty@IZ{}   -> aT (s\-u) ty
+        Just ty@Z{}    -> aT (s\-u) ty
         Just ty@Ρ{}    -> aT (s\-u) ty
         Just ty        -> aT s ty
         Nothing        -> ty'
-aT _ ty = ty
 
 runTyM :: Int -> TyM a b -> Either (TyE a) (b, Int)
 runTyM i = fmap (second maxU) . flip runStateT (TySt i IM.empty IM.empty IM.empty)
@@ -274,10 +276,11 @@ fc n l c = do
     nϵ <- freshN n l
     pushVarConstraint nϵ l c $> TVar (void nϵ)
 
-fn :: a -> Integer -> TyM a (T ())
-fn l n = do
-    nϵ <- freshN "n" l
-    pushVarConstraint nϵ l IsNum $> IZ (Ix()$fromInteger n) (void nϵ)
+fz :: TyM a (T ())
+fz = Z<$>freshN "z" ()
+
+fn :: Integer -> TyM a (T ())
+fn n = IZ (Ix()$fromInteger n)<$>freshN "n" ()
 
 ftv :: T.Text -> TyM a (T ())
 ftv n = ft n ()
@@ -456,6 +459,7 @@ occI IEVar{}         = IS.empty
 occ :: T a -> IS.IntSet
 occ (TVar n)     = Nm.singleton n
 occ (IZ _ n)     = Nm.singleton n
+occ (Z n)        = Nm.singleton n
 occ (Arrow t t') = occ t <> occ t'
 occ (Arr _ a)    = occ a -- shouldn't need shape?
 occ I            = IS.empty
@@ -493,8 +497,18 @@ mgu _ _ s Li{} I = pure (I, s)
 mgu _ _ s I Li{} = pure (I, s)
 mgu _ _ s (IZ _ (Nm _ (U j) _)) I = pure (I, uTS j I s)
 mgu _ _ s I (IZ _ (Nm _ (U j) _)) = pure (I, uTS j I s)
-mgu _ _ s F (IZ _ (Nm _ (U j) _)) = pure (F, uTS j F s)
 mgu _ _ s (IZ _ (Nm _ (U j) _)) F = pure (F, uTS j F s)
+mgu _ _ s F (IZ _ (Nm _ (U j) _)) = pure (F, uTS j F s)
+mgu _ _ s t@Z{} (IZ _ (Nm _ (U j) _)) = pure (t, uTS j t s)
+mgu _ _ s (IZ _ (Nm _ (U j) _)) t@Z{} = pure (t, uTS j t s)
+mgu _ _ s (Z (Nm _ (U i) _)) I = pure (I, uTS i I s)
+mgu _ _ s I (Z (Nm _ (U i) _)) = pure (I, uTS i I s)
+mgu _ _ s (Z (Nm _ (U i) _)) F = pure (F, uTS i F s)
+mgu _ _ s F (Z (Nm _ (U i) _)) = pure (F, uTS i F s)
+mgu _ _ s (Z (Nm _ (U i) _)) Li{} = pure (I, uTS i I s)
+mgu _ _ s Li{} (Z (Nm _ (U i) _)) = pure (I, uTS i I s)
+mgu _ _ s t@(Z n) (Z n'@(Nm _ (U j) _)) | n==n' = pure (t, s)
+                                        | otherwise = pure (t, uTS j t s)
 mgu f _ s (Li i0) (IZ i1 (Nm _ (U j) _)) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
 mgu f _ s (IZ i0 (Nm _ (U j) _)) (Li i1) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
@@ -506,14 +520,9 @@ mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li
 --
 -- lots of things are allowed (int(0) + int(1)) but we want to propagate as much information as possible
 -- also some index-things are more strict... addition not at all!
-mgu LF _ s (IZ _ n0@(Nm _ (U j) _)) t1@(TVar n1) | n0/=n1 = pure (t1, uTS j t1 s)
-mgu LF _ s t0@(TVar n0) (IZ _ n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu _ _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu _ _ s (TVar n0@(Nm _ (U j) _)) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
--- (+) : o -> o -> o would work w/ right-focus?
 -- in some cases we want to propagate information, e.g. λN. (irange 0 N)
-mgu LF _ s Li{} (TVar (Nm _ (U u) _)) = pure (I, uTS u I s)
-mgu LF _ s (TVar (Nm _ (U u) _)) Li{} = pure (I, uTS u I s)
 mgu _ _ s t@Li{} (TVar (Nm _ (U u) _)) = pure (t, uTS u t s)
 mgu _ _ s (TVar (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
@@ -544,6 +553,8 @@ mgu f l s (Arr (SVar n) t) t'@Li{} = second (scalar n) <$> mgu f l s t t'
 mgu f l s t'@Li{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
 mgu f l s (Arr (SVar n) t) t'@IZ{} = second (scalar n) <$> mgu f l s t t'
 mgu f l s t'@IZ{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
+mgu f l s (Arr (SVar n) t) t'@Z{} = second (scalar n) <$> mgu f l s t t'
+mgu f l s t'@Z{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
 mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f l) s ts ts'
 -- TODO: rho occurs check
 mgu f l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (iTS n t') <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
@@ -582,11 +593,8 @@ tS f s (t:ts) = do{(tϵ, next) <- f s t; first (tϵ:) <$> tS f next ts}
 vx = (`Cons` Nil)
 vV i = Arr (vx i)
 
--- FIXME: (+) applied to num(n) could be num(i)->num(j)->num(i+j)...
-tyNumBinOp :: a -> TyM a (T (), Subst a)
-tyNumBinOp l = do
-    n <- fc "a" l IsNum
-    pure (n ~> n ~> n, mempty)
+tyNumBinOp :: TyM a (T (), Subst a)
+tyNumBinOp = do {n<-fz; pure (n~>n~>n, mempty)}
 
 mm :: a -> TyM a (T (), Subst a)
 mm l = do
@@ -637,8 +645,8 @@ tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (F ~> I, mempty); tyB _ Ceil = pure (F ~> I, mempty); tyB _ ItoF = pure (I ~> F, mempty); tyB _ Bit = pure (B ~> I, mempty)
 tyB _ Even = pure (I ~> B, mempty); tyB _ Odd = pure (I ~> B, mempty)
 tyB _ Sr = pure (I ~> I ~> I, mempty); tyB _ Sl = pure (I ~> I ~> I, mempty)
-tyB l R = do
-    n <- fc "a" l IsNum; sh <- fsh "sh"
+tyB _ R = do
+    n <- fz; sh <- fsh "sh"
     pure (n ~> n ~> Arr sh n, mempty)
 tyB _ ConsE = do
     a <- ftv "a"; i <- fti "i"
@@ -708,10 +716,10 @@ tyB _ Fib = do
     n <- fti "n"; m <- fti "m"; k <- fti "k"; a <- ftv "a"
     pure (vV m a ~> (vV k a ~> a) ~> Li n ~> vV (m+:n) a, mempty)
 tyB _ IRange = do {n <- ftie; pure (I ~> I ~> vV n I, mempty)}
-tyB l Plus = tyNumBinOp l; tyB l Minus = tyNumBinOp l
-tyB l Times = tyNumBinOp l
-tyB l Dot = do
-    n <- fc "a" l IsNum; i <- fti "i"
+tyB _ Plus = tyNumBinOp; tyB _ Minus = tyNumBinOp
+tyB _ Times = tyNumBinOp
+tyB _ Dot = do
+    n <- fz; i <- fti "i"
     pure (vV i n ~> vV i n ~> n, mempty)
 tyB l Gte = tyOrdBinRel l; tyB l Gt = tyOrdBinRel l; tyB l Lt = tyOrdBinRel l
 tyB l Lte = tyOrdBinRel l; tyB l Eq = tyEqBinRel l; tyB l Neq = tyEqBinRel l
@@ -719,22 +727,12 @@ tyB l And = tyBoo l; tyB l Or = tyBoo l; tyB l Xor = tyBoo l
 tyB l N = do
     n <- fc "b" l HasBits
     pure (n ~> n, mempty)
-tyB _ Exp = pure (F ~> F ~> F, mempty)
 tyB l Min = mm l; tyB l Max = mm l
-tyB l IntExp = do
-    n <- fc "a" l IsNum
-    pure (n ~> I ~> n, mempty)
-tyB l Neg = do
-    n <- fc "a" l IsNum
-    pure (n ~> n, mempty)
-tyB l Abs = do
-    n <- fc "a" l IsNum
-    pure (n ~> n, mempty)
-tyB _ Sqrt = pure (F ~> F, mempty)
-tyB _ Log = pure (F ~> F, mempty)
-tyB _ Div = pure (F ~> F ~> F, mempty)
-tyB _ Mod = pure (I ~> I ~> I, mempty)
-tyB _ IDiv = pure (I ~> I ~> I, mempty)
+tyB _ IntExp = do {n <- fz; pure (n ~>I ~>n, mempty)}
+tyB _ Neg = do {n <- fz; pure (n~>n, mempty)}; tyB _ Abs = do {n <- fz; pure (n~>n, mempty)}
+tyB _ Sqrt = pure (F~>F, mempty); tyB _ Log = pure (F~>F, mempty)
+tyB _ Div = pure (F~>F~>F, mempty); tyB _ Mod = pure (I~>I~>I, mempty)
+tyB _ Exp = pure (F~>F~>F, mempty); tyB _ IDiv = pure (I~>I~>I, mempty)
 tyB _ Outer = do
     sh0 <- fsh "sh0"; sh1 <- fsh "sh1"
     a <- ftv "a"; b <- ftv "b"; c <- ftv "c"
@@ -851,13 +849,11 @@ tyB _ Gen = do
 tyB _ Ug = do
     a <- ftv "a"; b <- ftv "b"; n <- fti "n"
     pure ((b ~> P [b,a]) ~> b ~> Li n ~> vV n a, mempty)
-tyB l Mul = do
-    a <- fc "a" l IsNum
-    i <- fti "i"; j <- fti "j"; k <- fti "k"
+tyB _ Mul = do
+    a <- fz; i <- fti "i"; j <- fti "j"; k <- fti "k"
     pure (Arr (i `Cons` j `Cons` Nil) a ~> Arr (j `Cons` k `Cons` Nil) a ~> Arr (i `Cons` k `Cons` Nil) a, mempty)
-tyB l VMul = do
-    a <- fc "a" l IsNum
-    i <- fti "i"; j <- fti "j"
+tyB _ VMul = do
+    a <- fz; i <- fti "i"; j <- fti "j"
     pure (Arr (i `Cons` j `Cons` Nil) a ~> vV j a ~> vV i a, mempty)
 tyB _ Sin = pure (F ~> F, mempty)
 tyB _ Cos = pure (F ~> F, mempty)
@@ -935,6 +931,7 @@ rwArr F             = F
 rwArr t@Li{}        = t
 rwArr t@TVar{}      = t
 rwArr t@IZ{}        = t
+rwArr t@Z{}         = t
 rwArr (P ts)        = P (rwArr<$>ts)
 rwArr (Arr sh t)    | Nil <- rwSh sh = rwArr t
 rwArr (Arr ixes arr) | (is, Nil) <- unroll (rwSh ixes), Arr sh t <- rwArr arr = Arr (roll sh is) t
@@ -964,10 +961,6 @@ chkE _         = Right ()
 
 checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
 checkTy (TVar n) (c, _)       = pure $ Just(n, c)
-checkTy IZ{} (IsNum, _)       = pure Nothing
-checkTy Li{} (IsNum, _)       = pure Nothing
-checkTy I (IsNum, _)          = pure Nothing
-checkTy F (IsNum, _)          = pure Nothing
 checkTy I (IsOrd, _)          = pure Nothing
 checkTy I (HasBits, _)        = pure Nothing
 checkTy Li{} (HasBits, _)     = pure Nothing
@@ -975,12 +968,13 @@ checkTy B (HasBits, _)        = pure Nothing
 checkTy F (IsOrd, _)          = pure Nothing
 checkTy Li{} (IsOrd, _)       = pure Nothing
 checkTy IZ{} (IsOrd, _)       = pure Nothing
+checkTy Z{} (IsOrd, _)        = pure Nothing
 checkTy I (IsEq, _)           = pure Nothing
 checkTy F (IsEq, _)           = pure Nothing
 checkTy B (IsEq, _)           = pure Nothing
 checkTy Li{} (IsEq, _)        = pure Nothing
 checkTy IZ{} (IsEq, _)        = pure Nothing
-checkTy t (c@IsNum, l)        = Left$ Doesn'tSatisfy l t c
+checkTy Z{} (IsEq, _)         = pure Nothing
 checkTy t (c@HasBits, l)      = Left$ Doesn'tSatisfy l t c
 checkTy t@Arrow{} (c, l)      = Left$ Doesn'tSatisfy l t c
 checkTy (Arr _ t) c@(IsEq, _) = checkTy t c
@@ -1000,7 +994,7 @@ checkClass s i c =
 
 tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Nm a, C)], Int)
 tyClosed u e = do
-    ((eS, scs), i) <- runTyM u (do { (e', s) <- tyE mempty e; cvs <- gets varConstr; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs); pure (rwArr.(s@@)<$>e', scs) })
+    ((eS, scs), i) <- runTyM u (do {(e', s) <- tyE mempty e; cvs <- gets varConstr; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs); pure (rwArr.(s@@)<$>e', scs)})
     let vs = occ (eAnn eS); scs' = filter (\(Nm _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
     chkE (eAnn eS) $> (eS, nubOrd scs', i)
 
@@ -1008,27 +1002,26 @@ tyE :: Subst a -> E a -> TyM a (E (T ()), Subst a)
 tyE s (EApp _ (EApp _ (Builtin l IRange) lb) ub) = do
     (lbϵ,s0) <- tyE s lb; (ubϵ,s1) <- tyE s0 ub
     let lbTy0=eAnn lbϵ; ubTy0=eAnn ubϵ
-        iLoc sϵ t lϵ = second void$iv sϵ (aT sϵ (t$>eAnn lϵ))
+        iLoc sϵ t lϵ = second void$iv sϵ (aT sϵ (t$>eAnn lϵ)); x=eAnn lb
         (s3,lbTy) = iLoc s1 lbTy0 lb; (s4,ubTy) = iLoc s3 ubTy0 ub
-    m <- case (lbTy, ubTy) of
+    (m,s5) <- case (lbTy, ubTy) of
         (Li (Ix _ lbi), Li (Ix _ ubi)) -> do
             let m=ubi-lbi+1
             when (m<0) $ throwError (NegIx l m)
-            pure (Ix () m)
-        -- (Li (Ix _ 0), TVar n) -> do
-            -- k <- fti "n"
-            -- let x=eAnn lb; ix=(k+:Ix () 1)$>x
-            -- pure (void ix, iTS n (Li ix) s4)
-        _ -> ftie
-    let arrTy = vV m I
-    pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) IRange) lbϵ) ubϵ, s4)
+            pure (Ix () m,s4)
+        (Li (Ix _ 0), TVar n) -> do
+            k <- fti "n"
+            pure (k, iTS n (Li$k$>x) s4)
+        _ -> (,s4)<$>ftie
+    let arrTy = vV (m+:Ix()1) I
+    pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) IRange) lbϵ) ubϵ, s5)
   where iv sϵ (IZ i nm)   = let t=Li i in (iTS nm t sϵ, t)
         iv sϵ t@(TVar nm) = (iTS nm I sϵ, t)
         iv sϵ _           = (sϵ, I)
 tyE s (FLit _ x) = pure (FLit F x, s)
 tyE s (BLit _ x) = pure (BLit B x, s)
-tyE s (ILit l m) = do
-    n <- fn l m
+tyE s (ILit _ m) = do
+    n <- fn m
     pure (ILit n m, s)
 tyE s (Builtin l b) = do {(t,sϵ) <- tyB l b ; pure (Builtin t b, sϵ<>s)}
 tyE s (Lam _ nϵ e) = do
