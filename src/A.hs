@@ -25,13 +25,12 @@ import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, c
 import           Prettyprinter.Ext
 import           Sh
 
-data C = IsNum | IsOrd | IsEq
+data C = IsOrd | IsEq
        | HasBits deriving (Generic, Eq, Ord)
 
 instance NFData C where
 
 instance Pretty C where
-    pretty IsNum   = "IsNum"
     pretty IsOrd   = "IsOrd"
     pretty IsEq    = "IsEq"
     pretty HasBits = "HasBits"
@@ -49,7 +48,7 @@ data T a = Arr (Sh a) (T a)
          | B -- | bool
          | Li (I a)
          | TVar (Nm a) -- | Kind \(*\)
-         | IZ (I a) (Nm a)
+         | IZ (I a) (Nm a) | Z (Nm a)
          | Arrow (T a) (T a)
          | P [T a]
          | Ρ (Nm a) (IM.IntMap (T a))
@@ -63,6 +62,7 @@ instance PT (T a) where
     pp F             = pure F
     pp I             = pure I
     pp B             = pure B
+    pp (Z n)         = Z<$>fr tl n
     pp t@Li{}        = pure t
     pp (TVar n)      = TVar<$>fr tl n
     pp (IZ i n)      = IZ i<$>fr tl n
@@ -78,6 +78,7 @@ instance PS (T a) where
     ps d (Arr i t)              = group (parensp (d>appPrec) ("Arr" <+> ps (appPrec+1) i <+> ps (appPrec+1) t))
     ps _ F                      = "float"
     ps _ I                      = "int"
+    ps _ (Z n)                  = pretty n <> ":num"
     ps _ (Li i)                 = "int" <> parens (pretty i)
     ps _ (IZ i _)               = "num" <> parens (pretty i)
     ps _ B                      = "bool"
