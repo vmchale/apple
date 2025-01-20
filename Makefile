@@ -67,6 +67,7 @@ clean:
 	make -C vscode clean
 	make -C Rc clean
 	make -C janet clean
+	make -C tex/papers clean
 	rm -f nb/*.html
 	rm -rf dist-newstyle tags tags.mtime moddeps.svg *.hp *.o *.prof *.tix *.svg *.so *.dylib $$(fd -H '^__pycache__$$' -t d)
 

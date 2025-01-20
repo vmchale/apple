@@ -53,15 +53,13 @@ it would step over the input vector's elements one at a time. This is not as eff
 
 \subsection{Functions in Theory}
 
-Landin \cite{landin1965} points out that Algol corresponds to the lambda calculus. Functions in the lambda calculus have a formal definition and are applicable to programming in practice, but only some have efficient SIMD implementations: \verb|if x≥0 then x else 0| involves a conditional
+Landin \cite{landin1965} points out that Algol corresponds to the lambda calculus. Functions in the lambda calculus have a formal definition and are applicable to programming in practice, but only some have efficient SIMD implementations: \verb|λx. 1-x^2| and \verb|if x≥0 then x else 0| are both functions but the latter involves a conditional which in general is compiled to a jump; they must be treated differently during compilation but are not distinguished in the source language. % perhaps why programmers find it fickle!
+
+% https://www.netlib.org/cephes/doubldoc.html#log
 
 % Cataloguing + maybe expanding (branchless already studied?)
 
-% easy enough to check parallelizability at least?
-
 % http://blog.vmchale.com/article/intuitionist-c
-
-% log is not a "parallel" function b/c conditional... hardware detail?
 
 \subsection{Limits of C}
 
@@ -76,26 +74,43 @@ What makes C special in practice is that functions, which can be composed, are c
 as three shared library functions to address this.
 
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
-% functions-in-compiler vs. procedure-ABIs must be different... thus compiler-as-a-library is appealing
+% basically SIMD ends up in one top-level function, if you want multiple possibilities you have to write a function for each...
+% functions-in-compiler vs. procedure-ABIs must be different... thus compiler-as-a-library is appealing (also check hardware...)
 
 \section{Compiler Users}
 
-% also phase-optimization problem... examples where compilation techniques allow XYZ (phase optimization problem cited for entrenchment of clang/gcc)
-The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but that is not the problem sitting before us. We wish to generate efficient code from
-% different pipeline... idk if optimization
-% IR for interprocedural analysis is mentioned by Appel, actually!
-% also: how to make high-level languages efficient... no one is writing convoluted jumps anyway so procedural languages don't need to care really.
-
+% also phase-optimization problem... examples where compilation techniques allow XYZ (phase optimization problem cited for entrenchment of clang/gcc but maybe we should compile different things! LLVM is great but not always a target, e.g. laziness...)
+The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but that is not the problem sitting before us.
 % wrong to expect compiler to optimize code (widespread!), rather, one wants languages/compilers that are amenable to performance.
-% really "no big hammers" theorem, not a terrible fundamental... also nothing says high-level can't be performant!
-% no "spiritual optimization" but our problem at hand is actually a programmer sitting, writing code. As long as our burden is no more than writing assembly, we offer something as a high-level language, does entail constraint on the source language hm
-% narrower: for languages amenable to such, generate optimal code. (array languages!)
+% IR for interprocedural analysis is mentioned by Appel, actually! llvm puts its IR in object files
 
 \subsection{Typing}
+
+% 7-day moving average
 
 % indexing by for-loops is elegant but index information (parity!) doesn't propagate so easily (optimization is "internal" rather than specified system)
 % contract with compiler vs. ??? internals,
 % good b/c the information is high-level/at the language level so
+
+\begin{verbatim}
+ > :asm λxs. [(+)/x%ℝ(:x)]\`7 xs
+
+    ⋮
+    ldr d2, [sp, x2, LSL #3]
+    fadd d5, d5, d2
+    add x4, x4, #0x1
+apple_1:
+    mov x2, #0x10
+    add x2, x2, x4, LSL #3
+    ldr q2, [sp, x2]
+    fadd v3.2d, v3.2d, v2.2d
+    add x4, x4, #0x2
+    cmp x4, x3
+    b.LT apple_1
+    faddp d2, v3.2d
+    fadd d5, d5, d2
+    ⋮
+\end{verbatim}
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
