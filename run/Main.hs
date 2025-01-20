@@ -75,14 +75,16 @@ type Repl a = InputT (StateT Env IO)
 cyclicSimple :: [String] -> [Completion]
 cyclicSimple = fmap simpleCompletion
 
+iSt :: IO Env
+iSt = Env alexInitUserState [] <$> mem' <*> case arch of {"x86_64" -> pure X64; "aarch64" -> AArch64<$>math'; _ -> error "Unsupported architecture!"}
+
 runRepl :: Repl a x -> IO x
 runRepl x = do
     histDir <- (</> ".apple_history") <$> getHomeDirectory
-    mfϵ <- mem'
-    initSt <- Env alexInitUserState [] mfϵ <$> case arch of {"x86_64" -> pure X64; "aarch64" -> AArch64<$>math'; _ -> error "Unsupported architecture!"}
+    st <- iSt
     let myCompleter = appleCompletions `fallbackCompletion` completeFilename
     let settings = setComplete myCompleter $ defaultSettings { historyFile = Just histDir }
-    flip evalStateT initSt $ runInputT settings x
+    flip evalStateT st $ runInputT settings x
 
 appleCompletions :: CompletionFunc (StateT Env IO)
 appleCompletions (":","")         = pure (":", cyclicSimple ["help", "h", "ty", "quit", "q", "quickcheck", "qc", "list", "ann", "bench", "y", "yank", "st", "store"])
@@ -152,6 +154,7 @@ appleCompletions (" eteled:", "") = do {ns <- namesStr; pure (" eteled:", cyclic
 appleCompletions (" yt:", "")     = do {ns <- namesStr; pure (" yt:", cyclicSimple ns)}
 appleCompletions (" t:", "")      = do {ns <- namesStr; pure (" t:", cyclicSimple ns)}
 appleCompletions ("", "")         = ("",) . cyclicSimple <$> namesStr
+-- TODO: don't use builtins to complete :yank shuf e...
 appleCompletions (rp, "")         = do {ns <- namesStr; pure (unwords ("" : tail (words rp)), cyclicSimple (namePrefix ns rp))}
 appleCompletions _                = pure (undefined, [])
 
@@ -165,7 +168,7 @@ loop = do
         Just []                -> loop
         Just (":h":_)          -> showHelp *> loop
         Just (":help":_)       -> showHelp *> loop
-        Just ("\\l":_)         -> langHelp *> loop
+        Just ("\\l":_)         -> refcard *> loop
         Just (":ty":e)         -> tyExprR (unwords e) *> loop
         Just [":q"]            -> pure ()
         Just [":quit"]         -> pure ()
@@ -219,8 +222,8 @@ showHelp = liftIO $ putStr $ concat
     -- TODO: dump debug state
     ]
 
-langHelp :: Repl AlexPosn ()
-langHelp = liftIO $ putStr $ concat
+refcard :: Repl AlexPosn ()
+refcard = liftIO $ putStr $ concat
     [ lOption "Λ" "scan" "√" "sqrt"
     , lOption "⋉"  "max" "⋊"  "min"
     , lOption "⍳" "integer range" "⌊, ⌈" "floor, ceiling"
@@ -257,6 +260,7 @@ langHelp = liftIO $ putStr $ concat
     , lOption "𝔸" "digit literal" "ᶥ" "vector indices"
     , lOption "〃" "ditto" "𝐒,𝐊" "combinators"
     , lOption "⑂" "fork" "𝞈,𝟘,𝟙,𝟚" "fancy types"
+    -- /₊
     ]
 
 lOption op0 desc0 op1 desc1 =
@@ -273,7 +277,7 @@ ubs :: String -> BSL.ByteString
 ubs = encodeUtf8 . TL.pack
 
 replEPrint x = liftIO $ case x of
-    Left err -> putDocLn (pretty err); Right d  -> putDocLn d
+    Left err -> putDocLn (pretty err); Right d -> putDocLn d
 
 disasm :: String -> Repl AlexPosn ()
 disasm s = do
@@ -592,8 +596,8 @@ mentions Id{} _               = error "Internal error."
 desugar = error "Internal error. Should have been desugared."
 
 eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
-eRepl e = do { ees <- lg ee; pure $ foldLet ees e }
-    where foldLet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
+eRepl e = do {ees <- lg ee; pure (flet ees e)}
+    where flet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 
 putDocLn = putDoc.(<>hardline)
 pErr err = liftIO $ putDocLn (pretty err)
