@@ -190,8 +190,8 @@ loop = do
         Just (":qc":e)         -> qc (unwords e) *> loop
         Just (":quickcheck":e) -> qc (unwords e) *> loop
         Just (":delete":[n])   -> del n *> loop
-        Just (":st":n:e)       -> eCtx n (ubs$unwords e) *> loop
-        Just (":store":n:e)    -> eCtx n (ubs$unwords e) *> loop
+        Just (":st":n:e)       -> n <~ ubs (unwords e) *> loop
+        Just (":store":n:e)    -> n <~ ubs (unwords e) *> loop
         Just e                 -> printExpr (unwords e) *> loop
         Nothing                -> pure ()
 
@@ -372,8 +372,8 @@ inspect s = do
                             _ -> pErr ("only arrays can be inspected." :: T.Text)
         where bs = ubs s
 
-eCtx :: String -> BSL.ByteString -> Repl AlexPosn ()
-eCtx f bs = do
+(<~) :: String -> BSL.ByteString -> Repl AlexPosn ()
+f <~ bs = do
     st <- lg _lex
     case tyParseCtx st bs of
         Left err -> pErr err
@@ -388,7 +388,7 @@ iCtx f fp = do
     p <- liftIO $ doesFileExist fp
     if not p
         then liftIO $ putStrLn "file does not exist."
-        else do {bs <- liftIO $ BSL.readFile fp; eCtx f bs}
+        else do {bs <- liftIO $ BSL.readFile fp; f <~ bs}
 
 benchC :: String -> Repl AlexPosn ()
 benchC s = case tyParse bs of
