@@ -2,9 +2,11 @@
 
 \usepackage{fontspec}
 \usepackage{hyperref}
+\usepackage{fancyvrb}
 
 \begin{document}
 
+\VerbatimFootnotes
 \setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
 
 \author{V. E. McHale}
@@ -17,7 +19,7 @@
 
 \section{Background}
 
-\subsection{Textbook Compilation Models}
+\subsection{Textbook Compilation}
 
 C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant \footnote{Kell \cite{kell2017} points out that C is uniquely suited to interfacing with other languages, in part because of this compilation practice.}, but not suited to SIMD.
 
@@ -31,7 +33,7 @@ writeFn :: Expr -> [Temp] -> Temp -> [Stmt]
 
 The first function takes an expression and a register and creates a series of statements that will write that its value to the given register. The second takes an expression representing a function, registers to read arguments from, and a register to write the return value, and returns a series of statements. This is used in Appel \cite{appel1998}[pp.~148-169], for instance.
 
-Na\"ively\footnote{This was the approach taken in the Apple array system at first.}, we might try to compile \verb|λas. map (λx. f x)'as|, which maps over a vector, as follows:
+Na\"ively\footnote{This was the approach taken in the Apple array system at first.}, we might try to compile \verb|λas. map (λx. f x) as|, which maps over a vector, as follows:
 
 \begin{itemize}
   \item Generate temporaries \verb|x|, \verb|y| for the argument and return value of \verb|f|, respectively.
@@ -51,7 +53,9 @@ it would step over the input vector's elements one at a time. This is not as eff
 
 \subsection{Functions in Theory}
 
-Landin \cite{landin1965} points out that Algol corresponds to the lambda calculus. Functions in the lambda have a formal definition and are applicable to programming in practice---this
+Landin \cite{landin1965} points out that Algol corresponds to the lambda calculus. Functions in the lambda calculus have a formal definition and are applicable to programming in practice, but only some have efficient SIMD implementations: \verb|if x≥0 then x else 0| involves a conditional
+
+% Cataloguing + maybe expanding (branchless already studied?)
 
 % easy enough to check parallelizability at least?
 
@@ -61,14 +65,22 @@ Landin \cite{landin1965} points out that Algol corresponds to the lambda calculu
 
 \subsection{Limits of C}
 
-What makes C special in practice is that functions, which can be composed, are compiled to sequences of assembly instructions stored in object files; compositionality is borne through until linking. This compositionality is at odds with
-% Apple includes vexp for instance... but yeah
+What makes C special in practice is that functions, which can be composed, are compiled to sequences of assembly instructions stored in object files; compositionality is borne through until linking. This compositionality is at odds with SIMD, where a high-level function \verb|λx. x*2| should be compiled using different instructions depending on whether it is lifted to operate on an array. OS X provides
+
+\begin{verbatim}
+     float expf(float x);
+     vFloat vexpf(vFloat x);
+     void vvexpf(float *y, const float *x, const int *n);
+\end{verbatim}
+
+as three shared library functions to address this.
 
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 % functions-in-compiler vs. procedure-ABIs must be different... thus compiler-as-a-library is appealing
 
 \section{Compiler Users}
 
+% also phase-optimization problem... examples where compilation techniques allow XYZ (phase optimization problem cited for entrenchment of clang/gcc)
 The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but that is not the problem sitting before us. We wish to generate efficient code from
 % different pipeline... idk if optimization
 % IR for interprocedural analysis is mentioned by Appel, actually!
