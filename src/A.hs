@@ -180,6 +180,7 @@ instance Pretty Builtin where
     pretty Mod        = "|"
     pretty IOf        = "@."
     pretty Filt       = "§"
+    pretty Part       = "℘"
     pretty Abs        = "abs."
     pretty Di         = "di."
     pretty RevE       = "~"
@@ -209,7 +210,7 @@ instance Pretty Builtin where
 data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
              | Max | Min | Neg | Sqrt | T | Di
-             | Flat | AddDim | Ices | Filt
+             | Flat | AddDim | Ices | Filt | Part
              | IRange | Ix'd | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
@@ -276,15 +277,17 @@ mPrec Div    = Just 7
 mPrec IDiv   = Just 7
 mPrec Exp    = Just 8
 mPrec IntExp = Just 8
+mPrec IOf    = Just 8
 mPrec Mod    = Just 7
 mPrec Succ   = Just 9
 mPrec Fold   = Just 9
 mPrec Del    = Just 9
 mPrec DelM   = Just 9
-mPrec IOf    = Just 8
 mPrec C      = Just 9
 mPrec Ices   = Just 6
 mPrec Filt   = Just 6
+mPrec Part   = Just 6
+mPrec Dot    = Just 7
 mPrec Mul    = Just 7
 mPrec VMul   = Just 7
 mPrec Re     = Just 6
@@ -308,42 +311,12 @@ mPrec Lte    = Just 4
 mPrec _      = Nothing
 
 isBinOp :: Builtin -> Bool
-isBinOp Plus    = True
-isBinOp Minus   = True
-isBinOp Times   = True
-isBinOp Div     = True
-isBinOp IDiv    = True
-isBinOp Exp     = True
-isBinOp IntExp  = True
-isBinOp DI{}    = True
-isBinOp Conv{}  = True
-isBinOp Focus{} = True
-isBinOp Mul     = True
-isBinOp VMul    = True
-isBinOp Rot     = True
-isBinOp ConsE   = True
-isBinOp Snoc    = True
-isBinOp Scan    = True
-isBinOp Fold    = True
-isBinOp Map     = True
-isBinOp Cyc     = True
-isBinOp A1      = True
-isBinOp I1      = True
-isBinOp Mod     = True
-isBinOp IOf     = True
-isBinOp And     = True
-isBinOp Or      = True
-isBinOp Xor     = True
-isBinOp Filt    = True
-isBinOp Ices    = True
-isBinOp Sr      = True
-isBinOp Sl      = True
-isBinOp Dot     = True
-isBinOp S'      = True
-isBinOp Re      = True
-isBinOp Del     = True
-isBinOp DelM    = True
-isBinOp _       = False
+isBinOp DI{} = True; isBinOp Scan = True
+isBinOp IOf = True; isBinOp Focus{} = True
+isBinOp Rot = True; isBinOp Cyc = True
+isBinOp S'  = True
+isBinOp b | Just{} <- mPrec b = True
+          | otherwise = False
 
 data B = L | D | Λ
 

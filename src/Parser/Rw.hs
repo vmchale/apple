@@ -15,7 +15,6 @@ isBinOp Fib    = False
 isBinOp Log    = False
 isBinOp Size   = False
 isBinOp Sqrt   = False
-isBinOp Scan   = False
 isBinOp ItoF   = False
 isBinOp Last   = False
 isBinOp LastM  = False
@@ -54,8 +53,8 @@ fi Re = 6
 fi Plus = 6; fi Minus = 6
 fi Max = 6; fi Min = 6
 fi And = 3; fi Or = 2; fi Xor = 6
-fi Ices = 6; fi Filt=6
-fi IOf = 8 -- 9?
+fi Ices = 6; fi Filt=6; fi Part = 6
+fi IOf = 8
 fi Map = 5; fi A1 = 9
 fi I1 = 8
 fi ConsE = 4; fi Snoc = 4
@@ -92,6 +91,7 @@ lassoc Sl     = True
 lassoc Xor    = True
 lassoc Or = False; lassoc And = False
 lassoc Filt = False; lassoc Ices = False
+lassoc Part = False
 lassoc Fold = False; lassoc Succ = False
 lassoc Eq = False; lassoc Neq = False
 lassoc Gte = False; lassoc Lte = False

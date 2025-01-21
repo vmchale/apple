@@ -105,10 +105,10 @@ import Sh
     sub { TokSym $$ Sub }
     mod { TokSym $$ L.Mod }
     atDot { TokSym $$ AtDot }
-    -- weier { TokSym $$ Weier }
     up { TokSym $$ Up }
     ice { TokSym $$ Ice }
     para { TokSym $$ Para }
+    weier { TokSym $$ Weier }
 
     folds { TokSym $$ L.FoldS }
     fold { TokSym $$ L.Fold }
@@ -262,17 +262,14 @@ BBin :: { E AlexPosn }
      | lrank sepBy(R,comma) rbrace { Builtin $1 (Rank (reverse $2)) }
      | succ { Builtin $1 A.Succ }
      | pow { Builtin $1 Exp }
-     | consS { Builtin $1 ConsE }
-     | snoc { Builtin $1 A.Snoc }
-     | mul { Builtin $1 Mul }
-     | vmul { Builtin $1 VMul }
+     | consS { Builtin $1 ConsE } | snoc { Builtin $1 A.Snoc }
+     | mul { Builtin $1 Mul } | vmul { Builtin $1 VMul }
      | geq { Builtin $1 Gte } | gt { Builtin $1 A.Gt }
      | leq { Builtin $1 Lte } | lt { Builtin $1 A.Lt }
      | eq { Builtin $1 A.Eq } | neq { Builtin $1 A.Neq }
      | pp { Builtin $1 CatE }
-     | rot { Builtin $1 Rot }
      | fold { Builtin $1 A.Fold }
-     | bcyc { Builtin $1 A.Cyc }
+     | rot { Builtin $1 Rot } | bcyc { Builtin $1 A.Cyc }
      | iat { Builtin $1 A.A1 }
      | sub { Builtin $1 I1 }
      | mod { Builtin $1 A.Mod }
@@ -280,8 +277,8 @@ BBin :: { E AlexPosn }
      | ditto { Builtin $1 Re }
      | and { Builtin $1 A.And } | or { Builtin $1 A.Or }
      | xor { Builtin $1 A.Xor }
-     | ice { Builtin $1 Ices }
-     | para { Builtin $1 Filt }
+     | ice { Builtin $1 Ices } | para { Builtin $1 Filt }
+     | weier { Builtin $1 Part }
      | sr { Builtin $1 A.Sr } | sl { Builtin $1 A.Sl }
      | therefore { Builtin $1 C } | fork { Builtin $1 S' }
      | dp { Builtin $1 A.Dot }
