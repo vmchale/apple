@@ -277,7 +277,7 @@ fc n l c = do
     pushVarConstraint nϵ l c $> TVar (void nϵ)
 
 fz :: TyM a (T ())
-fz = Z<$>freshN "z" ()
+fz = Z<$>freshN "a" ()
 
 fn :: Integer -> TyM a (T ())
 fn n = IZ (Ix()$fromInteger n)<$>freshN "n" ()
