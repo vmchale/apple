@@ -78,7 +78,7 @@ instance PS (T a) where
     ps d (Arr i t)              = group (parensp (d>appPrec) ("Arr" <+> ps (appPrec+1) i <+> ps (appPrec+1) t))
     ps _ F                      = "float"
     ps _ I                      = "int"
-    ps _ (Z n)                  = pretty n <> ":num"
+    ps _ (Z (Nm n _ _))         = pretty (T.map g n) where g=toEnum.(+0x1d44e).(subtract 97).fromEnum
     ps _ (Li i)                 = "int" <> parens (pretty i)
     ps _ (IZ i _)               = "num" <> parens (pretty i)
     ps _ B                      = "bool"
