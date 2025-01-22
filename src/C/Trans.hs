@@ -1212,6 +1212,24 @@ aeval (EApp oTy@(Arr sh _) (EApp _ g@(EApp _ (Builtin _ Zip) op) xs) ys) t a | (
     (plEX, (lX, aPX)) <- plA xs; (plEY, (lY, aPY)) <- plA ys
     contents <- fill g (AD t (Just a) (Just oTy) Nothing Nothing Nothing) [AI (AD aPX lX Nothing Nothing Nothing (Just$Tmp nR)), AI (AD aPY lY Nothing Nothing Nothing Nothing)]
     pure (plEX$plEY$nR =: ev (eAnn xs) (aPX,lX):vSz sh t a (Tmp nR) zSz++[contents])
+aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t a
+    | Arrow tX (Arrow tY tC) <- eAnn op
+    , tYs@(Arr ySh _) <- eAnn ys, (Arr xSh _) <- eAnn xs
+    , Just (tXE, slopRnk) <- tRnk tX
+    , Just szX <- nSz tXE, Just szY <- nSz tY, Just szC <- nSz tC
+    , Just rnk <- staRnk sh, Just yRnk <- staRnk ySh, Just xRnk <- staRnk xSh = do
+    nR <- nI
+    y <- rtemp tY; z <- rtemp tC
+    (plX, (lX, xsR)) <- plA xs; (plY, (lY, ysR)) <- plA ys
+    (slopP, slopN, aSlop, pops) <- do
+        (dtxs,dxss) <- plDim slopRnk (xsR,lX)
+        third4 (dxss++) <$> plSlop szX slopRnk (Tmp<$>dtxs)
+    (dts,dss) <- plDim yRnk (ysR, lY)
+    m <- mdn sh t a rnk dts szC
+    (_, ss) <- writeF op [AA slopP Nothing, ra y] z
+    loop <- afor sh 0 ILt (Tmp nR) $ \k -> cpy (AElem slopP (KI slopRnk) Nothing 0) (AElem xsR (KI xRnk) lX (Tmp k*Tmp slopN)) (Tmp slopN) szX:mt (AElem ysR (KI yRnk) lY (Tmp k) szY) y:ss++[wt (AElem t (KI rnk) (Just a) (Tmp k) szC) z]
+    pure (plX$plY$nR=:ev tYs (ysR, lY):dss++m++aSlop++[loop, pops])
+    | otherwise = unsupported
 aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ ScanS) op) seed) e) t a | (Arrow tX (Arrow tY _)) <- eAnn op, Just xSz <- rSz tX, nind tY = do
     acc <- rtemp tX; n <- nI
     plS <- eeval seed acc
@@ -2112,6 +2130,7 @@ gpt (TΠ rs)=rs
 
 unsupported = error "Requires statically known rank."
 
+third4 f ~(x,y,z,w) = (x,y,f z,w)
 qmap f g h k ~(x,y,z,w) = (f x, g y, h z, k w)
 
 nyi e = error ("Not yet implemented: " ++ show e)
