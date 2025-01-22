@@ -8,5 +8,5 @@
   sift ← [(even.§xᶥ)⊂x];
   Δ ← λA. {nr ⟜ 𝓉 A;take# nr'A};
   o ⟜ Δ (sift (pascalsTriangle N));
-  (-)`(di. o) (0⊳di. (next o))
+  (-)`(di. o) (0⊳di. ({: o))
 }
