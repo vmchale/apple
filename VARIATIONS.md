@@ -106,6 +106,15 @@ Vec 4 [3.0, 4.0, 5.0, 6.0]
 λxs. {i ← (λx.λy. x+1) Λₒ (0::int) xs; [(x,y)]`({:i) xs}
 ```
 
+# Diagonal
+
+```
+ > [{ix<-xᶥ;(˙)`(x::M int) ix}] (irange 1 4 〃 4)
+Vec 4 [1, 2, 3, 4]
+ > di. (irange 1 4 〃 4)
+Vec 4 [1, 2, 3, 4]
+```
+
 # Successive Application
 
 ```
