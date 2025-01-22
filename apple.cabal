@@ -178,6 +178,29 @@ library as
         text,
         bytestring
 
+library apple-repl
+    import: warn
+    exposed-modules: REPL
+    other-modules: QC
+    hs-source-dirs: repl
+    default-extensions:
+        OverloadedStrings
+
+    build-depends:
+        base,
+        apple,
+        bytestring,
+        containers,
+        criterion,
+        directory,
+        haskeline,
+        libffi,
+        prettyprinter,
+        QuickCheck,
+        split >=0.2.0.0,
+        text,
+        transformers
+
 foreign-library apple
     import:             warn
     type:               native-shared
@@ -229,27 +252,17 @@ executable writeo
 executable arepl
     import:           warn
     main-is:          Main.hs
-    other-modules:    REPL
-                      QC
     hs-source-dirs:   run
-    default-extensions:
-        OverloadedStrings
 
     build-depends:
         base,
         apple,
-        bytestring,
-        libffi,
-        criterion,
-        prettyprinter,
+        apple-repl,
         haskeline,
         transformers,
         text,
         directory,
-        filepath,
-        QuickCheck,
-        containers,
-        split >=0.2.0.0
+        filepath
 
 test-suite apple-test
     import:             warn
