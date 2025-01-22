@@ -273,8 +273,12 @@ test-suite repltest
     build-depends:
         base,
         apple-repl,
+        bytestring,
+        haskeline,
         silently,
-        tasty
+        tasty,
+        tasty-golden,
+        transformers
 
 test-suite apple-test
     import:             warn

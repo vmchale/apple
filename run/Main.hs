@@ -2,15 +2,15 @@
 
 module Main (main) where
 
-import           Control.Monad.Trans.State (StateT, evalStateT, gets)
-import           Data.List                 (isPrefixOf)
-import qualified Data.Text                 as T
+import           Control.Monad.Trans.State.Strict (StateT, evalStateT, gets)
+import           Data.List                        (isPrefixOf)
+import qualified Data.Text                        as T
 import           Nm
 import           REPL
-import           System.Console.Haskeline  (Completion, CompletionFunc, completeFilename, defaultSettings, fallbackCompletion, historyFile, runInputT, setComplete,
-                                            simpleCompletion)
-import           System.Directory          (getHomeDirectory)
-import           System.FilePath           ((</>))
+import           System.Console.Haskeline         (Completion, CompletionFunc, completeFilename, defaultSettings, fallbackCompletion, historyFile, runInputT, setComplete,
+                                                   simpleCompletion)
+import           System.Directory                 (getHomeDirectory)
+import           System.FilePath                  ((</>))
 
 main :: IO ()
 main = runRepl loop

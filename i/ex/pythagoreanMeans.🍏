@@ -1,0 +1,7 @@
+:store a [(+)/x%ℝ(:x)]
+:store g [((*)/x)**(⅟(ℝ(:x)))]
+:store h [⅟((+)/((1%)')x)]
+:store x frange 1 10 10
+a x
+g x
+h x
