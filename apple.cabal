@@ -229,7 +229,8 @@ executable writeo
 executable arepl
     import:           warn
     main-is:          Main.hs
-    other-modules:    QC
+    other-modules:    REPL
+                      QC
     hs-source-dirs:   run
     default-extensions:
         OverloadedStrings
