@@ -264,6 +264,18 @@ executable arepl
         directory,
         filepath
 
+test-suite repltest
+    import:             warn
+    type:               exitcode-stdio-1.0
+    main-is:            Test.hs
+    hs-source-dirs:     i
+    ghc-options:        -rtsopts -with-rtsopts=-k1k
+    build-depends:
+        base,
+        apple-repl,
+        silently,
+        tasty
+
 test-suite apple-test
     import:             warn
     type:               exitcode-stdio-1.0
