@@ -1214,7 +1214,7 @@ aeval (EApp oTy@(Arr sh _) (EApp _ g@(EApp _ (Builtin _ Zip) op) xs) ys) t a | (
     pure (plEX$plEY$nR =: ev (eAnn xs) (aPX,lX):vSz sh t a (Tmp nR) zSz++[contents])
 aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t a
     | Arrow tX (Arrow tY tC) <- eAnn op
-    , tYs@(Arr ySh _) <- eAnn ys, tXs@(Arr xSh _) <- eAnn xs
+    , (Arr ySh _) <- eAnn ys, tXs@(Arr xSh _) <- eAnn xs
     , Just (tXE, slopRnk) <- tRnk tX
     , Just szX <- nSz tXE, Just szY <- nSz tY, Just szC <- nSz tC
     , Just rnk <- staRnk sh, Just yRnk <- staRnk ySh, Just xRnk <- staRnk xSh = do

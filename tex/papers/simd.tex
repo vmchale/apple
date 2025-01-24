@@ -63,7 +63,7 @@ Landin \cite{landin1965} points out that Algol corresponds to the lambda calculu
 
 \subsection{Limits of C}
 
-What makes C special in practice is that functions, which can be composed, are compiled to sequences of assembly instructions stored in object files; compositionality is borne through until linking. This compositionality is at odds with SIMD, where a high-level function \verb|λx. x*2| should be compiled using different instructions depending on whether it is lifted to operate on an array. OS X provides
+What makes C special in practice is that functions, which can be composed, are compiled to sequences of assembly instructions stored in object files; compositionality is borne through until linking. This compositionality is at odds with SIMD, where a high-level function \verb|λx. x*2| should be compiled using different instructions depending on whether it is lifted to operate on an array. macOS provides
 
 \begin{verbatim}
      float expf(float x);
@@ -73,24 +73,49 @@ What makes C special in practice is that functions, which can be composed, are c
 
 as three shared library functions to address this.
 
+% example: lift a sum function? (sum-of-sum i.e. matrix...)
+
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 % basically SIMD ends up in one top-level function, if you want multiple possibilities you have to write a function for each...
 % functions-in-compiler vs. procedure-ABIs must be different... thus compiler-as-a-library is appealing (also check hardware...)
 
-\section{Compiler Users}
+\section{Efficient Compilation}
 
 % also phase-optimization problem... examples where compilation techniques allow XYZ (phase optimization problem cited for entrenchment of clang/gcc but maybe we should compile different things! LLVM is great but not always a target, e.g. laziness...)
-The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but that is not the problem sitting before us.
+The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but the problem sitting before us is narrower. A compiler ferries a (possibly high-level) language to efficient code, and actually a source language with fewer low-level facilities offers more invariants. ``Optimization'' writ large gets much attention, but transformations that make high-level languages possible have not entered the computer science canon, particularly for functional or exotic languages.
+
+``Amenability to efficient compilation'' also informs the design of the source language. We can also consider the problem of designing a language and compiler so that the programmer
+% "predictable how to get efficient code (from the source)" in addition to "high-level efficiently"
+% notably not the case in C++, also
+
+% https://esumii.github.io/min-caml/paper.pdf
 % wrong to expect compiler to optimize code (widespread!), rather, one wants languages/compilers that are amenable to performance.
 % IR for interprocedural analysis is mentioned by Appel, actually! llvm puts its IR in object files
 
-\subsection{Typing}
+\subsection{Typing \& Indexing}
 
-% 7-day moving average
+% neither indices nor bounds are associated with the array
+
+% pragmas LOL
+\begin{verbatim}
+float* matmul(float* a, float* b, int m, int n, int l) {
+    float* c=malloc(m*l*sizeof(float));
+    for (int i=0; i<m; i++) {
+        for (int j=0; j<n; j++) {
+            float z=0;
+            for (int k=0; k<l; k++) {
+                z+=A[i*m+k]*B[k*l+j];
+            }
+            C[i*m+j]=z;
+        }
+    }
+    return c;
+}
+\end{verbatim}
 
 % indexing by for-loops is elegant but index information (parity!) doesn't propagate so easily (optimization is "internal" rather than specified system)
-% contract with compiler vs. ??? internals,
-% good b/c the information is high-level/at the language level so
+
+Suppose we wish to compute the 7-day moving average.
 
 \begin{verbatim}
  > :asm λxs. [(+)/x%ℝ(:x)]\`7 xs
@@ -111,6 +136,11 @@ apple_1:
     fadd d5, d5, d2
     ⋮
 \end{verbatim}
+
+% such analyses are performed by industrial compilers today, but this does it by high-level source language so the programmer can expect
+% C++ is "compiler expert" and the internals have no contract w/ user...
+
+% Autovectorization in C/C++ is fickle \cite{kolodiej}.
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}

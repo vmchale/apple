@@ -861,7 +861,7 @@ tyB _ Filt = do
     pure ((a ~> B) ~> vV i a ~> vV n a, mempty)
 tyB _ Part = do
     a <- ftv "a"; i <- fti "i"; n <- ftie; m <- ftie
-    pure ((a ~> B) ~> vV i a ~> (P [vV n a, vV m a]), mempty)
+    pure ((a ~> B) ~> vV i a ~> P [vV n a, vV m a], mempty)
 tyB _ C = do
     a <- ftv "a"; b <- ftv "b"; c <- ftv "c"
     pure ((b ~> c) ~> (a ~> b) ~> a ~> c, mempty)
