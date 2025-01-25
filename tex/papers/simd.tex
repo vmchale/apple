@@ -72,24 +72,26 @@ What makes C special in practice is that functions, which can be composed, are c
 \end{verbatim}
 
 as three shared library functions to address this.
+A library providing a sigmoid function (for instance) would need to expose three versions in a shared library. The clumsiness proliferates and the mathematical entity no longer corresponds to compiled code but rather three versions of itself depending on the context in which it is used.
 
-% example: lift a sum function? (sum-of-sum i.e. matrix...)
+A compiler-as-a-library is appealing
 
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
-% basically SIMD ends up in one top-level function, if you want multiple possibilities you have to write a function for each...
-% functions-in-compiler vs. procedure-ABIs must be different... thus compiler-as-a-library is appealing (also check hardware...)
 
 \section{Efficient Compilation}
 
 % also phase-optimization problem... examples where compilation techniques allow XYZ (phase optimization problem cited for entrenchment of clang/gcc but maybe we should compile different things! LLVM is great but not always a target, e.g. laziness...)
 The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but the problem sitting before us is narrower. A compiler ferries a (possibly high-level) language to efficient code, and actually a source language with fewer low-level facilities offers more invariants. ``Optimization'' writ large gets much attention, but transformations that make high-level languages possible have not entered the computer science canon, particularly for functional or exotic languages.
 
-``Amenability to efficient compilation'' also informs the design of the source language. We can also consider the problem of designing a language and compiler so that the programmer
-% "predictable how to get efficient code (from the source)" in addition to "high-level efficiently"
-% notably not the case in C++, also
+``Amenability to efficient compilation'' also informs the design of the source language. One can also consider languages where the programmer can expect efficient compilation by reasoning about the source-language in its own terms. This is not the case for C++, where efficiency of generated code can vary dramatically by compiler or across versions of the same compiler \cite{intrinsics,kolodiej}. There is no contract with the user; performance depends on internals are not documented, justified, analyzed with the same scrutiny as programming languages.
 
-% https://esumii.github.io/min-caml/paper.pdf
-% wrong to expect compiler to optimize code (widespread!), rather, one wants languages/compilers that are amenable to performance.
+Array languages have a chance to do better since they naturally express computations that can be executed via SIMD, % at a high-level, numeric aka real gains
+% basically the problem is framed wrong, not niche anymore?
+% C++ is "compiler expert" and the internals have no contract w/ user... (despite focus on performance->C++ people)
+% esp. problem with numeric code (see GCC example) where SIMD offers real performance
+% https://danluu.com/assembly-intrinsics/
+% "predictable how to get efficient code (from the source)" in addition to "high-level efficiently" (still useful b/c that's better than writing assembly...; C++ compilers very much do not do this)
+
 % IR for interprocedural analysis is mentioned by Appel, actually! llvm puts its IR in object files
 
 \subsection{Typing \& Indexing}
@@ -138,7 +140,6 @@ apple_1:
 \end{verbatim}
 
 % such analyses are performed by industrial compilers today, but this does it by high-level source language so the programmer can expect
-% C++ is "compiler expert" and the internals have no contract w/ user...
 
 % Autovectorization in C/C++ is fickle \cite{kolodiej}.
 
