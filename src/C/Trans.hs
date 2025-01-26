@@ -751,14 +751,12 @@ aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t a | tX@(Arr sh _) <- eAnn e, (A
 aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(Arr sh _) <- eAnn xs, Just sz <- nSz tX = do
     szR <- nI; nR <- nI; b <- nBT
     (plX, (lX, xsR)) <- plA xs
-    (xR, rX) <- arg tX (\kϵ -> AElem xsR 1 lX (Tmp kϵ) sz)
+    (xR, rX) <- arg tX (\k -> AElem xsR 1 lX (Tmp k) sz)
     ss <- writeRF p [xR] (PT b)
-    loop <- afor sh 0 ILt (Tmp szR) $ \k -> rX k:ss++[If () (Is b) [w tX (AElem t 1 (Just a) (Tmp nR) sz) xR, nR+=1] []]
+    loop <- afor sh 0 ILt (Tmp szR) $ \k -> rX k:ss++[If () (Is b) [wt (AElem t 1 (Just a) (Tmp nR) sz) xR, nR+=1] []]
     pure (plX$szR =: ev tXs (xsR,lX)
         :Ma () sh a t 1 (Tmp szR) sz
         :[nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
-  where
-    w ty at tt | nind ty = wt at tt
 aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(Arr sh _) <- eAnn xs, Just sz <- nSz tX = do
     szR <- nI; nR <- nI; b <- nBT
     (plX, (lX, xsR)) <- plA xs
@@ -2058,6 +2056,16 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
 
 -- update IPA/how we pass args! (multiple returns...)
 πr :: E (T ()) -> TStore -> CM [CS ()]
+πr (EApp _ (EApp _ (Builtin _ Part) p) xs) [TA t0 l0@(Just a0), TA t1 l1@(Just a1)] | Arrow tX _ <- eAnn p, tXs@(Arr sh _) <- eAnn xs, Just sz <- nSz tX = do
+    szR <- nI; n₀ <- nI; n₁ <- nI; b <- nBT
+    (plX, (lX, xsR)) <- plA xs
+    (xR, rX) <- arg tX (\k -> AElem xsR 1 lX (Tmp k) sz)
+    ss <- writeRF p [xR] (PT b)
+    loop <- afor sh 0 ILt (Tmp szR) $ \k -> rX k:ss++[If () (Is b) [wt (AElem t0 1 l0 (Tmp n₀) sz) xR, n₀+=1] [wt (AElem t1 1 l1 (Tmp n₁) sz) xR, n₁+=1]]
+    pure (plX$szR=:ev tXs (xsR,lX)
+        :Ma () sh a0 t0 1 (Tmp szR) sz
+        :Ma () sh a1 t1 1 (Tmp szR) sz
+        :[n₀=:0,n₁=:0, loop, Wr () (ADim t0 0 l0) (Tmp n₀), Wr () (ADim t1 0 l1) (Tmp n₁)])
 πr (Tup _ es) ts = do
     concat <$> zipWithM (\e a ->
             case (eAnn e, a) of
