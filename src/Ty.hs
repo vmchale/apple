@@ -819,10 +819,6 @@ tyB _ FoldS = do
 tyB _ Foldl = do
     ix <- fti "i"; sh <- fsh "sh"; a <- ftv "a"; b <- ftv "b"
     pure ((b ~> a ~> b) ~> b ~> Arr (ix `Cons` sh) a ~> Arr sh b, mempty)
-tyB _ FoldSt = do
-    i <- fti "i"; sh <- fsh "sh"; a <- ftv "a"; s <- ftv "s"
-    let sh1 = (i+:Ix()1) `Cons` sh
-    pure ((s ~> a ~> a ~> P [a,s]) ~> s ~> Arr sh1 a ~> Arr sh a, mempty)
 tyB _ FoldA = do
     sh <- fsh "sh"
     a <- ftv "a"
