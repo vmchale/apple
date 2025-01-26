@@ -260,7 +260,6 @@ refcard = liftIO $ putStr $ concat
     , lOption "𝔸" "digit literal" "ᶥ" "vector indices"
     , lOption "〃" "ditto" "𝐒,𝐊" "combinators"
     , lOption "⑂" "fork" "𝞈,𝟘,𝟙,𝟚" "fancy types"
-    -- /₊
     ]
 
 lOption op0 desc0 op1 desc1 =
