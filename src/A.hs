@@ -129,7 +129,6 @@ instance Pretty Builtin where
     pretty IntExp     = "^"
     pretty Exp        = "**"
     pretty ItoF       = "ℝ"
-    pretty Bit        = "𝔹"
     pretty Neg        = "_"
     pretty Sqrt       = "√"
     pretty Log        = "_."
@@ -215,7 +214,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
              | Fold | FoldS | Foldl
-             | Floor | Bit | ItoF | Ceil
+             | Floor | ItoF | Ceil
              | Scan | ScanS | Size | Dim | Re | Gen | Fib | Succ
              | DI !Int -- infix
              | Conv [(Int, Maybe Int)] | Focus [Int]

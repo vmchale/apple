@@ -637,7 +637,7 @@ roll :: Sh a -> [I a] -> Sh a
 roll = foldr Cons
 
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
-tyB _ Floor = pure (F ~> I, mempty); tyB _ Ceil = pure (F ~> I, mempty); tyB _ ItoF = pure (I ~> F, mempty); tyB _ Bit = pure (B ~> I, mempty)
+tyB _ Floor = pure (F ~> I, mempty); tyB _ Ceil = pure (F ~> I, mempty); tyB _ ItoF = pure (I ~> F, mempty)
 tyB _ Even = pure (I ~> B, mempty); tyB _ Odd = pure (I ~> B, mempty)
 tyB _ Sr = pure (I ~> I ~> I, mempty); tyB _ Sl = pure (I ~> I ~> I, mempty)
 tyB _ R = do

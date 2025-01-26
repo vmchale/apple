@@ -1659,10 +1659,10 @@ eval (ILit _ n) t = pure [t =: fromInteger n]
 eval (Var _ x) t = do
     st <- gets vars
     pure [t =: Tmp (getT st x)]
-eval (EApp _ (Builtin _ Bit) (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1)) t | Just cmp <- rel op = do
+eval (Cond _ (EApp _ (EApp _ (Builtin (Arrow I _) op) c0) c1) (ILit _ 0) (ILit _ 1)) t | Just cmp <- rel op = do
     (plC0,c0e) <- plC c0; (plC1,c1e) <- plC c1
     pure $ plC0 $ plC1 [CsetI () (IRel cmp c0e c1e) t]
-eval (EApp _ (Builtin _ Bit) b) t = do
+eval (Cond _ b (ILit _ 0) (ILit _ 1)) t = do
     (plB,eB) <- plP b
     pure $ plB [CsetI () eB t]
 eval (EApp _ (EApp _ (Builtin _ A.R) e0) e1) t = do
