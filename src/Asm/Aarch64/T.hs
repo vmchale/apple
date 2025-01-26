@@ -591,7 +591,7 @@ eval (IR.IB Op.IMax e0 e1) t = do
 eval (IR.IB (Op.BI Op.BEq) e0 e1) t = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [Eon () (absReg t) r0 r1, Bfc () (absReg t) 1 63]
-eval (IR.IB (Op.BI (Op.XorB)) e0 (IR.ConstI 1)) t = do
+eval (IR.IB (Op.BI Op.XorB) e0 (IR.ConstI 1)) t = do
     (plE,r) <- plI e0
     pure $ plE [EorI () (absReg t) r (BM 1 0)]
 eval (IR.IB op e0 e1) t | Just isn <- mIop op = do
