@@ -210,7 +210,6 @@ s@@t= aT (void s) t
 aT :: Subst a -> T a -> T a
 aT s (Arr sh ty) = Arr (shSubst s sh) (aT s ty)
 aT s (Arrow t₁ t₂) = Arrow (aT s t₁) (aT s t₂)
-aT s ty'@(TVar n) = aTi ty' n s
 aT s (P ts) = P (aT s <$> ts)
 aT s@(Subst ts _ _) (Ρ n rs) =
     let u = unU (unique n) in
@@ -221,6 +220,7 @@ aT s@(Subst ts _ _) (Ρ n rs) =
         Just ty@Z{}    -> aT (s\-u) ty
         Just ty        -> aT s ty
         Nothing        -> Ρ n (aT s<$>rs)
+aT s ty'@(TVar n) = aTi ty' n s
 aT s ty'@(IZ _ n) = aTi ty' n s
 aT s ty'@(Z n) = aTi ty' n s
 aT _ ty = ty
@@ -511,9 +511,7 @@ mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
 mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, uTS u t$wI iS s)}
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
 -- FIXME ug. is higher-rank on indices 😬
--- maybe we could mark "stateful" context when we enter lol? for index variables
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
--- also some index-things are more strict... addition not at all!
 mgu _ _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
 mgu _ _ s (TVar n0@(Nm _ (U j) _)) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu _ _ s t0@(Z n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
@@ -1008,6 +1006,7 @@ tyE s (EApp _ (EApp _ (Builtin l IRange) lb) ub) = do
     pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) IRange) lbϵ) ubϵ, s5)
   where iv sϵ (IZ i nm)   = let t=Li i in (iTS nm t sϵ, t)
         iv sϵ t@(TVar nm) = (iTS nm I sϵ, t)
+        iv sϵ t@(Z nm)    = (iTS nm I sϵ, t)
         iv sϵ _           = (sϵ, I)
 tyE s (FLit _ x) = pure (FLit F x, s)
 tyE s (BLit _ x) = pure (BLit B x, s)
