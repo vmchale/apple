@@ -44,23 +44,17 @@ tuck :: E a -> (E a -> E a, E a)
 tuck (Lam l n e) = let (f, e') = tuck e in (Lam l n.f, e')
 tuck e           = (id, e)
 
+h1 :: Builtin -> Bool
+h1 Scan=True; h1 ScanS=True; h1 Zip=True; h1 Map=True
+h1 FoldS=True; h1 Fold=True; h1 FoldA=True; h1 Foldl=True
+h1 Filt=True; h1 Ices=True; h1 Part=True; h1 Succ=True
+h1 Rank{}=True; h1 DI{}=True; h1 Conv{}=True; h1 Focus{}=True
+h1 Outer=True; h1 Ug=True; h1 Fib=True; h1 _=False
+
 ηAt :: E (T ()) -> RM (E (T ()))
 ηAt (EApp t0 (EApp t1 ho@(Builtin _ Gen) seed) op) = EApp t0 <$> EApp t1 ho <$> ηAt seed <*> η op
-ηAt (EApp t ho@(Builtin _ Scan{}) op)              = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ ScanS{}) op)             = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ Zip{}) op)               = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ Succ{}) op)              = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ FoldS) op)               = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ Fold) op)                = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ FoldA) op)               = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ Foldl) op)               = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ Filt{}) f)               = EApp t ho <$> η f
-ηAt (EApp t ho@(Builtin _ Ices{}) p)               = EApp t ho <$> η p
-ηAt (EApp t ho@(Builtin _ Map{}) op)               = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ Rank{}) op)              = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ DI{}) op)                = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ Conv{}) op)              = EApp t ho <$> η op
-ηAt (EApp t ho@(Builtin _ Outer) op)               = EApp t ho <$> η op
+ηAt (EApp t0 (EApp t1 ho@(Builtin _ Fib) seed) op) = EApp t0 <$> EApp t1 ho <$> ηAt seed <*> η op
+ηAt (EApp t ho@(Builtin _ b) op) | h1 b            = EApp t ho <$> η op
 ηAt (EApp t e0 e1)                                 = EApp t <$> ηAt e0 <*> ηAt e1
 ηAt (Lam l n e)                                    = Lam l n <$> ηAt e
 ηAt (Cond l p e e')                                = Cond l <$> ηAt p <*> ηAt e <*> ηAt e'
