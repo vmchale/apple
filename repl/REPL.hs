@@ -436,7 +436,7 @@ printExpr s = do
             eC <- eRepl eP
             case tyC i eC of
                 Left (RErr MR{}) -> case tyClosed i eC of
-                    Left e -> putDocLn (pretty e)
+                    Left e -> pErr e
                     Right (e, c, _) ->
                         let t=eAnn e in putDocLn (pretty e <::> prettyC (t, c))
                 Left err -> pErr err
