@@ -74,7 +74,7 @@ What makes C special in practice is that functions, which can be composed, are c
 as three shared library functions to address this.
 A library providing a sigmoid function (for instance) would need to expose three versions in a shared library. The clumsiness proliferates and the mathematical entity no longer corresponds to compiled code but rather three versions of itself depending on the context in which it is used.
 
-A compiler-as-a-library is appealing
+A compiler-as-a-library is appealing because it could dispatch different versions of a
 
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 
@@ -85,7 +85,7 @@ The full employment theorem for compiler writers states that it is impossible to
 
 ``Amenability to efficient compilation'' also informs the design of the source language. One can also consider languages where the programmer can expect efficient compilation by reasoning about the source-language in its own terms. This is not the case for C++, where efficiency of generated code can vary dramatically by compiler or across versions of the same compiler \cite{intrinsics,kolodiej,cc}. There is no contract with the user; performance depends on internals that are not documented, justified, analyzed with the same scrutiny as programming languages.
 
-Array languages have a chance to do better since they naturally express computations that can be executed via SIMD, in a domain where % at a high-level, numeric aka real gains
+Array languages have a chance to do better since they naturally express computations that can be executed via SIMD, in a domain where such CPU features offer significant gains.
 % C++ is "compiler expert" and the internals have no contract w/ user... (despite focus on performance->C++ people)
 % esp. problem with numeric code (see GCC example) where SIMD offers real performance
 % https://danluu.com/assembly-intrinsics/
@@ -116,7 +116,22 @@ float* matmul(float* a, float* b, int m, int n, int l) {
 
 % indexing by for-loops is elegant but index information (parity!) doesn't propagate so easily (optimization is "internal" rather than specified system)
 
-Suppose we wish to compute the 7-day moving average.
+Suppose we wish to compute the 7-day moving average. We will do so using \verb|`\|, inspired by J's infix \cite{nuvoc}, which lifts a vector function to operate on windows of 7-vectors, arranging the (scalar) results into a vector. Examining type annotations, we see that the fold of the inner loop (\verb|/|) is inferred have type \verb|(float → float → float) → Vec 7 float → float|:
+
+\begin{verbatim}
+ > :ann λxs. [(+)/x%ℝ(:x)]\`7 xs
+λ(xs : Vec (i + 7) float).
+    ((\`7 : (Vec 7 float → float) → Vec (i + 7) float → Vec (i + 1) float)
+     λ(x : Vec 7 float).
+         ((% : float → float → float)
+          ((/ : (float → float → float) → Vec 7 float → float)
+           (+ : float → float → float)
+           (x : Vec 7 float))
+          ((ℝ : int → float) ((: : Vec 7 float → int) (x : Vec 7 float))))
+     (xs : Vec (i + 7) float))
+\end{verbatim}
+
+and in fact the inner loop is compiled without
 
 \begin{verbatim}
  > :asm λxs. [(+)/x%ℝ(:x)]\`7 xs
@@ -138,7 +153,8 @@ apple_1:
     ⋮
 \end{verbatim}
 
-% such analyses are performed by industrial compilers today, but this does it by high-level source language so the programmer can expect
+Similar analyses are already performed by industrial compilers today, but with types, the information is present in the high-level language so that the programmer can expect % not fickle internals subject to change...
+% also type information proliferates (in a rules-based way)
 
 % Autovectorization in C/C++ is fickle \cite{kolodiej}.
 

@@ -287,9 +287,15 @@ B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
   | name lbind E { (LL, ($1, $3)) }
   | name polybind E { (D, ($1, $3)) }
 
+U :: { [Nm AlexPosn] }
+  : name { [$1] }
+  | underscore { [] }
+  | name comma U { $1 : $3 }
+  | underscore comma U { $3 }
+
 Lam :: { [(AlexPosn, [Nm AlexPosn])] }
-    : lam tupled(name) dot { [$2] }
-    | lam tupled(name) dot Lam { $2 : $4 }
+    : lam lparen U rparen dot { [($2, reverse $3)] }
+    | lam lparen U rparen dot Lam { ($2, reverse $3) : $6 }
 
 E :: { E AlexPosn }
   : name { Var (Nm.loc $1) $1 }
