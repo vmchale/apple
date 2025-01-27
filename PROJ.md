@@ -18,7 +18,8 @@
 - [ ] specify iteration by wallpaper group...
 - [ ] simd exp by polynomial...?
 - [ ] assembly "prettyprinter" class
-- [ ] map, zip as rank...
-- [ ] optimize sort
+- [ ] map, zip, outer as rank?
+- [ ] less ignominious sort
   - [ ] no padding?
   - [ ] don't copy in/out from slab
+- [ ] typed scatter... input matrix of indices = outputs matrix?
