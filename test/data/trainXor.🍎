@@ -6,7 +6,6 @@
   Σ ⇐ [(+)/ₒ x y];
   sigmoid ← [⅟(1+ℯ(_x))];
   sDdx ← [x*(1-x)];
-  sum ⇐ [(+)/x];
   -- ho: 4x2
   -- prediction: 4
   ho ⟜ sigmoid`{0} ([(+)`(bh::Vec 2 float) x]'X%.wh);
