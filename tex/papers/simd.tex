@@ -74,7 +74,7 @@ What makes C special in practice is that functions, which can be composed, are c
 as three shared library functions to address this.
 A library providing a sigmoid function (for instance) would need to expose three versions in a shared library. The clumsiness proliferates and the mathematical entity no longer corresponds to compiled code but rather three versions of itself depending on the context in which it is used.
 
-A compiler-as-a-library is appealing because it could dispatch different versions of a
+A compiler-as-a-library is appealing because it could be invoked by another compiler, dispatching different versions of a function without intervention from the programmer.
 
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 
@@ -154,9 +154,8 @@ apple_1:
 \end{verbatim}
 
 Similar analyses are already performed by industrial compilers today, but with types, the information is present in the high-level language so that the programmer can expect % not fickle internals subject to change...
-% also type information proliferates (in a rules-based way)
 
-% Autovectorization in C/C++ is fickle \cite{kolodiej}.
+In a type system with shapes, information proliferates (based on specified rules)
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
