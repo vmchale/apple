@@ -13,6 +13,7 @@ import           Test.Tasty.Golden                (goldenVsString)
 main = defaultMain $ testGroup "REPL"
   [ goldenVsString "pythagorean means" "i/golden/pythagoreanMeans.out" (testRepl "i/ex/pythagoreanMeans.🍏")
   , goldenVsString "median" "i/golden/median.out" (testRepl "i/ex/median.🍏")
+  , goldenVsString "tutorial" "i/golden/doc.out" (testRepl "i/ex/doc.🍎")
   ]
 
 testRepl :: FilePath -> IO BSL.ByteString
