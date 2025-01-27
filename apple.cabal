@@ -27,6 +27,9 @@ extra-source-files:
     math/numbertheory/*.🍏
     math/stats/*.🍎
     math/stats/*.🍏
+    i/ex/*.🍏
+    i/ex/*.🍎
+    i/golden/*.out
     Makefile
     mk/os.mk
     pyc/Makefile
