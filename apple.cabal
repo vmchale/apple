@@ -278,6 +278,7 @@ test-suite repltest
         silently,
         tasty,
         tasty-golden,
+        temporary,
         transformers
 
 test-suite apple-test

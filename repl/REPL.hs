@@ -23,6 +23,7 @@ import qualified Data.Text.Lazy.IO                as TLIO
 import           Data.Traversable                 (forM)
 import           Data.Word                        (Word8)
 import           Dbg
+import           Foreign.C.Types                  (CDouble (..))
 import           Foreign.LibFFI                   (callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc            (free)
 import           Foreign.Marshal.Array            (peekArray)
@@ -40,7 +41,7 @@ import           Sys.DL
 import           System.Console.Haskeline         (InputT, getInputLine)
 import           System.Directory                 (doesFileExist)
 import           System.Info                      (arch)
-import           System.IO                        (Handle, hFlush, hPrint, hPutStrLn, stdout)
+import           System.IO                        (Handle, hPrint)
 import           Ty
 import           Ty.M
 
@@ -456,8 +457,7 @@ printExpr s = do
                         A.F ->
                             do
                                 asm@(_, fp, _) <- liftIO $ efp eC
-                                h <- lg oh
-                                liftIO (hPrint h =<< callFFI fp retCDouble [])
+                                pErr.(\(CDouble x) -> x) =<< liftIO (callFFI fp retCDouble [])
 
                                 liftIO $ freeAsm asm
                         A.B ->
@@ -504,5 +504,5 @@ eRepl e = do {ees <- lg ee; pure (flet ees e)}
     where flet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 
 tput s = do {h <- lg oh; liftIO $ TIO.hPutStrLn h s}
-putDocLn p = do {h <- lg oh; liftIO $ hPutDoc h (p<>hardline)}
+putDocLn p = do {h <- lg oh; liftIO (hPutDoc h (p<>hardline))}
 pErr err = putDocLn (pretty err)
