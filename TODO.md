@@ -69,6 +69,20 @@ T16 = T13.dim[0]
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
 ```
+ > :ty pascal
+int(n) → Arr (n + 1 × #n) int
+```
+ > ([x] ⨳ {1∘2,1}) (irange 1 9)
+arepl: (2*(i + 1),9)
+CallStack (from HasCallStack):
+```
+```
+- [ ] too lenient; accepts this type
+```
+ > :ty [x (\-)⊗ xᶥ] (frange 0 9 10)
+Arr (10 × 9) float
+```
+```
 λa.λn. {log ← (%)⑂(_.∴ℝ); N ⟜ ⌊(log a n)+1; ~(ug. (λs. (s/.n, s|n)) a N)}
 ```
 has universally quantified return type, should be existential!
@@ -173,6 +187,7 @@ o → o → o
 - [ ] http://xahlee.info/math/algorithmic_math_art.html
 - [ ] https://rosalind.info/problems/locations/
 - [ ] https://en.wikipedia.org/wiki/Newton_fractal
+- [ ] https://pyvista.org/
 - [ ] https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
 - [ ] https://prng.di.unimi.it/splitmix64.c
 - [ ] https://github.com/tonio-m/python_neural_network/blob/main/main.py
@@ -206,6 +221,8 @@ o → o → o
   - [ ] https://www.boost.org/doc/libs/1_78_0/libs/math/doc/html/math_toolkit/remez.html
   - [ ] https://github.com/ARM-software/optimized-routines/blob/4c32619682de9d8632fe039153a3e26a6f095482/math/tools/remez.jl
 - [ ] https://www.skybluetrades.net/blog/category/data-analysis.html
+- [ ] https://rafalab.dfci.harvard.edu/pages/harvardx.html
+- [ ] https://en.wikipedia.org/wiki/Montgomery_modular_multiplication
 - [ ] https://code.jsoftware.com/wiki/User:John_Randall/FourierTransformAndPolynomialMultiplication
 - [ ] cute. https://en.wikipedia.org/wiki/Stirling_number#As_inverse_matrices
 - [ ] https://rosettacode.org/wiki/Cyclotomic_polynomial#Haskell
@@ -218,6 +235,8 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
     go (i, h:t) = Just (h, (i-1, zipWith (+) (map (h *) ker) t))
     ker = negate <$> p2 ++ repeat 0
 ```
+- [ ] https://ed25519.cr.yp.to/
+  - [ ] https://en.wikipedia.org/wiki/SHA-2#Pseudocode
 # Visual/Art
 - [ ] https://github.com/rougier/scientific-visualization-book
   - [ ] https://github.com/rougier/scientific-visualization-book/blob/master/code/scales-projections/polar-patterns.py
