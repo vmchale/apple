@@ -17,8 +17,7 @@ main = defaultMain $ testGroup "REPL"
   ]
 
 testRepl :: FilePath -> IO BSL.ByteString
-testRepl fp = silence $ withSystemTempFile "REPL" $ \t h -> do
+testRepl fp = withSystemTempFile "REPL" $ \t h -> do
     st <- iSt h
-    flip evalStateT st $ runInputTBehavior (useFile fp) defaultSettings loop
-    hClose h
-    BSL.readFile t
+    silence $ flip evalStateT st $ runInputTBehavior (useFile fp) defaultSettings loop
+    hClose h *> BSL.readFile t
