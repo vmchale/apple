@@ -269,7 +269,7 @@ test-suite repltest
     type:               exitcode-stdio-1.0
     main-is:            Test.hs
     hs-source-dirs:     i
-    ghc-options:        -rtsopts -with-rtsopts=-k1k
+    ghc-options:        -threaded -rtsopts "-with-rtsopts=-N -k1k"
     build-depends:
         base,
         apple-repl,
