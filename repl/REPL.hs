@@ -105,9 +105,7 @@ listCtx :: Repl AlexPosn ()
 listCtx = do {bs <- lg ee; putDocLn (prettyLines (pretty.fst<$>bs))}
 
 graph :: String -> Repl AlexPosn ()
-graph s = case dumpX86Ass (ubs s) of
-    Left err -> putDocLn (pretty err)
-    Right d  -> putDocLn d
+graph s = putDocLn $ either pretty id (dumpX86Ass (ubs s))
 
 showHelp :: Repl AlexPosn ()
 showHelp = liftIO $ putStr $ concat
@@ -178,8 +176,6 @@ helpOption cmd args desc =
 
 ubs :: String -> BSL.ByteString
 ubs = encodeUtf8 . TL.pack
-
-ep x = do {h <- lg oh; liftIO (case x of Left err -> hPutDoc h (pretty err); Right d -> hPutDoc h d)}
 
 disasm :: String -> Repl AlexPosn ()
 disasm s = do
@@ -451,8 +447,7 @@ printExpr s = do
                         I ->
                           do
                               asm@(_, fp, _) <- liftIO $ efp eC -- TODO: i after tyClosed gets discarded?
-                              h <- lg oh
-                              liftIO (hPrint h=<< callFFI fp retInt64 [])
+                              pErr =<< liftIO (callFFI fp retInt64 [])
                               liftIO $ freeAsm asm
                         A.F ->
                             do
@@ -503,6 +498,7 @@ eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
 eRepl e = do {ees <- lg ee; pure (flet ees e)}
     where flet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 
+hdoc p = do {h <- lg oh; liftIO $ hPutDoc h p}
+ep x = hdoc (either pretty id x); putDocLn p = hdoc (p<>hardline)
 tput s = do {h <- lg oh; liftIO $ TIO.hPutStrLn h s}
-putDocLn p = do {h <- lg oh; liftIO (hPutDoc h (p<>hardline))}
 pErr err = putDocLn (pretty err)
