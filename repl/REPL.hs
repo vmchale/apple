@@ -33,7 +33,7 @@ import           Hs.A
 import           Hs.FFI
 import           L
 import           Nm
-import           Prettyprinter                    (Doc, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
+import           Prettyprinter                    (Doc, Pretty, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
 import           Prettyprinter.Ext
 import           Prettyprinter.Render.Text        (hPutDoc)
 import           QC
@@ -41,7 +41,7 @@ import           Sys.DL
 import           System.Console.Haskeline         (InputT, getInputLine)
 import           System.Directory                 (doesFileExist)
 import           System.Info                      (arch)
-import           System.IO                        (Handle, hPrint)
+import           System.IO                        (Handle)
 import           Ty
 import           Ty.M
 
@@ -188,55 +188,26 @@ disasm s = do
             let d=case a of {X64 -> eDtxt; AArch64{} -> edAtxt}
             res <- liftIO $ d i eC
             case res of
-                Left err -> putDocLn (pretty err)
+                Left err -> pErr err
                 Right b  -> do {h <- lg oh; liftIO (TIO.hPutStr h b)}
 
-cR :: String -> Repl AlexPosn ()
-cR s = do
+eCtx :: Pretty e => (Int -> E AlexPosn -> Either e (Doc ann)) -> String -> Repl AlexPosn ()
+eCtx d s = do
     st <- lg _lex
     case rwP st (ubs s) of
         Left err -> pErr err
         Right (eP, i) -> do
             eC <- eRepl eP
-            ep $ eDumpC i eC
+            ep $ d i eC
 
-irR :: String -> Repl AlexPosn ()
-irR s = do
-    st <- lg _lex
-    case rwP st (ubs s) of
-        Left err -> pErr err
-        Right (eP, i) -> do
-            eC <- eRepl eP
-            ep $ eDumpIR i eC
-
-dumpAsm :: String -> Repl AlexPosn ()
+cR = eCtx eDumpC
+irR = eCtx eDumpIR
+tyExprR = eCtx (\i -> fmap (\(e,c,_) -> prettyC (eAnn e, c)).tyClosed i)
+annR = eCtx (\i -> fmap (\(e,_,_) -> prettyTyped e).tyClosed i)
 dumpAsm s = do
-    st <- lg _lex
-    case rwP st (ubs s) of
-        Left err -> pErr err
-        Right (eP, i) -> do
-            eC <- eRepl eP
-            a <- lg _arch
-            let dump = case a of {X64 -> eDumpX86; AArch64{} -> eDumpAarch64}
-            ep $ dump i eC
-
-tyExprR :: String -> Repl AlexPosn ()
-tyExprR s = do
-    st <- lg _lex
-    case rwP st (ubs s) of
-        Left err -> pErr err
-        Right (eP, i) -> do
-            eC <- eRepl eP
-            ep $ (\(e,c,_) -> prettyC (eAnn e, c)) <$> tyClosed i eC
-
-annR :: String -> Repl AlexPosn ()
-annR s = do
-    st <- lg _lex
-    case rwP st (ubs s) of
-        Left err    -> pErr err
-        Right (eP, i) -> do
-            eC <- eRepl eP
-            ep $ (\(e,_,_) -> prettyTyped e) <$> tyClosed i eC
+    a <- lg _arch
+    let dump = case a of {X64 -> eDumpX86; AArch64{} -> eDumpAarch64}
+    eCtx dump s
 
 freeAsm (sz, fp, mp) = freeFunPtr sz fp -- *> traverse_ free mp
 
@@ -319,14 +290,14 @@ qc s = do
                         Nothing -> pErr ("must be a proposition." :: T.Text)
                         Just ty -> do
                             asm@(_, fp, _) <- liftIO $ efp eC
-                            let loopϵ 0 = pure Nothing
-                                loopϵ n = do
+                            let g 0 = pure Nothing
+                                g n = do
                                     (args, es, mps) <- unzip3 <$> gas ty
                                     b <- callFFI fp retCUChar args
                                     (if cb b
-                                        then traverse freeP (catMaybes mps) *> loopϵ (n-1)
+                                        then traverse freeP (catMaybes mps) *> g (n-1)
                                         else Just es <$ traverse_ freeP (catMaybes mps))
-                            res <- liftIO $ loopϵ (100::Int)
+                            res <- liftIO $ g (100::Int)
                             case res of
                                 Nothing -> putDocLn "Passed, 100."
                                 Just ex -> putDocLn ("Proposition failed!" <> hardline <> pretty ex)
@@ -499,6 +470,6 @@ eRepl e = do {ees <- lg ee; pure (flet ees e)}
     where flet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 
 hdoc p = do {h <- lg oh; liftIO $ hPutDoc h p}
-ep x = hdoc (either pretty id x); putDocLn p = hdoc (p<>hardline)
+ep x = hdoc (either pretty (<>hardline) x); putDocLn p = hdoc (p<>hardline)
 tput s = do {h <- lg oh; liftIO $ TIO.hPutStrLn h s}
 pErr err = putDocLn (pretty err)
