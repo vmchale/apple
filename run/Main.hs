@@ -11,6 +11,7 @@ import           System.Console.Haskeline         (Completion, CompletionFunc, c
                                                    simpleCompletion)
 import           System.Directory                 (getHomeDirectory)
 import           System.FilePath                  ((</>))
+import           System.IO                        (stdout)
 
 main :: IO ()
 main = runRepl loop
@@ -24,7 +25,7 @@ bn = ["frange", "irange", "itof", "gen.", "di.", "sin.", "cos.", "rand.", "cyc."
 runRepl :: Repl a x -> IO x
 runRepl x = do
     histDir <- (</> ".apple_history") <$> getHomeDirectory
-    st <- iSt
+    st <- iSt stdout
     let myCompleter = appleCompletions `fallbackCompletion` completeFilename
     let settings = setComplete myCompleter $ defaultSettings { historyFile = Just histDir }
     flip evalStateT st $ runInputT settings x

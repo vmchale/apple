@@ -34,33 +34,34 @@ import           L
 import           Nm
 import           Prettyprinter                    (Doc, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
 import           Prettyprinter.Ext
-import           Prettyprinter.Render.Text        (putDoc)
+import           Prettyprinter.Render.Text        (hPutDoc)
 import           QC
 import           Sys.DL
 import           System.Console.Haskeline         (InputT, getInputLine)
 import           System.Directory                 (doesFileExist)
 import           System.Info                      (arch)
+import           System.IO                        (Handle, hFlush, hPrint, hPutStrLn, stdout)
 import           Ty
 import           Ty.M
 
 data Arch = X64 | AArch64 !MCtx
 
-data Env = Env { _lex :: !AlexUserState, ee :: [(Nm AlexPosn, E AlexPosn)], mf :: CCtx, _arch :: Arch }
+data Env = Env { _lex :: !AlexUserState, ee :: [(Nm AlexPosn, E AlexPosn)], mf :: CCtx, _arch :: Arch, oh :: !Handle }
 
 lg=lift . gets
 
 aEe :: Nm AlexPosn -> E AlexPosn -> Env -> Env
-aEe n e (Env l ees mm a) = Env l ((n,e):ees) mm a
+aEe n e (Env l ees mm a h) = Env l ((n,e):ees) mm a h
 
-mE f (Env l ees mm a) = Env l (f ees) mm a
+mE f (Env l ees mm a h) = Env l (f ees) mm a h
 
 setL :: AlexUserState -> Env -> Env
-setL lSt (Env _ ees mm a) = Env lSt ees mm a
+setL lSt (Env _ ees mm a h) = Env lSt ees mm a h
 
 type Repl a = InputT (StateT Env IO)
 
-iSt :: IO Env
-iSt = Env alexInitUserState [] <$> mem' <*> case arch of {"x86_64" -> pure X64; "aarch64" -> AArch64<$>math'; _ -> error "Unsupported architecture!"}
+iSt :: Handle -> IO Env
+iSt h = Env alexInitUserState [] <$> mem' <*> case arch of {"x86_64" -> pure X64; "aarch64" -> AArch64<$>math'; _ -> error "Unsupported architecture!"} <*> pure h
 
 loop :: Repl AlexPosn ()
 loop = do
@@ -100,10 +101,10 @@ del :: String -> Repl AlexPosn ()
 del s = lift $ modify (mE (filter (\(Nm n _ _, _) -> n /= st))) where st=T.pack s
 
 listCtx :: Repl AlexPosn ()
-listCtx = do {bs <- lg ee; liftIO $ putDocLn (prettyLines (pretty.fst<$>bs))}
+listCtx = do {bs <- lg ee; putDocLn (prettyLines (pretty.fst<$>bs))}
 
 graph :: String -> Repl AlexPosn ()
-graph s = liftIO $ case dumpX86Ass (ubs s) of
+graph s = case dumpX86Ass (ubs s) of
     Left err -> putDocLn (pretty err)
     Right d  -> putDocLn d
 
@@ -177,8 +178,7 @@ helpOption cmd args desc =
 ubs :: String -> BSL.ByteString
 ubs = encodeUtf8 . TL.pack
 
-replEPrint x = liftIO $ case x of
-    Left err -> putDocLn (pretty err); Right d -> putDocLn d
+ep x = do {h <- lg oh; liftIO (case x of Left err -> hPutDoc h (pretty err); Right d -> hPutDoc h d)}
 
 disasm :: String -> Repl AlexPosn ()
 disasm s = do
@@ -190,9 +190,9 @@ disasm s = do
             a <- lg _arch
             let d=case a of {X64 -> eDtxt; AArch64{} -> edAtxt}
             res <- liftIO $ d i eC
-            liftIO $ case res of
+            case res of
                 Left err -> putDocLn (pretty err)
-                Right b  -> TIO.putStr b
+                Right b  -> do {h <- lg oh; liftIO (TIO.hPutStr h b)}
 
 cR :: String -> Repl AlexPosn ()
 cR s = do
@@ -201,7 +201,7 @@ cR s = do
         Left err -> pErr err
         Right (eP, i) -> do
             eC <- eRepl eP
-            replEPrint $ eDumpC i eC
+            ep $ eDumpC i eC
 
 irR :: String -> Repl AlexPosn ()
 irR s = do
@@ -210,7 +210,7 @@ irR s = do
         Left err -> pErr err
         Right (eP, i) -> do
             eC <- eRepl eP
-            replEPrint $ eDumpIR i eC
+            ep $ eDumpIR i eC
 
 dumpAsm :: String -> Repl AlexPosn ()
 dumpAsm s = do
@@ -221,7 +221,7 @@ dumpAsm s = do
             eC <- eRepl eP
             a <- lg _arch
             let dump = case a of {X64 -> eDumpX86; AArch64{} -> eDumpAarch64}
-            replEPrint $ dump i eC
+            ep $ dump i eC
 
 tyExprR :: String -> Repl AlexPosn ()
 tyExprR s = do
@@ -230,7 +230,7 @@ tyExprR s = do
         Left err -> pErr err
         Right (eP, i) -> do
             eC <- eRepl eP
-            replEPrint $ (\(e,c,_) -> prettyC (eAnn e, c)) <$> tyClosed i eC
+            ep $ (\(e,c,_) -> prettyC (eAnn e, c)) <$> tyClosed i eC
 
 annR :: String -> Repl AlexPosn ()
 annR s = do
@@ -239,7 +239,7 @@ annR s = do
         Left err    -> pErr err
         Right (eP, i) -> do
             eC <- eRepl eP
-            replEPrint $ (\(e,_,_) -> prettyTyped e) <$> tyClosed i eC
+            ep $ (\(e,_,_) -> prettyTyped e) <$> tyClosed i eC
 
 freeAsm (sz, fp, mp) = freeFunPtr sz fp -- *> traverse_ free mp
 
@@ -264,12 +264,13 @@ inspect s = do
                 Right (e, _, i') -> do
                     a <- lg _arch; c <- lg mf
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
-                    liftIO $ do
-                        asm@(_, fp, _) <- efp eC
-                        p <- callFFI fp (retPtr undefined) []
+                    do
+                        asm@(_, fp, _) <- liftIO $ efp eC
+                        p <- liftIO $ callFFI fp (retPtr undefined) []
                         case eAnn e of
-                            (Arr _ t) -> do TLIO.putStrLn =<< dbgAB t p
-                                            free p *> freeAsm asm
+                            (Arr _ t) -> do {h <- lg oh; liftIO $ do
+                                                TLIO.hPutStrLn h =<< dbgAB t p
+                                                free p *> freeAsm asm}
                             _ -> pErr ("only arrays can be inspected." :: T.Text)
         where bs = ubs s
 
@@ -288,7 +289,7 @@ iCtx :: String -> String -> Repl AlexPosn ()
 iCtx f fp = do
     p <- liftIO $ doesFileExist fp
     if not p
-        then liftIO $ putStrLn "file does not exist."
+        then tput "file does not exist."
         else do {bs <- liftIO $ BSL.readFile fp; f <~ bs}
 
 benchC :: String -> Repl AlexPosn ()
@@ -319,8 +320,8 @@ qc s = do
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     case up (eAnn e) of
                         Nothing -> pErr ("must be a proposition." :: T.Text)
-                        Just ty -> liftIO $ do
-                            asm@(_, fp, _) <- efp eC
+                        Just ty -> do
+                            asm@(_, fp, _) <- liftIO $ efp eC
                             let loopϵ 0 = pure Nothing
                                 loopϵ n = do
                                     (args, es, mps) <- unzip3 <$> gas ty
@@ -328,11 +329,11 @@ qc s = do
                                     (if cb b
                                         then traverse freeP (catMaybes mps) *> loopϵ (n-1)
                                         else Just es <$ traverse_ freeP (catMaybes mps))
-                            res <- loopϵ (100::Int)
+                            res <- liftIO $ loopϵ (100::Int)
                             case res of
                                 Nothing -> putDocLn "Passed, 100."
                                 Just ex -> putDocLn ("Proposition failed!" <> hardline <> pretty ex)
-                            freeAsm asm
+                            liftIO (freeAsm asm)
 
   where bs = ubs s
         cb 0=False; cb 1=True
@@ -376,7 +377,7 @@ benchE s = do
                                 asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                                 freeAsm asm
-                        A.Arrow{} -> liftIO $ putDocLn "Cannot benchmark a function without arguments"
+                        A.Arrow{} -> putDocLn "Cannot benchmark a function without arguments"
     where bs = ubs s
 
 rSz A.B=1; rSz I=8; rSz A.F=8; rSz (P ts) = sum (rSz<$>ts); rSz Arr{}=8
@@ -437,7 +438,7 @@ printExpr s = do
         Right (eP, i) -> do
             eC <- eRepl eP
             case tyC i eC of
-                Left (RErr MR{}) -> liftIO $ case tyClosed i eC of
+                Left (RErr MR{}) -> case tyClosed i eC of
                     Left e -> putDocLn (pretty e)
                     Right (e, c, _) ->
                         let t=eAnn e in putDocLn (pretty e <::> prettyC (t, c))
@@ -447,29 +448,31 @@ printExpr s = do
                     let efp=case a of {X64 -> eFunP i' c; AArch64 ma -> eAFunP i' (c,ma)}
                     case eAnn (fmap rLi eLi) of
                         I ->
-                          liftIO $ do
-                              asm@(_, fp, _) <- efp eC -- TODO: i after tyClosed gets discarded?
-                              print =<< callFFI fp retInt64 []
-                              freeAsm asm
+                          do
+                              asm@(_, fp, _) <- liftIO $ efp eC -- TODO: i after tyClosed gets discarded?
+                              h <- lg oh
+                              liftIO (hPrint h=<< callFFI fp retInt64 [])
+                              liftIO $ freeAsm asm
                         A.F ->
-                            liftIO $ do
-                                asm@(_, fp, _) <- efp eC
-                                print =<< callFFI fp retCDouble []
-                                freeAsm asm
+                            do
+                                asm@(_, fp, _) <- liftIO $ efp eC
+                                h <- lg oh
+                                liftIO (hPrint h =<< callFFI fp retCDouble [])
+
+                                liftIO $ freeAsm asm
                         A.B ->
-                            liftIO $ do
-                                asm@(_, fp, _) <- efp eC
-                                cb <- callFFI fp retWord8 []
-                                putStrLn (sB cb)
-                                freeAsm asm
+                            do
+                                asm@(_, fp, _) <- liftIO $ efp eC
+                                cb <- liftIO $ callFFI fp retWord8 []
+                                tput (sB cb) *> liftIO (freeAsm asm)
                             where sB 1 = "#t"; sB 0 = "#f"
-                        A.Arrow{} -> liftIO $ putDocLn (pretty eLi <::> pretty (eAnn eLi))
+                        A.Arrow{} -> putDocLn (pretty eLi <::> pretty (eAnn eLi))
                         t ->
-                            liftIO $ do
-                                asm@(_, fp, _) <- efp eC
-                                p <- callFFI fp (retPtr undefined) []
-                                putDocLn =<< peekInterpret t p
-                                freeByT t p *> freeAsm asm
+                            do
+                                asm@(_, fp, _) <- liftIO $ efp eC
+                                p <- liftIO $ callFFI fp (retPtr undefined) []
+                                putDocLn =<< liftIO (peekInterpret t p)
+                                liftIO (freeByT t p *> freeAsm asm)
     where bs = ubs s
 
 parseE st bs = fst . either (error "Internal error?") id $ rwP st bs
@@ -500,5 +503,6 @@ eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
 eRepl e = do {ees <- lg ee; pure (flet ees e)}
     where flet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 
-putDocLn = putDoc.(<>hardline)
-pErr err = liftIO $ putDocLn (pretty err)
+tput s = do {h <- lg oh; liftIO $ TIO.hPutStrLn h s}
+putDocLn p = do {h <- lg oh; liftIO $ hPutDoc h (p<>hardline)}
+pErr err = putDocLn (pretty err)
