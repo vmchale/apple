@@ -1,4 +1,4 @@
-module E ( L (..), ip, pr, pc, psh ) where
+module E ( L (..), zp, ip, pr, pc, psh ) where
 
 import           Sh
 
@@ -14,6 +14,8 @@ pc (_ `Cons` i `Cons` _) = ip i; pc _ = U
 psh (i `Cons` sh) = mp (ip i) (psh sh); psh _ = U
 
 data L = E | O | U
+
+zp E=O;zp O=E;zp U=U
 
 sp,mp :: L -> L -> L
 mp E E = E; mp _ O = O; mp O _ = O; mp _ _ = U
