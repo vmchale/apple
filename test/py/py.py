@@ -49,7 +49,7 @@ assert (pf(60)==np.array([2,3,5])).all()
 luhn=apple.jit('''
 λxs.
   { digitSum ← [?x>10,.x-9,.x]
-  ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
+  ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (⟨2,1::int⟩⊙8))
   ; 10-t|10=}.xs
   }
 ''')
@@ -59,7 +59,7 @@ del luhn
 def unstring(isbn):
     return np.array([int(c) for c in isbn.replace('-','')])
 
-isbn13=apple.jit("xs ↦ (xs⋅(}:(𝔸13⊙7)))|10=0")
+isbn13=apple.jit("[(x⋅(}:(𝔸13⊙7)))|10=0]")
 
 dec=apple.jit("λn. (⊻)/ₒ n ((n>>)'⍳ 1 63)")
 assert dec(8)==15
@@ -72,7 +72,7 @@ any_v=apple.jit("λbs. (∨)/ₒ #f bs :: bool")
 assert any_v(np.array([False,False,False,True]))
 assert not(any_v(np.array([False,False,False])))
 
-prime_mask=apple.jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))))))'irange 2 N")
+prime_mask=apple.jit("λN. (λn.¬((∨)/ₒ #f ([(n|x)=0]'⍳ 2 (⌊(√(ℝn))))))'⍳ 2 N")
 assert (prime_mask(9)==np.array([True,True,False,True,False,True,False,False])).all()
 
 xs=np.random.rand(100)
