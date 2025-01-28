@@ -44,19 +44,19 @@ assembleCtx ctx (ds, isns) = do
     (b,,snd<$>IM.lookupMin ps)<$>finish b p
 
 dbgFp asmϵ = do
-    (bss,_,ps) <- allFp asmϵ
-    mFree ps $> bss
-allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], FunPtr b, Maybe (Ptr Word64))
+    (bss,sz,fp,ps) <- allFp asmϵ
+    freeFunPtr sz fp *> mFree ps $> bss
+allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], Int, FunPtr b, Maybe (Ptr Word64))
 allFp (ds, instrs) = do
-    let (sz, lbls) = mkIx 0 instrs
+    let (sz, lbls) = mkIx 0 instrs; csz=fromIntegral sz
     (fn, p) <- do
         res <- prepAddrs instrs
         case res of
-            (Just (m, _, _, _),_) -> (res,) <$> allocNear m (fromIntegral sz)
-            _                     -> (res,) <$> allocExec (fromIntegral sz)
+            (Just (m, _, _, _),_) -> (res,) <$> allocNear m csz
+            _                     -> (res,) <$> allocExec csz
     ps <- aArr ds
     let is = asm 0 (ps, fn, lbls) instrs; b = BS.pack.concatMap reverse$is; bsϵ = BS.pack.reverse<$>is
-    (bsϵ,,snd<$>IM.lookupMin ps)<$>finish b p
+    (bsϵ,sz,,snd<$>IM.lookupMin ps)<$>finish b p
 
 mkIx :: Int -> [AArch64 AReg FAReg a] -> (Int, M.Map Label Int)
 mkIx ix (Label _ l:asms) = second (M.insert l ix) $ mkIx ix asms

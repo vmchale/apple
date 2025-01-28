@@ -138,13 +138,13 @@ actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
 
 ctxFunPG jit asm ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm)
 
-funP :: BSL.ByteString -> IO (FunPtr a, Maybe (Ptr Word64))
+funP :: BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
 funP = fmap π.allFp <=< either throwIO pure . x86G
 
-π :: (a, b, c) -> (b, c)
-π (_,y,z) = (y,z)
+π :: (a, b, c, d) -> (b, c, d)
+π (_,y,z,w) = (y,z,w)
 
-aFunP :: BSL.ByteString -> IO (FunPtr a, Maybe (Ptr Word64))
+aFunP :: BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
 aFunP = fmap π.Aarch64.allFp <=< either throwIO pure . aarch64
 
 as :: T.Text -> BSL.ByteString -> Doc ann

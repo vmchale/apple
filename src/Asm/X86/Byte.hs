@@ -27,8 +27,8 @@ prepAddrs :: [X86 reg freg a] -> IO (Maybe CCtx)
 prepAddrs ss = if hasMa ss then Just <$> mem' else pure Nothing
 
 dbgFp asmϵ = do
-    (bs, _, ps) <- allFp asmϵ
-    mFree ps $> bs
+    (bs, sz, fp, ps) <- allFp asmϵ
+    freeFunPtr sz fp *> mFree ps $> bs
 
 assembleCtx :: CCtx -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
 assembleCtx ctx (ds, isns) = do
@@ -39,18 +39,18 @@ assembleCtx ctx (ds, isns) = do
         mP = snd<$>IM.lookupMin arrs
     (b,,mP)<$>finish b p
 
-allFp :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], FunPtr b, Maybe (Ptr Word64))
+allFp :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], Int, FunPtr b, Maybe (Ptr Word64))
 allFp (ds, instrs) = do
-    let (sz, lbls) = mkIx 0 instrs
+    let (sz, lbls) = mkIx 0 instrs; csz=fromIntegral sz
     (fn, p) <- do
         res <- prepAddrs instrs
         case res of
-            Just (m, _, _, _) -> (res,) <$> allocNear m (fromIntegral sz)
-            _                 -> (res,) <$> allocExec (fromIntegral sz)
+            Just (m, _, _, _) -> (res,) <$> allocNear m csz
+            _                 -> (res,) <$> allocExec csz
     arrs <- aArr ds
     let is = asm 0 (pI p, arrs, fn, lbls) instrs; b = BS.pack.concat$is; bs = BS.pack<$>is
         mP = snd<$>IM.lookupMin arrs
-    (bs,,mP)<$>finish b p
+    (bs,sz,,mP)<$>finish b p
 
 data VEXM = F | F38 | F3A
 

@@ -214,7 +214,7 @@ fpAaafp4 fp xs ys zs w = do
         (,,,) <$> peek pa0 <*> peek pa1 <*> peek pa2 <*> pure x
 
 -- leaks memory
-fpn = fmap fst . case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
+fpn = fmap π.case arch of {"aarch64" -> aFunP; "x86_64" -> funP} where π (_,y,_)=y
 
 fpAaff :: FilePath -> [Double] -> [Double] -> Double -> IO Double
 fpAaff fp xs ys z = do

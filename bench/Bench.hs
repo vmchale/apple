@@ -36,7 +36,7 @@ aA x = do
     p <- mallocBytes (sizeOf x)
     poke p x $> p
 
-leakFp = fmap fst.case arch of {"aarch64" -> aFunP; "x86_64" -> funP}
+leakFp = fmap π.case arch of {"aarch64" -> aFunP; "x86_64" -> funP} where π (_,y,_)=y
 
 aAF :: Storable a => Apple a -> IO (ForeignPtr (Apple a))
 aAF x = do {p <- mallocForeignPtrBytes (sizeOf x); withForeignPtr p (`poke` x) $> p}
