@@ -1,0 +1,3 @@
+[(⋉)/(x::Vec n float)] ⟨_1⟩
+[(⋉)/(x::Vec n float)] ⟨_2,_1⟩
+[(⋉)/(x::Vec n float)] ⟨_1,_2,_3⟩

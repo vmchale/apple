@@ -15,6 +15,7 @@ main = defaultMain $ testGroup "REPL"
   , goldenVsString "median" "i/golden/median.out" (testRepl "i/ex/median.🍏")
   , goldenVsString "tutorial" "i/golden/doc.out" (testRepl "i/ex/doc.🍎")
   , goldenVsString "rank" "i/golden/sum.out" (testRepl "i/ex/sum.🍎")
+  , goldenVsString "small" "i/golden/loop.out" (testRepl "i/ex/loop.🍏")
   ]
 
 testRepl :: FilePath -> IO BSL.ByteString
