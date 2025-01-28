@@ -1,8 +1,8 @@
 #include<stdlib.h>
 
 double amax(double* xs, size_t n){
-    double x,y=-100;
-    for(int i=0;i<n;i++) {
+    double x,y=xs[0];
+    for(int i=1;i<n;i++) {
         x=xs[i];
         y=x>y?x:y;
     }
