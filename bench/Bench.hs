@@ -136,6 +136,7 @@ main = do
                 , env cenv $ \f -> env penv $ \ ~(ap,_) ->
                   bgroup "c-simd"
                       [ bench "amax" $ nfIO (withForeignPtr f (pure.(`amax` 500)))
+                      , bench "maxf" $ nfIO (withForeignPtr f (pure.(`maxf` 500)))
                       , bench "max" $ nfIO (pure (maxa ap))
                       ]
                 , env simdEnv $ \isp ->
@@ -220,6 +221,7 @@ main = do
           eEnv = (,) <$> aAF (AA 1 [3] [0.0::Double,4,4]) <*> aAF (AA 1 [3] [0.0::Double,0.3])
 
 foreign import ccall amax :: Ptr Double -> CSize -> Double
+foreign import ccall maxf :: Ptr Double -> CSize -> Double
 foreign import ccall asum :: Ptr Double -> CSize -> Double
 foreign import ccall "dynamic" iii :: FunPtr (Int64 -> Int64 -> Int64) -> Int64 -> Int64 -> Int64
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double

@@ -326,6 +326,7 @@ benchmark apple-bench
     main-is:            Bench.hs
     hs-source-dirs:     bench
     c-sources:          bench/c/simd.c
+    cxx-sources:        bench/c/max.cc
     ghc-options:        -rtsopts
 
     build-depends:
