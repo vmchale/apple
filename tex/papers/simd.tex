@@ -153,10 +153,31 @@ apple_1:
     ⋮
 \end{verbatim}
 
-Similar analyses are already performed by industrial compilers, but types are part of the source language and thus available to any programmer who knows the language---contrast autovectorization in C++, which is a matter for compiler experts. Type systems
-% not fickle internals subject to change...
+Similar analyses are already performed by industrial compilers, but types are part of the source language and thus available to any programmer who knows the language---contrast autovectorization in C++, which is a matter for compiler experts. Moreover, type systems, unlike compiler internals, are not subject to change between versions.
 
 In a type system with shapes, information proliferates (based on rules)
+
+\section{A First Cut at a Solution for the Apple Array System}
+
+Apple adds functions
+
+\begin{verbatim}
+write2 :: Expr -> Temp2 -> [Stmt]
+
+writeFn2 :: Expr -> [Temp2] -> Temp2 -> [Stmt]
+\end{verbatim}
+
+which compile expressions such as \verb|λx. x*2| to statements operating on vector registers.
+
+Then, when compiling, say, \verb|map f|, we use
+
+\begin{verbatim}
+hasSIMD :: Expr -> Bool
+\end{verbatim}
+
+to determine whether \verb|f| can operate on vector registers.
+
+\verb|hasSIMD| traverses the AST, returning \verb|False| when, say \verb|log| is found.
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
