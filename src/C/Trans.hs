@@ -1967,6 +1967,18 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e, J
     ss <- write2 op [acc2, x] acc2
     let loop = F2or () (pr xSh) i 1 ILt (Tmp szR) (MX2 () x (FAt (AElem xR 1 lX (Tmp i) 8)):ss) (MX () x0 (FAt (AElem xR 1 lX (Tmp i) 8)):ss1)
     pure $ plX$szR=:ev tXs (xR,lX):MX () acc (FAt (AElem xR 1 lX 0 8)):vseed acc acc2:[loop, Comb () c acc0 acc2, MX () acc (FBin c (FTmp acc) (FTmp acc0))]
+    -- TODO: read two elements to initialize?
+  where
+    fca (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b) _) _))) | fS b = mFop b; fca _ = Nothing
+feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | tXs@(Arr xSh _) <- eAnn e, Just c <- fca op, Just vseed <- fc c = do
+    x₀ <- nF; acc₀ <- nF; acc2 <- nF2; x <- nF2
+    i <- nI; szR <- nI
+    (plX, (lX, xR)) <- plA e
+    (plSeed, seedR) <- plF seed
+    ss0 <- writeRF op [FT acc, FT x₀] (FT acc)
+    ss <- write2 op [acc2, x] acc2
+    let loop = F2or () (pr xSh) i 0 ILt (Tmp szR) (MX2 () x (FAt (AElem xR 1 lX (Tmp i) 8)):ss) (MX () x₀ (FAt (AElem xR 1 lX (Tmp i) 8)):ss0)
+    pure $ plX$szR=:ev tXs (xR,lX):plSeed (vseed seedR acc2:[loop, Comb () c acc₀ acc2, MX () acc (FBin c (FTmp seedR) (FTmp acc₀))])
   where
     fca (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b) _) _))) | fS b = mFop b; fca _ = Nothing
 feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e = do
