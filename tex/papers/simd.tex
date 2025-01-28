@@ -57,6 +57,8 @@ Landin \cite{landin1965} points out that Algol corresponds to the lambda calculu
 
 % https://www.netlib.org/cephes/doubldoc.html#log
 
+Cataloguing which functions can be compiled with vector instructions would be a welcome contribution to the compilers literature.
+
 % Cataloguing + maybe expanding (branchless already studied?)
 
 % http://blog.vmchale.com/article/intuitionist-c
@@ -177,7 +179,7 @@ hasSIMD :: Expr -> Bool
 
 to determine whether \verb|f| can operate on vector registers.
 
-\verb|hasSIMD| traverses the AST, returning \verb|False| when, say \verb|log| is found.
+\verb|hasSIMD| traverses the AST, returning \verb|False| when, say, \verb|log| is found.
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
