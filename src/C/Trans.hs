@@ -1965,7 +1965,7 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e, J
     (plX, (lX, xR)) <- plA e
     ss1 <- writeRF op [FT acc, FT x0] (FT acc)
     ss <- write2 op [acc2, x] acc2
-    let loop = F2or () (zp$pr xSh) i 1 ILt (Tmp szR) (MX2 () x (FAt (Raw xRd 0 lX 16)):xRd+=16:ss) (MX () x0 (FAt (Raw xRd 0 lX 8)):xRd+=8:ss1)
+    let loop = F2or () U i 1 ILt (Tmp szR) (MX2 () x (FAt (Raw xRd 0 lX 16)):xRd+=16:ss) (MX () x0 (FAt (Raw xRd 0 lX 8)):xRd+=8:ss1)
     pure $ plX$szR=:ev tXs (xR,lX):xRd=:DP xR 1:MX () acc (FAt (Raw xRd 0 lX 8)):xRd+=8:vseed acc acc2:[loop, Comb () c acc0 acc2, MX () acc (FBin c (FTmp acc) (FTmp acc0))]
     -- TODO: read two elements to initialize?
   where
