@@ -151,7 +151,6 @@ tokens :-
         "<."                     { mkSym MinS }
         ⦠                        { mkSym Focus }
         ">@"                     { mkSym Focus }
-        🎱                       { mkSym Focus }
         "{."                     { mkSym Head }
         "{.?"                    { mkSym HeadM }
         "}."                     { mkSym Last }
