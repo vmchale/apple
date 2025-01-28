@@ -4,11 +4,9 @@ import           Control.DeepSeq                  (NFData (..), rwhnf)
 import           Control.Exception                (Exception, throw)
 import           Criterion.Main
 import qualified Data.ByteString.Lazy             as BSL
-import           Data.Foldable                    (traverse_)
 import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import           Data.Number.Erf                  (erf, normcdf)
-import           Foreign.C.Types                  (CSize (..))
 import           Foreign.ForeignPtr               (ForeignPtr, mallocForeignPtrBytes, withForeignPtr)
 import           Foreign.Marshal.Alloc            (free, mallocBytes)
 import           Foreign.Ptr                      (FunPtr, Ptr)
@@ -76,7 +74,6 @@ main = do
     mulrank <- fmap aaa . leakFp =<< BSL.readFile "test/examples/mul.🍏"
     catFp <- fmap aaa . leakFp =<< BSL.readFile "bench/apple/cat.🍏"
     softmax <- fmap aa . leakFp =<< BSL.readFile "test/data/softmax.🍎"
-    maxa <- fmap af . leakFp =<< BSL.readFile "bench/c/max.🍎"
     defaultMain [ env files $ \ ~(m, 𝛾, ꜰ, ᴀ) ->
                   bgroup "pipeline"
                       [ bench "tyParse (mnist)" $ nf tyParse m
@@ -132,12 +129,6 @@ main = do
                   bgroup "scanmax"
                       [ bench "apple" $ nfIO (do {p<- withForeignPtr i scanFp;free p})
                       , bench "applef" $ nfIO (do {p<- withForeignPtr f scanfFp;free p})
-                      ]
-                , env cenv $ \f -> env penv $ \ ~(ap,_) ->
-                  bgroup "c-simd"
-                      [ bench "amax" $ nfIO (withForeignPtr f (pure.(`amax` 500)))
-                      , bench "maxf" $ nfIO (withForeignPtr f (pure.(`maxf` 500)))
-                      , bench "max" $ nfIO (pure (maxa ap))
                       ]
                 , env simdEnv $ \isp ->
                   env big $ \ ~(_,f) ->
@@ -198,10 +189,6 @@ main = do
           xs = replicate 500 (0.002 :: Double)
           ys = replicate 500 (0.002 :: Double)
           penv = (,) <$> aA (AA 1 [500] xs) <*> aA (AA 1 [500] ys)
-          cenv = do
-              hp <- mallocForeignPtrBytes 4000
-              (withForeignPtr hp
-                  $ \p -> traverse_ (\i -> pokeElemOff p i (2.5::Double)) [0..499]) $> hp
           big = do
               iPtr <- aAF (AA 1 [10000000] (replicate 10000000 (1::Int64)))
               fPtr <- aAF (AA 1 [10000000] (replicate 10000000 (1::Double)))
@@ -220,9 +207,6 @@ main = do
               pure (whPtr, woPtr, bhPtr)
           eEnv = (,) <$> aAF (AA 1 [3] [0.0::Double,4,4]) <*> aAF (AA 1 [3] [0.0::Double,0.3])
 
-foreign import ccall amax :: Ptr Double -> CSize -> Double
-foreign import ccall maxf :: Ptr Double -> CSize -> Double
-foreign import ccall asum :: Ptr Double -> CSize -> Double
 foreign import ccall "dynamic" iii :: FunPtr (Int64 -> Int64 -> Int64) -> Int64 -> Int64 -> Int64
 foreign import ccall "dynamic" ff :: FunPtr (Double -> Double) -> Double -> Double
 foreign import ccall "dynamic" fff :: FunPtr (Double -> Double -> Double) -> Double -> Double -> Double
