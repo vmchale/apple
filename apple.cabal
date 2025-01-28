@@ -325,6 +325,7 @@ benchmark apple-bench
     type:               exitcode-stdio-1.0
     main-is:            Bench.hs
     hs-source-dirs:     bench
+    c-sources:          bench/c/simd.c
     ghc-options:        -rtsopts
 
     build-depends:
