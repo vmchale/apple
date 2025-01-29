@@ -599,7 +599,7 @@ aeval (EApp (Arr oSh _) g@(Builtin _ AddDim) xs) t a | (Arr sh ty) <- eAnn xs, J
            [Wr () (ADim t 0 (Just a)) 1, CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)]++contents)
 aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just c <- cr tX = do
     (plX, (lX, xR)) <- plA x
-    e₀ <- rtemp tX; e₁ <- rtemp tX; ee <- rtemp tX
+    e₀ <- rtemp tX; e₁ <- rtemp tX
     -- § 5.2.2 Knuth
     ɴ <- nI; lɴ <- nI; tϵ <- nI; p <- nI; q <- nI; r <- nI; d <- nI; i <- nI
     let l2 = [lɴ=:(63-(IU Clz (Tmp ɴ))), Cmov () (IRel INeq (Tmp ɴ) (Bin IAsl 2 (Tmp lɴ))) lɴ (Tmp lɴ+1)]
@@ -607,7 +607,7 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just c <- cr tX = do
         m3 = For () 1 i 0 ILeq (Tmp ɴ-Tmp d)
                 [ If () (IRel IEq (Bin (BI AndB) (Tmp i) (Tmp p)) (Tmp r))
                     [ mt (eat (Tmp i)) e₀, mt (eat (Tmp i+Tmp d)) e₁
-                    , If () (c e₀ e₁) [mvt ee e₁, wt (eat (Tmp i)) ee, mvt ee e₀, wt (eat (Tmp i+Tmp d)) ee] []
+                    , If () (c e₀ e₁) [wt (eat (Tmp i)) e₁, wt (eat (Tmp i+Tmp d)) e₀] []
                     ]
                     []
                 ]
@@ -621,7 +621,8 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just c <- cr tX = do
           :l2++tϵ=:(Bin Op.IAsl 2 (Tmp lɴ-1)):p=:Tmp tϵ:[loop])
   where
     mvt (IT r0) (IT r1) = r0=:Tmp r1; mvt (FT r0) (FT r1) = MX () r0 (FTmp r1)
-    cr I=Just (\(IT r0) (IT r1) -> IRel IGt (Tmp r0) (Tmp r1)); cr F=Just (\(FT x0) (FT x1) -> FRel FGt (FTmp x0) (FTmp x1)); cr _=Nothing
+    -- FIXME: Gt fails?
+    cr I=Just (\(IT r0) (IT r1) -> IRel ILt (Tmp r0) (Tmp r1)); cr F=Just (\(FT x0) (FT x1) -> FRel FLt (FTmp x0) (FTmp x1)); cr _=Nothing
     sr r=r=:(Bin Op.IAsr (Tmp r) 1)
 aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Init) x) t a | Just sz <- aB oTy = do
     nR <- nI
