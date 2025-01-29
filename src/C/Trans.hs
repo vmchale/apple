@@ -1907,7 +1907,7 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n
     gs <- writeRF g [x] x
     ll <- arof1 ySh nE $ yRd+=KI qSz:mt (Raw yRd 0 lY qSz) y:gs++ss
     pure $ plYs $ plY $ plU plSeed ++ plN [yRd=:DP yR 1, ll]
-feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
+feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr pSh _) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
     acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     i <- nI; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
@@ -1917,12 +1917,11 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP <- eAnn p, Arr _ F <- eAnn q, J
     seed <- writeRF zop (FT<$>[x0,y0]) (FT acc0)
     let step1 = MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):ss1
         step = MX2 () x (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+16):MX2 () y (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+16):ss
-        loop = R2of () (e1 tyP) i (Tmp szR) step step1
+        loop = R2of () (pr1 pSh) i (Tmp szR) step step1
     pure $ plPP$plQ$szR=:ev tyP (pR,lP):pD=:DP pR 1:MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):qD=:DP qR 1:MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):seed++[szR=:(Tmp szR-1), vseed acc acc2, loop, Comb () c0 acc acc2, MX () acc (FTmp acc+FTmp acc0)]
   where
     fz (Lam _ _ (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b0) _) (EApp _ (EApp _ (Builtin _ b1) _) _))))) | fS b0, fS b1 = (,) <$> mFop b0 <*> mFop b1
     fz _ = Nothing
-    e1 (Arr (Ix x i `Cons` _) _) = ip (Ix x (i-1)); e1 _ = U
 feval (Id _ (FoldOfZip zop op (p:qs))) acc
     | tPs@(Arr pSh _) <- eAnn p
     , Just (tP, pSz) <- aBs tPs
@@ -1950,7 +1949,7 @@ feval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e, J
     (plX, (lX, xR)) <- plA e
     ss1 <- writeRF op [FT acc, FT x0] (FT acc)
     ss <- write2 op [acc2, x] acc2
-    let loop = F2or () U i 1 ILt (Tmp szR) (MX2 () x (FAt (Raw xRd 0 lX 16)):xRd+=16:ss) (MX () x0 (FAt (Raw xRd 0 lX 8)):xRd+=8:ss1)
+    let loop = F2or () (pr1 xSh) i 1 ILt (Tmp szR) (MX2 () x (FAt (Raw xRd 0 lX 16)):xRd+=16:ss) (MX () x0 (FAt (Raw xRd 0 lX 8)):xRd+=8:ss1)
     pure $ plX$szR=:ev tXs (xR,lX):xRd=:DP xR 1:MX () acc (FAt (Raw xRd 0 lX 8)):xRd+=8:vseed acc acc2:[loop, Comb () c acc0 acc2, MX () acc (FBin c (FTmp acc) (FTmp acc0))]
     -- TODO: read two elements to initialize?
   where
