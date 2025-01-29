@@ -602,7 +602,7 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just c <- cr tX = do
     e₀ <- rtemp tX; e₁ <- rtemp tX
     -- § 5.2.2 Knuth
     ɴ <- nI; lɴ <- nI; tϵ <- nI; p <- nI; q <- nI; r <- nI; d <- nI; i <- nI
-    let l2 = [lɴ=:(63-(IU Clz (Tmp ɴ))), Cmov () (IRel INeq (Tmp ɴ) (Bin IAsl 2 (Tmp lɴ))) lɴ (Tmp lɴ+1)]
+    let l2 = [lɴ=:(63-(IU Clz (Tmp ɴ))), Cmov () (IRel INeq (Tmp ɴ) (Bin IAsl 1 (Tmp lɴ))) lɴ (Tmp lɴ+1)]
         eat k = AElem t 1 (Just a) k 8
         m3 = For () 1 i 0 ILeq (Tmp ɴ-Tmp d)
                 [ If () (IRel IEq (Bin (BI AndB) (Tmp i) (Tmp p)) (Tmp r))
@@ -618,7 +618,7 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just c <- cr tX = do
             , sr p
             ]
     pure (plX$ɴ=:ev oTy (xR,lX):md oSh t a 1 (Tmp ɴ) [Tmp ɴ] 8++cpy (AElem t 1 (Just a) 0) (AElem xR 1 lX 0) (Tmp ɴ) 8
-          :l2++tϵ=:(Bin Op.IAsl 2 (Tmp lɴ-1)):p=:Tmp tϵ:[loop])
+          :l2++tϵ=:(Bin Op.IAsl 1 (Tmp lɴ-1)):p=:Tmp tϵ:[loop])
   where
     mvt (IT r0) (IT r1) = r0=:Tmp r1; mvt (FT r0) (FT r1) = MX () r0 (FTmp r1)
     -- FIXME: Gt fails?
