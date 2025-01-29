@@ -617,7 +617,7 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just c <- cr tX = do
             , While () q INeq (Tmp p) [d=:(Tmp q-Tmp p), sr q, r=:Tmp p, m3]
             , sr p
             ]
-    pure (plX$ɴ=:ev oTy (xR,lX):md oSh t a 1 (Tmp ɴ) [Tmp ɴ] 8++cpy (Raw t 0 (Just a)) (Raw xR 0 lX) (Tmp ɴ+2) 8
+    pure (plX$ɴ=:ev oTy (xR,lX):md oSh t a 1 (Tmp ɴ) [Tmp ɴ] 8++cpy (AElem t 1 (Just a) 0) (AElem xR 1 lX 0) (Tmp ɴ) 8
           :l2++tϵ=:(Bin Op.IAsl 2 (Tmp lɴ-1)):p=:Tmp tϵ:[loop])
   where
     mvt (IT r0) (IT r1) = r0=:Tmp r1; mvt (FT r0) (FT r1) = MX () r0 (FTmp r1)
