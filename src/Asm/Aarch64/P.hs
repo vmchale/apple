@@ -29,7 +29,6 @@ frame clob clobd asms = pre++asms++post++[Ret ()] where
     clobs = S.toList (clob `S.intersection` S.fromList [X18 .. X28])
     dg = foldMap collectS asms
     clobsd = S.toList (clobd `S.intersection` dg `S.intersection` S.fromList [D8 .. D15])
-    -- FIXME: vector registers
 
 gallocOn :: Int -> [AArch64 AbsReg FAbsReg ()] -> (IM.IntMap AReg, IM.IntMap FAReg, [AArch64 AbsReg FAbsReg ()])
 gallocOn u = go u 0 pres True
