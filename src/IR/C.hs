@@ -173,6 +173,10 @@ cToIRM (Ifn't _ p s) = do
     l <- nextL
     s' <- foldMapM cToIRM s
     pure $ MJ (irp p) l:s'++[L l]
+cToIRM (If _ (C.IRel c e0 e1) s []) = do
+    l <- nextL
+    s' <- foldMapM cToIRM s
+    pure $ MJ (irp (C.IRel (nr c) e0 e1)) l:s'++[L l]
 cToIRM (If _ p s0 s1) = do
     l <- nextL; l' <- nextL
     s0' <- foldMapM cToIRM s0; s1' <- foldMapM cToIRM s1
