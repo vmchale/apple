@@ -73,13 +73,8 @@ iop Op.ILeq = Leq
 iop Op.IGt  = Gt
 iop Op.ILt  = Lt
 
-nR :: WM AbsReg
 nR = IReg <$> nI
-
-nF :: WM FAbsReg
 nF = FReg <$> nI
-
-nQ :: WM (V2Reg FAbsReg)
 nQ = V2Reg<$>nF
 
 irToAarch64 :: IR.WSt -> [IR.Stmt] -> (Int, [AArch64 AbsReg FAbsReg ()])
