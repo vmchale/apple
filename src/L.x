@@ -65,14 +65,14 @@ tokens :-
 
     <0> {
         `$white*"{"              { mkSym LRank `andBegin` braces }
-        ⨳$white*"{"              { mkSym LConv `andBegin` braces }
+        (⨳|\#)$white*"{"         { mkSym LConv `andBegin` braces }
     }
 
     <dfn> {
         x                        { mkRes VarX }
         y                        { mkRes VarY }
         `$white*"{"              { mkSym LRank `andBegin` dbraces }
-        ⨳$white*"{"              { mkSym LConv `andBegin` dbraces }
+        (⨳|\#)$white*"{"         { mkSym LConv `andBegin` dbraces }
     }
 
     <braces,dbraces> {
