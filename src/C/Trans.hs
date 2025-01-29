@@ -597,17 +597,18 @@ aeval (EApp (Arr oSh _) g@(Builtin _ AddDim) xs) t a | (Arr sh ty) <- eAnn xs, J
     contents <- rfill g (AD t (Just a) Nothing (Just$Tmp rnk) (Just sz) Nothing) [AI (AD xR lX Nothing (Just$Tmp xRnk) Nothing (Just$Tmp szR))]
     pure (plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:rnk =: (Tmp xRnk+1):Ma () oSh a t (Tmp rnk) (Tmp szR) sz:
            [Wr () (ADim t 0 (Just a)) 1, CpyD () (ADim t 1 (Just a)) (ADim xR 0 lX) (Tmp xRnk)]++contents)
-aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just c <- cr tX = do
+aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just lt <- cr tX = do
     (plX, (lX, xR)) <- plA x
     e₀ <- rtemp tX; e₁ <- rtemp tX
     -- § 5.2.2 Knuth
     ɴ <- nI; lɴ <- nI; tϵ <- nI; p <- nI; q <- nI; r <- nI; d <- nI; i <- nI
     let l2 = [lɴ=:(63-(IU Clz (Tmp ɴ))), Cmov () (IRel INeq (Tmp ɴ) (Bin IAsl 1 (Tmp lɴ))) lɴ (Tmp lɴ+1)]
         eat k = AElem t 1 (Just a) k 8
+        -- better way to iterate over i s.t. i&p=r?
         m3 = For () 1 i 0 ILeq (Tmp ɴ-Tmp d)
                 [ If () (IRel IEq (Bin (BI AndB) (Tmp i) (Tmp p)) (Tmp r))
                     [ mt (eat (Tmp i)) e₀, mt (eat (Tmp i+Tmp d)) e₁
-                    , If () (c e₀ e₁) [wt (eat (Tmp i)) e₁, wt (eat (Tmp i+Tmp d)) e₀] []
+                    , If () (lt e₀ e₁) [wt (eat (Tmp i)) e₁, wt (eat (Tmp i+Tmp d)) e₀] []
                     ]
                     []
                 ]
@@ -620,7 +621,6 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just c <- cr tX = do
     pure (plX$ɴ=:ev oTy (xR,lX):md oSh t a 1 (Tmp ɴ) [Tmp ɴ] 8++cpy (AElem t 1 (Just a) 0) (AElem xR 1 lX 0) (Tmp ɴ) 8
           :l2++tϵ=:(Bin Op.IAsl 1 (Tmp lɴ-1)):p=:Tmp tϵ:[loop])
   where
-    mvt (IT r0) (IT r1) = r0=:Tmp r1; mvt (FT r0) (FT r1) = MX () r0 (FTmp r1)
     -- FIXME: Gt fails?
     cr I=Just (\(IT r0) (IT r1) -> IRel ILt (Tmp r0) (Tmp r1)); cr F=Just (\(FT x0) (FT x1) -> FRel FLt (FTmp x0) (FTmp x1)); cr _=Nothing
     sr r=r=:(Bin Op.IAsr (Tmp r) 1)
