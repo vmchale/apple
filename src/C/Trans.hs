@@ -252,6 +252,7 @@ aS f as rT rAt = do
 
 type Ix'd = Temp -> ArrAcc
 
+ve t l sz ix = AElem t 1 l (Tmp ix) sz
 iXelem t rnk l sz ix = AElem t rnk l (Tmp ix) sz
 ixarg t rnk l = AElem t rnk l.Tmp
 
@@ -456,7 +457,7 @@ fill (EApp _ (Builtin _ Succ) op) (AD t lA (Just (Arr sh _)) _ _ (Just n')) [AI 
     afor sh 0 ILt n' (\i -> step (repeat i) i)
 fill (EApp _ (Builtin _ ScanS) op) (AD t lA _ _ _ (Just n)) [NA acc, AI (AD aP l (Just tXs) _ _ _)]
     | Arrow tX (Arrow tY _) <- eAnn op, Just xSz <- nSz tX, Just ySz <- nSz tY = do
-    (x, wX) <- arg tY (iXelem aP 1 l ySz)
+    (x, wX) <- arg tY (ve aP l ySz)
     ss <- writeRF op [acc, x] acc
     afort tXs 0 ILt n (\i -> wt (AElem t 1 lA (Tmp i) xSz) acc:wX i:ss)
 
@@ -760,7 +761,7 @@ aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(A
 aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(Arr sh _) <- eAnn xs, Just sz <- nSz tX = do
     szR <- nI; nR <- nI; b <- nBT
     (plX, (lX, xsR)) <- plA xs
-    (xR, rX) <- arg tX (iXelem xsR 1 lX sz)
+    (xR, rX) <- arg tX (ve xsR lX sz)
     ss <- writeRF p [xR] (PT b)
     loop <- afor sh 0 ILt (Tmp szR) $ \k -> rX k:ss++[If () (Is b) [Wr () (AElem t 1 (Just a) (Tmp nR) 8) (Tmp k), nR+=1] []]
     pure (plX$szR=:ev tXs (xsR,lX)
@@ -775,7 +776,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     szR <- nI; xd <- nI; i <- nI
     (plX, (lX, xR)) <- plA xs
     (slopP, slopSz, aSlop, pops) <- plSlop szD rnk (idims rnk xRnk xR lX)
-    (y, wRet) <- rW tC (iXelem t 1 (Just a) sz)
+    (y, wRet) <- rW tC (ve t (Just a) sz)
     (_, ss) <- writeF f [AA slopP Nothing] y
     let xDims=[EAt (ADim xR (KI l) lX) | l <- [0..(rnk-1)]]
         dimsFromIn=KI$xRnk-rnk
@@ -1340,8 +1341,8 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t a
     , Just [szXT,szYT,szZT] <- traverse nSz [tX,tY,tEC] = do
     td <- nI; szX <- nI; szY <- nI; szZ <- nI; i <- nI; j <- nI; rnkZ <- nI; rnkO <- nI
     (plX, (lX, xR)) <- plA xs; (plY, (lY, yR)) <- plA ys
-    (x, wX) <- arg tX (iXelem xR 1 lX szXT)
-    (y, wY) <- arg tY (iXelem yR 1 lY szYT)
+    (x, wX) <- arg tX (ve xR lX szXT)
+    (y, wY) <- arg tY (ve yR lY szYT)
     (z0, lZ0, ss0) <- writeA op [ra x, ra y]
     (z, lZ, ss) <- writeA op [ra x, ra y]
     let step=[wX i, wY j]++ss++aiR (td,Just a) (z,lZ,Tmp rnkZ) (Tmp szZ) szZT
@@ -1451,7 +1452,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr x
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just ty <- aN tSeed, sz <- bT ty = do
     (plN, nE) <- plC n
     (plX, (lX, xR)) <- plA seed; kϵ <- nI
-    (y, wRet) <- rW ty (iXelem t 1 (Just a) sz)
+    (y, wRet) <- rW ty (ve t (Just a) sz)
     (_, ss) <- writeF op [AA t (Just a)] y
     loop <- arof oSh nE $ Wr () (ADim t 0 (Just a)) (Tmp kϵ):ss++[wRet kϵ, kϵ+=1]
     pure (plX$kϵ=:ev tSeed (xR,lX):plN (vSz oSh t a (nE+Tmp kϵ) sz++cpy (AElem t 1 (Just a) 0) (AElem xR 1 lX 0) (Tmp kϵ) sz:[loop]))
@@ -1621,7 +1622,7 @@ peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     szR <- nI
     (plE, (l, aP)) <- plA e
     plAcc <- peval seed acc
-    (x, wX) <- arg tY (iXelem aP 1 l szY)
+    (x, wX) <- arg tY (ve aP l szY)
     ss <- writeRF op [PT acc, x] (PT acc)
     loop <- afort tXs 0 ILt (Tmp szR) (\i -> wX i:ss)
     pure $ plE $ plAcc++szR=:ev (eAnn e) (aP,l):[loop]
@@ -1680,7 +1681,7 @@ eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arro
     szR <- nI
     (plE, (l, eR)) <- plA e
     plAcc <- eval seed acc
-    (x, wX) <- arg tX (iXelem eR 1 l xSz)
+    (x, wX) <- arg tX (ve eR l xSz)
     ss <- writeRF op [IT acc, x] (IT acc)
     loop <- afort tArr 0 ILt (Tmp szR) (\i -> wX i:ss)
     pure $ plE$plAcc++szR =: ev tArr (eR,l):[loop]
@@ -1750,7 +1751,7 @@ eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX
     pR <- nBT
     szR <- nI; i <- nI; done <- nI
     (plX, (lX, xsR)) <- plA xs
-    (x, wX) <- arg tD (iXelem xsR 1 lX szX)
+    (x, wX) <- arg tD (ve xsR lX szX)
     ss <- writeRF p [x] (PT pR)
     let loop=While () done INeq 1 (wX i:ss++[If () (Is pR) [t=:Tmp i, done=:1] [], i+=1, Cmov () (IRel IGeq (Tmp i) (Tmp szR)) done 1])
     pure $ plX $ szR=:ev (eAnn xs) (xsR,lX):t=:(-1):done=:0:i=:0:[loop]
@@ -2010,7 +2011,7 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arr
     szR <- nI
     (plE, (l, eR)) <- plA e
     plAcc <- feval seed acc
-    (x, wX) <- arg tX (iXelem eR 1 l xSz)
+    (x, wX) <- arg tX (ve eR l xSz)
     ss <- writeRF op [FT acc, x] (FT acc)
     loop <- afort tArr 0 ILt (Tmp szR) (\i -> wX i:ss)
     pure $ plE $ plAcc++szR =: ev tArr (eR,l):[loop]
