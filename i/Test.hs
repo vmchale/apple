@@ -14,6 +14,7 @@ main = defaultMain $ testGroup "REPL"
   [ goldenVsString "pythagorean means" "i/golden/pythagoreanMeans.out" (testRepl "i/ex/pythagoreanMeans.🍏")
   , goldenVsString "median" "i/golden/median.out" (testRepl "i/ex/median.🍏")
   , goldenVsString "tutorial" "i/golden/doc.out" (testRepl "i/ex/doc.🍎")
+  , goldenVsString "var" "i/golden/var.out" (testRepl "i/ex/var.🍏")
   , goldenVsString "rank" "i/golden/sum.out" (testRepl "i/ex/sum.🍎")
   , goldenVsString "small" "i/golden/loop.out" (testRepl "i/ex/loop.🍏")
   ]
