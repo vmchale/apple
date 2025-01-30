@@ -345,7 +345,7 @@ benchE s = do
                                 asm@(_, fp, _) <- efp eC
                                 benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
                                 freeAsm asm
-                        A.Arrow{} -> putDocLn "Cannot benchmark a function without arguments"
+                        A.Arrow{} -> putDocLn "Cannot benchmark a function; must be fully applied."
     where bs = ubs s
 
 rSz A.B=1; rSz I=8; rSz A.F=8; rSz (P ts) = sum (rSz<$>ts); rSz Arr{}=8
