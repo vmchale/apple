@@ -18,7 +18,6 @@ opt=pe.mvs
     pe (StrS x q0 (R ar):AddRC _ r1 r2 u IZero:asms) | ar==r1&&r1==r2 = StrS x q0 (Po ar (fromIntegral u)):pe asms
     pe (Str _ r0 (R ar0):Str _ r1 (RP ar1 8):asms) | ar0 == ar1 = Stp () r0 r1 (R ar0):pe asms
     pe (SubRC _ r r1 w IZero:CmpRC _ r' 0:asms) | r==r' = SubsRC () r r1 w:pe asms
-    pe (CmpRC x r 0:Bc _ Eq l:asms) = Cbz x r l:pe asms
     pe ((MovRC _ r 0):asms) = pe (ZeroR () r:asms)
     pe ((ZeroR _ r0):(MovK _ r1 u s):asms) | r0 == r1 = pe (MovZ () r1 u s:asms)
     pe (asm:asms) = asm : pe asms
