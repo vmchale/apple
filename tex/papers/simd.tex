@@ -98,27 +98,6 @@ Array languages have a chance to do better since they naturally express computat
 
 \subsection{Typing \& Indexing}
 
-% neither indices nor bounds are associated with the array
-
-% pragmas LOL
-\begin{verbatim}
-float* matmul(float* a, float* b, int m, int n, int l) {
-    float* c=malloc(m*l*sizeof(float));
-    for (int i=0; i<m; i++) {
-        for (int j=0; j<n; j++) {
-            float z=0;
-            for (int k=0; k<l; k++) {
-                z+=A[i*m+k]*B[k*l+j];
-            }
-            C[i*m+j]=z;
-        }
-    }
-    return c;
-}
-\end{verbatim}
-
-% indexing by for-loops is elegant but index information (parity!) doesn't propagate so easily (optimization is "internal" rather than specified system)
-
 Suppose we wish to compute the 7-day moving average. We will do so using \verb|`\|, inspired by J's infix \cite{nuvoc}, which lifts a vector function to operate on windows of 7-vectors, arranging the (scalar) results into a vector. Examining type annotations, we see that the fold of the inner loop (\verb|/|) is inferred have type \verb|(float → float → float) → Vec 7 float → float|:
 
 \begin{verbatim}
@@ -160,6 +139,7 @@ Similar analyses are already performed by industrial compilers, but types are pa
 
 In a type system with shapes, dimension information proliferates (based on rules).
 % C "the situation is more strained", indices for access are not associated... more about "no stinking loops" etc.
+% pointer is elegant but yeah
 As an example, in the Apple expression
 
 \begin{verbatim}
