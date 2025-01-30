@@ -2,8 +2,8 @@
 -- https://dl.acm.org/doi/10.1145/114054.114077
 λn.
 {
-  fact ← [(*)/ₒ 1 (irange 1 x)];
+  fact ← [(*)/ₒ 1 (1..x)];
   antibase ← λk.λbs. (->1)'({: ((λqr.λb. {s ⟜ qr->2; (s|b, s/.b)}) Λₒ (0,k) bs));
-    bs ⟜ ⍳ 1 n;
-  (λk. ~(antibase k bs))'⍳ 0 (fact n-1)
+    bs ⟜ 1..n;
+  (λk. ~(antibase k bs))'⍳ (fact n-1)
 }

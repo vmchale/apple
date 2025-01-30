@@ -1,2 +1,2 @@
 -- https://mathworld.wolfram.com/q-Series.html
-λa.λq.λn. {Π ← λN.λa. (*)/ₒ 1 (a'⍳ 0 N); Π (n-1) (λk. 1-a*q^k)}
+λa.λq.λn. {Π ← λN.λa. (*)/ₒ 1 (a'⍳N); Π (n-1) (λk. 1-a*q^k)}

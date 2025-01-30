@@ -5,7 +5,7 @@ if exists('b:current_syntax')
 endif
 
 syntax match appleComment "\v--.*$" contains=@Spell
-syntax keyword appleKeyword frange irange itof
+syntax keyword appleKeyword frange itof
 syntax keyword appleType Arr Nil M Vec float int 𝞈 𝟘 𝟙
 
 highlight link appleComment Comment

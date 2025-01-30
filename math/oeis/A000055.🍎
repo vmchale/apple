@@ -1,8 +1,8 @@
 λn.
 {
   sum ⇐ [(+)/ₒ 0 x];
-  Σ ⇐ λl.λu.λf. sum (f'⍳ l u);
-  A000081 ⟜ { divisors ← λn. (λk. (n|k=0))§⍳ 1 n
+  Σ ⇐ λl.λu.λf. sum (f'l..u);
+  A000081 ⟜ { divisors ← λn. (λk. (n|k=0))§1..n
             ; 𝓕 𝔸01 (λas. {n⟜ 𝓉as; Σ 1 (n-1) (λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))/.(n-1)}) n
             };
   ?n=0,.1,.A000081˙n-Σ 1 (n/.2) (λi. (A000081˙i)*(A000081˙(n-i)))+?odd. n,.0,.{x⟜A000081˙(n/.2);(1+x)*x/.2}

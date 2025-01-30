@@ -7,7 +7,8 @@ rewrite = rw
 
 isBinOp :: Builtin -> Bool
 isBinOp FRange = False
-isBinOp IRange = False
+isBinOp Range  = True
+isBinOp Io     = False
 isBinOp T      = False
 isBinOp Zip    = False
 isBinOp Rank{} = False
@@ -44,8 +45,9 @@ isBinOp Drop   = False
 isBinOp _      = True
 
 fi :: Builtin -> Int
-fi C = 9; fi Dot = 8
+fi C = 9; fi Range = 10; fi Dot = 8
 fi Del = 9; fi Succ = 9; fi Fold = 9
+fi Conv{} = 5; fi Scan = 9
 fi IntExp = 8; fi Exp = 8
 fi Times = 7; fi Div = 7; fi Mod = 7
 fi Mul = 7; fi VMul = 7
@@ -96,6 +98,7 @@ lassoc Fold = False; lassoc Succ = False
 lassoc Eq = False; lassoc Neq = False
 lassoc Gte = False; lassoc Lte = False
 lassoc Gt = False; lassoc Lt = False
+lassoc Range = False; lassoc Scan = False
 
 shuntl :: Builtin -> Builtin -> Bool
 shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1

@@ -14,7 +14,7 @@ np.random.seed(17)
 l1=init(28*28,128)
 l2=init(128,10)
 
-train_labels_v=apple.jit("((λn.[?x=n,.1::float,.0]'⍳ 0 9)')")(train_labels)
+train_labels_v=apple.jit("((λn.[?x=n,.1::float,.0]'⍳9)')")(train_labels)
 
 train=apple.jit('''
 -- x: 60000x784

@@ -14,7 +14,7 @@ Vec 8 [4.0, 4.0, 4.0, 3.0, 3.0, 3.0, 1.0, 1.0]
 
 - Index of all values >0.5
 ```
-(->2)'([x->1>0.5]#.([(x,y)]`(𝔯 0 1::Vec n float) (irange 0 9 1)))
+(->2)'([x->1>0.5]#.([(x,y)]`(𝔯 0 1::Vec n float) (⍳9)))
 ```
 
 gen. / iter
@@ -23,7 +23,7 @@ also tail/init ^
 
 # Identity-fill
 
-(\n. [?x=n,.1::int,.0]'(⍳ 0 9 1))'⍳ 0 9
+(\n. [?x=n,.1::int,.0]'(⍳9))'⍳ 0 9
 
 # Identities
 

@@ -12,12 +12,12 @@
   * Parse errors report with Happy's `explist`
   * Functions report that they are not a member of typeclasses
   * Tie up various cases in typechecker (no longer bail out/crash)
-  * Builtins (`frange`, `irange`, etc.) in REPL compleitions 
+  * Builtins (`frange`, `itof`, etc.) in REPL compleitions
   * No longer segfault when `irange` is specified backwards
   * Store functions in REPL
   * Fix bug in parsing curried binary operators
   * Remove `re:` in favor of infix 〃
-  * `irange`, ⍳ always step by 1
+  * ⍳ changes behavior to be like APL iota, `..` (range) replaces `irange` and always steps by 1
   * Drop support for X86 backend
   * Add sort to language
 

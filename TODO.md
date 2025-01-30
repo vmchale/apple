@@ -28,7 +28,9 @@
 ## Syntax
 - [ ] https://en.wiktionary.org/wiki/Appendix:APL
 ### Unicode
-- [ ] ℘
+- [x] .. for range (way better)
+- [ ] ⌗
+- [x] ℘
   - [ ] span/break?
 - [½] ⊲ ⊳ ⪫ ⪪
 - [ ]〔〖【
@@ -72,7 +74,7 @@ T16 = T13.dim[0]
  > :ty pascal
 int(n) → Arr (n + 1 × #n) int
 ```
- > ([x] ⨳ {1∘2,1}) (irange 1 9)
+ > ([x] ⨳ {1∘2,1}) (1..9)
 arepl: (2*(i + 1),9)
 CallStack (from HasCallStack):
 ```

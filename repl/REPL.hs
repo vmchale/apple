@@ -145,7 +145,7 @@ refcard = liftIO $ putStr $ concat
     , lOption "/*" "fold all" "ℝ" "i->f conversion"
     , lOption "⧺" "cat" "{:" "typesafe tail"
     , lOption "⊖" "rotate" "sin." "sine"
-    , lOption "𝔯" "rand" "⍳" "range (int)"
+    , lOption "𝔯" "rand" "⍳" "iota" -- TODO: .. aka range
     , lOption "/ₒ" "fold with seed" "Λₒ" "scan with seed"
     , lOption "{x←y;z}" "let...in" "⊙" "cycle"
     , lOption "˙" "at" "|" "rem"

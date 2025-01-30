@@ -32,7 +32,7 @@ stopifnot(all(run(any1,matrix(c(FALSE,FALSE,FALSE,TRUE),2))==c(FALSE,TRUE)))
 any<-jit("λbs. (∨)/ₒ #f bs :: bool")
 stopifnot(run(any,c(FALSE,FALSE,FALSE,TRUE)))
 
-stopifnot(all(const("(even.'irange 0 2)〃2")==matrix(c(TRUE,FALSE,TRUE,TRUE,FALSE,TRUE),2,byrow=TRUE)))
+stopifnot(all(const("(even.'0..2)〃2")==matrix(c(TRUE,FALSE,TRUE,TRUE,FALSE,TRUE),2,byrow=TRUE)))
 
 isbn<-jit('xs ↦ (xs⋅(}:(𝔸13⊙7)))|10=0')
 stopifnot(run(isbn,as.integer(c(9,7,8,0,5,9,6,5,2,8,1,2,6))));stopifnot(!run(isbn,as.integer(c(9,7,8,1,7,8,8,3,9,9,0,8,3))))
@@ -43,7 +43,7 @@ gc()
 bmat<-jit("[x (=)⊗ xᶥ]");pv<-jit("(([x]@.)')")
 stopifnot(all(run(pv,run(bmat,as.integer(c(1,0,2))))==as.integer(c(1,0,2))))
 
-prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([n|x=0]'⍳ 2 (⌊(√(ℝn))))))'irange 2 N")
+prime_mask<-jit("λN. (λn.¬((∨)/ₒ #f ([n|x=0]'2..(⌊(√(ℝn))))))'2..N")
 stopifnot(all(run(prime_mask,9)==c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE)))
 
 fibs<-jit("λN. [x˙0˙1]'{A⟜⟨⟨1,1⟩,⟨1,0::int⟩⟩; gen. A (A%.) N}")

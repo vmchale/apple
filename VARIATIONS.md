@@ -9,11 +9,11 @@ Drop 6:
 Take 7:
 
 ```
-{. ([x] \`7 (irange 0 9))
+{. ([x] \`7 ⍳9)
 ```
 
 ```
- > {take ← λn.λxs. ⍳ 0 (n-1)⊂xs; take 7 (irange 0 9)}
+ > {take ← λn.λxs. ⍳(n-1)⊂xs; take 7 (⍳9)}
 Vec 7 [0, 1, 2, 3, 4, 5, 6]
 ```
 
@@ -22,9 +22,9 @@ Vec 7 [0, 1, 2, 3, 4, 5, 6]
 Delete the `i`th element of vector `xs`:
 
 ```
- > ⍳ 0 9 \\ 4
+ > ⍳9 \\ 4
 Vec 9 [0, 1, 2, 3, 5, 6, 7, 8, 9]
- > {del ← λi.λxs. ((≠i)#.xsᶥ)⊂xs; del 4 (irange 0 9)}
+ > {del ← λi.λxs. ((≠i)#.xsᶥ)⊂xs; del 4 (⍳9)}
 Vec 9 [0, 1, 2, 3, 5, 6, 7, 8, 9]
 ```
 
@@ -109,20 +109,20 @@ Vec 4 [3.0, 4.0, 5.0, 6.0]
 # Diagonal
 
 ```
- > [{ix<-xᶥ;(˙)`(x::M int) ix}] (irange 1 4 〃 4)
+ > [{ix←xᶥ;(˙)`(x::M int) ix}] (1..4 〃 4)
 Vec 4 [1, 2, 3, 4]
- > 𝐒 (λx.λy.(˙)`x y) [xᶥ] (irange 1 4 〃 4)
+ > 𝐒 (λx.λy.(˙)`x y) [xᶥ] (1..4 〃 4)
 Vec 4 [1, 2, 3, 4]
- > di. (irange 1 4 〃 4)
+ > di. (1..4 〃 4)
 Vec 4 [1, 2, 3, 4]
 ```
 
 # Successive Application
 
 ```
- > (-)\~(irange 0 9)
+ > (-)\~ ⍳9
 Vec 9 [1, 1, 1, 1, 1, 1, 1, 1, 1]
- > [}.x-{.x]\`2 (irange 0 9)
+ > [}.x-{.x]\`2 ⍳9
 Vec 9 [1, 1, 1, 1, 1, 1, 1, 1, 1]
 ```
 <!-- with fib/strong induction? -->

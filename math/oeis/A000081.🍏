@@ -1,5 +1,5 @@
 -- https://oeis.org/A000081
-{ sum ⇐ [(+)/ₒ 0 x]; Σ ⇐ λl.λu.λf. sum (f'⍳ l u)
-; divisors ← λn. (λk. (n|k=0))§⍳ 1 n
+{ sum ⇐ [(+)/ₒ 0 x]; Σ ⇐ λl.λu.λf. sum (f'l..u)
+; divisors ← λn. (λk. (n|k=0))§⍳ n
 ; 𝓕 𝔸01 (λas. {n⟜ 𝓉as; Σ 1 (n-1) (λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))/.(n-1)})
 }

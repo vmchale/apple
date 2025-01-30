@@ -1,6 +1,6 @@
 -- https://mathworld.wolfram.com/q-Factorial.html
 λk.λq. {
-  Σ ← λN.λb. (+)/ₒ 0 (b'irange 0 N);
-  Π ← λN.λa. (*)/ₒ 1 (a'irange 0 N);
+  Σ ← λN.λb. (+)/ₒ 0 (b'⍳N);
+  Π ← λN.λa. (*)/ₒ 1 (a'⍳N);
   Π (k-1) (λl. Σ (l-1) (λi. q^i))
 }

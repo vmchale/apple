@@ -117,7 +117,8 @@ instance Pretty Builtin where
     pretty FoldA      = "/*"
     pretty Times      = "*"
     pretty FRange     = "𝒻"
-    pretty IRange     = "⍳"
+    pretty Io         = "⍳"
+    pretty Range      = ".."
     pretty Floor      = "⌊"
     pretty Ceil       = "⌈"
     pretty Minus      = "-"
@@ -210,7 +211,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | Eq | Neq | Gt | Lt | Gte | Lte | CatE | IDiv | Mod
              | Max | Min | Neg | Sqrt | T | Di
              | Flat | AddDim | Ices | Filt | Part
-             | IRange | Ix'd | FRange
+             | Io | Range | Ix'd | FRange
              | Map | FoldA | Zip
              | Rank [(Int, Maybe [Int])]
              | Fold | FoldS | Foldl
@@ -277,6 +278,7 @@ mPrec Exp    = Just 8
 mPrec IntExp = Just 8
 mPrec IOf    = Just 8
 mPrec Mod    = Just 7
+mPrec Range  = Just 10
 mPrec Succ   = Just 9
 mPrec Fold   = Just 9
 mPrec Del    = Just 9

@@ -3,9 +3,9 @@
   -- https://en.wikipedia.org/wiki/Lah_number
   -- n,k≥1
   lah ← λn.λk.
-    { rf ←  [(*)/ₒ 1 (⍳ x y)]; fact ← λn. rf 1 n
+    { rf ←  [(*)/ₒ 1 (x..y)]; fact ← λn. rf 1 n
     ; choose ← λn.λk. rf (n-k+1) n/.fact k
     ; choose (n-1) (k-1)*fact n/.fact k
     };
-  (+)/ₒ 0 (lah n'⍳ 1 n)
+  (+)/ₒ 0 (lah n'1..n)
 }

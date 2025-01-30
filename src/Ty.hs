@@ -708,7 +708,8 @@ tyB _ FRange = do {n <- fti "n"; pure (F ~> F ~> Li n ~> vV n F, mempty)}
 tyB _ Fib = do
     n <- fti "n"; m <- fti "m"; k <- fti "k"; a <- ftv "a"
     pure (vV m a ~> (vV k a ~> a) ~> Li n ~> vV (m+:n) a, mempty)
-tyB _ IRange = do {n <- ftie; pure (I ~> I ~> vV n I, mempty)}
+tyB _ Io = do {n <- fti "n"; pure (Li n ~> vV (n+:Ix()1) I, mempty)}
+tyB _ Range = do {n <- ftie; pure (I ~> I ~> vV n I, mempty)}
 tyB _ Plus = tyNumBinOp; tyB _ Minus = tyNumBinOp
 tyB _ Times = tyNumBinOp
 tyB _ Dot = do
@@ -988,7 +989,7 @@ tyClosed u e = do
     chkE (eAnn eS) $> (eS, nubOrd scs', i)
 
 tyE :: Subst a -> E a -> TyM a (E (T ()), Subst a)
-tyE s (EApp _ (EApp _ (Builtin l IRange) lb) ub) = do
+tyE s (EApp _ (EApp _ (Builtin l Range) lb) ub) = do
     (lbϵ,s0) <- tyE s lb; (ubϵ,s1) <- tyE s0 ub
     let lbTy0=eAnn lbϵ; ubTy0=eAnn ubϵ
         iLoc sϵ t lϵ = second void$iv sϵ (aT sϵ (t$>eAnn lϵ)); x=eAnn lb
@@ -1003,7 +1004,7 @@ tyE s (EApp _ (EApp _ (Builtin l IRange) lb) ub) = do
             pure (k+:Ix()1, iTS n (Li$k$>x) s4)
         _ -> (,s4)<$>ftie
     let arrTy = vV m I
-    pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) IRange) lbϵ) ubϵ, s5)
+    pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) Range) lbϵ) ubϵ, s5)
   where iv sϵ (IZ i nm)   = let t=Li i in (iTS nm t sϵ, t)
         iv sϵ t@(TVar nm) = (iTS nm I sϵ, t)
         iv sϵ t@(Z nm)    = (iTS nm I sϵ, t)

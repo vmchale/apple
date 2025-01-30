@@ -56,20 +56,37 @@ The file extension is `.🍎` or `.🍏`.
 
 # Capabilities
 
-## Integer Range
+## Range (Integer)
 
-To generate an integer range use `irange` or `⍳` (APL iota).
+To generate an integer range use `..`
 
 ```
- > ⍳
+(..)
+    : int → int → Vec #n int
+ > (..)
 ⍳ : int → int → Vec #n int
 ```
 
-`⍳` takes a start value and end value as arguments, viz.
+`..` is a binary operator taking a start value and end value as arguments, viz.
 
 ```
- > ⍳ 0 9
-[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ > 1..9
+Vec 9 [1, 2, 3, 4, 5, 6, 7, 8, 9]
+```
+
+## Iota
+
+`⍳` generates an integer range beginning with 0.
+
+```
+ > ⍳
+⍳
+    : int(n) → Vec (n + 1) int
+```
+
+```
+ > ⍳9
+Vec 10 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 ## Real Range
@@ -120,7 +137,7 @@ Vec 3 [0.0, 1.0, 3.0]
 ## Scan
 
 ```
- > (+)Λ (irange 1 3)
+ > (+)Λ 1..3
 Vec 3 [1, 3, 6]
 ```
 
@@ -184,7 +201,7 @@ Vec 11 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 `~` reverses an array.
 
 ```
- > ~(irange 0 9)
+ > ~(⍳9)
 [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
 ```
 
@@ -247,7 +264,7 @@ The outer product `⊗` creates a table by applying some function.
 ```
  > :ty λA. ♭ (A::Arr (28×28×1) a)
 Arr (28 × 28 × 1) a → Vec 784 a
- > ♯ (irange 0 9)
+ > ♯ (⍳9)
 Arr (1×10) [ [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] ]
 ```
 
@@ -273,9 +290,9 @@ Arr (1×10) [ [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] ]
 ```
 
 ```
- > 2 ⊖ irange 0 9
+ > 2 ⊖ ⍳9
 [2, 3, 4, 5, 6, 7, 8, 9, 0, 1]
- > _2 ⊖ irange 0 9
+ > _2 ⊖ ⍳9
 [8, 9, 0, 1, 2, 3, 4, 5, 6, 7]
 ```
 
@@ -378,12 +395,12 @@ assembly:
 ### Polymorphic Bind
 
 ```
- > {sum ⇐ [(+)/x]; sum (irange 0 9)+⌊(sum(frange 0 9 10))}
+ > {sum ⇐ [(+)/x]; sum (⍳ 9)+⌊(sum(frange 0 9 10))}
 90
 ```
 
 ```
- > {sum ← [(+)/x]; sum (irange 0 9)+⌊(sum(frange 0 9 10))}
+ > {sum ← [(+)/x]; sum (⍳ 9)+⌊(sum(frange 0 9 10))}
 1:42: could not unify 'float' with 'int' in expression '𝒻 0 9 10'
 ```
 
@@ -859,10 +876,10 @@ the lovely enumeration of permutations in reduced form:
 ```
 λn.
 {
-  fact ← [(*)/ₒ 1 (irange 1 x)];
+  fact ← [(*)/ₒ 1 (1..x)];
   antibase ← λk.λbs. (->1)'({: ((λqr.λb. {s ⟜ qr->2; (s|b, s/.b)}) Λₒ (0,k) bs));
-    bs ⟜ ⍳ 1 n;
-  (λk. ~(antibase k bs))'⍳ 0 (fact n-1)
+    bs ⟜ 1..n;
+  (λk. ~(antibase k bs))'⍳ (fact n-1)
 }
 ```
 
@@ -959,14 +976,14 @@ To drop the first 6 elements:
 Take the first 7 elements:
 
 ```
- > {. ([x] \`7 (irange 0 9))
+ > {. ([x] \`7 ⍳ 9)
 Vec 7 [0, 1, 2, 3, 4, 5, 6]
 ```
 
 Take the last 7 elements:
 
 ```
- > }. ([x] \`7 (irange 0 9))
+ > }. ([x] \`7 ⍳ 9)
 Vec 7 [3, 4, 5, 6, 7, 8, 9]
 ```
 
@@ -1013,7 +1030,7 @@ where $C_0=1,C_1=1,C_2=2$.
 We can compute them in Apple with:
 
 ```
-{ Σ ← λl.λu.λf.(+)/(f'irange l u)
+{ Σ ← λl.λu.λf.(+)/(f'l..u)
 ; 𝓕 ⟨1::int,1,2⟩ (λC. {n⟜ 𝓉C; Σ 0 (n-1) (λi. (C˙i*C˙(n-i-1)))})
 }
 ```
@@ -1026,8 +1043,8 @@ The number of unlabeled rooted trees with at most $n$ nodes (this [appears in
 chemistry (counting alkanes)](https://www.emis.de/journals/JIS/cayley.html)).
 
 ```
-{ sum ⇐ [(+)/x]; Σ ⇐ λl.λu.λf. (+)/(f'irange l u)
-; divisors ← λn. (λk. (n|k=0))§⍳ 1 n
+{ sum ⇐ [(+)/x]; Σ ⇐ λl.λu.λf. (+)/(f'l..u)
+; divisors ← λn. (λk. (n|k=0))§1..n
 ; 𝓕 𝔸01 (λas. {n⟜ 𝓉as; Σ 1 (n-1) (λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))/.(n-1)})
 }
 ```
@@ -1087,7 +1104,7 @@ In Apple we can generate the first `N` coefficients alongside the offsets with:
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
   ; A ← (0.5*sum ((*)`((%)`dxs dts) dtss) + sum ((*)`𝜉 dts))%T
   ; C ← (0.5*sum ((*)`((%)`dys dts) dtss) + sum ((*)`𝛿 dts))%T
-  ; (coeffs'(irange 1 N),A,C)
+  ; (coeffs'(1..N),A,C)
   }
 ```
 
@@ -1121,7 +1138,7 @@ Let 𝜆₀, 𝜑₀ be the coördinates of the origin, 𝜑₁, 𝜑₂ standar
 ### Primality Check
 
 ```
-λn.¬((∨)/ₒ #f ([(n|x)=0]'(⍳ 2 (⌊(√(ℝn))))))
+λn.¬((∨)/ₒ #f ([(n|x)=0]'2..(⌊(√(ℝn)))))
 ```
 
 ### Radical
@@ -1131,9 +1148,8 @@ Compute the radical of an integer $n$, $\displaystyle \prod_{p|n} p$
 ```
 λn.
   { ni ⟜ ⌊(√(ℝn))
-  ; pns ← ⍳ 2 ni
-  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'⍳ 2 (⌊(√(ℝn))))); pf ⇐ (isPrime #.)
-  ; pps ⟜  (λk. (n|k=0)) #. pns
+  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'2..(⌊(√(ℝn))))); pf ⇐ (isPrime #.)
+  ; pps ⟜  (λk. (n|k=0)) #. 2..ni
   ; ?ni^2=n
     ,.((*)/ₒ 1 (pf (pps⧺(n/.)'}:?pps)))
     ,.((*)/ₒ 1 (pf (n ⊲ pps⧺((n/.)'pps))))
@@ -1194,7 +1210,7 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
   erf ← λz.
     {
       ffact ← [(*)/ₒ 1 (𝒻 1 x (⌊x))];
-      Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N));
+      Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
       (2%√𝜋)*Σ 30 (λn. {nf⟜ℝn; ((_1^n)*z^(2*n+1))%((ffact nf)*(2*nf+1))})
     };
   zz ⟜ z%(√2);
@@ -1226,13 +1242,13 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
              , _0.261908384015814087e-4
              , 0.368991826595316234e-5
              ⟩;
-    ss ← (+)/ ([y%(zz+itof x)]`(⍳ 1 14) coeffs);
+    ss ← (+)/ ([y%(zz+itof x)]`(1..14) coeffs);
     (((zz+0.5)*_.(zz+𝛾+0.5))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
   };
   Γ ⟜ [e:(gammaln x)];
   f21 ← λa0.λa1.λb.λz. {
     rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-    Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N));
+    Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
     term ← λn. {nn⟜ℝ n; rf a0 nn*(rf a1 nn%rf b nn)*(z^n%fact nn)};
     Σ 50 term
   };
@@ -1256,7 +1272,7 @@ thence speeds compilation.
       f21 ← λa0.λa1.λb.λz.
         {
           rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-          Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N));
+          Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
           term ← λn. {nn⟜ℝ n; ((rf a0 nn)*(rf a1 nn)%(rf b nn))*((z^n)%(fact nn))};
           Σ 30 term
         };
@@ -1284,7 +1300,7 @@ thence speeds compilation.
                    , _0.261908384015814087e-4
                    , 0.368991826595316234e-5
                    ⟩;
-          ss ← (+)/ ([y%(zz+ℝ x)]`(⍳ 1 14) coeffs);
+          ss ← (+)/ ([y%(zz+ℝ x)]`(1..14) coeffs);
           (((zz+0.5)*_.(zz+𝛾+0.5))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
         };
       e:(gammaln x+gammaln y-gammaln (x+y))

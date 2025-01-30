@@ -208,9 +208,9 @@ tokens :-
 
         "]"                      { mkSym RSqBracket `andBegin` 0 }
 
+        ".."                     { mkB BuiltinRange }
         frange                   { mkB BuiltinFRange }
         𝒻                        { mkB BuiltinFRange }
-        irange                   { mkB BuiltinIota }
         ⍳                        { mkB BuiltinIota }
         ᶥ                        { mkB BuiltinIi }
         ⌊                        { mkB BuiltinFloor }
@@ -468,7 +468,8 @@ instance Pretty Var where
     pretty VarX     = "x"
     pretty VarY     = "y"
 
-data Builtin = BuiltinFRange | BuiltinIota | BuiltinIi | BuiltinFloor | BuiltinCeil | BuiltinE
+data Builtin = BuiltinFRange | BuiltinIota | BuiltinRange | BuiltinIi
+             | BuiltinFloor | BuiltinCeil | BuiltinE
              | BuiltinI | BuiltinF | BuiltinSqrt | BuiltinPi
              | BuiltinTrue | BuiltinFalse
              | BuiltinGen | BuiltinUg | BuiltinScan | BuiltinCons | BuiltinNil
@@ -482,6 +483,7 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinIi | BuiltinFloor | BuiltinC
 instance Pretty Builtin where
     pretty BuiltinFRange = "frange"
     pretty BuiltinIota   = "⍳"
+    pretty BuiltinRange  = ".."
     pretty BuiltinIi     = "ᶥ"
     pretty BuiltinFloor  = "⌊"
     pretty BuiltinCeil   = "⌈"

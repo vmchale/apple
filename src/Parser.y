@@ -132,6 +132,7 @@ import Sh
     y { TokResVar $$ VarY }
 
     frange { TokB $$ BuiltinFRange }
+    range { TokB $$ BuiltinRange }
     iota { TokB $$ BuiltinIota }
     ix { TokB $$ BuiltinIi }
     floor { TokB $$ BuiltinFloor }
@@ -250,9 +251,10 @@ BBin :: { E AlexPosn }
      | times { Builtin $1 A.Times } | percent { Builtin $1 Div }
      | idiv { Builtin $1 A.IDiv }
      | caret { Builtin $1 IntExp }
+     | range { Builtin $1 Range }
      | max { Builtin $1 Max } | min { Builtin $1 Min }
      | scan { Builtin $1 Scan }
-     | quot { Builtin $1 Map }
+     | fold { Builtin $1 A.Fold } | quot { Builtin $1 Map }
      | di intLit { Builtin $1 (DI (fromInteger $ int $2)) }
      | lconv sepBy(S,comma) rbrace { Builtin $1 (Conv (reverse $2)) }
      | focus braces(sepBy(intLit,comma)) { Builtin $1 (A.Focus (reverse (map (fromInteger.int) $2)))  }
@@ -266,12 +268,10 @@ BBin :: { E AlexPosn }
      | leq { Builtin $1 Lte } | lt { Builtin $1 A.Lt }
      | eq { Builtin $1 A.Eq } | neq { Builtin $1 A.Neq }
      | pp { Builtin $1 CatE }
-     | fold { Builtin $1 A.Fold }
      | rot { Builtin $1 Rot } | bcyc { Builtin $1 A.Cyc }
-     | iat { Builtin $1 A.A1 }
+     | iat { Builtin $1 A.A1 } | atDot { Builtin $1 IOf }
      | sub { Builtin $1 I1 }
      | mod { Builtin $1 A.Mod }
-     | atDot { Builtin $1 IOf }
      | ditto { Builtin $1 Re }
      | and { Builtin $1 A.And } | or { Builtin $1 A.Or }
      | xor { Builtin $1 A.Xor }
@@ -321,7 +321,7 @@ E :: { E AlexPosn }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
   | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
   | lsqbracket E rsqbracket { Dfn $1 $2 }
-  | frange { Builtin $1 FRange } | iota { Builtin $1 IRange }
+  | frange { Builtin $1 FRange } | iota { Builtin $1 Io }
   | floor { Builtin $1 Floor } | ceil { Builtin $1 Ceil }
   | sqrt { Builtin $1 Sqrt } | log { Builtin $1 Log }
   | underscore { Builtin $1 Neg }

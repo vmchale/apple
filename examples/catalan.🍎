@@ -2,8 +2,8 @@
 λN.
 {
   pascalsTriangle ← λn.
-    { choose ← λn.λk. {Π ← [(*)/ₒ 1 (irange x y)]; (Π (n-k+1) n)/.(Π 1 k)}
-    ; (⍳ 0 n) [?y>x,.0,.choose x y]⊗ (⍳ 0 n)
+    { choose ← λn.λk. {Π ← [(*)/ₒ 1 (x..y)]; (Π (n-k+1) n)/.(Π 1 k)}
+    ; (⍳ n) [?y>x,.0,.choose x y]⊗ (⍳ n)
     };
   sift ← [(even.§xᶥ)⊂x];
   Δ ← λA. {nr ⟜ 𝓉 A;take# nr'A};

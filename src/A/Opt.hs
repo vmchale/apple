@@ -71,8 +71,8 @@ optA (EApp oTy (EApp _ (Builtin _ Re) e) n) | tX <- eAnn e = do
 optA e@Builtin{}           = pure e
 optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
 optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
-optA (EApp oTy@(Arr (Ix _ i `Cons` Nil) _) (Builtin _ Ix'd) _) = optA $ Builtin (I~>I~>oTy) IRange $$ ILit I 0 $$ ILit I (fromIntegral i-1)
-optA (EApp oTy (Builtin _ Ix'd) e) = optA $ Builtin (I~>I~>oTy) IRange $$ ILit I 0 $$ ((Builtin (eAnn e~>I) Dim $$ e) `iMinus` ILit I 1)
+optA (EApp oTy@(Arr (Ix _ i `Cons` Nil) _) (Builtin _ Ix'd) _) = optA $ Builtin (I~>oTy) Io $$ ILit I (fromIntegral i-1)
+optA (EApp oTy (Builtin _ Ix'd) e) = optA $ Builtin (I~>oTy) Io $$ ((Builtin (eAnn e~>I) Dim $$ e) `iMinus` ILit I 1)
 -- TODO: rewrite Head to Aɴ for simplicity in C.Trans (and A1, Last when possible...)
 optA (EApp l (Builtin l₁ Head) e) =
     optA $ Id l (Aɴ e [ILit l₁ 0])
@@ -167,7 +167,12 @@ optA (EApp l (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) = do
     incr <- optA $ (end' `eMinus` start') `eDiv` (EApp F (Builtin (Arrow I F) ItoF) nSteps' `eMinus` FLit F 1)
     n <- nextU "n" F
     pure $ Builtin (F~>(F~>F)~>I~>l) Gen $$ start' $$ λ n (v n `ePlus` incr) $$ nSteps'
-optA (EApp l (EApp _ (Builtin _ IRange) start) end) = do
+optA (EApp l (Builtin _ Io) n) = do
+    n' <- optA n
+    k <- nextU "k" I
+    -- FIXME: when we use eMinus, ePlus w/ literal maybe optimize?
+    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ (ILit I 0) $$ λ k (v k `iPlus` ILit I 1) $$ (n' `iPlus` ILit I 1)
+optA (EApp l (EApp _ (Builtin _ Range) start) end) = do
     start' <- optA start; end' <- optA end
     k <- nextU "k" I
     n <- optA $ (end' `iMinus` start') `iPlus` ILit I 1
