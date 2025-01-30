@@ -35,7 +35,7 @@ import           L
 import           Nm
 import           Prettyprinter                    (Doc, Pretty, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
 import           Prettyprinter.Ext
-import           Prettyprinter.Render.Text        (hPutDoc)
+import           Prettyprinter.Render.Text        (renderIO)
 import           QC
 import           Sys.DL
 import           System.Console.Haskeline         (InputT, getInputLine)
@@ -469,7 +469,7 @@ eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
 eRepl e = do {ees <- lg ee; pure (flet ees e)}
     where flet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 
-hdoc p = do {h <- lg oh; liftIO $ hPutDoc h p}
-ep x = hdoc (either pretty (<>hardline) x); putDocLn p = hdoc (p<>hardline)
+hdoc p = do {h <- lg oh; liftIO $ renderIO h (smartA p)}
+ep x = hdoc (either pretty id x<>hardline); putDocLn p = hdoc (p<>hardline)
 tput s = do {h <- lg oh; liftIO $ TIO.hPutStrLn h s}
 pErr err = putDocLn (pretty err)

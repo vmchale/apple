@@ -4,6 +4,7 @@ module Prettyprinter.Ext ( (<#>), (<?>), (<!>)
                          , appPrec
                          , prettyLines
                          , tupledBy
+                         , smartA
                          , ptxt
                          , aText
                          , prettyDumpBinds
