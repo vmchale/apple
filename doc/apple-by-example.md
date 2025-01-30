@@ -426,7 +426,7 @@ To make a scalar function apply to arrays, re-rank
 Sigmoid on an arbitrary-dimension array:
 
 ```
-([1%(1+ℯ(_x))]`{0})
+([1%(1+e:(_x))]`{0})
 ```
 
 ```
@@ -660,7 +660,7 @@ Unicode vulgar fractions are considered float literals:
 One can use `⅟` for the reciprocal, viz.
 
 ```
- > [⅟(1+ℯ(_x))]
+ > [⅟(1+e:(_x))]
 λx. 1.0 % (1 + 2.718281828459045 ** _ x) : float → float
 ```
 
@@ -758,7 +758,7 @@ Note the `⟜` to prevent expressions from being inlined.
 λwh.λwo.λbh.λbo.
 { X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
   Y ← ⟨0,1,1,0⟩;
-  sigmoid ← [1%(1+ℯ(_x))];
+  sigmoid ← [1%(1+e:(_x))];
   sDdx ← [x*(1-x)];
   sum ⇐ [(+)/x];
   ho ⟜ sigmoid`{0} ([(+)`bh x]'(X%.wh));
@@ -1229,7 +1229,7 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
     ss ← (+)/ ([y%(zz+itof x)]`(⍳ 1 14) coeffs);
     (((zz+0.5)*_.(zz+𝛾+0.5))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
   };
-  Γ ⟜ [ℯ(gammaln x)];
+  Γ ⟜ [e:(gammaln x)];
   f21 ← λa0.λa1.λb.λz. {
     rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
     Σ ← λN.λa. (+)/ₒ 0 (a'(⍳ 0 N));
@@ -1243,7 +1243,7 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
 This uses the [Lanczos approximation](https://mathworld.wolfram.com/LanczosApproximation.html) to
 compute the gamma function; it is not built-in to Apple.
 
-Note the `Γ ⟜ [ℯ(gammaln x)]`; this prevents the function from being inlined and
+Note the `Γ ⟜ [e:(gammaln x)]`; this prevents the function from being inlined and
 thence speeds compilation.
 
 ### CDF for F-distribution

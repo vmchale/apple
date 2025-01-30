@@ -22,10 +22,10 @@ train=apple.jit('''
 λx.λtargets.
 λl1.λl2.
   {
-    dsigmoid ← ((λx.⸎x⟜ℯ(_x);x%(1+x)^2)`{0});
+    dsigmoid ← ((λx.⸎x⟜e:(_x);x%(1+x)^2)`{0});
     -- fw
     xl1p ⟜ x%.l1;
-    xSigmoid ← [1%(1+ℯ(_x))]`{0} xl1p;
+    xSigmoid ← [1%(1+e:(_x))]`{0} xl1p;
     xl2p ⟜ xSigmoid%.l2;
     m ⟜ (⋉)/* _1 xl2p; a ⟜ [e:(x-m)]`{0} xl2p;
     sum ← [(+)/x];

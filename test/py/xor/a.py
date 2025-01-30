@@ -13,7 +13,7 @@ train=apple.jit('''
 λwh.λwo.λbh.λbo.
 { X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
   Y ← ⟨0,1,1,0⟩;
-  sigmoid ← [⅟(1+ℯ(_x))];
+  sigmoid ← [⅟(1+e:(_x))];
   sDdx ← [x*(1-x)];
   sum ⇐ [(+)/x];
   -- ho: 4x2

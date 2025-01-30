@@ -217,7 +217,6 @@ tokens :-
         "|."                     { mkB BuiltinFloor }
         ⌈                        { mkB BuiltinCeil }
         "|`"                     { mkB BuiltinCeil }
-        ℯ                        { mkB BuiltinE }
         "e:"                     { mkB BuiltinE }
         itof                     { mkB BuiltinI }
         ℝ                        { mkB BuiltinI }

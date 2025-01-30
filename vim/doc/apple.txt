@@ -4,7 +4,6 @@ The Vim plugin for Apple provides the following |digraphs|:
 
 ←   <-
 ⟜   o-
-ℯ   ee
 𝒻   ff
 ⊲   <\
 ⊳   \>
