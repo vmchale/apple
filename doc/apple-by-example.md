@@ -757,7 +757,7 @@ Note the `⟜` to prevent expressions from being inlined.
 ```
 λwh.λwo.λbh.λbo.
 { X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
-  Y ⟜ ⟨0,1,1,0⟩;
+  Y ← ⟨0,1,1,0⟩;
   sigmoid ← [1%(1+ℯ(_x))];
   sDdx ← [x*(1-x)];
   sum ⇐ [(+)/x];
