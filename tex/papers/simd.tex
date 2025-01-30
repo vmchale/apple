@@ -37,8 +37,11 @@ Na\"ively\footnote{This was the approach taken in the Apple array system at firs
 
 \begin{itemize}
   \item Generate temporaries \verb|x|, \verb|y| for the argument and return value of \verb|f|, respectively.
-  \item Compile \verb|λx. f x| using \verb|writeFn|.
-  \item Generate code to loop over the input vector's elements, reading from the input and putting the value in \verb|x|, and then storing the result \verb|y| in the output vector.
+  \item Compile \verb|λx. f x| % to fsteps?
+    using \verb|writeFn|.
+  \item Generate code to loop over the input vector's elements, reading from the input and putting the value in \verb|x|,
+     % place ss/statements for f
+    and then storing the result \verb|y| in the output vector.
 \end{itemize}
 
 This is appealing because of its simplicity, and also has the advantage that \verb|f| can be defined in another language. However in the case of
@@ -53,13 +56,11 @@ it would step over the input vector's elements one at a time. This is not as eff
 
 \subsection{Functions in Theory}
 
-Landin \cite{landin1965} points out that Algol corresponds to the lambda calculus. Functions in the lambda calculus have a formal definition and are applicable to programming in practice, but only some have efficient SIMD implementations: \verb|λx. 1-x^2| and \verb|if x≥0 then x else 0| are both functions but the latter involves a conditional which in general is compiled to a jump; they must be treated differently during compilation but are not distinguished in the source language. % perhaps why programmers find it fickle!
+Landin \cite{landin1965} points out that Algol corresponds to the lambda calculus. Functions in the lambda calculus have a formal definition and are applicable to programming in practice, but only some have efficient SIMD implementations: \verb|λx. 1-x^2| and \verb|if x≥0 then x else 0| are both functions but the latter involves a conditional which in general is compiled to a jump; they must be treated differently during compilation but are not distinguished in the source language.
 
 % https://www.netlib.org/cephes/doubldoc.html#log
 
 Cataloguing which functions can be compiled with vector instructions would be a welcome contribution to the compilers literature.
-
-% Cataloguing + maybe expanding (branchless already studied?)
 
 % http://blog.vmchale.com/article/intuitionist-c
 
@@ -76,7 +77,7 @@ What makes C special in practice is that functions, which can be composed, are c
 as three shared library functions to address this.
 A library providing a sigmoid function (for instance) would need to expose three versions in a shared library. The clumsiness proliferates and the mathematical entity no longer corresponds to compiled code but rather three versions of itself depending on the context in which it is used.
 
-A compiler-as-a-library is appealing because it could be invoked by another compiler, dispatching different versions of a function without intervention from the programmer.
+A compiler-as-a-library is appealing because it could be invoked by another compiler, dispatching different versions of a function without intervention from the programmer. Alternately new formats for object files could include equivalent functions
 
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 
@@ -133,7 +134,7 @@ Suppose we wish to compute the 7-day moving average. We will do so using \verb|`
      (xs : Vec (i + 7) float))
 \end{verbatim}
 
-and in fact the inner loop is compiled without
+and in fact the inner loop is compiled without parity checks:
 
 \begin{verbatim}
  > :asm λxs. [(+)/x%ℝ(:x)]\`7 xs
@@ -157,7 +158,42 @@ apple_1:
 
 Similar analyses are already performed by industrial compilers, but types are part of the source language and thus available to any programmer who knows the language---contrast autovectorization in C++, which is a matter for compiler experts. Moreover, type systems, unlike compiler internals, are not subject to change between versions.
 
-In a type system with shapes, information proliferates (based on rules)
+In a type system with shapes, dimension information proliferates (based on rules).
+% C "the situation is more strained", indices for access are not associated... more about "no stinking loops" etc.
+As an example, in the Apple expression
+
+\begin{verbatim}
+λwh.λwo.λbh.λbo.
+{ X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
+  Y ← ⟨0,1,1,0⟩;
+  Σ ⇐ [(+)/ₒ x y];
+  sigmoid ← [1%(1+e:(_x))];
+  sDdx ← [x*(1-x)];
+  ho ⟜ sigmoid`{0} ([(+)`(bh::Vec 2 float) x]'X%.wh);
+  prediction ⟜ sigmoid ∴ (+bo)'ho%:wo;
+  l1E ← (-)`Y prediction;
+  l1Δ ⟜ (*)`(sDdx'prediction) l1E;
+  he ← l1Δ (*)⊗ wo;
+  hΔ ⟜ (*)`{0,0} (sDdx`{0} ho) he;
+  wha ← (+)`{0,0} wh (|:X%.hΔ);
+  woa ← (+)`wo (|:ho%:l1Δ);
+  bha ← Σ`{0,1} bh hΔ;
+  boa ← Σ bo l1Δ;
+  (wha,woa,bha,boa)
+}
+\end{verbatim}
+
+all dimensions are known to the compiler, with only one type annotation and \verb|X|, \verb|Y| being supplied as constants.
+The programmer can verify this in the Apple array system with
+
+\begin{verbatim}
+ > :ann xor
+\end{verbatim}
+
+and supply hints as type annotations if necessary/desired. The mode of interaction
+
+% interact with shape-guessing phase is not present in compilers? anyway not too unfamiliar... current type systems
+% sorta tells you what pragmas you need (better insight)
 
 \section{A First Cut at a Solution for the Apple Array System}
 
@@ -177,9 +213,17 @@ Then, when compiling, say, \verb|map f|, we use
 hasSIMD :: Expr -> Bool
 \end{verbatim}
 
-to determine whether \verb|f| can operate on vector registers.
+to determine whether \verb|f| can operate on vector registers. If so,
+
+\begin{itemize}
+  \item Generate temporaries \verb|x0|, \verb|y0| and vector temporaries \verb|x|, \verb|y| for arguments and return values of \verb|f|, respectively.
+  \item Compile \verb|λx. f x| twice, once with \verb|writeFn| and once with \verb|writeFn2|.
+\end{itemize}
 
 \verb|hasSIMD| traverses the AST, returning \verb|False| when, say, \verb|log| is found.
+
+SIMD in the Apple array system
+% not necessarily god-anointed but provides a starting example for array compiler authors
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
