@@ -78,22 +78,25 @@ initLiveness = IM.fromList . go where
     go (Def ann _ ss:cs)             = (node ann, (ann, emptyL)):go ss++go cs
     go (c:cs)                        = let x=lann c in (node x, (x, emptyL)):go cs
 
+    -- go' cs xs = go cs ++ xs
+
 inspectOrder :: [CS ControlAnn] -> [N]
-inspectOrder (For ann _ _ _ _ _ ss:cs)     = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (For1 ann _ _ _ _ _ ss:cs)    = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (F2or ann E _ _ _ _ ss _:cs)  = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (F2or ann _ _ _ _ _ ss s1:cs) = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
-inspectOrder (Rof ann _ _ ss:cs)           = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (Rof1 ann _ _ ss:cs)          = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (R2of ann E _ _ ss _:cs)      = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (R2of ann _ _ _ ss s1:cs)     = node ann:inspectOrder s1++inspectOrder ss++inspectOrder cs
-inspectOrder (While ann _ _ _ ss:cs)       = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (WT ann _ ss:cs)              = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (If ann _ ss ss':cs)          = node ann:inspectOrder ss++inspectOrder ss'++inspectOrder cs
-inspectOrder (Ifn't ann _ ss:cs)           = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (Def ann _ ss:cs)             = node ann:inspectOrder ss++inspectOrder cs
-inspectOrder (c:cs)                        = node (lann c):inspectOrder cs
-inspectOrder []                            = []
+inspectOrder s = io s [] where
+    io (For ann _ _ _ _ _ ss:cs) ns     = node ann:io ss (io cs ns)
+    io (For1 ann _ _ _ _ _ ss:cs) ns    = node ann:io ss (io cs ns)
+    io (F2or ann E _ _ _ _ ss _:cs) ns  = node ann:io ss (io cs ns)
+    io (F2or ann _ _ _ _ _ ss s1:cs) ns = node ann:io s1 (io ss (io cs ns))
+    io (Rof ann _ _ ss:cs) ns           = node ann:io ss (io cs ns)
+    io (Rof1 ann _ _ ss:cs) ns          = node ann:io ss (io cs ns)
+    io (R2of ann E _ _ ss _:cs) ns      = node ann:io ss (io cs ns)
+    io (R2of ann _ _ _ ss s1:cs) ns     = node ann:io s1 (io ss (io cs ns))
+    io (While ann _ _ _ ss:cs) ns       = node ann:io ss (io cs ns)
+    io (WT ann _ ss:cs) ns              = node ann:io ss (io cs ns)
+    io (If ann _ ss ss':cs) ns          = node ann:io ss (io ss' (io cs ns))
+    io (Ifn't ann _ ss:cs) ns           = node ann:io ss (io cs ns)
+    io (Def ann _ ss:cs) ns             = node ann:io ss (io cs ns)
+    io (c:cs) ns                        = node (lann c):io cs ns
+    io [] ns                            = ns
 
 tieBranch :: N -> ([N] -> [N]) -> [CS a] -> FreshM ([N] -> [N], [CS ControlAnn])
 tieBranch i f ss = do
