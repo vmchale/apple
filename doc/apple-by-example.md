@@ -416,7 +416,7 @@ Vec m a → (Vec k a → a) → int(n) → Vec (m + n) a
 Fibonacci sequence:
 
 ```
- > 𝓕 ⟨1::int,1⟩ [}.x+}.(}:x)]
+ > 𝓕 ⟨1::int,1⟩ [}.x+}.(}:x)] 10
 Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
 ```
 
