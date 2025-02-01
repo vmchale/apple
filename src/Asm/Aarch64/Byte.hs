@@ -6,6 +6,7 @@ module Asm.Aarch64.Byte ( allFp, assembleCtx, dbgFp ) where
 
 import           Asm.Aarch64
 import           Asm.M
+import           B
 import           Control.Monad    (when)
 import           Data.Bifunctor   (bimap, second)
 import           Data.Bits        (Bits (..))
@@ -302,8 +303,7 @@ rpf (Pfop PST L1 Strm) = 0b10001
 
 m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
 m4 r a = [MovRC () r w0, MovK () r w1 16, MovK () r w2 32, MovK () r w3 48]
-  where [w0,w1,w2,w3]=take 4 $ fromIntegral<$>zipWith (\m e -> (a.&.m) `rotateR` e) masks ee
-        ee=[0,16..]; masks=iterate (*0x10000) 0xffff
+  where [w0,w1,w2,w3]=b4 a
 
 get :: Label -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Int
 get l =

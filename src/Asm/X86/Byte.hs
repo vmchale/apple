@@ -7,16 +7,16 @@ module Asm.X86.Byte ( allFp, assembleCtx, dbgFp ) where
 
 import           Asm.M
 import           Asm.X86
-import           Data.Bifunctor   (second)
-import           Data.Bits        (Bits, rotateR, shiftL, (.&.), (.|.))
-import qualified Data.ByteString  as BS
-import           Data.Functor     (($>))
-import           Data.Int         (Int32, Int64, Int8)
-import qualified Data.IntMap      as IM
-import qualified Data.Map.Strict  as M
+import           B
+import           Data.Bifunctor  (second)
+import           Data.Bits       (shiftL, (.|.))
+import qualified Data.ByteString as BS
+import           Data.Functor    (($>))
+import           Data.Int        (Int32, Int64, Int8)
+import qualified Data.IntMap     as IM
+import qualified Data.Map.Strict as M
 import           Data.Word
-import           Foreign.Ptr      (FunPtr, IntPtr (..), Ptr, ptrToIntPtr)
-import           Foreign.Storable (Storable, sizeOf)
+import           Foreign.Ptr     (FunPtr, IntPtr (..), Ptr, ptrToIntPtr)
 import           Hs.FFI
 import           Sys.DL
 
@@ -652,7 +652,7 @@ asm ix st (ISubRI _ r i:asms) | Just i32 <- mi64i32 i =
 asm ix st (MovRI _ r i:asms) | Just i32 <- mi64i32 i, i >= 0 && fits r =
     let (_, b) = modRM r
         opc = 0xb8 .|. b
-    in (opc:cd i32):asm (ix+5) st asms
+    in (opc:le i32):asm (ix+5) st asms
     -- TODO: 0xc7 for case i<0
 asm ix st (MovRI _ r i:asms) =
     let (e, b) = modRM r
@@ -667,35 +667,35 @@ asm ix st (RetL{}:asms) =
     [0xc3]:asm (ix+1) st asms
 asm ix st (Je _ l:asms) =
     let lIx = get l st
-        instr = let offs = lIx-ix-6 in 0x0f:0x84:cd (fromIntegral offs :: Int32)
+        instr = let offs = lIx-ix-6 in 0x0f:0x84:le (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
 asm ix st (Jne _ l:asms) =
     let lIx = get l st
-        instr = let offs = lIx-ix-6 in 0x0f:0x85:cd (fromIntegral offs :: Int32)
+        instr = let offs = lIx-ix-6 in 0x0f:0x85:le (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
 asm ix st (Jg _ l:asms) =
     let lIx = get l st
-        instr = let offs = lIx-ix-6 in 0x0f:0x8f:cd (fromIntegral offs :: Int32)
+        instr = let offs = lIx-ix-6 in 0x0f:0x8f:le (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
 asm ix st (Jge _ l:asms) =
     let lIx = get l st
-        instr = let offs = lIx-ix-6 in 0x0f:0x8d:cd (fromIntegral offs :: Int32)
+        instr = let offs = lIx-ix-6 in 0x0f:0x8d:le (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
 asm ix st (Jl _ l:asms) =
     let lIx = get l st
-        instr = let offs = lIx-ix-6 in 0x0f:0x8c:cd (fromIntegral offs :: Int32)
+        instr = let offs = lIx-ix-6 in 0x0f:0x8c:le (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
 asm ix st (Jle _ l:asms) =
     let lIx = get l st
-        instr = let offs = lIx-ix-6 in 0x0f:0x8e:cd (fromIntegral offs :: Int32)
+        instr = let offs = lIx-ix-6 in 0x0f:0x8e:le (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
 asm ix st (J _ l:asms) =
     let lIx = get l st
-        instr = let offs = lIx-ix-5 in 0xe9:cd (fromIntegral offs :: Int32)
+        instr = let offs = lIx-ix-5 in 0xe9:le (fromIntegral offs :: Int32)
     in instr:asm (ix+5) st asms
 asm ix st (C _ l:asms) =
     let lIx = get l st
-        instr = let offs = lIx-ix-5 in 0xe8:cd (fromIntegral offs :: Int32)
+        instr = let offs = lIx-ix-5 in 0xe8:le (fromIntegral offs :: Int32)
     in instr:asm (ix+5) st asms
 asm ix st (Fmulp{}:asms) =
     [0xde,0xc9]:asm (ix+2) st asms
@@ -967,15 +967,6 @@ instance RMB FX86Reg where
     modRM XMM13 = (1, 0o5)
     modRM XMM14 = (1, 0o6)
     modRM XMM15 = (1, 0o7)
-
-cd :: (Integral a) => a -> [Word8]
-cd x = le (fromIntegral x :: Word32)
-
--- little endian
-le :: (Storable a, Integral a, Bits a) => a -> [Word8]
-le x = fromIntegral <$> zipWith (\m e -> (x .&. m) `rotateR` e) masks ee
-    where ee = [0,8..(8*(sizeOf x-1))]
-          masks = iterate (*0x100) 0xff
 
 fst4 :: (a, b, c, d) -> a
 fst4 (x, _, _, _) = x
