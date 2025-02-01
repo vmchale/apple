@@ -78,3 +78,9 @@ xs=np.random.rand(100)
 sort=apple.jit("[⍋(x::Vec n float)]")
 res=sort(xs);xs.sort()
 assert (res==xs).all()
+
+A=np.array([[20.,200,-5,23],[-13,134,119,100],[120,32,49,25],[-120,12,9,23]\
+])
+maxpool2d=apple.jit("([(⋉)/* _1e314 (x::M float)] ⨳ {2∘2,2∘2})")
+maxpool2d(A)
+assert ((maxpool2d(A)==np.array([[200.,119.],[120.,49.]])).all())
