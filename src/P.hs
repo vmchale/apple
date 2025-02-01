@@ -54,7 +54,7 @@ import qualified Data.ByteString.Lazy             as BSL
 import qualified Data.Text                        as T
 import           Data.Tuple.Extra                 (first3)
 import           Data.Typeable                    (Typeable)
-import           Data.Word                        (Word64)
+import           Data.Word                        (Word8)
 import           Foreign.Ptr                      (FunPtr, Ptr)
 import           GHC.Generics                     (Generic)
 import           I
@@ -122,29 +122,29 @@ getTy = fmap (first eAnn) . checkCtx <=< annTy
 annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
 annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
 
-eFunP :: (Pretty a, Typeable a) => Int -> CCtx -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
+eFunP :: (Pretty a, Typeable a) => Int -> CCtx -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word8))
 eFunP = eFunPG assembleCtx ex86G
 
-eAFunP :: (Pretty a, Typeable a) => Int -> (CCtx, MCtx) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word64))
+eAFunP :: (Pretty a, Typeable a) => Int -> (CCtx, MCtx) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word8))
 eAFunP = eFunPG Aarch64.assembleCtx eAarch64
 
 eFunPG jit asm m ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm m)
 
-ctxFunP :: CCtx -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
+ctxFunP :: CCtx -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word8))
 ctxFunP = ctxFunPG assembleCtx x86G
 
-actxFunP :: (CCtx, MCtx) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
+actxFunP :: (CCtx, MCtx) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word8))
 actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
 
 ctxFunPG jit asm ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm)
 
-funP :: BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
+funP :: BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word8))
 funP = fmap π.allFp <=< either throwIO pure . x86G
 
 π :: (a, b, c, d) -> (b, c, d)
 π (_,y,z,w) = (y,z,w)
 
-aFunP :: BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word64))
+aFunP :: BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word8))
 aFunP = fmap π.Aarch64.allFp <=< either throwIO pure . aarch64
 
 as :: T.Text -> BSL.ByteString -> Doc ann

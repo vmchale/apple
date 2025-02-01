@@ -52,7 +52,7 @@ import           Data.Text.Lazy.Builder.Int (hexadecimal)
 import           Data.Tree                  (drawTree)
 import           Data.Tuple                 (swap)
 import           Data.Tuple.Extra           (fst3)
-import           Data.Word                  (Word64)
+import           Data.Word                  (Word8)
 import           IR
 import           IR.Hoist
 import           L
@@ -107,9 +107,9 @@ nasm :: T.Text -> BSL.ByteString -> Doc ann
 nasm f = (\(d,i) -> "section .data\n\n" <> nasmD (IM.toList d) <#> i) . second ((prolegomena <#>).pAsm) . either throw id . x86G
     where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
 
-nasmD :: [(Int, [Word64])] -> Doc ann
+nasmD :: [(Int, [Word8])] -> Doc ann
 nasmD = prettyLines . fmap nasmArr
-    where nasmArr (i, ds) = "arr_" <> pretty i <+> "dq" <+> concatWith (<>) (punctuate comma (fmap hexn ds))
+    where nasmArr (i, ds) = "arr_" <> pretty i <+> "db" <+> concatWith (<>) (punctuate comma (fmap hexn ds))
           hexn = pretty.toLazyText.hexadecimal
 
 dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)

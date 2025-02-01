@@ -12,14 +12,12 @@ module Prettyprinter.Ext ( (<#>), (<?>), (<!>)
                          , pAD
                          ) where
 
-import           B
 import qualified Data.IntMap                as IM
 import qualified Data.Text                  as T
 import qualified Data.Text.Lazy             as TL
 import           Data.Text.Lazy.Builder     (toLazyTextWith)
 import           Data.Text.Lazy.Builder.Int (hexadecimal)
 import           Data.Void                  (Void, absurd)
-import           Data.Word                  (Word64)
 import           Prettyprinter              (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
                                              indent, layoutSmart, parens, softline', space, vsep, (<+>))
 import           Prettyprinter.Render.Text  (renderStrict)
@@ -73,8 +71,6 @@ tlhex2 :: Integral a => a -> TL.Text
 tlhex2 i | i < 16 = toLazyTextWith 2 ("0" <> hexadecimal i)
          | otherwise = toLazyTextWith 2 (hexadecimal i)
 
--- FIXME: this is certainly wrong for arm/endianness
-pAD ds = prettyLines ((\(n,dd) -> "arr_" <> pretty n <> ":" <+> ".8byte" <+> concatWith (\x y -> x <> "," <> y) (fmap p64 dd)) <$> IM.toList ds)
-
-p64 :: Word64 -> Doc ann
-p64 w = "0x"<>hex2 w3<>hex2 w2<>hex2 w1<>hex2 w0 where [w0,w1,w2,w3]=b4 w
+-- FIXME: this is probably wrong for arm/endianness
+pAD ds = prettyLines ((\(n,dd) -> "arr_" <> pretty n <> ":" <+> ".byte" <+> p8 dd) <$> IM.toList ds)
+  where p8 (w0:ws) = "0x"<>hex2 w0<>","<>p8 ws; p8 [] = ""

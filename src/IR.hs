@@ -13,13 +13,13 @@ import           CF.AL
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Void         (Void)
-import           Data.Word         (Word64)
+import           Data.Word         (Word8)
 import           Op
 import           Prettyprinter     (Doc, Pretty (..), hardline, parens, (<+>))
 import           Prettyprinter.Ext
 
 -- see https://my.eng.utah.edu/~cs4400/sse-fp.pdf
-type Label = Word; type AsmData = IM.IntMap [Word64]
+type Label = Word; type AsmData = IM.IntMap [Word8]
 
 data WSt = WSt { wlabel :: !Label, wtemps :: !Int }
 

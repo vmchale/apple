@@ -30,7 +30,7 @@ dbgFp asmϵ = do
     (bs, sz, fp, ps) <- allFp asmϵ
     freeFunPtr sz fp *> mFree ps $> bs
 
-assembleCtx :: CCtx -> (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
+assembleCtx :: CCtx -> (IM.IntMap [Word8], [X86 X86Reg FX86Reg a]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word8))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst4 ctx) (fromIntegral sz) else allocExec (fromIntegral sz)
@@ -39,7 +39,7 @@ assembleCtx ctx (ds, isns) = do
         mP = snd<$>IM.lookupMin arrs
     (b,,mP)<$>finish b p
 
-allFp :: (IM.IntMap [Word64], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], Int, FunPtr b, Maybe (Ptr Word64))
+allFp :: (IM.IntMap [Word8], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], Int, FunPtr b, Maybe (Ptr Word8))
 allFp (ds, instrs) = do
     let (sz, lbls) = mkIx 0 instrs; csz=fromIntegral sz
     (fn, p) <- do
@@ -320,7 +320,7 @@ mkIx _ (instr:_) = error (show instr)
 fits :: RMB reg => reg -> Bool
 fits r = let (e, _) = modRM r in e == 0
 
-asm :: Int -> (Int, IM.IntMap (Ptr Word64), Maybe CCtx, M.Map Label Int) -> [X86 X86Reg FX86Reg a] -> [[Word8]]
+asm :: Int -> (Int, IM.IntMap (Ptr Word8), Maybe CCtx, M.Map Label Int) -> [X86 X86Reg FX86Reg a] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (Push _ r:asms) | fits r =
     let (_, b0) = modRM r
@@ -908,11 +908,11 @@ encS Two   = 1
 encS Four  = 2
 encS Eight = 3
 
-get :: Label -> (Int, IM.IntMap (Ptr Word64), Maybe CCtx, M.Map Label Int) -> Int
+get :: Label -> (Int, IM.IntMap (Ptr Word8), Maybe CCtx, M.Map Label Int) -> Int
 get l =
     M.findWithDefault (error "Internal error: label not found") l . fth where fth (_,_,_,z) = z
 
-arr :: Int -> (Int, IM.IntMap (Ptr Word64), Maybe CCtx, M.Map Label Int) -> Ptr Word64
+arr :: Int -> (Int, IM.IntMap (Ptr Word8), Maybe CCtx, M.Map Label Int) -> Ptr Word8
 arr n = IM.findWithDefault (error "Internal error: array not found during assembler stage") n . snd4 where snd4 (_,y,_,_) = y
 
 mi64i8 :: Int64 -> Maybe Int8

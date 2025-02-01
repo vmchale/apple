@@ -17,7 +17,7 @@ import           Control.Monad.Trans.State.Strict (State, state)
 import           Data.Foldable                    (fold, traverse_)
 import qualified Data.IntMap                      as IM
 import           Data.List                        (scanl')
-import           Data.Word                        (Word64)
+import           Data.Word                        (Word8)
 import           Foreign.Marshal.Alloc            (free)
 import           Foreign.Marshal.Array            (mallocArray, pokeArray)
 import           Foreign.Ptr                      (Ptr, plusPtr)
@@ -62,7 +62,7 @@ instance Pretty CFunc where
 mFree :: Maybe (Ptr a) -> IO ()
 mFree = traverse_ free
 
-aArr :: IM.IntMap [Word64] -> IO (IM.IntMap (Ptr Word64))
+aArr :: IM.IntMap [Word8] -> IO (IM.IntMap (Ptr Word8))
 aArr as = do
     let bls = fmap length as; bl = sum bls
     p <- mallocArray bl
@@ -70,4 +70,4 @@ aArr as = do
     pokeArray p bs
     pure $ case IM.toList bls of
         []             -> IM.empty
-        ((k0,l0):bls') -> IM.fromList . fmap (\(x,_,z) -> (x,z)) $ scanl' (\(_, lϵ, pϵ) (k, l) -> (k, l, pϵ `plusPtr` (lϵ*8))) (k0, l0, p) bls'
+        ((k0,l0):bls') -> IM.fromList . fmap (\(x,_,z) -> (x,z)) $ scanl' (\(_, lϵ, pϵ) (k, l) -> (k, l, pϵ `plusPtr` lϵ)) (k0, l0, p) bls'

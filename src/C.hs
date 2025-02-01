@@ -18,7 +18,7 @@ import           Data.Copointed
 import           Data.Int          (Int64)
 import qualified Data.IntMap       as IM
 import           Data.Void         (Void)
-import           Data.Word         (Word64)
+import           Data.Word         (Word8)
 import           E
 import           Op
 import           Prettyprinter     (Doc, Pretty (..), brackets, comma, dot, hardline, indent, lbrace, parens, rbrace, tupled, (<+>))
@@ -26,7 +26,7 @@ import           Prettyprinter.Ext
 import           Q
 import           Sh
 
-type Label=Word; type AsmData = IM.IntMap [Word64]
+type Label=Word; type AsmData = IM.IntMap [Word8]
 
 data Temp = ITemp !Int | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5 | CRet deriving Eq

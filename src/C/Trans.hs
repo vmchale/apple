@@ -1,6 +1,7 @@
 module C.Trans ( writeC ) where
 
 import           A
+import           B
 import           C
 import           CF.AL                            (AL (..))
 import qualified CF.AL                            as AL
@@ -14,7 +15,7 @@ import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
 import           Data.List                        (find, genericLength, scanl')
 import           Data.Maybe                       (mapMaybe)
-import           Data.Word                        (Word64)
+import           Data.Word                        (Word8)
 import           E
 import           GHC.Float                        (castDoubleToWord64)
 import           Nm
@@ -161,8 +162,8 @@ forc t = if nec t then For1 () 1 else For () 1
 f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh); f2ors sh = F2or () (psh sh)
 r2of sh = R2of () (psh sh)
 
-mIFs :: [E a] -> Maybe [Word64]
-mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just [castDoubleToWord64 d]; mIFϵ (ILit _ n)=Just [fromIntegral n]; mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
+mIFs :: [E a] -> Maybe [Word8]
+mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just (le$castDoubleToWord64 d); mIFϵ (ILit _ n)=Just$le(fromIntegral n::Int64); mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
 
 writeC :: E (T ()) -> ([CS ()], LSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
@@ -538,11 +539,11 @@ maa (Var _ x) = do
     pure (t,l,[])
 maa (Id _ (AShLit ns es)) | Just ws <- mIFs es = do
     t <- nI; n <- nextAA
-    addAA n (rnk:fmap fromIntegral ns++ws)
-    -- TODO: boolean lits
+    addAA n (concatMap le8 (rnk:ns)++ws)
     pure (t, Nothing, [t =: LA n])
   where
     rnk=genericLength ns
+    le8=le.(fromIntegral::Int->Int64)
 maa e = do {t <- nI; a <- nextArr t; (t,Just a,) <$> aeval e t a}
 
 aeval :: E (T ()) -> Temp -> AL -> CM [CS ()]

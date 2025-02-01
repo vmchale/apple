@@ -16,7 +16,7 @@ import           Data.Int         (Int16)
 import qualified Data.IntMap      as IM
 import qualified Data.Map         as M
 import           Data.Tuple.Extra (fst3, thd3)
-import           Data.Word        (Word64, Word8)
+import           Data.Word        (Word8)
 import           Foreign.Ptr      (FunPtr, IntPtr (..), Ptr, nullPtr, ptrToIntPtr)
 import           GHC.Base         (Int (I#), iShiftRL#)
 import           Hs.FFI
@@ -35,7 +35,7 @@ prepAddrs ss = case (hasMa ss, hasMath ss) of
     (False, True)  -> do {m <- math'; pure (Nothing, Just m)}
     (True, True)   -> do {c <- mem'; m <- math'; pure (Just c, Just m)}
 
-assembleCtx :: (CCtx, MCtx) -> (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word64))
+assembleCtx :: (CCtx, MCtx) -> (IM.IntMap [Word8], [AArch64 AReg FAReg ()]) -> IO (BS.ByteString, FunPtr b, Maybe (Ptr Word8))
 assembleCtx ctx (ds, isns) = do
     let (sz, lbls) = mkIx 0 isns
     p <- if hasMa isns then allocNear (fst4 (fst ctx)) (fromIntegral sz) else allocExec (fromIntegral sz)
@@ -47,7 +47,7 @@ assembleCtx ctx (ds, isns) = do
 dbgFp asmϵ = do
     (bss,sz,fp,ps) <- allFp asmϵ
     freeFunPtr sz fp *> mFree ps $> bss
-allFp :: (IM.IntMap [Word64], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], Int, FunPtr b, Maybe (Ptr Word64))
+allFp :: (IM.IntMap [Word8], [AArch64 AReg FAReg ()]) -> IO ([BS.ByteString], Int, FunPtr b, Maybe (Ptr Word8))
 allFp (ds, instrs) = do
     let (sz, lbls) = mkIx 0 instrs; csz=fromIntegral sz
     (fn, p) <- do
@@ -89,7 +89,7 @@ i9 i = (fromIntegral ((i.&.0b111111111) `shiftR` 4), 0b1111 .&. fromIntegral i)
 
 lb r rD = (0x7 .&. be r) `shiftL` 5 .|. be rD
 
-asm :: Int -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
+asm :: Int -> (IM.IntMap (Ptr Word8), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (MovZ _ r i s:asms) = [0b11010010, 0b1 `shiftL` 7 .|. fromIntegral (s `quot` 16) `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral (0xff .&. (i `shiftR` 3)), fromIntegral (0x7 .&. i) `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (MovRC _ r i:asms) = asm ix st (MovZ () r i 0:asms)
@@ -305,11 +305,11 @@ m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
 m4 r a = [MovRC () r w0, MovK () r w1 16, MovK () r w2 32, MovK () r w3 48]
   where [w0,w1,w2,w3]=b4 a
 
-get :: Label -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Int
+get :: Label -> (IM.IntMap (Ptr Word8), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Int
 get l =
     M.findWithDefault (error "Internal error: label not found") l . thd3
 
-arr :: Int -> (IM.IntMap (Ptr Word64), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Ptr Word64
+arr :: Int -> (IM.IntMap (Ptr Word8), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Ptr Word8
 arr n = IM.findWithDefault (error "Internal error: array not found during assembler stage") n . fst3
 
 fst4 :: (a, b, c, d) -> a
