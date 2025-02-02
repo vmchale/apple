@@ -1372,8 +1372,8 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t a
     (slopY,nYe,plSlopY,popSlopY) <- plSlop szYT yERnk (idims yERnk yRnk yR lY)
     (z, wZ) <- rW tC (iXelem t (KI oRnk) (Just a) szZ)
     (_, ss) <- writeF op [AA slopX Nothing, AA slopY Nothing] z
-    let loop = [ aiA slopXd (xd,lX) (Tmp i) (Tmp nXe) szXT
-               , aiA slopYd (yd,lY) (Tmp j) (Tmp nYe) szYT
+    let loop = [ aiA slopXd (xd,lX) (Tmp i*Tmp nXe) (Tmp nXe) szXT
+               , aiA slopYd (yd,lY) (Tmp j*Tmp nYe) (Tmp nYe) szYT
                ] ++ ss ++ [wZ di, di+=1]
     (dtxs,dxss) <- plDim (xRnk-xERnk) (xR,lX)
     (dtys,dyss) <- plDim (yRnk-yERnk) (yR,lY)
