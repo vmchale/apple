@@ -7,7 +7,6 @@ module Asm.Aarch64 ( AArch64 (..)
                    , Addr (..)
                    , Cond (..)
                    , Shift (..), ISl (..), BM (..)
-                   , Pfop (..), TT (..), PT (..), CT (..)
                    , AbsReg (..), FAbsReg (..), F2Abs
                    , AReg (..), FAReg (..), V2Reg (..)
                    , SIMD (..)
@@ -22,7 +21,7 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
-import           Control.DeepSeq   (NFData (..), deepseq, rwhnf)
+import           Control.DeepSeq   (NFData (..), rwhnf)
 import           Data.Copointed
 import           Data.Int          (Int16)
 import           Data.Word         (Word16, Word8)
@@ -152,20 +151,6 @@ fToInt FArg5    = 15
 fToInt FArg6    = 16
 fToInt FArg7    = 17
 fToInt (FReg i) = 19+i
-
-data TT = PLD | PLI | PST; data CT=L1|L2|L3; data PT=Keep|Strm
-
-instance NFData PT where rnf=rwhnf
-instance NFData TT where rnf=rwhnf
-instance NFData CT where rnf=rwhnf
-
-instance Pretty TT where pretty PLD="pld"; pretty PLI="pli"; pretty PST="pst"
-instance Pretty CT where pretty L1="l1"; pretty L2="l2"; pretty L3="l3"
-instance Pretty PT where pretty Keep="keep"; pretty Strm="strm"
-
-data Pfop=Pfop !TT !CT !PT
-instance Pretty Pfop where pretty (Pfop t c p) = pretty t <> pretty c <> pretty p
-instance NFData Pfop where rnf (Pfop t c p) = t `deepseq` c `deepseq` p `deepseq` ()
 
 data Shift = Zero | Three | Four
 
@@ -317,7 +302,6 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
                          | EorI { ann :: a, rDest, rSrc :: reg, imm :: BM }
                          | Bfc { ann :: a, rDest :: reg, lsb :: Word8, width :: Word8 }
-                         | Prfm { ann :: a, pro :: !Pfop, aSrc :: Addr reg }
                          | Clz { ann :: a, rDest, rSrc :: reg }
                          deriving (Functor, Generic)
 
@@ -429,7 +413,6 @@ mapR f (Ins l v i r)         = Ins l v i (f r)
 mapR _ (DupD l v0 v1 i)      = DupD l v0 v1 i
 mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
-mapR f (Prfm l po r)         = Prfm l po (f<$>r)
 mapR f (Clz l r0 r1)         = Clz l (f r0) (f r1)
 
 fR :: Monoid m => (areg -> m) -> AArch64 areg afreg a -> m
@@ -528,7 +511,6 @@ fR _ Fmin{}                = mempty
 fR _ Fabs{}                = mempty
 fR f (Csel _ r0 r1 r2 _)   = f r0<>f r1<>f r2
 fR f (Bfc _ r _ _)         = f r
-fR f (Prfm _ _ a)          = f@<>a
 fR _ Fcmp{}                = mempty
 fR _ Fneg{}                = mempty
 fR _ Fsqrt{}               = mempty
@@ -643,7 +625,6 @@ mapFR f (Ins l v i r)         = Ins l (f<$>v) i r
 mapFR f (DupD l v0 v1 i)      = DupD l (f<$>v0) (f<$>v1) i
 mapFR f (ZeroD l d)           = ZeroD l (f d)
 mapFR f (EorD l d0 d1 d2)     = EorD l (f d0) (f d1) (f d2)
-mapFR _ (Prfm l po a)         = Prfm l po a
 mapFR _ (Clz l r0 r1)         = Clz l r0 r1
 
 s2 :: [a] -> [(a, Maybe a)]
@@ -788,7 +769,6 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Dup _ v r)             = "dup" <+> pvd v <> "," <+> pretty r
         p4 (Ins _ v i r)           = "ins" <+> pvd v <> brackets (pretty i) <> "," <+> pretty r
         p4 (DupD _ v0 v1 i)        = "dup" <+> pvd v0 <> "," <+> pvd v1 <> brackets (pretty i)
-        p4 (Prfm _ po r)           = ar2 "prfm" po r
         p4 (Clz _ r0 r1)           = ar2 "clz" r0 r1
 
 instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty
