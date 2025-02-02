@@ -2,12 +2,14 @@
 
 \usepackage{fontspec}
 \usepackage{hyperref}
+\usepackage{cleveref}
 \usepackage{fancyvrb}
 
 \begin{document}
 
 \VerbatimFootnotes
 \setmonofont{Jet Brains Mono}[Scale=MatchAveragecase]
+\crefformat{subsection}{\S#2#1#3}
 
 \author{V. E. McHale}
 \title{Compiling Array Languages for SIMD}
@@ -20,6 +22,7 @@
 \section{Background}
 
 \subsection{Textbook Compilation}
+\label{sec:map}
 
 C implementations compile the language's constructs (functions) to sequences of steps in assembly which read and write registers for arguments and return values defined by convention. The correspondence is elegant \footnote{Kell \cite{kell2017} points out that C is uniquely suited to interfacing with other languages, in part because of this compilation practice.}, but not suited to SIMD.
 
@@ -37,11 +40,13 @@ Na\"ively\footnote{This was the approach taken in the Apple array system at firs
 
 \begin{itemize}
   \item Generate temporaries \verb|x|, \verb|y| for the argument and return value of \verb|f|, respectively.
-  \item Compile \verb|λx. f x| % to fsteps?
-    using \verb|writeFn|.
-  \item Generate code to loop over the input vector's elements, reading from the input and putting the value in \verb|x|,
-     % place ss/statements for f
-    and then storing the result \verb|y| in the output vector.
+  \item Compile \verb|λx. f x| to \verb|fsteps| using \verb|writeFn|.
+  \item Generate code to loop over the input vector's elements; within the loop:
+    \begin{itemize}
+      \item Generate code to read from the input array at the current index, putting the value in \verb|x|
+      \item Place the statements \verb|fsteps|
+      \item Append code to store the result \verb|y| in the output array.
+    \end{itemize}
 \end{itemize}
 
 This is appealing because of its simplicity, and also has the advantage that \verb|f| can be defined in another language. However in the case of
@@ -77,7 +82,7 @@ What makes C special in practice is that functions, which can be composed, are c
 as three shared library functions to address this.
 A library providing a sigmoid function (for instance) would need to expose three versions in a shared library. The clumsiness proliferates and the mathematical entity no longer corresponds to compiled code but rather three versions of itself depending on the context in which it is used.
 
-A compiler-as-a-library is appealing because it could be invoked by another compiler, dispatching different versions of a function without intervention from the programmer. Alternately new formats for object files could include equivalent functions
+A compiler-as-a-library is appealing because it could be invoked by another compiler, dispatching different versions of a function without intervention from the programmer. Alternately new formats for object files could include several versions of a function, with information that other languages' compilers could use to pick the appropriate implementation.
 
 % actually the problem with C++ is more that compilers are fickle, clang vs. gcc https://marek.ai/matrix-multiplication-on-cpu.html
 
@@ -87,6 +92,7 @@ A compiler-as-a-library is appealing because it could be invoked by another comp
 The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but the problem sitting before us is narrower. A compiler ferries a (possibly high-level) language to efficient code, and actually a source language with fewer low-level facilities offers more invariants. ``Optimization'' writ large gets much attention, but transformations that make high-level languages possible have not entered the computer science canon, particularly for functional or exotic languages.
 
 ``Amenability to efficient compilation'' also informs the design of the source language. One can also consider languages where the programmer can expect efficient compilation by reasoning about the source-language in its own terms. This is not the case for C++, where efficiency of generated code can vary dramatically by compiler or across versions of the same compiler \cite{intrinsics,kolodiej,cc}. There is no contract with the user; performance depends on internals that are not documented, justified, analyzed with the same scrutiny as programming languages.
+% basically "suitable to write high-perf code" but not necessarily via manually changing to bitshifts
 
 Array languages have a chance to do better since they naturally express computations that can be executed via SIMD, in a domain where such CPU features offer significant gains.
 % C++ is "compiler expert" and the internals have no contract w/ user... (despite focus on performance->C++ people)
@@ -138,15 +144,13 @@ apple_1:
 Similar analyses are already performed by industrial compilers, but types are part of the source language and thus available to any programmer who knows the language---contrast autovectorization in C++, which is a matter for compiler experts. Moreover, type systems, unlike compiler internals, are not subject to change between versions.
 
 In a type system with shapes, dimension information proliferates (based on rules).
-% C "the situation is more strained", indices for access are not associated... more about "no stinking loops" etc.
-% pointer is elegant but yeah
 As an example, in the Apple expression
 
 \begin{verbatim}
 λwh.λwo.λbh.λbo.
 { X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
   Y ← ⟨0,1,1,0⟩;
-  Σ ⇐ [(+)/ₒ x y];
+  Σ ⇐ [(+)/o x y];
   sigmoid ← [1%(1+e:(_x))];
   sDdx ← [x*(1-x)];
   ho ⟜ sigmoid`{0} ([(+)`(bh::Vec 2 float) x]'X%.wh);
@@ -170,12 +174,17 @@ The programmer can verify this in the Apple array system with
  > :ann xor
 \end{verbatim}
 
-and supply hints as type annotations if necessary/desired. The mode of interaction
+and supply hints as type annotations if necessary or desired. This mode of interaction is entirely absent from industrial compilers—optimizations are confined to compiler internals, at best one can dump information and then adjust flags or add pragmas. These are peculiarities of the compiler rather than language, and the user's control of the compilation output is indirect.
 
-% interact with shape-guessing phase is not present in compilers? anyway not too unfamiliar... current type systems
-% sorta tells you what pragmas you need (better insight)
+% anyway not too unfamiliar... current type systems
+% "what would it look like if I _"
 
 \section{A First Cut at a Solution for the Apple Array System}
+
+SIMD in the Apple array system is not God-anointed but provides a starting example for array compiler authors.
+% basically yes map/fold explicitly we can do it... in terms of f!
+
+\subsection{Map}
 
 Apple adds functions
 
@@ -193,17 +202,31 @@ Then, when compiling, say, \verb|map f|, we use
 hasSIMD :: Expr -> Bool
 \end{verbatim}
 
-to determine whether \verb|f| can operate on vector registers. If so,
+to determine whether \verb|f| can operate on vector registers. \verb|hasSIMD| traverses the AST, returning \verb|False| when, say, \verb|log| is found. If the function has a SIMD implementation:
 
 \begin{itemize}
   \item Generate temporaries \verb|x0|, \verb|y0| and vector temporaries \verb|x|, \verb|y| for arguments and return values of \verb|f|, respectively.
   \item Compile \verb|λx. f x| twice, once with \verb|writeFn| and once with \verb|writeFn2|.
+  \item Generate code to loop over the input array, increasing index by 2 each time; within the loop
+    \begin{itemize}
+      \item Generate code to read two values from the input array at the current index, storing in \verb|x|
+      \item Place the statements \verb|fsteps2|
+      \item Append code to store the two result values in \verb|y| in the output array.
+    \end{itemize}
+  \item Generate code to conditionally execute if there is still one element remaining in the input array after iterating by 2. Inside the conditional:
+    \begin{itemize}
+      \item Generate code to read \verb|x| from the input array.
+      \item Place the statements \verb|fsteps|
+      \item Append the code to store the result \verb|y| in the output array.
+    \end{itemize}
 \end{itemize}
 
-\verb|hasSIMD| traverses the AST, returning \verb|False| when, say, \verb|log| is found.
+% https://tex.stackexchange.com/a/208942
+If the function does not have a SIMD implementation, we fall back on compiling \verb|map| as described in \cref{sec:map}
 
-SIMD in the Apple array system
-% not necessarily god-anointed but provides a starting example for array compiler authors
+% \subsection{Fold}
+
+% SIMD folds are a bit more involved; first
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
