@@ -20,12 +20,12 @@ psh (i `Cons` sh) = mp (ip i) (psh sh); psh _ = U Z
 dᵢ i | i>0 = S | otherwise = Z
 
 data D = S | Z
-data L = E !D | O !D | U !D
+data L = E D | O D | U D
 
 dl1 (E d)=d; dl1 O{}=S; dl1 (U d)=d
 
 mp :: L -> L -> L
-mp (E d) (E d') = E (d#*d'); mp (E d) O{} = E d; mp O{} (E d) = E d; mp l (O d) = O (dl1 l#*d); mp (O d) l = O (d#*dl1 l); mp l l' = U (dl1 l#*dl1 l')
+mp (E d) (E d') = E (d#*d'); mp (E d) l = E (d#*dl1 l); mp l (E d) = E (dl1 l#*d); mp l (O d) = O (dl1 l#*d); mp (O d) l = O (d#*dl1 l); mp l l' = U (dl1 l#*dl1 l')
 sp (E d) (E d') = E (d#|d'); sp (E d) (O d') = O (d#|d'); sp (O d) (E d') = O (d#|d'); sp O{} O{} = E S; sp d d' = U (dl1 d#|dl1 d')
 
 (#*), (#|) :: D -> D -> D

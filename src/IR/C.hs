@@ -113,10 +113,16 @@ cToIRM (For1 _ tk t el rel eu s) = do
     pure $ IR.MT t' (irE el):L l:irs++[IR.MT t' (Reg t'+irE tk), MJ (IR.IRel rel (Reg t') (irE eu)) l]
   where
     t'=ctemp t
-cToIRM (R2of _ (E S) t c s _) = do
+cToIRM (R2of _ (E Z) t c s _) = do
     l <- nL; eL <- nL
     irs <- foldMapM cToIRM s
     pure $ IR.MT t' (irE c):MJ (IR.IRel IEq (Reg t') 0) eL:L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGt (Reg t') 0) l, L eL]
+  where
+    t'=ctemp t
+cToIRM (R2of _ (E S) t c s _) = do
+    l <- nL
+    irs <- foldMapM cToIRM s
+    pure $ IR.MT t' (irE c):L l:irs++[IR.MT t' (Reg t'-2), MJ (IR.IRel IGt (Reg t') 0) l]
   where
     t'=ctemp t
 cToIRM (R2of _ (O Z) t c s s1) = do
@@ -137,7 +143,12 @@ cToIRM (F2or _ (E S) t el rel eu s _) = do
     pure $ IR.MT t' (irE el):L l:irs++[IR.MT t' (Reg t'+2), MJ (IR.IRel rel (Reg t') (irE eu)) l]
   where
     t'=ctemp t
-cToIRM (F2or _ (E Z) t _ _ eu _ _) = pure [IR.MT (ctemp t) (irE eu)]
+cToIRM (F2or _ (E Z) t el rel eu s _) = do
+    l <- nL; eL <- nL
+    irs <- foldMapM cToIRM s
+    pure $ IR.MT t' (irE el):MJ (IR.IRel (nr rel) (Reg t') (irE eu)) eL:L l:irs++[IR.MT t' (Reg t'+2), MJ (IR.IRel rel (Reg t') (irE eu)) l, L eL]
+  where
+    t'=ctemp t
 cToIRM (F2or _ (O Z) t el rel eu s s1) = do
     l <- nL; eL <- nL
     irs <- foldMapM cToIRM s; ir1 <- foldMapM cToIRM s1
