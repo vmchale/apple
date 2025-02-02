@@ -294,8 +294,7 @@ asm ix st (LdrRL _ r l:asms) =
 asm _ _ (isn:_) = error (show isn)
 
 m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
-m4 r a = [MovRC () r w0, MovK () r w1 16, MovK () r w2 32, MovK () r w3 48]
-  where [w0,w1,w2,w3]=b4 a
+m4 r a = let [w0,w1,w2,w3]=b4 a in [MovRC () r w0, MovK () r w1 16, MovK () r w2 32, MovK () r w3 48]
 
 get :: Label -> (IM.IntMap (Ptr Word8), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Int
 get l =
