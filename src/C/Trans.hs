@@ -131,25 +131,14 @@ staIx Nil=Just[]; staIx (Ix _ i `Cons` s) = (fromIntegral i:)<$>staIx s; staIx _
 tIx :: T a -> Maybe (T a, [Int64])
 tIx (Arr sh t) = (t,)<$>staIx sh; tIx _=Nothing
 
-nzSh :: Sh a -> D
-nzSh (i `Cons` Nil) = nz i
-nzSh (i `Cons` sh)  = nz i #* nzSh sh
-nzSh _              = E.Z
-
-n1 :: Sh a -> D
-n1 (i `Cons` _) = ni1 i; n1 _=E.Z
-
-nec :: T a -> D
-nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=E.Z
-
 for (i `Cons` _) = For () (nz i) 1
 
 rof sh = Rof () (nzSh sh); rof1 sh = Rof () (n1 sh)
 fort (Arr sh _) = for sh; fort _ = For () E.Z 1
-forc t = For () (nec t) 1
+forc (Arr sh _) = For () (nec sh) 1; forc _ = For () E.Z 1
 
-f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh); f2ors sh = F2or () (psh sh)
-r2of sh = R2of () (psh sh)
+f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh)
+f2ors sh = F2or () (psh sh); r2of sh = R2of () (psh sh)
 
 mIFs :: [E a] -> Maybe [Word8]
 mIFs = fmap concat.traverse b where b (BLit _ True)=Just [1]; b (BLit _ False)=Just [0]; b (FLit _ d)=Just (le$castDoubleToWord64 d); b (ILit _ n)=Just$le(fromIntegral n::Int64); b (Tup _ xs)=mIFs xs; b _=Nothing

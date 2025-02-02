@@ -1,4 +1,8 @@
-module E ( D (..), L (..), nz, ni1, pr, pr1, pc, psh, (#*) ) where
+module E ( D (..), L (..)
+         , nz, ni1, nzSh, n1, nec
+         , pr, pr1, pc, psh
+         , (#*)
+         ) where
 
 import           Sh
 
@@ -25,11 +29,19 @@ ip (StaPlus _ i j) = sp (ip i) (ip j)
 ip (StaMul _ i j) = mp (ip i) (ip j)
 ip _ = U Z
 
-pr1, pr,pc,psh :: Sh a -> L
+pr1,pr,pc,psh :: Sh a -> L
 pr1 (i `Cons` _) = ip1 i; pr1 _ = U Z
 pr (i `Cons` _) = ip i; pr _ = U Z
 pc (_ `Cons` i `Cons` _) = ip i; pc _ = U Z
 psh (i `Cons` sh) = mp (ip i) (psh sh); psh _ = U Z
+
+nzSh :: Sh a -> D
+nzSh (i `Cons` Nil) = nz i
+nzSh (i `Cons` sh)  = nz i #* nzSh sh
+nzSh _              = Z
+
+n1,nec :: Sh a -> D
+n1=dl1.pr1; nec=dl1.pc
 
 dᵢ i | i>0 = S | otherwise = Z
 
