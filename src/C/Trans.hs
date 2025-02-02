@@ -153,11 +153,11 @@ ni1 _ = False
 nec :: T a -> Bool
 nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
 
-for (i `Cons` _) | nz i = For1 () 1; for _ = For () 1
+for (i `Cons` _) | nz i = For () E.S 1; for _ = For () E.Z 1
 
-rof sh = if nzSh sh then Rof1 () else Rof (); rof1 sh = if n1 sh then Rof1 () else Rof ()
-fort (Arr sh _) = for sh; fort _ = For () 1
-forc t = if nec t then For1 () 1 else For () 1
+rof sh = if nzSh sh then Rof () E.S else Rof () E.Z; rof1 sh = if n1 sh then Rof () E.S else Rof () E.Z
+fort (Arr sh _) = for sh; fort _ = For () E.Z 1
+forc t = if nec t then For () E.S 1 else For () E.Z 1
 
 f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh); f2ors sh = F2or () (psh sh)
 r2of sh = R2of () (psh sh)
@@ -347,8 +347,8 @@ data Cell a b = Fixed -- set by the larger procedure
 aall is ds bs cs = do {i <- nI; pure (i=:0:forAll is ds bs (cs i++[i+=1]))}
 
 forAll is ds bs = thread (zipWith3 g is ds bs) where
-    g t d b@(KI i) | i > 0 = (:[]) . For1 () d t 0 ILt b
-    g t d b                = (:[]) . For () d t 0 ILt b
+    g t d b@(KI i) | i > 0 = (:[]) . For () E.S d t 0 ILt b
+    g t d b                = (:[]) . For () E.Z d t 0 ILt b
 
 forAll1 is = forAll is (repeat 1); aall1 is = aall is (repeat 1)
 
@@ -525,11 +525,11 @@ rfill (Builtin _ AddDim) (AD t lA _ (Just rnk) (Just sz) _) [AI (AD xR lX _ (Jus
     pure [td=:DP t rnk, xRd=:DP xR xRnk, cpy (Raw td 0 lA) (Raw xRd 0 lX) n sz]
 
 afor sh el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
-afor1 sh el c eu ss = do {i <- nI; pure (ff () 1 i el c eu (ss i))} where
-    ff | n1 sh = For1 | otherwise = For
+afor1 sh el c eu ss = do {i <- nI; pure (ff 1 i el c eu (ss i))} where
+    ff | n1 sh = For() E.S | otherwise = For() E.Z
 afort (Arr sh _) el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
-afors sh el c eu ss = do {i <- nI; pure (ff () 1 i el c eu (ss i))} where
-    ff | nzSh sh = For1 | otherwise = For
+afors sh el c eu ss = do {i <- nI; pure (ff 1 i el c eu (ss i))} where
+    ff | nzSh sh = For() E.S | otherwise = For() E.S
 arof sh n ss = do {i <- nI; pure (rof sh i n ss)}; arof1 sh n ss = do {k <- nI; pure (rof1 sh k n ss)}
 
 maa :: E (T ()) -> CM (Temp, Maybe AL, [CS ()])
@@ -614,14 +614,14 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just lt <- cr tX = do
         :pad=:(Tmp np-Tmp n)
         -- pad it to a power of 2
         :MaB () lS slop (Tmp np*(Tmp steps+1)*8)
-        :For () 1 i 0 ILt (Tmp pad) [ε (Raw slop (Tmp i) (Just lS) 8)]
+        :For () E.Z 1 i 0 ILt (Tmp pad) [ε (Raw slop (Tmp i) (Just lS) 8)]
         :cpy (Raw slop (Tmp pad) (Just lS)) (AElem xR 1 lX 0) (Tmp n) 8
         :i₀=:0:i₁=:0:inP=:Tmp slop:oP=:(Tmp slop+Tmp np*8):blSz=:1:blOSz=:2:nB=:Bin IAsr (Tmp np) 1
-        :For () 1 ph 1 ILeq (Tmp steps)
-            [ For () 1 bl 0 ILt (Tmp nB) [
+        :For () E.Z 1 ph 1 ILeq (Tmp steps)
+            [ For () E.Z 1 bl 0 ILt (Tmp nB) [
                 i₀=:0, i₁=:0, bl₀=:(Tmp bl*2), bl₁=:(Tmp bl₀+1),
                 -- fill out-block/next slab
-                For () 1 iₒ 0 ILt (Tmp blOSz)
+                For () E.Z 1 iₒ 0 ILt (Tmp blOSz)
                     [ If () (IRel IGeq (Tmp i₀) (Tmp blSz))
                         [ Wr () iAtO (EAt iAt1), i₁+=1 ]
                         [ If () (IRel IGeq (Tmp i₁) (Tmp blSz))
@@ -963,14 +963,14 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t aL
     let zero=f2or oSh l 0 ILt (Tmp m)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        loop = For1 () ɴc j₀ 0 ILt (Tmp n) [
+        loop = For () E.S ɴc j₀ 0 ILt (Tmp n) [
                   fort tA i 0 ILt (Tmp m) $
                       let zr=Raw td (Tmp i) (Just aL) 8 in
                       [ aid=:(Tmp aRd+(Tmp n*Tmp i+Tmp j₀)*8)
                       , xid=:(Tmp xRd+Tmp j₀*8)
                       , MX () z₀ (FAt zr)
                       , Ins () z z₀
-                      , For1 () 2 j 0 ILt ɴc
+                      , For () E.S 2 j 0 ILt ɴc
                              [ MX2 () za (FAt (Raw aid 0 lA 8)), aid+=16
                              , MX2 () zx (FAt (Raw xid 0 lX 8)), xid+=16
                              , MX2 () z (FBin FPlus (FTmp z) (FBin FTimes (FTmp za) (FTmp zx)))
@@ -1019,17 +1019,17 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t a
     let zero=f2ors oSh l 0 ILt (mE*oE)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
-        loop=For1 () ᴍ i₀ 0 ILt mE [
-                For1 () ᴏE j₀ 0 ILt oE [
-                    For1 () ɴ k₀ 0 ILt nE [
-                      For1 () 1 i 0 ILt ᴍ
+        loop=For () E.S ᴍ i₀ 0 ILt mE [
+                For () E.S ᴏE j₀ 0 ILt oE [
+                    For () E.S ɴ k₀ 0 ILt nE [
+                      For () E.S 1 i 0 ILt ᴍ
                             [ tid=:(Tmp td+((Tmp i+Tmp i₀)*oE+Tmp j₀)*8)
-                            , For1 () ᴏE j 0 ILt ᴏE $
+                            , For () E.S ᴏE j 0 ILt ᴏE $
                                   zipWith (\z₀ toffs -> MX () z₀ (FAt (Raw tid (KI toffs) (Just aL) 8))) z₀s oᴋ
                                 ++zipWith (Ins ()) zs z₀s
                                 ++[ aid=:(Tmp aRd+((Tmp i₀+Tmp i)*nE+Tmp k₀)*8)
                                   , bid=:(Tmp bRd+((Tmp j₀+Tmp j)*nE+Tmp k₀)*8)
-                                  , For1 () 2 k 0 ILt ɴ $
+                                  , For () E.S 2 k 0 ILt ɴ $
                                       zipWith (\zb bo -> MX2 () zb (FAt (Raw bid (nE*KI bo) lB 8))) (drop 1 zbs) (drop 1 oᴋ)
                                       ++MX2 () za (FAt (Raw aid 0 lA 8)):aid+=16
                                       :MX2 () (head zbs) (FAt (Raw bid 0 lB 8)):bid+=16
@@ -1323,7 +1323,7 @@ aeval (EApp _ (Builtin _ T) x) t a | Arr sh ty <- eAnn x, Just rnk <- staRnk sh 
     (std, plSd) <- offByDim dts
     let _:sstrides = sts; (_:dstrides) = std
     is <- nIs [1..rnk]
-    let loop=thread (zipWith (\i tt -> (:[]) . For () 1 i 0 ILt (Tmp tt)) is dts) [mv (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a)) (At xd (Tmp<$>sstrides) (Tmp<$>is) l) sze]
+    let loop=thread (zipWith (\i tt -> (:[]) . For () E.Z 1 i 0 ILt (Tmp tt)) is dts) [mv (At td (Tmp<$>dstrides) (Tmp<$>reverse is) (Just a)) (At xd (Tmp<$>sstrides) (Tmp<$>is) l) sze]
     pure (plX$plDs++init plSs++Ma () sh a t (KI rnk) (Tmp (head dts)*Tmp (head sstrides)) sze:diml (t, Just a) (Tmp<$>reverse dts)++init plSd++xd =: (Tmp xR+dO):td =: (Tmp t+dO):loop)
                                  | otherwise = unsupported
 aeval (EApp (Arr oSh _) (EApp _ g@(EApp _ (Builtin _ Outer) op) xs) ys) t a
@@ -1383,7 +1383,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Outer) op) xs) ys) t a
         ++plSlopX++plSlopY
           ++[ slopXd=:DP slopX (KI xERnk), slopYd=:DP slopY (KI yERnk)
             , xd=:DP xR (KI xRnk), yd=:DP yR (KI yRnk)
-            , di=:0, For () 1 i 0 ILt (Tmp nX) [For () 1 j 0 ILt (Tmp nY) loop]
+            , di=:0, For () E.Z 1 i 0 ILt (Tmp nX) [For () E.Z 1 j 0 ILt (Tmp nY) loop]
             , popSlopX, popSlopY])
   where
     tXs=eAnn xs; tYs=eAnn ys
@@ -1637,7 +1637,7 @@ peval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     plSeeds <- concat <$> zipWithM eeval seeds xs
     usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     fss <- writeRF f (PT t:xs) (PT t)
-    pure $ plU ++ plN (plSeeds ++ [For () 1 k 0 ILt nE (fss++usss)])
+    pure $ plU ++ plN (plSeeds ++ [For () E.Z 1 k 0 ILt nE (fss++usss)])
 peval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
     pure [MB () t (unBA aa)]
@@ -1650,7 +1650,7 @@ peval (Id _ (FoldGen seed g f n)) t = do
     (plSeed,seedR) <- plBV seed; (plN,nE) <- plC n
     uss <- writeRF g [PT x] (PT x)
     fss <- writeRF f [PT acc, PT x] (PT acc)
-    pure $ plSeed $ plN ([MB () acc (Is seedR), MB () x (Is seedR)] ++ uss ++ [Rof () k (nE-1) (fss++uss), MB () t (Is acc)])
+    pure $ plSeed $ plN ([MB () acc (Is seedR), MB () x (Is seedR)] ++ uss ++ [Rof () E.Z k (nE-1) (fss++uss), MB () t (Is acc)])
 peval e _ = nyi e
 
 eval :: E (T ()) -> Temp -> CM [CS ()]
@@ -1761,7 +1761,7 @@ eval (Id _ (Iter f x n)) t = do
     plX <- eval x t
     ss <- writeRF f [IT t] (IT t)
     i <- nI
-    let loop=For () 1 i 1 ILt nR ss
+    let loop=For () E.Z 1 i 1 ILt nR ss
     pure $ plX++plN [loop]
 eval (Cond _ p e0 e1) t = cond p e0 e1 (IT t)
 eval (Id _ (FoldOfZip zop op (p:qs))) acc
@@ -1783,7 +1783,7 @@ eval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     plSeeds <- concat <$> zipWithM eeval seeds xs
     usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     fss <- writeRF f (IT t:xs) (IT t)
-    pure $ plU ++ plN (plSeeds ++ [For () 1 k 0 ILt nE (fss++usss)])
+    pure $ plU ++ plN (plSeeds ++ [For () E.Z 1 k 0 ILt nE (fss++usss)])
 eval (Id _ (FoldGen seed g f n)) t = do
     x <- nI; acc <- nI
     k <- nI
@@ -1791,7 +1791,7 @@ eval (Id _ (FoldGen seed g f n)) t = do
     (plN,nE) <- plC n
     uss <- writeRF g [IT x] (IT x)
     fss <- writeRF f [IT acc, IT x] (IT acc)
-    pure $ plSeed $ plN ([acc=:Tmp seedR, x=:Tmp seedR] ++ uss ++ [Rof () k (nE-1) (fss++uss), t=:Tmp acc])
+    pure $ plSeed $ plN ([acc=:Tmp seedR, x=:Tmp seedR] ++ uss ++ [Rof () E.Z k (nE-1) (fss++uss), t=:Tmp acc])
 eval e _          = nyi e
 
 frel :: Builtin -> Maybe FRel
@@ -2023,7 +2023,7 @@ feval (Id _ (Iter f x n)) t = do
     plX <- feval x t
     ss <- writeRF f [FT t] (FT t)
     i <- nI
-    let loop=For () 1 i 1 ILt nR ss
+    let loop=For () E.Z 1 i 1 ILt nR ss
     pure $ plX ++ plN [loop]
 feval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
     aa <- tat e
@@ -2046,7 +2046,7 @@ feval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     plSeeds <- concat <$> zipWithM eeval seeds xs
     usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     fss <- writeRF f (FT t:xs) (FT t)
-    pure (plU ++ plSeeds ++ plN [Rof () k nE (fss++usss)])
+    pure (plU ++ plSeeds ++ plN [Rof () E.Z k nE (fss++usss)])
 feval (Id _ (FoldGen seed g f n)) t = do
     x <- nF; acc <- nF
     k <- nI
@@ -2054,7 +2054,7 @@ feval (Id _ (FoldGen seed g f n)) t = do
     (plN,nE) <- plC n
     uss <- writeRF g [FT x] (FT x)
     fss <- writeRF f [FT acc, FT x] (FT acc)
-    pure $ plSeed $ plN ([MX () acc (FTmp seedR), MX () x (FTmp seedR)] ++ uss ++ [Rof () k (nE-1) (fss++uss), MX () t (FTmp acc)])
+    pure $ plSeed $ plN ([MX () acc (FTmp seedR), MX () x (FTmp seedR)] ++ uss ++ [Rof () E.Z k (nE-1) (fss++uss), MX () t (FTmp acc)])
 feval e _ = nyi e
 
 sac t = Sa8 () t.KI
@@ -2094,7 +2094,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     -- TODO: array labels would be lost here, is that a problem?
     (_, ss) <- writeF f [ΠArg ats] (ΠT (tr<$>ts))
     i <- nI
-    let loop=For () 1 i 1 ILt nR (ss++mvts ats ts)
+    let loop=For () E.Z 1 i 1 ILt nR (ss++mvts ats ts)
     pure $ plN (plS ++ [loop])
 πr (LLet _ b e) ts = do
     ss <- llet b
