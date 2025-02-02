@@ -3,14 +3,10 @@ module E ( L (..), pr, pr1, pc, psh ) where
 import           Sh
 
 ip1 :: I a -> L
-ip1 (StaPlus x i0 (Ix x1 i1)) | i1>0 = ip (StaPlus x i0 (Ix x1 (i1-1)))
-ip1 (StaPlus x (Ix x0 i0) i1) | i0>0 = ip (StaPlus x (Ix x0 (i0-1)) i1)
 ip1 (Ix x i) | i>0 = ip (Ix x (i-1)); ip1 _ = U
 
 ip :: I a -> L
 ip (Ix _ i) | even i&&i>0 = E | odd i = O
-ip (StaPlus _ i0 i1) = sp (ip i0) (ip i1)
-ip (StaMul _ i0 i1) = mp (ip i0) (ip i1)
 ip _ = U
 
 pr1, pr,pc,psh :: Sh a -> L
