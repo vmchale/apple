@@ -7,8 +7,7 @@ ip1 (Ix x i) | i>0 = ip (Ix x (i-1)); ip1 _ = U Z
 
 ip :: I a -> L
 ip (Ix _ i) | even i = E (dᵢ i) | odd i = O (if i>=3 then S else Z)
-ip (StaPlus _ i j) = sp (ip i) (ip j)
--- StaMul 2 case
+ip (StaPlus _ i j) = sp (ip i) (ip j); ip (StaMul _ i j) = mp (ip i) (ip j)
 ip _ = U Z
 
 pr1, pr,pc,psh :: Sh a -> L
