@@ -62,41 +62,41 @@ emptyL = Liveness IS.empty IS.empty IS.empty IS.empty
 
 initLiveness :: [CS ControlAnn] -> IM.IntMap (ControlAnn, Liveness)
 initLiveness = IM.fromList . go where
-    go []                            = []
-    go (For ann _ _ _ _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
-    go (For1 ann _ _ _ _ _ ss:cs)    = (node ann, (ann, emptyL)):go ss++go cs
-    go (F2or ann E _ _ _ _ ss _:cs)  = (node ann, (ann, emptyL)):go ss++go cs
-    go (F2or ann _ _ _ _ _ ss s1:cs) = (node ann, (ann, emptyL)):go s1++go ss++go cs
-    go (Rof ann _ _ ss:cs)           = (node ann, (ann, emptyL)):go ss++go cs
-    go (Rof1 ann _ _ ss:cs)          = (node ann, (ann, emptyL)):go ss++go cs
-    go (R2of ann E _ _ ss _:cs)      = (node ann, (ann, emptyL)):go ss++go cs
-    go (R2of ann _ _ _ ss s1:cs)     = (node ann, (ann, emptyL)):go s1++go ss++go cs
-    go (While ann _ _ _ ss:cs)       = (node ann, (ann, emptyL)):go ss++go cs
-    go (WT ann _ ss:cs)              = (node ann, (ann, emptyL)):go ss++go cs
-    go (If ann _ ss ss':cs)          = (node ann, (ann, emptyL)):go ss++go ss'++go cs
-    go (Ifn't ann _ ss:cs)           = (node ann, (ann, emptyL)):go ss++go cs
-    go (Def ann _ ss:cs)             = (node ann, (ann, emptyL)):go ss++go cs
-    go (c:cs)                        = let x=lann c in (node x, (x, emptyL)):go cs
+    go []                             = []
+    go (For ann _ _ _ _ _ ss:cs)      = (node ann, (ann, emptyL)):go ss++go cs
+    go (For1 ann _ _ _ _ _ ss:cs)     = (node ann, (ann, emptyL)):go ss++go cs
+    go (F2or ann E{} _ _ _ _ ss _:cs) = (node ann, (ann, emptyL)):go ss++go cs
+    go (F2or ann _ _ _ _ _ ss s1:cs)  = (node ann, (ann, emptyL)):go s1++go ss++go cs
+    go (Rof ann _ _ ss:cs)            = (node ann, (ann, emptyL)):go ss++go cs
+    go (Rof1 ann _ _ ss:cs)           = (node ann, (ann, emptyL)):go ss++go cs
+    go (R2of ann E{} _ _ ss _:cs)     = (node ann, (ann, emptyL)):go ss++go cs
+    go (R2of ann _ _ _ ss s1:cs)      = (node ann, (ann, emptyL)):go s1++go ss++go cs
+    go (While ann _ _ _ ss:cs)        = (node ann, (ann, emptyL)):go ss++go cs
+    go (WT ann _ ss:cs)               = (node ann, (ann, emptyL)):go ss++go cs
+    go (If ann _ ss ss':cs)           = (node ann, (ann, emptyL)):go ss++go ss'++go cs
+    go (Ifn't ann _ ss:cs)            = (node ann, (ann, emptyL)):go ss++go cs
+    go (Def ann _ ss:cs)              = (node ann, (ann, emptyL)):go ss++go cs
+    go (c:cs)                         = let x=lann c in (node x, (x, emptyL)):go cs
 
     -- go' cs xs = go cs ++ xs
 
 inspectOrder :: [CS ControlAnn] -> [N]
 inspectOrder s = io s [] where
-    io (For ann _ _ _ _ _ ss:cs) ns     = node ann:io ss (io cs ns)
-    io (For1 ann _ _ _ _ _ ss:cs) ns    = node ann:io ss (io cs ns)
-    io (F2or ann E _ _ _ _ ss _:cs) ns  = node ann:io ss (io cs ns)
-    io (F2or ann _ _ _ _ _ ss s1:cs) ns = node ann:io s1 (io ss (io cs ns))
-    io (Rof ann _ _ ss:cs) ns           = node ann:io ss (io cs ns)
-    io (Rof1 ann _ _ ss:cs) ns          = node ann:io ss (io cs ns)
-    io (R2of ann E _ _ ss _:cs) ns      = node ann:io ss (io cs ns)
-    io (R2of ann _ _ _ ss s1:cs) ns     = node ann:io s1 (io ss (io cs ns))
-    io (While ann _ _ _ ss:cs) ns       = node ann:io ss (io cs ns)
-    io (WT ann _ ss:cs) ns              = node ann:io ss (io cs ns)
-    io (If ann _ ss ss':cs) ns          = node ann:io ss (io ss' (io cs ns))
-    io (Ifn't ann _ ss:cs) ns           = node ann:io ss (io cs ns)
-    io (Def ann _ ss:cs) ns             = node ann:io ss (io cs ns)
-    io (c:cs) ns                        = node (lann c):io cs ns
-    io [] ns                            = ns
+    io (For ann _ _ _ _ _ ss:cs) ns      = node ann:io ss (io cs ns)
+    io (For1 ann _ _ _ _ _ ss:cs) ns     = node ann:io ss (io cs ns)
+    io (F2or ann E{} _ _ _ _ ss _:cs) ns = node ann:io ss (io cs ns)
+    io (F2or ann _ _ _ _ _ ss s1:cs) ns  = node ann:io s1 (io ss (io cs ns))
+    io (Rof ann _ _ ss:cs) ns            = node ann:io ss (io cs ns)
+    io (Rof1 ann _ _ ss:cs) ns           = node ann:io ss (io cs ns)
+    io (R2of ann E{} _ _ ss _:cs) ns     = node ann:io ss (io cs ns)
+    io (R2of ann _ _ _ ss s1:cs) ns      = node ann:io s1 (io ss (io cs ns))
+    io (While ann _ _ _ ss:cs) ns        = node ann:io ss (io cs ns)
+    io (WT ann _ ss:cs) ns               = node ann:io ss (io cs ns)
+    io (If ann _ ss ss':cs) ns           = node ann:io ss (io ss' (io cs ns))
+    io (Ifn't ann _ ss:cs) ns            = node ann:io ss (io cs ns)
+    io (Def ann _ ss:cs) ns              = node ann:io ss (io cs ns)
+    io (c:cs) ns                         = node (lann c):io cs ns
+    io [] ns                             = ns
 
 tieBranch :: N -> ([N] -> [N]) -> [CS a] -> FreshM ([N] -> [N], [CS ControlAnn])
 tieBranch i f ss = do
@@ -160,18 +160,18 @@ addCF ((For1 _ tk t el c eu ss):stmts) = do
     pure $ For1 (ControlAnn i (f (h [])) udϵ) tk t el c eu ss':stmts'
   where
     udϵ = UD (uE el<>uE eu<>uE tk) IS.empty IS.empty IS.empty
-addCF ((F2or _ E t el c eu ss _):stmts) = do
+addCF ((F2or _ p@E{} t el c eu ss _):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
     (h, ss') <- tieBody i f ss
-    pure $ F2or (ControlAnn i (f (h [])) udϵ) E t el c eu ss' undefined:stmts'
+    pure $ F2or (ControlAnn i (f (h [])) udϵ) p t el c eu ss' undefined:stmts'
   where
     udϵ = UD (uE el<>uE eu) IS.empty IS.empty IS.empty
-addCF ((R2of _ E t ec ss _):stmts) = do
+addCF ((R2of _ p@E{} t ec ss _):stmts) = do
     i <- getFresh
     (f, stmts') <- next stmts
     (h, ss') <- tieBody i f ss
-    pure $ R2of (ControlAnn i (f (h [])) udϵ) E t ec ss' undefined:stmts'
+    pure $ R2of (ControlAnn i (f (h [])) udϵ) p t ec ss' undefined:stmts'
   where
     udϵ = UD (uE ec) IS.empty IS.empty IS.empty
 addCF ((F2or _ p t el c eu ss s1):stmts) = do
@@ -345,19 +345,19 @@ next stmts = do
 
 -- | Construct map assigning labels to their node name.
 brs :: [CS a] -> FreshM ()
-brs []                             = pure ()
-brs (G _ l retL:stmts)             = do {i <- fm retL; b3 i l; brs stmts}
-brs (Def _ f b:stmts)              = fm f *> brs b *> brs stmts
-brs (For _ _ _ _ _ _ ss:stmts)     = brs ss *> brs stmts
-brs (For1 _ _ _ _ _ _ ss:stmts)    = brs ss *> brs stmts
-brs (F2or _ E _ _ _ _ ss _:stmts)  = brs ss *> brs stmts
-brs (F2or _ _ _ _ _ _ ss s1:stmts) = brs ss *> brs s1 *> brs stmts
-brs (Rof _ _ _ ss:stmts)           = brs ss *> brs stmts
-brs (Rof1 _ _ _ ss:stmts)          = brs ss *> brs stmts
-brs (R2of _ E _ _ ss _:stmts)      = brs ss *> brs stmts
-brs (R2of _ _ _ _ ss s1:stmts)     = brs ss *> brs s1 *> brs stmts
-brs (While _ _ _ _ ss:stmts)       = brs ss *> brs stmts
-brs (WT _ _ ss:stmts)              = brs ss *> brs stmts
-brs (If _ _ ss ss':stmts)          = brs ss *> brs ss' *> brs stmts
-brs (Ifn't _ _ ss:stmts)           = brs ss *> brs stmts
-brs (_:asms)                       = brs asms
+brs []                              = pure ()
+brs (G _ l retL:stmts)              = do {i <- fm retL; b3 i l; brs stmts}
+brs (Def _ f b:stmts)               = fm f *> brs b *> brs stmts
+brs (For _ _ _ _ _ _ ss:stmts)      = brs ss *> brs stmts
+brs (For1 _ _ _ _ _ _ ss:stmts)     = brs ss *> brs stmts
+brs (F2or _ E{} _ _ _ _ ss _:stmts) = brs ss *> brs stmts
+brs (F2or _ _ _ _ _ _ ss s1:stmts)  = brs ss *> brs s1 *> brs stmts
+brs (Rof _ _ _ ss:stmts)            = brs ss *> brs stmts
+brs (Rof1 _ _ _ ss:stmts)           = brs ss *> brs stmts
+brs (R2of _ E{} _ _ ss _:stmts)     = brs ss *> brs stmts
+brs (R2of _ _ _ _ ss s1:stmts)      = brs ss *> brs s1 *> brs stmts
+brs (While _ _ _ _ ss:stmts)        = brs ss *> brs stmts
+brs (WT _ _ ss:stmts)               = brs ss *> brs stmts
+brs (If _ _ ss ss':stmts)           = brs ss *> brs ss' *> brs stmts
+brs (Ifn't _ _ ss:stmts)            = brs ss *> brs stmts
+brs (_:asms)                        = brs asms

@@ -243,9 +243,9 @@ pL f (For l tk t el rel eu ss) = "for" <> parens (pretty t <> comma <+> pretty t
 pL f (For1 l tk t el rel eu ss) = "for-1" <> parens (pretty t <> comma <+> pretty t <> "≔" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=" <> pretty tk) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (Rof l t ec ss)         = "rof" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "--") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (Rof1 l t ec ss)        = "rof-1" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "--") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
-pL f (R2of l E t ec ss _)    = "rof" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "-=2") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (R2of l E{} t ec ss _) = "rof" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "-=2") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (R2of l _ t ec ss ss1)  = "rof" <> parens (pretty t <> "≔" <> pretty ec <> comma <+> "nz" <+> pretty t <> comma <+> pretty t <> "-=2") <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <#> lbrace <#> indent 4 (pCS f ss1) <#> rbrace <> f l
-pL f (F2or l E t el rel eu ss _) = "for" <> parens (pretty t <> comma <+> pretty t <> "=" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=2") <#> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
+pL f (F2or l E{} t el rel eu ss _) = "for" <> parens (pretty t <> comma <+> pretty t <> "=" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=2") <#> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (F2or l _ t el rel eu ss ss1) = "for" <> parens (pretty t <> comma <+> pretty t <> "=" <> pretty el <> comma <+> pretty t <> pretty rel <> pretty eu <> comma <+> pretty t <> "+=2") <#> lbrace <#> indent 4 (pCS f ss) <#> rbrace <#> lbrace <#> indent 4 (pCS f ss1) <#> rbrace <> f l
 pL f (While l t rel eb ss) = "while" <> parens (pretty t <> pretty rel <> pretty eb) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l
 pL f (WT l p ss)           = "while" <> parens (pretty p) <+> lbrace <#> indent 4 (pCS f ss) <#> rbrace <> f l

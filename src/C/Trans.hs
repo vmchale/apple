@@ -993,7 +993,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ VMul) a) x) t aL | Arr xSh F <- tX = 
     i <- nI; j <- nI; m <- nI; n <- nI; z0 <- nF; z <- nF2
     aRd <- nI; xRd <- nI; td <- nI
     (plAA, (lA, aR)) <- plA a; (plX, (lX, xR)) <- plA x
-    (prologue, et, ~(Just zs)) <- case pr xSh of E -> pure (id, FTmp z0, Nothing); _ -> do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    (prologue, et, ~(Just zs)) <- case pr xSh of E{} -> pure (id, FTmp z0, Nothing); _ -> do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let loop = fort tA i 0 ILt (Tmp m) $ prologue
                   [ MX2 () z (ConstF (0,0))
                   , f2or xSh j 0 ILt (Tmp n)
@@ -1055,7 +1055,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t a
     aRd <- nI; bRd <- nI; td <- nI
     tid <- nI; bid <- nI; aid <- nI
     (plAA, (lA, aR)) <- plA a; (plB, (lB, bR)) <- plA b
-    (prologue, et, ~(Just zs)) <- case pc bSh of E -> pure (id, FTmp z0, Nothing); _ -> do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
+    (prologue, et, ~(Just zs)) <- case pc bSh of E{} -> pure (id, FTmp z0, Nothing); _ -> do {zs <- nF; pure ((MX () zs 0:), FTmp zs+FTmp z0, Just zs)}
     let zero=f2ors oSh l 0 ILt (Tmp m*Tmp o)
                 [Wr2F () (Raw td (Tmp l) (Just aL) 8) (ConstF (0,0))]
                 [WrF () (Raw td (Tmp l) (Just aL) 8) 0]
