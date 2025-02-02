@@ -163,7 +163,7 @@ f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh); f2ors sh = F2or () (psh s
 r2of sh = R2of () (psh sh)
 
 mIFs :: [E a] -> Maybe [Word8]
-mIFs = fmap concat.traverse mIFϵ where mIFϵ (FLit _ d)=Just (le$castDoubleToWord64 d); mIFϵ (ILit _ n)=Just$le(fromIntegral n::Int64); mIFϵ (Tup _ xs)=mIFs xs; mIFϵ _=Nothing
+mIFs = fmap concat.traverse b where b (BLit _ True)=Just [1]; b (BLit _ False)=Just [0]; b (FLit _ d)=Just (le$castDoubleToWord64 d); b (ILit _ n)=Just$le(fromIntegral n::Int64); b (Tup _ xs)=mIFs xs; b _=Nothing
 
 writeC :: E (T ()) -> ([CS ()], LSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
