@@ -1,6 +1,17 @@
-module E ( D (..), L (..), pr, pr1, pc, psh ) where
+module E ( D (..), L (..), nz, ni1, pr, pr1, pc, psh, (#*) ) where
 
 import           Sh
+
+nz, ni1 :: I a -> D
+nz (Ix _ i) | i>0 = S
+nz (StaPlus _ i j) = nz i#|nz j
+nz (StaMul _ i j) = nz i#*nz j
+nz _ = Z
+
+ni1 (Ix _ i) | i>1 = S
+ni1 (StaPlus _ i j) = ni1 i#|ni1 j
+ni1 (StaMul _ i j) = nz i#*ni1 j #| ni1 i#*nz j
+ni1 _ = Z
 
 ip1 :: I a -> L
 ip1 (Ix x i) | i>0 = ip (Ix x (i-1))
@@ -40,6 +51,9 @@ sp (E d) (O d') = O (d#|d')
 sp (O d) (E d') = O (d#|d')
 sp O{} O{}      = E S
 sp d d'         = U (dl1 d#|dl1 d')
+
+infixr 5 #*
+infixr 4 #|
 
 (#*), (#|) :: D -> D -> D
 S #* S = S; _ #* _ = Z

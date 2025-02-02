@@ -131,33 +131,22 @@ staIx Nil=Just[]; staIx (Ix _ i `Cons` s) = (fromIntegral i:)<$>staIx s; staIx _
 tIx :: T a -> Maybe (T a, [Int64])
 tIx (Arr sh t) = (t,)<$>staIx sh; tIx _=Nothing
 
-nz, ni1 :: I a -> Bool
-nz (Ix _ i) | i > 0 = True
-nz (StaPlus _ i0 i1) = nz i0 || nz i1 -- no negative dims
-nz (StaMul _ i0 i1) = nz i0 && nz i1
-nz _ = False
-
-nzSh :: Sh a -> Bool
+nzSh :: Sh a -> D
 nzSh (i `Cons` Nil) = nz i
-nzSh (i `Cons` sh)  = nz i && nzSh sh
-nzSh _              = False
+nzSh (i `Cons` sh)  = nz i #* nzSh sh
+nzSh _              = E.Z
 
-n1 :: Sh a -> Bool
-n1 (i `Cons` _) = ni1 i; n1 _=False
+n1 :: Sh a -> D
+n1 (i `Cons` _) = ni1 i; n1 _=E.Z
 
-ni1 (Ix _ i) | i > 1 = True
-ni1 (StaPlus _ i0 i1) = ni1 i0 || ni1 i1
-ni1 (StaMul _ i0 i1) = (nz i0&&ni1 i1) || (nz i1&&ni1 i0)
-ni1 _ = False
+nec :: T a -> D
+nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=E.Z
 
-nec :: T a -> Bool
-nec (Arr (_ `Cons` i `Cons` _) _) = nz i; nec _=False
+for (i `Cons` _) = For () (nz i) 1
 
-for (i `Cons` _) | nz i = For () E.S 1; for _ = For () E.Z 1
-
-rof sh = if nzSh sh then Rof () E.S else Rof () E.Z; rof1 sh = if n1 sh then Rof () E.S else Rof () E.Z
+rof sh = Rof () (nzSh sh); rof1 sh = Rof () (n1 sh)
 fort (Arr sh _) = for sh; fort _ = For () E.Z 1
-forc t = if nec t then For () E.S 1 else For () E.Z 1
+forc t = For () (nec t) 1
 
 f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh); f2ors sh = F2or () (psh sh)
 r2of sh = R2of () (psh sh)
@@ -526,10 +515,10 @@ rfill (Builtin _ AddDim) (AD t lA _ (Just rnk) (Just sz) _) [AI (AD xR lX _ (Jus
 
 afor sh el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
 afor1 sh el c eu ss = do {i <- nI; pure (ff 1 i el c eu (ss i))} where
-    ff | n1 sh = For() E.S | otherwise = For() E.Z
+    ff = For() (n1 sh)
 afort (Arr sh _) el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
 afors sh el c eu ss = do {i <- nI; pure (ff 1 i el c eu (ss i))} where
-    ff | nzSh sh = For() E.S | otherwise = For() E.S
+    ff = For() (nzSh sh)
 arof sh n ss = do {i <- nI; pure (rof sh i n ss)}; arof1 sh n ss = do {k <- nI; pure (rof1 sh k n ss)}
 
 maa :: E (T ()) -> CM (Temp, Maybe AL, [CS ()])
