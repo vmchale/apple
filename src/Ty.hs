@@ -469,7 +469,7 @@ occ Li{}         = IS.empty
 occ (P ts)       = occ @<> ts
 occ (Ρ n rs)     = Nm.insert n $ occ @<> rs
 
-scalar sv = mapShSubst (insert sv Nil)
+scalar f (l,_) s n = snd <$> mgSh f l s n Nil
 
 σ (Li IEVar{}) = I; σ (IZ IEVar{} t) = TVar t; σ t = t
 
@@ -519,8 +519,8 @@ mgu _ _ s (TVar n0@(Nm _ (U j) _)) t1@(Z n1) | n0/=n1 = pure (t1, uTS j t1 s)
 mgu _ _ s t@Li{} (TVar (Nm _ (U u) _)) = pure (t, uTS u t s)
 mgu _ _ s (TVar (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
 mgu _ _ s t@(TVar n) (TVar n') | n == n' = pure (t, s)
-mgu _ _ s t@(TVar n) (Arr (SVar i) (TVar n')) | n'==n = pure (t, scalar i s)
-mgu _ _ s (Arr (SVar i) t@(TVar n)) (TVar n') | n'==n = pure (t, scalar i s)
+mgu f l s t@(TVar n) (Arr i (TVar n')) | n'==n = (t,) <$> scalar f l s i
+mgu f l s (Arr i t@(TVar n)) (TVar n') | n'==n = (t,) <$> scalar f l s i
 mgu _ (l, _) s t'@(TVar (Nm _ (U i) _)) t | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = pure (t, uTS i t s)
 mgu _ (l, _) s t t'@(TVar (Nm _ (U i) _)) | i `IS.member` occ t = throwError $ OT l t' t
@@ -532,22 +532,22 @@ mgu f l s (Arr sh t) (Arr sh' t') = do
     (t'', s0) <- mgu f l s t t'
     (sh'', s1) <- mgShPrep f (fst l) s0 sh sh'
     pure (Arr sh'' t'', s1)
-mgu f l s (Arr (SVar n) t) F = second (scalar n) <$> mgu f l s t F
-mgu f l s (Arr (SVar n) t) I = second (scalar n) <$> mgu f l s t I
-mgu f l s F (Arr (SVar n) t) = second (scalar n) <$> mgu f l s F t
-mgu f l s I (Arr (SVar n) t) = second (scalar n) <$> mgu f l s I t
-mgu f l s (Arr (SVar n) t) B = second (scalar n) <$> mgu f l s t B
-mgu f l s B (Arr (SVar n) t) = second (scalar n) <$> mgu f l s B t
-mgu f l s (Arr (SVar n) t) t'@P{} = second (scalar n) <$> mgu f l s t t'
-mgu f l s t'@P{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
-mgu f l s (Arr (SVar n) t) t'@Ρ{} = second (scalar n) <$> mgu f l s t t'
-mgu f l s t'@Ρ{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
-mgu f l s (Arr (SVar n) t) t'@Li{} = second (scalar n) <$> mgu f l s t t'
-mgu f l s t'@Li{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
-mgu f l s (Arr (SVar n) t) t'@IZ{} = second (scalar n) <$> mgu f l s t t'
-mgu f l s t'@IZ{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
-mgu f l s (Arr (SVar n) t) t'@Z{} = second (scalar n) <$> mgu f l s t t'
-mgu f l s t'@Z{} (Arr (SVar n) t) = second (scalar n) <$> mgu f l s t' t
+mgu f l s (Arr n t) F = do {s' <- scalar f l s n; mguPrep f l s' t F}
+mgu f l s (Arr n t) I = do {s' <- scalar f l s n; mguPrep f l s' t I}
+mgu f l s F (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' F t}
+mgu f l s I (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' I t}
+mgu f l s (Arr n t) B = do {s' <- scalar f l s n; mguPrep f l s' t B}
+mgu f l s B (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' B t}
+mgu f l s (Arr n t) t'@P{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
+mgu f l s t'@P{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
+mgu f l s (Arr n t) t'@Ρ{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
+mgu f l s t'@Ρ{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
+mgu f l s (Arr n t) t'@Li{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
+mgu f l s t'@Li{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
+mgu f l s (Arr n t) t'@IZ{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
+mgu f l s t'@IZ{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
+mgu f l s (Arr n t) t'@Z{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
+mgu f l s t'@Z{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
 mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f l) s ts ts'
 -- TODO: rho occurs check
 mgu f l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (iTS n t') <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
