@@ -1025,7 +1025,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t a
         :[zero,loop])
   where
     tA=eAnn a; tB=eAnn b
-    mT n | n `rem` 8 == 0 = Just 8 | n `rem` 4 == 0 = Just 4 | otherwise = Nothing
+    mT n | n `rem` 8==0 && n > 0 = Just 8 | n `rem` 4==0 && n>0 = Just 4 | otherwise = Nothing
     rot1 xs = take (length xs) $ drop 1 $ cycle xs
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Mul) a) (EApp _ (Builtin _ T) b)) t aL | Arr bSh F <- tB = do
     i <- nI; j <- nI; k <- nI; m <- nI; l <- nI; n <- nI; o <- nI
