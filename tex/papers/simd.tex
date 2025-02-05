@@ -104,7 +104,7 @@ Array languages have a chance to do better since they naturally express computat
 
 \subsection{Typing \& Indexing}
 
-Suppose we wish to compute the 7-day moving average. We will do so using \verb|`\|, inspired by J's infix \cite{nuvoc}, which lifts a vector function to operate on windows of 7-vectors, arranging the (scalar) results into a vector. Examining type annotations, we see that the fold of the inner loop (\verb|/|) is inferred have type \verb|(float → float → float) → Vec 7 float → float|:
+Suppose we wish to compute the 7-day moving average. We will do so using \verb|\`|, inspired by J's infix \cite{nuvoc}, which lifts a vector function to operate on windows of 7-vectors, arranging the (scalar) results into a vector. Examining type annotations, we see that the fold of the inner loop (\verb|/|) is inferred have type \verb|(float → float → float) → Vec 7 float → float|:
 
 \begin{verbatim}
  > :ann λxs. [(+)/x%ℝ(:x)]\`7 xs
