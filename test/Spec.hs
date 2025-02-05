@@ -76,6 +76,7 @@ allT = testGroup "jit"
     , testCase "oeis (A000262)" $ do { res <- fpIi "math/oeis/A000262.🍏" 6; res @?= 4051}
     , testCase "part" $ do { res <- fpIv "math/oeis/A000041.🍏" 12; res @?= [1::Int64,1,2,3,5,7,11,15,22,30,42,56,77]}
     , testCase "catalan numbers" $ do { res <- fpIv "math/oeis/A000108.🍎" 6; res @?= [1::Int64,1,2,5,14,42,132,429]}
+    , testCase "derangements" $ do { res <- fpIv "math/oeis/A000166.🍏" 8; res @?= [1::Int64,0,1,2,9,44,265,1854,14833]}
     , testCase "catalan" $ do { res <- fpIi "math/combinatorics/catalan.🍎" 10 ; res @?= 16796 }
     , testCase "bell" $ do { res <- fpIv "math/combinatorics/bell.🍎" 6; res @?= [1::Int64,1,2,5,15,52]}
     , testCase "base" $ do { res <- fpIiv "examples/base.🍏" 15 3; res @?= [1,2,0::Int64] }
