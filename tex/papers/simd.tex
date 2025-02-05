@@ -141,6 +141,38 @@ apple_1:
     ⋮
 \end{verbatim}
 
+Compare the code generated to compute the average of a vector of unspecified size, which includes \verb|tbz x1, #0, apple_0| to
+
+\begin{verbatim}
+ > :ty [(+)/x%ℝ(:x)]
+Vec (i + 1) float → float
+ > :asm [(+)/x%ℝ(:x)]
+
+    ⋮
+    ldr d3, [x2], #0x8
+    eor v2.16b, v2.16b, v2.16b
+    mov x4, #0x1
+    cmp x4, x3
+    b.GE apple_1
+    sub x1, x3, #0x1
+    tbz x1, #0, apple_0
+    ldr d0, [x2], #0x8
+    fadd d3, d3, d0
+    add x4, x4, #0x1
+apple_0:
+    cmp x4, x3
+    b.GE apple_1
+    ldr q0, [x2], #0x10
+    fadd v2.2d, v2.2d, v0.2d
+    add x4, x4, #0x2
+    cmp x4, x3
+    b.LT apple_0
+apple_1:
+    faddp d0, v2.2d
+    fadd d3, d3, d0
+    ⋮
+\end{verbatim}
+
 Similar analyses are already performed by industrial compilers, but types are part of the source language and thus available to any programmer who knows the language---contrast autovectorization in C++, which is a matter for compiler experts. Moreover, type systems, unlike compiler internals, are not subject to change between versions.
 
 In a type system with shapes, dimension information proliferates (based on rules).
@@ -224,9 +256,15 @@ to determine whether \verb|f| can operate on vector registers. \verb|hasSIMD| tr
 % https://tex.stackexchange.com/a/208942
 If the function does not have a SIMD implementation, we fall back on compiling \verb|map| as described in \cref{sec:map}
 
-% \subsection{Fold}
+\subsection{Fold}
 
-% SIMD folds are a bit more involved; first
+SIMD folds are a bit more involved. In the Apple array system:
+
+\begin{itemize}
+  \item Determine how to duplicate the seed value across a vector register by inspecting \verb|op|. For instance, in the case of \verb|max|, we fill all elements of the vector accumulator with the seed; in the case of \verb|(+)|, we zero the vector accumulator and then write the seed to one of its elements.
+  \item
+  \item Combine the elements of the vector accumulator using \verb|op|, writing the result to the return register. Often there is a specialized instruction to do this, e.g. \verb|faddp|, \verb|haddpd|, \verb|fmaxp|.
+\end{itemize}
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
