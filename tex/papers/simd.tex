@@ -19,6 +19,8 @@
   The C compilation model has dominated compilers literature but it opposes Single-Intruction, Multiple Data (SIMD). We articulate the assumptions behind textbook methods, where new CPUs diverge, and give a first cut of a better approach used in the Apple Array System. By reconsidering expectations about compiler optimization, we give a program for high-level languages to offer performant SIMD. Array languages turn out to be an especially good candidate, expressing efficient operations in a high-level language; we give examples in Apple.
 \end{abstract}
 
+\tableofcontents
+
 \section{Background}
 
 \subsection{Textbook Compilation}
@@ -90,6 +92,7 @@ A compiler-as-a-library is appealing because it could be invoked by another comp
 
 % also phase-optimization problem... examples where compilation techniques allow XYZ (phase optimization problem cited for entrenchment of clang/gcc but maybe we should compile different things! LLVM is great but not always a target, e.g. laziness...)
 The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but the problem sitting before us is narrower. A compiler ferries a (possibly high-level) language to efficient code, and actually a source language with fewer low-level facilities offers more invariants. ``Optimization'' writ large gets much attention, but transformations that make high-level languages possible have not entered the computer science canon, particularly for functional or exotic languages.
+% recursive/immutable compiled to the same b/c register coalescing
 
 ``Amenability to efficient compilation'' also informs the design of the source language. One can also consider languages where the programmer can expect efficient compilation by reasoning about the source-language in its own terms. This is not the case for C++, where efficiency of generated code can vary dramatically by compiler or across versions of the same compiler \cite{intrinsics,kolodiej,cc}. There is no contract with the user; performance depends on internals that are not documented, justified, analyzed with the same scrutiny as programming languages.
 % basically "suitable to write high-perf code" but not necessarily via manually changing to bitshifts
@@ -141,7 +144,7 @@ apple_1:
     ⋮
 \end{verbatim}
 
-Compare the code generated to compute the average of a vector of unspecified size, which includes \verb|tbz x1, #0, apple_0| to
+Compare the code generated to compute the average of a vector of unspecified size; note the \verb|tbz x1, #0, apple_0| to handle the case when the vector cannot fit exactly in vector registers.
 
 \begin{verbatim}
  > :ty [(+)/x%ℝ(:x)]
@@ -258,13 +261,34 @@ If the function does not have a SIMD implementation, we fall back on compiling \
 
 \subsection{Fold}
 
-SIMD folds are a bit more involved. In the Apple array system:
+\iffalse
+SIMD folds are a bit more involved. Let us first set out how scalar folds are compiled in Apple. Suppose we are compiling \verb|fold (λx.λy. op x y) seed|
+
+\begin{itemize}
+  \item Generate temporaries \verb|x|, \verb|y| for arguments and \verb|z| for the return value.
+\end{itemize}
+\fi
+
+Suppose we are compling \verb|fold (λx.λy. op x y) seed|. At a high level, the Apple array system attempts a SIMD implementation as follows:
 
 \begin{itemize}
   \item Determine how to duplicate the seed value across a vector register by inspecting \verb|op|. For instance, in the case of \verb|max|, we fill all elements of the vector accumulator with the seed; in the case of \verb|(+)|, we zero the vector accumulator and then write the seed to one of its elements.
-  \item
-  \item Combine the elements of the vector accumulator using \verb|op|, writing the result to the return register. Often there is a specialized instruction to do this, e.g. \verb|faddp|, \verb|haddpd|, \verb|fmaxp|.
+  \item Iterate over the input array by 2, reading to the vector argument \verb|x| and executing \verb|fsteps2 = writeF2 op| to update the vector accumulator.
+  \item Combine the elements of the vector accumulator using \verb|op|, writing the result to the return register. Often there is a specialized instruction, e.g. \verb|faddp|, \verb|haddpd|, \verb|fmaxp|.
+  \item If there is still one remaining element after iterating by 2, update the return register by executing \verb|fsteps = writeF op|
 \end{itemize}
+
+In the Apple array system, we define
+
+\begin{verbatim}
+seedVector :: Expr -> Maybe (FTemp -> F2Temp -> [Stmt])
+
+combine :: Expr -> F2Temp -> FTemp -> [Stmt]
+\end{verbatim}
+
+\verb|seedVector| generates a sequence of \verb|Stmt|s to seed a given vector register from a value in a register when possible. If the operation  is not recognized, we give up and return \verb|Nothing|.
+
+\verb|combine| generates code to apply \verb|op| to the vector elements of a given register, writing the result to a specified register.
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
