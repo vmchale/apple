@@ -171,7 +171,7 @@ optA (EApp l (Builtin _ Io) n) = do
     n' <- optA n
     k <- nextU "k" I
     -- FIXME: when we use eMinus, ePlus w/ literal maybe optimize?
-    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ (ILit I 0) $$ λ k (v k `iPlus` ILit I 1) $$ (n' `iPlus` ILit I 1)
+    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ ILit I 0 $$ λ k (v k `iPlus` ILit I 1) $$ (n' `iPlus` ILit I 1)
 optA (EApp l (EApp _ (Builtin _ Range) start) end) = do
     start' <- optA start; end' <- optA end
     k <- nextU "k" I
