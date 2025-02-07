@@ -92,7 +92,6 @@ A compiler-as-a-library is appealing because it could be invoked by another comp
 
 % also phase-optimization problem... examples where compilation techniques allow XYZ (phase optimization problem cited for entrenchment of clang/gcc but maybe we should compile different things! LLVM is great but not always a target, e.g. laziness...)
 The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but the problem sitting before us is narrower. A compiler ferries a (possibly high-level) language to efficient code, and actually a source language with fewer low-level facilities offers more invariants. ``Optimization'' writ large gets much attention, but transformations that make high-level languages possible have not entered the computer science canon, particularly for functional or exotic languages.
-% recursive/immutable compiled to the same b/c register coalescing
 
 ``Amenability to efficient compilation'' also informs the design of the source language. One can also consider languages where the programmer can expect efficient compilation by reasoning about the source-language in its own terms. This is not the case for C++, where efficiency of generated code can vary dramatically by compiler or across versions of the same compiler \cite{intrinsics,kolodiej,cc}. There is no contract with the user; performance depends on internals that are not documented, justified, analyzed with the same scrutiny as programming languages.
 % basically "suitable to write high-perf code" but not necessarily via manually changing to bitshifts
@@ -272,13 +271,13 @@ SIMD folds are a bit more involved. Let us first set out how scalar folds are co
 Suppose we are compling \verb|fold (λx.λy. op x y) seed|. At a high level, the Apple array system attempts a SIMD implementation as follows:
 
 \begin{itemize}
-  \item Determine how to duplicate the seed value across a vector register by inspecting \verb|op|. For instance, in the case of \verb|max|, we fill all elements of the vector accumulator with the seed; in the case of \verb|(+)|, we zero the vector accumulator and then write the seed to one of its elements.
-  \item Iterate over the input array by 2, reading to the vector argument \verb|x| and executing \verb|fsteps2 = writeF2 op| to update the vector accumulator.
-  \item Combine the elements of the vector accumulator using \verb|op|, writing the result to the return register. Often there is a specialized instruction, e.g. \verb|faddp|, \verb|haddpd|, \verb|fmaxp|.
-  \item If there is still one remaining element after iterating by 2, update the return register by executing \verb|fsteps = writeF op|
+  \item Determine how to duplicate the seed value across a vector register by inspecting \verb|op|. For instance, in the case of \verb|max|, we fill all elements of the vector accumulator \verb|acc| with the seed; in the case of \verb|(+)|, we zero the vector accumulator and then write the seed to one of its elements.
+  \item Iterate over the input array by 2, reading to the vector argument \verb|x| and executing \verb|fsteps2 = writeF2 op [x, acc] acc| to update the vector accumulator.
+  \item Combine the elements of the vector accumulator using \verb|op|, writing the result to the return register \verb|t|. Often there is a specialized instruction, e.g. \verb|faddp|, \verb|haddpd|, \verb|fmaxp|.
+  \item If there is still one remaining element after iterating by 2, read it a register \verb|x0| and update the return register by executing \verb|fsteps = writeF op [x0, t] t|
 \end{itemize}
 
-In the Apple array system, we define
+Apple array system defines the helper functions:
 
 \begin{verbatim}
 seedVector :: Expr -> Maybe (FTemp -> F2Temp -> [Stmt])
@@ -289,6 +288,10 @@ combine :: Expr -> F2Temp -> FTemp -> [Stmt]
 \verb|seedVector| generates a sequence of \verb|Stmt|s to seed a given vector register from a value in a register when possible. If the operation  is not recognized, we give up and return \verb|Nothing|.
 
 \verb|combine| generates code to apply \verb|op| to the vector elements of a given register, writing the result to a specified register.
+
+\section*{Acknowledgments}
+
+Thanks to Marshall Lochbaum for suggested improvements.
 
 \bibliographystyle{plain}
 \bibliography{simd.bib}
