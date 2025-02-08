@@ -91,7 +91,9 @@ A compiler-as-a-library is appealing because it could be invoked by another comp
 \section{Efficient Compilation}
 
 % also phase-optimization problem... examples where compilation techniques allow XYZ (phase optimization problem cited for entrenchment of clang/gcc but maybe we should compile different things! LLVM is great but not always a target, e.g. laziness...)
-The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but the problem sitting before us is narrower. A compiler ferries a (possibly high-level) language to efficient code, and actually a source language with fewer low-level facilities offers more invariants. ``Optimization'' writ large gets much attention, but transformations that make high-level languages possible have not entered the computer science canon, particularly for functional or exotic languages.
+The full employment theorem for compiler writers states that it is impossible to write an algorithm that transforms an arbitrary program into an optimal version. Of course, such a ``big hammer'' would be handy, but the problem sitting before us is narrower. A compiler ferries a (possibly high-level) language to efficient code, and actually a source language with fewer low-level facilities offers more invariants. ``Optimization'' writ large gets much attention, but transformations that make high-level languages possible\footnotemark have not entered the computer science canon, particularly for functional or exotic languages.
+
+\footnotetext{Programmers caution against recursion due to concerns about ``stack overflow,'' but this is about the underlying implementation, not recursion \textit{per se} \cite{bobharper}---in fact GHC defaults to an infinite stack so that idiomatic code will not crash. In other environments, the same style would be infeasible.}
 
 ``Amenability to efficient compilation'' also informs the design of the source language. One can also consider languages where the programmer can expect efficient compilation by reasoning about the source-language in its own terms. This is not the case for C++, where efficiency of generated code can vary dramatically by compiler or across versions of the same compiler \cite{intrinsics,kolodiej,cc}. There is no contract with the user; performance depends on internals that are not documented, justified, analyzed with the same scrutiny as programming languages.
 % basically "suitable to write high-perf code" but not necessarily via manually changing to bitshifts
@@ -143,7 +145,7 @@ apple_1:
     ⋮
 \end{verbatim}
 
-Compare the code generated to compute the average of a vector of unspecified size; note the \verb|tbz x1, #0, apple_0| to handle the case when the vector cannot fit exactly in vector registers.
+Compare the code generated to compute the average of a vector of unspecified size; note the \verb|tbz x1, #0, apple_0| to handle the case when the elements cannot be divided exactly into vector registers.
 
 \begin{verbatim}
  > :ty [(+)/x%ℝ(:x)]
