@@ -271,13 +271,13 @@ SIMD folds are a bit more involved. Let us first set out how scalar folds are co
 Suppose we are compling \verb|fold (λx.λy. op x y) seed|. At a high level, the Apple array system attempts a SIMD implementation as follows:
 
 \begin{itemize}
-  \item Determine how to duplicate the seed value across a vector register by inspecting \verb|op|. For instance, in the case of \verb|max|, we fill all elements of the vector accumulator \verb|acc| with the seed; in the case of \verb|(+)|, we zero the vector accumulator and then write the seed to one of its elements.
+  \item Determine how to seed the vector register from a scalar value by inspecting \verb|op|. For instance, in the case of \verb|max|, we fill all elements of the vector accumulator \verb|acc| with the scalar seed; in the case of \verb|(+)|, we zero the vector accumulator and then write the seed value to one of its elements.
   \item Iterate over the input array by 2, reading to the vector argument \verb|x| and executing \verb|fsteps2 = writeF2 op [x, acc] acc| to update the vector accumulator.
   \item Combine the elements of the vector accumulator using \verb|op|, writing the result to the return register \verb|t|. Often there is a specialized instruction, e.g. \verb|faddp|, \verb|haddpd|, \verb|fmaxp|.
   \item If there is still one remaining element after iterating by 2, read it a register \verb|x0| and update the return register by executing \verb|fsteps = writeF op [x0, t] t|
 \end{itemize}
 
-Apple array system defines the helper functions:
+The Apple array system defines the helper functions:
 
 \begin{verbatim}
 seedVector :: Expr -> Maybe (FTemp -> F2Temp -> [Stmt])
