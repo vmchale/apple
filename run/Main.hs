@@ -3,7 +3,7 @@
 module Main (main) where
 
 import           Control.Monad.Trans.State.Strict (StateT, evalStateT, gets)
-import           Data.List                        (isPrefixOf)
+import           Data.List                        (isPrefixOf, isSuffixOf)
 import qualified Data.Text                        as T
 import           Nm
 import           REPL
@@ -98,7 +98,7 @@ appleCompletions (" eteled:", "") = do {ns <- namesStr; pure (" eteled:", cyclic
 appleCompletions (" yt:", "")     = do {ns <- namesStr; pure (" yt:", cyclicSimple ns)}
 appleCompletions (" t:", "")      = do {ns <- namesStr; pure (" t:", cyclicSimple ns)}
 appleCompletions ("", "")         = ("",) . cyclicSimple <$> namesStr
--- TODO: don't use builtins to complete :yank shuf e...
+appleCompletions (rp, "")         | "y:" `isSuffixOf` rp = pure (rp, [])
 appleCompletions (rp, "")         = do {ns <- namesStr; pure (unwords ("" : tail (words rp)), cyclicSimple (namePrefix ns rp))}
 appleCompletions _                = pure (undefined, [])
 
