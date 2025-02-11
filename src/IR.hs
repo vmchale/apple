@@ -66,27 +66,27 @@ instance Show Temp where show=show.pretty
 instance Show FTemp where show=show.pretty
 instance Show F2 where show=show.pretty
 
-data Stmt = L Label
-          | MJ Exp Label
-          | J Label
-          | MT Temp Exp | MX FTemp FE -- move targeting xmm0 &c.
-          | MX2 F2 F2E
+data Stmt = L !Label
+          | MJ Exp !Label
+          | J !Label
+          | MT !Temp Exp | MX !FTemp FE -- move targeting xmm0 &c.
+          | MX2 !F2 F2E
           -- happd on x86
-          | S2 FBin FTemp F2
-          | Fill2 F2 FTemp | Ins F2 FTemp
-          | Ma AL Temp Exp -- label, register, size
-          | Free Temp | RA !AL -- "return array" no-op
-          | Wr AE Exp | WrF AE FE | WrF2 AE F2E | WrB AE Exp
-          | Cmov Exp Temp Exp | Fcmov Exp FTemp FE
-          | Cset Temp Exp
-          | Sa8 Temp Exp
+          | S2 FBin !FTemp !F2
+          | Fill2 !F2 !FTemp | Ins !F2 !FTemp
+          | Ma !AL !Temp Exp -- label, register, size
+          | Free !Temp | RA !AL -- "return array" no-op
+          | Wr !AE Exp | WrF !AE FE | WrF2 !AE F2E | WrB !AE Exp
+          | Cmov Exp !Temp Exp | Fcmov Exp !FTemp FE
+          | Cset !Temp Exp
+          | Sa8 !Temp Exp
           | Pop8 Exp
-          | Sa Temp Exp -- register, size
+          | Sa !Temp Exp -- register, size
           | Pop Exp -- pop salloc
-          | Cpy AE AE Exp
-          | Cpy1 AE AE Exp
-          | Mv AE AE Int64 -- bytes
-          | C Label | R Label
+          | Cpy !AE !AE Exp
+          | Cpy1 !AE !AE Exp
+          | Mv !AE !AE Int64 -- bytes
+          | C !Label | R !Label
           | IRnd Temp | FRnd FTemp
 
 instance Pretty Stmt where
@@ -123,18 +123,18 @@ instance Pretty Stmt where
 
 instance Show Stmt where show = show . pretty
 
-data AE = AP Temp (Maybe Exp) (Maybe AL) -- offset, label for tracking liveness
+data AE = AP !Temp (Maybe Exp) !(Maybe AL) -- offset, label for tracking liveness
 
 instance Pretty AE where
     pretty (AP t Nothing _)  = parens ("ptr" <+> pretty t)
     pretty (AP t (Just e) _) = parens ("ptr" <+> pretty t <> "+" <> pretty e)
 
-data FExp t c e = KF c
-                | FB FBin (FExp t c e) (FExp t c e)
+data FExp t c e = KF !c
+                | FB !FBin (FExp t c e) (FExp t c e)
                 | FConv e
-                | FReg t
-                | FU FUn (FExp t c e)
-                | FAt AE
+                | FReg !t
+                | FU !FUn (FExp t c e)
+                | FAt !AE
 
 type FE=FExp FTemp Double Exp; type F2E=FExp F2 (Double, Double) Void
 
@@ -147,15 +147,15 @@ instance Num (FExp ftemp Double e) where
 instance Fractional (FExp ftemp Double e) where
     (/) = FB FDiv; fromRational = KF . fromRational
 
-data Exp = ConstI Int64
-         | Reg Temp
-         | IB IBin Exp Exp
-         | FRel FRel FE FE
-         | IRel IRel Exp Exp | Is Temp
-         | IP IP Exp | IU IUn Exp
-         | BU BUn Exp
+data Exp = ConstI !Int64
+         | Reg !Temp
+         | IB !IBin Exp Exp
+         | FRel !FRel FE FE
+         | IRel !IRel Exp Exp | Is Temp
+         | IP !IP Exp | IU !IUn Exp
+         | BU !BUn Exp
          | IRFloor FE | IRCeil FE
-         | EAt AE | BAt AE
+         | EAt !AE | BAt !AE
          | LA !Int -- assembler data
 
 instance (Pretty t, Pretty c, Pretty e) => Pretty (FExp t c e) where

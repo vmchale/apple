@@ -69,14 +69,14 @@ instance Show Temp where show=show.pretty
 instance Show FTemp where show=show.pretty
 instance Show BTemp where show=show.pretty
 
-data ArrAcc = AElem Temp CE (Maybe AL) CE Int64 -- pointer, rank, label for tracking liveness, elem., elem. size (bytes)
+data ArrAcc = AElem !Temp CE !(Maybe AL) CE Int64 -- pointer, rank, label for tracking liveness, elem., elem. size (bytes)
             -- TODO: more robust way to handle rank (often statically known)
-            | ARnk Temp (Maybe AL)
-            | ADim Temp CE (Maybe AL) -- pointer, #, label
+            | ARnk !Temp !(Maybe AL)
+            | ADim !Temp CE !(Maybe AL) -- pointer, #, label
             -- TODO: shape information
-            | At Temp [CE] [CE] (Maybe AL) Int64 -- data pointer, strides, indices, label, elem. size (bytes)
-            | Raw Temp CE (Maybe AL) Int64 -- pointer to data, offset, label, element size
-            | TupM Temp (Maybe AL)
+            | At !Temp [CE] [CE] !(Maybe AL) Int64 -- data pointer, strides, indices, label, elem. size (bytes)
+            | Raw !Temp CE !(Maybe AL) Int64 -- pointer to data, offset, label, element size
+            | TupM !Temp !(Maybe AL)
 
 instance Pretty ArrAcc where
     pretty (AElem t _ _ e _) = pretty t <> brackets (pretty e)
@@ -171,10 +171,10 @@ infix 9 =:
 
 (=:) = MT ()
 
-data CS a = For { lann :: a, zz :: D, tck :: CE, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
-          | Rof { lann :: a, zz :: D, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
-          | R2of { lann :: a, par :: L, ixVar :: Temp, eCnt :: CE, body, body1 :: [CS a] }
-          | F2or { lann :: a, par :: L, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body, body1 :: [CS a] }
+data CS a = For { lann :: a, zz :: !D, tck :: CE, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body :: [CS a] }
+          | Rof { lann :: a, zz :: !D, ixVar :: Temp, eCnt :: CE, body :: [CS a] }
+          | R2of { lann :: a, par :: !L, ixVar :: Temp, eCnt :: CE, body, body1 :: [CS a] }
+          | F2or { lann :: a, par :: !L, ixVar :: Temp, eLow :: CE, loopCond :: IRel, eUpper :: CE, body, body1 :: [CS a] }
           | While { lann :: a, iVar :: Temp, loopCond :: IRel, eDone :: CE, body :: [CS a] }
           | WT { lann :: a, bE :: PE, body :: [CS a] }
           | MT { lann :: a, tDest :: Temp, tSrc :: CE }
@@ -184,11 +184,11 @@ data CS a = For { lann :: a, zz :: D, tck :: CE, ixVar :: Temp, eLow :: CE, loop
           | Comb { lann :: a, op2 :: FBin, ftDest :: FTemp, f2Src :: F2Temp }
           | DS { lann :: a, f2Dest :: F2Temp, fSrc :: FTemp } | Ins { lann :: a, f2dest :: F2Temp, fSrc :: FTemp }
           | MB { lann :: a, bDest :: BTemp, pSrc :: PE }
-          | Wr { lann :: a, addr :: ArrAcc, wrE :: CE }
-          | WrF { lann :: a, addr :: ArrAcc, wrF :: F1E }
-          | Wr2F { lann :: a, addr :: ArrAcc, wrF2 :: F2E }
-          | WrP { lann :: a, addr :: ArrAcc , wrB :: PE }
-          | WrT { lann :: a, addr :: ArrAcc, wrT :: TStore }
+          | Wr { lann :: a, addr :: !ArrAcc, wrE :: CE }
+          | WrF { lann :: a, addr :: !ArrAcc, wrF :: F1E }
+          | Wr2F { lann :: a, addr :: !ArrAcc, wrF2 :: F2E }
+          | WrP { lann :: a, addr :: !ArrAcc , wrB :: PE }
+          | WrT { lann :: a, addr :: !ArrAcc, wrT :: TStore }
           | Ma { lann :: a, ash :: Sh (), label :: AL, temp :: Temp, rank :: CE, nElem :: CE, elemSz :: !Int64 }
           | Aa { lann :: a, label :: AL, dTemp, srcTemp :: Temp }
           | Free Temp
