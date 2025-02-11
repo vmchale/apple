@@ -19,14 +19,14 @@ Thus the same implementation can be used interpreted, compiled, or called from
 another language.
 
 ```
- > [((+)/x)%ℝ(:x)]\`7 (frange 1 10 10)
+ > [(+)/x%ℝ(:x)]\`7 (frange 1 10 10)
 Arr (4) [4.0, 5.0, 6.0, 7.0]
 ```
 
 ```python
 >>> import apple
 >>> import numpy as np
->>> sliding_mean=apple.jit('([((+)/x)%ℝ(:x)]\`7)')
+>>> sliding_mean=apple.jit('([(+)/x%ℝ(:x)]\`7)')
 >>> sliding_mean(np.arange(0,10,dtype=np.float64))
 array([3., 4., 5., 6.])
 ```
@@ -34,7 +34,7 @@ array([3., 4., 5., 6.])
 ```janet
 repl:1:> (import apple)
 @{_ @{:value <cycle 0>} apple/jit @{:private true} apple/tyof @{:private true}}
-repl:2:> (def sliding-mean (apple/jit ``([((+)/x)%ℝ(:x)]\`7)``))
+repl:2:> (def sliding-mean (apple/jit ``([(+)/x%ℝ(:x)]\`7)``))
 <jit Vec (i + 7) float → Vec i float>
 repl:3:> (sliding-mean @[0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0])
 @[3 4 5 6 7]
@@ -42,7 +42,7 @@ repl:3:> (sliding-mean @[0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0])
 
 ```R
 > source("R/apple.R")
-> sliding_mean<-jit("([((+)/x)%ℝ(:x)]\\`7)")
+> sliding_mean<-jit("([(+)/x%ℝ(:x)]\\`7)")
 > run(sliding_mean,seq(0,10,1.0))
 [1] 3 4 5 6 7
 ```
