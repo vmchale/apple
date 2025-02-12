@@ -1734,6 +1734,18 @@ eval (EApp _ (EApp _ (Builtin _ IOf) p) xs) t | (Arrow tD _) <- eAnn p, Just szX
     ss <- writeRF p [x] (PT pR)
     let loop=While () done INeq 1 (wX i:ss++[If () (Is pR) [t=:Tmp i, done=:1] [], i+=1, Cmov () (IRel IGeq (Tmp i) (Tmp szR)) done 1])
     pure $ plX $ szR=:ev (eAnn xs) (xsR,lX):t=:(-1):done=:0:i=:0:[loop]
+eval (EApp _ (EApp _ (Builtin _ IOf) p) x) t
+    | Arrow tC _ <- eAnn p
+    , Just (tEX, slopRnk) <- tRnk tC
+    , Just szX <- nSz tEX, Just xRnk <- staRnk xSh = do
+    pR <- nBT
+    oR <- nI; i <- nI; done <- nI
+    (plX, (lX, xR)) <- plA x
+    (slop, nR, plSlopP, popSlop) <- plSlop szX slopRnk (idims slopRnk xRnk xR lX)
+    (_, ss) <- writeF p [AA slop Nothing] (PT pR)
+    let loop=While () done INeq 1 (cpy (AElem slop (KI slopRnk) Nothing 0) (AElem xR (KI xRnk) lX (Tmp i*Tmp nR)) (Tmp nR) szX:ss++[If () (Is pR) [t=:Tmp i, done=:1] [], i+=1, Cmov () (IRel IGeq (Tmp i) (Tmp oR)) done 1])
+    pure $ plX $ oR=:ev tX (xR,lX):t=:(-1):done=:0:i=:0:plSlopP ++ [loop, popSlop]
+  where tX@(Arr xSh _)=eAnn x
 eval (Id _ (Iter f x n)) t = do
     (plN,nR) <- plC n
     plX <- eval x t
