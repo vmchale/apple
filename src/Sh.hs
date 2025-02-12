@@ -73,8 +73,8 @@ instance PS (I a) where
     ps _ (IEVar _ n)                = "#" <> pretty n
 
 data I a = Ix { ia :: a, ii :: !Int }
-         | IVar { ia :: a, ixn :: Nm a }
-         | IEVar { ia :: a , ie :: Nm a } -- existential
+         | IVar { ia :: a, ixn :: !(Nm a) }
+         | IEVar { ia :: a , ie :: !(Nm a) } -- existential
          | StaPlus { ia :: a, ix0, ix1 :: I a }
          | StaMul { ia :: a, ix0, ix1 :: I a }
          deriving (Functor, Generic)
@@ -86,7 +86,7 @@ i0+:i1 = StaPlus (ia i0) i0 i1
 infixr 8 `Cons`
 
 data Sh a = Nil
-          | SVar (Nm a)
+          | SVar !(Nm a)
           | Cons (I a) (Sh a)
           | Rev (Sh a)
           | Cat (Sh a) (Sh a)

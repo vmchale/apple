@@ -47,11 +47,11 @@ data T a = Arr (Sh a) (T a)
          | I -- | int
          | B -- | bool
          | Li (I a)
-         | TVar (Nm a) -- | Kind \(*\)
-         | IZ (I a) (Nm a) | Z (Nm a)
+         | TVar !(Nm a) -- | Kind \(*\)
+         | IZ (I a) (Nm a) | Z !(Nm a)
          | Arrow (T a) (T a)
          | P [T a]
-         | Ρ (Nm a) (IM.IntMap (T a))
+         | Ρ !(Nm a) (IM.IntMap (T a))
          deriving (Functor, Generic)
 
 instance Show (T a) where show=show.pretty
@@ -419,7 +419,7 @@ data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          | Def { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
          | LLet { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
          | Dfn { eAnn :: a, eIn :: E a }
-         | ResVar { eAnn :: a, eXY :: ResVar }
+         | ResVar { eAnn :: a, eXY :: !ResVar }
          | Parens { eAnn :: a, eExp :: E a }
          | Ann { eAnn :: a, eEe :: E a, eTy :: T a }
          | Id { eAnn :: a, eIdiom :: Idiom a }
