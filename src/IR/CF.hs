@@ -110,7 +110,7 @@ f2is = IS.singleton . f2ToInt
 
 uE :: Exp -> IS.IntSet
 uE (Reg r)        = singleton r
-uE ConstI{}       = IS.empty
+uE KI{}           = IS.empty
 uE (IB _ e0 e1)   = uE e0 <> uE e1
 uE (IRel _ e0 e1) = uE e0 <> uE e1
 uE (Is t)         = singleton t
@@ -127,7 +127,7 @@ uE (FRel _ x0 x1) = uFR x0<>uFR x1
 uFF :: Exp -> IS.IntSet
 uFF (IRFloor e)    = uF e
 uFF (IRCeil e)     = uF e
-uFF ConstI{}       = IS.empty
+uFF KI{}           = IS.empty
 uFF Reg{}          = IS.empty
 uFF (IB _ e0 e1)   = uFF e0<>uFF e1
 uFF (IRel _ e0 e1) = uFF e0<>uFF e1

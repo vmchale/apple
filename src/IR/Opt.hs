@@ -11,34 +11,34 @@ optIR = fmap opt
 optE :: Exp -> Exp
 optE (IB ITimes e0 e1) =
     case (optE e0, optE e1) of
-        (ConstI 0, _)                      -> ConstI 0
-        (_, ConstI 0)                      -> ConstI 0
-        (ConstI 1, e1')                    -> e1'
-        (e0', ConstI 1)                    -> e0'
-        (ConstI i0, ConstI i1)             -> ConstI$i0*i1
-        (e0', ConstI i) | Just s <- cLog i -> IB IAsl e0' (ConstI s)
-        (ConstI i, e1') | Just s <- cLog i -> IB IAsl e1' (ConstI s)
-        (e0', e1')                         -> IB ITimes e0' e1'
+        (KI 0, _)                      -> KI 0
+        (_, KI 0)                      -> KI 0
+        (KI 1, e1')                    -> e1'
+        (e0', KI 1)                    -> e0'
+        (KI i0, KI i1)                 -> KI$i0*i1
+        (e0', KI i) | Just s <- cLog i -> IB IAsl e0' (KI s)
+        (KI i, e1') | Just s <- cLog i -> IB IAsl e1' (KI s)
+        (e0', e1')                     -> IB ITimes e0' e1'
 optE (IB IPlus e0 e1) =
     case (optE e0, optE e1) of
-        (ConstI 0, e1')        -> e1'
-        (e0', ConstI 0)        -> e0'
-        (ConstI i0, ConstI i1) -> ConstI$i0+i1
-        (e0', e1')             -> IB IPlus e0' e1'
+        (KI 0, e1')    -> e1'
+        (e0', KI 0)    -> e0'
+        (KI i0, KI i1) -> KI$i0+i1
+        (e0', e1')     -> IB IPlus e0' e1'
 optE (IB IDiv e0 e1) =
     case (optE e0, optE e1) of
-        (e0', ConstI i) | Just s <- cLog i -> IB IAsr e0' (ConstI s)
-        (e0', e1')                         -> IB IDiv e0' e1'
+        (e0', KI i) | Just s <- cLog i -> IB IAsr e0' (KI s)
+        (e0', e1')                     -> IB IDiv e0' e1'
 optE (IB IMinus e0 e1) =
     case (optE e0, optE e1) of
-        (ConstI i0, ConstI i1) -> ConstI$i0-i1
-        (e0', ConstI 0)        -> e0'
-        (e0', e1')             -> IB IMinus e0' e1'
+        (KI i0, KI i1) -> KI$i0-i1
+        (e0', KI 0)    -> e0'
+        (e0', e1')     -> IB IMinus e0' e1'
 optE (IB IAsl e0 e1) =
     case (optE e0, optE e1) of
-        (ConstI i0, ConstI i1) -> ConstI$i0 `shiftL` fromIntegral i1
-        (e0', ConstI 0)        -> e0'
-        (e0',e1')              -> IB IAsl e0' e1'
+        (KI i0, KI i1) -> KI$i0 `shiftL` fromIntegral i1
+        (e0', KI 0)    -> e0'
+        (e0',e1')      -> IB IAsl e0' e1'
 optE (IB op e e')            = IB op (optE e) (optE e')
 optE (IRel rel e e')         = IRel rel (optE e) (optE e')
 optE (FRel rel fe fe')       = FRel rel (optF fe) (optF fe')
@@ -92,8 +92,8 @@ optF :: FE -> FE
 optF (FAt p) = FAt (optP p)
 optF (FConv e) =
     case optE e of
-        ConstI i -> KF$fromIntegral i
-        e'       -> FConv e'
+        KI i -> KF$fromIntegral i
+        e'   -> FConv e'
 optF (FU f e) =
     case optF e of
         KF d -> KF (f1c f d)

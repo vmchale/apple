@@ -139,7 +139,7 @@ data FExp t c e = KF !c
 type FE=FExp FTemp Double Exp; type F2E=FExp F2 (Double, Double) Void
 
 instance Num Exp where
-    (+) = IB IPlus; (*) = IB ITimes; (-) = IB IMinus; fromInteger = ConstI . fromInteger
+    (+) = IB IPlus; (*) = IB ITimes; (-) = IB IMinus; fromInteger = KI . fromInteger
 
 instance Num (FExp ftemp Double e) where
     (+) = FB FPlus; (*) = FB FTimes; (-) = FB FMinus; fromInteger = KF . fromInteger
@@ -147,7 +147,7 @@ instance Num (FExp ftemp Double e) where
 instance Fractional (FExp ftemp Double e) where
     (/) = FB FDiv; fromRational = KF . fromRational
 
-data Exp = ConstI !Int64
+data Exp = KI !Int64
          | Reg !Temp
          | IB !IBin Exp Exp
          | FRel !FRel FE FE
@@ -169,7 +169,7 @@ instance (Pretty t, Pretty c, Pretty e) => Pretty (FExp t c e) where
 instance (Pretty t, Pretty c, Pretty e) => Show (FExp t c e) where show=show.pretty
 
 instance Pretty Exp where
-    pretty (ConstI i)     = parens ("int" <+> pretty i)
+    pretty (KI i)         = parens ("int" <+> pretty i)
     pretty (Reg t)        = parens ("reg" <+> pretty t)
     pretty (IRel op e e') = parens (pretty op <+> pretty e <+> pretty e')
     pretty (IB op e e')   = parens (pretty op <+> pretty e <+> pretty e')
