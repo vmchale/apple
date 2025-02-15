@@ -1375,13 +1375,15 @@ aeval (EApp oTy@(Arr oSh _) g@(Builtin _ RevE) e) t a | Just sz <- aB oTy = do
     (plE, (lE, eR)) <- plA e
     contents <- rfill g (AD t (Just a) (Just oTy) Nothing (Just sz) Nothing) [AI$AD eR lE Nothing Nothing Nothing (Just$Tmp n)]
     pure (plE$n =: ev oTy (eR,lE):vSz oSh t a (Tmp n) sz++contents)
-aeval (EApp _ (Builtin _ RevE) e) t a | Arr sh ty <- eAnn e, Just rnk <- staRnk sh = do
+aeval (EApp _ (Builtin _ RevE) e) t a
+    | tyXs@(Arr sh ty) <- eAnn e
+    , Just sz <- nSz ty, Just rnk <- staRnk sh = do
     n <- nI; szA <- nI
     (plE, (lE, eR)) <- plA e
-    let sz=bT ty; rnkE=KI rnk
+    let rnkE=KI rnk
     (dts, plDs) <- plDim rnk (eR, lE)
     loop <- afor sh 0 ILt (Tmp n) $ \i -> [cpy (AElem t rnkE (Just a) (Tmp i*Tmp szA)) (AElem eR rnkE lE ((Tmp n-Tmp i-1)*Tmp szA)) (Tmp szA) sz]
-    pure (plE$n=:ev ty (eR,lE):tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () sh a t rnkE (Tmp n*Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim eR 0 lE) rnkE:[loop])
+    pure (plE$n=:ev tyXs (eR,lE):tail plDs++PlProd () szA (Tmp<$>tail dts):Ma () sh a t rnkE (Tmp n*Tmp szA) sz:CpyD () (ADim t 0 (Just a)) (ADim eR 0 lE) rnkE:[loop])
                                     | otherwise = unsupported
 aeval (EApp (Arr sh tX) (EApp _ (EApp _ (Builtin _ Ug) g) seed) n) t a
     | tyS <- eAnn seed
