@@ -10,6 +10,6 @@ b4 x = take 4 $ fromIntegral <$> zipWith (\m e -> (x.&.m) `rotateR` e) masks ee
 
 -- little endian
 le :: (Bits a, Storable a, Integral a) => a -> [Word8]
-le x = (fromIntegral <$> zipWith (\m e -> (x .&. m) `rotateR` e) masks ee)
+le x = fromIntegral <$> zipWith (\m e -> (x .&. m) `rotateR` e) masks ee
     where ee = [0,8..(8*(sizeOf x-1))]
           masks = iterate (*0x100) 0xff

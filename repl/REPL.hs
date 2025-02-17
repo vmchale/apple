@@ -127,7 +127,7 @@ refcard :: Repl AlexPosn ()
 refcard = liftIO $ putStr $ concat
     [ lOption "Λ" "scan" "√" "sqrt"
     , lOption "⋉"  "max" "⋊"  "min"
-    , lOption "⍳" "integer range" "⌊, ⌈" "floor, ceiling"
+    , lOption "⍳" "iota" "⌊, ⌈" "floor, ceiling"
     , lOption "e:" "exp" "⨳ {m,n}" "convolve"
     , lOption "\\~" "successive application" "\\`n" "infix"
     , lOption "_." "log" "'" "map"
@@ -145,7 +145,7 @@ refcard = liftIO $ putStr $ concat
     , lOption "/*" "fold all" "ℝ" "i->f conversion"
     , lOption "⧺" "cat" "{:" "typesafe tail"
     , lOption "⊖" "rotate" "sin." "sine"
-    , lOption "𝔯" "rand" "⍳" "iota" -- TODO: .. aka range
+    , lOption "𝔯" "rand" ".." "(integer) range"
     , lOption "/ₒ" "fold with seed" "Λₒ" "scan with seed"
     , lOption "{x←y;z}" "let...in" "⊙" "cycle"
     , lOption "˙" "at" "|" "rem"
@@ -161,7 +161,7 @@ refcard = liftIO $ putStr $ concat
     , lOption "𝔸" "digit literal" "ᶥ" "vector indices"
     , lOption "〃" "ditto" "𝐒,𝐊" "combinators"
     , lOption "⑂" "fork" "𝞈,𝟘,𝟙,𝟚" "fancy types"
-    -- /₊
+    , lOption "℘" "partition" "" ""
     ]
 
 lOption op0 desc0 op1 desc1 =
