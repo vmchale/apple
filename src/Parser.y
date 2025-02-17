@@ -296,6 +296,7 @@ U :: { [Nm AlexPosn] }
 Lam :: { [(AlexPosn, [Nm AlexPosn])] }
     : lam lparen U rparen dot { [($2, reverse $3)] }
     | lam lparen U rparen dot Lam { ($2, reverse $3) : $6 }
+    | lam name dot { [($1, [$2])] }
 
 E :: { E AlexPosn }
   : name { Var (Nm.loc $1) $1 }
@@ -314,7 +315,6 @@ E :: { E AlexPosn }
   | parens(E) { Parens (eAnn $1) $1 }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
   | il { let l=loc $1 in ALit l (map (ILit l.fromInteger) (ints $1)) }
-  | lam name dot E { A.Lam $1 $2 $4 }
   | name mmap E { A.Lam $2 $1 $3 }
   | Lam E {% bindΠ (reverse $1) $2 }
   | tupled(E) { Tup (fst $1) (reverse (snd $1)) }
@@ -378,6 +378,7 @@ bindΠ vs e = do
     (lams, bΡ) <- unzip <$> traverse (uncurry b) vs
     pure $ thread lams $ thread bΡ e
   where
+    b l [n] = pure (A.Lam l n, id)
     b l ns = do
         ρ <- lift $ freshName "ρ"
         let bΡs = thread (zipWith (\n i -> let lϵϵ=Nm.loc n in (LLet lϵϵ (n, EApp lϵϵ (Builtin lϵϵ (TAt i)) (Var lϵϵ ρ)))) (reverse ns) [1..])
