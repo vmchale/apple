@@ -297,6 +297,7 @@ Lam :: { [(AlexPosn, [Nm AlexPosn])] }
     : lam lparen U rparen dot { [($2, reverse $3)] }
     | lam lparen U rparen dot Lam { ($2, reverse $3) : $6 }
     | lam name dot { [($1, [$2])] }
+    | lam name dot Lam { ($1, [$2]) : $4 }
 
 E :: { E AlexPosn }
   : name { Var (Nm.loc $1) $1 }
@@ -316,7 +317,7 @@ E :: { E AlexPosn }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
   | il { let l=loc $1 in ALit l (map (ILit l.fromInteger) (ints $1)) }
   | name mmap E { A.Lam $2 $1 $3 }
-  | Lam E {% bindΠ (reverse $1) $2 }
+  | Lam E {% bindΠ $1 $2 }
   | tupled(E) { Tup (fst $1) (reverse (snd $1)) }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
   | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
