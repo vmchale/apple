@@ -98,12 +98,11 @@ nSz F=Just 8; nSz I=Just 8; nSz B=Just 1; nSz (P ts)=sum<$>traverse nSz ts; nSz 
 
 aB (Arr (_ `Cons` Nil) t) = nSz t; aB _ = Nothing
 aBs (Arr (_ `Cons` Nil) t) = (t,)<$>nSz t; aBs _ = Nothing
-aN (Arr _ t) = nt t; aN _=Nothing
+aN (Arr _ t) = rr t; aN _=Nothing
 
-nt :: T a -> Maybe (T a)
-nt I=Just I; nt F=Just F; nt B=Just B; nt t@P{} = Just t; nt _=Nothing
+nr, rr :: T a -> Maybe (T a, Int64)
+nr (P ts) = bimap P sum . unzip <$> traverse nr ts; nr t = rr t
 
-rr :: T a -> Maybe (T a, Int64)
 rr I=Just (I,8); rr F=Just (F,8); rr B=Just (B,1); rr _=Nothing
 
 szT = scanl' (\o ty -> o+bT ty::Int64) 0
@@ -723,11 +722,6 @@ aeval (EApp (Arr oSh _) (Builtin _ Flat) xs) t a | (Arr sh ty) <- eAnn xs, Just 
     (plX, (lX, xR)) <- plA xs
     xRnk <- nI; szR <- nI
     pure (plX$xRnk=:eRnk sh (xR,lX):SZ () szR xR (Tmp xRnk) lX:vSz oSh t a (Tmp szR) sz++[cpy (AElem t 1 (Just a) 0) (AElem xR (Tmp xRnk) lX 0) (Tmp szR) sz])
-aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t a | tX@(Arr sh _) <- eAnn e, (Arrow tD tC) <- eAnn op, Just sz <- nSz tC, nind tD = do
-    (plE, (l, xR)) <- plA e
-    nR <- nI
-    contents <- rfill f (AD t (Just a) (Just tX) Nothing Nothing (Just$Tmp nR)) [AI (AD xR l (Just tX) Nothing Nothing Nothing)]
-    pure (plE$nR=:ev tX (xR,l):vSz sh t a (Tmp nR) sz++contents)
 aeval (EApp _ (EApp _ (Builtin _ Filt) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(Arr sh _) <- eAnn xs, Just sz <- nSz tX = do
     szR <- nI; nR <- nI; b <- nBT
     (plX, (lX, xsR)) <- plA xs
@@ -746,6 +740,11 @@ aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(A
     pure (plX$szR=:ev tXs (xsR,lX)
         :Ma () sh a t 1 (Tmp szR) 8
         :[nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
+aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t a | tX@(Arr sh _) <- eAnn e, (Arrow tD tC) <- eAnn op, Just sz <- nSz tC, nind tD = do
+    (plE, (l, xR)) <- plA e
+    nR <- nI
+    contents <- rfill f (AD t (Just a) (Just tX) Nothing Nothing (Just$Tmp nR)) [AI (AD xR l (Just tX) Nothing Nothing Nothing)]
+    pure (plE$nR=:ev tX (xR,l):vSz sh t a (Tmp nR) sz++contents)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     | (Arrow tD tC) <- eAnn f
     , Arr xSh _ <- eAnn xs
@@ -839,7 +838,7 @@ aeval e t a | (Arr oSh _) <- eAnn e, Just (f, xss) <- r00 e, all isF (unroll$eAn
 -- TODO: transp-rank
 aeval e t a
     | Just (f, xss) <- r00 e
-    , Just xsTys <- traverse (aN.eAnn) xss
+    , Just xsTys <- traverse (fmap fst.aN.eAnn) xss
     , (Arr sh _) <- eAnn (head xss)
     , tC <- codT (eAnn f)
     , Just szC <- nSz tC
@@ -1287,7 +1286,8 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Rot) n) xs) t a | Just (tX, xRnk) <- 
         :c=:(Tmp d1-Tmp nR)
         :[cpy (AElem t rnkE (Just a) 0) (AElem xR rnkE lX (Tmp nR*Tmp szR)) (Tmp c*Tmp szR) sz, cpy (AElem t rnkE (Just a) (Tmp c*Tmp szR)) (AElem xR rnkE lX 0) (Tmp nR*Tmp szR) sz])
                                                          | otherwise = unsupported
-aeval (Id (Arr sh at) (AShLit ns es)) t a | Just ty <- nt at, sz <- bT ty = do
+                                                         -- TODO: multidim
+aeval (Id (Arr sh at) (AShLit ns es)) t a | Just (ty,sz) <- nr at = do
     let rnk=genericLength ns; n=fromIntegral$product ns
     tt <- rtemp ty
     plEs <- zipWithM (\eϵ i -> do {pl <- eeval eϵ tt; pure $ pl ++ [wt (AElem t rnk (Just a) (KI i) sz) tt]}) es [0..]
@@ -1430,7 +1430,7 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr x
         :Ma () xSh lX x xRnkE nXe xSz:CpyD () (ADim x 0 (Just lX)) (ADim seedR 0 lSeed) xRnkE:cpy (AElem x xRnkE (Just lX) 0) (AElem seedR xRnkE lSeed 0) nXe xSz
         :l1++[loop]
 -- also (%.)/(re: 5 ⟨⟨1,1⟩,⟨1,0::int⟩⟩) would be nice
-aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just ty <- aN tSeed, sz <- bT ty = do
+aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just (ty,sz) <- aN tSeed = do
     (plN, nE) <- plC n
     (plX, (lX, xR)) <- plA seed; kϵ <- nI
     (y, wRet) <- rW ty (ve t (Just a) sz)
