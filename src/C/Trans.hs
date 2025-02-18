@@ -1286,8 +1286,8 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Rot) n) xs) t a | Just (tX, xRnk) <- 
         :c=:(Tmp d1-Tmp nR)
         :[cpy (AElem t rnkE (Just a) 0) (AElem xR rnkE lX (Tmp nR*Tmp szR)) (Tmp c*Tmp szR) sz, cpy (AElem t rnkE (Just a) (Tmp c*Tmp szR)) (AElem xR rnkE lX 0) (Tmp nR*Tmp szR) sz])
                                                          | otherwise = unsupported
-                                                         -- TODO: multidim
-aeval (Id (Arr sh at) (AShLit ns es)) t a | Just (ty,sz) <- nr at = do
+                                                         -- FIXME: multidim
+aeval (Id (Arr sh at) (AShLit ns es)) t a | Just (ty,sz) <- nr at, Just{} <- traverse nr (map eAnn es) = do
     let rnk=genericLength ns; n=fromIntegral$product ns
     tt <- rtemp ty
     plEs <- zipWithM (\eϵ i -> do {pl <- eeval eϵ tt; pure $ pl ++ [wt (AElem t rnk (Just a) (KI i) sz) tt]}) es [0..]
