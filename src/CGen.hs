@@ -59,6 +59,7 @@ cTy B                 = pure (SC CB)
 cTy (Arr _ F)         = pure (AC CR)
 cTy (Arr _ I)         = pure (AC CI)
 cTy (Arr _ B)         = pure (AC CB)
+cTy (Arr _ P{})       = error "arrays of tuples not implemented (C API)."
 cTy (P ts)            = ΠC <$> traverse cTy ts
 cTy (Arrow Arrow{} _) = Left FArg
 cTy (Arr _ Arrow{})   = Left ArrFn
