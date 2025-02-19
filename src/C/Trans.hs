@@ -463,7 +463,7 @@ rfill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just (A
         step1=MX () x₀ (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+8):s1++[WrF () (Raw td 0 lA 8) (FTmp y₀), td=:(Tmp td+8)]
         loop=r2of xSh i n step step1
     pure [xRd=:DP xR 1,td=:DP t 1, loop]
-rfill (EApp _ (Builtin _ Map) op) (AD t lA (Just (Arr sh _)) _ _ (Just n)) [AI (AD xR l _ _ _ _)] | (Arrow tD tC) <- eAnn op, nind tD = do
+rfill (EApp _ (Builtin _ Map) op) (AD t lA (Just (Arr sh _)) _ _ (Just n)) [AI (AD xR l _ _ _ _)] | Arrow tD tC <- eAnn op, nind tD = do
     xRd <- nI; td <- nI;
     step <- aSD op [(tD, Raw xRd 0 l undefined, xRd)] tC (Raw td 0 lA undefined) td
     loop <- arof sh n step
@@ -740,11 +740,14 @@ aeval (EApp _ (EApp _ (Builtin _ Ices) p) xs) t a | Arrow tX _ <- eAnn p, tXs@(A
     pure (plX$szR=:ev tXs (xsR,lX)
         :Ma () sh a t 1 (Tmp szR) 8
         :[nR=:0, loop, Wr () (ADim t 0 (Just a)) (Tmp nR)])
-aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t a | tX@(Arr sh _) <- eAnn e, (Arrow tD tC) <- eAnn op, Just sz <- nSz tC, nind tD = do
+aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t a
+    | Arr sh _ <- tX, Arrow tD tC <- eAnn op
+    , Just sz <- nSz tC, nind tD = do
     (plE, (l, xR)) <- plA e
     nR <- nI
     contents <- rfill f (AD t (Just a) (Just tX) Nothing Nothing (Just$Tmp nR)) [AI (AD xR l (Just tX) Nothing Nothing Nothing)]
     pure (plE$nR=:ev tX (xR,l):vSz sh t a (Tmp nR) sz++contents)
+  where tX=eAnn e
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     | Arrow tD tC <- eAnn f
     , Arr xSh _ <- eAnn xs
