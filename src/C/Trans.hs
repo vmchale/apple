@@ -1286,12 +1286,18 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Rot) n) xs) t a | Just (tX, xRnk) <- 
         :c=:(Tmp d1-Tmp nR)
         :[cpy (AElem t rnkE (Just a) 0) (AElem xR rnkE lX (Tmp nR*Tmp szR)) (Tmp c*Tmp szR) sz, cpy (AElem t rnkE (Just a) (Tmp c*Tmp szR)) (AElem xR rnkE lX 0) (Tmp nR*Tmp szR) sz])
                                                          | otherwise = unsupported
-                                                         -- FIXME: multidim
 aeval (Id (Arr sh at) (AShLit ns es)) t a | Just (ty,sz) <- nr at, Just{} <- traverse nr (map eAnn es) = do
     let rnk=genericLength ns; n=fromIntegral$product ns
     tt <- rtemp ty
-    plEs <- zipWithM (\eϵ i -> do {pl <- eeval eϵ tt; pure $ pl ++ [wt (AElem t rnk (Just a) (KI i) sz) tt]}) es [0..]
+    plEs <- zipWithM (\e i -> do {pl <- eeval e tt; pure $ pl ++ [wt (AElem t rnk (Just a) (KI i) sz) tt]}) es [0..]
     pure (md sh t a rnk n (fromIntegral<$>ns) sz++concat plEs)
+aeval (Id (Arr sh at) (AShLit ns es@(e0:_))) t a | Just sz <- rSz at, Arr sh0 _ <- t0, Just irnk <- staRnk sh0 = do
+    (r0,l0,pl0) <- maa e0
+    (ts,ss) <- plDim irnk (r0,l0); n <- nI
+    let rnk=KI$genericLength ns+irnk; on=fromIntegral$product ns; nn=Tmp n; tt=Tmp<$>ts
+    plEs <- zipWithM (\e i -> do {(r,l,pl) <- maa e; pure $ pl ++ [cpy (AElem t rnk (Just a) (KI i*nn)) (AElem r (KI irnk) l 0) nn sz]}) es [0..]
+    pure (pl0++ss++PlProd () n tt:md sh t a rnk (on*nn) (map fromIntegral ns++tt) sz++concat plEs)
+  where t0=eAnn e0
 aeval (EApp _ (Builtin _ T) x) t a | Arr sh ty <- eAnn x, Just rnk <- staRnk sh = do
     let sze=bT ty; dO=KI$8+8*rnk
     xd <- nI; td <- nI
