@@ -746,7 +746,7 @@ aeval (EApp _ f@(EApp _ (Builtin _ Map) op) e) t a | tX@(Arr sh _) <- eAnn e, (A
     contents <- rfill f (AD t (Just a) (Just tX) Nothing Nothing (Just$Tmp nR)) [AI (AD xR l (Just tX) Nothing Nothing Nothing)]
     pure (plE$nR=:ev tX (xR,l):vSz sh t a (Tmp nR) sz++contents)
 aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
-    | (Arrow tD tC) <- eAnn f
+    | Arrow tD tC <- eAnn f
     , Arr xSh _ <- eAnn xs
     , Just xRnk <- staRnk xSh
     , Just (ta, rnk) <- tRnk tD
@@ -774,7 +774,7 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
     y <- nI; y0 <- nI; szX <- nI; szY <- nI
     td <- nI
     (plX, (lX, xR)) <- plA xs
-    (x0, wX0) <- arg tD (\_ -> AElem xR (KI xRnk) lX 0 dSz)
+    (x0, wX0) <- arg tD (const $ AElem xR (KI xRnk) lX 0 dSz)
     (x, wX) <- arg tD (\kϵ -> AElem xR (KI xRnk) lX (Tmp kϵ) dSz)
     (lY0, ss0) <- writeF f [ra x0] (IT y0)
     (lY, ss) <- writeF f [ra x] (IT y)

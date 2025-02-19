@@ -15,6 +15,8 @@ module P ( Err (..), FErr (..)
          , opt
          , ir
          , cmm
+         , refcard
+         , padstr
          , eDumpC
          , eDumpIR
          , aarch64
@@ -235,3 +237,50 @@ tc fp = do
 
 tyParse :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 tyParse = tyParseCtx alexInitUserState
+
+refcard :: String
+refcard = concat
+    [ lOption "Λ" "scan" "√" "sqrt"
+    , lOption "⋉"  "max" "⋊"  "min"
+    , lOption "⍳" "iota" "⌊, ⌈" "floor, ceiling"
+    , lOption "e:" "exp" "⨳ {m,n}" "convolve"
+    , lOption "\\~" "successive application" "\\`n" "infix"
+    , lOption "_." "log" "'" "map"
+    , lOption "`" "zip" "`{i,j∘[k,l]}" "rank"
+    , lOption "𝒻" "range (real)" "𝜋" "pi"
+    , lOption "_" "negate" ":" "size"
+    , lOption "𝓉" "dimension" "{x⟜y;z}" "no inline"
+    , lOption "->n" "select" "**" "power"
+    , lOption "⊂" "scatter" "}." "last"
+    , lOption "⊲" "cons" "⊳" "snoc"
+    , lOption "^:" "iterate" "%." "matmul"
+    , lOption "⊗" "outer product" "⍉, |:" "transpose"
+    , lOption "{." "head" "}:" "typesafe init"
+    , lOption "⟨z,w⟩" "array literal" "?p,.e1,.e2" "conditional"
+    , lOption "/*" "fold all" "ℝ" "i->f conversion"
+    , lOption "⧺" "cat" "{:" "typesafe tail"
+    , lOption "⊖" "rotate" "sin." "sine"
+    , lOption "𝔯" "rand" ".." "(integer) range"
+    , lOption "/ₒ" "fold with seed" "Λₒ" "scan with seed"
+    , lOption "{x←y;z}" "let...in" "⊙" "cycle"
+    , lOption "˙" "at" "|" "rem"
+    , lOption "@." "index of" "/." "idiv"
+    , lOption "%:" "vector mul" "odd." "parity"
+    , lOption "⍋" "sort" "𝓕" "course-of-value recursion"
+    , lOption "~" "reverse" "¬,⊻,∧,∨" "logical"
+    , lOption "♭" "flatten" "♯" "add dimension"
+    , lOption "⩪" "indices of" "§, #." "filter"
+    , lOption "ug." "unfold" "(i × j)" "dimensions"
+    , lOption "gen." "generate" "}:?" "init"
+    , lOption "{:?" "tail" "∴" "compose"
+    , lOption "𝔸" "digit literal" "ᶥ" "vector indices"
+    , lOption "〃" "ditto" "𝐒,𝐊" "combinators"
+    , lOption "⑂" "fork" "𝞈,𝟘,𝟙,𝟚" "fancy types"
+    , lOption "℘" "partition" "" ""
+    ]
+  where
+    lOption op0 desc0 op1 desc1 =
+        padstr 14 op0 ++ padstr 25 desc0 ++ padstr 14 op1 ++ desc1 ++ "\n"
+
+padstr :: Int -> String -> String
+padstr n str = take n $ str ++ repeat ' '
