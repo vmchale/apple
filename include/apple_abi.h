@@ -35,7 +35,7 @@ _ U poke_ai (Ai x) {
     R p;
 }
 
-_ U poke_ab (Ai x) {
+_ U poke_ab (Ab x) {
     J rnk = x.rnk;
     J t = 1;
     DO(i,rnk,t*=x.dim[i]);
