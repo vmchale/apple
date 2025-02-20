@@ -1,21 +1,16 @@
 module E ( D (..), L (..)
-         , nz, ni1, nzSh, n1, nec
+         , nz, nzSh, n1, nec
          , pr, pr1, pc, psh
          , (#*)
          ) where
 
 import           Sh
 
-nz, ni1 :: I a -> D
+nz :: I a -> D
 nz (Ix _ i) | i>0 = S
 nz (StaPlus _ i j) = nz i#|nz j
 nz (StaMul _ i j) = nz i#*nz j
 nz _ = Z
-
-ni1 (Ix _ i) | i>1 = S
-ni1 (StaPlus _ i j) = ni1 i#|ni1 j
-ni1 (StaMul _ i j) = nz i#*ni1 j #| ni1 i#*nz j
-ni1 _ = Z
 
 ip1 :: I a -> L
 ip1 (Ix x i) | i>0 = ip (Ix x (i-1))
