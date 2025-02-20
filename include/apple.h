@@ -2,7 +2,7 @@
 #define K const
 
 // exp, log, pow can be NULL on X86
-TS JC {P ma; P free;P r;P xr;P e;P log;P pow;} JC;
+TS JC {P ma;P free;P r;P xr;P e;P log;P pow;} JC;
 
 U apple_compile(K JC*,K char*,S*,U*);
 
