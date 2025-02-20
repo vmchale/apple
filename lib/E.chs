@@ -121,6 +121,7 @@ apple_ty src errPtr = do
                             zipWithM_ (\tϵ n -> do
                                 let ap=pp `plusPtr` (n*{#sizeof apple_t#})
                                 case tϵ of
+                                    ΠA{} -> error "nested tuples not implemented."
                                     ΠC{} -> error "nested tuples not implemented."
                                     AC taϵ -> do
                                         {# set apple_t.f #} ap (hk32 Aa)
@@ -131,6 +132,7 @@ apple_ty src errPtr = do
                     zipWithM_ (\ti n ->
                         case ti of
                             ΠC{} -> error "tuple arguments not implemented."
+                            ΠA{} -> error "array-of-tuple arguments not implemented."
                             SC tai -> do
                                 argn ip n {# offsetof apple_t->f #} (hk32 Sc)
                                 argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)

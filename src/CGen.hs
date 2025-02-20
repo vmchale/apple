@@ -12,7 +12,7 @@ data CAt = CR | CI | CB
 
 instance Pretty CAt where pretty CR="F"; pretty CI="J"; pretty CB="B"
 
-data CType = SC !CAt | AC !CAt | ΠC [CType]
+data CType = SC !CAt | AC !CAt | ΠC [CType] | ΠA [CType]
 
 instance Pretty CType where
     pretty (AC CR)="Af"; pretty (AC CI)="Ai"; pretty (AC CB)="Ab"
@@ -59,8 +59,8 @@ cTy B                 = pure (SC CB)
 cTy (Arr _ F)         = pure (AC CR)
 cTy (Arr _ I)         = pure (AC CI)
 cTy (Arr _ B)         = pure (AC CB)
-cTy (Arr _ P{})       = error "arrays of tuples not implemented (C API)."
 cTy (P ts)            = ΠC <$> traverse cTy ts
+cTy (Arr _ (P ts))    = ΠA <$> traverse cTy ts -- TODO: bail on array-of-tuple-of-array
 cTy (Arrow Arrow{} _) = Left FArg
 cTy (Arr _ Arrow{})   = Left ArrFn
 
@@ -76,3 +76,5 @@ irTy (Arrow Arrow{} _) = Left HO
 irTy (Arrow t0 t1)     = first (t0:) <$> irTy t1
 irTy TVar{}            = Left Poly
 irTy Ρ{}               = Left Poly
+irTy IZ{}              = Left Poly
+irTy Z{}               = Left Poly

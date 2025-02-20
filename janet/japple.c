@@ -34,9 +34,11 @@ Z Janet jr(K apple_t t, K U x){
         r=janet_wrap_number(*(F*)x),
         r=janet_wrap_integer((int32_t)*(J*)x),
         r=janet_wrap_boolean(*(int*)x),
+        nyi,
         r=janet_wrap_array(j_vf(*(U*)x)),
         r=janet_wrap_array(j_vi(*(U*)x)),
-        r=janet_wrap_array(j_vb(*(U*)x))
+        r=janet_wrap_array(j_vb(*(U*)x)),
+        nyi
     );
     R r;
 }
@@ -53,9 +55,11 @@ Z Janet apple_call(void *x, int32_t argc, Janet *argv) {
             {SA(F,xf);*xf=janet_getnumber(argv,k);vals[k]=xf;},
             {SA(J,xi);*xi=(J)janet_getinteger(argv,k);vals[k]=xi;},
             {SA(B,xb);*xb=(B)janet_getboolean(argv,k);vals[k]=xb;},
+            nyi,
             {SA(U,a);*a=fv_r(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;},
             {SA(U,a);*a=fv_i(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;},
             {SA(U,a);*a=fv_b(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;}
+            nyi,
         )
     }
     U fp=jit->bc;ffi_cif* cif=jit->ffi;

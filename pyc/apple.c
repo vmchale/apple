@@ -45,12 +45,16 @@ Z PY ar(K apple_P t, K U* x){
     R r;
 }
 
+// "fill" ABI hm https://numpy.org/doc/stable/reference/c-api/array.html#c.PyDataMem_NEW
+// https://stackoverflow.com/a/66248758/11296354
+
 Z PY apy(K apple_t t, K U x){
     PY r;
-    Ret(t,
+    ArgTy(t,
         r=PyFloat_FromDouble(*(F*)x),r=PyLong_FromLongLong(*(J*)x),r=PyBool_FromLong(*(long*)x),
+        r=ar(t.ty.APi,*(U*)x),
         r=npy_f(*(U*)x),r=npy_i(*(U*)x),r=npy_b(*(U*)x),
-        r=ar(t.ty.APi,*(U*)x)
+        nyi
     )
     R r;
 }
@@ -110,15 +114,23 @@ ZF apple_call(PYA self, PYA args, PYA kwargs) {
             apple_t argt=ty->args[k];
             switch(argt.f){
                 C(Sc,
-                    switch(argt.ty.sa){
-                        C(I_t,SA(J,xi);*xi=PyLong_AsLong(pyarg);vals[k]=xi;)
-                        C(F_t,SA(F,xf);*xf=PyFloat_AsDouble(pyarg);vals[k]=xf;)
-                    })
+                    switch(argt.rr){
+                        C(Rc,
+                            switch(argt.ty.aa){
+                                C(I_t,SA(J,xi);*xi=PyLong_AsLong(pyarg);vals[k]=xi;)
+                                C(F_t,SA(F,xf);*xf=PyFloat_AsDouble(pyarg);vals[k]=xf;)
+                            })
+                    }
+                )
                 C(Aa,
-                    switch(argt.ty.aa){
-                        C(I_t,SA(U,x);$arr(pyarg);*x=i_npy((const NP)pyarg);fs|=1<<k;vals[k]=x;)
-                        C(B_t,SA(U,x);$arr(pyarg);*x=b_npy((const NP)pyarg);fs|=1<<k;vals[k]=x;)
-                        C(F_t,SA(U,x);$arr(pyarg);*x=f_npy((const NP)pyarg);fs|=1<<k;vals[k]=x;)
+                    switch(argt.rr){
+                        C(Sc,
+                            switch(argt.ty.aa){
+                                C(I_t,SA(U,x);$arr(pyarg);*x=i_npy((const NP)pyarg);fs|=1<<k;vals[k]=x;)
+                                C(B_t,SA(U,x);$arr(pyarg);*x=b_npy((const NP)pyarg);fs|=1<<k;vals[k]=x;)
+                                C(F_t,SA(U,x);$arr(pyarg);*x=f_npy((const NP)pyarg);fs|=1<<k;vals[k]=x;)
+                            }
+                        )
                     }
                  )
             }

@@ -112,9 +112,11 @@ SEXP run_R(SEXP args){
             {SA(F,xf);*xf=asReal(arg);vals[k]=xf;},
             {SA(J,xi);*xi=(J)asInteger(arg);vals[k]=xi;},
             {SA(B,xb);*xb=(B)asLogical(arg);vals[k]=xb;},
+            nyi,
             {SA(U,x);*x=fr(arg);fs|=1<<k;vals[k]=x;},
             {SA(U,x);*x=fi(arg);vals[k]=x;},
-            {SA(U,x);*x=fb(arg);vals[k]=x;}
+            {SA(U,x);*x=fb(arg);vals[k]=x;},
+            nyi
         )
     }
     ffi_call(cif,fp,ret,vals);
@@ -123,7 +125,8 @@ SEXP run_R(SEXP args){
         r=ScalarReal(*(F*)ret),
         r=ScalarInteger((int)(*(J*)ret)),
         r=ScalarLogical(*(int*)ret),
-        r=rf(*(U*)ret),r=ri(*(U*)ret),r=rb(*(U*)ret)
+        nyi,
+        r=rf(*(U*)ret),r=ri(*(U*)ret),r=rb(*(U*)ret),nyi
     )
     R r;
 }
