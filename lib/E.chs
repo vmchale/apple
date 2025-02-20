@@ -30,6 +30,7 @@ data JitCtx
 
 {# enum apple_at as CA {} #}
 {# enum HK as HK {} #}
+{# enum NK as NK {} #}
 
 ct :: CAt -> CA
 ct CR = F_t; ct CI = I_t; ct CB = B_t
@@ -39,6 +40,9 @@ t32 = fromIntegral.fromEnum.ct
 
 hk32 :: HK -> CInt
 hk32 = fromIntegral.fromEnum
+
+nk32 :: NK -> CInt
+nk32 = fromIntegral.fromEnum
 
 ppn :: T.Text -> Ptr CSize -> IO CString
 ppn t szP = BS.unsafeUseAsCStringLen (encodeUtf8 t) $ \(bs, sz) -> do
@@ -101,14 +105,17 @@ apple_ty src errPtr = do
                     case to of
                         SC tao -> do
                             {# set FnTy.res.f #} sp (hk32 Sc)
-                            {# set FnTy.res.ty.sa #} sp (t32 tao)
+                            {# set FnTy.res.rr #} sp (nk32 Rc)
+                            {# set FnTy.res.ty.aa #} sp (t32 tao)
                         AC tao -> do
                             {# set FnTy.res.f #} sp (hk32 Aa)
+                            {# set FnTy.res.rr #} sp (nk32 Rc)
                             {# set FnTy.res.ty.aa #} sp (t32 tao)
                         ΠC ts -> do
                             let nr=length ts
                             pp <- mallocBytes (nr*{#sizeof apple_t#})
-                            {# set FnTy.res.f #} sp (hk32 Pi)
+                            {# set FnTy.res.f #} sp (hk32 Sc)
+                            {# set FnTy.res.rr #} sp (nk32 Pi)
                             {# set FnTy.res.ty.APi.pi_n #} sp (fromIntegral nr::CInt)
                             {# set FnTy.res.ty.APi.a_pi #} sp pp
                             zipWithM_ (\tϵ n -> do
@@ -120,13 +127,13 @@ apple_ty src errPtr = do
                                         {# set apple_t.ty.aa #} ap (t32 taϵ)
                                     SC taϵ -> do
                                         {# set apple_t.f #} ap (hk32 Sc)
-                                        {# set apple_t.ty.sa #} ap (t32 taϵ)) ts [0..]
+                                        {# set apple_t.ty.aa #} ap (t32 taϵ)) ts [0..]
                     zipWithM_ (\ti n ->
                         case ti of
                             ΠC{} -> error "tuple arguments not implemented."
                             SC tai -> do
                                 argn ip n {# offsetof apple_t->f #} (hk32 Sc)
-                                argn ip n {# offsetof apple_t->ty.sa #} (t32 tai)
+                                argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)
                             AC tao -> do
                                 argn ip n {# offsetof apple_t->f #} (hk32 Aa)
                                 argn ip n {# offsetof apple_t->ty.aa #} (t32 tao)) tis [0..]
