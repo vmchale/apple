@@ -48,6 +48,7 @@ main = do
             , ccOut pwd "math/numbertheory/radical.🍎" "ii" sys "30"
             , ccOut pwd "math/numbertheory/factors.🍏" "ia" sys "1 3\n2,3,5\n"
             , ccOut pwd "test/data/primeMask.🍎" "ib" sys "1 10\n1,1,0,1,0,1,0,0,0,1\n"
+            , ccOut pwd "test/data/any.🍏" "ab" sys "1\n"
             , ccOut pwd "test/examples/regress.🍎" "aaf2" sys "-0.950000 1.000000"
             ]
   where
