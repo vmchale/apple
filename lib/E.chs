@@ -103,32 +103,8 @@ apple_ty src errPtr = do
                     ip <- mallocBytes (argc * {# sizeof apple_t #})
                     {# set FnTy.argc #} sp (fromIntegral argc)
                     case to of
-                        SC tao -> do
-                            {# set FnTy.res.f #} sp (hk32 Sc)
-                            {# set FnTy.res.rr #} sp (nk32 Rc)
-                            {# set FnTy.res.ty.aa #} sp (t32 tao)
-                        AC tao -> do
-                            {# set FnTy.res.f #} sp (hk32 Aa)
-                            {# set FnTy.res.rr #} sp (nk32 Rc)
-                            {# set FnTy.res.ty.aa #} sp (t32 tao)
-                        ΠC ts -> do
-                            let nr=length ts
-                            pp <- mallocBytes (nr*{#sizeof apple_t#})
-                            {# set FnTy.res.f #} sp (hk32 Sc)
-                            {# set FnTy.res.rr #} sp (nk32 Pi)
-                            {# set FnTy.res.ty.APi.pi_n #} sp (fromIntegral nr::CInt)
-                            {# set FnTy.res.ty.APi.a_pi #} sp pp
-                            zipWithM_ (\tϵ n -> do
-                                let ap=pp `plusPtr` (n*{#sizeof apple_t#})
-                                case tϵ of
-                                    ΠA{} -> error "nested tuples not implemented."
-                                    ΠC{} -> error "nested tuples not implemented."
-                                    AC taϵ -> do
-                                        {# set apple_t.f #} ap (hk32 Aa)
-                                        {# set apple_t.ty.aa #} ap (t32 taϵ)
-                                    SC taϵ -> do
-                                        {# set apple_t.f #} ap (hk32 Sc)
-                                        {# set apple_t.ty.aa #} ap (t32 taϵ)) ts [0..]
+                        SC tao -> f sp Sc tao; AC tao -> f sp Aa tao
+                        ΠC ts -> πk sp Sc ts; ΠA ts -> πk sp Aa ts
                     zipWithM_ (\ti n ->
                         case ti of
                             ΠC{} -> error "tuple arguments not implemented."
@@ -143,6 +119,29 @@ apple_ty src errPtr = do
                     pure sp
   where 
     argn p n = pokeByteOff (p `plusPtr` (n*{# sizeof apple_t #}))
+    f p k t = do
+        {# set FnTy.res.f #} p (hk32 k)
+        {# set FnTy.res.rr #} p (nk32 Rc)
+        {# set FnTy.res.ty.aa #} p (t32 t)
+    πk sp k ts = do
+        let nr=length ts
+        pp <- mallocBytes (nr*{#sizeof apple_t#})
+        {# set FnTy.res.f #} sp (hk32 k)
+        {# set FnTy.res.rr #} sp (nk32 Pi)
+        {# set FnTy.res.ty.APi.pi_n #} sp (fromIntegral nr::CInt)
+        {# set FnTy.res.ty.APi.a_pi #} sp pp
+        zipWithM_ (\tϵ n -> do
+            let ap=pp `plusPtr` (n*{#sizeof apple_t#})
+            case tϵ of
+                ΠA{} -> error "nested tuples not implemented."
+                ΠC{} -> error "nested tuples not implemented."
+                AC taϵ -> ft ap Aa taϵ
+                SC taϵ -> ft ap Sc taϵ) ts [0..]
+      where
+        ft p kϵ t = do
+            {# set apple_t.f #} p (hk32 kϵ)
+            {# set apple_t.rr #} p (nk32 Rc)
+            {# set apple_t.ty.aa #} p (t32 t)
 
 cfp = case arch of {"aarch64" -> actxFunP; "x86_64" -> ctxFunP.fst}
 jNull x p = case x of {Nothing -> poke p nullPtr; Just xϵ -> poke p xϵ}
