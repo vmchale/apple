@@ -100,7 +100,7 @@ apple_ty src errPtr = do
                 Right (tis, to) -> do
                     let argc = length tis
                     sp <- mallocBytes {# sizeof FnTy #}
-                    ip <- mallocBytes (argc * {# sizeof apple_t #})
+                    ip <- mallocBytes (argc*{#sizeof apple_t#})
                     {# set FnTy.argc #} sp (fromIntegral argc)
                     case to of
                         SC tao -> f sp Sc tao; AC tao -> f sp Aa tao
@@ -112,9 +112,9 @@ apple_ty src errPtr = do
                             SC tai -> do
                                 argn ip n {# offsetof apple_t->f #} (hk32 Sc)
                                 argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)
-                            AC tao -> do
+                            AC tai -> do
                                 argn ip n {# offsetof apple_t->f #} (hk32 Aa)
-                                argn ip n {# offsetof apple_t->ty.aa #} (t32 tao)) tis [0..]
+                                argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)) tis [0..]
                     {# set FnTy.args #} sp ip
                     pure sp
   where 
