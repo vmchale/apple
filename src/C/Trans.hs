@@ -98,7 +98,7 @@ nSz F=Just 8; nSz I=Just 8; nSz B=Just 1; nSz (P ts)=sum<$>traverse nSz ts; nSz 
 
 aB (Arr (_ `Cons` Nil) t) = nSz t; aB _ = Nothing
 aBs (Arr (_ `Cons` Nil) t) = (t,)<$>nSz t; aBs _ = Nothing
-aN (Arr _ t) = rr t; aN _=Nothing
+aN (Arr _ t) = nr t; aN _=Nothing
 
 nr, rr :: T a -> Maybe (T a, Int64)
 nr (P ts) = bimap P sum . unzip <$> traverse nr ts; nr t = rr t
@@ -842,7 +842,7 @@ aeval e t a | (Arr oSh _) <- eAnn e, Just (f, xss) <- r00 e, all isF (unroll$eAn
 aeval e t a
     | Just (f, xss) <- r00 e
     , Just xsTys <- traverse (fmap fst.aN.eAnn) xss
-    , (Arr sh _) <- eAnn (head xss)
+    , Arr sh _ <- eAnn (head xss)
     , tC <- codT (eAnn f)
     , Just szC <- nSz tC
     , Arr oSh _ <- eAnn e = do
