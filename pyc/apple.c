@@ -29,7 +29,7 @@ ZU b_npy(K NP o) {CT(o,'?',"Error: expected an array of booleans");A(rnk,n,1,x,o
 ZU i_npy(K NP o) {CT(o,'l',"Error: expected an array of 64-bit integers");A(rnk,n,8,x,o);J* x_i=x;U data=PyArray_DATA(o);memcpy(x_i+rnk+1,data,n*8);R x;}
 
 // https://stackoverflow.com/a/52737023/11296354
-#define RP(rnk,x,n,w,ls,T) {PY cap=PyCapsule_New(x,NULL,c_free);PyArray_Descr* pd=PyArray_DescrFromType(T); PY r=PyArray_NewFromDescr(&PyArray_Type,pd,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);PyArray_SetBaseObject((NP)r,cap);R r;}
+#define RP(rnk,x,n,w,ls,T) {PY cap=PyCapsule_New(x,NULL,c_free);PyArray_Descr* pd=PyArray_DescrFromType(T);PY r=PyArray_NewFromDescr(&PyArray_Type,pd,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);PyArray_SetBaseObject((NP)r,cap);R r;}
 
 #define NPA(f,s,T) _ PY f(U x) {CD(rnk,x,t,ls);RP(rnk,x,t,s,ls,T);}
 
@@ -39,7 +39,22 @@ NPA(npy_b,1,NPY_BOOL)
 
 Z PY apy(K apple_t,K U);
 
-Z PY ar(K apple_P t, K U* x){
+// https://stackoverflow.com/a/66248758/11296354
+_ PY npy_p(K apple_P t, U x){
+    int n=t.pi_n;
+    PyArray_Descr* pd;
+        PY rt=PyUnicode_FromString("float64,float64");
+        PyArray_DescrConverter(rt, &pd);
+
+    CD(rnk,x,m,ls);
+
+    PY cap=PyCapsule_New(x,NULL,c_free);
+    PY r=PyArray_NewFromDescr(&PyArray_Type,pd,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);
+    PyArray_SetBaseObject((NP)r,cap);
+    R r;
+}
+
+_ PY ar(K apple_P t, K U* x){
     int n=t.pi_n;
     PY r=PyTuple_New(n);
     SA(U,ret);DO(i,n,ret[0]=x[i];PyTuple_SetItem(r,i,apy(t.a_pi[i],ret)))
@@ -55,8 +70,7 @@ Z PY apy(K apple_t t, K U x){
     ArgTy(t,
         r=PyFloat_FromDouble(*(F*)x),r=PyLong_FromLongLong(*(J*)x),r=PyBool_FromLong(*(long*)x),
         r=ar(t.ty.APi,*(U*)x),
-        r=npy_f(*(U*)x),r=npy_i(*(U*)x),r=npy_b(*(U*)x),
-        nyi
+        r=npy_f(*(U*)x),r=npy_i(*(U*)x),r=npy_b(*(U*)x),r=npy_p(t.ty.APi,*(U*)x)
     )
     R r;
 }
@@ -122,6 +136,7 @@ ZF apple_call(PYA self, PYA args, PYA kwargs) {
                                 C(I_t,SA(J,xi);*xi=PyLong_AsLong(pyarg);vals[k]=xi;)
                                 C(F_t,SA(F,xf);*xf=PyFloat_AsDouble(pyarg);vals[k]=xf;)
                             })
+                        C(Pi,nyi)
                     }
                 )
                 C(Aa,
@@ -133,6 +148,7 @@ ZF apple_call(PYA self, PYA args, PYA kwargs) {
                                 C(F_t,SA(U,x);$arr(pyarg);*x=f_npy((const NP)pyarg);fs|=1<<k;vals[k]=x;)
                             }
                         )
+                        C(Pi,nyi)
                     }
                  )
             }
