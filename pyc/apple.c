@@ -39,11 +39,11 @@ NPA(npy_b,1,NPY_BOOL)
 
 Z PY apy(K apple_t,K U);
 
-// https://stackoverflow.com/a/66248758/11296354
+// https://numpy.org/devdocs/reference/arrays.dtypes.html#specifying-and-constructing-data-types
 _ PY npy_p(K apple_P t, U x){
     int n=t.pi_n;
     PyArray_Descr* pd;
-        PY rt=PyUnicode_FromString("float64,float64");
+        PY rt=PyUnicode_FromString("f8,f8");
         PyArray_DescrConverter(rt, &pd);
 
     CD(rnk,x,m,ls);
