@@ -11,7 +11,7 @@
 
 TS JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi; T ts;} JF;
 
-_ Janet nyi(void){printf("unsupported: tuple in bindings.");R NIL;}
+#define nyi {printf("unsupported: tuple in bindings.");R NIL;}
 
 _ int jit_gc(void *data, size_t len) {
     JF* j=(JF*)data;
@@ -60,8 +60,8 @@ Z Janet apple_call(void *x, int32_t argc, Janet *argv) {
             nyi,
             {SA(U,a);*a=fv_r(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;},
             {SA(U,a);*a=fv_i(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;},
-            {SA(U,a);*a=fv_b(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;}
-            nyi,
+            {SA(U,a);*a=fv_b(janet_getarray(argv,k));fs|=1<<k;vals[k]=a;},
+            nyi
         )
     }
     U fp=jit->bc;ffi_cif* cif=jit->ffi;
