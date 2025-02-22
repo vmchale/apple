@@ -29,7 +29,7 @@ ZU i_npy(K NP o) {CT(o,'l',"Error: expected an array of 64-bit integers");A(rnk,
 // https://stackoverflow.com/a/52737023/11296354
 #define RP(rnk,x,n,w,ls,T) {S sz=w*n;PY cap=PyCapsule_New(x,NULL,c_free);PyArray_Descr* pd=PyArray_DescrFromType(T); PY r=PyArray_NewFromDescr(&PyArray_Type,pd,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);PyArray_SetBaseObject((NP)r,cap);R r;}
 
-#define NPA(f,s,T) ZF f(U x) {CD(rnk,x,t,ls);RP(rnk,x,t,s,ls,T);}
+#define NPA(f,s,T) _ PY f(U x) {CD(rnk,x,t,ls);RP(rnk,x,t,s,ls,T);}
 
 NPA(npy_i,8,NPY_INT64)
 NPA(npy_f,8,NPY_FLOAT64)
