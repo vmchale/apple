@@ -17,7 +17,7 @@ typedef PyObject* PY;typedef PyArrayObject* NP;typedef const PY PYA;
 _ void c_free(PY cap){free(PyCapsule_GetPointer(cap,NULL));}
 
 // CD - copy dims AD - apple dimensionate
-#define CD(rnk,x,t,ls) J* i_p=x;J rnk=i_p[0];npy_intp* ls=malloc(SZ(npy_intp)*rnk);J t=1;DO(i,rnk,t*=i_p[i+1];ls[i]=(npy_intp)i_p[i+1]);
+#define CD(rnk,x,ls) J* i_p=x;J rnk=i_p[0];npy_intp* ls=malloc(SZ(npy_intp)*rnk);DO(i,rnk,ls[i]=(npy_intp)i_p[i+1]);
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ls=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ls[i]);}
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 
@@ -31,7 +31,7 @@ ZU i_npy(K NP o) {CT(o,'l',"Error: expected an array of 64-bit integers");A(rnk,
 // https://stackoverflow.com/a/52737023/11296354
 #define RP(rnk,x,ls,T) {PY cap=PyCapsule_New(x,NULL,c_free);PyArray_Descr* pd=PyArray_DescrFromType(T);PY r=PyArray_NewFromDescr(&PyArray_Type,pd,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);PyArray_SetBaseObject((NP)r,cap);R r;}
 
-#define NPA(f,s,T) _ PY f(U x) {CD(rnk,x,t,ls);RP(rnk,x,ls,T);}
+#define NPA(f,s,T) _ PY f(U x) {CD(rnk,x,ls);RP(rnk,x,ls,T);}
 
 NPA(npy_i,8,NPY_INT64)
 NPA(npy_f,8,NPY_FLOAT64)
@@ -49,7 +49,7 @@ _ PY npy_p(K apple_P t, U x){
             s[o]=0;
         PY rt=PyUnicode_FromString(s);
         PyArray_DescrConverter(rt, &pd);
-    CD(rnk,x,m,ls);
+    CD(rnk,x,ls);
     PY cap=PyCapsule_New(x,NULL,c_free);
     PY r=PyArray_NewFromDescr(&PyArray_Type,pd,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);
     PyArray_SetBaseObject((NP)r,cap);
