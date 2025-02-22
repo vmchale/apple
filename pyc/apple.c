@@ -43,7 +43,11 @@ Z PY apy(K apple_t,K U);
 _ PY npy_p(K apple_P t, U x){
     int n=t.pi_n;
     PyArray_Descr* pd;
-        PY rt=PyUnicode_FromString("f8,f8");
+        T s=alloca(3*n+1);
+        DO(i,n,switch(t.a_pi[i].ty.aa){C(F_t,memcpy(s+i*3,"f8,",3))})
+        s[3*n]=0;
+        printf("%lld,%s\n",n,s);
+        PY rt=PyUnicode_FromString(s);
         PyArray_DescrConverter(rt, &pd);
 
     CD(rnk,x,m,ls);
