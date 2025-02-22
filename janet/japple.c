@@ -11,6 +11,8 @@
 
 TS JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi; T ts;} JF;
 
+_ Janet nyi(void){printf("unsupported: tuple in bindings.");R NIL;}
+
 _ int jit_gc(void *data, size_t len) {
     JF* j=(JF*)data;
     munmap(j->bc,j->c_sz);

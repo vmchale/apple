@@ -21,6 +21,8 @@
 
 #define ZS static SEXP
 
+_ SEXP nyi(void){E("unsupported: tuple in bindings.")}
+
 typedef const SEXP r;
 
 TS AppleC {U code;S code_sz;FnTy* ty;U sa;ffi_cif* ffi;} AppleC;

@@ -24,6 +24,4 @@ ffi_cif* apple_ffi(FnTy* ty) {
     R cif;
 }
 
-_ void nyi(void){printf("unsupported: tuples in bindings");exit(1);}
-
 #define ArgTy(t,fc,i,b,sp,fa,ia,ba,ap) {switch(t.f){C(Sc,switch(t.rr){C(Rc,switch(t.ty.aa){C(F_t,fc) C(I_t,i) C(B_t,b)}) C(Pi,sp)};) C(Aa,switch(t.rr){C(Rc,switch(t.ty.aa){C(F_t,fa) C(I_t,ia) C(B_t,ba)}) C(Pi,ap)})}};
