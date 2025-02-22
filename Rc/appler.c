@@ -21,7 +21,7 @@
 
 #define ZS static SEXP
 
-_ SEXP nyi(void){E("unsupported: tuple in bindings.")}
+#define nyi {E("not yet implemented: tuple in bindings.")}
 
 typedef const SEXP r;
 
