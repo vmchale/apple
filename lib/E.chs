@@ -111,9 +111,11 @@ apple_ty src errPtr = do
                             ΠA{} -> error "array-of-tuple arguments not implemented."
                             SC tai -> do
                                 argn ip n {# offsetof apple_t->f #} (hk32 Sc)
+                                argn ip n {# offsetof apple_t->rr #} (nk32 Rc)
                                 argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)
                             AC tai -> do
                                 argn ip n {# offsetof apple_t->f #} (hk32 Aa)
+                                argn ip n {# offsetof apple_t->rr #} (nk32 Rc)
                                 argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)) tis [0..]
                     {# set FnTy.args #} sp ip
                     pure sp
