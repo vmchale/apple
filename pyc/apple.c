@@ -21,7 +21,7 @@ _ void c_free(PY cap){free(PyCapsule_GetPointer(cap,NULL));}
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ls=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ls[i]);}
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 
-_ PY nyi(void){PyErr_SetString(PyExc_RuntimeError,"unsupported: tuple in bindings.");R NULL;}
+#define nyi {PyErr_SetString(PyExc_RuntimeError,"unsupported: tuple in bindings.");R NULL;}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
 ZU f_npy(K NP o) {CT(o,'d',"Error: expected an array of floats");A(rnk,n,8,x,o);F* x_f=x;U data=PyArray_DATA(o);memcpy(x_f+rnk+1,data,n*8);R x;}
