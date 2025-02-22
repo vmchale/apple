@@ -9,7 +9,7 @@ typedef PyObject* PY;typedef PyArrayObject* NP;typedef const PY PYA;
 
 #define $arr(o){if(!(PyArray_CheckExact(o))){PyErr_SetString(PyExc_RuntimeError,"Expected NumPy array.");R NULL;}}
 #define $e(p,e) {if(!(p)){PyErr_SetString(PyExc_RuntimeError,e);}}
-#define CT(o,c,s) {$e((o->flags && NPY_ARRAY_C_CONTIGUOUS), "Only row-major (C-style) arrays are supported.");PyArray_Descr *d=PyArray_DESCR(o);$e((d->type==c),s);}
+#define CT(o,c,s) {$e((o->flags && NPY_ARRAY_C_CONTIGUOUS),"Only row-major (C-style) arrays are supported.");PyArray_Descr *d=PyArray_DESCR(o);$e((d->type==c),s);}
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;}}
 
 #define ZF Z PY
@@ -44,14 +44,12 @@ _ PY npy_p(K apple_P t, U x){
     int n=t.pi_n;
     PyArray_Descr* pd;
         T s=alloca(3*n+1);
-        DO(i,n,switch(t.a_pi[i].ty.aa){C(F_t,memcpy(s+i*3,"f8,",3))})
-        s[3*n]=0;
-        printf("%lld,%s\n",n,s);
+            J l;J o=0;
+            DO(i,n,T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3)};memcpy(s+o,r,l);o+=l)
+            s[o]=0;
         PY rt=PyUnicode_FromString(s);
         PyArray_DescrConverter(rt, &pd);
-
     CD(rnk,x,m,ls);
-
     PY cap=PyCapsule_New(x,NULL,c_free);
     PY r=PyArray_NewFromDescr(&PyArray_Type,pd,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);
     PyArray_SetBaseObject((NP)r,cap);
