@@ -1221,6 +1221,17 @@ Cliff Reiter points out that we can simulate a random walk by simply scanning an
 nb/randomWalk.html
 ```
 
+### Lorenz Attractor
+
+We use `gen.` in place of a [less efficient for loop](https://matplotlib.org/stable/gallery/mplot3d/lorenz_attractor.html).
+
+Apple has support for efficient tuples, while higher-rank arrays are more common
+in the NumPy ecosystem.
+
+```{.include}
+nb/lorenz.html
+```
+
 ## Statistics
 
 Apple is capable of statistical computing, via the program suggested by [Ewart Shaw](https://www.jsoftware.com/papers/jhyper.pdf).
