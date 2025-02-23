@@ -1232,6 +1232,24 @@ in the NumPy ecosystem.
 nb/lorenz.html
 ```
 
+### Mandelbrot Set
+
+Apple has no support for complex numbers so we have to implement addition,
+square, absolute value ourselves.
+
+Note the idiom
+
+```
+(frange _2.5 1 700) [(x,y)]⊗ (frange _1 1 400)
+  : Arr (700 × 400) (float * float)
+```
+
+to get a grid of tuples.
+
+```{.include}
+nb/mandel.html
+```
+
 ## Statistics
 
 Apple is capable of statistical computing, via the program suggested by [Ewart Shaw](https://www.jsoftware.com/papers/jhyper.pdf).
