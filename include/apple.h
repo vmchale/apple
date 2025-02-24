@@ -18,12 +18,12 @@ T apple_print_ts_sz(K char*, S*, T*);
 
 TD apple_at{I_t=1,F_t=2,B_t=3} apple_at;
 
-TD HK{Sc,Aa} HK; TD NK{Rc,Pi} NK;
+TD TK {Rc,Pi,Ap,Aa} TK;
 
 TS apple_P{int pi_n; struct apple_t* a_pi;} apple_P;
 
 // https://stackoverflow.com/questions/20752551/working-with-a-union-of-structs-in-c
-TS apple_t {HK f; NK rr; union {apple_at aa; apple_P APi;} ty;} apple_t;
+TS apple_t {TK f; union {apple_at aa; apple_P APi;} ty;} apple_t;
 
 TS FnTy {int argc; apple_t* args; apple_t res;} FnTy;
 

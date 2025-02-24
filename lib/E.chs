@@ -29,8 +29,7 @@ data JitCtx
 {# fun memcpy as ^ { castPtr `Ptr a', castPtr `Ptr a', coerce `CSize' } -> `Ptr a' castPtr #}
 
 {# enum apple_at as CA {} #}
-{# enum HK as HK {} #}
-{# enum NK as NK {} #}
+{# enum TK as TK {} #}
 
 ct :: CAt -> CA
 ct CR = F_t; ct CI = I_t; ct CB = B_t
@@ -38,11 +37,8 @@ ct CR = F_t; ct CI = I_t; ct CB = B_t
 t32 :: CAt -> CInt
 t32 = fromIntegral.fromEnum.ct
 
-hk32 :: HK -> CInt
-hk32 = fromIntegral.fromEnum
-
-nk32 :: NK -> CInt
-nk32 = fromIntegral.fromEnum
+tk32 :: TK -> CInt
+tk32 = fromIntegral.fromEnum
 
 ppn :: T.Text -> Ptr CSize -> IO CString
 ppn t szP = BS.unsafeUseAsCStringLen (encodeUtf8 t) $ \(bs, sz) -> do
@@ -103,33 +99,29 @@ apple_ty src errPtr = do
                     ip <- mallocBytes (argc*{#sizeof apple_t#})
                     {# set FnTy.argc #} sp (fromIntegral argc)
                     case to of
-                        SC tao -> f sp Sc tao; AC tao -> f sp Aa tao
-                        ΠC ts -> πk sp Sc ts; ΠA ts -> πk sp Aa ts
+                        SC tao -> f sp Rc tao; AC tao -> f sp Aa tao
+                        ΠC ts -> πk sp Pi ts; ΠA ts -> πk sp Ap ts
                     zipWithM_ (\ti n ->
                         case ti of
                             ΠC{} -> error "tuple arguments not implemented."
                             ΠA{} -> error "array-of-tuple arguments not implemented."
                             SC tai -> do
-                                argn ip n {# offsetof apple_t->f #} (hk32 Sc)
-                                argn ip n {# offsetof apple_t->rr #} (nk32 Rc)
+                                argn ip n {# offsetof apple_t->f #} (tk32 Rc)
                                 argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)
                             AC tai -> do
-                                argn ip n {# offsetof apple_t->f #} (hk32 Aa)
-                                argn ip n {# offsetof apple_t->rr #} (nk32 Rc)
+                                argn ip n {# offsetof apple_t->f #} (tk32 Aa)
                                 argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)) tis [0..]
                     {# set FnTy.args #} sp ip
                     pure sp
   where 
     argn p n = pokeByteOff (p `plusPtr` (n*{# sizeof apple_t #}))
     f p k t = do
-        {# set FnTy.res.f #} p (hk32 k)
-        {# set FnTy.res.rr #} p (nk32 Rc)
+        {# set FnTy.res.f #} p (tk32 k)
         {# set FnTy.res.ty.aa #} p (t32 t)
     πk sp k ts = do
         let nr=length ts
         pp <- mallocBytes (nr*{#sizeof apple_t#})
-        {# set FnTy.res.f #} sp (hk32 k)
-        {# set FnTy.res.rr #} sp (nk32 Pi)
+        {# set FnTy.res.f #} sp (tk32 k)
         {# set FnTy.res.ty.APi.pi_n #} sp (fromIntegral nr::CInt)
         {# set FnTy.res.ty.APi.a_pi #} sp pp
         zipWithM_ (\tϵ n -> do
@@ -138,11 +130,10 @@ apple_ty src errPtr = do
                 ΠA{} -> error "nested tuples not implemented."
                 ΠC{} -> error "nested tuples not implemented."
                 AC taϵ -> ft ap Aa taϵ
-                SC taϵ -> ft ap Sc taϵ) ts [0..]
+                SC taϵ -> ft ap Rc taϵ) ts [0..]
       where
         ft p kϵ t = do
-            {# set apple_t.f #} p (hk32 kϵ)
-            {# set apple_t.rr #} p (nk32 Rc)
+            {# set apple_t.f #} p (tk32 kϵ)
             {# set apple_t.ty.aa #} p (t32 t)
 
 cfp = case arch of {"aarch64" -> actxFunP; "x86_64" -> ctxFunP.fst}
