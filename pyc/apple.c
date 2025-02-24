@@ -40,7 +40,7 @@ NPA(npy_b,1,NPY_BOOL)
 
 Z PY apy(K apple_t,K U);
 
-#define apd(t,pd) PyArray_Descr* pd; {int n=t.pi_n;T s=alloca(3*n+1);J l;J o=0;DO(i,n,T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3) C(B_t,r="?,";l=2) C(I_t,r="i8,";l=3)};memcpy(s+o,r,l);o+=l);s[o]=0;PY rt=PyUnicode_FromString(s);PyArray_DescrConverter(rt, &pd);}
+#define apd(t,pd) PyArray_Descr* pd; {int n=t.pi_n;T s=alloca(3*n+1);J l;J o=0;DO(i,n,$(t.a_pi[i].f==Rc,"tuples-of-tuples not yet implemented.");T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3) C(B_t,r="?,";l=2) C(I_t,r="i8,";l=3)};memcpy(s+o,r,l);o+=l);s[o]=0;PY rt=PyUnicode_FromString(s);PyArray_DescrConverter(rt, &pd);}
 
 // https://numpy.org/devdocs/reference/arrays.dtypes.html#specifying-and-constructing-data-types
 _ PY npy_p(K apple_P t, U x){
