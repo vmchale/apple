@@ -21,7 +21,7 @@ else
 	cp $$(jq '."install-plan"[]|select(."component-name"=="flib:apple")|."bin-file"' dist-newstyle/cache/plan.json -r) $@
 endif
 
-docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html
+docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html nb/mandel.html
 	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
 
 nb/%.html: nb/%.ipynb
