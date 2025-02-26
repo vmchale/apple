@@ -7,8 +7,8 @@
 
 typedef PyObject* PY;typedef PyArrayObject* NP;typedef const PY PYA;
 
-#define $arr(o){if(!(PyArray_CheckExact(o))){PyErr_SetString(PyExc_RuntimeError,"Expected NumPy array.");R NULL;}}
-#define $e(p,e) {if(!(p)){PyErr_SetString(PyExc_RuntimeError,e);}}
+#define $e(p,e) {if(!(p)){PyErr_SetString(PyExc_RuntimeError,e);R NULL;}}
+#define $arr(o) $e(PyArray_CheckExact(o),"Expected NumPy array.")
 #define CT(o,c,s) {$e((o->flags && NPY_ARRAY_C_CONTIGUOUS),"Only row-major (C-style) arrays are supported.");PyArray_Descr *d=PyArray_DESCR(o);$e((d->type==c),s);}
 #define ERR(p,msg) {if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;}}
 
@@ -40,7 +40,7 @@ NPA(npy_b,1,NPY_BOOL)
 
 Z PY apy(K apple_t,K U);
 
-#define apd(t,pd) PyArray_Descr* pd; {int n=t.pi_n;T s=alloca(3*n+1);J l;J o=0;DO(i,n,$(t.a_pi[i].f==Rc,"tuples-of-tuples not yet implemented.");T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3) C(B_t,r="?,";l=2) C(I_t,r="i8,";l=3)};memcpy(s+o,r,l);o+=l);s[o]=0;PY rt=PyUnicode_FromString(s);PyArray_DescrConverter(rt, &pd);}
+#define apd(t,pd) PyArray_Descr* pd; {int n=t.pi_n;T s=alloca(3*n+1);J l;J o=0;DO(i,n,$e(t.a_pi[i].f==Rc,"tuples-of-tuples not yet implemented.");T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3) C(B_t,r="?,";l=2) C(I_t,r="i8,";l=3)};memcpy(s+o,r,l);o+=l);s[o]=0;PY rt=PyUnicode_FromString(s);PyArray_DescrConverter(rt, &pd);}
 
 // https://numpy.org/devdocs/reference/arrays.dtypes.html#specifying-and-constructing-data-types
 _ PY npy_p(K apple_P t, U x){
