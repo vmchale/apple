@@ -5,8 +5,8 @@
 
 #define NIL janet_wrap_nil()
 #define ERR(p,msg){if(p==NULL){printf("%s\n",msg);free(msg);R NIL;};}
-#define JA(x,n,xs) J n=((J*)x)[1];JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
-#define VA(sz,y) U y=malloc(sz+16);{J* x_i=y;x_i[0]=1;x_i[1]=n;}
+#define JA J n=((J*)x)[1];JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
+#define VA(sz) U y=malloc(sz+16);{J* x_i=y;x_i[0]=1;x_i[1]=n;}
 #define L(a) (J)a->count
 
 TS JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi; T ts;} JF;
@@ -20,13 +20,13 @@ _ int jit_gc(void *data, size_t len) {
     R 0;
 }
 
-_ U fv_r(K JanetArray* x) {J n=L(x);VA(n*8,y);F* x_f=y;Janet* js=x->data;DO(i,n,x_f[i+2]=janet_unwrap_number(js[i]));R y;}
-_ U fv_i(K JanetArray* x) {J n=L(x);VA(n*8,y) J* x_i=y;Janet* js=x->data;DO(i,n,x_i[i+2]=(J)janet_unwrap_integer(js[i]));R y;}
-_ U fv_b(K JanetArray* x) {J n=L(x);VA(n,y);B* x_b=y+16;Janet* js=x->data;DO(i,n,x_b[i]=janet_unwrap_boolean(js[i]));R y;}
+_ U fv_r(K JanetArray* x) {J n=L(x);VA(n*8);F* x_f=y;Janet* js=x->data;DO(i,n,x_f[i+2]=janet_unwrap_number(js[i]));R y;}
+_ U fv_i(K JanetArray* x) {J n=L(x);VA(n*8);J* x_i=y;Janet* js=x->data;DO(i,n,x_i[i+2]=(J)janet_unwrap_integer(js[i]));R y;}
+_ U fv_b(K JanetArray* x) {J n=L(x);VA(n);B* x_b=y+16;Janet* js=x->data;DO(i,n,x_b[i]=janet_unwrap_boolean(js[i]));R y;}
 
-_ JanetArray* j_vb(K U x) {JA(x,n,xs);B* b_p=x+16;DO(j,n,xs[j]=janet_wrap_boolean((int32_t)b_p[j]));free(x);R arr;}
-_ JanetArray* j_vf(K U x) {JA(x,n,xs);F* f_p=x;DO(j,n,xs[j]=janet_wrap_number(f_p[j+2]));free(x);R arr;}
-_ JanetArray* j_vi(K U x) {JA(x,n,xs);J* i_p=x;DO(j,n,xs[j]=janet_wrap_integer((int32_t)i_p[j+2]));free(x);R arr;}
+_ JanetArray* j_vb(K U x) {JA;B* b_p=x+16;DO(j,n,xs[j]=janet_wrap_boolean((int32_t)b_p[j]));free(x);R arr;}
+_ JanetArray* j_vf(K U x) {JA;F* f_p=x;DO(j,n,xs[j]=janet_wrap_number(f_p[j+2]));free(x);R arr;}
+_ JanetArray* j_vi(K U x) {JA;J* i_p=x;DO(j,n,xs[j]=janet_wrap_integer((int32_t)i_p[j+2]));free(x);R arr;}
 
 Z Janet jr(K apple_t, K U);
 
@@ -67,7 +67,7 @@ Z Janet apple_call(void *x, int32_t argc, Janet *argv) {
     U fp=jit->bc;ffi_cif* cif=jit->ffi;
     ffi_call(cif,fp,ret,vals);
     Janet r=jr(ty->res,ret);
-    DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
+    DO(i,argc,$(fs>>i&1, free(*(U*)vals[i])))
     janet_sfree(vals);janet_sfree(ret);
     R r;
 }
