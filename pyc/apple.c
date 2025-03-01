@@ -28,9 +28,9 @@ ZU f_npy(K NP o) {CT(o,'d',"Error: expected an array of floats");A(rnk,n,8,x,o);
 ZU b_npy(K NP o) {CT(o,'?',"Error: expected an array of booleans");A(rnk,n,1,x,o);B* x_p=x;U data=PyArray_DATA(o);memcpy(x_p+8*rnk+8,data,n);R x;}
 ZU i_npy(K NP o) {CT(o,'l',"Error: expected an array of 64-bit integers");A(rnk,n,8,x,o);J* x_i=x;U data=PyArray_DATA(o);memcpy(x_i+rnk+1,data,n*8);R x;}
 
-// https://stackoverflow.com/a/52737023/11296354
-#define CAP(rnk,x,ls,d) {PY cap=PyCapsule_New(x,NULL,c_free);PY r=PyArray_NewFromDescr(&PyArray_Type,d,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);PyArray_SetBaseObject((NP)r,cap);R r;}
-#define RP(rnk,x,ls,T) {PyArray_Descr* pd=PyArray_DescrFromType(T);CAP(rnk,x,ls,pd)}
+// CA - "encapsulate Apple" https://stackoverflow.com/a/52737023/11296354
+#define CA(rnk,x,ls,d) {PY cap=PyCapsule_New(x,NULL,c_free);PY r=PyArray_NewFromDescr(&PyArray_Type,d,(int)rnk,ls,NULL,x+rnk*8+8,NPY_ARRAY_C_CONTIGUOUS,NULL);PyArray_SetBaseObject((NP)r,cap);R r;}
+#define RP(rnk,x,ls,T) {PyArray_Descr* pd=PyArray_DescrFromType(T);CA(rnk,x,ls,pd)}
 
 #define NPA(f,s,T) _ PY f(U x) {CD(rnk,x,ls);RP(rnk,x,ls,T);}
 
@@ -44,9 +44,10 @@ Z PY apy(K apple_t,K U);
 
 // https://numpy.org/devdocs/reference/arrays.dtypes.html#specifying-and-constructing-data-types
 _ PY npy_p(K apple_P t, U x){
-    apd(t,pd)
+    PyArray_Descr* pd;
+    {int n=t.pi_n;T s=alloca(3*n+1);J l;J o=0;DO(i,n,$e(t.a_pi[i].f==Rc,"tuples-of-tuples not yet implemented.");T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3) C(B_t,r="?,";l=2) C(I_t,r="i8,";l=3)};memcpy(s+o,r,l);o+=l);s[o]=0;PyArray_DescrConverter(PyUnicode_FromString(s), &pd);}
     CD(rnk,x,ls);
-    CAP(rnk,x,ls,pd);
+    CA(rnk,x,ls,pd);
 }
 
 _ PY ar(K apple_P t, K U* x){
