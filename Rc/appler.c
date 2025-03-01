@@ -15,13 +15,13 @@
 
 // http://adv-r.had.co.nz/C-interface.html
 
-#define ERR(p,msg){if(p==NULL){SEXP er=mkString(msg);free(msg);R er;};}
-#define E(msg){SEXP er=mkString(msg);R er;}
+#define ERR(p,msg) if(p==NULL){SEXP er=mkString(msg);free(msg);R er;}
+#define E(msg) {SEXP er=mkString(msg);R er;}
 #define An(x,n,t,ra) J* i_p=x;J n=i_p[1];SEXP ra=PROTECT(allocVector(t,n));
 
 #define ZS static SEXP
 
-#define nyi {E("not yet implemented: tuple in bindings.")}
+#define nyi E("not yet implemented: tuple in bindings.")
 
 typedef const SEXP r;
 
@@ -101,8 +101,8 @@ SEXP asm_R(r a) {
 SEXP run_R(SEXP args){
     args=CDR(args);
     SEXP rc=CAR(args);
-    if(TYPEOF(rc)!=EXTPTRSXP){SEXP e=mkString("First argument of run must be a JIT-compiled function.");R e;};
-    AppleC* c=(AppleC*)(R_ExternalPtrAddr(rc));
+    if(TYPEOF(rc)!=EXTPTRSXP) E("First argument of run must be a JIT-compiled function.");
+    AppleC* c=(AppleC*)R_ExternalPtrAddr(rc);
     FnTy* ty=c->ty;U fp=c->code;ffi_cif* cif=c->ffi;
     SEXP r;
     int argc=ty->argc;
@@ -122,7 +122,7 @@ SEXP run_R(SEXP args){
         )
     }
     ffi_call(cif,fp,ret,vals);
-    DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
+    DO(i,argc,$(fs>>i&1, free(*(U*)vals[i])))
     ArgTy(ty->res,
         r=ScalarReal(*(F*)ret),
         r=ScalarInteger((int)(*(J*)ret)),

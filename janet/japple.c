@@ -4,12 +4,12 @@
 #include"../c/ffi.c"
 
 #define NIL janet_wrap_nil()
-#define ERR(p,msg){if(p==NULL){printf("%s\n",msg);free(msg);R NIL;};}
+#define ERR(p,msg) if(p==NULL){printf("%s\n",msg);free(msg);R NIL;}
 #define JA J n=((J*)x)[1];JanetArray* arr=janet_array((int32_t)n);arr->count=n;Janet* xs=arr->data;
 #define VA(sz) U y=malloc(sz+16);{J* x_i=y;x_i[0]=1;x_i[1]=n;}
 #define L(a) (J)a->count
 
-TS JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi; T ts;} JF;
+TS JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi;T ts;} JF;
 
 #define nyi {printf("unsupported: tuple in bindings.");R NIL;}
 
