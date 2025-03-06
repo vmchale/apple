@@ -211,6 +211,12 @@ ir (IR.MJ (IR.IP Op.IEven e) l) = do
 ir (IR.MJ (IR.IP Op.IOdd e) l) = do
     (plE,r) <- plI e
     pure $ plE [Tbnz () r 0 l]
+ir (IR.MJ (IR.IRel Op.IGeq e (IR.KI 0)) l) = do
+    (plE,r) <- plI e
+    pure $ plE [Tbz () r 63 l]
+ir (IR.MJ (IR.IRel Op.ILt e (IR.KI 0)) l) = do
+    (plE,r) <- plI e
+    pure $ plE [Tbnz () r 63 l]
 ir (IR.MJ (IR.IRel Op.IEq e (IR.KI 0)) l) = do
     (plE,r) <- plI e
     pure $ plE [Cbz () r l]
