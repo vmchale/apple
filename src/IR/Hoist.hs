@@ -211,8 +211,7 @@ loopHeads g ss seen (Node n cs) =
     let bes=hasEdge g n #. seen
     in (if isMJ n then (bes++) else id) $ concatMap (loopHeads g ss (n:seen)) cs
   where
-    isMJ nϵ = p (ss A.! nϵ)
-    p MJ{}=True; p _=False
+    isMJ nϵ | MJ{} <- ss A.! nϵ = True | otherwise = False
 
 hasEdge :: Graph -> Node -> Node -> Bool
 hasEdge g n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
