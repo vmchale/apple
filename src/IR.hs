@@ -144,9 +144,6 @@ instance Num Exp where
 instance Num (FExp ftemp Double e) where
     (+) = FB FPlus; (*) = FB FTimes; (-) = FB FMinus; fromInteger = KF . fromInteger
 
-instance Fractional (FExp ftemp Double e) where
-    (/) = FB FDiv; fromRational = KF . fromRational
-
 data Exp = KI !Int64
          | Reg !Temp
          | IB !IBin Exp Exp
