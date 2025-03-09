@@ -1,0 +1,9 @@
+λzs.
+{ atan ← λx.
+  { atan ← [x-x^3%3+x^5%5-x^7%7]
+  ; ?x>1,.𝜋%2-atan (1%x),.atan x
+  }
+; polarize ← (x,y) ↦ (√(x^2+y^2), atan (y%x))
+; pix ← λ(r,θ). (θ+2*𝜋%3,1.0,r^2%(r^2+1))
+; (pix∴polarize)`{0} (zs::M (𝞈,𝞈))
+}
