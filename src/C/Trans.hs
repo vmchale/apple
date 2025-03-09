@@ -496,6 +496,7 @@ aeval (EApp (Arr sh F) (EApp _ (Builtin _ A.R) e0) e1) t a | Just ixs <- staIx s
     loop <- afors sh 0 ILt (KI n) $ \k ->
               [FRnd () xR, MX () xR (FTmp scaleR*FTmp xR+e0e), WrF () (AElem t rnk (Just a) (Tmp k) 8) (FTmp xR)]
     pure (plE0 $ plE1 (md sh t a rnk (KI n) (KI<$>ixs) 8++MX () scaleR (e1e-e0e):[loop]))
+                                                           | otherwise = usi
 aeval (EApp (Arr sh I) (EApp _ (Builtin _ A.R) e0) e1) t a | Just ixs <- staIx sh = do
     scaleR <- nI; iR <- nI
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
@@ -503,6 +504,7 @@ aeval (EApp (Arr sh I) (EApp _ (Builtin _ A.R) e0) e1) t a | Just ixs <- staIx s
     loop <- afors sh 0 ILt (KI n) $ \k ->
               [Rnd () iR, iR =: (Bin IRem (Tmp iR) (Tmp scaleR) + e0e), Wr () (AElem t rnk (Just a) (Tmp k) 8) (Tmp iR)]
     pure (plE0$plE1$md sh t a rnk (KI n) (KI<$>ixs) 8++scaleR=:(e1e-e0e+1):[loop])
+                                                           | otherwise = usi
 aeval (EApp _ (EApp _ (Builtin _ I1) i1) e) t a | iT@(Arr iSh _) <- eAnn i1, Just eSz <- aB (eAnn e) = do
     n <- nI
     (plX, (lX, xR)) <- plA e
@@ -527,7 +529,7 @@ aeval (EApp (Arr sh _) (Builtin _ AddDim) x) t a | Just (ty,sz) <- rr (eAnn x) =
     xR <- rtemp ty
     plX <- eeval x xR
     pure (plX++vSz sh t a 1 sz++[wt (AElem t 1 (Just a) 0 8) xR])
-aeval (EApp (Arr oSh _) g@(Builtin _ AddDim) xs) t a | (Arr sh ty) <- eAnn xs, Just sz <- nSz ty = do
+aeval (EApp (Arr oSh _) g@(Builtin _ AddDim) xs) t a | Arr sh ty <- eAnn xs, Just sz <- nSz ty = do
     (plX, (lX, xR)) <- plA xs
     xRnk <- nI; szR <- nI; rnk <- nI
     contents <- rfill g (AD t (Just a) Nothing (Just$Tmp rnk) (Just sz) Nothing) [AI (AD xR lX Nothing (Just$Tmp xRnk) Nothing (Just$Tmp szR))]
@@ -2106,6 +2108,7 @@ gpt (TΠ rs)=rs
     catt = mapMaybe g where g (TA _ l)=l; g _=Nothing
 
 unsupported = error "Requires statically known rank."
+usi = error "Requires statically known dimensions."
 
 qmap f g h k ~(x,y,z,w) = (f x, g y, h z, k w)
 
