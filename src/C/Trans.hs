@@ -393,19 +393,15 @@ fill (EApp _ (Builtin _ ScanS) op) (AD t lA _ _ _ (Just n)) [NA acc, AI (AD aP l
     ss <- writeRF op [acc, x] acc
     afort tXs 0 ILt n (\i -> wt (AElem t 1 lA (Tmp i) xSz) acc:wX i:ss)
 
+fv (AD xR lX _ _ (Just sz) (Just n)) (AD yR lY _ _ _ _) i j = [cpy (AElem xR 1 lX i) (AElem yR 1 lY j) n sz]
+
 rfill :: E (T ()) -> AD -> [RA] -> CM [CS ()]
-rfill (Builtin _ Init) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
-    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) n sz]
-rfill (Builtin _ Take) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
-    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) n sz]
-rfill (Builtin _ InitM) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
-    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) n sz]
-rfill (Builtin _ Tail) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
-    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 1) n sz]
-rfill (Builtin _ Drop) (AD t lA _ _ (Just sz) (Just ne)) [AI (AD xR lX _ _ _ _), NA (IT n)] =
-    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX (Tmp n)) ne sz]
-rfill (Builtin _ TailM) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _)] =
-    pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 1) n sz]
+rfill (Builtin _ Init) d [AI s] = pure (fv d s 0 0)
+rfill (Builtin _ InitM) d [AI s] = pure (fv d s 0 0)
+rfill (Builtin _ Tail) d [AI s] = pure (fv d s 0 1)
+rfill (Builtin _ TailM) d [AI s] = pure (fv d s 0 1)
+rfill (Builtin _ Take) d [AI s] = pure (fv d s 0 0)
+rfill (Builtin _ Drop) d [AI s, NA (IT n)] = pure (fv d s 0 (Tmp n))
 rfill (Builtin _ Del) (AD t lA _ _ (Just sz) (Just n)) [AI (AD xR lX _ _ _ _), NA (IT j)] =
     pure [cpy (AElem t 1 lA 0) (AElem xR 1 lX 0) (Tmp j) sz, cpy (AElem t 1 lA (Tmp j)) (AElem xR 1 lX (Tmp j+1)) (n-Tmp j) sz]
 rfill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just (Arr xSh _)) _ _ _)] | Arrow F F <- eAnn f, hasS f = do
