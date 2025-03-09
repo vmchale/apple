@@ -1,0 +1,6 @@
+{ plus ← λ(a,b).λ(c,d). (a+c,b+d)
+; div ← λ(a,b).λ(c,d). {n ⟜ c^2+d^2; ((a*b+c*d)%n,(b*c-a*d)%n)}
+; one ⟜ (1,0)
+; f ← z ↦ plus one (div one z)
+; f`{0} ((frange _5 5 11) [(x,y)]⊗ (frange _5 5 11))
+}
