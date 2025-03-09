@@ -293,11 +293,6 @@ U :: { [Nm AlexPosn] }
   | name comma U { $1 : $3 }
   | underscore comma U { $3 }
 
-MMap :: { E AlexPosn }
-     : name mmap E { A.Lam $2 $1 $3 }
-     | tupled(name) { Tup (fst $1) (map v (reverse (snd $1))) }
-     | tupled(name) mmap E {% bindΠ [($2, reverse (snd $1))] $3 }
-
 Lam :: { [(AlexPosn, [Nm AlexPosn])] }
     : lam lparen U rparen dot { [($2, reverse $3)] }
     | lam lparen U rparen dot Lam { ($2, reverse $3) : $6 }
@@ -305,7 +300,7 @@ Lam :: { [(AlexPosn, [Nm AlexPosn])] }
     | lam name dot Lam { ($1, [$2]) : $4 }
 
 E :: { E AlexPosn }
-  : name { v $1 }
+  : name { Var (Nm.loc $1) $1 }
   | E ix { EApp (eAnn $1) (Builtin $2 Ix'd) $1 }
   | intLit { ILit (loc $1) (int $1) }
   | floatLit { FLit (loc $1) (float $1) }
@@ -316,12 +311,12 @@ E :: { E AlexPosn }
   | parens(inv) { EApp $1 (Builtin $1 Div) (FLit $1 1) }
   | parens(BBin) { Parens (eAnn $1) $1 }
   | lparen E BBin rparen { Parens $1 (EApp $1 $3 $2) }
-  | lparen BBin E rparen {% do { n <- lift $ freshName "x"; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (v n)) $3)) } }
+  | lparen BBin E rparen {% do { n <- lift $ freshName "x"; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Nm.loc n) n)) $3)) } }
   | E BBin E { EApp (eAnn $1) (EApp (eAnn $3) $2 $1) $3 }
   | parens(E) { Parens (eAnn $1) $1 }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
   | il { let l=loc $1 in ALit l (map (ILit l.fromInteger) (ints $1)) }
-  | MMap { $1 }
+  | name mmap E { A.Lam $2 $1 $3 }
   | Lam E {% bindΠ $1 $2 }
   | tupled(E) { Tup (fst $1) (reverse (snd $1)) }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
@@ -372,8 +367,6 @@ E :: { E AlexPosn }
   | sks { Builtin $1 S } | skk { Builtin $1 K }
 
 {
-
-v n = Var (Nm.loc n) n
 
 parseErr :: Tok -> [String] -> Parse a
 parseErr tok = throwError . Unexpected tok
