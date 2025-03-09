@@ -81,6 +81,7 @@ library
     other-modules:
         B
         Bits
+        A.S
         CF
         CF.AL
         LI
