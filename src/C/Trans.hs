@@ -569,7 +569,7 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just lt <- cr tX = do
         ++[cpy (AElem t 1 (Just a) 0) (Raw slop (Tmp np*Tmp steps+Tmp pad) (Just lS)) (Tmp n) 8])
   where
     cr I=Just (\(IT r0) (IT r1) -> IRel ILt (Tmp r0) (Tmp r1)); cr F=Just (\(FT x0) (FT x1) -> FRel FLt (FTmp x0) (FTmp x1)); cr _=Nothing
-    ε at=case tX of F -> WrF () at (let (_,ub)=floatRange (undefined::Double) in ConstF (- (encodeFloat (2^12-1) ub))); I -> Wr () at (KI minBound)
+    ε at=case tX of F -> WrF () at (let (_,ub)=floatRange (undefined::Double) in ConstF (- (encodeFloat (2^(12::Int)-1) ub))); I -> Wr () at (KI minBound)
 aeval (EApp oTy@(Arr oSh _) e@(Builtin _ Init) x) t a | Just sz <- aB oTy = do
     nR <- nI
     (plX, (lX, xR)) <- plA x
