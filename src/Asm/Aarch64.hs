@@ -87,8 +87,9 @@ data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 
 
 instance Pretty AbsReg where
     pretty (IReg i) = "T" <> pretty i
-    pretty LR       = "LR"
     pretty ASP      = "SP"
+    pretty LR       = "LR"
+    pretty FP       = "FP"
     pretty CArg0    = "X0"
     pretty CArg1    = "X1"
     pretty CArg2    = "X2"
@@ -97,18 +98,11 @@ instance Pretty AbsReg where
     pretty CArg5    = "X5"
     pretty CArg6    = "X6"
     pretty CArg7    = "X7"
-    pretty FP       = "FP"
 
 instance P32 AbsReg where
     pw (IReg i) = "W" <> pretty i
-    pw CArg0    = "W0"
-    pw CArg1    = "W1"
-    pw CArg2    = "W2"
-    pw CArg3    = "W3"
-    pw CArg4    = "W4"
-    pw CArg5    = "W5"
-    pw CArg6    = "W6"
-    pw CArg7    = "W7"
+    pw CArg0 = "W0"; pw CArg1 = "W1"; pw CArg2 = "W2"; pw CArg3 = "W3"
+    pw CArg4 = "W4"; pw CArg5 = "W5"; pw CArg6 = "W6"; pw CArg7 = "W7"
 
 type F2Abs = V2Reg FAbsReg
 
@@ -118,14 +112,8 @@ data FAbsReg = FReg !Int | FArg0 | FArg1 | FArg2 | FArg3 | FArg4 | FArg5 | FArg6
 
 instance Pretty FAbsReg where
     pretty (FReg i) = "F" <> pretty i
-    pretty FArg0    = "D0"
-    pretty FArg1    = "D1"
-    pretty FArg2    = "D2"
-    pretty FArg3    = "D3"
-    pretty FArg4    = "D4"
-    pretty FArg5    = "D5"
-    pretty FArg6    = "D6"
-    pretty FArg7    = "D7"
+    pretty FArg0 = "D0"; pretty FArg1 = "D1"; pretty FArg2 = "D2"; pretty FArg3 = "D3"
+    pretty FArg4 = "D4"; pretty FArg5 = "D5"; pretty FArg6 = "D6"; pretty FArg7 = "D7"
 
 toInt :: AbsReg -> Int
 toInt CArg0    = 0
@@ -142,14 +130,8 @@ toInt FP       = 18
 toInt (IReg i) = 19+i
 
 fToInt :: FAbsReg -> Int
-fToInt FArg0    = 10
-fToInt FArg1    = 11
-fToInt FArg2    = 12
-fToInt FArg3    = 13
-fToInt FArg4    = 14
-fToInt FArg5    = 15
-fToInt FArg6    = 16
-fToInt FArg7    = 17
+fToInt FArg0 = 10; fToInt FArg1 = 11; fToInt FArg2 = 12; fToInt FArg3 = 13
+fToInt FArg4 = 14; fToInt FArg5 = 15; fToInt FArg6 = 16; fToInt FArg7 = 17
 fToInt (FReg i) = 19+i
 
 data Shift = Zero | Three | Four
