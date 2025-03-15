@@ -10,7 +10,7 @@ typedef PyObject* PY;typedef PyArrayObject* NP;typedef const PY PYA;
 #define $e(p,e) if(!(p)){PyErr_SetString(PyExc_RuntimeError,e);R NULL;}
 #define $arr(o) $e(PyArray_CheckExact(o),"Expected NumPy array.")
 #define CT(o,c,s) {$e((o->flags && NPY_ARRAY_C_CONTIGUOUS),"Only row-major (C-style) arrays are supported.");PyArray_Descr *d=PyArray_DESCR(o);$e((d->type==c),s);}
-#define ERR(p,msg) if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;}
+#define PyE(p,msg) if(p==NULL){PyErr_SetString(PyExc_RuntimeError,msg);free(msg);R NULL;}
 
 #define ZF Z PY
 
@@ -75,7 +75,7 @@ ZF apple_typeof(PYA self, PYA args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
         T res = apple_printty(inp,&err);
-    ERR(res,err);
+    PyE(res,err);
     K PY py = PyUnicode_FromString(res);
     free(res);R py;
 }
@@ -84,7 +84,7 @@ ZF apple_asm(PYA self, PYA args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
         T res = apple_dumpasm(inp,&err);
-    ERR(res,err);
+    PyE(res,err);
     K PY py = PyUnicode_FromString(res);
     free(res);R py;
 }
@@ -93,7 +93,7 @@ ZF apple_ir(PYA self, PYA args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
         T res = apple_dumpir(inp,&err);
-    ERR(res,err);
+    PyE(res,err);
     K PY py = PyUnicode_FromString(res);
     free(res); R py;
 }
@@ -163,7 +163,7 @@ ZF apple_jit(PYA self, PYA args) {
     const T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
     FnTy* ty=apple_ty(inp,&err);
-    ERR(ty,err);
+    PyE(ty,err);
     S sz;
         T ts_str=apple_print_ts_sz(inp,&sz,&err);
     T buf=malloc(sz+8);
