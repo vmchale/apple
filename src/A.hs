@@ -10,7 +10,7 @@ module A ( T (..)
          , ResVar (..)
          , prettyTyped
          , prettyC
-         , mPrec, isBinOp
+         , fi, isBinOp
          , rLi
          ) where
 
@@ -272,28 +272,28 @@ spine x = spine' x []
     spine' (EApp _ e0 e1) es = spine' e0 (e1:es)
     spine' e es              = e:es
 
-mPrec :: Builtin -> Maybe Int
-mPrec Plus = Just 6;   mPrec Minus = Just 6; mPrec Times = Just 7
-mPrec Div = Just 7;    mPrec IDiv = Just 7;  mPrec Exp = Just 8
-mPrec IntExp = Just 8; mPrec IOf = Just 8;   mPrec Mod = Just 7
-mPrec Range = Just 10; mPrec Succ = Just 9;  mPrec Fold = Just 9
-mPrec Del = Just 9;    mPrec DelM = Just 9;  mPrec C = Just 9
-mPrec Ices = Just 6;   mPrec Filt = Just 6;  mPrec Part = Just 6
-mPrec Dot = Just 8;    mPrec Mul = Just 7;   mPrec VMul = Just 7
-mPrec Re = Just 6;     mPrec A1 = Just 9;    mPrec I1 = Just 8
-mPrec Map = Just 5;    mPrec ConsE = Just 4; mPrec Snoc = Just 4
-mPrec CatE = Just 5;   mPrec Sr = Just 8;    mPrec Sl = Just 8
-mPrec Xor = Just 6;    mPrec And = Just 3;   mPrec Or = Just 2
-mPrec Eq = Just 4;     mPrec Neq = Just 4;   mPrec Gt = Just 4
-mPrec Lt = Just 4;     mPrec Gte = Just 4;   mPrec Lte = Just 4
-mPrec Max = Just 6;    mPrec Min = Just 6;   mPrec Scan = Just 9;
-mPrec Conv{} = Just 5; mPrec _ = Nothing
+fi :: Builtin -> Maybe Int
+fi Plus = Just 6;   fi Minus = Just 6; fi Times = Just 7
+fi Div = Just 7;    fi IDiv = Just 7;  fi Exp = Just 8
+fi IntExp = Just 8; fi IOf = Just 8;   fi Mod = Just 7
+fi Range = Just 10; fi Succ = Just 9;  fi Fold = Just 9
+fi Del = Just 9;    fi DelM = Just 9;  fi C = Just 9
+fi Ices = Just 6;   fi Filt = Just 6;  fi Part = Just 6
+fi Dot = Just 8;    fi Mul = Just 7;   fi VMul = Just 7
+fi Re = Just 6;     fi A1 = Just 9;    fi I1 = Just 8
+fi Map = Just 5;    fi ConsE = Just 4; fi Snoc = Just 4
+fi CatE = Just 5;   fi Sr = Just 8;    fi Sl = Just 8
+fi Xor = Just 6;    fi And = Just 3;   fi Or = Just 2
+fi Eq = Just 4;     fi Neq = Just 4;   fi Gt = Just 4
+fi Lt = Just 4;     fi Gte = Just 4;   fi Lte = Just 4
+fi Max = Just 6;    fi Min = Just 6;   fi Scan = Just 9;
+fi Conv{} = Just 5; fi _ = Nothing
 
 isBinOp :: Builtin -> Bool
 isBinOp DI{} = True; isBinOp S'  = True
 isBinOp IOf = True;  isBinOp Focus{} = True
 isBinOp Rot = True;  isBinOp Cyc = True
-isBinOp b | Just{} <- mPrec b = True
+isBinOp b | Just{} <- fi b = True
           | otherwise = False
 
 data B = L | D | Λ
@@ -319,7 +319,7 @@ instance PS (E a) where
     ps _ (Builtin _ b)                                            = pretty b
     ps d (EApp _ (Builtin _ (TAt i)) e)                           = parensp (d>9) (ps 10 e <> "->" <> pretty i)
     ps _ (EApp _ (Builtin _ op) e0) | isBinOp op                  = parens (ps 10 e0 <> pretty op)
-    ps d (EApp _ (EApp _ (Builtin _ op) e0) e1) | Just d' <- mPrec op = parensp (d>d') (ps (d'+1) e0 <> pretty op <> ps (d'+1) e1)
+    ps d (EApp _ (EApp _ (Builtin _ op) e0) e1) | Just d' <- fi op = parensp (d>d') (ps (d'+1) e0 <> pretty op <> ps (d'+1) e1)
     ps _ (EApp _ (EApp _ (Builtin _ op) e0) e1) | isBinOp op      = parens (ps 10 e0 <> pretty op <> ps 10 e1)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)    = parens (pretty e0 <> "/ₒ" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)

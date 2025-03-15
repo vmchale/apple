@@ -41,7 +41,7 @@ lassoc Gt = False; lassoc Lt = False
 lassoc Range = False; lassoc Scan = False
 
 shuntl :: Builtin -> Builtin -> Bool
-shuntl op0 op1 | Just f0 <- mPrec op0, Just f1 <- mPrec op1 = f0>f1 || lassoc op0 && lassoc op1 && f0==f1 | otherwise = False
+shuntl op0 op1 | Just f0 <- fi op0, Just f1 <- fi op1 = f0>f1 || lassoc op0 && lassoc op1 && f0==f1 | otherwise = False
 
 rw :: E a -> E a
 rw (EApp l0 (EApp l1 e0@(Builtin _ op0) e1) e2) | isBinOp op0 =
