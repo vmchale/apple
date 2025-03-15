@@ -5,66 +5,6 @@ import           A
 
 rewrite = rw
 
-isBinOp :: Builtin -> Bool
-isBinOp FRange = False
-isBinOp Range  = True
-isBinOp Io     = False
-isBinOp T      = False
-isBinOp Zip    = False
-isBinOp Rank{} = False
-isBinOp Fib    = False
-isBinOp Log    = False
-isBinOp Size   = False
-isBinOp Sqrt   = False
-isBinOp ItoF   = False
-isBinOp Last   = False
-isBinOp LastM  = False
-isBinOp Head   = False
-isBinOp HeadM  = False
-isBinOp Gen    = False
-isBinOp Ug     = False
-isBinOp TAt{}  = False
-isBinOp Outer  = False
-isBinOp R      = False
-isBinOp Tail   = False
-isBinOp TailM  = False
-isBinOp Init   = False
-isBinOp InitM  = False
-isBinOp Even   = False
-isBinOp Odd    = False
-isBinOp Abs    = False
-isBinOp Flat   = False
-isBinOp AddDim = False
-isBinOp RevE   = False
-isBinOp S      = False
-isBinOp Re     = True
-isBinOp K      = False
-isBinOp Ix'd   = False
-isBinOp Take   = False
-isBinOp Drop   = False
-isBinOp _      = True
-
-fi :: Builtin -> Int
-fi C = 9; fi Range = 10; fi Dot = 8
-fi Del = 9; fi Succ = 9; fi Fold = 9
-fi Conv{} = 5; fi Scan = 9
-fi IntExp = 8; fi Exp = 8
-fi Times = 7; fi Div = 7; fi Mod = 7
-fi Mul = 7; fi VMul = 7
-fi Re = 6
-fi Plus = 6; fi Minus = 6
-fi Max = 6; fi Min = 6
-fi And = 3; fi Or = 2; fi Xor = 6
-fi Ices = 6; fi Filt=6; fi Part = 6
-fi IOf = 8
-fi Map = 5; fi A1 = 9
-fi I1 = 8
-fi ConsE = 4; fi Snoc = 4
-fi Eq = 4; fi Neq = 4; fi Gt = 4
-fi Lt = 4; fi Lte = 4; fi Gte = 4
-fi CatE = 5; fi Sr=8; fi Sl=8
-fi IDiv = 7
-
 lassoc :: Builtin -> Bool
 lassoc IntExp = False
 lassoc Exp    = False
@@ -101,7 +41,7 @@ lassoc Gt = False; lassoc Lt = False
 lassoc Range = False; lassoc Scan = False
 
 shuntl :: Builtin -> Builtin -> Bool
-shuntl op0 op1 = fi op0 > fi op1 || lassoc op0 && lassoc op1 && fi op0 == fi op1
+shuntl op0 op1 | Just f0 <- mPrec op0, Just f1 <- mPrec op1 = f0>f1 || lassoc op0 && lassoc op1 && f0==f1 | otherwise = False
 
 rw :: E a -> E a
 rw (EApp l0 (EApp l1 e0@(Builtin _ op0) e1) e2) | isBinOp op0 =

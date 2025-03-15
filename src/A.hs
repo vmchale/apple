@@ -10,6 +10,7 @@ module A ( T (..)
          , ResVar (..)
          , prettyTyped
          , prettyC
+         , mPrec, isBinOp
          , rLi
          ) where
 
@@ -278,20 +279,20 @@ mPrec IntExp = Just 8; mPrec IOf = Just 8;   mPrec Mod = Just 7
 mPrec Range = Just 10; mPrec Succ = Just 9;  mPrec Fold = Just 9
 mPrec Del = Just 9;    mPrec DelM = Just 9;  mPrec C = Just 9
 mPrec Ices = Just 6;   mPrec Filt = Just 6;  mPrec Part = Just 6
-mPrec Dot = Just 7;    mPrec Mul = Just 7;   mPrec VMul = Just 7
+mPrec Dot = Just 8;    mPrec Mul = Just 7;   mPrec VMul = Just 7
 mPrec Re = Just 6;     mPrec A1 = Just 9;    mPrec I1 = Just 8
 mPrec Map = Just 5;    mPrec ConsE = Just 4; mPrec Snoc = Just 4
 mPrec CatE = Just 5;   mPrec Sr = Just 8;    mPrec Sl = Just 8
 mPrec Xor = Just 6;    mPrec And = Just 3;   mPrec Or = Just 2
 mPrec Eq = Just 4;     mPrec Neq = Just 4;   mPrec Gt = Just 4
 mPrec Lt = Just 4;     mPrec Gte = Just 4;   mPrec Lte = Just 4
-mPrec _ = Nothing
+mPrec Max = Just 6;    mPrec Min = Just 6;   mPrec Scan = Just 9;
+mPrec Conv{} = Just 5; mPrec _ = Nothing
 
 isBinOp :: Builtin -> Bool
-isBinOp DI{} = True; isBinOp Scan = True
-isBinOp IOf = True; isBinOp Focus{} = True
-isBinOp Rot = True; isBinOp Cyc = True
-isBinOp S'  = True
+isBinOp DI{} = True; isBinOp S'  = True
+isBinOp IOf = True;  isBinOp Focus{} = True
+isBinOp Rot = True;  isBinOp Cyc = True
 isBinOp b | Just{} <- mPrec b = True
           | otherwise = False
 
