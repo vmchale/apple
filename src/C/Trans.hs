@@ -14,7 +14,7 @@ import           Data.Functor                     (($>))
 import           Data.Int                         (Int64)
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.List                        (find, genericLength, scanl')
+import           Data.List                        (find, genericLength)
 import           Data.Maybe                       (mapMaybe)
 import           Data.Word                        (Word8)
 import           E
