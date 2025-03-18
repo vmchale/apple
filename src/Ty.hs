@@ -846,15 +846,9 @@ tyB _ K = do
     a <- ftv "a"; b <- ftv "b"
     pure (b ~> (a ~> b), mempty)
 
-liftCloneTy :: T b -> TyM a (T b, IM.IntMap Int)
-liftCloneTy t = do
-    i<- gets maxU
-    let (u,t',vs) = cloneT i t
-    setMaxU u $> (t',vs)
-
 cloneWithConstraints :: T b -> TyM a (T b)
 cloneWithConstraints t = do
-    (t', vs) <- liftCloneTy t
+    (t', vs) <- liftCloned
     traverse_ (\(k,v) -> do
         cst <- gets varConstr
         case IM.lookup k cst of
@@ -862,6 +856,12 @@ cloneWithConstraints t = do
             Nothing    -> pure ())
         (IM.toList vs)
     pure t'
+  where
+
+    liftCloned = do
+        i<- gets maxU
+        let (u,t',vs) = cloneT i t
+        setMaxU u $> (t',vs)
 
 rwI :: I a -> I a
 rwI (StaPlus l i0 i1) =
