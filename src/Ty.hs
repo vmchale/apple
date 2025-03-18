@@ -718,9 +718,7 @@ tyB _ Dot = do
 tyB l Gte = tyOrdBinRel l; tyB l Gt = tyOrdBinRel l; tyB l Lt = tyOrdBinRel l
 tyB l Lte = tyOrdBinRel l; tyB l Eq = tyEqBinRel l; tyB l Neq = tyEqBinRel l
 tyB l And = tyBoo l; tyB l Or = tyBoo l; tyB l Xor = tyBoo l
-tyB l N = do
-    n <- fc "b" l HasBits
-    pure (n ~> n, mempty)
+tyB l N = do {n <- fc "b" l HasBits; pure (n ~> n, mempty)}
 tyB l Min = mm l; tyB l Max = mm l
 tyB _ IntExp = do {n <- fz; pure (n ~>I ~>n, mempty)}
 tyB _ Neg = do {n <- fz; pure (n~>n, mempty)}; tyB _ Abs = do {n <- fz; pure (n~>n, mempty)}
@@ -1011,9 +1009,7 @@ tyE s (EApp _ (EApp _ (Builtin l Range) lb) ub) = do
         iv sϵ _           = (sϵ, I)
 tyE s (FLit _ x) = pure (FLit F x, s)
 tyE s (BLit _ x) = pure (BLit B x, s)
-tyE s (ILit _ m) = do
-    n <- fn m
-    pure (ILit n m, s)
+tyE s (ILit _ m) = do {n <- fn m; pure (ILit n m, s)}
 tyE s (Builtin l b) = do {(t,sϵ) <- tyB l b ; pure (Builtin t b, sϵ<>s)}
 tyE s (Lam _ nϵ e) = do
     n <- ftv "a"
