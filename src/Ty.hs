@@ -247,8 +247,8 @@ setMaxU i = modify (\(TySt _ l v vcs) -> TySt i l v vcs)
 addStaEnv :: Nm a -> T () -> TyM a ()
 addStaEnv n t = modify (\(TySt u l v vcs) -> TySt u (insert n t l) v vcs)
 
-addPolyEnv :: Nm a -> T () -> TySt a -> TySt a
-addPolyEnv n t (TySt u l v vcs) = TySt u l (insert n t v) vcs
+addPolyEnv :: Nm a -> T () -> TyM a ()
+addPolyEnv n t = modify (\(TySt u l v vcs) -> TySt u l (insert n t v) vcs)
 
 addVarConstrI :: Int -> a -> C -> TyM a ()
 addVarConstrI i ann c = modify (\(TySt u l v vcs) -> TySt u l v (IM.insert i (c, ann) vcs))
@@ -1000,7 +1000,7 @@ tyE s (Let _ (n, e') e) = do
 tyE s (Def _ (n, e') e) = do
     (e'Res, s') <- tyE s e'
     let e'Ty = eAnn e'Res
-    modify (addPolyEnv n (s'@@e'Ty))
+    addPolyEnv n (s'@@e'Ty)
     (eRes, s'') <- tyE s' e
     pure (Def (eAnn eRes) (n { loc = e'Ty }, e'Res) eRes, s'')
 tyE s (LLet _ (n, e') e) = do
