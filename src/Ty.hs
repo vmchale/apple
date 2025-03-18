@@ -250,8 +250,8 @@ addStaEnv n t = modify (\(TySt u l v vcs) -> TySt u (insert n t l) v vcs)
 addPolyEnv :: Nm a -> T () -> TySt a -> TySt a
 addPolyEnv n t (TySt u l v vcs) = TySt u l (insert n t v) vcs
 
-addVarConstrI :: Int -> a -> C -> TySt a -> TySt a
-addVarConstrI i ann c (TySt u l v vcs) = TySt u l v (IM.insert i (c, ann) vcs)
+addVarConstrI :: Int -> a -> C -> TyM a ()
+addVarConstrI i ann c = modify (\(TySt u l v vcs) -> TySt u l v (IM.insert i (c, ann) vcs))
 
 pushC :: Nm a -> a -> C -> TyM a ()
 pushC n ann c = modify (\(TySt u l v vcs) -> TySt u l v (insert n (c, ann) vcs))
@@ -855,7 +855,7 @@ cloneWithConstraints t = do
     traverse_ (\(k,v) -> do
         cst <- gets varConstr
         case IM.lookup k cst of
-            Just (c,l) -> modify (addVarConstrI v l c)
+            Just (c,l) -> addVarConstrI v l c
             Nothing    -> pure ())
         (IM.toList vs)
     pure t'
