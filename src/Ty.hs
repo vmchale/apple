@@ -253,11 +253,8 @@ addPolyEnv n t (TySt u l v vcs) = TySt u l (insert n t v) vcs
 addVarConstrI :: Int -> a -> C -> TySt a -> TySt a
 addVarConstrI i ann c (TySt u l v vcs) = TySt u l v (IM.insert i (c, ann) vcs)
 
-addVarConstr :: Nm a -> a -> C -> TySt a -> TySt a
-addVarConstr tn = addVarConstrI (unU$unique tn)
-
 pushVarConstraint :: Nm a -> a -> C -> TyM a ()
-pushVarConstraint tn l c = modify (addVarConstr tn l c)
+pushVarConstraint (Nm _ (U j) _) l c = modify (addVarConstrI j l c)
 
 freshN :: T.Text -> b -> TyM a (Nm b)
 freshN n l = do
