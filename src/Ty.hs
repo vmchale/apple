@@ -238,8 +238,8 @@ aTi ty' n s@(Subst ts _ _) =
 runTyM :: Int -> TyM a b -> Either (TyE a) (b, Int)
 runTyM i = fmap (second maxU) . flip runStateT (TySt i IM.empty IM.empty IM.empty)
 
-mapMaxU :: (Int -> Int) -> TySt a -> TySt a
-mapMaxU f (TySt u l v vcs) = TySt (f u) l v vcs
+tickMaxU :: TyM a ()
+tickMaxU = modify (\(TySt u l v vcs) -> TySt (u+1) l v vcs)
 
 setMaxU :: Int -> TyM a ()
 setMaxU i = modify (\(TySt _ l v vcs) -> TySt i l v vcs)
@@ -253,14 +253,11 @@ addPolyEnv n t (TySt u l v vcs) = TySt u l (insert n t v) vcs
 addVarConstrI :: Int -> a -> C -> TySt a -> TySt a
 addVarConstrI i ann c (TySt u l v vcs) = TySt u l v (IM.insert i (c, ann) vcs)
 
-pushVarConstraint :: Nm a -> a -> C -> TyM a ()
-pushVarConstraint (Nm _ (U j) _) l c = modify (addVarConstrI j l c)
+pushC :: Nm a -> a -> C -> TyM a ()
+pushC n ann c = modify (\(TySt u l v vcs) -> TySt u l v (insert n (c, ann) vcs))
 
 freshN :: T.Text -> b -> TyM a (Nm b)
-freshN n l = do
-    modify (mapMaxU (+1))
-    st <- gets maxU
-    pure $ Nm n (U st) l
+freshN n l = do {tickMaxU; st <- gets maxU; pure (Nm n (U st) l)}
 
 ft :: T.Text -> b -> TyM a (T b)
 ft n l = TVar <$> freshN n l
@@ -271,7 +268,7 @@ fsh n = SVar <$> freshN n ()
 fc :: T.Text -> a -> C -> TyM a (T ())
 fc n l c = do
     nϵ <- freshN n l
-    pushVarConstraint nϵ l c $> TVar (void nϵ)
+    pushC nϵ l c $> TVar (void nϵ)
 
 fz :: TyM a (T ())
 fz = Z<$>freshN "a" ()
@@ -814,8 +811,7 @@ tyB _ Foldl = do
     ix <- fti "i"; sh <- fsh "sh"; a <- ftv "a"; b <- ftv "b"
     pure ((b ~> a ~> b) ~> b ~> Arr (ix `Cons` sh) a ~> Arr sh b, mempty)
 tyB _ FoldA = do
-    sh <- fsh "sh"
-    a <- ftv "a"
+    sh <- fsh "sh"; a <- ftv "a"
     pure ((a ~> a ~> a) ~> a ~> Arr sh a ~> a, mempty)
 tyB _ Dim = do
     iV <- fti "i"; shV <- fsh "sh"; a <- ftv "a"
@@ -825,8 +821,7 @@ tyB _ RevE = do
     let aTy = Arr (iV `Cons` shV) a
     pure (aTy ~> aTy, mempty)
 tyB _ Size = do
-    shV <- fsh "sh"
-    a <- ftv "a"
+    shV <- fsh "sh"; a <- ftv "a"
     pure (Arr shV a ~> I, mempty)
 tyB _ Gen = do
     a <- ftv "a"; n <- fti "n"
