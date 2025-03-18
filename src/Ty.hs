@@ -848,7 +848,10 @@ tyB _ K = do
 
 cloneWithConstraints :: T b -> TyM a (T b)
 cloneWithConstraints t = do
-    (t', vs) <- liftCloned
+    (t', vs) <- do
+        i<- gets maxU
+        let (u,t',vs) = cloneT i t
+        setMaxU u $> (t',vs)
     traverse_ (\(k,v) -> do
         cst <- gets varConstr
         case IM.lookup k cst of
@@ -856,12 +859,6 @@ cloneWithConstraints t = do
             Nothing    -> pure ())
         (IM.toList vs)
     pure t'
-  where
-
-    liftCloned = do
-        i<- gets maxU
-        let (u,t',vs) = cloneT i t
-        setMaxU u $> (t',vs)
 
 rwI :: I a -> I a
 rwI (StaPlus l i0 i1) =
