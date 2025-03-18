@@ -583,25 +583,11 @@ vV i = Arr (vx i)
 tyNumBinOp :: TyM a (T (), Subst a)
 tyNumBinOp = do {n<-fz; pure (n~>n~>n, mempty)}
 
-mm :: a -> TyM a (T (), Subst a)
-mm l = do
-    n <- fc "o" l IsOrd
-    pure (n ~> n ~> n, mempty)
-
-tyBoo :: a -> TyM a (T (), Subst a)
-tyBoo l = do
-    n <- fc "b" l HasBits
-    pure (n ~> n ~> n, mempty)
-
-tyOrdBinRel :: a -> TyM a (T (), Subst a)
-tyOrdBinRel l = do
-    n <- fc "o" l IsOrd
-    pure (n ~> n ~> B, mempty)
-
-tyEqBinRel :: a -> TyM a (T (), Subst a)
-tyEqBinRel l = do
-    n <- fc "e" l IsEq
-    pure (n ~> n ~> B, mempty)
+mm, tyBoo, tyOrdBinRel, tyEqBinRel :: a -> TyM a (T (), Subst a)
+mm l = do {n <- fc "o" l IsOrd;  pure (n ~> n ~> n, mempty)}
+tyBoo l = do {n <- fc "b" l HasBits; pure (n ~> n ~> n, mempty)}
+tyOrdBinRel l = do {n <- fc "o" l IsOrd; pure (n ~> n ~> B, mempty)}
+tyEqBinRel l = do {n <- fc "e" l IsEq; pure (n ~> n ~> B, mempty)}
 
 sel :: [Int] -> Sh a -> Sh a
 sel axes sh = roll Nil (fmap snd (filter ((`elem` axes) . fst) (zip [1..] unrolled))) where
