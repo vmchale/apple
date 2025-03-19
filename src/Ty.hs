@@ -292,11 +292,12 @@ iTS n t = mapTySubst (insert n t)
 uTS u n = mapTySubst (IM.insert u n)
 iSh u sh = mapShSubst (IM.insert u sh)
 
-data F = LF | RF
+data F = LF | RF | AF
 
-instance NFData F where rnf LF=(); rnf RF=()
+instance NFData F where rnf LF=(); rnf RF=(); rnf AF=()
 
-instance Pretty F where pretty LF="⦠"; pretty RF="∢"
+-- ≬
+instance Pretty F where pretty LF="⦠"; pretty RF="∢"; pretty AF="🝙"
 
 mguIPrep :: F -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
 mguIPrep f is = mguI f is `on` rwI.(is!>)
@@ -335,7 +336,7 @@ mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
 -- TODO: rewrite existential vars on the left...
 mguI LF _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l LF i0 i1
 mguI LF _ i0@(Ix l _) i1@IEVar{} = throwError $ UI l LF i0 i1
-mguI RF inp (IEVar l (Nm _ (U i) _)) j@StaPlus{} | i `IS.notMember` occI j = do {m <- nIe l; pure (m, inp)}
+mguI RF inp (IEVar l (Nm _ (U i) _)) j@StaPlus{} | i `IS.notMember` occI j = (,inp) <$> nIe l
 mguI RF inp i@StaPlus{} j@IEVar{} = mguI RF inp j i
 mguI f _ i0@(IEVar l _) i1@StaPlus{} = throwError $ UI l f i0 i1
 mguI f _ i0@(StaPlus l _ _) i1@IEVar{} = throwError $ UI l f i0 i1
@@ -465,7 +466,11 @@ occ (Ρ n rs)     = Nm.insert n $ occ @<> rs
 
 scalar f (l,_) s n = snd <$> mgSh f l s n Nil
 
+scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
+
 σ (Li IEVar{}) = I; σ (IZ IEVar{} t) = TVar t; σ t = t
+
+mguZ AF=mguI RF; mguZ f=mguI f
 
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0@Arrow{} t1) (Arrow t0' t1') = do
@@ -499,11 +504,11 @@ mgu _ _ s (Z (Nm _ (U i) _)) Li{} = pure (I, uTS i I s)
 mgu _ _ s Li{} (Z (Nm _ (U i) _)) = pure (I, uTS i I s)
 mgu _ _ s t@(Z n) (Z n'@(Nm _ (U j) _)) | n==n' = pure (t, s)
                                         | otherwise = pure (t, uTS j t s)
-mgu f _ s (Li i0) (IZ i1 (Nm _ (U j) _)) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
-mgu f _ s (IZ i0 (Nm _ (U j) _)) (Li i1) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
+mgu f _ s (Li i0) (IZ i1 (Nm _ (U j) _)) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
+mgu f _ s (IZ i0 (Nm _ (U j) _)) (Li i1) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
-mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, uTS u t$wI iS s)}
-mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
+mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, uTS u t$wI iS s)}
+mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguZ f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
 -- FIXME ug. is higher-rank on indices 😬
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
 mgu _ _ s t0@(IZ _ n0) (TVar n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
@@ -655,11 +660,11 @@ tyB _ InitM = do
     pure (Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
 tyB l Tail = tyB l Init
 tyB _ Take = do
-    a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
-    pure (Li n ~> Arr ((i+:n) `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
+    a <- ftv "a"; k <- fti "k"; n <- ftie; sh <- fsh "sh"
+    pure (I ~> Arr (k `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
 tyB _ Drop = do
-    a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
-    pure (Li n ~> Arr ((i+:n) `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
+    a <- ftv "a"; k <- fti "k"; n <- ftie; sh <- fsh "sh"
+    pure (I ~> Arr (k `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
 tyB _ Del = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
     pure (Arr ((i+:Ix()1) `Cons` sh) a ~> I ~> Arr (i `Cons` sh) a, mempty)
@@ -1013,7 +1018,9 @@ tyE s e@(ALit l es) = do
     a <- ftv "a"
     (es', s') <- tS tyE s es
     let eTys = a : fmap eAnn es'
-        uHere sϵ t t' = mp (l,e) RF sϵ (t$>l) (t'$>l)
+        -- index variables bound as dimension can't branch (don't support ragged arrays)
+        -- different handling for IZ
+        uHere sϵ t t' = mp (l,e) AF sϵ (t$>l) (t'$>l)
     ss' <- liftU $ zS uHere s' eTys (tail eTys)
     pure (ALit (vV (Ix () $ length es) a) es', ss')
 tyE s (EApp l e0 e1) = do
