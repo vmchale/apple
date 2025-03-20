@@ -17,7 +17,7 @@
              ) where
 
 import Control.Arrow ((&&&))
-import Control.DeepSeq (NFData)
+import Control.DeepSeq (NFData (rnf), rwhnf)
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Char8 as ASCII
@@ -462,11 +462,11 @@ instance Pretty Sym where
     pretty Inv          = "⅟"
 
 -- | Reserved/special variables
-data Var = VarX | VarY deriving (Generic, NFData)
+data Var = VarX | VarY
 
-instance Pretty Var where
-    pretty VarX     = "x"
-    pretty VarY     = "y"
+instance NFData Var where rnf=rwhnf
+
+instance Pretty Var where pretty VarX = "x"; pretty VarY = "y"
 
 data Builtin = BuiltinFRange | BuiltinIota | BuiltinRange | BuiltinIi
              | BuiltinFloor | BuiltinCeil | BuiltinE
