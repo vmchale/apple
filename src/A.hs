@@ -14,7 +14,7 @@ module A ( T (..)
          , rLi
          ) where
 
-import           Control.DeepSeq   (NFData)
+import           Control.DeepSeq   (NFData (rnf))
 import           Data.Bifunctor    (first)
 import           Data.Foldable     (toList)
 import qualified Data.IntMap       as IM
@@ -27,9 +27,9 @@ import           Prettyprinter.Ext
 import           Sh
 
 data C = IsOrd | IsEq
-       | HasBits deriving (Generic, Eq, Ord)
+       | HasBits deriving (Eq, Ord)
 
-instance NFData C where
+instance NFData C where rnf x=seq x ()
 
 instance Pretty C where
     pretty IsOrd   = "IsOrd"
@@ -354,7 +354,7 @@ instance PS (E a) where
 
 instance Show (E a) where show=show.pretty
 
-data ResVar = X | Y deriving (Generic)
+data ResVar = X | Y
 
 instance Pretty ResVar where
     pretty X = "x"; pretty Y = "y"
@@ -401,7 +401,7 @@ data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
          deriving (Functor, Generic)
 
 instance NFData Builtin where
-instance NFData ResVar where
+instance NFData ResVar where rnf x=seq x ()
 instance NFData a => NFData (Idiom a) where
 instance NFData a => NFData (E a) where
 instance NFData a => NFData (T a) where
