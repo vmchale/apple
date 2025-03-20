@@ -41,7 +41,7 @@ cM Dfn{} = desugar; cM ResVar{} = desugar; cM Parens{} = desugar
 cM Id{} = error "Internal error."; cM Ann{} = error "Internal error."
 
 mrT :: T a -> Maybe (T a)
-mrT t@TVar{}     = Just t
+mrT t@TV{}       = Just t
 mrT t@IZ{}       = Just t
 mrT t@Z{}        = Just t
 mrT (Arr _ t)    = mrT t

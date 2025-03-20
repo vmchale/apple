@@ -48,7 +48,7 @@ data T a = Arr (Sh a) (T a)
          | I -- | int
          | B -- | bool
          | Li (I a)
-         | TVar !(Nm a) -- | Kind \(*\)
+         | TV !(Nm a) -- | Kind \(*\)
          | IZ (I a) (Nm a) | Z !(Nm a)
          | Arrow (T a) (T a)
          | P [T a]
@@ -65,7 +65,7 @@ instance PT (T a) where
     pp B             = pure B
     pp (Z n)         = Z<$>fr tl n
     pp t@Li{}        = pure t
-    pp (TVar n)      = TVar<$>fr tl n
+    pp (TV n)        = TV<$>fr tl n
     pp (IZ i n)      = IZ i<$>fr tl n
     pp (Arrow t₀ t₁) = Arrow<$>pp t₀<*>pp t₁
     pp (Arr sh t)    = Arr sh<$>pp t
@@ -83,14 +83,14 @@ instance PS (T a) where
     ps _ (Li i)                 = "int" <> parens (pretty i)
     ps _ (IZ i _)               = "num" <> parens (pretty i)
     ps _ B                      = "bool"
-    ps _ (TVar n)               = pretty n
+    ps _ (TV n)                 = pretty n
     ps d (Arrow t0 t1)          = parensp (d>0) (ps 1 t0 <+> "→" <+> ps 0 t1)
     ps _ (P ts)                 = tupledBy " * " (pretty <$> ts)
     ps _ (Ρ n fs)               = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
 
 rLi :: T a -> T a
 rLi Li{}          = I
-rLi (IZ _ n)      = TVar n
+rLi (IZ _ n)      = TV n
 rLi (Arrow t0 t1) = Arrow (rLi t0) (rLi t1)
 rLi (Arr sh t)    = Arr sh (rLi t)
 rLi (Ρ n ts)      = Ρ n (rLi <$> ts)
