@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Asm.M ( CFunc (..)
              , WM
              , Label
@@ -12,7 +10,7 @@ module Asm.M ( CFunc (..)
              , aArr, mFree
              ) where
 
-import           Control.DeepSeq                  (NFData)
+import           Control.DeepSeq                  (NFData (rnf), rwhnf)
 import           Control.Monad.Trans.State.Strict (State, state)
 import           Data.Foldable                    (fold, traverse_)
 import qualified Data.IntMap                      as IM
@@ -21,7 +19,6 @@ import           Data.Word                        (Word8)
 import           Foreign.Marshal.Alloc            (free)
 import           Foreign.Marshal.Array            (mallocArray, pokeArray)
 import           Foreign.Ptr                      (Ptr, plusPtr)
-import           GHC.Generics                     (Generic)
 import qualified IR
 import           Prettyprinter                    (Doc, Pretty (pretty), indent)
 import           Prettyprinter.Ext
@@ -50,9 +47,9 @@ nI = state (\(IR.WSt l i) -> (i, IR.WSt l (i+1)))
 nL :: WM Label
 nL = state (\(IR.WSt i t) -> (i, IR.WSt (i+1) t))
 
-data CFunc = Malloc | Free | JR | DR | Exp | Log | Pow deriving (Generic)
+data CFunc = Malloc | Free | JR | DR | Exp | Log | Pow
 
-instance NFData CFunc where
+instance NFData CFunc where rnf=rwhnf
 
 instance Pretty CFunc where
     pretty Malloc="malloc"; pretty Free="free"
