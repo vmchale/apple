@@ -21,7 +21,7 @@ module Asm.X86 ( X86 (..)
                ) where
 
 import           Asm.M
-import           Control.DeepSeq   (NFData (..))
+import           Control.DeepSeq   (NFData (rnf), rwhnf)
 import           Data.Copointed
 import           Data.Int          (Int32, Int64, Int8)
 import           Data.Word         (Word8)
@@ -31,17 +31,17 @@ import           Prettyprinter.Ext
 import           Q
 
 data X86Reg = Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15 | Rbx | Rax | Rbp | Rsp
-            deriving (Eq, Ord, Enum, Generic)
+            deriving (Eq, Ord, Enum)
 
 data FX86Reg = XMM1 | XMM2 | XMM3 | XMM4 | XMM5 | XMM6 | XMM7 | XMM8 | XMM9 | XMM10 | XMM11 | XMM12 | XMM13 | XMM14 | XMM15 | XMM0
-             deriving (Eq, Ord, Enum, Generic)
+             deriving (Eq, Ord, Enum)
 
 data F2X86 = YMM1 | YMM2 | YMM3 | YMM4 | YMM5 | YMM6 | YMM7 | YMM8 | YMM9 | YMM10 | YMM11 | YMM12 | YMM13 | YMM14 | YMM15 | YMM0
-           deriving (Eq, Ord, Enum, Generic)
+           deriving (Eq, Ord, Enum)
 
-instance NFData X86Reg where
-instance NFData FX86Reg where
-instance NFData F2X86 where
+instance NFData X86Reg where rnf=rwhnf
+instance NFData FX86Reg where rnf=rwhnf
+instance NFData F2X86 where rnf=rwhnf
 
 simd2 :: FX86Reg -> F2X86
 simd2 = toEnum.fromEnum
@@ -180,9 +180,9 @@ newtype ST = ST Int8 deriving (NFData)
 instance Pretty ST where
     pretty (ST i) = "st" <> pretty i
 
-data RoundMode = RNearest | RDown | RUp | RZero deriving Generic
+data RoundMode = RNearest | RDown | RUp | RZero
 
-instance NFData RoundMode where
+instance NFData RoundMode where rnf=rwhnf
 
 -- 3 bits, stored as Word8 for ease of manipulation
 roundMode :: RoundMode -> Word8
@@ -194,7 +194,7 @@ roundMode RZero    = 0x3
 instance Pretty RoundMode where
     pretty = pretty . roundMode
 
-data Scale = One | Two | Four | Eight deriving (Eq, Generic)
+data Scale = One | Two | Four | Eight deriving Eq
 
 instance Pretty Scale where
     pretty One   = "1"
@@ -202,7 +202,7 @@ instance Pretty Scale where
     pretty Four  = "4"
     pretty Eight = "8"
 
-data Pred = Eqoq | Ltos | Leos | Unordq | Nequq | Nltus | Nleus | Ordq deriving (Generic)
+data Pred = Eqoq | Ltos | Leos | Unordq | Nequq | Nltus | Nleus | Ordq
 
 instance Pretty Pred where
     pretty Eqoq   = "EQ_OQ"
@@ -228,11 +228,11 @@ imm8 Nltus  = 5
 imm8 Nleus  = 6
 imm8 Ordq   = 7
 
-instance NFData Pred where
+instance NFData Pred where rnf=rwhnf
 
 data Addr reg = R reg | RC reg Int8 | RC32 reg Int32 | RS reg Scale reg | RSD reg Scale reg Int8 deriving (Eq, Generic, Functor, Foldable)
 
-instance NFData Scale where
+instance NFData Scale where rnf=rwhnf
 
 instance NFData reg => NFData (Addr reg) where
 
