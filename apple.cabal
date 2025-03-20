@@ -150,7 +150,7 @@ library
     build-depends:
         base >=4.17 && <5,
         prettyprinter >=1.7.0,
-        deepseq,
+        deepseq >=1.4.3.0,
         text,
         mtl >=2.2.2,
         containers >=0.6.0.1,
