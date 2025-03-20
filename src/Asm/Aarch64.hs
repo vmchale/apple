@@ -172,7 +172,7 @@ instance Pretty reg => Pretty (Addr reg) where
 
 data Cond = Eq | Neq | Geq | Lt | Gt | Leq
 
-instance NFData Cond where rnf Eq=(); rnf Neq=(); rnf Geq=(); rnf Lt=(); rnf Gt=(); rnf Leq=()
+instance NFData Cond where rnf=rwhnf
 
 instance Pretty Cond where
     pretty Eq = "EQ"; pretty Neq = "NE"; pretty Geq = "GE"

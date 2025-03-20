@@ -8,7 +8,7 @@ module Ty ( TyE
           ) where
 
 import           A
-import           Control.DeepSeq                  (NFData (rnf))
+import           Control.DeepSeq                  (NFData (rnf), rwhnf)
 import           Control.Exception                (Exception, throw)
 import           Control.Monad                    (when, zipWithM)
 import           Control.Monad.Except             (liftEither, throwError)
@@ -294,7 +294,7 @@ iSh u sh = mapShSubst (IM.insert u sh)
 
 data F = LF | RF | AF
 
-instance NFData F where rnf LF=(); rnf RF=(); rnf AF=()
+instance NFData F where rnf=rwhnf
 
 -- ≬
 instance Pretty F where pretty LF="⦠"; pretty RF="∢"; pretty AF="🝙"
