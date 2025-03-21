@@ -14,13 +14,12 @@ import           Control.Monad                    (when, zipWithM)
 import           Control.Monad.Except             (liftEither, throwError)
 import           Control.Monad.Trans.State.Strict (StateT (runStateT), gets, modify, state)
 import           Data.Bifunctor                   (first, second)
-import           Data.Containers.ListUtils        (nubOrd)
 import           Data.Foldable                    (traverse_)
 import           Data.Function                    (on)
 import           Data.Functor                     (void, ($>))
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.Maybe                       (catMaybes, fromMaybe, listToMaybe, mapMaybe)
+import           Data.Maybe                       (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.Text                        as T
 import           Data.Typeable                    (Typeable)
@@ -536,7 +535,6 @@ mgu _ (l, _) s t@(TV (Nm _ (U i) _) c) t'@(TV (Nm _ (U j) _) c')
     | otherwise = undefined
 mgu _ (l, _) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = case (l,t) `satisfies` c of Nothing -> pure (t, uTS i t s)
-mgu _ (l, _) s t@TV{} t'@(TV (Nm _ (U i) _) c) = undefined
 mgu _ (l, _) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = case (l,t) `satisfies` c of Nothing -> pure (t, uTS i t s)
 mgu _ (l, e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
