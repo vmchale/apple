@@ -41,8 +41,7 @@ leakFp = fmap π.case arch of {"aarch64" -> aFunP; "x86_64" -> funP} where π (_
 aAF :: Storable a => Apple a -> IO (ForeignPtr (Apple a))
 aAF x = do {p <- mallocForeignPtrBytes (sizeOf x); withForeignPtr p (`poke` x) $> p}
 
-instance NFData (ForeignPtr a) where
-    rnf = rwhnf
+instance NFData (ForeignPtr a) where rnf = rwhnf
 
 main :: IO ()
 main = do
