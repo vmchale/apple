@@ -9,7 +9,6 @@ module A ( T (..)
          , Builtin (..)
          , ResVar (..)
          , prettyTyped
-         , prettyC
          , fi, isBinOp
          , rLi
          ) where
@@ -235,12 +234,6 @@ x<::>y = parens (x <+> ":" <+> pretty y)
 ptn :: Nm (T a) -> Doc ann
 ptn n@(Nm _ _ t) = pretty n<::>t
 
-prettyC :: (T (), [(Nm a, C)]) -> Doc ann
-prettyC (t, []) = pretty t
-prettyC (t, cs) = tupled (pc<$>cs) <+> ":=>" <+> pretty t
-    where pc (n, c) = pretty c <+> pretty n
-
--- TODO: constraints
 prettyTyped :: E (T a) -> Doc ann
 prettyTyped = pt where
     pt (Var t n)                                              = pretty n<::>t

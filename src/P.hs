@@ -7,7 +7,6 @@ module P ( Err (..), FErr (..)
          , tyParseCtx
          , tc
          , tyExpr
-         , tyOf
          , tyC
          , getTy
          , parseRename
@@ -65,7 +64,6 @@ import           IR.C
 import           IR.Hoist
 import           IR.Opt
 import           L
-import           Nm
 import           Parser
 import           Parser.Rw
 import           Prettyprinter                    (Doc, Pretty (..))
@@ -109,20 +107,14 @@ renameECtx i ast = rG i (dedfn ast)
 parseRename :: BSL.ByteString -> Either ParseE (E AlexPosn, Int)
 parseRename = parseRenameCtx alexInitUserState
 
-tyC :: Int -> E a -> Either (Err a) (E (T ()), [(Nm a, C)], Int)
-tyC u = (\(e,cs,uϵ) -> (,cs,uϵ)<$>checkM e) <=< first TyErr . tyClosed u
+tyC :: Int -> E a -> Either (Err a) (E (T ()), Int)
+tyC u = (\(e,uϵ) -> (,uϵ)<$>checkM e) <=< first TyErr . tyClosed u
 
 tyExpr :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
-tyExpr = fmap prettyC.tyOf
+tyExpr = fmap (pretty.eAnn.fst).tyParse
 
-tyOf :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Nm AlexPosn, C)])
-tyOf = fmap (first eAnn) . annTy
-
-getTy :: BSL.ByteString -> Either (Err AlexPosn) (T (), [(Nm AlexPosn, C)])
-getTy = fmap (first eAnn) . checkCtx <=< annTy
-
-annTy :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)])
-annTy = fmap discard . tyConstrCtx alexInitUserState where discard (x, y, _) = (x, y)
+getTy :: BSL.ByteString -> Either (Err AlexPosn) (T ())
+getTy = fmap (eAnn.fst) . checkCtx <=< tyParse
 
 eFunP :: (Pretty a, Typeable a) => Int -> CCtx -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word8))
 eFunP = eFunPG assembleCtx ex86G
@@ -209,7 +201,7 @@ opt bsl = uncurry βηast <$> parseInline bsl
   optA' eϵ = state (\k -> runM k (optA eϵ))
 
 eInline :: Int -> E a -> Either (Err a) (E (T ()), Int)
-eInline m e = (\(eϵ, i) -> inline i eϵ) <$> (checkCtx =<< liftErr (fmap sel (tyClosed m e))) where sel ~(x, _, z) = (x, z); liftErr = first TyErr
+eInline m e = (\(eϵ, i) -> inline i eϵ) <$> (checkCtx =<< liftErr (tyClosed m e)) where liftErr = first TyErr
 
 checkM :: E (T ()) -> Either (Err a) (E (T ()))
 checkM e = maybe (Right e) (Left . RErr) $ check e
@@ -221,14 +213,11 @@ parseInline :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 parseInline bsl =
     (\(e, i) -> inline i e) <$> (checkCtx =<< tyParse bsl)
 
-tyConstrCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), [(Nm AlexPosn, C)], Int)
-tyConstrCtx st bsl =
+tyParseCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
+tyParseCtx st bsl =
     case parseRenameCtx st bsl of
         Left err       -> Left $ PErr err
         Right (ast, m) -> first TyErr $ tyClosed m ast
-
-tyParseCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
-tyParseCtx st = fmap sel . tyConstrCtx st where sel ~(x, _, z) = (x, z)
 
 tc :: FilePath -> IO ()
 tc fp = do

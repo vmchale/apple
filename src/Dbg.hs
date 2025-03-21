@@ -51,7 +51,6 @@ import           Data.Text.Lazy.Builder     (toLazyText)
 import           Data.Text.Lazy.Builder.Int (hexadecimal)
 import           Data.Tree                  (drawTree)
 import           Data.Tuple                 (swap)
-import           Data.Tuple.Extra           (fst3)
 import           Data.Word                  (Word8)
 import           IR
 import           IR.Hoist
@@ -174,7 +173,7 @@ ann :: BSL.ByteString -> Doc ann
 ann bsl =
     case parseRename bsl of
         Left err       -> throw err
-        Right (ast, m) -> either throw (prettyTyped.fst3) $ tyClosed m ast
+        Right (ast, m) -> either throw (prettyTyped.fst) $ tyClosed m ast
 
 topt :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 topt = fmap prettyTyped . opt

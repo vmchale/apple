@@ -19,7 +19,7 @@ run (fpϵ, a, n) = do
     let asm=case a of {X64 -> Nasm.writeO; Aarch64 -> As.writeO}
     asm n contents True
     withFile (T.unpack n <> ".h") WriteMode $ \h -> hPutDoc h ct
-    where cS s = do {t <- yIO (fst<$>getTy s); yIO $ pCty n t}
+    where cS s = do {t <- yIO$getTy s; yIO $ pCty n t}
 
 yIO :: Exception x => Either x a -> IO a
 yIO = either throwIO pure

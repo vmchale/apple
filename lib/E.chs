@@ -90,7 +90,7 @@ apple_ty src errPtr = do
         Left err -> do
             poke errPtr =<< tcstr (ptxt err)
             pure nullPtr
-        Right (t, []) ->
+        Right t ->
             case tCTy t of
                 Left te -> do {poke errPtr =<< tcstr (ptxt te); pure nullPtr}
                 Right (tis, to) -> do

@@ -155,8 +155,8 @@ eCtx d s = do
 
 cR = eCtx eDumpC
 irR = eCtx eDumpIR
-tyExprR = eCtx (\i -> fmap (\(e,c,_) -> prettyC (eAnn e, c)).tyClosed i)
-annR = eCtx (\i -> fmap (\(e,_,_) -> prettyTyped e).tyClosed i)
+tyExprR = eCtx (\i -> fmap (\(e,_) -> pretty (eAnn e)).tyClosed i)
+annR = eCtx (\i -> fmap (\(e,_) -> prettyTyped e).tyClosed i)
 dumpAsm s = do
     a <- lg _arch
     let dump = case a of {X64 -> eDumpX86; AArch64{} -> eDumpAarch64}
@@ -182,7 +182,7 @@ inspect s = do
             eC <- eRepl eP
             case tyC i eC of
                 Left err -> pErr err
-                Right (e, _, i') -> do
+                Right (e, i') -> do
                     a <- lg _arch; c <- lg mf
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     do
@@ -236,7 +236,7 @@ qc s = do
             eC <- eRepl eP
             case tyC i eC of
                 Left err -> pErr err
-                Right (e, _, i') -> do
+                Right (e, i') -> do
                     c <- lg mf; a <- lg _arch
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     case up (eAnn e) of
@@ -268,7 +268,7 @@ benchE s = do
             eC <- eRepl eP
             case tyC i eC of
                 Left err -> pErr err
-                Right (e, _, i') -> do
+                Right (e, i') -> do
                     c <- lg mf; a <- lg _arch
                     let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
                     case eAnn e of
@@ -361,10 +361,10 @@ printExpr s = do
             case tyC i eC of
                 Left (RErr MR{}) -> case tyClosed i eC of
                     Left e -> pErr e
-                    Right (e, c, _) ->
-                        let t=eAnn e in putDocLn (pretty e <::> prettyC (t, c))
+                    Right (e, _) ->
+                        let t=eAnn e in putDocLn (pretty e <::> pretty t)
                 Left err -> pErr err
-                Right (eLi, _, i') -> do
+                Right (eLi, i') -> do
                     c <- lg mf; a <- lg _arch
                     let efp=case a of {X64 -> eFunP i' c; AArch64 ma -> eAFunP i' (c,ma)}
                     case eAnn (fmap rLi eLi) of
