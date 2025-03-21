@@ -18,23 +18,20 @@ import           Control.DeepSeq   (NFData (rnf))
 import           Data.Bifunctor    (first)
 import           Data.Foldable     (toList)
 import qualified Data.IntMap       as IM
+import qualified Data.Set          as S
 import qualified Data.Text         as T
 import           GHC.Generics      (Generic)
 import           Nm
-import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe, punctuate, rbrace,
-                                    rbracket, tupled, vsep, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, concatWith, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe,
+                                    punctuate, rbrace, rbracket, tupled, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Sh
 
-data C = IsOrd | IsEq
-       | HasBits deriving (Eq, Ord)
+data C = IsOrd | IsEq | HasBits | IsZ deriving (Eq, Ord)
 
 instance NFData C where rnf x=seq x ()
 
-instance Pretty C where
-    pretty IsOrd   = "IsOrd"
-    pretty IsEq    = "IsEq"
-    pretty HasBits = "HasBits"
+instance Pretty C where pretty IsOrd = "IsOrd"; pretty IsEq = "IsEq"; pretty HasBits = "HasBits"; pretty IsZ = "IsNum"
 
 instance Show C where show=show.pretty
 
@@ -48,7 +45,7 @@ data T a = Arr (Sh a) (T a)
          | I -- | int
          | B -- | bool
          | Li (I a)
-         | TV !(Nm a) -- | Kind \(*\)
+         | TV !(Nm a) (S.Set C)
          | IZ (I a) (Nm a) | Z !(Nm a)
          | Arrow (T a) (T a)
          | P [T a]
@@ -65,7 +62,7 @@ instance PT (T a) where
     pp B             = pure B
     pp (Z n)         = Z<$>fr tl n
     pp t@Li{}        = pure t
-    pp (TV n)        = TV<$>fr tl n
+    pp (TV n c)      = TV<$>fr tl n<*>pure c
     pp (IZ i n)      = IZ i<$>fr tl n
     pp (Arrow t₀ t₁) = Arrow<$>pp t₀<*>pp t₁
     pp (Arr sh t)    = Arr sh<$>pp t
@@ -83,14 +80,15 @@ instance PS (T a) where
     ps _ (Li i)                 = "int" <> parens (pretty i)
     ps _ (IZ i _)               = "num" <> parens (pretty i)
     ps _ B                      = "bool"
-    ps _ (TV n)                 = pretty n
+    ps _ (TV n c) | S.null c    = pretty n
+                  | otherwise   = braces(pretty n<>"|"<>concatWith (\x y -> x<>","<>y) (pretty<$>S.toList c))
     ps d (Arrow t0 t1)          = parensp (d>0) (ps 1 t0 <+> "→" <+> ps 0 t1)
     ps _ (P ts)                 = tupledBy " * " (pretty <$> ts)
     ps _ (Ρ n fs)               = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))
 
 rLi :: T a -> T a
 rLi Li{}          = I
-rLi (IZ _ n)      = TV n
+rLi (IZ _ n)      = TV n (S.singleton IsZ)
 rLi (Arrow t0 t1) = Arrow (rLi t0) (rLi t1)
 rLi (Arr sh t)    = Arr sh (rLi t)
 rLi (Ρ n ts)      = Ρ n (rLi <$> ts)

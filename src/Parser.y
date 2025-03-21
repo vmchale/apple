@@ -13,6 +13,7 @@ import Data.Bifunctor (first, second)
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as ASCII
 import Data.Functor (void)
+import qualified Data.Set as S
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified Nm
@@ -235,7 +236,7 @@ T :: { T AlexPosn }
   | parens(T) { $1 }
   | T arrow T { A.Arrow $1 $3 }
   | tupled(T) { P (reverse (snd $1)) }
-  | name { TV $1 }
+  | name { tv $1 }
 
 R :: { (Int, Maybe [Int]) }
   : intLit compose lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (fmap (fromInteger.int) $4))) }
@@ -345,7 +346,7 @@ E :: { E AlexPosn }
   | diag { Builtin $1 Di }
   | question E condSplit E condSplit E { Cond $1 $2 $4 $6 }
   | E sig T { Ann $2 $1 $3 }
-  | E tsig parens(Sh) {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (Arr $3 (TV a))} }
+  | E tsig parens(Sh) {% do{a <- lift$freshName "a"; pure$Ann $2 $1 (Arr $3 (tv a))} }
   | e { EApp $1 (Builtin $1 Exp) (FLit $1 (exp 1)) }
   | E at { EApp (eAnn $1) (Builtin (loc $2) (TAt (iat $ sym $2))) $1 }
   | parens(at) { Builtin (loc $1) (TAt (iat $ sym $1)) }
@@ -367,6 +368,8 @@ E :: { E AlexPosn }
   | sks { Builtin $1 S } | skk { Builtin $1 K }
 
 {
+
+tv x = TV x S.empty
 
 parseErr :: Tok -> [String] -> Parse a
 parseErr tok = throwError . Unexpected tok

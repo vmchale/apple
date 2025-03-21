@@ -20,7 +20,8 @@ import           Data.Function                    (on)
 import           Data.Functor                     (void, ($>))
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.Maybe                       (catMaybes, fromMaybe)
+import           Data.Maybe                       (catMaybes, fromMaybe, listToMaybe, mapMaybe)
+import qualified Data.Set                         as S
 import qualified Data.Text                        as T
 import           Data.Typeable                    (Typeable)
 import           GHC.Generics                     (Generic)
@@ -165,10 +166,11 @@ maM _ (Z (Nm _ (U u) _)) F          = Right $ Subst (IM.singleton u F) IM.empty 
 maM _ I I                           = Right mempty
 maM _ F F                           = Right mempty
 maM _ B B                           = Right mempty
-maM _ (TV n) (TV n') | n == n'      = Right mempty
+maM _ (TV n c) (TV n' c') | n == n' = undefined
 maM _ (Z n) (Z n') | n == n'        = Right mempty
 maM _ (Z (Nm _ (U i) _)) t@Z{}      = Right $ Subst (IM.singleton i t) IM.empty IM.empty
-maM _ (TV (Nm _ (U i) _)) t         = Right $ Subst (IM.singleton i t) IM.empty IM.empty
+maM _ (TV (Nm _ (U i) l) c) t       | Just e <- (l,t) `enforces` c = Left e
+                                    | otherwise = Right $ Subst (IM.singleton i t) IM.empty IM.empty
 maM _ (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM LF t0 t0' <*> maM RF t1 t1' -- TODO: use <\> over <>
 maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
 maM f (Arr sh t) t'                 = (<>) <$> mSh f sh Nil <*> maM f t t'
@@ -220,11 +222,12 @@ aT s@(Subst ts _ _) (Ρ n rs) =
         Just ty@Z{}  -> aT (s\-u) ty
         Just ty      -> aT s ty
         Nothing      -> Ρ n (aT s<$>rs)
-aT s ty'@(TV n)   = aTi ty' n s
+aT s ty'@(TV n _) = aTi ty' n s
 aT s ty'@(IZ _ n) = aTi ty' n s
 aT s ty'@(Z n)    = aTi ty' n s
 aT _ ty = ty
 
+-- don't need preferential substitution b/c that's how we pick keys already?
 aTi ty' n s@(Subst ts _ _) =
     let u=unU$unique n in
     case IM.lookup u ts of
@@ -253,22 +256,17 @@ addPolyEnv n t = modify (\(TySt u l v vcs) -> TySt u l (insert n t v) vcs)
 addVarConstrI :: Int -> a -> C -> TyM a ()
 addVarConstrI i ann c = modify (\(TySt u l v vcs) -> TySt u l v (IM.insert i (c, ann) vcs))
 
-pushC :: Nm a -> a -> C -> TyM a ()
-pushC n ann c = modify (\(TySt u l v vcs) -> TySt u l v (insert n (c, ann) vcs))
-
 freshN :: T.Text -> b -> TyM a (Nm b)
 freshN n l = do {tickMaxU; st <- gets maxU; pure (Nm n (U st) l)}
 
 ft :: T.Text -> b -> TyM a (T b)
-ft n l = TV <$> freshN n l
+ft n l = TV <$> freshN n l <*> pure S.empty
 
 fsh :: T.Text -> TyM a (Sh ())
 fsh n = SVar <$> freshN n ()
 
 fc :: T.Text -> a -> C -> TyM a (T ())
-fc n l c = do
-    nϵ <- freshN n l
-    pushC nϵ l c $> TV (void nϵ)
+fc n l c = do {nϵ <- freshN n l; pure $ TV (void nϵ) (S.singleton c)}
 
 fz :: TyM a (T ())
 fz = Z<$>freshN "a" ()
@@ -334,6 +332,7 @@ mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
     (m, s') <- mguIPrep f s i1 j1
     pure (StaMul l k m, s')
 -- TODO: rewrite existential vars on the left...
+-- (cause problems: introduced by ug. improperly higher-rank handling+unified with seed...)
 mguI LF _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l LF i0 i1
 mguI LF _ i0@(Ix l _) i1@IEVar{} = throwError $ UI l LF i0 i1
 mguI RF inp (IEVar l (Nm _ (U i) _)) j@StaPlus{} | i `IS.notMember` occI j = (,inp) <$> nIe l
@@ -452,7 +451,7 @@ occI (StaMul _ i j)  = occI i <> occI j
 occI IEVar{}         = IS.empty
 
 occ :: T a -> IS.IntSet
-occ (TV n)       = Nm.singleton n
+occ (TV n _)     = Nm.singleton n
 occ (IZ _ n)     = Nm.singleton n
 occ (Z n)        = Nm.singleton n
 occ (Arrow t t') = occ t <> occ t'
@@ -468,9 +467,12 @@ scalar f (l,_) s n = snd <$> mgSh f l s n Nil
 
 scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
-σ (Li IEVar{}) = I; σ (IZ IEVar{} t) = TV t; σ t = t
+σ (Li IEVar{}) = I; σ (IZ IEVar{} t) = TV t (S.singleton IsZ); σ t = t
 
 mguZ AF=mguI RF; mguZ f=mguI f
+
+(|\) :: Ord a => S.Set a -> S.Set a -> S.Set a
+(|\) = S.symmetricDifference
 
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0@Arrow{} t1) (Arrow t0' t1') = do
@@ -512,19 +514,31 @@ mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguZ f 
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguZ f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
 -- FIXME ug. is higher-rank on indices 😬
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
-mgu _ _ s t0@(IZ _ n0) (TV n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
-mgu _ _ s (TV n0@(Nm _ (U j) _)) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
-mgu _ _ s t0@(Z n0) (TV n1@(Nm _ (U j) _)) | n0/=n1 = pure (t0, uTS j t0 s)
-mgu _ _ s (TV n0@(Nm _ (U j) _)) t1@(Z n1) | n0/=n1 = pure (t1, uTS j t1 s)
-mgu _ _ s t@Li{} (TV (Nm _ (U u) _)) = pure (t, uTS u t s)
-mgu _ _ s (TV (Nm _ (U u) _)) t@Li{} = pure (t, uTS u t s)
-mgu _ _ s t@(TV n) (TV n') | n == n' = pure (t, s)
-mgu f l s t@(TV n) (Arr i (TV n')) | n'==n = (t,) <$> scalar f l s i
-mgu f l s (Arr i t@(TV n)) (TV n') | n'==n = (t,) <$> scalar f l s i
-mgu _ (l, _) s t'@(TV (Nm _ (U i) _)) t | i `IS.member` occ t = throwError $ OT l t' t
-                                        | otherwise = pure (t, uTS i t s)
-mgu _ (l, _) s t t'@(TV (Nm _ (U i) _)) | i `IS.member` occ t = throwError $ OT l t' t
-                                        | otherwise = pure (t, uTS i t s)
+mgu _ _ s t0@(IZ _ n0) (TV n1@(Nm _ (U j) _) _) | n0/=n1 = pure (t0, uTS j t0 s)
+mgu _ _ s (TV n0@(Nm _ (U j) _) _) t1@(IZ _ n1) | n0/=n1 = pure (t1, uTS j t1 s)
+-- Z with HasBits->Int (for both)
+mgu _ _ s t0@(Z n0) (TV n1@(Nm _ (U j) _) c) | n0/=n1 =
+    if HasBits `S.member` c
+        then pure (I, undefined)
+        else pure (t0, uTS j t0 s)
+mgu _ _ s (TV n0@(Nm _ (U j) _) c) t1@(Z n1) | n0/=n1 =
+    if HasBits `S.member` c
+        then pure (I, undefined)
+        else pure (t1, uTS j t1 s)
+mgu _ _ s t@Li{} (TV (Nm _ (U u) _) _) = pure (t, uTS u t s)
+mgu _ _ s (TV (Nm _ (U u) _) _) t@Li{} = pure (t, uTS u t s)
+mgu _ _ s t@(TV n c) (TV n' c') | n == n' = if S.null (c|\c') then pure (t, s) else undefined
+mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
+mgu f l s (Arr i t@(TV n c)) (TV n' c') | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
+mgu _ (l, _) s t@(TV (Nm _ (U i) _) c) t'@(TV (Nm _ (U j) _) c')
+    | S.null (c' S.\\ c) = pure (t', uTS i t' s)
+    | S.null (c S.\\ c') = pure (t, uTS j t s)
+    | otherwise = undefined
+mgu _ (l, _) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
+                                          | otherwise = case (l,t) `satisfies` c of Nothing -> pure (t, uTS i t s)
+mgu _ (l, _) s t@TV{} t'@(TV (Nm _ (U i) _) c) = undefined
+mgu _ (l, _) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
+                                          | otherwise = case (l,t) `satisfies` c of Nothing -> pure (t, uTS i t s)
 mgu _ (l, e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
 mgu _ (l, e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
 -- TODO: if t' is a TV, it could be an array! (so sh could eat sh'++sh part of t')
@@ -532,22 +546,22 @@ mgu f l s (Arr sh t) (Arr sh' t') = do
     (t'', s0) <- mgu f l s t t'
     (sh'', s1) <- mgShPrep f (fst l) s0 sh sh'
     pure (Arr sh'' t'', s1)
-mgu f l s (Arr n t) F = do {s' <- scalar f l s n; mguPrep f l s' t F}
-mgu f l s (Arr n t) I = do {s' <- scalar f l s n; mguPrep f l s' t I}
-mgu f l s F (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' F t}
-mgu f l s I (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' I t}
-mgu f l s (Arr n t) B = do {s' <- scalar f l s n; mguPrep f l s' t B}
-mgu f l s B (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' B t}
-mgu f l s (Arr n t) t'@P{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
-mgu f l s t'@P{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
-mgu f l s (Arr n t) t'@Ρ{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
-mgu f l s t'@Ρ{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
-mgu f l s (Arr n t) t'@Li{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
-mgu f l s t'@Li{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
-mgu f l s (Arr n t) t'@IZ{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
-mgu f l s t'@IZ{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
-mgu f l s (Arr n t) t'@Z{} = do {s' <- scalar f l s n; mguPrep f l s' t t'}
-mgu f l s t'@Z{} (Arr n t) = do {s' <- scalar f l s n; mguPrep f l s' t' t}
+mgu f l s (Arr n t) F = scalarStep f l s n t F
+mgu f l s (Arr n t) I = scalarStep f l s n t I
+mgu f l@(_,e) s F (Arr n t) = scalarStep f l s n F t
+mgu f l s I (Arr n t) = scalarStep f l s n I t
+mgu f l s (Arr n t) B = scalarStep f l s n t B
+mgu f l s B (Arr n t) = scalarStep f l s n B t
+mgu f l s (Arr n t) t'@P{} = scalarStep f l s n t t'
+mgu f l s t'@P{} (Arr n t) = scalarStep f l s n t' t
+mgu f l s (Arr n t) t'@Ρ{} = scalarStep f l s n t t'
+mgu f l s t'@Ρ{} (Arr n t) = scalarStep f l s n t' t
+mgu f l s (Arr n t) t'@Li{} = scalarStep f l s n t t'
+mgu f l s t'@Li{} (Arr n t) = scalarStep f l s n t' t
+mgu f l s (Arr n t) t'@IZ{} = scalarStep f l s n t t'
+mgu f l s t'@IZ{} (Arr n t) = scalarStep f l s n t' t
+mgu f l s (Arr n t) t'@Z{} = scalarStep f l s n t t'
+mgu f l s t'@Z{} (Arr n t) = scalarStep f l s n t' t
 mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f l) s ts ts'
 -- TODO: rho occurs check
 mgu f l@(lϵ, e) s t@(Ρ n rs) t'@(P ts) | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (iTS n t') <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
@@ -701,6 +715,7 @@ tyB _ Times = tyNumBinOp
 tyB _ Dot = do
     n <- fz; i <- fti "i"
     pure (vV i n ~> vV i n ~> n, mempty)
+    -- FIXME: need to do something like Z type... eugh
 tyB l Gte = tyOrdBinRel l; tyB l Gt = tyOrdBinRel l; tyB l Lt = tyOrdBinRel l
 tyB l Lte = tyOrdBinRel l; tyB l Eq = tyEqBinRel l; tyB l Neq = tyEqBinRel l
 tyB l And = tyBoo l; tyB l Or = tyBoo l; tyB l Xor = tyBoo l
@@ -928,8 +943,27 @@ chkE :: T () -> Either (TyE a) ()
 chkE t@Arrow{} = if hasE t then Left (ExistentialArg t) else Right ()
 chkE _         = Right ()
 
+enforces :: (a, T a) -> S.Set C -> Maybe (TyE a)
+enforces (l,TV{}) c   = undefined
+enforces (l,t@IZ{}) c = if HasBits `S.member` c then Just$Doesn'tSatisfy l t HasBits else Nothing
+enforces (l,t@Z{}) c  = if HasBits `S.member` c then Just$Doesn'tSatisfy l t HasBits else Nothing
+enforces x c          = x `satisfies` c
+
+satisfies :: (a, T a) -- ^ Not a type variable
+          -> S.Set C -> Maybe (TyE a)
+satisfies (l,t) = listToMaybe . mapMaybe s . S.toList
+    where s = case t of
+            I       -> const Nothing
+            Li{}    -> const Nothing
+            B       -> const Nothing
+            F       -> \case {HasBits -> Just$Doesn'tSatisfy l t HasBits; _ -> Nothing}
+            P{}     -> \case {HasBits -> Just$Doesn'tSatisfy l t HasBits; _ -> Nothing}
+            Arr{}   -> \case {IsZ -> Just$Doesn'tSatisfy l t IsZ; _ -> Nothing}
+            Arrow{} -> Just . Doesn'tSatisfy l t
+            TV{}    -> error "uh-oh"
+
 checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
-checkTy (TV n) (c, _)         = pure $ Just(n, c)
+checkTy (TV n _) (c, _)       = pure $ Just(n, c)
 checkTy I (IsOrd, _)          = pure Nothing
 checkTy I (HasBits, _)        = pure Nothing
 checkTy Li{} (HasBits, _)     = pure Nothing
@@ -978,16 +1012,16 @@ tyE s (EApp _ (EApp _ (Builtin l Range) lb) ub) = do
             let m=ubi-lbi+1
             when (m<0) $ throwError (NegIx l m)
             pure (Ix () m,s4)
-        (Li (Ix _ 0), TV n) -> do
+        (Li (Ix _ 0), TV n _) -> do
             k <- fti "n"
             pure (k+:Ix()1, iTS n (Li$k$>x) s4)
         _ -> (,s4)<$>ftie
     let arrTy = vV m I
     pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) Range) lbϵ) ubϵ, s5)
-  where iv sϵ (IZ i nm) = let t=Li i in (iTS nm t sϵ, t)
-        iv sϵ t@(TV nm) = (iTS nm I sϵ, t)
-        iv sϵ t@(Z nm)  = (iTS nm I sϵ, t)
-        iv sϵ _         = (sϵ, I)
+  where iv sϵ (IZ i nm)   = let t=Li i in (iTS nm t sϵ, t)
+        iv sϵ t@(TV nm _) = (iTS nm I sϵ, t) -- int satisfies all constraints
+        iv sϵ t@(Z nm)    = (iTS nm I sϵ, t)
+        iv sϵ _           = (sϵ, I)
 tyE s (FLit _ x) = pure (FLit F x, s)
 tyE s (BLit _ x) = pure (BLit B x, s)
 tyE s (ILit _ m) = do {n <- fn m; pure (ILit n m, s)}
