@@ -40,25 +40,27 @@ tryReplaceInT lens n@(Nm t (U i) l) = do
         Just j  -> pure (Nm t (U j) l)
         Nothing -> freshen lens n
 
+cloneIx :: I a -> CM (I a)
+cloneIx i@Ix{}           = pure i
+cloneIx (StaPlus l i i') = StaPlus l <$> cloneIx i <*> cloneIx i'
+cloneIx (StaMul l i i')  = StaMul l <$> cloneIx i <*> cloneIx i'
+cloneIx (IVar l n)       = IVar l <$> tryReplaceInT boundIxLens n
+cloneIx (IEVar l n)      = IEVar l <$> tryReplaceInT boundIxLens n
+
+cloneSh :: Sh a -> CM (Sh a)
+cloneSh Nil           = pure Nil
+cloneSh (Cons i sh)   = Cons <$> cloneIx i <*> cloneSh sh
+cloneSh (SVar n)      = SVar <$> tryReplaceInT boundShLens n
+cloneSh (Rev sh)      = Rev <$> cloneSh sh
+cloneSh (Cat sh0 sh1) = Cat <$> cloneSh sh0 <*> cloneSh sh1
+cloneSh (Π sh)        = Π <$> cloneSh sh
+
+iSt u = TR u IM.empty IM.empty IM.empty
+
 cloneT :: Int -> T a
               -> (Int, T a, IM.IntMap Int) -- ^ Substition on type variables, returned so constraints can be propagated/copied
-cloneT u = (\(t, TR uϵ tvs _ _) -> (uϵ,t,tvs)).flip runState (TR u IM.empty IM.empty IM.empty).cT
+cloneT u = (\(t, TR uϵ tvs _ _) -> (uϵ,t,tvs)).flip runState (iSt u).cT
   where
-    cloneIx :: I a -> CM (I a)
-    cloneIx i@Ix{}           = pure i
-    cloneIx (StaPlus l i i') = StaPlus l <$> cloneIx i <*> cloneIx i'
-    cloneIx (StaMul l i i')  = StaMul l <$> cloneIx i <*> cloneIx i'
-    cloneIx (IVar l n)       = IVar l <$> tryReplaceInT boundIxLens n
-    cloneIx (IEVar l n)      = IEVar l <$> tryReplaceInT boundIxLens n
-
-    cloneSh :: Sh a -> CM (Sh a)
-    cloneSh Nil           = pure Nil
-    cloneSh (Cons i sh)   = Cons <$> cloneIx i <*> cloneSh sh
-    cloneSh (SVar n)      = SVar <$> tryReplaceInT boundShLens n
-    cloneSh (Rev sh)      = Rev <$> cloneSh sh
-    cloneSh (Cat sh0 sh1) = Cat <$> cloneSh sh0 <*> cloneSh sh1
-    cloneSh (Π sh)        = Π <$> cloneSh sh
-
     cT :: T a -> CM (T a)
     cT F            = pure F
     cT I            = pure I
