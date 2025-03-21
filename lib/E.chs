@@ -113,7 +113,7 @@ apple_ty src errPtr = do
                                 argn ip n {# offsetof apple_t->ty.aa #} (t32 tai)) tis [0..]
                     {# set FnTy.args #} sp ip
                     pure sp
-  where 
+  where
     argn p n = pokeByteOff (p `plusPtr` (n*{# sizeof apple_t #}))
     f p k t = do
         {# set FnTy.res.f #} p (tk32 k)
