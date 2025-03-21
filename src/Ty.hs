@@ -14,7 +14,6 @@ import           Control.Monad                    (when, zipWithM)
 import           Control.Monad.Except             (liftEither, throwError)
 import           Control.Monad.Trans.State.Strict (StateT (runStateT), gets, modify, state)
 import           Data.Bifunctor                   (first, second)
-import           Data.Foldable                    (traverse_)
 import           Data.Function                    (on)
 import           Data.Functor                     (void, ($>))
 import qualified Data.IntMap                      as IM
@@ -37,7 +36,7 @@ import           U
 infixl 7 \-
 infixl 6 @@
 
-data TySt a = TySt { maxU :: !Int, staEnv, polyEnv :: IM.IntMap (T ()), varConstr :: IM.IntMap (C, a) }
+data TySt a = TySt { maxU :: !Int, staEnv, polyEnv :: IM.IntMap (T ()) }
 
 data Subst a = Subst { tySubst :: IM.IntMap (T a)
                      , iSubst  :: IM.IntMap (I a) -- ^ Index variables
@@ -238,22 +237,19 @@ aTi ty' n s@(Subst ts _ _) =
         Nothing      -> ty'
 
 runTyM :: Int -> TyM a b -> Either (TyE a) (b, Int)
-runTyM i = fmap (second maxU) . flip runStateT (TySt i IM.empty IM.empty IM.empty)
+runTyM i = fmap (second maxU) . flip runStateT (TySt i IM.empty IM.empty)
 
 tickMaxU :: TyM a ()
-tickMaxU = modify (\(TySt u l v vcs) -> TySt (u+1) l v vcs)
+tickMaxU = modify (\(TySt u l v) -> TySt (u+1) l v)
 
 setMaxU :: Int -> TyM a ()
-setMaxU i = modify (\(TySt _ l v vcs) -> TySt i l v vcs)
+setMaxU i = modify (\(TySt _ l v) -> TySt i l v)
 
 addStaEnv :: Nm a -> T () -> TyM a ()
-addStaEnv n t = modify (\(TySt u l v vcs) -> TySt u (insert n t l) v vcs)
+addStaEnv n t = modify (\(TySt u l v) -> TySt u (insert n t l) v)
 
 addPolyEnv :: Nm a -> T () -> TyM a ()
-addPolyEnv n t = modify (\(TySt u l v vcs) -> TySt u l (insert n t v) vcs)
-
-addVarConstrI :: Int -> a -> C -> TyM a ()
-addVarConstrI i ann c = modify (\(TySt u l v vcs) -> TySt u l v (IM.insert i (c, ann) vcs))
+addPolyEnv n t = modify (\(TySt u l v) -> TySt u l (insert n t v))
 
 freshN :: T.Text -> b -> TyM a (Nm b)
 freshN n l = do {tickMaxU; st <- gets maxU; pure (Nm n (U st) l)}
@@ -865,19 +861,8 @@ tyB _ K = do
     a <- ftv "a"; b <- ftv "b"
     pure (b ~> (a ~> b), mempty)
 
-cloneWithConstraints :: T b -> TyM a (T b)
-cloneWithConstraints t = do
-    (t', vs) <- do
-        i<- gets maxU
-        let (u,t',vs) = cloneT i t
-        setMaxU u $> (t',vs)
-    traverse_ (\(k,v) -> do
-        cst <- gets varConstr
-        case IM.lookup k cst of
-            Just (c,l) -> addVarConstrI v l c
-            Nothing    -> pure ())
-        (IM.toList vs)
-    pure t'
+cl :: T b -> TyM a (T b)
+cl t = do {i<- gets maxU; let (u,t') = cloneT i t in setMaxU u $> t'}
 
 rwI :: I a -> I a
 rwI (StaPlus l i0 i1) =
@@ -1042,7 +1027,7 @@ tyE s (Var l n@(Nm _ (U u) _)) = do
         Nothing -> do
             vSt<- gets polyEnv
             case IM.lookup u vSt of
-                Just t  -> do {t'<- cloneWithConstraints t; pure (Var t' (n$>t'), s)}
+                Just t  -> do {t'<- cl t; pure (Var t' (n$>t'), s)}
                 Nothing -> throwError $ IllScoped l n
 tyE s (Tup _ es) = do
     (es', s') <- tS tyE s es

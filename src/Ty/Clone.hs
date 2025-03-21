@@ -57,9 +57,8 @@ cloneSh (Π sh)        = Π <$> cloneSh sh
 
 iSt u = TR u IM.empty IM.empty IM.empty
 
-cloneT :: Int -> T a
-              -> (Int, T a, IM.IntMap Int) -- ^ Substition on type variables, returned so constraints can be propagated/copied
-cloneT u = (\(t, TR uϵ tvs _ _) -> (uϵ,t,tvs)).flip runState (iSt u).cT
+cloneT :: Int -> T a -> (Int, T a)
+cloneT u = (\(t, TR uϵ _ _ _) -> (uϵ,t)).flip runState (iSt u).cT
   where
     cT :: T a -> CM (T a)
     cT F            = pure F

@@ -62,7 +62,7 @@ rG i = second max_ . flip runState (Rs i IM.empty) . rE
 liftR :: (HasRs s, Monad m) => T a -> StateT s m (T a)
 liftR t = do
     i <- use (rename.maxLens)
-    let (u,t',_) = cloneT i t
+    let (u,t') = cloneT i t
     (rename.maxLens .= u) $> t'
 
 {-# INLINABLE rE #-}
