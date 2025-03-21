@@ -962,7 +962,7 @@ satisfies (l,t) = listToMaybe . mapMaybe s . S.toList
 
 tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), Int)
 tyClosed u e = do
-    ((eS), i) <- runTyM u (do {(e', s) <- tyE mempty e; pure (rwArr.(s@@)<$>e')})
+    (eS, i) <- runTyM u (do {(e', s) <- tyE mempty e; pure (rwArr.(s@@)<$>e')})
     chkE (eAnn eS) $> (eS, i)
 
 tyE :: Subst a -> E a -> TyM a (E (T ()), Subst a)
