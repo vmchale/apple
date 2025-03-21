@@ -962,44 +962,10 @@ satisfies (l,t) = listToMaybe . mapMaybe s . S.toList
             Arrow{} -> Just . Doesn'tSatisfy l t
             TV{}    -> error "uh-oh"
 
-checkTy :: T a -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
-checkTy (TV n _) (c, _)       = pure $ Just(n, c)
-checkTy I (IsOrd, _)          = pure Nothing
-checkTy I (HasBits, _)        = pure Nothing
-checkTy Li{} (HasBits, _)     = pure Nothing
-checkTy B (HasBits, _)        = pure Nothing
-checkTy F (IsOrd, _)          = pure Nothing
-checkTy Li{} (IsOrd, _)       = pure Nothing
-checkTy IZ{} (IsOrd, _)       = pure Nothing
-checkTy Z{} (IsOrd, _)        = pure Nothing
-checkTy I (IsEq, _)           = pure Nothing
-checkTy F (IsEq, _)           = pure Nothing
-checkTy B (IsEq, _)           = pure Nothing
-checkTy Li{} (IsEq, _)        = pure Nothing
-checkTy IZ{} (IsEq, _)        = pure Nothing
-checkTy Z{} (IsEq, _)         = pure Nothing
-checkTy t (c@HasBits, l)      = Left$ Doesn'tSatisfy l t c
-checkTy t@Arrow{} (c, l)      = Left$ Doesn'tSatisfy l t c
-checkTy (Arr _ t) c@(IsEq, _) = checkTy t c
-
-substI :: Subst a -> Int -> Maybe (T a)
-substI s@(Subst ts _ _) i =
-    case IM.lookup i ts of
-        Just ty@TV{} -> Just $ aT (s\-i) ty
-        Just ty      -> Just $ aT s ty
-        Nothing      -> Nothing
-
-checkClass :: Subst a -> Int -> (C, a) -> Either (TyE a) (Maybe (Nm a, C))
-checkClass s i c =
-    case substI s i of
-        Just ty -> checkTy (rwArr ty) c
-        Nothing -> pure Nothing
-
 tyClosed :: Int -> E a -> Either (TyE a) (E (T ()), [(Nm a, C)], Int)
 tyClosed u e = do
-    ((eS, scs), i) <- runTyM u (do {(e', s) <- tyE mempty e; cvs <- gets varConstr; scs <- liftEither $ catMaybes <$> traverse (uncurry$checkClass s) (IM.toList cvs); pure (rwArr.(s@@)<$>e', scs)})
-    let vs = occ (eAnn eS); scs' = filter (\(Nm _ (U iϵ) _, _) -> iϵ `IS.member` vs) scs
-    chkE (eAnn eS) $> (eS, nubOrd scs', i)
+    ((eS), i) <- runTyM u (do {(e', s) <- tyE mempty e; pure (rwArr.(s@@)<$>e')})
+    chkE (eAnn eS) $> (eS, undefined, i)
 
 tyE :: Subst a -> E a -> TyM a (E (T ()), Subst a)
 tyE s (EApp _ (EApp _ (Builtin l Range) lb) ub) = do
