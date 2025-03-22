@@ -53,8 +53,8 @@ mrT _            = Nothing
 flT :: T a -> Maybe (T a)
 flT t@(Arr _ tϵ) | ha tϵ = Just t
 flT (Arrow t t') = flT t <|> flT t'
-flT (P ts) = flT ||> ts
-flT _ = Nothing
+flT (P ts)       = flT ||> ts
+flT _            = Nothing
 
 ha :: T a -> Bool
 ha Arrow{}   = True
@@ -67,9 +67,9 @@ har Arr{} = True; har (P ts) = any har ts; har _ = False
 
 ata :: T a -> Maybe (T a)
 ata t@(Arr _ (P ts)) | any har ts = Just t
-ata (Arrow t t') = ata t <|> ata t'
-ata (P t) = ata ||> t
-ata _ = Nothing
+ata (Arrow t t')     = ata t <|> ata t'
+ata (P t)            = ata ||> t
+ata _                = Nothing
 
 dynI :: I a -> Bool
 dynI Ix{}      = False
