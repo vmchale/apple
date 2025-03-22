@@ -70,4 +70,3 @@ cloneT u = (\(t, TR uϵ _ _ _) -> (uϵ,t)).flip runState (iSt u).cT
     cT (TV n c)     = TV <$> tryReplaceInT boundTVLens n<*>pure c
     cT (P ts)       = P <$> traverse cT ts
     cT (IZ ix n)    = IZ <$> cloneIx ix <*> tryReplaceInT boundTVLens n
-    cT (Z n)        = Z <$> tryReplaceInT boundTVLens n

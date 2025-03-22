@@ -1,3 +1,5 @@
+(∃a. t a) → r ≡ ∀a. t a → r
+- [ ] `uint8` or whatever bitvector for C (HasBits, IsEq, IsOrd, IsZ)
 - [x] tuples in C's FnTy
 - [½] slotted/efficient array allocations
 - [ ] Abstract function intermediates

@@ -77,4 +77,3 @@ irTy (Arrow t0 t1)     = first (t0:) <$> irTy t1
 irTy TV{}              = Left Poly
 irTy Ρ{}               = Left Poly
 irTy IZ{}              = Left Poly
-irTy Z{}               = Left Poly

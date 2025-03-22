@@ -153,8 +153,7 @@ eCtx d s = do
             eC <- eRepl eP
             ep $ d i eC
 
-cR = eCtx eDumpC
-irR = eCtx eDumpIR
+irR = eCtx eDumpIR; cR = eCtx eDumpC
 tyExprR = eCtx (\i -> fmap (\(e,_) -> pretty (eAnn e)).tyClosed i)
 annR = eCtx (\i -> fmap (\(e,_) -> prettyTyped e).tyClosed i)
 dumpAsm s = do

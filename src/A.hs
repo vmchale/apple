@@ -45,7 +45,7 @@ data T a = Arr (Sh a) (T a)
          | B -- | bool
          | Li (I a)
          | TV !(Nm a) (S.Set C)
-         | IZ (I a) (Nm a) | Z !(Nm a)
+         | IZ (I a) !(Nm a)
          | Arrow (T a) (T a)
          | P [T a]
          | Ρ !(Nm a) (IM.IntMap (T a))
@@ -59,7 +59,6 @@ instance PT (T a) where
     pp F             = pure F
     pp I             = pure I
     pp B             = pure B
-    pp (Z n)         = Z<$>fr tl n
     pp t@Li{}        = pure t
     pp (TV n c)      = TV<$>fr tl n<*>pure c
     pp (IZ i n)      = IZ i<$>fr tl n
@@ -75,7 +74,6 @@ instance PS (T a) where
     ps d (Arr i t)              = group (parensp (d>appPrec) ("Arr" <+> ps (appPrec+1) i <+> ps (appPrec+1) t))
     ps _ F                      = "float"
     ps _ I                      = "int"
-    ps _ (Z (Nm n _ _))         = pretty (T.map g n) where g=toEnum.(+0x1d44e).subtract 97.fromEnum
     ps _ (Li i)                 = "int" <> parens (pretty i)
     ps _ (IZ i _)               = "num" <> parens (pretty i)
     ps _ B                      = "bool"

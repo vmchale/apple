@@ -40,6 +40,7 @@
 - [ ] script f https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols#Latin_letters
 - [ ] https://www.compart.com/en/unicode/block/U+2A00
 - [ ] https://www.compart.com/en/unicode/block/U+2440
+- [ ] https://www.compart.com/en/unicode/block/U+1F700
 - [x] dfns like k, APL (J)
 - [ ] https://en.wikipedia.org/wiki/Hwair
 - [ ] https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
@@ -241,10 +242,15 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [ ] https://ed25519.cr.yp.to/
   - [ ] https://en.wikipedia.org/wiki/SHA-2#Pseudocode
 # Visual/Art
+- [ ] https://code.jsoftware.com/wiki/Essays/R%C3%B6ssler_Attractor
 - [ ] https://github.com/rougier/scientific-visualization-book
   - [ ] https://github.com/rougier/scientific-visualization-book/blob/master/code/scales-projections/polar-patterns.py
 - [ ] https://lodev.org/cgtutor/xortexture.html
 - [ ] https://x.com/yuruyurau/status/1873400073255800891
+- [ ] https://bsky.app/profile/sconradi.bsky.social/post/3lh7wantozs27
+- [ ] https://www-users.cse.umn.edu/~arnold/complex.html
+- [ ] https://stackoverflow.com/a/20958684/11296354
+- [ ] https://x.com/XorDev/status/1894105806267711499
 # Rosetta Code
 - [ ] https://cses.fi/problemset/
 - [ ] https://rosettacode.org/wiki/Averages/Pythagorean_means
