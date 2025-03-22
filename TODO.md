@@ -225,6 +225,7 @@ o → o → o
 - [ ] https://www.skybluetrades.net/blog/category/data-analysis.html
 - [ ] https://rafalab.dfci.harvard.edu/pages/harvardx.html
 - [ ] https://en.wikipedia.org/wiki/Montgomery_modular_multiplication
+- [ ] https://www.quantumcalculus.org/the-5-lines-of-cohomology/
 - [ ] https://code.jsoftware.com/wiki/User:John_Randall/FourierTransformAndPolynomialMultiplication
 - [ ] cute. https://en.wikipedia.org/wiki/Stirling_number#As_inverse_matrices
 - [ ] https://rosettacode.org/wiki/Cyclotomic_polynomial#Haskell
