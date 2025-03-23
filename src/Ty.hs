@@ -56,6 +56,7 @@ data TyE a = IllScoped a !(Nm a)
            | MatchShFailed !(Sh a) !(Sh a)
            | MatchIFailed !F !(I a) !(I a)
            | Doesn'tSatisfy a (T a) !C
+           | CV a (T a) !C
            | NegIx a Int
            deriving (Generic)
 
@@ -85,6 +86,7 @@ instance Pretty a => Pretty (TyE a) where
     pretty (MatchIFailed f i i')   = pretty f <+> "Failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
     pretty (Doesn'tSatisfy l ty c) = located l$ squotes (pretty ty) <+> "is not a member of class" <+> pretty c
     pretty (NegIx l i)             = located l$ "negative index" <+> pretty i
+    pretty (CV l t c)              = located l$squotes (pretty t) <+> "violates constraint" <+> pretty c
 
 instance (Pretty a) => Show (TyE a) where
     show = show . pretty
@@ -163,7 +165,7 @@ maM _ I I                           = Right mempty
 maM _ F F                           = Right mempty
 maM _ B B                           = Right mempty
 maM _ (TV n c) (TV n' c') | n == n' = undefined
-maM _ (TV (Nm _ (U i) l) c) t       | Just e <- (l,t) `enforcesn't` c = Left e
+maM _ t'@(TV (Nm _ (U i) l) c) t    | Just e <- (l,t) `enforcesn't` c = Left e
                                     | otherwise = Right $ Subst (IM.singleton i t) IM.empty IM.empty
 maM _ (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM LF t0 t0' <*> maM RF t1 t1' -- TODO: use <\> over <>
 maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
@@ -456,9 +458,6 @@ scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
 mguZ AF=mguI RF; mguZ f=mguI f
 
-(|\) :: Ord a => S.Set a -> S.Set a -> S.Set a
-(|\) = S.symmetricDifference
-
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0@Arrow{} t1) (Arrow t0' t1') = do
     -- FIXME: dimension variables (bound in ug.) need to agree (we don't support ragged arrays)
@@ -476,8 +475,13 @@ mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
 mgu _ _ s I I = pure (I, s)
 mgu _ _ s F F = pure (F, s)
 mgu _ _ s B B = pure (B, s)
+-- FIXME: frange allowed have I< I is Li #n
+-- see line 495 for how to handle?
+-- mgu LF (l,e) _ t@Li{} I = throwError $ UF l e t I
+-- mgu LF (l,e) _ I t@Li{} = throwError $ UF l e I t
 mgu _ _ s Li{} I = pure (I, s)
 mgu _ _ s I Li{} = pure (I, s)
+-- IZ always from literals
 mgu _ _ s (IZ _ n) I = pure (I, iTS n I s)
 mgu _ _ s I (IZ _ n) = pure (I, iTS n I s)
 mgu _ _ s (IZ _ n) F = pure (F, iTS n F s)
@@ -494,27 +498,29 @@ mgu f _ s (IZ i0 n0) (Li i1) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$
 mgu _ _ s (TV n c) t1@Li{} = if S.null c then pure (t1, iTS n t1 s) else pure (I, iTS n I s)
 mgu _ _ s t0@Li{} (TV n c) = if S.null c then pure (t0, iTS n t0 s) else pure (I, iTS n I s)
 mgu f _ s (IZ i0 n0) (IZ i1 n1) | n0/=n1 = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, iTS n1 t$wI iS s)}
--- FIXME: what if a is later discovered to be int from propagating int->a
+-- TODO: if C HasBits, force I (Li (?))
 mgu _ _ s t0@(IZ _ n0) (TV n1 c) | n0/=n1 = if S.null c then pure (t0, iTS n1 t0 s) else let t=TV n1 (S.insert IsZ c) in pure (t, iTS n0 t s)
                                  | otherwise = error "unexpected."
 mgu _ _ s (TV n0 c) t1@(IZ _ n1) | n0/=n1 = if S.null c then pure (t1, iTS n0 t1 s) else let t=TV n0 (S.insert IsZ c) in pure (t, iTS n1 t s)
                                  | otherwise = error "unexpected."
 -- FIXME ug. is higher-rank on indices 😬
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
-mgu _ _ s t@(TV n c) (TV n' c') | n == n' = if S.null (c|\c') then pure (t, s) else undefined
+mgu _ _ s t@(TV n c) (TV n' c') | n == n' = let t'=TV n (c<>c') in pure (t', iTS n t' s)
 mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
-    | S.null (c' S.\\ c) = pure (t, iTS n1 t s)
-    | S.null (c S.\\ c') = pure (t', iTS n0 t' s)
-    | otherwise = undefined
-mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
-mgu f l s (Arr i t@(TV n c)) (TV n' c') | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
+    | c' `S.isSubsetOf` c = pure (t, iTS n1 t s)
+    | c `S.isSubsetOf` c' = pure (t', iTS n0 t' s)
+    | otherwise = let t''=TV n0 (c<>c') in pure (t'', iTS n0 t'' (iTS n1 t'' s))
+mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = undefined
+mgu f l s (Arr i (TV n c)) t@(TV n' c') | n'==n = undefined
+mgu f l s t@(TV n c) (Arr i (TV n' c')) | IsZ `S.member` c = (t,) <$>scalar f l s i
+mgu f l s (Arr i (TV n c)) t@(TV n' c') | IsZ `S.member` c' = (t,) <$> scalar f l s i
 mgu _ (l,_) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
 mgu _ (l,_) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
-mgu _ (l, e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
-mgu _ (l, e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
--- TODO: if t' is a TV, it could be an array! (so sh could eat sh'++sh part of t')
+mgu _ (l,e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
+mgu _ (l,e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
+-- TODO: if t' is a TV, it could be an array (sh could eat sh'++sh part of t')
 mgu f l s (Arr sh t) (Arr sh' t') = do
     (t'', s0) <- mgu f l s t t'
     (sh'', s1) <- mgShPrep f (fst l) s0 sh sh'
@@ -541,20 +547,20 @@ mgu f l s t@P{} t'@Ρ{} = mgu f l s t' t
 mgu _ l s (Ρ n rs) (Ρ n' rs') = do
     (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep LF l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     let t=Ρ n' (rs<>rs') in pure (t, iTS n t rss)
-mgu _ (l, e) _ t0@Ρ{} t1 = throwError $ UF l e t0 t1
-mgu _ (l, e) _ t0 t1@Ρ{} = throwError $ UF l e t0 t1
-mgu _ (l, e) _ t0@Li{} t1 = throwError $ UF l e t0 t1
-mgu _ (l, e) _ t0 t1@Li{} = throwError $ UF l e t0 t1
-mgu _ (l, e) _ t0@IZ{} t1 = throwError $ UF l e t0 t1
-mgu _ (l, e) _ t0 t1@IZ{} = throwError $ UF l e t0 t1
-mgu _ (l, e) _ B t1 = throwError $ UF l e B t1
-mgu _ (l, e) _ t0 B = throwError $ UF l e t0 B
-mgu _ (l, e) _ F t1 = throwError $ UF l e F t1
-mgu _ (l, e) _ t0 F = throwError $ UF l e t0 F
-mgu _ (l, e) _ I t1 = throwError $ UF l e I t1
-mgu _ (l, e) _ t0 I = throwError $ UF l e t0 I
-mgu _ (l, e) _ t0@P{} t1 = throwError $ UF l e t0 t1
-mgu _ (l, e) _ t0 t1@P{} = throwError $ UF l e t0 t1
+mgu _ (l,e) _ t0@Ρ{} t1 = throwError $ UF l e t0 t1
+mgu _ (l,e) _ t0 t1@Ρ{} = throwError $ UF l e t0 t1
+mgu _ (l,e) _ t0@Li{} t1 = throwError $ UF l e t0 t1
+mgu _ (l,e) _ t0 t1@Li{} = throwError $ UF l e t0 t1
+mgu _ (l,e) _ t0@IZ{} t1 = throwError $ UF l e t0 t1
+mgu _ (l,e) _ t0 t1@IZ{} = throwError $ UF l e t0 t1
+mgu _ (l,e) _ B t1 = throwError $ UF l e B t1
+mgu _ (l,e) _ t0 B = throwError $ UF l e t0 B
+mgu _ (l,e) _ F t1 = throwError $ UF l e F t1
+mgu _ (l,e) _ t0 F = throwError $ UF l e t0 F
+mgu _ (l,e) _ I t1 = throwError $ UF l e I t1
+mgu _ (l,e) _ t0 I = throwError $ UF l e t0 I
+mgu _ (l,e) _ t0@P{} t1 = throwError $ UF l e t0 t1
+mgu _ (l,e) _ t0 t1@P{} = throwError $ UF l e t0 t1
 
 zSt _ s [] _           = pure ([], s)
 zSt _ s _ []           = pure ([], s)
@@ -902,9 +908,9 @@ chkE t@Arrow{} = if hasE t then Left (ExistentialArg t) else Right ()
 chkE _         = Right ()
 
 enforcesn't :: (a, T a) -> S.Set C -> Maybe (TyE a)
-enforcesn't (l,TV{}) c   = undefined
-enforcesn't (l,t@IZ{}) c = if HasBits `S.member` c then Just$Doesn'tSatisfy l t HasBits else Nothing
-enforcesn't x c          = x `satisfiesn't` c
+enforcesn't (l,t@(TV _ cϵ)) c = if c `S.isSubsetOf` cϵ then Nothing else Just (CV l t (S.findMin c))
+enforcesn't (l,t@IZ{}) c      = if HasBits `S.member` c then Just$CV l t HasBits else Nothing
+enforcesn't x c               = x `satisfiesn't` c
 
 satisfiesn't :: (a, T a) -- ^ Not a type variable
              -> S.Set C -> Maybe (TyE a)
