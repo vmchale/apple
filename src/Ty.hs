@@ -486,30 +486,31 @@ mgu _ _ s I (TV n _) = pure (I, iTS n I s)
 mgu _ _ s (TV n _) I = pure (I, iTS n I s)
 mgu _ (l,_) s t@(TV n c) F = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
 mgu _ (l,_) s F t@(TV n c) = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
-mgu _ _ s t0@(IZ _ n0) (TV n1 c) | n0/=n1 = if S.null c then pure (t0, iTS n1 t0 s) else let t=TV n1 (S.insert IsZ c) in pure (t, iTS n1 t s)
-                                 | otherwise = error "?? uh-oh."
-mgu _ _ s (TV n0 c) t1@(IZ _ n1) | n0/=n1 = if S.null c then pure (t1, iTS n0 t1 s) else let t=TV n0 (S.insert IsZ c) in pure (t, iTS n0 t s)
-                                 | otherwise = error "?? uh-oh."
-                                 -- constraints arise from >, +, etc.
-mgu _ _ s (TV n c) t1@Li{} = if S.null c then pure (t1, iTS n t1 s) else pure (I, iTS n I s)
-mgu _ _ s t0@Li{} (TV n c) = if S.null c then pure (t0, iTS n t0 s) else pure (I, iTS n I s)
+mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
+mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguZ f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
+                                 -- constraints arise from >, +, &. so we should not propagate index constraints
 mgu f _ s (Li i0) (IZ i1 n) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, iTS n t$wI iS s)}
 mgu f _ s (IZ i0 n0) (Li i1) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, iTS n0 t$wI iS s)}
-mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
+mgu _ _ s (TV n c) t1@Li{} = if S.null c then pure (t1, iTS n t1 s) else pure (I, iTS n I s)
+mgu _ _ s t0@Li{} (TV n c) = if S.null c then pure (t0, iTS n t0 s) else pure (I, iTS n I s)
 mgu f _ s (IZ i0 n0) (IZ i1 n1) | n0/=n1 = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, iTS n1 t$wI iS s)}
-mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguZ f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
+-- FIXME: what if a is later discovered to be int from propagating int->a
+mgu _ _ s t0@(IZ _ n0) (TV n1 c) | n0/=n1 = if S.null c then pure (t0, iTS n1 t0 s) else let t=TV n1 (S.insert IsZ c) in pure (t, iTS n0 t s)
+                                 | otherwise = error "unexpected."
+mgu _ _ s (TV n0 c) t1@(IZ _ n1) | n0/=n1 = if S.null c then pure (t1, iTS n0 t1 s) else let t=TV n0 (S.insert IsZ c) in pure (t, iTS n1 t s)
+                                 | otherwise = error "unexpected."
 -- FIXME ug. is higher-rank on indices 😬
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
 mgu _ _ s t@(TV n c) (TV n' c') | n == n' = if S.null (c|\c') then pure (t, s) else undefined
-mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
-mgu f l s (Arr i t@(TV n c)) (TV n' c') | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
 mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
     | S.null (c' S.\\ c) = pure (t, iTS n1 t s)
     | S.null (c S.\\ c') = pure (t', iTS n0 t' s)
     | otherwise = undefined
-mgu _ (l, _) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
+mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
+mgu f l s (Arr i t@(TV n c)) (TV n' c') | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
+mgu _ (l,_) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
-mgu _ (l, _) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
+mgu _ (l,_) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
 mgu _ (l, e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
 mgu _ (l, e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
