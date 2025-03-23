@@ -7,10 +7,10 @@ import           Control.Applicative (Alternative (..))
 import           Control.DeepSeq     (NFData)
 import           Data.Foldable       (asum)
 import           GHC.Generics        (Generic)
-import           Prettyprinter       (Pretty (..), squotes, (<+>))
+import           Prettyprinter       (Pretty (..), parens, squotes, (<+>))
 import           Sh
 
-data RE = MR (E (T ())) (T ()) | Unflat (E (T ())) (T ()) | UT (E (T ())) (T ()) | IS (Sh ()) deriving (Generic)
+data RE = MR (E (T ())) (T ()) | Unflat (E (T ())) (T ()) | UT (E (T ())) (T ()) | IS (Sh ()) | Rg (E (T ())) (Sh ()) deriving (Generic)
 
 instance NFData RE where
 
@@ -19,13 +19,30 @@ instance Pretty RE where
     pretty (Unflat e t) = "Error in expression" <+> squotes (pretty e) <+> "of type" <+> squotes (pretty t) <> ": arrays of functions are not supported."
     pretty (UT e t)     = "Type" <+> squotes (pretty t) <+> "of expression" <+> squotes (pretty e) <+> "tuples of arrays of tuples are not supported"
     pretty (IS s)       = "𝔯 requires statically known dimensions; inferred shape" <+> squotes (pretty s)
+    pretty (Rg e s)       = "Error in expressoin" <+> squotes (pretty e) <+> ": ragged arrays are not permitted" <+> parens ("shape" <+> squotes (pretty s) <+> "has an existential in an inner dimension.")
 
 check = cM
 
+ex :: I a -> Bool
+ex IEVar{}           = True
+ex IVar{}            = False
+ex (StaPlus _ i0 i1) = ex i0||ex i1
+ex (StaMul _ i0 i1)  = ex i0||ex i1
+ex Ix{}              = False
+
+unrollM :: Sh () -> Maybe [I ()]
+unrollM (i `Cons` sh) = (i:) <$> unrollM sh
+unrollM _             = Nothing
+
+gr :: Sh () -> Maybe (Sh ())
+gr sh | Just i <- unrollM sh, all ex i = Just sh | otherwise = Nothing
+
 cM :: E (T ()) -> Maybe RE
-cM e | Just t <- mrT (eAnn e) = Just (MR e t)
-cM e | Just t <- flT (eAnn e) = Just (Unflat e t)
-cM e | Just t <- ata (eAnn e) = Just (UT e t)
+cM e | Just t <- mrT ty = Just (MR e t)
+     | Just t <- flT ty = Just (Unflat e t)
+     | Just t <- ata ty = Just (UT e t)
+     | Arr sh _ <- ty, Just x <- gr sh = Just (Rg e x)
+     where ty=eAnn e
 cM (Builtin (Arrow _ (Arrow _ (Arr sh _))) R) | dynSh sh = Just (IS sh)
 cM (Let _ (_, e) e') = cM e <|> cM e'
 cM (LLet _ (_, e) e') = cM e <|> cM e'
