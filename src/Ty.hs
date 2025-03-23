@@ -512,12 +512,12 @@ mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
     | otherwise = let t''=TV n0 (c<>c') in pure (t'', iTS n0 t'' (iTS n1 t'' s))
 mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = undefined
 mgu f l s (Arr i (TV n c)) t@(TV n' c') | n'==n = undefined
-mgu f l s t@(TV n c) (Arr i (TV n' c')) | IsZ `S.member` c = (t,) <$>scalar f l s i
-mgu f l s (Arr i (TV n c)) t@(TV n' c') | IsZ `S.member` c' = (t,) <$> scalar f l s i
+mgu f l s (TV n c) (Arr i (TV n' c'))  | IsZ `S.member` c = let t=TV n (c<>c') in do {s' <- scalar f l s i; pure (t, iTS n' t$iTS n t s')}
+mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `S.member` c' = let t=TV n' (c<>c') in do {s' <- scalar f l s i; pure (t, iTS n t$iTS n' t s')}
 mgu _ (l,_) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
-                                          | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
+                                         | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
 mgu _ (l,_) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
-                                          | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
+                                         | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
 mgu _ (l,e) _ t0@Arrow{} t1 = throwError $ UF l e t0 t1
 mgu _ (l,e) _ t0 t1@Arrow{} = throwError $ UF l e t0 t1
 -- TODO: if t' is a TV, it could be an array (sh could eat sh'++sh part of t')
