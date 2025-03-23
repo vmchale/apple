@@ -478,34 +478,34 @@ mgu _ _ s F F = pure (F, s)
 mgu _ _ s B B = pure (B, s)
 mgu _ _ s Li{} I = pure (I, s)
 mgu _ _ s I Li{} = pure (I, s)
-mgu _ _ s (IZ _ (Nm _ (U j) _)) I = pure (I, uTS j I s)
-mgu _ _ s I (IZ _ (Nm _ (U j) _)) = pure (I, uTS j I s)
-mgu _ _ s (IZ _ (Nm _ (U j) _)) F = pure (F, uTS j F s)
-mgu _ _ s F (IZ _ (Nm _ (U j) _)) = pure (F, uTS j F s)
-mgu _ _ s I (TV (Nm _ (U i) _) _) = pure (I, uTS i I s)
-mgu _ _ s (TV (Nm _ (U j) _) _) I = pure (I, uTS j I s)
-mgu _ (l,_) s t@(TV (Nm _ (U i) _) c) F = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, uTS i F s)
-mgu _ (l,_) s F t@(TV (Nm _ (U i) _) c) = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, uTS i F s)
-mgu _ _ s t0@(IZ _ n0) (TV n1@(Nm _ (U j) _) c) | n0/=n1 = if S.null c then pure (t0, uTS j t0 s) else let t=TV n1 (S.insert IsZ c) in pure (t, uTS j t s)
-                                                | otherwise = error "?? uh-oh."
-mgu _ _ s (TV n0@(Nm _ (U j) _) c) t1@(IZ _ n1) | n0/=n1 = if S.null c then pure (t1, uTS j t1 s) else let t=TV n0 (S.insert IsZ c) in pure (t, uTS j t s)
-                                                | otherwise = error "?? uh-oh."
-                                          -- constraints arise from >, +, etc.
-mgu _ _ s (TV (Nm _ (U i) _) c) t1@Li{} = if S.null c then pure (t1, uTS i t1 s) else pure (I, uTS i I s)
-mgu _ _ s t0@Li{} (TV (Nm _ (U i) _) c) = if S.null c then pure (t0, uTS i t0 s) else pure (I, uTS i I s)
-mgu f _ s (Li i0) (IZ i1 (Nm _ (U j) _)) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
-mgu f _ s (IZ i0 (Nm _ (U j) _)) (Li i1) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, uTS j t$wI iS s)}
+mgu _ _ s (IZ _ n) I = pure (I, iTS n I s)
+mgu _ _ s I (IZ _ n) = pure (I, iTS n I s)
+mgu _ _ s (IZ _ n) F = pure (F, iTS n F s)
+mgu _ _ s F (IZ _ n) = pure (F, iTS n F s)
+mgu _ _ s I (TV n _) = pure (I, iTS n I s)
+mgu _ _ s (TV n _) I = pure (I, iTS n I s)
+mgu _ (l,_) s t@(TV n c) F = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
+mgu _ (l,_) s F t@(TV n c) = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
+mgu _ _ s t0@(IZ _ n0) (TV n1 c) | n0/=n1 = if S.null c then pure (t0, iTS n1 t0 s) else let t=TV n1 (S.insert IsZ c) in pure (t, iTS n1 t s)
+                                 | otherwise = error "?? uh-oh."
+mgu _ _ s (TV n0 c) t1@(IZ _ n1) | n0/=n1 = if S.null c then pure (t1, iTS n0 t1 s) else let t=TV n0 (S.insert IsZ c) in pure (t, iTS n0 t s)
+                                 | otherwise = error "?? uh-oh."
+                                 -- constraints arise from >, +, etc.
+mgu _ _ s (TV n c) t1@Li{} = if S.null c then pure (t1, iTS n t1 s) else pure (I, iTS n I s)
+mgu _ _ s t0@Li{} (TV n c) = if S.null c then pure (t0, iTS n t0 s) else pure (I, iTS n I s)
+mgu f _ s (Li i0) (IZ i1 n) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, iTS n t$wI iS s)}
+mgu f _ s (IZ i0 n0) (Li i1) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, iTS n0 t$wI iS s)}
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
-mgu f _ s (IZ i0 n0) (IZ i1 n1@(Nm _ (U u) _)) | n0/=n1 = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, uTS u t$wI iS s)}
+mgu f _ s (IZ i0 n0) (IZ i1 n1) | n0/=n1 = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, iTS n1 t$wI iS s)}
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguZ f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
 -- FIXME ug. is higher-rank on indices 😬
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
 mgu _ _ s t@(TV n c) (TV n' c') | n == n' = if S.null (c|\c') then pure (t, s) else undefined
 mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
 mgu f l s (Arr i t@(TV n c)) (TV n' c') | n'==n = if S.null (c|\c') then (t,) <$> scalar f l s i else undefined
-mgu _ _ s t@(TV (Nm _ (U i) _) c) t'@(TV (Nm _ (U j) _) c')
-    | S.null (c' S.\\ c) = pure (t, uTS j t s)
-    | S.null (c S.\\ c') = pure (t', uTS i t' s)
+mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
+    | S.null (c' S.\\ c) = pure (t, iTS n1 t s)
+    | S.null (c S.\\ c') = pure (t', iTS n0 t' s)
     | otherwise = undefined
 mgu _ (l, _) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
                                           | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e

@@ -568,9 +568,7 @@ newIdentAlex pos t = do
     alexSetUserState st' $> n
 
 freshIdent :: AlexPosn -> T.Text -> Int -> (Int, Nm AlexPosn)
-freshIdent pos t max' =
-    let i=max'+1; nm=Nm t (U i) pos
-        in (i, nm)
+freshIdent pos t max' = let i=max'+1; nm=Nm t (U i) pos in (i, nm)
 
 newIdent :: AlexPosn -> T.Text -> AlexUserState -> (AlexUserState, Nm AlexPosn)
 newIdent pos t pre@(max', ns, us) =
