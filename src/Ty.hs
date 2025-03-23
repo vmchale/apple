@@ -165,8 +165,8 @@ maM _ I I                           = Right mempty
 maM _ F F                           = Right mempty
 maM _ B B                           = Right mempty
 maM _ (TV n c) (TV n' c') | n == n' = undefined
-maM _ t'@(TV (Nm _ (U i) l) c) t    | Just e <- (l,t) `enforcesn't` c = Left e
-                                    | otherwise = Right $ Subst (IM.singleton i t) IM.empty IM.empty
+maM _ (TV (Nm _ (U i) l) c) t    | Just e <- (l,t) `enforcesn't` c = Left e
+                                 | otherwise = Right $ Subst (IM.singleton i t) IM.empty IM.empty
 maM _ (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM LF t0 t0' <*> maM RF t1 t1' -- TODO: use <\> over <>
 maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
 maM f (Arr sh t) t'                 = (<>) <$> mSh f sh Nil <*> maM f t t'
