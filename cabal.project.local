@@ -1,4 +1,1 @@
 multi-repl: True
-
-allow-newer:
-  *:containers

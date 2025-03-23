@@ -9,7 +9,7 @@ import qualified Data.IntSet       as IS
 import           Prettyprinter     (Pretty (pretty), braces, punctuate, (<+>))
 import           Prettyprinter.Ext
 
-data Liveness = Liveness { ins, out, fins, fout :: !IS.IntSet } deriving Eq
+data Liveness = Liveness { ins, out, fins, fout :: !IS.IntSet }
 
 data NLiveness = NLiveness { nx :: Int, liveness :: !Liveness }
 
