@@ -137,7 +137,7 @@ mI f (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI f i (Ix l (iϵ-j))
 mI f (StaPlus _ (Ix _ iϵ) i) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ (Ix _ j) i) | iϵ >= j = mI f i (Ix l (iϵ-j))
-mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent, should enter confessional error context
+mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent... confessional error context
 mI f (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent
 
 mSh :: F -> Sh a -> Sh a -> Either (TyE a) (Subst a)
@@ -558,7 +558,6 @@ mgu _ (l,e) _ t0 F = throwError $ UF l e t0 F
 mgu _ (l,e) _ I t1 = throwError $ UF l e I t1
 mgu _ (l,e) _ t0 I = throwError $ UF l e t0 I
 mgu _ (l,e) _ t0@P{} t1 = throwError $ UF l e t0 t1
-mgu _ (l,e) _ t0 t1@P{} = throwError $ UF l e t0 t1
 
 zSt _ s [] _           = pure ([], s)
 zSt _ s _ []           = pure ([], s)
@@ -781,8 +780,7 @@ tyB l (Rank as) = do
         fTy = foldr (~>) cod $ zipWith3 (\ax sh t -> case ax of {(_,Nothing) -> Arr (trim sh) t;(_,Just axs) -> Arr (sel axs sh) t}) as shs vs
         rTy = foldr (~>) codTy mArrs
         shsU = zipWith (\ax sh -> case ax of {(n,Nothing) -> tydrop n sh;(_,Just axs) -> del axs sh}) as shs
-        -- wait right-focus?
-        shUHere sh sh' = fmap snd (liftU $ mgShPrep RF l mempty (sh$>l) (sh'$>l))
+        shUHere sh sh' = fmap snd (liftU $ mgShPrep AF l mempty (sh$>l) (sh'$>l))
     s <- zipWithM shUHere shsU (tail shsU++[codSh])
     pure (fTy ~> rTy, mconcat s)
 tyB _ Fold = do
