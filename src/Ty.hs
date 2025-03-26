@@ -460,6 +460,8 @@ scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
 mguZ AF=mguI RF; mguZ f=mguI f
 
+φ (n0,c0) (n1,c1) s = do {n <- nI (loc n0); let t=TV n (c0<>c1) in pure (t, iTS n0 t$iTS n1 t s)}
+
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0@Arrow{} t1) (Arrow t0' t1') = do
     -- FIXME: dimension variables (bound in ug.) need to agree (we don't support ragged arrays)
@@ -507,15 +509,15 @@ mgu _ _ s (TV n0 c) t1@(IZ _ n1) | n0/=n1 = if S.null c then pure (t1, iTS n0 t1
                                  | otherwise = error "unexpected."
 -- FIXME ug. is higher-rank on indices 😬
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
-mgu _ _ s t@(TV n c) (TV n' c') | n == n' = let t'=TV n (c<>c') in pure (t', iTS n t' s)
+mgu _ _ s (TV n c) (TV n' c') | n == n' = do {m <- nI (loc n); let t'=TV m (c<>c') in pure (t', iTS n t' s)}
 mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
     | c' `S.isSubsetOf` c = pure (t, iTS n1 t s)
     | c `S.isSubsetOf` c' = pure (t', iTS n0 t' s)
-    | otherwise = let t''=TV n0 (c<>c') in pure (t'', iTS n0 t'' (iTS n1 t'' s))
+    | otherwise = φ (n0,c) (n1,c') s
 mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = undefined
 mgu f l s (Arr i (TV n c)) t@(TV n' c') | n'==n = undefined
-mgu f l s (TV n c) (Arr i (TV n' c'))  | IsZ `S.member` c = let t=TV n (c<>c') in do {s' <- scalar f l s i; pure (t, iTS n' t$iTS n t s')}
-mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `S.member` c' = let t=TV n' (c<>c') in do {s' <- scalar f l s i; pure (t, iTS n t$iTS n' t s')}
+mgu f l s (TV n c) (Arr i (TV n' c'))  | IsZ `S.member` c = scalar f l s i >>= φ (n,c) (n',c')
+mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `S.member` c' = scalar f l s i >>= φ (n,c) (n',c')
 mgu _ (l,_) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
                                          | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
 mgu _ (l,_) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
