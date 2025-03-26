@@ -516,7 +516,7 @@ mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
     | otherwise = φ (n0,c) (n1,c') s
 mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = undefined
 mgu f l s (Arr i (TV n c)) t@(TV n' c') | n'==n = undefined
-mgu f l s (TV n c) (Arr i (TV n' c'))  | IsZ `S.member` c = scalar f l s i >>= φ (n,c) (n',c')
+mgu f l s (TV n c) (Arr i (TV n' c')) | IsZ `S.member` c = scalar f l s i >>= φ (n,c) (n',c')
 mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `S.member` c' = scalar f l s i >>= φ (n,c) (n',c')
 mgu _ (l,_) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
                                          | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
@@ -547,9 +547,12 @@ mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f 
 mgu f l@(lϵ, e) s t@(Ρ (Nm _ (U j) _) rs) t'@(P ts) | j `IS.notMember` (occ@<>ts) && length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (uTS j t') <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
                                                     | otherwise = throwError $ UF lϵ e t t'
 mgu f l s t@P{} t'@Ρ{} = mgu f l s t' t
-mgu _ l s (Ρ n rs) (Ρ n' rs') = do
+mgu _ l s t@(Ρ (Nm _ (U i) x) rs) t'@(Ρ (Nm _ (U j) _) rs') | i `IS.notMember` (occ@<> rs') && j `IS.notMember` (occ@<>rs) = do
     (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep LF l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
-    let t=Ρ n' (rs<>rs') in pure (t, iTS n t rss)
+    n<-nI x
+    let t''=Ρ n (rs<>rs')
+    pure (t'', uTS i t'$uTS j t'' rss)
+                                                            | otherwise = throwError $ OT (fst l) t t'
 mgu _ (l,e) _ t0@Ρ{} t1 = throwError $ UF l e t0 t1
 mgu _ (l,e) _ t0 t1@Ρ{} = throwError $ UF l e t0 t1
 mgu _ (l,e) _ t0@Li{} t1 = throwError $ UF l e t0 t1
