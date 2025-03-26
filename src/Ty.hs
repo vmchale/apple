@@ -544,15 +544,16 @@ mgu f l s t'@Li{} (Arr n t) = scalarStep f l s n t' t
 mgu f l s (Arr n t) t'@IZ{} = scalarStep f l s n t t'
 mgu f l s t'@IZ{} (Arr n t) = scalarStep f l s n t' t
 mgu f l s (P ts) (P ts') | length ts == length ts' = first P <$> zSt (mguPrep f l) s ts ts'
-mgu f l@(lϵ, e) s t@(Ρ (Nm _ (U j) _) rs) t'@(P ts) | j `IS.notMember` (occ@<>ts) && length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (uTS j t') <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
+mgu f l@(lϵ, e) s t@(Ρ (Nm _ (U j) _) rs) t'@(P ts) | j `IS.member` (occ@<>ts) = throwError $ OT lϵ t t'
+                                                    | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (uTS j t') <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
                                                     | otherwise = throwError $ UF lϵ e t t'
 mgu f l s t@P{} t'@Ρ{} = mgu f l s t' t
-mgu _ l s t@(Ρ (Nm _ (U i) x) rs) t'@(Ρ (Nm _ (U j) _) rs') | i `IS.notMember` (occ@<> rs') && j `IS.notMember` (occ@<>rs) = do
+mgu _ l@(lϵ,_) s t@(Ρ (Nm _ (U i) x) rs) t'@(Ρ (Nm _ (U j) _) rs') | i `IS.notMember` (occ@<> rs') && j `IS.notMember` (occ@<>rs) = do
     (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep LF l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     n<-nI x
     let t''=Ρ n (rs<>rs')
     pure (t'', uTS i t'$uTS j t'' rss)
-                                                            | otherwise = throwError $ OT (fst l) t t'
+                                                                   | otherwise = throwError $ OT lϵ t t'
 mgu _ (l,e) _ t0@Ρ{} t1 = throwError $ UF l e t0 t1
 mgu _ (l,e) _ t0 t1@Ρ{} = throwError $ UF l e t0 t1
 mgu _ (l,e) _ t0@Li{} t1 = throwError $ UF l e t0 t1
