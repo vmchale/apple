@@ -250,32 +250,32 @@ addStaEnv n t = modify (\(TySt u l v) -> TySt u (insert n t l) v)
 addPolyEnv :: Nm a -> T () -> TyM a ()
 addPolyEnv n t = modify (\(TySt u l v) -> TySt u l (insert n t v))
 
-freshN :: T.Text -> b -> TyM a (Nm b)
-freshN n l = do {tickMaxU; st <- gets maxU; pure (Nm n (U st) l)}
+nN :: T.Text -> b -> TyM a (Nm b)
+nN n l = do {tickMaxU; st <- gets maxU; pure (Nm n (U st) l)}
 
 ft :: T.Text -> b -> TyM a (T b)
-ft n l = TV <$> freshN n l <*> pure S.empty
+ft n l = TV <$> nN n l <*> pure S.empty
 
 fsh :: T.Text -> TyM a (Sh ())
-fsh n = SVar <$> freshN n ()
+fsh n = SVar <$> nN n ()
 
 fc :: T.Text -> C -> TyM a (T ())
-fc n c = do {nϵ <- freshN n (); pure $ TV nϵ (S.singleton c)}
+fc n c = do {nϵ <- nN n (); pure $ TV nϵ (S.singleton c)}
 
 fz, fb, fo :: TyM a (T ())
 fz = fc "a" IsZ; fb = fc "a" HasBits; fo = fc "o" IsOrd
 
 fn :: Integer -> TyM a (T ())
-fn n = IZ (Ix()$fromInteger n)<$>freshN "n" ()
+fn n = IZ (Ix()$fromInteger n)<$>nN "n" ()
 
 ftv :: T.Text -> TyM a (T ())
 ftv n = ft n ()
 
 fti :: T.Text -> TyM a (I ())
-fti n = IVar () <$> freshN n ()
+fti n = IVar () <$> nN n ()
 
 ftie :: TyM a (I ())
-ftie = IEVar () <$> freshN "n" ()
+ftie = IEVar () <$> nN "n" ()
 
 mapTySubst f (Subst t i sh) = Subst (f t) i sh
 
@@ -755,7 +755,7 @@ tyB _ Succ = do
     let opTy = a ~> (a ~> b)
     pure (opTy ~> (Arr ((i+:Ix () 1) <| sh) a ~> Arr (i <| sh) b), mempty)
 tyB _ (TAt i) = do
-    ρ <- freshN "ρ" ()
+    ρ <- nN "ρ" ()
     a <- ftv "a"
     pure (Ρ ρ (IM.singleton i a) ~> a, mempty)
 tyB _ Map = do
