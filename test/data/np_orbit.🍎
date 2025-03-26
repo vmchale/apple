@@ -1,0 +1,6 @@
+λa.λb.
+{
+  unzip ← [{a⟜x;((->1)`{0} a, (->2)`{0} a)}];
+  g ← λ(x,y). (sin. (x^2-y^2+a), cos. (2*x*y+b));
+  unzip ((frange _1 1 500) [(gen. (x,y) g 200)]⊗ (frange _1 1 500))
+}
