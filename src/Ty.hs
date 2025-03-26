@@ -35,6 +35,10 @@ import           U
 
 infixl 7 \-
 infixl 6 @@
+infixr 5 <||
+infixr 5 <|
+
+(<|) = Cons
 
 data TySt a = TySt { maxU :: !Int, staEnv, polyEnv :: IM.IntMap (T ()) }
 
@@ -400,8 +404,8 @@ mgSh f l s sh0@Cons{} sh1@(Cat shh shϵ) | (is, Nil) <- unroll sh0, (isϵ, Nil) 
       then throwError $ USh l sh0 sh1
       else let (ish, isϵ') = splitFromLeft (n-nϵ) is
            in do
-              (_, s0) <- mgSh f l s shh (iroll ish)
-              (_, s1) <- mgShPrep f l s0 (iroll isϵ') shϵ
+              (_, s0) <- mgSh f l s shh (ish<||Nil)
+              (_, s1) <- mgShPrep f l s0 (isϵ'<||Nil) shϵ
               pure (sh0, s1)
 mgSh f l s sh0@Cat{} sh1@Cons{} = mgSh f l s sh1 sh0
 mgSh _ l _ sh0@Cons{} sh1 = throwError $ UShD l sh0 sh1
@@ -571,7 +575,7 @@ tS :: Monad m => (Subst a -> b -> m (x, Subst a)) -> Subst a -> [b] -> m ([x], S
 tS _ s []     = pure ([], s)
 tS f s (t:ts) = do{(tϵ, next) <- f s t; first (tϵ:) <$> tS f next ts}
 
-vx = (`Cons` Nil)
+vx = (<| Nil)
 vV i = Arr (vx i)
 
 tyNumBinOp :: TyM a (T (), Subst a)
@@ -610,7 +614,6 @@ iroll = roll Nil
 roll :: Sh a -> [I a] -> Sh a
 roll = foldr Cons
 
-infixr 5 <||
 i <|| sh = foldr Cons sh i
 
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
@@ -627,57 +630,57 @@ tyB l Snoc = tyB l ConsE
 tyB _ Sort = do {o <- fo; i <- fti "i"; pure (vV i o~>vV i o, mempty)}
 tyB _ A1 = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr (i `Cons` sh) a ~> I ~> Arr sh a, mempty)
+    pure (Arr (i <| sh) a ~> I ~> Arr sh a, mempty)
 tyB _ I1 = do
     a <- ftv "a"; i <- fti "i"; n <- fti "n"; sh <- fsh "sh"
-    pure (vV n I ~> Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
+    pure (vV n I ~> Arr (i <| sh) a ~> Arr (n <| sh) a, mempty)
 tyB _ IOf = do
     a <- ftv "a"; i <- fti "i"
     pure ((a ~> B) ~> vV i a ~> I, mempty)
 tyB _ Di = do
     a <- ftv "a"; i <- fti "i"
-    pure (Arr (i `Cons` i `Cons` Nil) a ~> vV i a, mempty)
+    pure (Arr (i <| i <| Nil) a ~> vV i a, mempty)
 tyB _ LastM = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr (i `Cons` sh) a ~> Arr sh a, mempty)
+    pure (Arr (i <| sh) a ~> Arr sh a, mempty)
 tyB _ Head = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr ((i+:Ix()1) `Cons` sh) a ~> Arr sh a, mempty)
+    pure (Arr ((i+:Ix()1) <| sh) a ~> Arr sh a, mempty)
 tyB l Last = tyB l Head
 tyB _ Init = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr ((i+:Ix()1) `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
+    pure (Arr ((i+:Ix()1) <| sh) a ~> Arr (i <| sh) a, mempty)
 tyB _ InitM = do
     a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
-    pure (Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
+    pure (Arr (i <| sh) a ~> Arr (n <| sh) a, mempty)
 tyB l Tail = tyB l Init
 tyB _ Take = do
     a <- ftv "a"; k <- fti "k"; n <- ftie; sh <- fsh "sh"
-    pure (I ~> Arr (k `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
+    pure (I ~> Arr (k <| sh) a ~> Arr (n <| sh) a, mempty)
 tyB _ Drop = do
     a <- ftv "a"; k <- fti "k"; n <- ftie; sh <- fsh "sh"
-    pure (I ~> Arr (k `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
+    pure (I ~> Arr (k <| sh) a ~> Arr (n <| sh) a, mempty)
 tyB _ Del = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr ((i+:Ix()1) `Cons` sh) a ~> I ~> Arr (i `Cons` sh) a, mempty)
+    pure (Arr ((i+:Ix()1) <| sh) a ~> I ~> Arr (i <| sh) a, mempty)
 tyB _ DelM = do
     a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
-    pure (Arr (i `Cons` sh) a ~> I ~> Arr (n `Cons` sh) a, mempty)
+    pure (Arr (i <| sh) a ~> I ~> Arr (n <| sh) a, mempty)
 tyB _ Ix'd = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr (i `Cons` sh) a ~> vV i I, mempty)
+    pure (Arr (i <| sh) a ~> vV i I, mempty)
 tyB _ TailM = do
     a <- ftv "a"; i <- fti "i"; n <- ftie; sh <- fsh "sh"
-    pure (Arr (i `Cons` sh) a ~> Arr (n `Cons` sh) a, mempty)
+    pure (Arr (i <| sh) a ~> Arr (n <| sh) a, mempty)
 tyB _ Rot = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (I ~> Arr (i `Cons` sh) a ~> Arr (i `Cons` sh) a, mempty)
+    pure (I ~> Arr (i <| sh) a ~> Arr (i <| sh) a, mempty)
 tyB _ Cyc = do
     sh <- fsh "sh"; a <- ftv "a"; i <- fti "i"; n <- fti "n"
-    pure (Arr (i `Cons` sh) a ~> Li n ~> Arr (StaMul() n i `Cons` sh) a, mempty)
+    pure (Arr (i <| sh) a ~> Li n ~> Arr (StaMul() n i <| sh) a, mempty)
 tyB _ HeadM = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    pure (Arr (i `Cons` sh) a ~> Arr sh a, mempty)
+    pure (Arr (i <| sh) a ~> Arr sh a, mempty)
 tyB _ Re = do
     a <- ftv "a"; n <- fti "n"
     pure (a ~> Li n ~> vV n a, mempty)
@@ -715,20 +718,20 @@ tyB _ Flat = do
     pure (Arr sh a ~> Arr (Π sh) a, mempty)
 tyB _ AddDim = do
     sh <- fsh "sh"; a <- ftv "a"
-    pure (Arr sh a ~> Arr (Ix()1 `Cons` sh) a, mempty)
+    pure (Arr sh a ~> Arr (Ix()1 <| sh) a, mempty)
 tyB _ CatE = do
     i <- fti "i"; j <- fti "j"
     n <- ftv "a"
     pure (vV i n ~> vV j n ~> vV (i+:j) n, mempty)
 tyB _ Scan = do
     a <- ftv "a"; i <- fti "i"; sh <- fsh "sh"
-    let arrTy = Arr ((i+:Ix() 1) `Cons` sh) a
+    let arrTy = Arr ((i+:Ix() 1) <| sh) a
     pure ((a ~> a ~> a) ~> arrTy ~> arrTy, mempty)
 tyB _ ScanS = do
     a <- ftv "a"; b <- ftv "b"
     i <- fti "i"; sh <- fsh "sh"
-    let rarrTy = Arr ((i+:Ix()1) `Cons` sh)
-    pure ((b~>a~>b) ~> b ~> Arr (i `Cons` sh) a ~> rarrTy b, mempty)
+    let rarrTy = Arr ((i+:Ix()1) <| sh)
+    pure ((b~>a~>b) ~> b ~> Arr (i <| sh) a ~> rarrTy b, mempty)
 tyB l (DI n) = tyB l (Conv [(n,Just 1)])
 tyB _ (Conv as) = do
     sh <- fsh "sh"
@@ -751,7 +754,7 @@ tyB _ Succ = do
     i <- fti "i"; sh <- fsh "sh"
     a <- ftv "a"; b <- ftv "b"
     let opTy = a ~> (a ~> b)
-    pure (opTy ~> (Arr ((i+:Ix () 1) `Cons` sh) a ~> Arr (i `Cons` sh) b), mempty)
+    pure (opTy ~> (Arr ((i+:Ix () 1) <| sh) a ~> Arr (i <| sh) b), mempty)
 tyB _ (TAt i) = do
     ρ <- freshN "ρ" ()
     a <- ftv "a"
@@ -785,23 +788,23 @@ tyB l (Rank as) = do
     pure (fTy ~> rTy, mconcat s)
 tyB _ Fold = do
     i <- fti "i"; sh <- fsh "sh"; a <- ftv "a"
-    let sh1 = (i+:Ix()1) `Cons` sh
+    let sh1 = (i+:Ix()1) <| sh
     pure ((a ~> a ~> a) ~> Arr sh1 a ~> Arr sh a, mempty)
 tyB _ FoldS = do
     i <- fti "i"; sh <- fsh "sh"; a <- ftv "a"; b <- ftv "b"
-    pure ((a ~> b ~> b) ~> b ~> Arr (i `Cons` sh) a ~> Arr sh b, mempty)
+    pure ((a ~> b ~> b) ~> b ~> Arr (i <| sh) a ~> Arr sh b, mempty)
 tyB _ Foldl = do
     ix <- fti "i"; sh <- fsh "sh"; a <- ftv "a"; b <- ftv "b"
-    pure ((b ~> a ~> b) ~> b ~> Arr (ix `Cons` sh) a ~> Arr sh b, mempty)
+    pure ((b ~> a ~> b) ~> b ~> Arr (ix <| sh) a ~> Arr sh b, mempty)
 tyB _ FoldA = do
     sh <- fsh "sh"; a <- ftv "a"
     pure ((a ~> a ~> a) ~> a ~> Arr sh a ~> a, mempty)
 tyB _ Dim = do
     iV <- fti "i"; shV <- fsh "sh"; a <- ftv "a"
-    pure (Arr (iV `Cons` shV) a ~> Li iV, mempty)
+    pure (Arr (iV <| shV) a ~> Li iV, mempty)
 tyB _ RevE = do
     iV <- fti "i"; shV <- fsh "sh"; a <- ftv "a"
-    let aTy = Arr (iV `Cons` shV) a
+    let aTy = Arr (iV <| shV) a
     pure (aTy ~> aTy, mempty)
 tyB _ Size = do
     shV <- fsh "sh"; a <- ftv "a"
@@ -814,10 +817,10 @@ tyB _ Ug = do
     pure ((b ~> P [b,a]) ~> b ~> Li n ~> vV n a, mempty)
 tyB _ Mul = do
     a <- fz; i <- fti "i"; j <- fti "j"; k <- fti "k"
-    pure (Arr (i `Cons` j `Cons` Nil) a ~> Arr (j `Cons` k `Cons` Nil) a ~> Arr (i `Cons` k `Cons` Nil) a, mempty)
+    pure (Arr (i <| j <| Nil) a ~> Arr (j <| k <| Nil) a ~> Arr (i <| k <| Nil) a, mempty)
 tyB _ VMul = do
     a <- fz; i <- fti "i"; j <- fti "j"
-    pure (Arr (i `Cons` j `Cons` Nil) a ~> vV j a ~> vV i a, mempty)
+    pure (Arr (i <| j <| Nil) a ~> vV j a ~> vV i a, mempty)
 tyB _ Sin = pure (F ~> F, mempty)
 tyB _ Cos = pure (F ~> F, mempty)
 tyB _ Tan = pure (F ~> F, mempty)
@@ -862,13 +865,13 @@ rwI i = i
 rwSh :: Sh a -> Sh a
 rwSh s@SVar{}     = s
 rwSh s@Nil        = s
-rwSh (i `Cons` s) = rwI i `Cons` rwSh s
+rwSh (i `Cons` s) = rwI i <| rwSh s
 rwSh (Cat s0 s1) | (is, Nil) <- unroll (rwSh s0), (js, Nil) <- unroll (rwSh s1) = roll Nil (is++js)
                  | otherwise = Cat (rwSh s0) (rwSh s1)
 rwSh (Rev s) | (is, Nil) <- unroll (rwSh s) = roll Nil (reverse is)
              | otherwise = Rev (rwSh s)
 rwSh (Π s) | Nil <- rwSh s = Nil
-rwSh (Π s) | Just i <- iunroll (rwSh s) = rwI i `Cons` Nil
+rwSh (Π s) | Just i <- iunroll (rwSh s) = rwI i <| Nil
            | otherwise = Π (rwSh s)
 
 rwArr :: T a -> T a
