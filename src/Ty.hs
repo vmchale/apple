@@ -386,14 +386,12 @@ mgSh f l inp Nil (Cat sh0 sh1) = do
     (_, s') <- mgShPrep f l s Nil sh1
     pure (Nil, s')
 mgSh f l inp sh0@Rev{} sh1@Π{} = do
-    i <- nIe l
-    let sh=vx i
+    sh <- vx<$>nIe l
     (_, s') <- mgSh f l inp sh sh0
     (_, s'') <- mgShPrep f l s' sh sh1
     pure (sh, s'')
 mgSh f l inp sh0@Π{} sh1@Rev{} = do
-    i <- nIe l
-    let sh=vx i
+    sh <- vx<$>nIe l
     (_, s') <- mgSh f l inp sh sh0
     (_, s'') <- mgShPrep f l s' sh sh1
     pure (sh, s'')
@@ -442,7 +440,7 @@ occ :: T a -> IS.IntSet
 occ (TV n _)     = Nm.singleton n
 occ (IZ _ n)     = Nm.singleton n
 occ (Arrow t t') = occ t <> occ t'
-occ (Arr _ a)    = occ a -- shouldn't need shape?
+occ (Arr _ a)    = occ a -- shouldn't need shape
 occ I            = IS.empty
 occ F            = IS.empty
 occ B            = IS.empty
@@ -613,6 +611,9 @@ iroll = roll Nil
 roll :: Sh a -> [I a] -> Sh a
 roll = foldr Cons
 
+infixr 5 <||
+i <|| sh = foldr Cons sh i
+
 tyB :: a -> Builtin -> TyM a (T (), Subst a)
 tyB _ Floor = pure (F ~> I, mempty); tyB _ Ceil = pure (F ~> I, mempty); tyB _ ItoF = pure (I ~> F, mempty)
 tyB _ Even = pure (I ~> B, mempty); tyB _ Odd = pure (I ~> B, mempty)
@@ -735,8 +736,8 @@ tyB _ (Conv as) = do
     is <- zipWithM (\_ t -> fti (T.singleton t)) ns ['i'..]
     a <- ftv "a"; b <- ftv "b"
     let nx = Ix () <$> ns
-        opTy = Arr (foldr Cons sh nx) a ~> b
-        t = Arrow (Arr (foldr Cons sh (zipWith3 (\dϵ iϵ n -> StaMul () dϵ (iϵ+:n)) dix is nx)) a) (Arr (foldr Cons Nil ((+:Ix()1)<$>is)) b)
+        opTy = Arr (nx <|| sh) a ~> b
+        t = Arrow (Arr ((zipWith3 (\dϵ iϵ n -> StaMul () dϵ (iϵ+:n)) dix is nx) <|| sh) a) (Arr (((+:Ix()1)<$>is) <|| Nil) b)
     pure (opTy ~> t, mempty)
   where (ns,ds) = unzip as; dix=Ix ().fromMaybe 1<$>ds
 tyB _ (Focus ns) = do
@@ -744,8 +745,8 @@ tyB _ (Focus ns) = do
     is <- zipWithM (\_ t -> fti (T.singleton t)) ns ['i'..]
     a <- ftv "a"; b <- ftv "b"
     let nx = map (Ix ()) ns
-        opTy = Arr (foldr Cons sh nx) a ~> b
-        t = Arr (foldr Cons sh (zipWith (StaMul ()) nx is)) a ~> Arr (foldr Cons Nil is) b
+        opTy = Arr (nx <|| sh) a ~> b
+        t = Arr ((zipWith (StaMul ()) nx is) <|| sh) a ~> Arr (is <|| Nil) b
     pure (opTy~>t, mempty)
 tyB _ Succ = do
     i <- fti "i"; sh <- fsh "sh"
@@ -771,7 +772,7 @@ tyB _ Zip = do
     pure (fTy ~> gTy, mempty)
 tyB l (Rank as) = do
     let ixN n = zipWithM (\_ c -> fti (T.singleton c)) [1..n] ['i'..]
-    shs <- traverse (\(i,ax) -> do {is <- ixN (maybe i maximum ax); sh <- fsh "sh"; pure $ foldr Cons sh is}) as
+    shs <- traverse (\(i,ax) -> do {is <- ixN (maybe i maximum ax); sh <- fsh "sh"; pure (is <|| sh)}) as
     vs <- zipWithM (\_ c -> ftv (T.singleton c)) as ['a'..]
     codSh <- fsh "sh"
     cod <- ftv "c"
