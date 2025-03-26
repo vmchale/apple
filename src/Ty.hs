@@ -52,9 +52,9 @@ data TyE a = IllScoped a !(Nm a)
            | OSh a !(Sh a) !(Sh a)
            | OI a !(I a) !(I a)
            | ExistentialArg (T ())
-           | MatchFailed !(T a) !(T a)
-           | MatchShFailed !(Sh a) !(Sh a)
-           | MatchIFailed !F !(I a) !(I a)
+           | MF !(T a) !(T a)
+           | MS !(Sh a) !(Sh a)
+           | MI !F !(I a) !(I a)
            | Doesn'tSatisfy a (T a) !C
            | CV a (T a) !C
            | NegIx a Int
@@ -81,9 +81,9 @@ instance Pretty a => Pretty (TyE a) where
     pretty (OI l i j)              = located l$ "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
     pretty (OSh l s0 s1)           = located l$ "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
     pretty (ExistentialArg ty)     = "Existential occurs as an argument in" <+> squotes (pretty ty)
-    pretty (MatchFailed t t')      = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
-    pretty (MatchShFailed sh sh')  = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
-    pretty (MatchIFailed f i i')   = pretty f <+> "Failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
+    pretty (MF t t')               = "Failed to match" <+> squotes (pretty t) <+> "against type" <+> squotes (pretty t')
+    pretty (MS sh sh')             = "Failed to match" <+> squotes (pretty sh) <+> "against shape" <+> squotes (pretty sh')
+    pretty (MI f i i')             = pretty f <+> "Failed to match" <+> squotes (pretty i) <+> "against index" <+> squotes (pretty i')
     pretty (Doesn'tSatisfy l ty c) = located l$ squotes (pretty ty) <+> "is not a member of class" <+> pretty c
     pretty (NegIx l i)             = located l$ "negative index" <+> pretty i
     pretty (CV l t c)              = located l$squotes (pretty t) <+> "violates constraint" <+> pretty c
@@ -123,16 +123,16 @@ wI iS (Subst t i sh) = Subst t (iS<>i) sh
 
 mI :: F -> I a -> I a -> Either (TyE a) (Subst a)
 mI f i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
-                             | otherwise = Left $ MatchIFailed f i0 i1
+                             | otherwise = Left $ MI f i0 i1
 mI _ (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI _ ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI _ (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
 -- TODO: propagate?
 mI RF Ix{} IEVar{} = Right mempty
 mI RF IEVar{} IEVar{} = Right mempty
-mI LF i0@IEVar{} i1@IEVar{} = Left $ MatchIFailed LF i0 i1
-mI LF i0@IEVar{} i1@Ix{} = Left $ MatchIFailed LF i0 i1
-mI LF i0@Ix{} i1@IEVar{} = Left $ MatchIFailed LF i0 i1
+mI LF i0@IEVar{} i1@IEVar{} = Left $ MI LF i0 i1
+mI LF i0@IEVar{} i1@Ix{} = Left $ MI LF i0 i1
+mI LF i0@Ix{} i1@IEVar{} = Left $ MI LF i0 i1
 mI f (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI f i (Ix l (iϵ-j))
 mI f (StaPlus _ (Ix _ iϵ) i) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
@@ -152,7 +152,7 @@ mSh f (Rev sh) Nil                  = mSh f sh Nil
 mSh _ Nil (Rev Nil)                 = Right mempty
 mSh f (Cat sh0 sh1) Nil             = (<>) <$> mSh f sh0 Nil <*> mSh f sh1 Nil
 mSh _ Nil (Cat Nil Nil)             = Right mempty
-mSh _ sh sh'                        = Left $ MatchShFailed sh sh'
+mSh _ sh sh'                        = Left $ MS sh sh'
 
 match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
 match t t' = either throw id (maM RF t t')
@@ -174,7 +174,7 @@ maM f (P ts) (P ts')                = mconcat <$> zipWithM (maM f) ts ts'
 maM _ (Ρ n _) (Ρ n' _) | n == n'    = Right mempty
 maM f (Ρ n rs) t@(Ρ _ rs') | IM.keysSet rs' `IS.isSubsetOf` IM.keysSet rs = iTS n t . mconcat <$> traverse (uncurry (maM f)) (IM.elems (IM.intersectionWith (,) rs rs'))
 maM f (Ρ n rs) t@(P ts) | length ts >= fst (IM.findMax rs) = iTS n t . mconcat <$> traverse (uncurry (maM f)) [ (ts!!(i-1),tϵ) | (i,tϵ) <- IM.toList rs ]
-maM _ t t'                          = Left $ MatchFailed t t'
+maM _ t t'                          = Left $ MF t t'
 
 shSubst :: Subst a -> Sh a -> Sh a
 shSubst _ Nil           = Nil
