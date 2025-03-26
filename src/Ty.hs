@@ -548,7 +548,7 @@ mgu f l@(lϵ, e) s t@(Ρ (Nm _ (U j) _) rs) t'@(P ts) | j `IS.member` (occ@<>ts)
                                                     | length ts >= fst (IM.findMax rs) && fst (IM.findMin rs) > 0 = first P <$> tS (\sϵ (i, tϵ) -> second (uTS j t') <$> mguPrep f l sϵ (ts!!(i-1)) tϵ) s (IM.toList rs)
                                                     | otherwise = throwError $ UF lϵ e t t'
 mgu f l s t@P{} t'@Ρ{} = mgu f l s t' t
-mgu _ l@(lϵ,_) s t@(Ρ (Nm _ (U i) x) rs) t'@(Ρ (Nm _ (U j) _) rs') | i `IS.notMember` (occ@<> rs') && j `IS.notMember` (occ@<>rs) = do
+mgu _ l@(lϵ,_) s t@(Ρ (Nm _ (U i) x) rs) t'@(Ρ (Nm _ (U j) _) rs') | i `IS.notMember` (occ@<>rs') && j `IS.notMember` (occ@<>rs) = do
     (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep LF l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     n<-nI x
     let t''=Ρ n (rs<>rs')
@@ -753,7 +753,7 @@ tyB _ (Focus ns) = do
     a <- ftv "a"; b <- ftv "b"
     let nx = map (Ix ()) ns
         opTy = Arr (nx <|| sh) a ~> b
-        t = Arr ((zipWith (StaMul ()) nx is) <|| sh) a ~> Arr (is <|| Nil) b
+        t = Arr (zipWith (StaMul ()) nx is <|| sh) a ~> Arr (is <|| Nil) b
     pure (opTy~>t, mempty)
 tyB _ Succ = do
     i <- fti "i"; sh <- fsh "sh"
