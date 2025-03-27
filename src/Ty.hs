@@ -244,6 +244,8 @@ tickMaxU = modify (\(TySt u l v) -> TySt (u+1) l v)
 setMaxU :: Int -> TyM a ()
 setMaxU i = modify (\(TySt _ l v) -> TySt i l v)
 
+infixr 2 <~
+
 (<~) :: Nm a -> T () -> TyM a ()
 n <~ t = modify (\(TySt u l v) -> TySt u (insert n t l) v)
 
@@ -965,24 +967,24 @@ tyE s (Lam _ nϵ e) = do
     nϵ <~ n
     (e', s') <- tyE s e
     pure (Lam (n~>eAnn e') (nϵ { loc = n }) e', s')
-tyE s (Let _ (n, e') e) = do
-    (e'Res, s') <- tyE s e'
-    let t = eAnn e'Res
-    n <~ (s'@@t)
-    (eRes, s'') <- tyE s' e
-    pure (Let (eAnn eRes) (n { loc = t }, e'Res) eRes, s'')
-tyE s (Def _ (n, e') e) = do
-    (e'Res, s') <- tyE s e'
-    let t = eAnn e'Res
+tyE s (Let _ (n, b) e) = do
+    (b', s') <- tyE s b
+    let t = eAnn b'
+    n <~ s'@@t
+    (e', s'') <- tyE s' e
+    pure (Let (eAnn e') (n { loc = t }, b') e', s'')
+tyE s (Def _ (n, b) e) = do
+    (b', s') <- tyE s b
+    let t = eAnn b'
     addPolyEnv n (s'@@t)
-    (eRes, s'') <- tyE s' e
-    pure (Def (eAnn eRes) (n { loc = t }, e'Res) eRes, s'')
-tyE s (LLet _ (n, e') e) = do
-    (e'Res, s') <- tyE s e'
-    let t = eAnn e'Res
-    n <~ (s'@@t)
-    (eRes, s'') <- tyE s' e
-    pure (LLet (eAnn eRes) (n { loc = t }, e'Res) eRes, s'')
+    (e', s'') <- tyE s' e
+    pure (Def (eAnn e') (n { loc = t }, b') e', s'')
+tyE s (LLet _ (n, b) e) = do
+    (b', s') <- tyE s b
+    let t = eAnn b'
+    n <~ s'@@t
+    (e', s'') <- tyE s' e
+    pure (LLet (eAnn e') (n { loc = t }, b') e', s'')
 tyE s e@(ALit l es) = do
     a <- ftv "a"
     (es', s') <- tS tyE s es
