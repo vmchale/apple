@@ -1,0 +1,6 @@
+-- https://pytorch.org/docs/stable/generated/torch.nn.GELU.html
+λx.
+{ 
+  tanh ← [{l₀ ⟜ e:x;l₁ ⟜ e:(_x); (l₀-l₁)%(l₀+l₁)}];
+  ½*x*(1+tanh (√(2%𝜋)*(x+0.044715*x^3)))
+}
