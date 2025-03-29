@@ -628,10 +628,10 @@ puxs = map go.s2 where go (r0, Just r1) = Stp2 () (V2Reg r0) (V2Reg r1) (Pr SP (
 poxs = map go.reverse.s2 where go (r0, Just r1) = Ldp2 () (V2Reg r0) (V2Reg r1) (Po SP 32); go (r, Nothing) = LdrS () (V2Reg r) (Po SP 16)
 
 ph :: Integral a => a -> T.Text
-ph = fix (\r d -> let (q,s) = d `quotRem` 16 in if q==0 then T.singleton (g s) else r q `T.snoc` g s)
+ph d = case d `quotRem` 16 of {(0,s) -> T.singleton (c s); (q,s) -> ph q `T.snoc` c s}
   where
-    g 0='0'; g 1='1'; g 2='2'; g 3='3'; g 4='4'; g 5='5'; g 6='6'; g 7='7'; g 8='8'
-    g 9='9'; g 10='a'; g 11='b'; g 12='c'; g 13='d'; g 14='e'; g 15='f'
+    c n | n>=0&&n<10 = toEnum (fromIntegral n+48)
+        | n>=10&&n<16 = toEnum (fromIntegral n+87)
 
 hexd :: Integral a => a -> Doc ann
 hexd n | n < 0 = pretty ("#-0x"<>ph (-n))
