@@ -23,10 +23,11 @@ module Asm.Aarch64 ( AArch64 (..)
 import           Asm.M
 import           Control.DeepSeq   (NFData (..), rwhnf)
 import           Data.Copointed
+import           Data.Function     (fix)
 import           Data.Int          (Int16)
+import qualified Data.Text         as T
 import           Data.Word         (Word16, Word8)
 import           GHC.Generics      (Generic)
-import           Numeric           (showHex)
 import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
 import           Prettyprinter.Ext
 import           Q
@@ -626,9 +627,15 @@ puxs, poxs :: [freg] -> [AArch64 AReg freg ()]
 puxs = map go.s2 where go (r0, Just r1) = Stp2 () (V2Reg r0) (V2Reg r1) (Pr SP (-32)); go (r, Nothing) = StrS () (V2Reg r) (Pr SP (-16))
 poxs = map go.reverse.s2 where go (r0, Just r1) = Ldp2 () (V2Reg r0) (V2Reg r1) (Po SP 32); go (r, Nothing) = LdrS () (V2Reg r) (Po SP 16)
 
+ph :: Integral a => a -> T.Text
+ph = fix (\r d -> let (q,s) = d `quotRem` 16 in if q==0 then T.singleton (g s) else r q `T.snoc` g s)
+  where
+    g 0='0'; g 1='1'; g 2='2'; g 3='3'; g 4='4'; g 5='5'; g 6='6'; g 7='7'; g 8='8'
+    g 9='9'; g 10='a'; g 11='b'; g 12='c'; g 13='d'; g 14='e'; g 15='f'
+
 hexd :: Integral a => a -> Doc ann
-hexd n | n < 0 = pretty ("#-0x"++showHex (-n) "")
-       | otherwise = pretty ("#0x"++showHex n "")
+hexd n | n < 0 = pretty ("#-0x"<>ph (-n))
+       | otherwise = pretty ("#0x"<>ph n)
 
 pvd v = pv v <> ".2d"
 pvv v = pv v <> ".16b"; pvs v = pv v <> ".8b"
