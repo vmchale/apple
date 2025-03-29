@@ -21,17 +21,19 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
-import           Control.DeepSeq   (NFData (..), rwhnf)
+import           Control.DeepSeq            (NFData (..), rwhnf)
+import           Data.Bits                  (FiniteBits, countLeadingZeros, finiteBitSize)
 import           Data.Copointed
-import           Data.Function     (fix)
-import           Data.Int          (Int16)
-import qualified Data.Text         as T
-import           Data.Word         (Word16, Word8)
-import           GHC.Generics      (Generic)
-import           Prettyprinter     (Doc, Pretty (..), brackets, (<+>))
+import           Data.Int                   (Int16)
+import qualified Data.Text.Lazy             as TL
+import           Data.Text.Lazy.Builder     (toLazyTextWith)
+import           Data.Text.Lazy.Builder.Int (hexadecimal)
+import           Data.Word                  (Word16, Word8)
+import           GHC.Generics               (Generic)
+import           Prettyprinter              (Doc, Pretty (..), brackets, (<+>))
 import           Prettyprinter.Ext
 import           Q
-import           System.Info       (os)
+import           System.Info                (os)
 
 -- https://developer.arm.com/documentation/102374/0101/Registers-in-AArch64---other-registers
 data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
@@ -627,13 +629,12 @@ puxs, poxs :: [freg] -> [AArch64 AReg freg ()]
 puxs = map go.s2 where go (r0, Just r1) = Stp2 () (V2Reg r0) (V2Reg r1) (Pr SP (-32)); go (r, Nothing) = StrS () (V2Reg r) (Pr SP (-16))
 poxs = map go.reverse.s2 where go (r0, Just r1) = Ldp2 () (V2Reg r0) (V2Reg r1) (Po SP 32); go (r, Nothing) = LdrS () (V2Reg r) (Po SP 16)
 
-ph :: Integral a => a -> T.Text
-ph d = case d `quotRem` 16 of {(0,s) -> T.singleton (c s); (q,s) -> ph q `T.snoc` c s}
+ph :: (FiniteBits a, Integral a) => a -> TL.Text
+ph c = toLazyTextWith (l2 c) (hexadecimal c)
   where
-    c n | n>=0&&n<10 = toEnum (fromIntegral n+48)
-        | n>=10&&n<16 = toEnum (fromIntegral n+87)
+    l2 n=finiteBitSize n-1-countLeadingZeros n
 
-hexd :: Integral a => a -> Doc ann
+hexd :: (FiniteBits a, Integral a) => a -> Doc ann
 hexd n | n < 0 = pretty ("#-0x"<>ph (-n))
        | otherwise = pretty ("#0x"<>ph n)
 
