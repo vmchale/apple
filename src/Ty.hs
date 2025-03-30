@@ -42,6 +42,8 @@ infixr 5 <|
 
 data TySt a = TySt { maxU :: !Int, staEnv, polyEnv :: IM.IntMap (T ()) }
 
+type ISubst a = IM.IntMap (I a)
+
 data Subst a = Subst { tySubst :: IM.IntMap (T a)
                      , iSubst  :: IM.IntMap (I a) -- ^ Index variables
                      , sSubst  :: IM.IntMap (Sh a) -- ^ Shape variables
@@ -62,6 +64,7 @@ data TyE a = IllScoped a !(Nm a)
            | Doesn'tSatisfy a (T a) !C
            | CV a (T a) !C
            | NegIx a Int
+           | AI !a !(I a) !(I a)
            deriving (Generic)
 
 instance Semigroup (Subst a) where
@@ -91,6 +94,7 @@ instance Pretty a => Pretty (TyE a) where
     pretty (Doesn'tSatisfy l ty c) = located l$ squotes (pretty ty) <+> "is not a member of class" <+> pretty c
     pretty (NegIx l i)             = located l$ "negative index" <+> pretty i
     pretty (CV l t c)              = located l$squotes (pretty t) <+> "violates constraint" <+> pretty c
+    pretty (AI l ix ix')           = located l$squotes (pretty ix) <+> "not an acceptable argument to a function expecting" <+> squotes (pretty ix')
 
 instance (Pretty a) => Show (TyE a) where
     show = show . pretty
@@ -115,7 +119,7 @@ nI :: a -> UM b (Nm a)
 nI l = state (\i -> let j=i+1 in (Nm "m" (U j) l, j))
 
 nIe :: a -> UM b (I a)
-nIe l = IEVar l <$> nI l
+nIe l = IEV l <$> nI l
 
 liftU :: UM a x -> TyM a x
 liftU a = do
@@ -130,13 +134,13 @@ mI f i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
                              | otherwise = Left $ MI f i0 i1
 mI _ (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI _ ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
-mI _ (IEVar _ n) (IEVar _ n') | n == n' = Right mempty
+mI _ (IEV _ n) (IEV _ n') | n == n' = Right mempty
 -- TODO: propagate?
-mI RF Ix{} IEVar{} = Right mempty
-mI RF IEVar{} IEVar{} = Right mempty
-mI LF i0@IEVar{} i1@IEVar{} = Left $ MI LF i0 i1
-mI LF i0@IEVar{} i1@Ix{} = Left $ MI LF i0 i1
-mI LF i0@Ix{} i1@IEVar{} = Left $ MI LF i0 i1
+mI RF Ix{} IEV{} = Right mempty
+mI RF IEV{} IEV{} = Right mempty
+mI LF i0@IEV{} i1@IEV{} = Left $ MI LF i0 i1
+mI LF i0@IEV{} i1@Ix{} = Left $ MI LF i0 i1
+mI LF i0@Ix{} i1@IEV{} = Left $ MI LF i0 i1
 mI f (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI f i (Ix l (iϵ-j))
 mI f (StaPlus _ (Ix _ iϵ) i) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
@@ -168,9 +172,10 @@ maM _ (IZ _ (Nm _ (U u) _)) F       = Right $ Subst (IM.singleton u F) IM.empty 
 maM _ I I                           = Right mempty
 maM _ F F                           = Right mempty
 maM _ B B                           = Right mempty
-maM _ (TV n c) (TV n' c') | n == n' = undefined
 maM _ (TV (Nm _ (U i) l) c) t    | Just e <- (l,t) `enforcesn't` c = Left e
                                  | otherwise = Right $ Subst (IM.singleton i t) IM.empty IM.empty
+maM _ (Arrow t0@Arrow{} t1) (Arrow t0' t1') = (<>) <$> maM RF t0 t0' <*> maM RF t1 t1'
+maM _ (Arrow t0 t1) (Arrow t0'@Arrow{} t1') = (<>) <$> maM RF t0 t0' <*> maM RF t1 t1'
 maM _ (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM LF t0 t0' <*> maM RF t1 t1' -- TODO: use <\> over <>
 maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
 maM f (Arr sh t) t'                 = (<>) <$> mSh f sh Nil <*> maM f t t'
@@ -202,7 +207,7 @@ infixr 4 !>
 (!>) ixes (StaPlus l ix ix') = StaPlus l (ixes !> ix) (ixes !> ix')
 (!>) ixes (StaMul l ix ix') = StaMul l (ixes !> ix) (ixes !> ix')
 (!>) _ ix@Ix{} = ix
-(!>) _ ix@IEVar{} = ix
+(!>) _ ix@IEV{} = ix
 
 (\-) :: Subst a -> Int -> Subst a
 (\-) (Subst ts is ss) u = Subst (IM.delete u ts) is ss
@@ -277,7 +282,7 @@ fti :: T.Text -> TyM a (I ())
 fti n = IVar () <$> nN n ()
 
 ftie :: TyM a (I ())
-ftie = IEVar () <$> nN "n" ()
+ftie = IEV () <$> nN "n" ()
 
 mapTySubst f (Subst t i sh) = Subst (f t) i sh
 
@@ -292,18 +297,45 @@ instance NFData F where rnf=rwhnf
 -- ≬
 instance Pretty F where pretty LF="⦠"; pretty RF="∢"; pretty AF="🝙"
 
-mguIPrep :: F -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
+mguIPrep :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
 mguIPrep f is = mguI f is `on` rwI.(is!>)
 
-mguI :: F -> IM.IntMap (I a) -> I a -> I a -> UM a (I a, IM.IntMap (I a))
+np :: ISubst a -> I a -> I a -> UM a (ISubst a)
+np is = ni is `on` rwI.(is!>)
+
+-- argument supplied must be narrower than argument accepted by function
+-- (substitution propagates to function body)
+ni :: ISubst a -> I a -> I a -> UM a (ISubst a)
+ni s i0@(Ix l i) i1@(Ix _ j) | i==j = pure s
+                             | otherwise = throwError $ AI l i0 i1
+ni s i0@(IEV l n) i1@(IEV _ m) | n==m = pure s
+                             | otherwise = throwError $ AI l i0 i1
+ni s ix@(IVar l (Nm _ (U i) _)) ix' | i `IS.member` occI ix' = throwError $ OI l ix ix'
+                                    | otherwise = pure (IM.insert i ix' s)
+ni s ix ix'@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $ OI l ix' ix
+                                    | otherwise = pure (IM.insert i ix s)
+
+φ :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
+φ inp (Ix l _) Ix{} = do {m <- nIe l; pure (m, inp)}
+φ inp (IEV l _) IEV{} = do {m <- nIe l; pure (m, inp)}
+φ inp i@IEV{} Ix{} = pure (i, inp)
+φ inp Ix{} j@IEV{} = pure (j, inp)
+φ inp (IEV l (Nm _ (U i) _)) j@StaPlus{} | i `IS.notMember` occI j = (,inp) <$> nIe l
+φ inp (IEV l (Nm _ (U i) _)) j@StaMul{} | i `IS.notMember` occI j = (,inp) <$> nIe l
+
+mguI :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
 mguI _ inp i0@(Ix _ i) (Ix _ j) | i == j = pure (i0, inp)
-mguI RF inp (Ix l _) Ix{} = do {m <- nIe l; pure (m, inp)}
+mguI _ inp i0@(IEV _ i) (IEV _ j) | i == j = pure (i0, inp)
+mguI RF inp i@Ix{} j@Ix{} = φ inp i j
+mguI RF inp i@IEV{} j@IEV{} = φ inp i j
+mguI RF inp i@Ix{} j@IEV{} = φ inp i j
+mguI RF inp i@Ix{} j@IEV{} = φ inp i j
+mguI RF inp i@IEV{} j@StaPlus{} = φ inp i j
+mguI RF inp i@StaPlus{} j@IEV{} = φ inp j i
+mguI RF inp i@IEV{} j@StaMul{} = φ inp i j
+mguI RF inp i@StaMul{} j@IEV{} = φ inp j i
 mguI f _ i0@(Ix l _) i1@Ix{} = throwError $ UI l f i0 i1
-mguI _ inp i0@(IEVar _ i) (IEVar _ j) | i == j = pure (i0, inp)
-mguI RF inp (IEVar l _) (IEVar _ _) = do {m <- nIe l; pure (m, inp)}
-mguI RF inp i@IEVar{} Ix{} = pure (i, inp)
-mguI RF inp Ix{} j@IEVar{} = pure (j, inp)
-mguI f _ i0@(IEVar l _) i1@IEVar{} = throwError $ UI l f i0 i1
+mguI f _ i0@(IEV l _) i1@IEV{} = throwError $ UI l f i0 i1
 mguI _ inp i0@(IVar _ i) (IVar _ j) | i == j = pure (i0, inp)
 mguI _ inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = throwError $ OI l iix ix
                                           | otherwise = pure (ix, IM.insert i ix inp)
@@ -317,7 +349,6 @@ mguI f inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguI f inp i1 i0
 mguI f inp (StaPlus l i@Ix{} j) k@Ix{} = mguI f inp (StaPlus l j i) k
 mguI f inp i@Ix{} (StaPlus l j@Ix{} k) = mguI f inp i (StaPlus l k j)
 mguI f inp (StaPlus l i0 i1) (StaPlus _ j0 j1) = do
-    -- FIXME: too stringent
     (k, s) <- mguI f inp i0 j0
     (m, s') <- mguIPrep f s i1 j1
     pure (StaPlus l k m, s')
@@ -326,14 +357,11 @@ mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
     (k, s) <- mguI f inp i0 j0
     (m, s') <- mguIPrep f s i1 j1
     pure (StaMul l k m, s')
--- TODO: rewrite existential vars on the left...
 -- (cause problems: introduced by ug. improperly higher-rank handling+unified with seed...)
-mguI LF _ i0@(IEVar l _) i1@Ix{} = throwError $ UI l LF i0 i1
-mguI LF _ i0@(Ix l _) i1@IEVar{} = throwError $ UI l LF i0 i1
-mguI RF inp (IEVar l (Nm _ (U i) _)) j@StaPlus{} | i `IS.notMember` occI j = (,inp) <$> nIe l
-mguI RF inp i@StaPlus{} j@IEVar{} = mguI RF inp j i
-mguI f _ i0@(IEVar l _) i1@StaPlus{} = throwError $ UI l f i0 i1
-mguI f _ i0@(StaPlus l _ _) i1@IEVar{} = throwError $ UI l f i0 i1
+mguI LF _ i0@(IEV l _) i1@Ix{} = throwError $ UI l LF i0 i1
+mguI LF _ i0@(Ix l _) i1@IEV{} = throwError $ UI l LF i0 i1
+mguI f _ i0@(IEV l _) i1@StaPlus{} = throwError $ UI l f i0 i1
+mguI f _ i0@(StaPlus l _ _) i1@IEV{} = throwError $ UI l f i0 i1
 mguI f inp (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
     k <- IVar l <$> nI l
     (_,s0) <- mguI f inp n (k+:Ix l₀ (c`div`m))
@@ -440,7 +468,7 @@ occI Ix{}            = IS.empty
 occI (IVar _ n)      = Nm.singleton n
 occI (StaPlus _ i j) = occI i <> occI j
 occI (StaMul _ i j)  = occI i <> occI j
-occI IEVar{}         = IS.empty
+occI IEV{}           = IS.empty
 
 occ :: T a -> IS.IntSet
 occ (TV n _)     = Nm.singleton n
@@ -458,31 +486,34 @@ scalar f (l,_) s n = snd <$> mgSh f l s n Nil
 
 scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
-σ (Li IEVar{}) = I; σ (IZ IEVar{} t) = TV t (S.singleton IsZ); σ t = t
+σ (Li IEV{}) = I; σ (IZ IEV{} t) = TV t (S.singleton IsZ); σ t = t
 
 mguZ AF=mguI RF; mguZ f=mguI f
 
-φ (n0,c0) (n1,c1) s = do {n <- nI (loc n0); let t=TV n (c0<>c1) in pure (t, iTS n0 t$iTS n1 t s)}
+φv (n0,c0) (n1,c1) s = do {n <- nI (loc n0); let t=TV n (c0<>c1) in pure (t, iTS n0 t$iTS n1 t s)}
 
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0@Arrow{} t1) (Arrow t0' t1') = do
     -- FIXME: dimension variables (bound in ug.) need to agree (we don't support ragged arrays)
-    (t0'', s0) <- mgu LF l s t0 t0'
+    -- but also not "scope out"
+    (t0'', s0) <- mgu RF l s t0 t0'
     (t1'', s1) <- mguPrep f l s0 t1 t1'
     pure (Arrow t0'' t1'', s1)
 mgu f l s (Arrow t0 t1) (Arrow t0'@Arrow{} t1') = do
-    (t0'', s0) <- mgu LF l s t0 t0'
+    (t0'', s0) <- mgu RF l s t0 t0'
     (t1'', s1) <- mguPrep f l s0 t1 t1'
     pure (Arrow t0'' t1'', s1)
 mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
+    -- TODO: what focus for argument
     (t0'', s0) <- mgu f l s t0 t0'
     (t1'', s1) <- mguPrep f l s0 t1 t1'
     pure (Arrow t0'' t1'', s1)
 mgu _ _ s I I = pure (I, s)
 mgu _ _ s F F = pure (F, s)
 mgu _ _ s B B = pure (B, s)
--- FIXME: frange allowed have I< I is Li #n
--- see line 495 for how to handle?
+-- FIXME: frange allowed have I argument; I is Li #n
+-- but also this should be rewritten
+-- (∃a. t a) → r ≡ ∀a. t a → r
 -- mgu LF (l,e) _ t@Li{} I = throwError $ UF l e t I
 -- mgu LF (l,e) _ I t@Li{} = throwError $ UF l e I t
 mgu _ _ s Li{} I = pure (I, s)
@@ -515,11 +546,11 @@ mgu _ _ s (TV n c) (TV n' c') | n == n' = do {m <- nI (loc n); let t'=TV m (c<>c
 mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
     | c' `S.isSubsetOf` c = pure (t, iTS n1 t s)
     | c `S.isSubsetOf` c' = pure (t', iTS n0 t' s)
-    | otherwise = φ (n0,c) (n1,c') s
+    | otherwise = φv (n0,c) (n1,c') s
 mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = undefined
 mgu f l s (Arr i (TV n c)) t@(TV n' c') | n'==n = undefined
-mgu f l s (TV n c) (Arr i (TV n' c')) | IsZ `S.member` c = scalar f l s i >>= φ (n,c) (n',c')
-mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `S.member` c' = scalar f l s i >>= φ (n,c) (n',c')
+mgu f l s (TV n c) (Arr i (TV n' c')) | IsZ `S.member` c = scalar f l s i >>= φv (n,c) (n',c')
+mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `S.member` c' = scalar f l s i >>= φv (n,c) (n',c')
 mgu _ (l,_) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
                                          | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
 mgu _ (l,_) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
@@ -897,7 +928,7 @@ rwArr (Arr sh t)   = Arr (rwSh sh) (rwArr t)
 rwArr (Ρ n fs)     = Ρ n (rwArr<$>fs)
 
 hasEI :: I a -> Bool
-hasEI IEVar{}            = True
+hasEI IEV{}              = True
 hasEI (StaPlus _ ix ix') = hasEI ix || hasEI ix'
 hasEI (StaMul _ ix ix')  = hasEI ix || hasEI ix'
 hasEI _                  = False
@@ -998,7 +1029,7 @@ tyE s (EApp l e0 e1) = do
     a <- ft "a" l; b <- ft "b" l
     (e0', s0) <- tyE s e0
     (e1', s1) <- tyE s0 e1
-    s2 <- liftU $ mp (l,e0) LF s1 (eAnn e0'$>l) (a~>b)
+    s2 <- liftU $ mp (l,e0) RF s1 (eAnn e0'$>l) (a~>b)
     s3 <- liftU $ mp (l,e1) LF s2 (eAnn e1'$>l) a
     pure (EApp (void b) e0' e1', s3)
 tyE s (Cond l p e0 e1) = do
