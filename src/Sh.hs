@@ -60,21 +60,21 @@ el = LC (\(CT _ _ z _) -> T.singleton z) (\(CT v i e s) -> CT v i (succ e) s)
 instance PT (I a) where
     pp i@Ix{}          = pure i
     pp (IVar x n)      = IVar x<$>fr il n
-    pp (IEVar x n)     = IEVar x<$>fr el n
+    pp (IEV x n)       = IEV x<$>fr el n
     pp (StaPlus x i j) = StaPlus x<$>pp i<*>pp j
     pp (StaMul x i j)  = StaMul x<$>pp i<*>pp j
 
 instance PS (I a) where
-    ps _ (Ix _ i)                   = pretty i
-    ps _ (IVar _ n)                 = pretty n
-    ps _ ip                         | Just (i,d) <- pv ip = maybe mempty pretty i <> d
-    ps d (StaPlus _ i j)            = parensp (d>5) (ps 6 i <+> "+" <+> ps 6 j)
-    ps d (StaMul _ i j)             = parensp (d>7) (ps 8 i <> "*" <> ps 8 j)
-    ps _ (IEVar _ n)                = "#" <> pretty n
+    ps _ (Ix _ i)        = pretty i
+    ps _ (IVar _ n)      = pretty n
+    ps _ ip              | Just (i,d) <- pv ip = maybe mempty pretty i <> d
+    ps d (StaPlus _ i j) = parensp (d>5) (ps 6 i <+> "+" <+> ps 6 j)
+    ps d (StaMul _ i j)  = parensp (d>7) (ps 8 i <> "*" <> ps 8 j)
+    ps _ (IEV _ n)       = "#" <> pretty n
 
 data I a = Ix { ia :: a, ii :: !Int }
          | IVar { ia :: a, ixn :: !(Nm a) }
-         | IEVar { ia :: a , ie :: !(Nm a) } -- existential
+         | IEV { ia :: a , ie :: !(Nm a) } -- existential
          | StaPlus { ia :: a, ix0, ix1 :: I a }
          | StaMul { ia :: a, ix0, ix1 :: I a }
          deriving (Functor, Generic)

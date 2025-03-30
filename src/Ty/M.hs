@@ -24,7 +24,7 @@ instance Pretty RE where
 check = cM
 
 ex :: I a -> Bool
-ex IEVar{}           = True
+ex IEV{}             = True
 ex IVar{}            = False
 ex (StaPlus _ i0 i1) = ex i0||ex i1
 ex (StaMul _ i0 i1)  = ex i0||ex i1
@@ -90,7 +90,7 @@ ata _                = Nothing
 dynI :: I a -> Bool
 dynI Ix{}      = False
 dynI IVar{}    = True
-dynI IEVar{}   = True
+dynI IEV{}     = True
 dynI StaPlus{} = True
 dynI StaMul{}  = True
 

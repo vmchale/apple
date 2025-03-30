@@ -45,7 +45,7 @@ cloneIx i@Ix{}           = pure i
 cloneIx (StaPlus l i i') = StaPlus l <$> cloneIx i <*> cloneIx i'
 cloneIx (StaMul l i i')  = StaMul l <$> cloneIx i <*> cloneIx i'
 cloneIx (IVar l n)       = IVar l <$> tryReplaceInT boundIxLens n
-cloneIx (IEVar l n)      = IEVar l <$> tryReplaceInT boundIxLens n
+cloneIx (IEV l n)        = IEV l <$> tryReplaceInT boundIxLens n
 
 cloneSh :: Sh a -> CM (Sh a)
 cloneSh Nil           = pure Nil
