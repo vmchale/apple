@@ -15,8 +15,7 @@ module Dbg ( dumpAAbs
            , dumpX86Ass
            , topt
            , nasm
-           , pBIO, dtxt, dAtxt
-           , edAtxt, eDtxt
+           , pBIO, edAtxt, eDtxt
            , module P
            ) where
 
