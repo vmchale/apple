@@ -3,8 +3,7 @@
 
 # Introduction
 
-Apple is an experimental compiler with a working though not-perfectly-designed
-typed frontend.
+Apple is an experimental compiler with a typed frontend inhabited by two demons.
 
 ## Installation
 
@@ -63,8 +62,6 @@ To generate an integer range use `..`
 ```
 (..)
     : int → int → Vec #n int
- > (..)
-⍳ : int → int → Vec #n int
 ```
 
 `..` is a binary operator taking a start value and end value as arguments, viz.
