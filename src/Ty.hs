@@ -63,7 +63,6 @@ data TyE a = IllScoped a !(Nm a)
            | Doesn'tSatisfy a (T a) !C
            | CV a (T a) !C
            | NegIx a Int
-           | AI !a !(I a) !(I a)
            | SF !a !(I a) !(I a)
            deriving (Generic)
 
@@ -93,7 +92,6 @@ instance Pretty a => Pretty (TyE a) where
     pretty (Doesn'tSatisfy l ty c) = located l$ squotes (pretty ty) <+> "is not a member of class" <+> pretty c
     pretty (NegIx l i)             = located l$ "negative index" <+> pretty i
     pretty (CV l t c)              = located l$squotes (pretty t) <+> "violates constraint" <+> pretty c
-    pretty (AI l ix ix')           = located l$squotes (pretty ix) <+> "not an acceptable argument to a function expecting" <+> squotes (pretty ix')
     pretty (SF l i i')             = located l$pretty i <+> "⊁" <+> pretty i'
 
 instance (Pretty a) => Show (TyE a) where
@@ -164,6 +162,8 @@ mSh _ sh sh'                        = Left $ MS sh sh'
 match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
 match t t' = either throw id (maM RF t t')
 
+inv RF=LF; inv _=RF
+
 maM :: F -> T a -> T a -> Either (TyE a) (Subst a)
 maM f (Li n) (Li m)              = mI f m n
 maM _ (IZ _ (Nm _ (U u) _)) I    = Right $ Subst (IM.singleton u I) IM.empty IM.empty
@@ -174,9 +174,7 @@ maM _ B B                        = Right mempty
 maM _ (TV (Nm _ (U i) l) c) t    | Just e <- (l,t) `enforcesn't` c = Left e
                                  | otherwise = Right $ Subst (IM.singleton i t) IM.empty IM.empty
                                  -- FIXME invert focus
-maM _ (Arrow t0@Arrow{} t1) (Arrow t0' t1') = (<>) <$> maM RF t0 t0' <*> maM RF t1 t1'
-maM _ (Arrow t0 t1) (Arrow t0'@Arrow{} t1') = (<>) <$> maM RF t0 t0' <*> maM RF t1 t1'
-maM _ (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM LF t0 t0' <*> maM RF t1 t1' -- TODO: use <\> over <>
+maM f (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM (inv f) t0 t0' <*> maM f t1 t1' -- TODO: use <\> over <>
 maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
 maM f (Arr sh t) t'                 = (<>) <$> mSh f sh Nil <*> maM f t t'
 maM f (P ts) (P ts')                = mconcat <$> zipWithM (maM f) ts ts'
@@ -302,9 +300,9 @@ sc is = su is `on` rwI.(is!>)
 -- ≻
 su :: ISubst a -> I a -> I a -> UM a (ISubst a)
 su s i0@(Ix l i) i1@(Ix _ j) | i==j = pure s
-                             | otherwise = throwError $ AI l i0 i1
+                             | otherwise = throwError $ SF l i0 i1
 su s i0@(IEV l n) i1@(IEV _ m) | n==m = pure s
-                               | otherwise = throwError $ AI l i0 i1
+                               | otherwise = throwError $ SF l i0 i1
 su s (IVar _ n0) (IVar _ n1) | n0==n1 = pure s
 su s ix@(IVar l (Nm _ (U i) _)) ix' | i `IS.member` occI ix' = throwError $ OI l ix ix'
                                     | otherwise = pure (IM.insert i ix' s)
@@ -321,7 +319,12 @@ su s (StaMul _ (Ix _ m) j) (Ix l n) | (k,0) <- n `quotRem` m = su s j (Ix l k)
 su s (StaMul _ i (Ix _ m)) (Ix l n) | (k,0) <- n `quotRem` m = su s i (Ix l k)
 su s (Ix l n) (StaMul _ (Ix _ m) j) | (k,0) <- n `quotRem` m = su s (Ix l k) j
 su s (Ix l n) (StaMul _ i (Ix _ m)) | (k,0) <- n `quotRem` m = su s (Ix l k) i
-su _ i0 i1 = error (show (i0,i1))
+su _ i0@(Ix l _) i1@IEV{} = throwError$SF l i0 i1
+su _ i0@(IEV l _) i1@Ix{} = throwError$SF l i0 i1
+su _ i0@(StaPlus l _ _) i1@IEV{} = throwError$SF l i0 i1
+su _ i0@(IEV l _) i1@StaPlus{} = throwError$SF l i0 i1
+su _ i0@(StaMul l _ _) i1@IEV{} = throwError$SF l i0 i1
+su _ i0@(IEV l _) i1@StaMul{} = throwError$SF l i0 i1
 
 -- fan out
 φ :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
@@ -336,25 +339,10 @@ lsu s i0 i1 = (i0,)<$>su s i0 i1
 rsu s i0 i1 = (i1,)<$>su s i1 i0
 
 mguI :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
-mguI Φ  = φ
-mguI AF = φ
-mguI LF = lsu
-mguI RF = rsu
+mguI Φ = φ; mguI AF = φ
+mguI LF = lsu; mguI RF = rsu
 
 {-
-mguI _ inp i0@(Ix _ i) (Ix _ j) | i == j = pure (i0, inp)
-mguI _ inp i0@(IEV _ i) (IEV _ j) | i == j = pure (i0, inp)
-mguI f _ i0@(Ix l _) i1@Ix{} = throwError $ UI l f i0 i1
-mguI f _ i0@(IEV l _) i1@IEV{} = throwError $ UI l f i0 i1
-mguI _ inp i0@(IVar _ i) (IVar _ j) | i == j = pure (i0, inp)
-mguI _ inp iix@(IVar l (Nm _ (U i) _)) ix | i `IS.member` occI ix = throwError $ OI l iix ix
-                                          | otherwise = pure (ix, IM.insert i ix inp)
-mguI _ inp ix iix@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $ OI l ix iix
-                                          | otherwise = pure (ix, IM.insert i ix inp)
-mguI f inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguI f inp i0 i1
-mguI f inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguI f inp i0 i1
-mguI f inp (StaPlus l i@Ix{} j) k@Ix{} = mguI f inp (StaPlus l j i) k
-mguI f inp i@Ix{} (StaPlus l j@Ix{} k) = mguI f inp i (StaPlus l k j)
 mguI f inp (StaPlus l i0 i1) (StaPlus _ j0 j1) = do
     (k, s) <- mguI f inp i0 j0
     (m, s') <- mguIPrep f s i1 j1
@@ -365,10 +353,6 @@ mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
     (m, s') <- mguIPrep f s i1 j1
     pure (StaMul l k m, s')
 -- (cause problems: introduced by ug. improperly higher-rank handling+unified with seed...)
-mguI LF _ i0@(IEV l _) i1@Ix{} = throwError $ UI l LF i0 i1
-mguI LF _ i0@(Ix l _) i1@IEV{} = throwError $ UI l LF i0 i1
-mguI f _ i0@(IEV l _) i1@StaPlus{} = throwError $ UI l f i0 i1
-mguI f _ i0@(StaPlus l _ _) i1@IEV{} = throwError $ UI l f i0 i1
 mguI f inp (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
     k <- IVar l <$> nI l
     (_,s0) <- mguI f inp n (k+:Ix l₀ (c`div`m))
@@ -379,12 +363,6 @@ mguI f inp (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
 -- n*m, i+j, (m,j known) then must be divisible by m and >=j
 -- unify to m*k+lcm(m,j)
 -- Then n=k+(lcm(m,j)/m), i=m*k+(lcm(m,j)-j)
-mguI f inp n@(StaMul _ _ Ix{}) (StaPlus l1 i@Ix{} j) = mguI f inp n (StaPlus l1 j i)
-mguI f inp (StaMul l0 n@Ix{} m) i@(StaPlus _ _ Ix{}) = mguI f inp (StaMul l0 m n) i
-mguI f inp (StaMul l0 n@Ix{} m) (StaPlus l1 i@Ix{} j) = mguI f inp (StaMul l0 m n) (StaPlus l1 j i)
-mguI f inp (StaMul l (Ix _ m) j) (Ix _ n) | (k,0) <- n `quotRem` m = mguI f inp j (Ix l k)
-mguI f inp (StaMul l i (Ix _ m)) (Ix _ n) | (k,0) <- n `quotRem` m = mguI f inp i (Ix l k)
-mguI f inp i0@Ix{} i1@StaMul{} = mguI f inp i1 i0
 -}
 
 splitFromLeft :: Int -> [a] -> ([a], [a])
@@ -500,7 +478,7 @@ scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
-    (t0'', s0) <- mgu f l s t0' t0
+    (t0'', s0) <- mgu (inv f) l s t0' t0
     (t1'', s1) <- mguPrep f l s0 t1 t1'
     pure (Arrow t0'' t1'', s1)
 mgu _ _ s I I = pure (I, s)
@@ -1018,8 +996,6 @@ tyE s e@(ALit l es) = do
     a <- ftv "a"
     (es', s') <- tS tyE s es
     let eTys = a : fmap eAnn es'
-        -- index variables bound as dimension can't branch (don't support ragged arrays)
-        -- different handling for IZ
         uHere sϵ t t' = mp (l,e) AF sϵ (t$>l) (t'$>l)
     ss' <- liftU $ zS uHere s' eTys (tail eTys)
     pure (ALit (vV (Ix () $ length es) a) es', ss')

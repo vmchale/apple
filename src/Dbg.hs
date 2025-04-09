@@ -57,7 +57,6 @@ import           P
 import           Prettyprinter              (Doc, Pretty (..), comma, concatWith, punctuate, space, (<+>))
 import           Prettyprinter.Ext
 import           System.Info                (arch)
-import           Ty
 
 pBIO :: BSL.ByteString -> IO ()
 pBIO = either throwIO TIO.putStr <=< case arch of {"x86_64" -> dtxt; "aarch64" -> dAtxt}
