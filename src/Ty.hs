@@ -51,7 +51,6 @@ data Subst a = Subst { tySubst :: IM.IntMap (T a)
 
 data TyE a = IllScoped a !(Nm a)
            | UF a (E a) !(T a) !(T a)
-           | UI a !F !(I a) !(I a)
            | USh a !(Sh a) !(Sh a)
            | UShD a !(Sh a) !(Sh a)
            | OT a !(T a) !(T a)
@@ -65,6 +64,7 @@ data TyE a = IllScoped a !(Nm a)
            | CV a (T a) !C
            | NegIx a Int
            | AI !a !(I a) !(I a)
+           | SF !a !(I a) !(I a)
            deriving (Generic)
 
 instance Semigroup (Subst a) where
@@ -83,7 +83,6 @@ instance Pretty a => Pretty (TyE a) where
     pretty (UF l e ty ty')         = located l$ "could not unify" <+> squotes (pretty ty) <+> "with" <+> squotes (pretty ty') <+> "in expression" <+> squotes (pretty e)
     pretty (USh l sh sh')          = located l$ "could not unify shape" <+> squotes (pretty sh) <+> "with" <+> squotes (pretty sh')
     pretty (UShD l sh sh')         = located l$ "unification gave up on" <+> squotes (pretty sh) <+> squotes (pretty sh')
-    pretty (UI l f ix ix')         = lf l f$ "could not unify index" <+> squotes (pretty ix) <+> "with" <+> squotes (pretty ix')
     pretty (OT l ty ty')           = located l$ "occurs check failed when unifying" <+> squotes (pretty ty) <+> "and" <+> squotes (pretty ty')
     pretty (OI l i j)              = located l$ "occurs check failed when unifying indices" <+> squotes (pretty i) <+> "and" <+> squotes (pretty j)
     pretty (OSh l s0 s1)           = located l$ "occurs check failed when unifying shapes" <+> squotes (pretty s0) <+> "and" <+> squotes (pretty s1)
@@ -95,6 +94,7 @@ instance Pretty a => Pretty (TyE a) where
     pretty (NegIx l i)             = located l$ "negative index" <+> pretty i
     pretty (CV l t c)              = located l$squotes (pretty t) <+> "violates constraint" <+> pretty c
     pretty (AI l ix ix')           = located l$squotes (pretty ix) <+> "not an acceptable argument to a function expecting" <+> squotes (pretty ix')
+    pretty (SF l i i')             = located l$pretty i <+> "⊁" <+> pretty i'
 
 instance (Pretty a) => Show (TyE a) where
     show = show . pretty
@@ -290,12 +290,11 @@ iTS n t = mapTySubst (insert n t)
 uTS u n = mapTySubst (IM.insert u n)
 iSh u sh s = s { sSubst = IM.insert u sh (sSubst s) }
 
-data F = LF | RF | Φ | AF | NF
+data F = LF | RF | Φ | AF
 
 instance NFData F where rnf=rwhnf
 
--- ≬
-instance Pretty F where pretty LF="⦠"; pretty RF="∢"; pretty Φ="Φ"; pretty NF="≬"; pretty AF="🝙"
+instance Pretty F where pretty LF="⦠"; pretty RF="∢"; pretty Φ="Φ"; pretty AF="🝙"
 
 mguIPrep :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
 mguIPrep f is = mguI f is `on` rwI.(is!>)
@@ -303,16 +302,29 @@ mguIPrep f is = mguI f is `on` rwI.(is!>)
 sc :: ISubst a -> I a -> I a -> UM a (ISubst a)
 sc is = su is `on` rwI.(is!>)
 
--- subsume
+-- ≻
 su :: ISubst a -> I a -> I a -> UM a (ISubst a)
 su s i0@(Ix l i) i1@(Ix _ j) | i==j = pure s
                              | otherwise = throwError $ AI l i0 i1
 su s i0@(IEV l n) i1@(IEV _ m) | n==m = pure s
                                | otherwise = throwError $ AI l i0 i1
+su s (IVar _ n0) (IVar _ n1) | n0==n1 = pure s
 su s ix@(IVar l (Nm _ (U i) _)) ix' | i `IS.member` occI ix' = throwError $ OI l ix ix'
                                     | otherwise = pure (IM.insert i ix' s)
 su s ix ix'@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $ OI l ix' ix
                                     | otherwise = pure (IM.insert i ix s)
+su s i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = su s i (Ix lk (j-k))
+                                            | otherwise = throwError $ SF l i0 i1
+su s i0@(Ix l i) i1@(StaPlus _ j (Ix _ k)) | i >= k = su s j (Ix l (i-k))
+                                           | otherwise = throwError $ SF l i0 i1
+su s (StaPlus _ i0 i1) (StaPlus _ j0 j1) = do
+    s' <- su s i0 j0
+    sc s' i1 j1
+su s (StaMul _ (Ix _ m) j) (Ix l n) | (k,0) <- n `quotRem` m = su s j (Ix l k)
+su s (StaMul _ i (Ix _ m)) (Ix l n) | (k,0) <- n `quotRem` m = su s i (Ix l k)
+su s (Ix l n) (StaMul _ (Ix _ m) j) | (k,0) <- n `quotRem` m = su s (Ix l k) j
+su s (Ix l n) (StaMul _ i (Ix _ m)) | (k,0) <- n `quotRem` m = su s (Ix l k) i
+su _ i0 i1 = error (show (i0,i1))
 
 -- fan out
 φ :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
@@ -323,24 +335,24 @@ su s ix ix'@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $ OI l 
 φ inp (IEV l (Nm _ (U i) _)) j@StaPlus{} | i `IS.notMember` occI j = (,inp) <$> nIe l
 φ inp (IEV l (Nm _ (U i) _)) j@StaMul{} | i `IS.notMember` occI j = (,inp) <$> nIe l
 
--- Li 3 should unify with I?
-
 gi :: ISubst a
    -> I a -- ^ Supplied return value
    -> I a -- ^ @y@ in @f : x → y@
    -> UM a (I a, ISubst a)
 gi inp i@Ix{} IEV{} = pure (i, inp)
 
+lsu s i0 i1 = (i0,)<$>su s i0 i1
+rsu s i0 i1 = (i1,)<$>su s i1 i0
+
 mguI :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
+mguI Φ  = φ
+mguI AF = φ
+mguI LF = lsu
+mguI RF = rsu
+
+{-
 mguI _ inp i0@(Ix _ i) (Ix _ j) | i == j = pure (i0, inp)
 mguI _ inp i0@(IEV _ i) (IEV _ j) | i == j = pure (i0, inp)
-mguI Φ inp i@Ix{} j@Ix{} = φ inp i j
-mguI Φ inp i@IEV{} j@IEV{} = φ inp i j
-mguI Φ inp i@Ix{} j@IEV{} = φ inp i j
-mguI Φ inp i@IEV{} j@StaPlus{} = φ inp i j
-mguI Φ inp i@StaPlus{} j@IEV{} = φ inp j i
-mguI Φ inp i@IEV{} j@StaMul{} = φ inp i j
-mguI Φ inp i@StaMul{} j@IEV{} = φ inp j i
 mguI f _ i0@(Ix l _) i1@Ix{} = throwError $ UI l f i0 i1
 mguI f _ i0@(IEV l _) i1@IEV{} = throwError $ UI l f i0 i1
 mguI _ inp i0@(IVar _ i) (IVar _ j) | i == j = pure (i0, inp)
@@ -350,9 +362,6 @@ mguI _ inp ix iix@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $
                                           | otherwise = pure (ix, IM.insert i ix inp)
 mguI f inp (StaPlus _ i0 (Ix _ k0)) (StaPlus _ i1 (Ix _ k1)) | k0 == k1 = mguI f inp i0 i1
 mguI f inp (StaMul _ i0 (Ix _ k0)) (StaMul _ i1 (Ix _ k1)) | k0 == k1 = mguI f inp i0 i1
-mguI f inp i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = mguI f inp i (Ix lk (j-k))
-                                                  | otherwise = throwError $ UI l f i0 i1
-mguI f inp i0@Ix{} i1@(StaPlus _ _ Ix{}) = mguI f inp i1 i0
 mguI f inp (StaPlus l i@Ix{} j) k@Ix{} = mguI f inp (StaPlus l j i) k
 mguI f inp i@Ix{} (StaPlus l j@Ix{} k) = mguI f inp i (StaPlus l k j)
 mguI f inp (StaPlus l i0 i1) (StaPlus _ j0 j1) = do
@@ -385,6 +394,7 @@ mguI f inp (StaMul l0 n@Ix{} m) (StaPlus l1 i@Ix{} j) = mguI f inp (StaMul l0 m 
 mguI f inp (StaMul l (Ix _ m) j) (Ix _ n) | (k,0) <- n `quotRem` m = mguI f inp j (Ix l k)
 mguI f inp (StaMul l i (Ix _ m)) (Ix _ n) | (k,0) <- n `quotRem` m = mguI f inp i (Ix l k)
 mguI f inp i0@Ix{} i1@StaMul{} = mguI f inp i1 i0
+-}
 
 splitFromLeft :: Int -> [a] -> ([a], [a])
 splitFromLeft n xs | nl <- length xs = splitAt (nl-n) xs
@@ -493,20 +503,14 @@ scalar f (l,_) s n = snd <$> mgSh f l s n Nil
 
 scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
-σ (Li IEV{}) = I; σ (IZ IEV{} t) = TV t (S.singleton IsZ); σ t = t
-
-mguZ AF=mguI Φ; mguZ f=mguI f
+σ AF (Li IEV{}) = I; σ AF (IZ IEV{} t) = TV t (S.singleton IsZ); σ _ t = t
 
 φv (n0,c0) (n1,c1) s = do {n <- nI (loc n0); let t=TV n (c0<>c1) in pure (t, iTS n0 t$iTS n1 t s)}
 
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
-mgu NF l s (Arrow t0 t1) (Arrow t0' t1') = do
-    (t0'', s0) <- mgu RF l s t0 t0'
-    (t1'', s1) <- mguPrep LF l s0 t1 t1'
-    pure (Arrow t0'' t1'', s1)
-mgu LF l s (Arrow t0 t1) (Arrow t0' t1') = do
-    (t0'', s0) <- mgu RF l s t0 t0' -- FIXME what about when these are "pointed"?
-    (t1'', s1) <- mguPrep LF l s0 t1 t1'
+mgu f l s (Arrow t0 t1) (Arrow t0' t1') = do
+    (t0'', s0) <- mgu f l s t0' t0
+    (t1'', s1) <- mguPrep f l s0 t1 t1'
     pure (Arrow t0'' t1'', s1)
 mgu _ _ s I I = pure (I, s)
 mgu _ _ s F F = pure (F, s)
@@ -518,6 +522,8 @@ mgu _ _ s B B = pure (B, s)
 -- mgu LF (l,e) _ I t@Li{} = throwError $ UF l e I t
 mgu _ _ s Li{} I = pure (I, s)
 mgu _ _ s I Li{} = pure (I, s)
+-- mgu f (l,_) s (Li i) I = do {n <- nIe l; (i',is) <- mguI f (iSubst s) i n; pure (σ f$Li i',wI is s)} -- (𝓉 : Arr (n `Cons` sh) m → int(i)) pure (I, s)
+-- mgu f (l,_) s I (Li i) = do {n <- nIe l; (i',is) <- mguI f (iSubst s) i n; pure (σ f$Li i',wI is s)}
 -- IZ always from literals
 mgu _ _ s (IZ _ n) I = pure (I, iTS n I s)
 mgu _ _ s I (IZ _ n) = pure (I, iTS n I s)
@@ -528,13 +534,13 @@ mgu _ _ s (TV n _) I = pure (I, iTS n I s)
 mgu _ (l,_) s t@(TV n c) F = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
 mgu _ (l,_) s F t@(TV n c) = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
-mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguZ f (iSubst s) i0 i1; pure (σ$Li i', wI iS s)}
+mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ f$Li i', wI iS s)}
                               -- constraints arise from >, +, &. so we should not propagate index constraints
-mgu f _ s (Li i0) (IZ i1 n) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, iTS n t$wI iS s)}
-mgu f _ s (IZ i0 n0) (Li i1) = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$Li i' in pure (t, iTS n0 t$wI iS s)}
+mgu f _ s (Li i0) (IZ i1 n) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ f$Li i' in pure (t, iTS n t$wI iS s)}
+mgu f _ s (IZ i0 n0) (Li i1) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ f$Li i' in pure (t, iTS n0 t$wI iS s)}
 mgu _ _ s (TV n c) t1@Li{} = if S.null c then pure (t1, iTS n t1 s) else pure (I, iTS n I s)
 mgu _ _ s t0@Li{} (TV n c) = if S.null c then pure (t0, iTS n t0 s) else pure (I, iTS n I s)
-mgu f _ s (IZ i0 n0) (IZ i1 n1) | n0/=n1 = do {(i',iS) <- mguZ f (iSubst s) i0 i1; let t=σ$IZ i' n0 in pure (t, iTS n1 t$wI iS s)}
+mgu f _ s (IZ i0 n0) (IZ i1 n1) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ f$IZ i' n0 in pure (t, iTS n1 t$wI iS s)}
 -- TODO: if C HasBits, force I (Li (?))
 mgu _ _ s t0@(IZ _ n0) (TV n1 c) | n0/=n1 = if S.null c then pure (t0, iTS n1 t0 s) else let t=TV n1 (S.insert IsZ c) in pure (t, iTS n0 t s)
                                  | otherwise = error "unexpected."
@@ -1030,7 +1036,7 @@ tyE s (EApp l e0 e1) = do
     a <- ft "a" l; b <- ft "b" l
     (e0', s0) <- tyE s e0
     (e1', s1) <- tyE s0 e1
-    s2 <- liftU $ mp (l,e0) NF s1 (eAnn e0'$>l) (a~>b)
+    s2 <- liftU $ mp (l,e0) RF s1 (eAnn e0'$>l) (a~>b)
     s3 <- liftU $ mp (l,e1) LF s2 (eAnn e1'$>l) a
     pure (EApp (void b) e0' e1', s3)
 tyE s (Cond l p e0 e1) = do
