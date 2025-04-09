@@ -296,9 +296,6 @@ instance NFData F where rnf=rwhnf
 
 instance Pretty F where pretty LF="⦠"; pretty RF="∢"; pretty Φ="Φ"; pretty AF="🝙"
 
-mguIPrep :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
-mguIPrep f is = mguI f is `on` rwI.(is!>)
-
 sc :: ISubst a -> I a -> I a -> UM a (ISubst a)
 sc is = su is `on` rwI.(is!>)
 
@@ -334,12 +331,6 @@ su _ i0 i1 = error (show (i0,i1))
 φ inp Ix{} j@IEV{} = pure (j, inp)
 φ inp (IEV l (Nm _ (U i) _)) j@StaPlus{} | i `IS.notMember` occI j = (,inp) <$> nIe l
 φ inp (IEV l (Nm _ (U i) _)) j@StaMul{} | i `IS.notMember` occI j = (,inp) <$> nIe l
-
-gi :: ISubst a
-   -> I a -- ^ Supplied return value
-   -> I a -- ^ @y@ in @f : x → y@
-   -> UM a (I a, ISubst a)
-gi inp i@Ix{} IEV{} = pure (i, inp)
 
 lsu s i0 i1 = (i0,)<$>su s i0 i1
 rsu s i0 i1 = (i1,)<$>su s i1 i0
@@ -461,7 +452,7 @@ mgSh _ l _ sh0@Π{} sh1@Cat{} = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0@Cat{} sh1@Π{} = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0@Rev{} sh1@Cat{} = throwError $ UShD l sh0 sh1
 mgSh _ l _ sh0@Cat{} sh1@Rev{} = throwError $ UShD l sh0 sh1
--- TODO: enter confessional context (error messages)
+-- TODO: confessional context (error messages)
 
 mguPrep :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mguPrep f l s t0 t1 =
@@ -637,7 +628,7 @@ sel axes sh = iroll (fmap snd (filter ((`elem` axes) . fst) (zip [1..] unrolled)
 
 tydrop :: Int -> Sh a -> Sh a
 tydrop 0 sh            = sh
-tydrop _ (_ `Cons` sh) = sh
+tydrop n (_ `Cons` sh) = tydrop (n-1) sh
 
 del axes sh = roll t (fmap snd (filter ((`notElem` axes) . fst) (zip [1..] unrolled))) where
     (unrolled, t) = unroll sh
