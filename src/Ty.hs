@@ -522,8 +522,8 @@ mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
     | c' `S.isSubsetOf` c = pure (t, iTS n1 t s)
     | c `S.isSubsetOf` c' = pure (t', iTS n0 t' s)
     | otherwise = φv (n0,c) (n1,c') s
-mgu f l s t@(TV n c) (Arr i (TV n' c')) | n'==n = undefined
-mgu f l s (Arr i (TV n c)) t@(TV n' c') | n'==n = undefined
+mgu f l s (TV n c) (Arr i (TV n' c')) | n'==n = scalar f l s i >>= φv (n,c) (n',c')
+mgu f l s (Arr i (TV n c)) (TV n' c') | n'==n = scalar f l s i >>= φv (n,c) (n',c')
 mgu f l s (TV n c) (Arr i (TV n' c')) | IsZ `S.member` c = scalar f l s i >>= φv (n,c) (n',c')
 mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `S.member` c' = scalar f l s i >>= φv (n,c) (n',c')
 mgu _ (l,_) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
