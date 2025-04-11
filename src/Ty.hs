@@ -770,7 +770,7 @@ tyB _ (Conv as) = do
     a <- ftv "a"; b <- ftv "b"
     let nx = Ix () <$> ns
         opTy = Arr (nx <|| sh) a ~> b
-        t = Arrow (Arr ((zipWith3 (\dϵ iϵ n -> StaMul () dϵ (iϵ+:n)) dix is nx) <|| sh) a) (Arr (((+:Ix()1)<$>is) <|| Nil) b)
+        t = Arrow (Arr (zipWith3 (\dϵ iϵ n -> StaMul () dϵ (iϵ+:n)) dix is nx <|| sh) a) (Arr (((+:Ix()1)<$>is) <|| Nil) b)
     pure (opTy ~> t, mempty)
   where (ns,ds) = unzip as; dix=Ix ().fromMaybe 1<$>ds
 tyB _ (Focus ns) = do
