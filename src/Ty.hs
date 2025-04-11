@@ -75,7 +75,6 @@ instance Monoid (Subst a) where
 instance NFData a => NFData (TyE a) where
 
 located l p = pretty l <> ":" <+> p
-lf l f p = pretty l <> ":" <+> pretty f <+> p
 
 instance Pretty a => Pretty (TyE a) where
     pretty (IllScoped l n)         = located l$ squotes (pretty n) <+> "is not in scope."
