@@ -364,28 +364,19 @@ ni inp (StaPlus l i₀ j₀) (StaPlus _ i₁ j₁) = do
 ni inp i@(IEV _ n0) (IEV _ n1) | n0==n1 = pure (i, inp)
 ni inp (Ix l n) (StaMul _ (Ix _ m) i) | (k,0) <- n `quotRem` m = ni inp (Ix l k) i
 ni inp (StaMul _ (Ix _ n) i) (Ix l m) | (k,0) <- n `quotRem` m = ni inp i (Ix l k)
-
-mguI :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
-mguI CF = \s i0 i1 -> (i0,)<$>cuc s i0 i1; mguI RF = φ; mguI LF = ni
-
-{-
-mguI f inp (StaMul l i0 i1) (StaMul _ j0 j1) = do
-    -- FIXME: too stringent
-    (k, s) <- mguI f inp i0 j0
-    (m, s') <- mguIPrep f s i1 j1
-    pure (StaMul l k m, s')
--- (cause problems: introduced by ug. improperly higher-rank handling+unified with seed...)
-mguI f inp (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
+ni s (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
     k <- IVar l <$> nI l
-    (_,s0) <- mguI f inp n (k+:Ix l₀ (c`div`m))
-    (_,s1) <- mguIPrep f s0 i (StaMul l₀ mi k+:Ix l₁ (c-j))
+    (_,s0) <- ni s n (k+:Ix l₀ (c`div`m))
+    (_,s1) <- nc s0 i (StaMul l₀ mi k+:Ix l₁ (c-j))
     pure (StaMul l mi k+:Ix l₀ c, s1)
   where
     c=lcm m j
 -- n*m, i+j, (m,j known) then must be divisible by m and >=j
 -- unify to m*k+lcm(m,j)
 -- Then n=k+(lcm(m,j)/m), i=m*k+(lcm(m,j)-j)
--}
+
+mguI :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
+mguI CF = \s i0 i1 -> (i0,)<$>cuc s i0 i1; mguI RF = φ; mguI LF = ni
 
 splitFromLeft :: Int -> [a] -> ([a], [a])
 splitFromLeft n xs | nl <- length xs = splitAt (nl-n) xs
