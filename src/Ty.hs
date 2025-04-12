@@ -298,9 +298,11 @@ instance NFData F where rnf=rwhnf
 
 instance Pretty F where pretty LF="⦠"; pretty RF="∢"; pretty CF="≬"
 
+instance Show F where show=show.pretty
+
 ctx'ize u is = u is `on` rwI.(is!>)
 
-cuc = ctx'ize uc; nc = ctx'ize ni
+cuc = ctx'ize uc; nc = ctx'ize ni; φc = ctx'ize φ
 
 uc :: ISubst a
    -> I a -- ^ supplied
@@ -337,8 +339,8 @@ uc _ i0@(IEV l _) i1@StaMul{} = throwError$AF l i0 i1
 φ inp Ix{} j@IEV{} = pure (j, inp)
 φ inp (IEV l _) StaPlus{} = (,inp) <$> nIe l
 φ inp (IEV l _) StaMul{} = (,inp) <$> nIe l
-φ inp (Ix _ i) (StaPlus _ (IVar _ n) (Ix l j)) | i>=j = let t=Ix l (i-j) in pure (t, insert n t inp)
-φ inp (StaPlus _ (IVar _ n) (Ix l i)) (Ix _ j) | j>=i = let t=Ix l (j-i) in pure (t, insert n t inp)
+φ inp i0@(Ix _ i) (StaPlus _ (IVar _ n) (Ix l j)) | i>=j = let i'=Ix l (i-j) in pure (i0, insert n i' inp)
+φ inp (StaPlus _ (IVar _ n) (Ix l i)) i1@(Ix _ j) | j>=i = let i'=Ix l (j-i) in pure (i1, insert n i' inp)
 φ inp i@(IVar _ n0) (IVar _ n1) | n0==n1 = pure (i, inp)
 φ inp i0@(IVar l (Nm _ (U u) _)) i1 | u `IS.member` occI i1 = throwError$OI l i0 i1
                                     | otherwise = pure (i1, IM.insert u i1 inp)
@@ -375,7 +377,7 @@ ni s (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
 -- Then n=k+(lcm(m,j)/m), i=m*k+(lcm(m,j)-j)
 
 mguI :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
-mguI CF = \s i0 i1 -> (i0,)<$>cuc s i0 i1; mguI RF = φ; mguI LF = ni
+mguI CF = \s i0 i1 -> (i0,)<$>uc s i0 i1; mguI RF = φ; mguI LF = ni
 
 splitFromLeft :: Int -> [a] -> ([a], [a])
 splitFromLeft n xs | nl <- length xs = splitAt (nl-n) xs
