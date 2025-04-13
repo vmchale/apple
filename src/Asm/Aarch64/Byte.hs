@@ -89,6 +89,9 @@ i9 i = (fromIntegral ((i.&.0b111111111) `shiftR` 4), 0b1111 .&. fromIntegral i)
 
 lb r rD = (0x7 .&. be r) `shiftL` 5 .|. be rD
 
+br3 opc0 opc1 opc2 r0 r1 r2 = [opc0, opc1 `shiftL` 5 .|. be r2, opc2 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]
+br2 opc0 opc1 opc2 r0 r1 = [opc0, opc1, opc2 `shiftL`  2 .|. be r1 `shiftR` 3, lb r1 r0]
+
 asm :: Int -> (IM.IntMap (Ptr Word8), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> [AArch64 AReg FAReg ()] -> [[Word8]]
 asm _ _ [] = []
 asm ix st (MovZ _ r i s:asms) = [0b11010010, 0b1 `shiftL` 7 .|. fromIntegral (s `quot` 16) `shiftL` 5 .|. fromIntegral (i `shiftR` 11), fromIntegral (0xff .&. (i `shiftR` 3)), fromIntegral (0x7 .&. i) `shiftL` 5 .|. be r]:asm (ix+4) st asms
@@ -97,33 +100,33 @@ asm ix st (MovK _ r i s:asms) = [0b11110010, 0b1 `shiftL` 7 .|. fromIntegral (s 
 asm ix st (FMovDR _ d r:asms) = [0b10011110, 0b01100111, be r `shiftR` 3, lb r d]:asm (ix+4) st asms
 asm ix st (FMovXX _ d0 d1:asms) = [0b00011110, 0x1 `shiftL` 6 .|. 0b100000, 0b10000 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (MovQQ _ q0 q1:asms) = [0b01001110, 0b101 `shiftL` 5 .|. be q1, 0b111 `shiftL` 2 .|. be q1 `shiftR` 3, lb q1 q0]:asm (ix+4) st asms
-asm ix st (Fadd _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b001010 `shiftL` 2 .|. (be d1 `shiftR` 3), lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fmul _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0x2 `shiftL` 2 .|. (be d1 `shiftR` 3), lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fsub _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b1110 `shiftL` 2 .|. (be d1 `shiftR` 3), lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fdiv _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b110 `shiftL` 2 .|. (be d1 `shiftR` 3), lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fmax _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b10010 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fmin _ d0 d1 d2:asms) = [0b00011110, 0x3 `shiftL` 5 .|. be d2, 0b10110 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fabs _ d0 d1:asms) = [0b00011110, 0x60, 0x3 `shiftL` 6 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fabs2 _ v0 v1:asms) = [0b01001110, 0b11100000, 0b111110 `shiftL` 2 .|. be v1 `shiftR` 3, lb v1 v0]:asm (ix+4) st asms
+asm ix st (Fadd _ d0 d1 d2:asms) = br3 0b00011110 0x3 0b001010 d0 d1 d2:asm (ix+4) st asms
+asm ix st (Fmul _ d0 d1 d2:asms) = br3 0b00011110 0x3 0x2 d0 d1 d2:asm (ix+4) st asms
+asm ix st (Fsub _ d0 d1 d2:asms) = br3 0b00011110 0x3 0b1110 d0 d1 d2:asm (ix+4) st asms
+asm ix st (Fdiv _ d0 d1 d2:asms) = br3 0b00011110 0x3 0b110 d0 d1 d2:asm (ix+4) st asms
+asm ix st (Fmax _ d0 d1 d2:asms) = br3 0b00011110 0x3 0b10010 d0 d1 d2:asm (ix+4) st asms
+asm ix st (Fmin _ d0 d1 d2:asms) = br3 0b00011110 0x3 0b10110 d0 d1 d2:asm (ix+4) st asms
+asm ix st (Fabs _ d0 d1:asms) = br2 0b00011110 0x60 (0x3 `shiftL` 4) d0 d1:asm (ix+4) st asms
+asm ix st (Fabs2 _ v0 v1:asms) = br2 0b01001110 0b11100000 0b111110 v0 v1:asm (ix+4) st asms
 -- https://stackoverflow.com/a/57312875/11296354
 -- .2D arrangement specifier = two doubles in vector register
-asm ix st (Fadd2 _ x0 x1 x2:asms) = [0b01001110, 0x3 `shiftL` 5 .|. be x2, 0b110101 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
-asm ix st (Fsub2 _ x0 x1 x2:asms) = [0b01001110, 0x7 `shiftL` 5 .|. be x2, 0b110101 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
-asm ix st (Fmul2 _ x0 x1 x2:asms) = [0b01101110, 0b11 `shiftL` 5 .|. be x2, 0b110111 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
-asm ix st (Fdiv2 _ x0 x1 x2:asms) = [0b01101110, 0x3 `shiftL` 5 .|. be x2, 0b111111 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
-asm ix st (Fmax2 _ x0 x1 x2:asms) = [0b01001110, 0x3 `shiftL` 5 .|. be x2, 0b111101 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
-asm ix st (Fmin2 _ x0 x1 x2:asms) = [0b01001110, 0x7 `shiftL` 5 .|. be x2, 0b111101 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
+asm ix st (Fadd2 _ x0 x1 x2:asms) = br3 0b01001110 0x3 0b110101 x0 x1 x2:asm (ix+4) st asms
+asm ix st (Fsub2 _ x0 x1 x2:asms) = br3 0b01001110 0x7 0b110101 x0 x1 x2:asm (ix+4) st asms
+asm ix st (Fmul2 _ x0 x1 x2:asms) = br3 0b01101110 0b11 0b110111 x0 x1 x2:asm (ix+4) st asms
+asm ix st (Fdiv2 _ x0 x1 x2:asms) = br3 0b01101110 0x3 0b111111 x0 x1 x2:asm (ix+4) st asms
+asm ix st (Fmax2 _ x0 x1 x2:asms) = br3 0b01001110 0x3 0b111101 x0 x1 x2:asm (ix+4) st asms
+asm ix st (Fmin2 _ x0 x1 x2:asms) = br3 0b01001110 0x7 0b111101 x0 x1 x2:asm (ix+4) st asms
 asm ix st (Fmadd _ d0 d1 d2 d3:asms) = [0b00011111, 0x2 `shiftL` 5 .|. be d2, be d3 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
 asm ix st (Fmsub _ d0 d1 d2 d3:asms) = [0b00011111, 0x2 `shiftL` 5 .|. be d2, 0x1 `shiftL` 7 .|. be d3 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fsqrt2 _ x0 x1:asms) = [0b01101110, 0b11100001, 0b111110 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
+asm ix st (Fsqrt2 _ x0 x1:asms) = br2 0b01101110 0b11100001 0b111110 x0 x1:asm (ix+4) st asms
 asm ix st (Fneg2 _ x0 x1:asms) = [0b01101110, 0x7 `shiftL` 5, 0b111110 `shiftL` 2 .|. be x1 `shiftR` 3, lb x1 x0]:asm (ix+4) st asms
-asm ix st (Fmla _ d0 d1 d2:asms) = [0b01001110, 0b11 `shiftL` 5 .|. be d2, 0b110011 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fmls _ d0 d1 d2:asms) = [0b01001110, 0x7 `shiftL` 5 .|. be d2, 0b110011 `shiftL` 2 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
-asm ix st (Faddp _ d v:asms) = [0b01111110, 0b1110000, 0b110110 `shiftL` 2 .|. be v `shiftR` 3, lb v d]:asm (ix+4) st asms
-asm ix st (Fmaxp _ d v:asms) = [0b01111110, 0b1110000, 0b111110 `shiftL` 2 .|. be v `shiftR` 3, lb v d]:asm (ix+4) st asms
-asm ix st (Fminp _ d v:asms) = [0b01111110, 0b11110000, 0b111110 `shiftL` 2 .|. be v `shiftR` 3, lb v d]:asm (ix+4) st asms
-asm ix st (EorS _ v0 v1 v2:asms) = [0b01101110, 0x1 `shiftL` 5 .|. be v2, 0x7 `shiftL` 2 .|. be v1 `shiftR` 3, lb v1 v0]:asm (ix+4) st asms
-asm ix st (EorD _ v0 v1 v2:asms) = [0b00101110, 0x1 `shiftL` 5 .|. be v2, 0x7 `shiftL` 2 .|. be v1 `shiftR` 3, lb v1 v0]:asm (ix+4) st asms
+asm ix st (Fmla _ d0 d1 d2:asms) = br3 0b01001110 0b11 0b110011 d0 d1 d2:asm (ix+4) st asms
+asm ix st (Fmls _ d0 d1 d2:asms) = br3 0b01001110 0x7 0b110011 d0 d1 d2:asm (ix+4) st asms
+asm ix st (Faddp _ d v:asms) = br2 0b01111110 0b1110000 0b110110 d v:asm (ix+4) st asms
+asm ix st (Fmaxp _ d v:asms) = br2 0b01111110 0b1110000 0b111110 d v:asm (ix+4) st asms
+asm ix st (Fminp _ d v:asms) = br2 0b01111110 0b11110000 0b111110 d v:asm (ix+4) st asms
+asm ix st (EorS _ v0 v1 v2:asms) = br3 0b01101110 0x1 0x7 v0 v1 v2:asm (ix+4) st asms
+asm ix st (EorD _ v0 v1 v2:asms) = br3 0b00101110 0x1 0x7 v0 v1 v2:asm (ix+4) st asms
 asm ix st (ZeroS x v:asms) = asm ix st (EorS x v v v:asms)
 asm ix st (ZeroD x v:asms) = asm ix st (EorD x v v v:asms)
 asm ix st (Label{}:asms) = asm ix st asms
@@ -156,7 +159,7 @@ asm ix st (MovRR x r0 SP:asms) = asm ix st (AddRC x r0 SP 0 IZero:asms)
 asm ix st (MovRR x SP r1:asms) = asm ix st (AddRC x SP r1 0 IZero:asms)
 asm ix st (MovRR _ r0 r1:asms) = [0b10101010, be r1, 0x3, 0x7 `shiftL` 5 .|. be r0]:asm (ix+4) st asms
 asm ix st (AsrR _ r0 r1 r2:asms) = [0x9a, 0x3 `shiftL` 6 .|. be r2, 0b1010 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
-asm ix st (LslR _ r0 r1 r2:asms) = [0x9a, 0x6 `shiftL` 5 .|. be r2, 0b1000 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
+asm ix st (LslR _ r0 r1 r2:asms) = br3 0x9a 0x6 0b1000 r0 r1 r2:asm (ix+4) st asms
 asm ix st (ZeroR _ r:asms) = [0b11001010, be r, be r `shiftR` 3, lb r r]:asm (ix+4) st asms
 asm ix st (Csel _ r0 r1 r2 p:asms) = [0b10011010, 0x1 `shiftL` 7 .|. be r2, bp p `shiftL` 4 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Cset _ r p:asms) = [0b10011010, 0b10011111, ip p `shiftL` 4 .|. 0x7, 0x7 `shiftL` 5 .|. be r]:asm (ix+4) st asms
@@ -215,9 +218,9 @@ asm ix st (LdrS x q (R rb):asms) = asm ix st (LdrS x q (RP rb 0):asms)
 asm ix st (LdrS _ q (RP rb u):asms) | (u',0) <- u `quotRem` 16, u <= 65520 = [0b00111101, 0b11 `shiftL` 6 .|. fromIntegral (u' `shiftR` 6), fromIntegral (0b11111 .&. u') `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (LdrS _ q (Po rb i):asms) | i >= -256 && i <= 255 = let (ub,lub)=i9 i in [0b00111100, 0x6 `shiftL` 5 .|. ub, lub `shiftL` 4 .|. 0x1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
 asm ix st (StrS _ q (BI rb ri s):asms) = [0b00111100, 0b101 `shiftL` 5 .|. be ri, 0b011 `shiftL` 5 .|. bs s `shiftL` 4 .|. 0b10 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q]:asm (ix+4) st asms
-asm ix st (Dup _ q r:asms) = [0b01001110, 0b01000, 0x3 `shiftL` 2 .|. be r `shiftR` 3, lb r q]:asm (ix+4) st asms
+asm ix st (Dup _ q r:asms) = br2 0b01001110 0b01000 0x3 q r:asm (ix+4) st asms
 asm ix st (Ins _ q i r:asms) | i <= 1 = [0b01001110, i `shiftL` 4 .|. 0b1000, 0x7 `shiftL` 2 .|. be r `shiftR` 3, lb r q]:asm (ix+4) st asms
-asm ix st (DupD _ q0 q1 0:asms) = [0b1001110, 0b01000, 0x1 `shiftL` 2 .|. be q1 `shiftR` 3, lb q1 q0]:asm (ix+4) st asms
+asm ix st (DupD _ q0 q1 0:asms) = br2 0b1001110 0b01000 0x1 q0 q1:asm (ix+4) st asms
 asm ix st (Ldp2 _ q0 q1 (RP rb u):asms) | (uϵ, 0) <- u `quotRem` 16, u <= 1008 = [0b10101101, 0x1 `shiftL` 6 .|. fromIntegral (uϵ `shiftR` 1), fromIntegral (0x1 .&. uϵ) `shiftL` 7 .|. be q1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q0]:asm (ix+4) st asms
 asm ix st (Ldp2 _ q0 q1 (Po rb i):asms) | (i',0) <- i `quotRem` 16, i >= -1024 && i <= 1004 = let (ub,lub)=i7 i' in [0b10101100, 0x3 `shiftL` 6 .|. ub, lub `shiftL` 7 .|. be q1 `shiftL` 2 .|. be rb `shiftR` 3, lb rb q0]:asm (ix+4) st asms
 asm ix st (Ldp2 x q0 q1 (R rb):asms) = asm ix st (Ldp2 x q0 q1 (RP rb 0):asms)
@@ -229,9 +232,9 @@ asm ix st (Scvtf _ d r:asms) = [0b10011110, 0b01100010, be r `shiftR` 3, lb r d]
 asm ix st (Fcvtms _ r d:asms) = [0x9e, 0b01110000, be d `shiftR` 3, lb d r]:asm (ix+4) st asms
 asm ix st (Fcvtps _ r d:asms) = [0x9e, 0b01101000, be d `shiftR` 3, lb d r]:asm (ix+4) st asms
 asm ix st (Fcvtas _ r d:asms) = [0x9e, 0b01100100, be d `shiftR` 3, lb d r]:asm (ix+4) st asms
-asm ix st (Fsqrt _ d0 d1:asms) = [0b00011110, 0b01100001, 0x3 `shiftL` 6 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
-asm ix st (Fneg _ d0 d1:asms) = [0b00011110, 0b01100001, 0x1 `shiftL` 6 .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
-asm ix st (Frintm _ d0 d1:asms) = [0b00011110, 0b01100101, 0x1 `shiftL` 6  .|. be d1 `shiftR` 3, lb d1 d0]:asm (ix+4) st asms
+asm ix st (Fsqrt _ d0 d1:asms) = br2 0b00011110 0b01100001 (0x3 `shiftL` 4) d0 d1:asm (ix+4) st asms
+asm ix st (Fneg _ d0 d1:asms) = br2 0b00011110 0b01100001 (0x1 `shiftL` 4) d0 d1:asm (ix+4) st asms
+asm ix st (Frintm _ d0 d1:asms) = br2 0b00011110 0b01100101 (0x1 `shiftL` 4) d0 d1:asm (ix+4) st asms
 asm ix st (Asr _ r0 r1 s:asms) = [0b10010011, 0x1 `shiftL` 6 .|. s, 0b111111 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Lsl _ r0 r1 s:asms) =
     let immr= (-s) `mod` 64
