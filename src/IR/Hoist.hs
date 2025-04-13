@@ -194,7 +194,17 @@ outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` n
 
 -- expand tree
 et :: Graph -> Tbl Stmt -> Tree N -> [(N, [N])]
-et g ss t = expandLoop t <$> loopHeads g ss [] t
+et g ss t = expandLoop t <$> loopHeads [] t
+  where
+    loopHeads :: [N] -> Tree N -> [N]
+    loopHeads seen (Node n cs) =
+        let bes=hasEdge n #. seen
+        in (if isMJ n then (bes++) else id) $ concatMap (loopHeads (n:seen)) cs
+      where
+        isMJ nϵ | MJ{} <- ss A.! nϵ = True | otherwise = False
+
+    hasEdge :: Node -> Node -> Bool
+    hasEdge n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
 
 -- everything the start node dominates
 expandLoop :: Tree N -> N -> (N,[N])
@@ -203,16 +213,6 @@ expandLoop t s = (s, fromJust (go t))
   where
     go (Node n tϵ) | n==s = Just$concatMap toList tϵ
     go (Node _ ns) = mh (go<$>ns) where mh xs=case catMaybes xs of {[] -> Nothing; (nϵ:_) -> Just nϵ}
-
-loopHeads :: Graph -> Tbl Stmt -> [N] -> Tree N -> [N]
-loopHeads g ss seen (Node n cs) =
-    let bes=hasEdge g n #. seen
-    in (if isMJ n then (bes++) else id) $ concatMap (loopHeads g ss (n:seen)) cs
-  where
-    isMJ nϵ | MJ{} <- ss A.! nϵ = True | otherwise = False
-
-hasEdge :: Graph -> Node -> Node -> Bool
-hasEdge g n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
 
 mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, AnnTbl)
 mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
