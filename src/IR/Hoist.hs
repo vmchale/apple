@@ -142,8 +142,11 @@ rwL _ (ss, a)     = (ss, nx a)
 
 hoist :: Label -> [Stmt] -> ([Stmt], Label)
 hoist u ss = flip runState u $ do
-    (cf, m, is, dels) <- indels ss
-    let go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
+    (cf,m,h) <- gatherLoops ss
+    let dels = IS.fromList (mapMaybe snd3 h)
+        is = thread ((\(n,_,s) -> n!:s)<$>h) IM.empty
+
+        go ((_,n):ssϵ) | n `IS.member` dels = go ssϵ
         go ((s,n):ssϵ) | Just cs <- IM.lookup n is = let (css, S _ _ subst) = {-# SCC "consolidate" #-} consolidate cs in bimap (subst<>) ((css++[s])++) (go ssϵ)
         go ((s,_):ssϵ) = second (s:)$go ssϵ
         go [] = (M.empty, [])
@@ -153,25 +156,18 @@ hoist u ss = flip runState u $ do
   where
     (@>) s = mapF (\t -> M.findWithDefault t t s)
     consolidate = first concat . flip runState emptyS . traverse c
-
-    c (LL l) = pure [L l]
-    c (FM t x) = do
-        seen <- gets f1s
-        case M.lookup x seen of
-            Nothing -> i1 x t$>[MX t (KF x)]
-            Just r  -> modify (br t r) $> []
-    c (F2M t x) = do
-        seen <- gets f2s
-        case M.lookup x seen of
-            Nothing -> i2 x t$>[MX2 t (KF x)]
-            Just r  -> modify (br2 t r) $> []
-
-indels :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, IM.IntMap [CM], IS.IntSet)
-indels ss = do
-    (c,ls,h) <- gatherLoops ss
-    let ds = IS.fromList (mapMaybe snd3 h)
-        is = thread ((\(n,_,s) -> n!:s)<$>h)
-    pure (c, ls, is IM.empty, ds)
+      where
+        c (LL l) = pure [L l]
+        c (FM t x) = do
+            seen <- gets f1s
+            case M.lookup x seen of
+                Nothing -> i1 x t$>[MX t (KF x)]
+                Just r  -> modify (br t r) $> []
+        c (F2M t x) = do
+            seen <- gets f2s
+            case M.lookup x seen of
+                Nothing -> i2 x t$>[MX2 t (KF x)]
+                Just r  -> modify (br2 t r) $> []
 
 gatherLoops :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, [(N, Maybe N, CM)])
 gatherLoops ss = let (ls, cf, dm) = loop ss
@@ -191,6 +187,12 @@ loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) x,y,z)).graphParts
 
 graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, NLiveness)], AnnTbl)
 graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,reconstructFlat$fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
+  where
+    mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, AnnTbl)
+    mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
+        where
+        domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
+        sa = A.array (0,m-1) ((node.snd &&& id)<$>ns)
 
 -- expand tree
 et :: Graph -> Tbl Stmt -> Tree N -> [(N, [N])]
@@ -206,9 +208,3 @@ et g ss = loopHeads [] IM.empty
 
     hasEdge :: Node -> Node -> Bool
     hasEdge n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
-
-mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, AnnTbl)
-mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
-  where
-    domG = IM.fromList [ (node ann, IS.fromList (conn ann)) | (_, ann) <- ns ]
-    sa = A.array (0,m-1) ((node.snd &&& id)<$>ns)
