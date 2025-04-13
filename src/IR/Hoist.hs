@@ -180,6 +180,10 @@ gatherLoops ss = let (ls, cf, dm) = loop ss
   where
     bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
+    {-# SCC outers #-}
+    outers :: [Loop] -> [Loop]
+    outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
+
 loop :: [Stmt] -> ([Loop], [(Stmt, NLiveness)], AnnTbl)
 loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) x,y,z)).graphParts
   where
@@ -187,10 +191,6 @@ loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) x,y,z)).graphParts
 
 graphParts :: [Stmt] -> (Graph, Tree N, [(Stmt, NLiveness)], AnnTbl)
 graphParts ss = (\ssϵ -> (\(x,y,z) -> (x,y,reconstructFlat$fst ssϵ,z))$mkG ssϵ) (mkControlFlow ss)
-
-{-# SCC outers #-}
-outers :: [Loop] -> [Loop]
-outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
 
 -- expand tree
 et :: Graph -> Tbl Stmt -> Tree N -> [(N, [N])]
