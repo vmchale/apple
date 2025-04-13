@@ -63,9 +63,6 @@ mapFF f (FConv e)     = FConv (mapFE f e)
 view :: (FTemp -> FTemp) -> F2 -> F2
 view f (F2Temp i) = case f (FTemp i) of (FTemp j) -> F2Temp j
 
-vv :: F2 -> FTemp
-vv (F2Temp i) = FTemp i
-
 mapF :: (FTemp -> FTemp) -> Stmt -> Stmt
 mapF f (MX t e)       = MX (f t) (mapFF f e)
 mapF f (MX2 t e)      = MX2 (view f t) (mapFF2 f e)
@@ -137,6 +134,7 @@ type LM=State Label
 
 i1 x t = modify (\(S f1 f2 s) -> S (M.insert x t f1) f2 s); i2 x t = modify (\(S f1 f2 s) -> S f1 (M.insert x t f2) s)
 br t r (S f1 f2 s) = S f1 f2 (M.insert t r s)
+br2 = br `on` vv where vv (F2Temp i) = FTemp i
 
 rwL :: LLoop -> (Stmt, NLiveness) -> (Stmt, N)
 rwL s (MJ e l, a) = let n=nx a in (case M.lookup l s of {Just (lϵ,m) | n `IS.notMember` m -> MJ e lϵ; _ -> MJ e l}, n)
@@ -166,7 +164,7 @@ hoist u ss = flip runState u $ do
         seen <- gets f2s
         case M.lookup x seen of
             Nothing -> i2 x t$>[MX2 t (KF x)]
-            Just r  -> modify ((br `on` vv) t r) $> []
+            Just r  -> modify (br2 t r) $> []
 
 indels :: [Stmt] -> LM ([(Stmt, NLiveness)], LLoop, IM.IntMap [CM], IS.IntSet)
 indels ss = do
@@ -183,7 +181,7 @@ gatherLoops ss = let (ls, cf, dm) = loop ss
     bimerge xys = let (xs,ys)=unzip xys in (mconcat xs, concat ys)
 
 loop :: [Stmt] -> ([Loop], [(Stmt, NLiveness)], AnnTbl)
-loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) [] x,y,z)).graphParts
+loop = first3 (fmap mkL).(\(w,x,y,z) -> (et w (fmap fst z) x,y,z)).graphParts
   where
     mkL (n, ns) = (n, IS.fromList ns)
 
@@ -195,8 +193,8 @@ outers :: [Loop] -> [Loop]
 outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` ns') ls) ls
 
 -- expand tree
-et :: Graph -> Tbl Stmt -> [N] -> Tree N -> [(N, [N])]
-et g ss seen t = expandLoop t <$> loopHeads g ss seen t
+et :: Graph -> Tbl Stmt -> Tree N -> [(N, [N])]
+et g ss t = expandLoop t <$> loopHeads g ss [] t
 
 -- everything the start node dominates
 expandLoop :: Tree N -> N -> (N,[N])
