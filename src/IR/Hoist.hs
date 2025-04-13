@@ -14,7 +14,7 @@ import           Data.Graph.Dom                 (Graph, Node, domTree)
 import qualified Data.IntMap                    as IM
 import qualified Data.IntSet                    as IS
 import qualified Data.Map.Strict                as M
-import           Data.Maybe                     (catMaybes, fromJust, mapMaybe)
+import           Data.Maybe                     (mapMaybe)
 import           Data.Tuple.Extra               (first3, snd3)
 import           Data.Void                      (Void, absurd)
 import           IR
@@ -194,25 +194,18 @@ outers ls = filter (\(_,ns) -> not $ any (\(_,ns') -> ns `IS.isProperSubsetOf` n
 
 -- expand tree
 et :: Graph -> Tbl Stmt -> Tree N -> [(N, [N])]
-et g ss t = expandLoop <$> loopHeads [] t
+et g ss = loopHeads [] IM.empty
   where
-    loopHeads :: [N] -> Tree N -> [N]
-    loopHeads seen (Node n cs) =
+    loopHeads :: [N] -> IM.IntMap [N] -> Tree N -> [(N,[N])]
+    loopHeads seen treeview (Node n cs) =
         let bes=hasEdge n #. seen
-        in (if isMJ n then (bes++) else id) $ concatMap (loopHeads (n:seen)) cs
+        in (if isMJ n then ([(be, treeview IM.! be) | be <- bes]++) else id) $ concatMap (loopHeads (n:seen) (flattree treeview)) cs
       where
         isMJ nϵ | MJ{} <- ss A.! nϵ = True | otherwise = False
+        flattree = IM.insert n (concatMap toList cs)
 
     hasEdge :: Node -> Node -> Bool
     hasEdge n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
-
-    -- everything the start node dominates
-    expandLoop :: N -> (N,[N])
-    --- wir müssen wissen, wir werden wissen
-    expandLoop s = (s, fromJust (go t))
-      where
-        go (Node n tϵ) | n==s = Just$concatMap toList tϵ
-        go (Node _ ns) = mh (go<$>ns) where mh xs=case catMaybes xs of {[] -> Nothing; (nϵ:_) -> Just nϵ}
 
 mkG :: ([(Stmt, ControlAnn)], Int) -> (Graph, Tree N, AnnTbl)
 mkG (ns,m) = (domG, domTree (node (snd (head ns)), domG), sa)
