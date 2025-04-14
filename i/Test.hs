@@ -11,13 +11,15 @@ import           Test.Tasty                       (defaultMain, testGroup)
 import           Test.Tasty.Golden                (goldenVsString)
 
 main = defaultMain $ testGroup "REPL"
-  [ goldenVsString "pythagorean means" "i/golden/pythagoreanMeans.out" (testRepl "i/ex/pythagoreanMeans.🍏")
-  , goldenVsString "median" "i/golden/median.out" (testRepl "i/ex/median.🍏")
-  , goldenVsString "tutorial" "i/golden/doc.out" (testRepl "i/ex/doc.🍎")
-  , goldenVsString "var" "i/golden/var.out" (testRepl "i/ex/var.🍏")
-  , goldenVsString "rank" "i/golden/sum.out" (testRepl "i/ex/sum.🍎")
-  , goldenVsString "small" "i/golden/loop.out" (testRepl "i/ex/loop.🍏")
+  [ goldenRepl "pythagorean means" "i/golden/pythagoreanMeans.out" "i/ex/pythagoreanMeans.🍏"
+  , goldenRepl "median" "i/golden/median.out" "i/ex/median.🍏"
+  , goldenRepl "tutorial" "i/golden/doc.out" "i/ex/doc.🍎"
+  , goldenRepl "var" "i/golden/var.out" "i/ex/var.🍏"
+  , goldenRepl "rank" "i/golden/sum.out" "i/ex/sum.🍎"
+  , goldenRepl "small" "i/golden/loop.out" "i/ex/loop.🍏"
   ]
+  where
+    goldenRepl str out src = goldenVsString str out (testRepl src)
 
 testRepl :: FilePath -> IO BSL.ByteString
 testRepl fp = withSystemTempFile "REPL" $ \t h -> do
