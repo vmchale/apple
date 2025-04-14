@@ -9,12 +9,12 @@ import Data.Functor (($>))
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word8)
-import Dbg
 import Foreign.C.String (CString)
 import Foreign.C.Types (CInt (..), CSize (..), CChar)
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr (Ptr, castPtr, castFunPtrToPtr, plusPtr, nullPtr)
 import Foreign.Storable (poke, pokeByteOff)
+import JIT
 import Prettyprinter (Doc, Pretty)
 import Prettyprinter.Ext
 import System.Info (arch)

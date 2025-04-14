@@ -15,36 +15,29 @@ module Dbg ( dumpAAbs
            , dumpX86Ass
            , topt
            , nasm
-           , pBIO, edAtxt, eDtxt
            , module P
            ) where
 
 import           A
 import qualified Asm.Aarch64                as Aarch64
-import qualified Asm.Aarch64.Byte           as Aarch64
 import qualified Asm.Aarch64.P              as Aarch64
 import           Asm.Aarch64.T
 import           Asm.L
 import           Asm.LI
 import           Asm.M
 import qualified Asm.X86                    as X86
-import           Asm.X86.Byte
 import           Asm.X86.P
 import           Asm.X86.Trans
 import           C
 import           C.Alloc
 import qualified C.Trans                    as C
 import           CF
-import           Control.Exception          (throw, throwIO)
-import           Control.Monad              ((<=<))
+import           Control.Exception          (throw)
 import           Data.Bifunctor             (second)
-import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import qualified Data.Text                  as T
-import qualified Data.Text.IO               as TIO
-import qualified Data.Text.Lazy             as TL
 import           Data.Text.Lazy.Builder     (toLazyText)
 import           Data.Text.Lazy.Builder.Int (hexadecimal)
 import           Data.Tree                  (drawTree)
@@ -56,49 +49,6 @@ import           L
 import           P
 import           Prettyprinter              (Doc, Pretty (..), comma, concatWith, punctuate, space, (<+>))
 import           Prettyprinter.Ext
-import           System.Info                (arch)
-
-pBIO :: BSL.ByteString -> IO ()
-pBIO = either throwIO TIO.putStr <=< case arch of {"x86_64" -> dtxt; "aarch64" -> dAtxt}
-
-comm :: Either a (IO b) -> IO (Either a b)
-comm (Left err) = pure(Left err)
-comm (Right x)  = Right <$> x
-
-wIdM :: Functor m => ((c, a) -> m b) -> (c, a) -> m (a, b)
-wIdM f (d, x) = (x,)<$>f (d, x)
-
-dtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
-dtxt = asmTxt x86G
-
-eDtxt :: Int -> E a -> IO (Either (Err a) T.Text)
-eDtxt k = asmTxt (ex86G k)
-
-asmTxt f = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM dbgFp) . f
-    where zipS [] []                 = []
-          zipS (x@X86.Label{}:xs) ys = (x,BS.empty):zipS xs ys
-          zipS (x:xs) (y:ys)         = (x,y):zipS xs ys
-
-edAtxt :: Int -> E a -> IO (Either (Err a) T.Text)
-edAtxt k = aAsmTxt (eAarch64 k)
-
-dAtxt :: BSL.ByteString -> IO (Either (Err AlexPosn) T.Text)
-dAtxt = aAsmTxt aarch64
-
-aAsmTxt f = fmap (fmap (T.unlines.fmap present.uncurry zipS)) . comm . fmap (wIdM Aarch64.dbgFp) . f
-    where zipS [] []                                    = []
-          zipS (x@Aarch64.C{}:xs) (y0:y1:y2:y3:y4:ys)   = (x,y0):(x,y1):(x,y2):(x,y3):(x,y4):zipS xs ys
-          zipS (x@Aarch64.MovRCf{}:xs) (y0:y1:y2:y3:ys) = (x,y0):(x,y1):(x,y2):(x,y3):zipS xs ys
-          zipS (x@Aarch64.LdrRL{}:xs) (y0:y1:y2:y3:ys)  = (x,y0):(x,y1):(x,y2):(x,y3):zipS xs ys
-          zipS (x@Aarch64.Label{}:xs) ys                = (x,BS.empty):zipS xs ys
-          zipS (x:xs) (y:ys)                            = (x,y):zipS xs ys
-
-rightPad :: Int -> T.Text -> T.Text
-rightPad n str = T.take n (str <> T.replicate n " ")
-
-present :: Pretty a => (a, BS.ByteString) -> T.Text
-present (x, b) = rightPad 45 (ptxt x) <> he b
-    where he = T.unwords.fmap (TL.toStrict . tlhex2).BS.unpack
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
 nasm f = (\(d,i) -> "section .data\n\n" <> nasmD (IM.toList d) <#> i) . second ((prolegomena <#>).pAsm) . either throw id . x86G

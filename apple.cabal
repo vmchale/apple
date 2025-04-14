@@ -59,10 +59,13 @@ library
     import:             warn
     exposed-modules:
         A
+        Asm.Aarch64
+        Asm.M
+        Asm.X86
+        B
         CGen
         Dbg
         Hs.A
-        Hs.FFI
         I
         L
         Nm
@@ -70,25 +73,20 @@ library
         Parser
         Prettyprinter.Ext
         Sh
-        Sys.DL
         Ty
         Ty.M
         U
 
     build-tool-depends:
-        , alex:alex      >=3.5.0.0
-        , c2hs:c2hs
-        , happy:happy    >=2.1
-        , hsc2hs:hsc2hs
+        , alex:alex    >=3.5.0.0
+        , happy:happy  >=2.1
 
     hs-source-dirs:     src
     other-modules:
         A.Eta
         A.Opt
         A.S
-        Asm.Aarch64
         Asm.Aarch64.B
-        Asm.Aarch64.Byte
         Asm.Aarch64.CF
         Asm.Aarch64.Fr
         Asm.Aarch64.Guess
@@ -103,10 +101,7 @@ library
         Asm.G
         Asm.L
         Asm.LI
-        Asm.M
-        Asm.X86
         Asm.X86.B
-        Asm.X86.Byte
         Asm.X86.CF
         Asm.X86.Frame
         Asm.X86.Opt
@@ -114,7 +109,6 @@ library
         Asm.X86.Sp
         Asm.X86.SpX
         Asm.X86.Trans
-        B
         Bits
         C
         C.Alloc
@@ -177,7 +171,6 @@ library
         , split                >=0.2.0.0
         , text
         , transformers
-        , unix
 
 library as
     import:          warn
@@ -196,6 +189,36 @@ library as
         , temporary
         , text
 
+library jit
+    import:             warn
+    exposed-modules:
+        Hs.FFI
+        JIT
+        Sys.DL
+
+    other-modules:
+        Asm.Aarch64.Byte
+        Asm.X86.Byte
+
+    hs-source-dirs:     jit
+    default-extensions:
+        OverloadedStrings
+        TupleSections
+
+    build-tool-depends:
+        , c2hs:c2hs
+        , hsc2hs:hsc2hs
+
+    build-depends:
+        , apple
+        , base
+        , bytestring
+        , containers
+        , extra
+        , prettyprinter  >=1.7.0
+        , text
+        , unix
+
 library apple-repl
     import:             warn
     exposed-modules:    REPL
@@ -210,6 +233,7 @@ library apple-repl
         , criterion
         , directory
         , haskeline
+        , jit
         , libffi
         , prettyprinter
         , QuickCheck
@@ -232,6 +256,7 @@ foreign-library apple
         , apple
         , base
         , bytestring     >=0.11.0.0
+        , jit
         , prettyprinter  >=1.7.0
         , text
 
@@ -307,6 +332,7 @@ test-suite apple-test
         , bytestring
         , fast-arithmetic
         , hypergeometric    >=0.1.4.0
+        , jit
         , QuickCheck
         , tasty
         , tasty-hunit
@@ -343,4 +369,5 @@ benchmark apple-bench
         , deepseq
         , erf
         , hypergeometric  >=0.1.2.0
+        , jit
         , statistics

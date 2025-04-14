@@ -22,7 +22,6 @@ import           Data.Text.Lazy.Encoding          (encodeUtf8)
 import qualified Data.Text.Lazy.IO                as TLIO
 import           Data.Traversable                 (forM)
 import           Data.Word                        (Word8)
-import           Dbg
 import           Foreign.C.Types                  (CDouble (..))
 import           Foreign.LibFFI                   (callFFI, retCDouble, retCUChar, retInt64, retPtr, retWord8)
 import           Foreign.Marshal.Alloc            (free)
@@ -31,6 +30,7 @@ import           Foreign.Ptr                      (Ptr, castPtr, plusPtr)
 import           Foreign.Storable                 (peek)
 import           Hs.A
 import           Hs.FFI
+import           JIT
 import           L
 import           Nm
 import           Prettyprinter                    (Doc, Pretty, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))

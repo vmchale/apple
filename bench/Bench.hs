@@ -13,9 +13,9 @@ import           Foreign.Ptr                      (FunPtr, Ptr)
 import           Foreign.Storable                 (Storable (..))
 import           Hs.A
 import           I
+import           JIT
 import qualified Math.Hypergeometric              as Hyper
 import qualified Math.SpecialFunction             as Math
-import           P
 import           Statistics.Distribution          (cumulative)
 import           Statistics.Distribution.StudentT (studentT)
 import           System.Info                      (arch)

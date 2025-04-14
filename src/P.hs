@@ -2,7 +2,6 @@
 
 -- pipeline
 module P ( Err (..), FErr (..)
-         , CCtx
          , tyParse
          , tyParseCtx
          , tc
@@ -22,22 +21,17 @@ module P ( Err (..), FErr (..)
          , as, x86G
          , eDumpX86, eDumpAarch64
          , ex86G, eAarch64
-         , funP, aFunP
-         , eFunP, eAFunP
-         , ctxFunP, actxFunP
          ) where
 
 import           A
 import           A.Eta
 import           A.Opt
 import           Asm.Aarch64
-import qualified Asm.Aarch64.Byte                 as Aarch64
 import qualified Asm.Aarch64.Opt                  as Aarch64
 import qualified Asm.Aarch64.P                    as Aarch64
 import           Asm.Aarch64.T
 import           Asm.M
 import           Asm.X86
-import           Asm.X86.Byte
 import           Asm.X86.Opt
 import qualified Asm.X86.P                        as X86
 import           Asm.X86.Trans
@@ -50,13 +44,9 @@ import           Control.Exception                (Exception, throw, throwIO)
 import           Control.Monad                    ((<=<))
 import           Control.Monad.Trans.State.Strict (evalState, state)
 import           Data.Bifunctor                   (first, second)
-import qualified Data.ByteString                  as BS
 import qualified Data.ByteString.Lazy             as BSL
 import qualified Data.Text                        as T
-import           Data.Tuple.Extra                 (first3)
 import           Data.Typeable                    (Typeable)
-import           Data.Word                        (Word8)
-import           Foreign.Ptr                      (FunPtr, Ptr)
 import           GHC.Generics                     (Generic)
 import           I
 import           IR
@@ -70,7 +60,6 @@ import           Prettyprinter                    (Doc, Pretty (..))
 import           Prettyprinter.Ext
 import           R.Dfn
 import           R.R
-import           Sys.DL
 import           Ty
 import           Ty.M
 
@@ -115,31 +104,6 @@ tyExpr = fmap (pretty.eAnn.fst).tyParse
 
 getTy :: BSL.ByteString -> Either (Err AlexPosn) (T ())
 getTy = fmap (eAnn.fst) . checkCtx <=< tyParse
-
-eFunP :: (Pretty a, Typeable a) => Int -> CCtx -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word8))
-eFunP = eFunPG assembleCtx ex86G
-
-eAFunP :: (Pretty a, Typeable a) => Int -> (CCtx, MCtx) -> E a -> IO (Int, FunPtr b, Maybe (Ptr Word8))
-eAFunP = eFunPG Aarch64.assembleCtx eAarch64
-
-eFunPG jit asm m ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm m)
-
-ctxFunP :: CCtx -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word8))
-ctxFunP = ctxFunPG assembleCtx x86G
-
-actxFunP :: (CCtx, MCtx) -> BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word8))
-actxFunP = ctxFunPG Aarch64.assembleCtx aarch64
-
-ctxFunPG jit asm ctx = fmap (first3 BS.length) . (jit ctx <=< either throwIO pure . asm)
-
-funP :: BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word8))
-funP = fmap π.allFp <=< either throwIO pure . x86G
-
-π :: (a, b, c, d) -> (b, c, d)
-π (_,y,z,w) = (y,z,w)
-
-aFunP :: BSL.ByteString -> IO (Int, FunPtr a, Maybe (Ptr Word8))
-aFunP = fmap π.Aarch64.allFp <=< either throwIO pure . aarch64
 
 as :: T.Text -> BSL.ByteString -> Doc ann
 as f = prolegomena.either throw (second aso).aarch64
