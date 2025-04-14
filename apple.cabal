@@ -12,36 +12,36 @@ category:           Language, Array
 build-type:         Simple
 data-files:         ./include/apple_abi.h
 extra-source-files:
+    bench/apple/*.🍏
+    c/ffi.c
+    i/ex/*.🍎
+    i/ex/*.🍏
+    i/golden/*.out
     include/apple.h
     include/apple_p.h
     include/m.h
-    test/examples/*.🍎
-    test/examples/*.🍏
-    bench/apple/*.🍏
-    test/data/*.🍎
-    test/data/*.🍏
-    test/harness/*.c
+    Makefile
     math/*.🍎
     math/*.🍏
     math/numbertheory/*.🍎
     math/numbertheory/*.🍏
     math/stats/*.🍎
     math/stats/*.🍏
-    i/ex/*.🍏
-    i/ex/*.🍎
-    i/golden/*.out
-    Makefile
     mk/os.mk
-    pyc/Makefile
     pyc/*.c
-    Rc/Makefile
-    Rc/*.c
-    c/ffi.c
+    pyc/Makefile
     R/apple.R
+    Rc/*.c
+    Rc/Makefile
+    test/data/*.🍎
+    test/data/*.🍏
+    test/examples/*.🍎
+    test/examples/*.🍏
+    test/harness/*.c
 
 extra-doc-files:
-    README.md
     CHANGELOG.md
+    README.md
 
 source-repository head
     type:     git
@@ -56,154 +56,166 @@ common warn
         -Wcpp-undef -Wunused-packages -Wno-operator-whitespace-ext-conflict
 
 library
-    import: warn
+    import:             warn
     exposed-modules:
-        Dbg
-        P
         A
-        Ty
-        Ty.M
-        Nm
-        U
-        I
-        Sh
-        L
-        Parser
         CGen
+        Dbg
         Hs.A
         Hs.FFI
-        Sys.DL
+        I
+        L
+        Nm
+        P
+        Parser
         Prettyprinter.Ext
+        Sh
+        Sys.DL
+        Ty
+        Ty.M
+        U
+
     build-tool-depends:
-        alex:alex >=3.5.0.0, happy:happy >=2.1, hsc2hs:hsc2hs, c2hs:c2hs
+        , alex:alex      >=3.5.0.0
+        , c2hs:c2hs
+        , happy:happy    >=2.1
+        , hsc2hs:hsc2hs
 
     hs-source-dirs:     src
     other-modules:
-        B
-        Bits
-        A.S
-        CF
-        CF.AL
-        LI
-        R
-        LR
-        R.Dfn
-        R.R
-        Parser.Rw
-        Ty.Clone
         A.Eta
         A.Opt
-        Op
-        E
-        C
-        C.Alloc
-        C.CF
-        C.Trans
-        IR
-        IR.CF
-        IR.Hoist
-        IR.Opt
-        IR.C
-        Class.E
-        Data.Copointed
-        Asm.Ar
-        Asm.Ar.P
-        Asm.L
-        Asm.LI
-        Asm.BB
-        Asm.X86
-        Asm.X86.B
-        Asm.X86.Byte
-        Asm.X86.CF
-        Asm.X86.Opt
-        Asm.X86.Frame
-        Asm.X86.P
-        Asm.X86.Sp
-        Asm.X86.SpX
-        Asm.X86.Trans
+        A.S
         Asm.Aarch64
         Asm.Aarch64.B
         Asm.Aarch64.Byte
         Asm.Aarch64.CF
-        Asm.Aarch64.Guess
         Asm.Aarch64.Fr
+        Asm.Aarch64.Guess
+        Asm.Aarch64.Opt
         Asm.Aarch64.P
         Asm.Aarch64.Sp
-        Asm.Aarch64.Opt
         Asm.Aarch64.T
-        Asm.G
-        Asm.M
+        Asm.Ar
+        Asm.Ar.P
+        Asm.BB
         Asm.CF
+        Asm.G
+        Asm.L
+        Asm.LI
+        Asm.M
+        Asm.X86
+        Asm.X86.B
+        Asm.X86.Byte
+        Asm.X86.CF
+        Asm.X86.Frame
+        Asm.X86.Opt
+        Asm.X86.P
+        Asm.X86.Sp
+        Asm.X86.SpX
+        Asm.X86.Trans
+        B
+        Bits
+        C
+        C.Alloc
+        C.CF
+        C.Trans
+        CF
+        CF.AL
+        Class.E
+        Data.Copointed
+        E
+        IR
+        IR.C
+        IR.CF
+        IR.Hoist
+        IR.Opt
+        LI
+        LR
         Nm.IntMap
         Nm.IntSet
+        Op
+        Parser.Rw
         Q
+        R
+        R.Dfn
+        R.R
+        Ty.Clone
 
     default-extensions:
-        DeriveFoldable DeriveFunctor LambdaCase OverloadedStrings
+        DeriveFoldable
+        DeriveFunctor
+        LambdaCase
+        OverloadedStrings
         TupleSections
+
     other-extensions:
-        DeriveGeneric DeriveAnyClass StandaloneDeriving
-        RankNTypes FlexibleContexts MagicHash BinaryLiterals
-        ScopedTypeVariables MultiParamTypeClasses
+        BinaryLiterals
+        DeriveAnyClass
+        DeriveGeneric
+        FlexibleContexts
         GeneralizedNewtypeDeriving
+        MagicHash
+        MultiParamTypeClasses
+        RankNTypes
+        ScopedTypeVariables
+        StandaloneDeriving
 
     build-depends:
-        base >=4.17 && <5,
-        prettyprinter >=1.7.0,
-        deepseq >=1.4.3.0,
-        text,
-        mtl >=2.2.2,
-        containers >=0.6.3.1,
-        microlens,
-        microlens-mtl >=0.1.8.0,
-        array,
-        bytestring,
-        transformers,
-        unix,
-        split >=0.2.0.0,
-        extra >=1.7.4,
-        composition-prelude >=1.1.0.1,
-        dom-lt
+        , array
+        , base                 >=4.17    && <5
+        , bytestring
+        , composition-prelude  >=1.1.0.1
+        , containers           >=0.6.3.1
+        , deepseq              >=1.4.3.0
+        , dom-lt
+        , extra                >=1.7.4
+        , microlens
+        , microlens-mtl        >=0.1.8.0
+        , mtl                  >=2.2.2
+        , prettyprinter        >=1.7.0
+        , split                >=0.2.0.0
+        , text
+        , transformers
+        , unix
 
 library as
-    import: warn
-    exposed-modules:
-        H
-    other-modules: Nasm, As
+    import:          warn
+    exposed-modules: H
+    other-modules:
+        As
+        Nasm
 
-    hs-source-dirs:   as
-
+    hs-source-dirs:  as
     build-depends:
-        base,
-        apple,
-        process,
-        temporary,
-        prettyprinter,
-        text,
-        bytestring
+        , apple
+        , base
+        , bytestring
+        , prettyprinter
+        , process
+        , temporary
+        , text
 
 library apple-repl
-    import: warn
-    exposed-modules: REPL
-    other-modules: QC
-    hs-source-dirs: repl
-    default-extensions:
-        OverloadedStrings
-
+    import:             warn
+    exposed-modules:    REPL
+    other-modules:      QC
+    hs-source-dirs:     repl
+    default-extensions: OverloadedStrings
     build-depends:
-        base,
-        apple,
-        bytestring,
-        containers,
-        criterion,
-        directory,
-        haskeline,
-        libffi,
-        prettyprinter,
-        QuickCheck,
-        split >=0.2.0.0,
-        text,
-        transformers
+        , apple
+        , base
+        , bytestring
+        , containers
+        , criterion
+        , directory
+        , haskeline
+        , libffi
+        , prettyprinter
+        , QuickCheck
+        , split          >=0.2.0.0
+        , text
+        , transformers
 
 foreign-library apple
     import:             warn
@@ -212,128 +224,123 @@ foreign-library apple
     hs-source-dirs:     lib
     other-modules:      E
     include-dirs:       include
-    install-includes:   apple.h
-                        m.h
+    install-includes:
+        apple.h
+        m.h
 
     build-depends:
-        base,
-        apple,
-        bytestring >=0.11.0.0,
-        prettyprinter >=1.7.0,
-        text
+        , apple
+        , base
+        , bytestring     >=0.11.0.0
+        , prettyprinter  >=1.7.0
+        , text
 
     if os(linux)
-        lib-version-info:   1:0:0
+        lib-version-info: 1:0:0
 
     if os(windows)
         options: standalone
 
 executable atc
-    import:           warn
-    main-is:          Main.hs
-    hs-source-dirs:   app
-    other-modules:    Paths_apple
-    autogen-modules:  Paths_apple
-
+    import:          warn
+    main-is:         Main.hs
+    hs-source-dirs:  app
+    other-modules:   Paths_apple
+    autogen-modules: Paths_apple
     build-depends:
-        base,
-        apple,
-        optparse-applicative >=0.13.0.0
+        , apple
+        , base
+        , optparse-applicative  >=0.13.0.0
 
 executable writeo
-    import:           warn
-    main-is:          Main.hs
-    hs-source-dirs:   exe
-    other-modules:    Paths_apple
-    autogen-modules:  Paths_apple
-
+    import:          warn
+    main-is:         Main.hs
+    hs-source-dirs:  exe
+    other-modules:   Paths_apple
+    autogen-modules: Paths_apple
     build-depends:
-        base,
-        as,
-        optparse-applicative >=0.14.0.0,
-        text
+        , as
+        , base
+        , optparse-applicative  >=0.14.0.0
+        , text
 
 executable arepl
-    import:           warn
-    main-is:          Main.hs
-    hs-source-dirs:   run
-
+    import:         warn
+    main-is:        Main.hs
+    hs-source-dirs: run
     build-depends:
-        base,
-        apple,
-        apple-repl,
-        haskeline,
-        transformers,
-        text,
-        directory,
-        filepath
+        , apple
+        , apple-repl
+        , base
+        , directory
+        , filepath
+        , haskeline
+        , text
+        , transformers
 
 test-suite repltest
-    import:             warn
-    type:               exitcode-stdio-1.0
-    main-is:            Test.hs
-    hs-source-dirs:     i
-    ghc-options:        -threaded -rtsopts "-with-rtsopts=-N -k1k"
+    import:         warn
+    type:           exitcode-stdio-1.0
+    main-is:        Test.hs
+    hs-source-dirs: i
+    ghc-options:    -threaded -rtsopts "-with-rtsopts=-N -k1k"
     build-depends:
-        base,
-        apple-repl,
-        bytestring,
-        haskeline,
-        silently,
-        tasty,
-        tasty-golden,
-        temporary,
-        transformers
+        , apple-repl
+        , base
+        , bytestring
+        , haskeline
+        , silently
+        , tasty
+        , tasty-golden
+        , temporary
+        , transformers
 
 test-suite apple-test
-    import:             warn
-    type:               exitcode-stdio-1.0
-    main-is:            Spec.hs
-    hs-source-dirs:     test
-    ghc-options:        -threaded -rtsopts "-with-rtsopts=-N -k1k"
-
+    import:         warn
+    type:           exitcode-stdio-1.0
+    main-is:        Spec.hs
+    hs-source-dirs: test
+    ghc-options:    -threaded -rtsopts "-with-rtsopts=-N -k1k"
     build-depends:
-        base,
-        apple,
-        tasty,
-        tasty-hunit,
-        bytestring,
-        hypergeometric >=0.1.4.0,
-        fast-arithmetic,
-        QuickCheck,
-        tasty-quickcheck
+        , apple
+        , base
+        , bytestring
+        , fast-arithmetic
+        , hypergeometric    >=0.1.4.0
+        , QuickCheck
+        , tasty
+        , tasty-hunit
+        , tasty-quickcheck
 
 test-suite apple-o
-    import:           warn
-    type:             exitcode-stdio-1.0
-    main-is:          Test.hs
-    hs-source-dirs:   of
-    ghc-options:      -rtsopts -with-rtsopts=-k1k
-
+    import:         warn
+    type:           exitcode-stdio-1.0
+    main-is:        Test.hs
+    hs-source-dirs: of
+    ghc-options:    -rtsopts -with-rtsopts=-k1k
     build-depends:
-        base,
-        as,
-        tasty,
-        tasty-hunit,
-        temporary,
-        process,
-        text,
-        filepath,
-        directory
+        , as
+        , base
+        , directory
+        , filepath
+        , process
+        , tasty
+        , tasty-hunit
+        , temporary
+        , text
 
 benchmark apple-bench
-    import:             warn
-    type:               exitcode-stdio-1.0
-    main-is:            Bench.hs
-    hs-source-dirs:     bench
-    ghc-options:        -rtsopts
-
+    import:         warn
+    type:           exitcode-stdio-1.0
+    main-is:        Bench.hs
+    hs-source-dirs: bench
+    ghc-options:    -rtsopts
     build-depends:
-        base,
-        apple,
-        criterion,
-        statistics,
-        bytestring,
-        erf,
-        hypergeometric >=0.1.2.0,
-        deepseq
+        , apple
+        , base
+        , bytestring
+        , criterion
+        , deepseq
+        , erf
+        , hypergeometric  >=0.1.2.0
+        , statistics
