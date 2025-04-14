@@ -131,18 +131,17 @@ mI f i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
                              | otherwise = Left $ MI f i0 i1
 mI _ (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI _ ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
+mI ΦF IEV{} _ = Right mempty
+mI ΦF _ IEV{} = Right mempty
 mI _ (IEV _ n) (IEV _ n') | n == n' = Right mempty
-mI LF i0@IEV{} i1@IEV{} = Left $ MI LF i0 i1
-mI LF i0@IEV{} i1@Ix{} = Left $ MI LF i0 i1
-mI LF i0@Ix{} i1@IEV{} = Left $ MI LF i0 i1
-mI _ Ix{} IEV{} = Right mempty
-mI _ IEV{} IEV{} = Right mempty
+mI f i0@IEV{} i1 = Left $ MI f i0 i1
+mI f i0 i1@IEV{} = Left $ MI f i0 i1
 mI f (StaPlus _ i (Ix _ iϵ)) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ i (Ix _ j)) | iϵ >= j = mI f i (Ix l (iϵ-j))
 mI f (StaPlus _ (Ix _ iϵ) i) (Ix l j) | j >= iϵ = mI f i (Ix l (j-iϵ))
 mI f (Ix l iϵ) (StaPlus _ (Ix _ j) i) | iϵ >= j = mI f i (Ix l (iϵ-j))
-mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent (TODO confessional error context)
-mI f (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: stringent
+mI f (StaPlus _ i j) (StaPlus _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: too stringent (enter confessional error context)
+mI f (StaMul _ i j) (StaMul _ i' j') = (<>) <$> mI f i i' <*> mI f j j' -- FIXME: too stringent
 
 mSh :: F -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mSh _ (SVar (Nm _ (U i) _)) sh      = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
@@ -160,9 +159,7 @@ mSh _ sh sh'                        = Left $ MS sh sh'
 
 -- I think 'focus' for match is ??
 match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
-match t t' = either throw id (maM RF t t')
-
-inv RF=LF; inv _=RF
+match t t' = either throw id (maM Ua t t')
 
 maM :: F -> T a -> T a -> Either (TyE a) (Subst a)
 maM f (Li n) (Li m)              = mI f m n
@@ -174,7 +171,7 @@ maM _ B B                        = Right mempty
 maM _ (TV (Nm _ (U i) l) c) t    | Just e <- (l,t) `enforcesn't` c = Left e
                                  | otherwise = Right $ Subst (IM.singleton i t) IM.empty IM.empty
                                  -- FIXME invert focus
-maM f (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM (inv f) t0 t0' <*> maM f t1 t1' -- TODO: use <\> over <>
+maM f (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM f t0 t0' <*> maM ΦF t1 t1' -- TODO: use <\> over <>
 maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
 maM f (Arr sh t) t'                 = (<>) <$> mSh f sh Nil <*> maM f t t'
 maM f (P ts) (P ts')                = mconcat <$> zipWithM (maM f) ts ts'
@@ -288,7 +285,7 @@ iTS n t = mapTySubst (insert n t)
 uTS u n = mapTySubst (IM.insert u n)
 iSh u sh s = s { sSubst = IM.insert u sh (sSubst s) }
 
-data F = LF | RF | CF
+data F = Ua | CF | ΦF
 
 instance NFData F where rnf=rwhnf
 
@@ -296,40 +293,40 @@ instance NFData F where rnf=rwhnf
 -- CF check argument suitability
 -- Φ branch out (conditionals)
 
-instance Pretty F where pretty LF="⦠"; pretty RF="∢"; pretty CF="≬"
+instance Pretty F where pretty ΦF="Φ"; pretty Ua="≬"; pretty CF="@"
 
 instance Show F where show=show.pretty
 
 ctx'ize u is = u is `on` rwI.(is!>)
 
-cuc = ctx'ize uc; nc = ctx'ize ni; φc = ctx'ize φ
+suc = ctx'ize su; uc = ctx'ize ui; φc = ctx'ize φ
 
-uc :: ISubst a
+su :: ISubst a
    -> I a -- ^ supplied
    -> I a -- ^ argument accepted by function
    -> UM a (ISubst a)
-uc s i0@(Ix l i) i1@(Ix _ j) | i==j = pure s
+su s i0@(Ix l i) i1@(Ix _ j) | i==j = pure s
                              | otherwise = throwError $ AF l i0 i1
-uc s i0@(IEV l n) i1@(IEV _ m) | n==m = pure s
+su s i0@(IEV l n) i1@(IEV _ m) | n==m = pure s
                                | otherwise = throwError $ AF l i0 i1
-uc s (IVar _ n0) (IVar _ n1) | n0==n1 = pure s
-uc s ix@(IVar l (Nm _ (U i) _)) ix' | i `IS.member` occI ix' = throwError $ OI l ix ix'
+su s (IVar _ n0) (IVar _ n1) | n0==n1 = pure s
+su s ix@(IVar l (Nm _ (U i) _)) ix' | i `IS.member` occI ix' = throwError $ OI l ix ix'
                                     | otherwise = pure (IM.insert i ix' s)
-uc s ix ix'@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $ OI l ix' ix
+su s ix ix'@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $ OI l ix' ix
                                     | otherwise = pure (IM.insert i ix s)
-uc s i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = uc s i (Ix lk (j-k))
+su s i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = su s i (Ix lk (j-k))
                                             | otherwise = throwError $ AF l i0 i1
-uc s i0@(Ix l i) i1@(StaPlus _ j (Ix _ k)) | i >= k = uc s j (Ix l (i-k))
+su s i0@(Ix l i) i1@(StaPlus _ j (Ix _ k)) | i >= k = su s j (Ix l (i-k))
                                            | otherwise = throwError $ AF l i0 i1
-uc s (StaPlus _ i0 i1) (StaPlus _ j0 j1) = do {s' <- uc s i0 j0; cuc s' i1 j1}
-uc s (StaMul _ (Ix _ m) j) (Ix l n) | (k,0) <- n `quotRem` m = uc s j (Ix l k)
-uc s (Ix l n) (StaMul _ (Ix _ m) j) | (k,0) <- n `quotRem` m = uc s (Ix l k) j
-uc _ i0@(Ix l _) i1@IEV{} = throwError$AF l i0 i1
-uc _ i0@(IEV l _) i1@Ix{} = throwError$AF l i0 i1
-uc _ i0@(StaPlus l _ _) i1@IEV{} = throwError$AF l i0 i1
-uc _ i0@(IEV l _) i1@StaPlus{} = throwError$AF l i0 i1
-uc _ i0@(StaMul l _ _) i1@IEV{} = throwError$AF l i0 i1
-uc _ i0@(IEV l _) i1@StaMul{} = throwError$AF l i0 i1
+su s (StaPlus _ i0 i1) (StaPlus _ j0 j1) = do {s' <- su s i0 j0; suc s' i1 j1}
+su s (StaMul _ (Ix _ m) j) (Ix l n) | (k,0) <- n `quotRem` m = su s j (Ix l k)
+su s (Ix l n) (StaMul _ (Ix _ m) j) | (k,0) <- n `quotRem` m = su s (Ix l k) j
+su _ i0@(Ix l _) i1@IEV{} = throwError$AF l i0 i1
+su _ i0@(IEV l _) i1@Ix{} = throwError$AF l i0 i1
+su _ i0@(StaPlus l _ _) i1@IEV{} = throwError$AF l i0 i1
+su _ i0@(IEV l _) i1@StaPlus{} = throwError$AF l i0 i1
+su _ i0@(StaMul l _ _) i1@IEV{} = throwError$AF l i0 i1
+su _ i0@(IEV l _) i1@StaMul{} = throwError$AF l i0 i1
 
 -- fan out (not necessary to propagate back)
 φ :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
@@ -348,36 +345,36 @@ uc _ i0@(IEV l _) i1@StaMul{} = throwError$AF l i0 i1
                                     | otherwise = pure (i0, IM.insert u i0 inp)
 φ inp (StaPlus _ i0 (Ix _ n)) (StaPlus _ i1 (Ix _ m)) | n==m = φ inp i0 i1
 
--- not necessary to propagate substitutions back? (currently we do)
-ni :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
-ni inp i@(Ix _ n) (Ix _ m) | n==m = pure (i, inp)
-ni inp i@(IVar _ n0) (IVar _ n1) | n0==n1 = pure (i, inp)
-ni inp i0 i1@(IVar l (Nm _ (U u) _)) | u `IS.notMember` occI i0 = pure (i0, IM.insert u i0 inp)
+ui :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
+ui inp i@(Ix _ n) (Ix _ m) | n==m = pure (i, inp)
+ui inp i@(IVar _ n0) (IVar _ n1) | n0==n1 = pure (i, inp)
+ui inp i0 i1@(IVar l (Nm _ (U u) _)) | u `IS.notMember` occI i0 = pure (i0, IM.insert u i0 inp)
                                      | otherwise = throwError$OI l i0 i1
-ni inp i0@(IVar l (Nm _ (U u) _)) i1 | u `IS.notMember` occI i1 = pure (i1, IM.insert u i1 inp)
+ui inp i0@(IVar l (Nm _ (U u) _)) i1 | u `IS.notMember` occI i1 = pure (i1, IM.insert u i1 inp)
                                      | otherwise = throwError$OI l i0 i1
-ni inp (StaPlus _ (IVar l n) (Ix _ i)) (Ix _ j) | j>=i = let t=Ix l (j-i) in pure (t, insert n t inp)
-ni inp (Ix _ i) (StaPlus _ (IVar l n) (Ix _ j)) | i>=j = let t=Ix l (i-j) in pure (t, insert n t inp)
-ni inp (StaPlus l i₀ j₀) (StaPlus _ i₁ j₁) = do
-    (i',s) <- ni inp i₀ i₁
-    (j',s') <- nc s j₀ j₁
+ui inp (StaPlus _ (IVar l n) (Ix _ i)) (Ix _ j) | j>=i = let t=Ix l (j-i) in pure (t, insert n t inp)
+ui inp (Ix _ i) (StaPlus _ (IVar l n) (Ix _ j)) | i>=j = let t=Ix l (i-j) in pure (t, insert n t inp)
+ui inp (StaPlus l i₀ j₀) (StaPlus _ i₁ j₁) = do
+    (i',s) <- ui inp i₀ i₁
+    (j',s') <- uc s j₀ j₁
     pure (StaPlus l i' j', s')
-ni inp i@(IEV _ n0) (IEV _ n1) | n0==n1 = pure (i, inp)
-ni inp (Ix l n) (StaMul _ (Ix _ m) i) | (k,0) <- n `quotRem` m = ni inp (Ix l k) i
-ni inp (StaMul _ (Ix _ n) i) (Ix l m) | (k,0) <- n `quotRem` m = ni inp i (Ix l k)
-ni s (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
+ui inp i@(IEV _ n0) (IEV _ n1) | n0==n1 = pure (i, inp)
+ui inp (Ix l n) (StaMul _ (Ix _ m) i) | (k,0) <- n `quotRem` m = ui inp (Ix l k) i
+ui inp (StaMul _ (Ix _ n) i) (Ix l m) | (k,0) <- n `quotRem` m = ui inp i (Ix l k)
+ui s (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
     k <- IVar l <$> nI l
-    (_,s0) <- ni s n (k+:Ix l₀ (c`div`m))
-    (_,s1) <- nc s0 i (StaMul l₀ mi k+:Ix l₁ (c-j))
+    (_,s0) <- ui s n (k+:Ix l₀ (c`div`m))
+    (_,s1) <- uc s0 i (StaMul l₀ mi k+:Ix l₁ (c-j))
     pure (StaMul l mi k+:Ix l₀ c, s1)
   where
     c=lcm m j
 -- n*m, i+j, (m,j known) then must be divisible by m and >=j
 -- unify to m*k+lcm(m,j)
 -- Then n=k+(lcm(m,j)/m), i=m*k+(lcm(m,j)-j)
+ui _ t0 t1 = error (show (t0,t1))
 
 mguI :: F -> ISubst a -> I a -> I a -> UM a (I a, ISubst a)
-mguI CF = \s i0 i1 -> (i0,)<$>uc s i0 i1; mguI RF = φ; mguI LF = ni
+mguI CF = \s i0 i1 -> (i0,)<$>su s i0 i1; mguI ΦF = φ; mguI Ua = ui
 
 splitFromLeft :: Int -> [a] -> ([a], [a])
 splitFromLeft n xs | nl <- length xs = splitAt (nl-n) xs
@@ -486,18 +483,19 @@ scalar f (l,_) s n = snd <$> mgSh f l s n Nil
 
 scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
-σ RF (Li IEV{}) = I; σ RF (IZ IEV{} t) = TV t (S.singleton IsZ); σ _ t = t
+σ ΦF (Li IEV{}) = I; σ ΦF (IZ IEV{} t) = TV t (S.singleton IsZ); σ _ t = t
 
 φv (n0,c0) (n1,c1) s = do {n <- nI (loc n0); let t=TV n (c0<>c1) in pure (t, iTS n0 t$iTS n1 t s)}
 
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
-mgu RF l s (Arrow t0 t1) (Arrow t0' t1') = do
-    (t0'',s0) <- mgu LF l s t0 t0'
-    (t1'',s1) <- mguPrep RF l s0 t1 t1'
-    pure (Arrow t0'' t1'', s1)
+mgu ΦF _ _ Arrow{} Arrow{} = undefined
 mgu CF l s (Arrow t0 t1) (Arrow t0' t1') = do
-    (t0'', s0) <- mgu CF l s t0' t0
-    (t1'', s1) <- mguPrep CF l s0 t1 t1'
+    (t0'',s0) <- mgu CF l s t0 t0'
+    (t1'',s1) <- mguPrep CF l s0 t1 t1'
+    pure (Arrow t0'' t1'', s1)
+mgu Ua l s (Arrow t0 t1) (Arrow t0' t1') = do
+    (t0'', s0) <- mgu Ua l s t0' t0
+    (t1'', s1) <- mguPrep Ua l s0 t1 t1'
     pure (Arrow t0'' t1'', s1)
 mgu _ _ s I I = pure (I, s)
 mgu _ _ s F F = pure (F, s)
@@ -575,7 +573,7 @@ mgu f l@(lϵ, e) s t@(Ρ (Nm _ (U j) _) rs) t'@(P ts) | j `IS.member` (occ@<>ts)
                                                     | otherwise = throwError $ UF lϵ e t t'
 mgu f l s t@P{} t'@Ρ{} = mgu f l s t' t
 mgu _ l@(lϵ,_) s t@(Ρ (Nm _ (U i) x) rs) t'@(Ρ (Nm _ (U j) _) rs') | i `IS.notMember` (occ@<>rs') && j `IS.notMember` (occ@<>rs) = do
-    (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep LF l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
+    (_, rss) <- tS (\sϵ (t0,t1) -> mguPrep Ua l sϵ t0 t1) s $ IM.elems $ IM.intersectionWith (,) rs rs'
     n<-nI x
     let t''=Ρ n (rs<>rs')
     pure (t'', uTS i t'$uTS j t'' rss)
@@ -815,7 +813,7 @@ tyB l (Rank as) = do
         fTy = foldr (~>) cod $ zipWith3 (\ax sh t -> case ax of {(_,Nothing) -> Arr (trim sh) t;(_,Just axs) -> Arr (sel axs sh) t}) as shs vs
         rTy = foldr (~>) codTy mArrs
         shsU = zipWith (\ax sh -> case ax of {(n,Nothing) -> tydrop n sh;(_,Just axs) -> del axs sh}) as shs
-        shUHere sh sh' = fmap snd (liftU $ mgShPrep RF l mempty (sh$>l) (sh'$>l))
+        shUHere sh sh' = fmap snd (liftU $ mgShPrep Ua l mempty (sh$>l) (sh'$>l))
     s <- zipWithM shUHere shsU (tail shsU++[codSh])
     pure (fTy ~> rTy, mconcat s)
 tyB _ Fold = do
@@ -1015,21 +1013,21 @@ tyE s e@(ALit l es) = do
     a <- ftv "a"
     (es', s') <- tS tyE s es
     let eTys = a : fmap eAnn es'
-        uHere sϵ t t' = mp (l,e) RF sϵ (t$>l) (t'$>l)
+        uHere sϵ t t' = mp (l,e) ΦF sϵ (t$>l) (t'$>l)
     ss' <- liftU $ zS uHere s' eTys (tail eTys)
     pure (ALit (vV (Ix () $ length es) a) es', ss')
 tyE s (EApp l e0 e1) = do
     a <- ft "a" l; b <- ft "b" l
     (e0', s0) <- tyE s e0
     (e1', s1) <- tyE s0 e1
-    s2 <- liftU $ mp (l,e0) RF s1 (eAnn e0'$>l) (a~>b)
+    s2 <- liftU $ mp (l,e0) CF s1 (eAnn e0'$>l) (a~>b)
     s3 <- liftU $ mp (l,e1) CF s2 (eAnn e1'$>l) a
     pure (EApp (void b) e0' e1', s3)
 tyE s (Cond l p e0 e1) = do
     (p',sP) <- tyE s p
     (e0',s0) <- tyE sP e0
     (e1',s1) <- tyE s0 e1
-    sP' <- liftU $ mp (eAnn p,p) RF s1 B (eAnn p'$>eAnn p); (tB, s0') <- liftU $ mguPrep RF (l,e0) sP' (eAnn e0'$>l) (eAnn e1'$>eAnn e1)
+    sP' <- liftU $ mp (eAnn p,p) ΦF s1 B (eAnn p'$>eAnn p); (tB, s0') <- liftU $ mguPrep ΦF (l,e0) sP' (eAnn e0'$>l) (eAnn e1'$>eAnn e1)
     pure (Cond (void tB) p' e0' e1', s0')
 tyE s (Var l n@(Nm _ (U u) _)) = do
     lSt<- gets staEnv
@@ -1046,7 +1044,7 @@ tyE s (Tup _ es) = do
     pure (Tup (P eTys) es', s')
 tyE s (Ann l e t) = do
     (e', s') <- tyE s e
-    s'' <- liftEither $ maM RF (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
+    s'' <- liftEither $ maM Ua (aT s'$fmap ($>l) eAnn e') (aT s' (t$>l))
     pure (e', s'<>s'')
 tyE _ Dfn{} = desugar; tyE _ ResVar{} = desugar; tyE _ Parens{} = desugar
 
