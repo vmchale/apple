@@ -1,5 +1,3 @@
-{-# LANGUAGE TupleSections #-}
-
 module Main (main) where
 
 import           Control.Monad.Trans.State.Strict (StateT, evalStateT, gets)
