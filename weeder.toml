@@ -10,7 +10,8 @@ roots = [
   '^Parser\.happy',
   'HappyAction',
   '^L\.(begin|end|skip|token|alexInputPrevChar|runAlex)',
-  '^Dbg\.(pBIO|dump(DomTree|Loop))'
+  '^Dbg\.dump(DomTree|Loop)',
+  '^JIT\.pBIO'
 ]
 unused-types = true
 
