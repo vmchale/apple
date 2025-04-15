@@ -59,12 +59,12 @@ mE f (Env l ees mm a h) = Env l (f ees) mm a h
 setL :: AlexUserState -> Env -> Env
 setL lSt (Env _ ees mm a h) = Env lSt ees mm a h
 
-type Repl a = InputT (StateT Env IO)
+type Repl = InputT (StateT Env IO)
 
 iSt :: Handle -> IO Env
 iSt h = Env alexInitUserState [] <$> mem' <*> case arch of {"x86_64" -> pure X64; "aarch64" -> AArch64<$>math'; _ -> error "Unsupported architecture!"} <*> pure h
 
-loop :: Repl AlexPosn ()
+loop :: Repl ()
 loop = do
     inp <- getInputLine " > "
     case words <$> inp of
@@ -98,16 +98,16 @@ loop = do
         Just e                 -> printExpr (unwords e) *> loop
         Nothing                -> pure ()
 
-del :: String -> Repl AlexPosn ()
+del :: String -> Repl ()
 del s = lift $ modify (mE (filter (\(Nm n _ _, _) -> n /= st))) where st=T.pack s
 
-listCtx :: Repl AlexPosn ()
+listCtx :: Repl ()
 listCtx = do {bs <- lg ee; putDocLn (prettyLines (pretty.fst<$>bs))}
 
-graph :: String -> Repl AlexPosn ()
+graph :: String -> Repl ()
 graph s = putDocLn $ either pretty id (dumpX86Ass (ubs s))
 
-showHelp :: Repl AlexPosn ()
+showHelp :: Repl ()
 showHelp = liftIO $ putStr $ concat
     [ helpOption ":help, :h" "" "Show this help"
     , helpOption ":yank, :y" "<fn> <file>" "Read file"
@@ -130,7 +130,7 @@ helpOption cmd args desc =
 ubs :: String -> BSL.ByteString
 ubs = encodeUtf8 . TL.pack
 
-disasm :: String -> Repl AlexPosn ()
+disasm :: String -> Repl ()
 disasm s = do
     st <- lg _lex
     case rwP st (ubs s) of
@@ -144,7 +144,7 @@ disasm s = do
                 Left err -> pErr err
                 Right b  -> do {h <- lg oh; liftIO (TIO.hPutStr h b)}
 
-eCtx :: Pretty e => (Int -> E AlexPosn -> Either e (Doc ann)) -> String -> Repl AlexPosn ()
+eCtx :: Pretty e => (Int -> E AlexPosn -> Either e (Doc ann)) -> String -> Repl ()
 eCtx d s = do
     st <- lg _lex
     case rwP st (ubs s) of
@@ -172,7 +172,7 @@ dbgAB t p = do
 
 hb = TL.unwords.map (toLazyTextWith 1.hexadecimal)
 
-inspect :: String -> Repl AlexPosn ()
+inspect :: String -> Repl ()
 inspect s = do
     st <- lg _lex
     case rwP st bs of
@@ -194,7 +194,7 @@ inspect s = do
                             _ -> pErr ("only arrays can be inspected." :: T.Text)
         where bs = ubs s
 
-(<~) :: String -> BSL.ByteString -> Repl AlexPosn ()
+(<~) :: String -> BSL.ByteString -> Repl ()
 f <~ bs = do
     st <- lg _lex
     case tyParseCtx st bs of
@@ -205,14 +205,14 @@ f <~ bs = do
             in lift $ do {modify (aEe n x'); modify (setL st')}
     where setM i' (_, mm, im) = (i', mm, im)
 
-iCtx :: String -> String -> Repl AlexPosn ()
+iCtx :: String -> String -> Repl ()
 iCtx f fp = do
     p <- liftIO $ doesFileExist fp
     if not p
         then tput "file does not exist."
         else do {bs <- liftIO $ BSL.readFile fp; f <~ bs}
 
-benchC :: String -> Repl AlexPosn ()
+benchC :: String -> Repl ()
 benchC s = case tyParse bs of
     Left err -> pErr err
     Right _ -> do
@@ -226,7 +226,7 @@ up (A.Arrow t0 t1@A.Arrow{}) = (t0:)<$>up t1
 up (A.Arrow t A.B)           = Just [t]
 up _                         = Nothing
 
-qc :: String -> Repl AlexPosn ()
+qc :: String -> Repl ()
 qc s = do
     st <- lg _lex
     case rwP st bs of
@@ -258,7 +258,7 @@ qc s = do
   where bs = ubs s
         cb 0=False; cb 1=True
 
-benchE :: String -> Repl AlexPosn ()
+benchE :: String -> Repl ()
 benchE s = do
     st <- lg _lex
     case rwP st bs of
@@ -350,7 +350,7 @@ freeByT _ _      = pure ()
 
 x <::> y = x <!> ":" <+> y
 
-printExpr :: String -> Repl AlexPosn ()
+printExpr :: String -> Repl ()
 printExpr s = do
     st <- lg _lex
     case rwP st bs of
@@ -417,7 +417,7 @@ mentions Id{} _               = error "Internal error."
 
 desugar = error "Internal error. Should have been desugared."
 
-eRepl :: E AlexPosn -> Repl AlexPosn (E AlexPosn)
+eRepl :: E AlexPosn -> Repl (E AlexPosn)
 eRepl e = do {ees <- lg ee; pure (flet ees e)}
     where flet = thread . fmap (\b@(n,eϵ) eR -> if eR `mentions` n then Let (eAnn eϵ) b eR else eR) where thread = foldr (.) id
 

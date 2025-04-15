@@ -20,7 +20,7 @@ namesStr = gets ((++bn) . fmap (T.unpack.name.fst) . ee)
 bn :: [String]
 bn = ["frange", "itof", "gen.", "di.", "sin.", "cos.", "rand.", "cyc.", "odd.", "even.", "abs.", "ug.", "take#", "drop#"]
 
-runRepl :: Repl a x -> IO x
+runRepl :: Repl x -> IO x
 runRepl x = do
     histDir <- (</> ".apple_history") <$> getHomeDirectory
     st <- iSt stdout
