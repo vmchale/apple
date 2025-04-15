@@ -17,6 +17,7 @@ main = defaultMain $ testGroup "REPL"
   , goldenRepl "var" "i/golden/var.out" "i/ex/var.🍏"
   , goldenRepl "rank" "i/golden/sum.out" "i/ex/sum.🍎"
   , goldenRepl "small" "i/golden/loop.out" "i/ex/loop.🍏"
+  , goldenRepl "slowft" "i/golden/ft.out" "i/ex/ft.🍏"
   ]
   where
     goldenRepl str out src = goldenVsString str out (testRepl src)

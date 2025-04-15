@@ -1,0 +1,2 @@
+:yank sft test/examples/slowft.🍏
+sft ([(sin.x,0)]'frange 0 7 8)
