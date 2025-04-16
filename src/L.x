@@ -543,14 +543,14 @@ instance Pretty Tok where
     pretty (TokInt _ i)    = pretty i
     pretty (TokResVar _ v) = "reserved variable" <+> squotes (pretty v)
     pretty (TokFloat _ f)  = pretty f
-    pretty (TokIx _ i)     = pretty (pSubscript i)
+    pretty (TokIx _ i)     = pretty (pSub i)
     pretty (TokAdLit _ is) = "𝔸" <> foldMap pretty is
 
-pSubscript :: Int -> T.Text
-pSubscript i =
+pSub :: Int -> T.Text
+pSub i =
     case i `quotRem` 10 of
         (0, d) -> pChar d
-        (b, d) -> pSubscript b <> pChar d
+        (b, d) -> pSub b <> pChar d
   where
     pChar iϵ = T.singleton (toEnum (iϵ+8320))
 
