@@ -38,10 +38,10 @@ instance Pretty CF where
               l var = "_" <> pretty var
 
 -- type translation error
-data TTE = HO | Poly | FArg | ArrFn deriving Show
+data TTE = HO | Poly | FArg | ArrFn | ArrΠ deriving Show
 
 instance Pretty TTE where
-    pretty HO = "Higher order"; pretty Poly = "Too polymorphic"; pretty FArg = "Function as argument"; pretty ArrFn = "Arrays of functions are not supported."
+    pretty HO = "Higher order"; pretty Poly = "Too polymorphic"; pretty FArg = "Function as argument"; pretty ArrFn = "Arrays of functions are not supported."; pretty ArrΠ = "Arrays of tuples of arrays not supported."
 
 pCty :: T.Text -> T a -> Either TTE (Doc ann)
 pCty nm t = ("#include<apple_abi.h>" <#>) . pretty <$> nmtCTy nm t
@@ -52,6 +52,8 @@ nmtCTy nm t = do{(ins,out) <- irTy (rLi t); CF nm<$>traverse cTy ins<*>cTy out}
 tCTy :: T a -> Either TTE ([CType], CType)
 tCTy t = do{(ins,out) <- irTy (rLi t); (,)<$>traverse cTy ins<*>cTy out}
 
+isArr = \case Arr{} -> True; _ -> False
+
 cTy :: T a -> Either TTE CType
 cTy F                 = pure (SC CR)
 cTy I                 = pure (SC CI)
@@ -60,7 +62,8 @@ cTy (Arr _ F)         = pure (AC CR)
 cTy (Arr _ I)         = pure (AC CI)
 cTy (Arr _ B)         = pure (AC CB)
 cTy (P ts)            = ΠC <$> traverse cTy ts
-cTy (Arr _ (P ts))    = ΠA <$> traverse cTy ts -- TODO: bail on array-of-tuple-of-array
+cTy (Arr _ (P ts))    | any isArr ts = Left ArrΠ
+                      | otherwise = ΠA <$> traverse cTy ts
 cTy (Arrow Arrow{} _) = Left FArg
 cTy (Arr _ Arrow{})   = Left ArrFn
 
