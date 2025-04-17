@@ -368,8 +368,7 @@ instance Pretty (Idiom a) where
 
 instance Show (Idiom a) where show=show.pretty
 
-data E a = ALit { eAnn :: a, arrLit :: [E a] } -- TODO: include shape?
-         -- TODO: bool array
+data E a = ALit { eAnn :: a, arrLit :: [E a] }
          | Var { eAnn :: a, eVar :: Nm a }
          | Builtin { eAnn :: a, eBuiltin :: !Builtin }
          | EApp { eAnn :: a, eF, eArg :: E a }
