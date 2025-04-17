@@ -318,6 +318,8 @@ E :: { E AlexPosn }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
   | il { let l=loc $1 in ALit l (map (ILit l.fromInteger) (ints $1)) }
   | name mmap E { A.Lam $2 $1 $3 }
+  | tupled(name) mmap E {% bindΠ [$1] $3 }
+  | tupled(name) { Tup (fst $1) (reverse (map (\nϵ -> Var (Nm.loc nϵ) nϵ) $ snd $1)) }
   | Lam E {% bindΠ $1 $2 }
   | tupled(E) { Tup (fst $1) (reverse (snd $1)) }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
@@ -409,7 +411,6 @@ instance NFData ParseE where
 
 type Parse = ExceptT ParseE Alex
 
-parseAll :: AlexUserState -> BSL.ByteString -> Either ParseE (AlexUserState, E AlexPosn)
 parseAll = runParseSt parseE
 
 parseWithMaxCtx :: AlexUserState -> BSL.ByteString -> Either ParseE (Int, E AlexPosn)
