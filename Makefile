@@ -53,7 +53,7 @@ ty: $(HS_SRC)
 test: libapple$(EXT)
 	python3 test/py/mat.py
 
-test-pyc: libapple$(EXT) install-py
+test-pyc: install-py libapple$(EXT)
 	python3 test/py/xor/m.py
 	python3 test/py/py.py
 
