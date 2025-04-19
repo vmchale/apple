@@ -170,21 +170,21 @@ dbgAB t p = do
 
 hb = TL.unwords.map (toLazyTextWith 1.hexadecimal)
 
+ty :: (Int -> E (T ()) -> Repl ()) -> String -> Repl ()
+ty d = rw (\i e -> case tyC i e of {Left err -> pErr err; Right (e',i') -> d i' e'})
+
 inspect :: String -> Repl ()
-inspect = rw $ \i eC ->
-    case tyC i eC of
-        Left err -> pErr err
-        Right (e, i') -> do
-            a <- lg _arch; c <- lg mf
-            let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
-            do
-                asm@(_, fp, _) <- liftIO $ efp eC
-                p <- liftIO $ callFFI fp (retPtr undefined) []
-                case eAnn e of
-                    (Arr _ t) -> do {h <- lg oh; liftIO $ do
-                                        TLIO.hPutStrLn h =<< dbgAB t p
-                                        free p *> freeAsm asm}
-                    _ -> pErr ("only arrays can be inspected." :: T.Text)
+inspect = ty $ \i e -> do
+    a <- lg _arch; c <- lg mf
+    let efp=case a of {X64 -> eFunP i c; AArch64 m -> eAFunP i (c,m)}
+    do
+        asm@(_, fp, _) <- liftIO $ efp e
+        p <- liftIO $ callFFI fp (retPtr undefined) []
+        case eAnn e of
+            (Arr _ t) -> do {h <- lg oh; liftIO $ do
+                                TLIO.hPutStrLn h =<< dbgAB t p
+                                free p *> freeAsm asm}
+            _ -> pErr ("only arrays can be inspected." :: T.Text)
 
 (<~) :: String -> BSL.ByteString -> Repl ()
 f <~ bs = do
@@ -219,66 +219,60 @@ up (A.Arrow t A.B)           = Just [t]
 up _                         = Nothing
 
 qc :: String -> Repl ()
-qc = rw $ \i eC ->
-    case tyC i eC of
-        Left err -> pErr err
-        Right (e, i') -> do
-            c <- lg mf; a <- lg _arch
-            let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
-            case up (eAnn e) of
-                Nothing -> pErr ("must be a proposition." :: T.Text)
-                Just ty -> do
-                    asm@(_, fp, _) <- liftIO $ efp eC
-                    let g 0 = pure Nothing
-                        g n = do
-                            (args, es, mps) <- unzip3 <$> gas ty
-                            b <- callFFI fp retCUChar args
-                            (if cb b
-                                then traverse freeP (catMaybes mps) *> g (n-1)
-                                else Just es <$ traverse_ freeP (catMaybes mps))
-                    res <- liftIO $ g (100::Int)
-                    case res of
-                        Nothing -> putDocLn "Passed, 100."
-                        Just ex -> putDocLn ("Proposition failed!" <> hardline <> pretty ex)
-                    liftIO (freeAsm asm)
+qc = ty $ \i e -> do
+    c <- lg mf; a <- lg _arch
+    let efp=case a of {X64 -> eFunP i c; AArch64 m -> eAFunP i (c,m)}
+    case up (eAnn e) of
+        Nothing -> pErr ("must be a proposition." :: T.Text)
+        Just t -> do
+            asm@(_, fp, _) <- liftIO $ efp e
+            let g 0 = pure Nothing
+                g n = do
+                    (args, es, mps) <- unzip3 <$> gas t
+                    b <- callFFI fp retCUChar args
+                    (if cb b
+                        then traverse freeP (catMaybes mps) *> g (n-1)
+                        else Just es <$ traverse_ freeP (catMaybes mps))
+            res <- liftIO $ g (100::Int)
+            case res of
+                Nothing -> putDocLn "Passed, 100."
+                Just ex -> putDocLn ("Proposition failed!" <> hardline <> pretty ex)
+            liftIO (freeAsm asm)
 
   where cb 0=False; cb 1=True
 
 benchE :: String -> Repl ()
-benchE = rw $ \i eC ->
-    case tyC i eC of
-        Left err -> pErr err
-        Right (e, i') -> do
-            c <- lg mf; a <- lg _arch
-            let efp=case a of {X64 -> eFunP i' c; AArch64 m -> eAFunP i' (c,m)}
-            case eAnn e of
-                I -> do
-                    liftIO $ do
-                        asm@(_, fp, _) <- efp eC
-                        benchmark (nfIO $ callFFI fp retInt64 [])
-                        freeAsm asm
-                A.F -> do
-                    liftIO $ do
-                        asm@(_, fp, _) <- efp eC
-                        benchmark (nfIO $ callFFI fp retCDouble [])
-                        freeAsm asm
-                A.B -> do
-                    liftIO $ do
-                        asm@(_, fp, _) <- efp eC
-                        benchmark (nfIO $ callFFI fp retCUChar [])
-                        freeAsm asm
-                P [A.F,A.F] -> error "Haskell support for float ABI is poor :("
-                (Arr _ _) -> do
-                    liftIO $ do
-                        asm@(_, fp, _) <- efp eC
-                        benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
-                        freeAsm asm
-                P{} ->
-                    liftIO $ do
-                        asm@(_, fp, _) <- efp eC
-                        benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
-                        freeAsm asm
-                A.Arrow{} -> putDocLn "Cannot benchmark a function; must be fully applied."
+benchE = ty $ \i e -> do
+    c <- lg mf; a <- lg _arch
+    let efp=case a of {X64 -> eFunP i c; AArch64 m -> eAFunP i (c,m)}
+    case eAnn e of
+        I -> do
+            liftIO $ do
+                asm@(_, fp, _) <- efp e
+                benchmark (nfIO $ callFFI fp retInt64 [])
+                freeAsm asm
+        A.F -> do
+            liftIO $ do
+                asm@(_, fp, _) <- efp e
+                benchmark (nfIO $ callFFI fp retCDouble [])
+                freeAsm asm
+        A.B -> do
+            liftIO $ do
+                asm@(_, fp, _) <- efp e
+                benchmark (nfIO $ callFFI fp retCUChar [])
+                freeAsm asm
+        P [A.F,A.F] -> error "Haskell support for float ABI is poor :("
+        (Arr _ _) -> do
+            liftIO $ do
+                asm@(_, fp, _) <- efp e
+                benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
+                freeAsm asm
+        P{} ->
+            liftIO $ do
+                asm@(_, fp, _) <- efp e
+                benchmark (nfIO (do{p<- callFFI fp (retPtr undefined) []; free p}))
+                freeAsm asm
+        A.Arrow{} -> putDocLn "Cannot benchmark a function; must be fully applied."
 
 rSz A.B=1; rSz I=8; rSz A.F=8; rSz (P ts) = sum (rSz<$>ts); rSz Arr{}=8
 
