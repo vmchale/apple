@@ -242,6 +242,7 @@ prettyTyped = pt where
     pt (BLit t False)                                         = "#f"<::>t
     pt (Cond t p e0 e1)                                       = parens ("?" <+> pt p <+> ",." <+> pt e0 <+> pt e1) <+> colon <+> pretty t
     pt (Lam _ n e)                                            = "λ" <> ptn n <> "." <!> pt e
+    pt (LamΠ (Arrow tC _) ns e)                               = "λ" <> parens (tupled(pretty<$>ns)<::>tC) <> "." <!> pt e
     pt (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)  = parens (pt e0 <> "/ₒ" <+> pt e1 <+> pt e2)
     pt (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)  = parens (pt e0 <> "/*" <+> pt e1 <+> pt e2)
     pt (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)  = parens (pt e0 <> "/l" <+> pt e1 <+> pt e2)
