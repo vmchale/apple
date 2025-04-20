@@ -11,9 +11,7 @@ import           Nm.IntMap                        as Nm
 import           R
 import           Ty
 
-data ISt a = ISt { renames :: !Rs
-                 , binds   :: IM.IntMap (E a)
-                 }
+data ISt a = ISt { renames :: !Rs, binds :: IM.IntMap (E a) }
 
 instance HasRs (ISt a) where
     rename f s = fmap (\x -> s { renames = x }) (f (renames s))
