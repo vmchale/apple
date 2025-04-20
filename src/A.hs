@@ -303,6 +303,7 @@ instance Pretty (E a) where pretty=ps 0
 
 instance PS (E a) where
     ps d (Lam _ n e)                                              = parensp (d>1) ("λ" <> pretty n <> "." <+> ps 2 e)
+    ps d (LamΠ _ ns e)                                            = parensp (d>1) ("λ" <> tupled(pretty<$>ns) <> "." <+> ps 2 e)
     ps _ (Var _ n)                                                = pretty n
     ps _ (Builtin _ op) | isBinOp op                              = parens (pretty op)
     ps _ (Builtin _ b)                                            = pretty b
@@ -373,6 +374,7 @@ data E a = ALit { eAnn :: a, arrLit :: [E a] }
          | Builtin { eAnn :: a, eBuiltin :: !Builtin }
          | EApp { eAnn :: a, eF, eArg :: E a }
          | Lam { eAnn :: a, eVar :: Nm a, eIn :: E a }
+         | LamΠ { eAnn :: a, eVars :: [Nm a], eIn :: E a }
          | ILit { eAnn :: a, eILit :: !Integer }
          | FLit { eAnn :: a, eFLit :: !Double }
          | BLit { eAnn :: a, eBLit :: !Bool }

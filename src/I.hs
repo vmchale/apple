@@ -49,6 +49,7 @@ hR (Tup _ es)                          = any hR es
 hR (Cond _ p e e')                     = hR p||hR e||hR e'
 hR (EApp _ e e')                       = hR e||hR e'
 hR (Lam _ _ e)                         = hR e
+hR (LamΠ _ _ e)                        = hR e
 hR (Let _ (_, e') e)                   = hR e'||hR e
 hR (Def _ (_, e') e)                   = hR e'||hR e
 hR (LLet _ (_, e') e)                  = hR e'||hR e
@@ -71,6 +72,7 @@ iM (Tup l es) = Tup l <$> traverse iM es
 iM (Cond l p e0 e1) = Cond l <$> iM p <*> iM e0 <*> iM e1
 iM (EApp l e0 e1) = EApp l <$> iM e0 <*> iM e1
 iM (Lam l n e) = Lam l n <$> iM e
+iM (LamΠ l ns e) = LamΠ l ns <$> iM e
 iM (LLet l (n, e') e) = do
     e'I <- iM e'
     eI <- iM e
@@ -111,6 +113,7 @@ bM (EApp l e0 e1) = do
         Lam{} -> bM (EApp l e0' e1')
         _     -> pure $ EApp l e0' e1'
 bM (Lam l n e) = Lam l n <$> bM e
+bM (LamΠ l n e) = LamΠ l n <$> bM e
 bM e@(Var _ n) = do
     st <- gets binds
     case Nm.lookup n st of

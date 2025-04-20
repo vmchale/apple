@@ -17,6 +17,7 @@ dedfn (ALit l es) = ALit l (map dedfn es)
 dedfn (Tup l es) = Tup l (map dedfn es)
 dedfn (EApp l e e') = EApp l (dedfn e) (dedfn e')
 dedfn (Cond l e e' e'') = Cond l (dedfn e) (dedfn e') (dedfn e'')
+dedfn (LamΠ l ns e) = LamΠ l ns (dedfn e)
 dedfn (Lam l n e) = Lam l n (dedfn e)
 dedfn (Let l (n, e) eBody) = Let l (n, dedfn e) (dedfn eBody)
 dedfn (Def l (n, e) eBody) = Def l (n, dedfn e) (dedfn eBody)
@@ -44,6 +45,9 @@ replaceXY _ _ e@Builtin{} = (e, False)
 replaceXY x y (Ann l e t) =
     let (e', b) = replaceXY x y e
         in (Ann l e' t, b)
+replaceXY x y (LamΠ l ns e) =
+    let (e', b) = replaceXY x y e
+        in (LamΠ l ns e', b)
 replaceXY x y (Lam l n e) =
     let (e', b) = replaceXY x y e
         in (Lam l n e', b)

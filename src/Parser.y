@@ -4,7 +4,6 @@
                   , ParseE (..)
                   ) where
 
-import Control.Composition (thread)
 import Control.Exception (Exception)
 import Control.Monad.Except (ExceptT, runExceptT, throwError)
 import Control.Monad.Trans.Class (lift)
@@ -290,15 +289,7 @@ B :: { (Bnd, (Nm AlexPosn, E AlexPosn)) }
 
 U :: { [Nm AlexPosn] }
   : name { [$1] }
-  | underscore { [] }
   | name comma U { $1 : $3 }
-  | underscore comma U { $3 }
-
-Lam :: { [(AlexPosn, [Nm AlexPosn])] }
-    : lam lparen U rparen dot { [($2, reverse $3)] }
-    | lam lparen U rparen dot Lam { ($2, reverse $3) : $6 }
-    | lam name dot { [($1, [$2])] }
-    | lam name dot Lam { ($1, [$2]) : $4 }
 
 E :: { E AlexPosn }
   : name { Var (Nm.loc $1) $1 }
@@ -318,9 +309,10 @@ E :: { E AlexPosn }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
   | il { let l=loc $1 in ALit l (map (ILit l.fromInteger) (ints $1)) }
   | name mmap E { A.Lam $2 $1 $3 }
-  | tupled(name) mmap E {% bindΠ [$1] $3 }
+  | tupled(name) mmap E { LamΠ $2 (snd $1) $3 }
   | tupled(name) { Tup (fst $1) (reverse (map (\nϵ -> Var (Nm.loc nϵ) nϵ) $ snd $1)) }
-  | Lam E {% bindΠ $1 $2 }
+  | lam name dot E { A.Lam $1 $2 $4 }
+  | lam lparen U rparen dot E { A.LamΠ $1 $3 $6 }
   | tupled(E) { Tup (fst $1) (reverse (snd $1)) }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
   | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
@@ -377,18 +369,6 @@ parseErr :: Tok -> [String] -> Parse a
 parseErr tok = throwError . Unexpected tok
 
 data Bnd = L | LL | D
-
--- TODO: maybe do something like this after inlining?
-bindΠ :: [(AlexPosn, [Nm AlexPosn])] -> E AlexPosn -> Parse (E AlexPosn)
-bindΠ vs e = do
-    (lams, bΡ) <- unzip <$> traverse (uncurry b) vs
-    pure $ thread lams $ thread bΡ e
-  where
-    b l [n] = pure (A.Lam l n, id)
-    b l ns = do
-        ρ <- lift $ freshName "ρ"
-        let bΡs = thread (zipWith (\n i -> let lϵϵ=Nm.loc n in (LLet lϵϵ (n, EApp lϵϵ (Builtin lϵϵ (TAt i)) (Var lϵϵ ρ)))) (reverse ns) [1..])
-        pure (A.Lam l ρ, bΡs)
 
 mkLet :: a -> [(Bnd, (Nm a, E a))] -> E a -> E a
 mkLet _ [] e            = e

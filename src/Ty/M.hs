@@ -50,6 +50,7 @@ cM (Def _ _ e') = cM e' -- FIXME hm
 cM (EApp _ e e') = cM e <|> cM e'
 cM (ALit _ es) = cM ||> es
 cM (Lam _ _ e) = cM e
+cM (LamΠ _ _ e) = cM e
 cM (Cond _ p e e') = cM p <|> cM e <|> cM e'
 cM (Tup _ es) = cM ||> es
 cM Builtin{} = Nothing; cM Var{} = Nothing

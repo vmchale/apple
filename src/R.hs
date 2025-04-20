@@ -70,6 +70,9 @@ rE :: (HasRs s, Monad m) => E a -> StateT s m (E a)
 rE (Lam l n e) = doLocal $ do
     n' <- freshen n
     Lam l n' <$> rE e
+rE (LamΠ l n e) = doLocal $ do
+    ns' <- traverse freshen n
+    LamΠ l ns' <$> rE e
 rE (Let l (n, eϵ) e) = do
     eϵ' <- rE eϵ
     n' <- freshen n

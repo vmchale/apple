@@ -2,9 +2,9 @@ module A.Opt ( optA
              ) where
 
 import           A
-import           Data.Bits ((.<<.), (.>>.))
+import           Control.Composition (thread)
+import           Data.Bits           ((.<<.), (.>>.))
 import           Nm
-import           R
 import           R.R
 import           Sh
 
@@ -125,6 +125,13 @@ optA (EApp l0 (EApp l1 op@(Builtin _ Sl) e0) e1) = do
         (ILit _ m, ILit _ n) -> ILit I (m .<<. fromIntegral n)
         _                    -> EApp l0 (EApp l1 op e0') e1'
 optA (Lam l n e) = Lam l n <$> optA e
+optA (LamΠ l ns e) | Arrow tC _ <- l = do
+    e' <- optA e
+    ρ <- nextU "ρ" tC
+    let b=zipWith (\n i -> LLet (eAnn e') (n, Var tC ρ @ i)) ns [1..]
+    pure $ Lam l ρ $ thread b e'
+  where
+    x @ i | P ts <- eAnn x = Builtin (eAnn x~>ts!!(i-1)) (TAt i) $$ x
 optA (EApp l0 (EApp l1 op@(Builtin _ Minus) x) y) = do
     x0 <- optA x; y0 <- optA y
     pure $ case (x0,y0) of

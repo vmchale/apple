@@ -10,7 +10,7 @@ module Ty ( TyE
 import           A
 import           Control.DeepSeq                  (NFData (rnf), rwhnf)
 import           Control.Exception                (Exception, throw)
-import           Control.Monad                    (when, zipWithM)
+import           Control.Monad                    (when, zipWithM, zipWithM_)
 import           Control.Monad.Except             (liftEither, throwError)
 import           Control.Monad.Trans.State.Strict (StateT (runStateT), gets, modify, state)
 import           Data.Bifunctor                   (first, second)
@@ -272,6 +272,9 @@ fn n = IZ (Ix()$fromInteger n)<$>nN "n" ()
 
 ftv :: T.Text -> TyM a (T ())
 ftv n = ft n ()
+
+ftvs :: [b] -> TyM a [T ()]
+ftvs xs = zipWithM (\_ -> ftv) xs [ T.singleton c | c <- ['a'..] ]
 
 fti :: T.Text -> TyM a (I ())
 fti n = IVar () <$> nN n ()
@@ -805,7 +808,7 @@ tyB _ Zip = do
 tyB l (Rank as) = do
     let ixN n = zipWithM (\_ c -> fti (T.singleton c)) [1..n] ['i'..]
     shs <- traverse (\(i,ax) -> do {is <- ixN (maybe i maximum ax); sh <- fsh "sh"; pure (is <|| sh)}) as
-    vs <- zipWithM (\_ c -> ftv (T.singleton c)) as ['a'..]
+    vs <- ftvs as
     codSh <- fsh "sh"
     cod <- ftv "c"
     let mArrs = zipWith Arr shs vs
@@ -991,6 +994,11 @@ tyE s (Lam _ nϵ e) = do
     nϵ <~ n
     (e', s') <- tyE s e
     pure (Lam (n~>eAnn e') (nϵ { loc = n }) e', s')
+tyE s (LamΠ _ nϵs e) = do
+    ns <- ftvs nϵs
+    zipWithM_ (<~) nϵs ns
+    (e', s') <- tyE s e
+    pure (LamΠ (P ns~>eAnn e') (zipWith (\nm t -> nm { loc = t }) nϵs ns) e', s')
 tyE s (Let _ (n, b) e) = do
     (b', s') <- tyE s b
     let t = eAnn b'
