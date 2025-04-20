@@ -45,7 +45,7 @@ replaceVar (Nm n u l) = do
 doLocal :: (HasRs s, Monad m) => StateT s m a -> StateT s m a
 doLocal act = do
     preB <- use (rename.boundLens)
-    act <* ((rename.boundLens) .= preB)
+    act <* (rename.boundLens .= preB)
 
 freshen :: (HasRs s, Monad m) => Nm a -> StateT s m (Nm a)
 freshen (Nm t (U i) l) = do
