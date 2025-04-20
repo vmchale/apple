@@ -304,6 +304,10 @@ ctx'ize u is = u is `on` rwI.(is!>)
 
 suc = ctx'ize su; uc = ctx'ize ui; φc = ctx'ize φ
 
+ci :: U -> I a -> I a -> ISubst a -> UM a (ISubst a)
+ci (U u) i i' s | u `IS.member` occI i = throwError $ OI (ia i) i i'
+                | otherwise = pure (IM.insert u i s)
+
 su :: ISubst a
    -> I a -- ^ supplied
    -> I a -- ^ argument accepted by function
@@ -313,10 +317,8 @@ su s i0@(Ix l i) i1@(Ix _ j) | i==j = pure s
 su s i0@(IEV l n) i1@(IEV _ m) | n==m = pure s
                                | otherwise = throwError $ AF l i0 i1
 su s (IVar _ n0) (IVar _ n1) | n0==n1 = pure s
-su s ix@(IVar l (Nm _ (U i) _)) ix' | i `IS.member` occI ix' = throwError $ OI l ix ix'
-                                    | otherwise = pure (IM.insert i ix' s)
-su s ix ix'@(IVar l (Nm _ (U i) _)) | i `IS.member` occI ix = throwError $ OI l ix' ix
-                                    | otherwise = pure (IM.insert i ix s)
+su s ix@(IVar _ (Nm _ u _)) ix' = ci u ix' ix s
+su s ix ix'@(IVar _ (Nm _ u _)) = ci u ix ix' s
 su s i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = su s i (Ix lk (j-k))
                                             | otherwise = throwError $ AF l i0 i1
 su s i0@(Ix l i) i1@(StaPlus _ j (Ix _ k)) | i >= k = su s j (Ix l (i-k))
@@ -342,19 +344,15 @@ su _ i0@(IEV l _) i1@StaMul{} = throwError$AF l i0 i1
 φ inp i0@(Ix _ i) (StaPlus _ (IVar _ n) (Ix l j)) | i>=j = let i'=Ix l (i-j) in pure (i0, insert n i' inp)
 φ inp (StaPlus _ (IVar _ n) (Ix l i)) i1@(Ix _ j) | j>=i = let i'=Ix l (j-i) in pure (i1, insert n i' inp)
 φ inp i@(IVar _ n0) (IVar _ n1) | n0==n1 = pure (i, inp)
-φ inp i0@(IVar l (Nm _ (U u) _)) i1 | u `IS.member` occI i1 = throwError$OI l i0 i1
-                                    | otherwise = pure (i1, IM.insert u i1 inp)
-φ inp i0 i1@(IVar l (Nm _ (U u) _)) | u `IS.member` occI i0 = throwError$OI l i0 i1
-                                    | otherwise = pure (i0, IM.insert u i0 inp)
+φ inp i0@(IVar _ (Nm _ u _)) i1 = (i1,) <$> ci u i1 i0 inp
+φ inp i0 i1@(IVar _ (Nm _ u _)) = (i0,) <$> ci u i0 i1 inp
 φ inp (StaPlus _ i0 (Ix _ n)) (StaPlus _ i1 (Ix _ m)) | n==m = φ inp i0 i1
 
 ui :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
 ui inp i@(Ix _ n) (Ix _ m) | n==m = pure (i, inp)
 ui inp i@(IVar _ n0) (IVar _ n1) | n0==n1 = pure (i, inp)
-ui inp i0 i1@(IVar l (Nm _ (U u) _)) | u `IS.notMember` occI i0 = pure (i0, IM.insert u i0 inp)
-                                     | otherwise = throwError$OI l i0 i1
-ui inp i0@(IVar l (Nm _ (U u) _)) i1 | u `IS.notMember` occI i1 = pure (i1, IM.insert u i1 inp)
-                                     | otherwise = throwError$OI l i0 i1
+ui inp i0 i1@(IVar _ (Nm _ u _)) = (i0,) <$> ci u i0 i1 inp
+ui inp i0@(IVar _ (Nm _ u _)) i1 = (i1,) <$> ci u i1 i0 inp
 ui inp (StaPlus _ (IVar l n) (Ix _ i)) (Ix _ j) | j>=i = let t=Ix l (j-i) in pure (t, insert n t inp)
 ui inp (Ix _ i) (StaPlus _ (IVar l n) (Ix _ j)) | i>=j = let t=Ix l (i-j) in pure (t, insert n t inp)
 ui inp (StaPlus l i₀ j₀) (StaPlus _ i₁ j₁) = do
