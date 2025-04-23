@@ -3,6 +3,7 @@ module A.Opt ( optA
 
 import           A
 import           Control.Composition (thread)
+import           Data.Bifunctor      (first)
 import           Data.Bits           ((.<<.), (.>>.))
 import           Nm
 import           R.R
@@ -36,6 +37,10 @@ f$$x | Arrow _ tC <- eAnn f = EApp tC f x
 
 λ x y = Lam (Arrow (loc x) (eAnn y)) x y
 v n = Var (loc n) n
+
+enips :: E a -> ([(a, [Nm a])], E a)
+enips (LamΠ l ns e) = first ((l,ns):) $ enips e
+enips e             = ([], e)
 
 optA :: E (T ()) -> RM (E (T ()))
 optA (ILit F x)            = pure (FLit F (realToFrac x))
@@ -125,11 +130,14 @@ optA (EApp l0 (EApp l1 op@(Builtin _ Sl) e0) e1) = do
         (ILit _ m, ILit _ n) -> ILit I (m .<<. fromIntegral n)
         _                    -> EApp l0 (EApp l1 op e0') e1'
 optA (Lam l n e) = Lam l n <$> optA e
-optA (LamΠ l ns e) | Arrow tC _ <- l = do
-    e' <- optA e
-    ρ <- nextU "ρ" tC
-    let b=zipWith (\n i -> LLet (eAnn e') (n, Var tC ρ @ i)) ns [1..]
-    pure $ Lam l ρ $ thread b e'
+optA e@LamΠ{} | (bs, e') <- enips e = do
+    e'' <- optA e'
+    let pinch l ns | Arrow tC _ <- l = do
+            ρ <- nextU "ρ" tC
+            let b=zipWith (\n i -> LLet (eAnn e') (n, Var tC ρ @ i)) ns [1..]
+            pure (Lam l ρ, thread b)
+    (lams,bΡ) <- unzip <$> traverse (uncurry pinch) bs
+    pure (thread lams $ thread bΡ e')
   where
     x @ i | P ts <- eAnn x = Builtin (eAnn x~>ts!!(i-1)) (TAt i) $$ x
 optA (EApp l0 (EApp l1 op@(Builtin _ Minus) x) y) = do

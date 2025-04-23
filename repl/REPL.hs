@@ -376,6 +376,7 @@ mentions (Def _ (_, eϵ) e) n  = e `mentions` n || eϵ `mentions` n
 mentions (LLet _ (_, eϵ) e) n = e `mentions` n || eϵ `mentions` n
 mentions (ALit _ es) n        = any (`mentions` n) es
 mentions (A.Lam _ _ e) n      = e `mentions` n
+mentions (A.LamΠ _ _ e) n     = e `mentions` n
 mentions (Ann _ e _) n        = e `mentions` n
 mentions (Tup _ es) n         = any (`mentions` n) es
 mentions Dfn{} _              = desugar
