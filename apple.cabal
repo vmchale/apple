@@ -63,13 +63,13 @@ common warn
 library
     import:             warn
     exposed-modules:
+        Dbg
         A
         Asm.Aarch64
         Asm.M
         Asm.X86
         B
         CGen
-        Dbg
         Hs.A
         I
         L
