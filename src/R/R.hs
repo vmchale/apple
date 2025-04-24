@@ -15,6 +15,7 @@ import           U
 
 type RM = State Rs
 
+{-# INLINABLE nextU #-}
 nextU :: T.Text -> a -> RM (Nm a)
 nextU n l = do {i <- gets max_; modifying maxLens (+1) $> Nm n (U$i+1) l }
 
