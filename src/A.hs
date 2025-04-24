@@ -288,17 +288,38 @@ isBinOp b | Just{} <- fi b = True
 
 data B = L | D | Λ
 
-unbind :: E a -> ([(B, Nm a, E a)], E a)
-unbind (Let _ (n,e) e')  = first ((L,n,e):) $ unbind e'
-unbind (LLet _ (n,e) e') = first ((Λ,n,e):) $ unbind e'
-unbind (Def _ (n,e) e')  = first ((D,n,e):) $ unbind e'
-unbind e                 = ([], e)
-
 pBs :: [(B, Nm a, E a)] -> E a -> Doc ann
 pBs [] e            = pretty e
 pBs ((b,n,e):bs) e' = pretty n <+> pArr b <+> pretty e <?> ";" <+> pBs bs e' where pArr L="←"; pArr D="⟜"; pArr Λ="⟜"
 
 pB=align.braces.uncurry pBs.unbind
+  where
+    unbind :: E a -> ([(B, Nm a, E a)], E a)
+    unbind (Let _ (n,e) e')  = first ((L,n,e):) $ unbind e'
+    unbind (LLet _ (n,e) e') = first ((Λ,n,e):) $ unbind e'
+    unbind (Def _ (n,e) e')  = first ((D,n,e):) $ unbind e'
+    unbind e                 = ([], e)
+
+data E a = ALit { eAnn :: a, arrLit :: [E a] }
+         | Var { eAnn :: a, eVar :: Nm a }
+         | Builtin { eAnn :: a, eBuiltin :: !Builtin }
+         | EApp { eAnn :: a, eF, eArg :: E a }
+         | Lam { eAnn :: a, eVar :: Nm a, eIn :: E a }
+         | LamΠ { eAnn :: a, eVars :: [Nm a], eIn :: E a }
+         | ILit { eAnn :: a, eILit :: !Integer }
+         | FLit { eAnn :: a, eFLit :: !Double }
+         | BLit { eAnn :: a, eBLit :: !Bool }
+         | Cond { eAnn :: a, prop, ifBranch, elseBranch :: E a }
+         | Tup { eAnn :: a, eEs :: [E a] }
+         | Let { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
+         | Def { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
+         | LLet { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
+         | Dfn { eAnn :: a, eIn :: E a }
+         | ResVar { eAnn :: a, eXY :: !ResVar }
+         | Parens { eAnn :: a, eExp :: E a }
+         | Ann { eAnn :: a, eEe :: E a, eTy :: T a }
+         | Id { eAnn :: a, eIdiom :: Idiom a }
+         deriving (Functor, Generic)
 
 instance Pretty (E a) where pretty=ps 0
 
@@ -369,27 +390,6 @@ instance Pretty (Idiom a) where
     pretty (Iter g seed n)         = parens (pretty g <+> "^:" <> pretty n <+> pretty seed)
 
 instance Show (Idiom a) where show=show.pretty
-
-data E a = ALit { eAnn :: a, arrLit :: [E a] }
-         | Var { eAnn :: a, eVar :: Nm a }
-         | Builtin { eAnn :: a, eBuiltin :: !Builtin }
-         | EApp { eAnn :: a, eF, eArg :: E a }
-         | Lam { eAnn :: a, eVar :: Nm a, eIn :: E a }
-         | LamΠ { eAnn :: a, eVars :: [Nm a], eIn :: E a }
-         | ILit { eAnn :: a, eILit :: !Integer }
-         | FLit { eAnn :: a, eFLit :: !Double }
-         | BLit { eAnn :: a, eBLit :: !Bool }
-         | Cond { eAnn :: a, prop, ifBranch, elseBranch :: E a }
-         | Tup { eAnn :: a, eEs :: [E a] }
-         | Let { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
-         | Def { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
-         | LLet { eAnn :: a, eBnd :: (Nm a, E a), eIn :: E a }
-         | Dfn { eAnn :: a, eIn :: E a }
-         | ResVar { eAnn :: a, eXY :: !ResVar }
-         | Parens { eAnn :: a, eExp :: E a }
-         | Ann { eAnn :: a, eEe :: E a, eTy :: T a }
-         | Id { eAnn :: a, eIdiom :: Idiom a }
-         deriving (Functor, Generic)
 
 instance NFData Builtin where
 instance NFData ResVar where rnf x=seq x ()
