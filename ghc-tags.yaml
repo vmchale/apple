@@ -3,4 +3,4 @@ source_paths:
 exclude_paths:
 - dist-newstyle
 language: Haskell2010
-extensions: [LambdaCase]
+extensions: [LambdaCase, TupleSections]
