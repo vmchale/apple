@@ -32,4 +32,4 @@ train=apple.jit('''
 }
 ''')
 
-(hidden_weights,output_weights,hidden_bias,output_bias)=train(hidden_weights,output_weights,hidden_bias,output_bias)
+hidden_weights,output_weights,hidden_bias,output_bias=train(hidden_weights,output_weights,hidden_bias,output_bias)
