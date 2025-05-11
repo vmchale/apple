@@ -9,5 +9,4 @@ bb = filter (not.emptyBB).fmap mkBB.concatMap (split (keepDelimsL$whenElt isL)).
     where cf J{}=True; cf Jl{}=True; cf Jg{}=True; cf Jge{}=True; cf Jle{}=True; cf Jne{}=True; cf C{}=True; cf RetL{}=True; cf _=False
           isL Label{}=True; isL _=False
           mkBB x = BB x ()
-          emptyBB (BB [] _) = True
-          emptyBB _         = False
+          emptyBB (BB [] _) = True; emptyBB _ = False

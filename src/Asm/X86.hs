@@ -48,7 +48,7 @@ simd2 = toEnum.fromEnum
 
 instance Pretty X86Reg where
     pretty Rax = "rax"; pretty Rbx = "rbx"; pretty Rcx = "rcx"; pretty Rdx = "rdx"
-    pretty Rsi = "rsi"; pretty Rdi = "rdi"; pretty R8  = "r8"; pretty R9   = "r9"
+    pretty Rsi = "rsi"; pretty Rdi = "rdi"; pretty R8  = "r8";  pretty R9  = "r9"
     pretty R10 = "r10"; pretty R11 = "r11"; pretty R12 = "r12"; pretty R13 = "r13"
     pretty R14 = "r14"; pretty R15 = "r15"; pretty Rsp = "rsp"; pretty Rbp = "rbp"
 
@@ -59,9 +59,9 @@ instance Pretty FX86Reg where
     pretty XMM12 = "xmm12"; pretty XMM13 = "xmm13"; pretty XMM14 = "xmm14"; pretty XMM15 = "xmm15"
 
 instance Pretty F2X86 where
-    pretty YMM0  = "ymm0"; pretty YMM1   = "ymm1"; pretty YMM2   = "ymm2"; pretty YMM3   = "ymm3"
-    pretty YMM4  = "ymm4"; pretty YMM5   = "ymm5"; pretty YMM6   = "ymm6"; pretty YMM7   = "ymm7"
-    pretty YMM8  = "ymm8"; pretty YMM9   = "ymm9"; pretty YMM10  = "ymm10"; pretty YMM11 = "ymm11"
+    pretty YMM0  = "ymm0";  pretty YMM1  = "ymm1";  pretty YMM2  = "ymm2";  pretty YMM3  = "ymm3"
+    pretty YMM4  = "ymm4";  pretty YMM5  = "ymm5";  pretty YMM6  = "ymm6";  pretty YMM7  = "ymm7"
+    pretty YMM8  = "ymm8";  pretty YMM9  = "ymm9";  pretty YMM10 = "ymm10"; pretty YMM11 = "ymm11"
     pretty YMM12 = "ymm12"; pretty YMM13 = "ymm13"; pretty YMM14 = "ymm14"; pretty YMM15 = "ymm15"
 
 instance Show X86Reg where show = show . pretty
@@ -83,60 +83,32 @@ data FAbsReg = FReg !Int
 data X2Abs = F2Reg !Int deriving (Eq, Ord)
 
 instance Pretty AbsReg where
-    pretty CArg0    = "rdi"
-    pretty CArg1    = "rsi"
-    pretty CArg2    = "rdx"
-    pretty CArg3    = "rcx"
-    pretty CArg4    = "r8"
-    pretty CArg5    = "r9"
-    pretty CRet     = "rax"
-    pretty SP       = "rsp"
-    pretty Quot     = "rax"
-    pretty Rem      = "rdx"
+    pretty CArg0 = "rdi"; pretty CArg1 = "rsi"; pretty CArg2 = "rdx";  pretty CArg3 = "rcx"
+    pretty CArg4 = "r8";  pretty CArg5  = "r9"; pretty CRet   = "rax"; pretty SP    = "rsp"
+    pretty BP    = "rbp"
+    pretty Quot  = "rax"; pretty Rem   = "rdx"
     pretty (IReg i) = "^r" <> pretty i
-    pretty BP       = "rbp"
 
 instance Pretty FAbsReg where
-    pretty FArg0    = "xmm0"
-    pretty FArg1    = "xmm1"
-    pretty FArg2    = "xmm2"
-    pretty FArg3    = "xmm3"
-    pretty FArg4    = "xmm4"
-    pretty FArg5    = "xmm5"
-    pretty FArg6    = "xmm6"
-    pretty FArg7    = "xmm7"
-    pretty FRet0    = "xmm0"
-    pretty FRet1    = "xmm1"
+    pretty FArg0 = "xmm0"; pretty FArg1 = "xmm1"; pretty FArg2 = "xmm2"; pretty FArg3 = "xmm3"
+    pretty FArg4 = "xmm4"; pretty FArg5 = "xmm5"; pretty FArg6 = "xmm6"; pretty FArg7 = "xmm7"
+    pretty FRet0 = "xmm0"; pretty FRet1 = "xmm1"
     pretty (FReg i) = "^xmm" <> pretty i
 
 instance Pretty X2Abs where
     pretty (F2Reg i) = "ymm" <> pretty i
 
 toInt :: AbsReg -> Int
-toInt CArg0    = 0
-toInt CArg1    = 1
-toInt CArg2    = 2
-toInt CArg3    = 3
-toInt CArg4    = 4
-toInt CArg5    = 5
-toInt CRet     = 6
-toInt SP       = 7
-toInt Quot     = 6 -- FIXME: I think this is wrong, graph approach would precolor both...?
-toInt Rem      = 2
+toInt CArg0 = 0; toInt CArg1 = 1; toInt CArg2 = 2; toInt CArg3 = 3
+toInt CArg4 = 4; toInt CArg5 = 5; toInt CRet  = 6
+toInt SP   = 7; toInt BP  = -16
+toInt Quot = 6; toInt Rem = 2
 toInt (IReg i) = 16+i
-toInt BP       = -16
 
 fToInt :: FAbsReg -> Int
-fToInt FArg0    = 8
-fToInt FArg1    = 9
-fToInt FArg2    = 10
-fToInt FArg3    = 11
-fToInt FArg4    = 12
-fToInt FArg5    = 13
-fToInt FArg6    = 14
-fToInt FArg7    = 15
-fToInt FRet0    = 8 -- xmm0
-fToInt FRet1    = 9 -- xmm1
+fToInt FArg0 = 8;  fToInt FArg1 = 9;  fToInt FArg2 = 10; fToInt FArg3 = 11
+fToInt FArg4 = 12; fToInt FArg5 = 13; fToInt FArg6 = 14; fToInt FArg7 = 15
+fToInt FRet0 = 8;  fToInt FRet1 = 9
 fToInt (FReg i) = 16+i
 
 newtype ST = ST Int8 deriving (NFData)
@@ -161,36 +133,23 @@ instance Pretty RoundMode where
 data Scale = One | Two | Four | Eight deriving Eq
 
 instance Pretty Scale where
-    pretty One   = "1"
-    pretty Two   = "2"
-    pretty Four  = "4"
-    pretty Eight = "8"
+    pretty One   = "1"; pretty Two   = "2"
+    pretty Four  = "4"; pretty Eight = "8"
 
 data Pred = Eqoq | Ltos | Leos | Unordq | Nequq | Nltus | Nleus | Ordq
 
 instance Pretty Pred where
-    pretty Eqoq   = "EQ_OQ"
-    pretty Ltos   = "LT_OS"
-    pretty Leos   = "LE_OS"
-    pretty Unordq = "UNORD_Q"
-    pretty Nequq  = "NEQ_UQ"
-    pretty Nltus  = "NLT_US"
-    pretty Nleus  = "NLE_US"
-    pretty Ordq   = "ORD_Q"
+     pretty Eqoq   = "EQ_OQ";   pretty Ltos  = "LT_OS";  pretty Leos  = "LE_OS"
+     pretty Unordq = "UNORD_Q"; pretty Nequq = "NEQ_UQ"; pretty Nltus = "NLT_US"
+     pretty Nleus  = "NLE_US";  pretty Ordq  = "ORD_Q"
 
 hasMa :: [X86 reg freg a] -> Bool
 hasMa = any g where g Call{} = True; g _ = False
 
 -- https://www.felixcloutier.com/x86/cmppd
 imm8 :: Pred -> Int8
-imm8 Eqoq   = 0
-imm8 Ltos   = 1
-imm8 Leos   = 2
-imm8 Unordq = 3
-imm8 Nequq  = 4
-imm8 Nltus  = 5
-imm8 Nleus  = 6
-imm8 Ordq   = 7
+imm8 Eqoq  = 0; imm8 Ltos  = 1; imm8 Leos  = 2; imm8 Unordq = 3
+imm8 Nequq = 4; imm8 Nltus = 5; imm8 Nleus = 6; imm8 Ordq   = 7
 
 instance NFData Pred where rnf=rwhnf
 
