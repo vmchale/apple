@@ -97,22 +97,10 @@ extSse pre opc r0 r1 =
         in [pre,b,0xf,opc,modRMB]
 
 vexV4 :: FX86Reg -> Word8
-vexV4 XMM0  = 0xf
-vexV4 XMM1  = 0xe
-vexV4 XMM2  = 0xd
-vexV4 XMM3  = 0xc
-vexV4 XMM4  = 0xb
-vexV4 XMM5  = 0xa
-vexV4 XMM6  = 0x9
-vexV4 XMM7  = 0x8
-vexV4 XMM8  = 0x7
-vexV4 XMM9  = 0x6
-vexV4 XMM10 = 0x5
-vexV4 XMM11 = 0x4
-vexV4 XMM12 = 0x3
-vexV4 XMM13 = 0x2
-vexV4 XMM14 = 0x1
-vexV4 XMM15 = 0x0
+vexV4 XMM0  = 0xf; vexV4 XMM1  = 0xe; vexV4 XMM2  = 0xd; vexV4 XMM3  = 0xc
+vexV4 XMM4  = 0xb; vexV4 XMM5  = 0xa; vexV4 XMM6  = 0x9; vexV4 XMM7  = 0x8
+vexV4 XMM8  = 0x7; vexV4 XMM9  = 0x6; vexV4 XMM10 = 0x5; vexV4 XMM11 = 0x4
+vexV4 XMM12 = 0x3; vexV4 XMM13 = 0x2; vexV4 XMM14 = 0x1; vexV4 XMM15 = 0x0
 
 bitC :: Word8 -> Word8
 bitC 0x0 = 0x1
