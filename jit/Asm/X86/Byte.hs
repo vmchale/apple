@@ -38,6 +38,8 @@ assembleCtx ctx (ds, isns) = do
     let b = BS.pack.concat$asm 0 (pI p, arrs, Just ctx, lbls) isns
         mP = snd<$>IM.lookupMin arrs
     (b,,mP)<$>finish b p
+  where
+    fst4 (x,_,_,_) = x
 
 allFp :: (IM.IntMap [Word8], [X86 X86Reg FX86Reg a]) -> IO ([BS.ByteString], Int, FunPtr b, Maybe (Ptr Word8))
 allFp (ds, instrs) = do
@@ -864,11 +866,8 @@ asm ix st@(self, _, Just (_, _, d, _), _) (Call _ DR:asms) | Just i32 <- mi32 (d
 asm _ (_, _, Nothing, _) (Call{}:_) = error "Internal error? no dynlibs"
 asm _ _ (instr:_) = error (show instr)
 
-encS :: Scale -> Word8
-encS One   = 0
-encS Two   = 1
-encS Four  = 2
-encS Eight = 3
+encS One  = 0; encS Two   = 1
+encS Four = 2; encS Eight = 3
 
 get :: Label -> (Int, IM.IntMap (Ptr Word8), Maybe CCtx, M.Map Label Int) -> Int
 get l =
@@ -890,48 +889,20 @@ mi64i32 i | i > fromIntegral (maxBound :: Int32) || i < fromIntegral (minBound :
           | otherwise = Just $ fromIntegral i
 
 class RMB a where
-    -- extra is 1 bit, ModR/M is 3 bits; I store them as bytes for ease of
-    -- manipulation
+    -- extra is 1 bit, ModR/M is 3 bits; stored as bytes for ease of manipulation
     modRM :: a -> (Word8, Word8)
 
 instance RMB X86Reg where
-    modRM Rax = (0, 0o0)
-    modRM Rcx = (0, 0o1)
-    modRM Rdx = (0, 0o2)
-    modRM Rbx = (0, 0o3)
-    modRM Rsp = (0, 0o4)
-    modRM Rbp = (0, 0o5)
-    modRM Rsi = (0, 0o6)
-    modRM Rdi = (0, 0o7)
-    modRM R8  = (1, 0o0)
-    modRM R9  = (1, 0o1)
-    modRM R10 = (1, 0o2)
-    modRM R11 = (1, 0o3)
-    modRM R12 = (1, 0o4)
-    modRM R13 = (1, 0o5)
-    modRM R14 = (1, 0o6)
-    modRM R15 = (1, 0o7)
+    modRM Rax = (0, 0o0); modRM Rcx = (0, 0o1); modRM Rdx = (0, 0o2); modRM Rbx = (0, 0o3)
+    modRM Rsp = (0, 0o4); modRM Rbp = (0, 0o5); modRM Rsi = (0, 0o6); modRM Rdi = (0, 0o7)
+    modRM R8  = (1, 0o0); modRM R9  = (1, 0o1); modRM R10 = (1, 0o2); modRM R11 = (1, 0o3)
+    modRM R12 = (1, 0o4); modRM R13 = (1, 0o5); modRM R14 = (1, 0o6); modRM R15 = (1, 0o7)
 
 instance RMB FX86Reg where
-    modRM XMM0  = (0, 0o0)
-    modRM XMM1  = (0, 0o1)
-    modRM XMM2  = (0, 0o2)
-    modRM XMM3  = (0, 0o3)
-    modRM XMM4  = (0, 0o4)
-    modRM XMM5  = (0, 0o5)
-    modRM XMM6  = (0, 0o6)
-    modRM XMM7  = (0, 0o7)
-    modRM XMM8  = (1, 0o0)
-    modRM XMM9  = (1, 0o1)
-    modRM XMM10 = (1, 0o2)
-    modRM XMM11 = (1, 0o3)
-    modRM XMM12 = (1, 0o4)
-    modRM XMM13 = (1, 0o5)
-    modRM XMM14 = (1, 0o6)
-    modRM XMM15 = (1, 0o7)
+    modRM XMM0  = (0, 0o0); modRM XMM1  = (0, 0o1); modRM XMM2  = (0, 0o2); modRM XMM3  = (0, 0o3)
+    modRM XMM4  = (0, 0o4); modRM XMM5  = (0, 0o5); modRM XMM6  = (0, 0o6); modRM XMM7  = (0, 0o7)
+    modRM XMM8  = (1, 0o0); modRM XMM9  = (1, 0o1); modRM XMM10 = (1, 0o2); modRM XMM11 = (1, 0o3)
+    modRM XMM12 = (1, 0o4); modRM XMM13 = (1, 0o5); modRM XMM14 = (1, 0o6); modRM XMM15 = (1, 0o7)
 
 cd :: (Integral a) => a -> [Word8]
 cd x = le (fromIntegral x :: Word32)
-
-fst4 :: (a, b, c, d) -> a
-fst4 (x, _, _, _) = x
