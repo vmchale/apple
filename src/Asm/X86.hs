@@ -98,14 +98,12 @@ instance Pretty FAbsReg where
 instance Pretty X2Abs where
     pretty (F2Reg i) = "ymm" <> pretty i
 
-toInt :: AbsReg -> Int
 toInt CArg0 = 0; toInt CArg1 = 1; toInt CArg2 = 2; toInt CArg3 = 3
 toInt CArg4 = 4; toInt CArg5 = 5; toInt CRet  = 6
 toInt SP   = 7; toInt BP  = -16
 toInt Quot = 6; toInt Rem = 2
 toInt (IReg i) = 16+i
 
-fToInt :: FAbsReg -> Int
 fToInt FArg0 = 8;  fToInt FArg1 = 9;  fToInt FArg2 = 10; fToInt FArg3 = 11
 fToInt FArg4 = 12; fToInt FArg5 = 13; fToInt FArg6 = 14; fToInt FArg7 = 15
 fToInt FRet0 = 8;  fToInt FRet1 = 9
@@ -133,8 +131,8 @@ instance Pretty RoundMode where
 data Scale = One | Two | Four | Eight deriving Eq
 
 instance Pretty Scale where
-    pretty One   = "1"; pretty Two   = "2"
-    pretty Four  = "4"; pretty Eight = "8"
+    pretty One  = "1"; pretty Two   = "2"
+    pretty Four = "4"; pretty Eight = "8"
 
 data Pred = Eqoq | Ltos | Leos | Unordq | Nequq | Nltus | Nleus | Ordq
 
@@ -147,7 +145,6 @@ hasMa :: [X86 reg freg a] -> Bool
 hasMa = any g where g Call{} = True; g _ = False
 
 -- https://www.felixcloutier.com/x86/cmppd
-imm8 :: Pred -> Int8
 imm8 Eqoq  = 0; imm8 Ltos  = 1; imm8 Leos  = 2; imm8 Unordq = 3
 imm8 Nequq = 4; imm8 Nltus = 5; imm8 Nleus = 6; imm8 Ordq   = 7
 
