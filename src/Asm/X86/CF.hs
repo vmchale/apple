@@ -43,16 +43,11 @@ addControlFlow (BB asms _:bbs) = do
         _             -> getFresh
     ; (f, bbs') <- next bbs
     ; acc <- case last asms of
-            J _ lϵ    -> do {l_i <- lookupLabel lϵ; pure [l_i]}
-            Je _ lϵ   -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
-            Jle _ lϵ  -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
-            Jl _ lϵ   -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
-            Jg _ lϵ   -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
-            Jge _ lϵ  -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
-            Jne _ lϵ  -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
-            C _ lϵ    -> do {l_i <- lookupLabel lϵ; pure [l_i]}
-            RetL _ lϵ -> lC lϵ
-            _         -> pure (f [])
+            J _ lϵ     -> do {l_i <- lookupLabel lϵ; pure [l_i]}
+            Jcc _ _ lϵ -> do {l_i <- lookupLabel lϵ; pure (f [l_i])}
+            C _ lϵ     -> do {l_i <- lookupLabel lϵ; pure [l_i]}
+            RetL _ lϵ  -> lC lϵ
+            _          -> pure (f [])
     ; pure (BB asms (ControlAnn i acc (ubb asms)) : bbs')
     }
 
@@ -117,12 +112,7 @@ usesF Sal{}                     = IS.empty
 usesF Sar{}                     = IS.empty
 usesF Fscale{}                  = IS.empty
 usesF Call{}                    = IS.empty
-usesF Cmovnle{}                 = IS.empty
-usesF Cmovnl{}                  = IS.empty
-usesF Cmovne{}                  = IS.empty
-usesF Cmove{}                   = IS.empty
-usesF Cmovle{}                  = IS.empty
-usesF Cmovl{}                   = IS.empty
+usesF Cmov{}                    = IS.empty
 usesF Fstp{}                    = IS.empty
 usesF MovqXA{}                  = IS.empty
 usesF Fyl2x{}                   = IS.empty
@@ -150,13 +140,8 @@ usesF Pop{}                     = IS.empty
 usesF Rdrand{}                  = IS.empty
 usesF Neg{}                     = IS.empty
 usesF J{}                       = IS.empty
-usesF Je{}                      = IS.empty
+usesF Jcc{}                     = IS.empty
 usesF Label{}                   = IS.empty
-usesF Jne{}                     = IS.empty
-usesF Jge{}                     = IS.empty
-usesF Jg{}                      = IS.empty
-usesF Jl{}                      = IS.empty
-usesF Jle{}                     = IS.empty
 usesF C{}                       = IS.empty
 usesF RetL{}                    = IS.empty
 usesF Ret{}                     = fromList [FRet0, FRet1]
@@ -203,12 +188,7 @@ uses Fcos{}                 = IS.empty
 uses Fscale{}               = IS.empty
 uses Fxch{}                 = IS.empty
 uses (Not _ r)              = singleton r
-uses (Cmovnle _ _ r)        = singleton r
-uses (Cmovnl _ _ r)         = singleton r
-uses (Cmovne _ _ r)         = singleton r
-uses (Cmove _ _ r)          = singleton r
-uses (Cmovle _ _ r)         = singleton r
-uses (Cmovl _ _ r)          = singleton r
+uses (Cmov _ _ _ r)         = singleton r
 uses Vmulsd{}               = IS.empty
 uses Vaddsd{}               = IS.empty
 uses (VaddsdA _ _ _ a)      = uA a
@@ -239,13 +219,8 @@ uses (Push _ r)             = singleton r
 uses Pop{}                  = IS.empty
 uses (Neg _ r)              = singleton r
 uses J{}                    = IS.empty
-uses Je{}                   = IS.empty
+uses Jcc{}                  = IS.empty
 uses Label{}                = IS.empty
-uses Jne{}                  = IS.empty
-uses Jge{}                  = IS.empty
-uses Jg{}                   = IS.empty
-uses Jl{}                   = IS.empty
-uses Jle{}                  = IS.empty
 uses C{}                    = IS.empty
 uses RetL{}                 = IS.empty
 uses Ret{}                  = singleton CRet
@@ -306,12 +281,7 @@ defsF CmpRR{}                = IS.empty
 defsF CmpRI{}                = IS.empty
 defsF Sal{}                  = IS.empty
 defsF Sar{}                  = IS.empty
-defsF Cmovnle{}              = IS.empty
-defsF Cmovnl{}               = IS.empty
-defsF Cmovne{}               = IS.empty
-defsF Cmove{}                = IS.empty
-defsF Cmovle{}               = IS.empty
-defsF Cmovl{}                = IS.empty
+defsF Cmov{}                 = IS.empty
 defsF (Call _ DR)            = IS.singleton (X86.fToInt FRet0)
 defsF Call{}                 = IS.empty
 defsF Cvttsd2si{}            = IS.empty
@@ -327,13 +297,8 @@ defsF Push{}                 = IS.empty
 defsF Rdrand{}               = IS.empty
 defsF Neg{}                  = IS.empty
 defsF J{}                    = IS.empty
-defsF Je{}                   = IS.empty
+defsF Jcc{}                  = IS.empty
 defsF Label{}                = IS.empty
-defsF Jne{}                  = IS.empty
-defsF Jge{}                  = IS.empty
-defsF Jg{}                   = IS.empty
-defsF Jl{}                   = IS.empty
-defsF Jle{}                  = IS.empty
 defsF C{}                    = IS.empty
 defsF RetL{}                 = IS.empty
 defsF Ret{}                  = IS.empty
@@ -380,12 +345,7 @@ defs Faddp{}           = IS.empty
 defs Fscale{}          = IS.empty
 defs Fxch{}            = IS.empty
 defs (Not _ r)         = singleton r
-defs (Cmovnle _ r _)   = singleton r
-defs (Cmovnl _ r _)    = singleton r
-defs (Cmovne _ r _)    = singleton r
-defs (Cmove _ r _)     = singleton r
-defs (Cmovl _ r _)     = singleton r
-defs (Cmovle _ r _)    = singleton r
+defs (Cmov _ _ r _)    = singleton r
 defs Vmulsd{}          = IS.empty
 defs Vdivsd{}          = IS.empty
 defs Vaddsd{}          = IS.empty
@@ -416,13 +376,8 @@ defs Push{}            = IS.empty
 defs (Pop _ r)         = singleton r
 defs (Neg _ r)         = singleton r
 defs J{}               = IS.empty
-defs Je{}              = IS.empty
+defs Jcc{}             = IS.empty
 defs Label{}           = IS.empty
-defs Jne{}             = IS.empty
-defs Jge{}             = IS.empty
-defs Jg{}              = IS.empty
-defs Jl{}              = IS.empty
-defs Jle{}             = IS.empty
 defs C{}               = IS.empty
 defs RetL{}            = IS.empty
 defs Ret{}             = IS.empty

@@ -223,12 +223,7 @@ mkIx ix (Cvttsd2si{}:asms)                    = mkIx (ix+5) asms
 mkIx ix (Cvtsi2sd{}:asms)                     = mkIx (ix+5) asms
 mkIx ix (Ret{}:asms)                          = mkIx (ix+1) asms
 mkIx ix (RetL{}:asms)                         = mkIx (ix+1) asms
-mkIx ix (Je{}:asms)                           = mkIx (ix+6) asms
-mkIx ix (Jne{}:asms)                          = mkIx (ix+6) asms
-mkIx ix (Jg{}:asms)                           = mkIx (ix+6) asms
-mkIx ix (Jge{}:asms)                          = mkIx (ix+6) asms
-mkIx ix (Jl{}:asms)                           = mkIx (ix+6) asms
-mkIx ix (Jle{}:asms)                          = mkIx (ix+6) asms
+mkIx ix (Jcc{}:asms)                           = mkIx (ix+6) asms
 mkIx ix (J{}:asms)                            = mkIx (ix+5) asms
 mkIx ix (C{}:asms)                            = mkIx (ix+5) asms
 mkIx ix (MovqAX _ (R Rsp) r:asms) | fits r = mkIx (ix+5) asms
@@ -305,12 +300,7 @@ mkIx ix (Sqrtsd _ r0 r1:asms) | fits r0 && fits r1 = mkIx (ix+4) asms
                               | otherwise     = mkIx (ix+5) asms
 mkIx ix (Not{}:asms)                          = mkIx (ix+3) asms
 mkIx ix (Rdrand{}:asms)                       = mkIx (ix+4) asms
-mkIx ix (Cmovnle{}:asms)                      = mkIx (ix+4) asms
-mkIx ix (Cmovnl{}:asms)                       = mkIx (ix+4) asms
-mkIx ix (Cmovne{}:asms)                       = mkIx (ix+4) asms
-mkIx ix (Cmove{}:asms)                        = mkIx (ix+4) asms
-mkIx ix (Cmovl{}:asms)                        = mkIx (ix+4) asms
-mkIx ix (Cmovle{}:asms)                       = mkIx (ix+4) asms
+mkIx ix (Cmov{}:asms)                         = mkIx (ix+4) asms
 mkIx ix (Fninit{}:asms)                       = mkIx (ix+2) asms
 mkIx ix (IDiv{}:asms)                         = mkIx (ix+3) asms
 mkIx ix (Neg{}:asms)                          = mkIx (ix+3) asms
@@ -665,27 +655,27 @@ asm ix st (Ret{}:asms) =
     [0xc3]:asm (ix+1) st asms
 asm ix st (RetL{}:asms) =
     [0xc3]:asm (ix+1) st asms
-asm ix st (Je _ l:asms) =
+asm ix st (Jcc _ E l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x84:cd (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
-asm ix st (Jne _ l:asms) =
+asm ix st (Jcc _ Ne l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x85:cd (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
-asm ix st (Jg _ l:asms) =
+asm ix st (Jcc _ G l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8f:cd (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
-asm ix st (Jge _ l:asms) =
+asm ix st (Jcc _ Ge l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8d:cd (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
-asm ix st (Jl _ l:asms) =
+asm ix st (Jcc _ L l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8c:cd (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
-asm ix st (Jle _ l:asms) =
+asm ix st (Jcc _ Le l:asms) =
     let lIx = get l st
         instr = let offs = lIx-ix-6 in 0x0f:0x8e:cd (fromIntegral offs :: Int32)
     in instr:asm (ix+6) st asms
@@ -855,17 +845,17 @@ asm ix st (MovRA l r (R Rbp):asms) = asm ix st (MovRA l r (RC Rbp 0):asms)
 asm ix st (MovRA l r (R R13):asms) = asm ix st (MovRA l r (RC R13 0):asms)
 asm ix st (MovRA _ r (R ar):asms) =
     mkAR [0x8b] 0 ar r:asm (ix+3) st asms
-asm ix st (Cmovne _ r0 r1:asms) =
+asm ix st (Cmov _ Ne r0 r1:asms) =
     mkRR [0xf,0x45] r1 r0:asm (ix+4) st asms
-asm ix st (Cmovnle _ r0 r1:asms) =
+asm ix st (Cmov _ G r0 r1:asms) =
     mkRR [0xf,0x4f] r1 r0:asm (ix+4) st asms
-asm ix st (Cmovnl _ r0 r1:asms) =
+asm ix st (Cmov _ Ge r0 r1:asms) =
     mkRR [0xf,0x4d] r1 r0:asm (ix+4) st asms
-asm ix st (Cmovle _ r0 r1:asms) =
+asm ix st (Cmov _ Le r0 r1:asms) =
     mkRR [0xf,0x4e] r1 r0:asm (ix+4) st asms
-asm ix st (Cmovl _ r0 r1:asms) =
+asm ix st (Cmov _ L r0 r1:asms) =
     mkRR [0xf,0x4c] r1 r0:asm (ix+4) st asms
-asm ix st (Cmove _ r0 r1:asms) =
+asm ix st (Cmov _ E r0 r1:asms) =
     mkRR [0xf,0x44] r1 r0:asm (ix+4) st asms
 asm ix st (MovAR _ (RS rb s ri) r:asms) =
     let (eb, bb) = modRM rb

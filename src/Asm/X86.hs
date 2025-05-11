@@ -5,6 +5,7 @@ module Asm.X86 ( X86 (..)
                , AbsReg (..), FAbsReg (..)
                , X86Reg (..), FX86Reg (..)
                , Addr (..)
+               , P (..)
                , ST (..)
                , Scale (..)
                , Pred (..)
@@ -145,6 +146,7 @@ hasMa :: [X86 reg freg a] -> Bool
 hasMa = any g where g Call{} = True; g _ = False
 
 -- https://www.felixcloutier.com/x86/cmppd
+imm8 :: Pred -> Int8
 imm8 Eqoq  = 0; imm8 Ltos  = 1; imm8 Leos  = 2; imm8 Unordq = 3
 imm8 Nequq = 4; imm8 Nltus = 5; imm8 Nleus = 6; imm8 Ordq   = 7
 
@@ -166,6 +168,17 @@ instance Pretty reg => Pretty (Addr reg) where
     pretty (RS b s i)      = brackets (pretty b <> "+" <> pretty s <> "*" <> pretty i)
     pretty (RSD b One i d) = brackets (pretty b <> pretty i <> pix d)
     pretty (RSD b s i d)   = brackets (pretty b <> "+" <> pretty s <> "*" <> pretty i <> pix d)
+
+data P = Ne | E | L | Le | Ge | G
+
+instance NFData P where rnf=rwhnf
+
+instance Pretty P where
+    pretty Ne="ne"; pretty E="e";   pretty L="l"
+    pretty Le="le"; pretty Ge="ge"; pretty G="g"
+
+pm Ne="ne"; pm E="e";   pm L="l"
+pm Le="le"; pm Ge="nl"; pm G="nle"
 
 data X86 reg freg a = Label { ann :: a, label :: Label }
                     | IAddRR { ann :: a, rAdd1, rAdd2 :: reg }
@@ -202,12 +215,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Fninit { ann :: a }
                     | Fxch { ann :: a, stIsn :: ST }
                     | J { ann :: a, label :: Label }
-                    | Je { ann :: a, jLabel :: Label }
-                    | Jne { ann :: a, jLabel :: Label }
-                    | Jg { ann :: a, jLabel :: Label }
-                    | Jge { ann :: a, jLabel :: Label }
-                    | Jl { ann :: a, jLabel :: Label }
-                    | Jle { ann :: a, jLabel :: Label }
+                    | Jcc { ann :: a, cond :: !P, jLabel :: !Label }
                     | C { ann :: a, label :: Label }
                     | CmpRR { ann :: a, rCmp, rCmp' :: reg }
                     | CmpRI { ann :: a, rCmp :: reg, cmpI32 :: Int32 }
@@ -249,12 +257,7 @@ data X86 reg freg a = Label { ann :: a, label :: Label }
                     | Vminsd { ann :: a, fDest, rSrc1, rSrc2 :: freg }
                     | Not { ann :: a, rSrc :: reg }
                     | And { ann :: a, rDest, rSrc :: reg }
-                    | Cmovnle { ann :: a, rDest, rSrc :: reg }
-                    | Cmovnl { ann :: a, rDest, rSrc :: reg }
-                    | Cmovne { ann :: a, rDest , rSrc :: reg }
-                    | Cmove { ann :: a, rDest, rSrc :: reg }
-                    | Cmovl { ann :: a, rDest, rSrc :: reg }
-                    | Cmovle { ann :: a, rDest, rSrc :: reg }
+                    | Cmov { ann :: a, movcond :: !P, rDest, rSrc :: reg }
                     | Rdrand { ann :: a, rDest :: reg }
                     | Neg { ann :: a, rDest :: reg }
                     deriving (Functor, Generic)
@@ -278,12 +281,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (ISubRI _ r i)                = i4 ("sub" <+> pretty r <> "," <+> pretty i)
     pretty (IMulRR _ r0 r1)              = i4 ("imul" <+> pretty r0 <> "," <+> pretty r1)
     pretty (IMulRA _ r a)                = i4 ("imul" <+> pretty r <> "," <+> pretty a)
-    pretty (Jne _ l)                     = i4 ("jne" <+> prettyLabel l)
-    pretty (Jle _ l)                     = i4 ("jle" <+> prettyLabel l)
-    pretty (Je _ l)                      = i4 ("je" <+> prettyLabel l)
-    pretty (Jge _ l)                     = i4 ("jge" <+> prettyLabel l)
-    pretty (Jg _ l)                      = i4 ("jg" <+> prettyLabel l)
-    pretty (Jl _ l)                      = i4 ("jl" <+> prettyLabel l)
+    pretty (Jcc _ p l)                   = i4 ("j" <> pretty p <+> prettyLabel l)
     pretty Ret{}                         = i4 "ret"
     pretty (Vdivsd _ rD r0 r1)           = i4 ("vdivsd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
     pretty (Movapd _ r0 r1)              = i4 ("movapd" <+> pretty r0 <> "," <+> pretty r1)
@@ -341,12 +339,7 @@ instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
     pretty (Vminsd _ r0 r1 r2)           = i4 ("vminsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2)
     pretty (Not _ r)                     = i4 ("not" <+> pretty r)
     pretty (And _ r0 r1)                 = i4 ("and" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cmovnle _ r0 r1)             = i4 ("cmovnle" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cmovnl _ r0 r1)              = i4 ("cmovnl" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cmovne _ r0 r1)              = i4 ("cmovne" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cmove _ r0 r1)               = i4 ("cmove" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cmovl _ r0 r1)               = i4 ("cmovl" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cmovle _ r0 r1)              = i4 ("cmovle" <+> pretty r0 <> "," <+> pretty r1)
+    pretty (Cmov _ p r0 r1)              = i4 ("cmov" <> pm p <+> pretty r0 <> "," <+> pretty r1)
     pretty (Rdrand _ r)                  = i4 ("rdrand" <+> pretty r)
     pretty (Test _ r0 r1)                = i4 ("test" <+> pretty r0 <> "," <+> pretty r1)
     pretty (TestI _ r0 i)                = i4 ("test" <+> pretty r0 <> "," <+> pretty i)
@@ -374,13 +367,8 @@ prettyDebugX86 = prettyLines . fmap prettyLive
 mapR :: (areg -> reg) -> X86 areg afreg a -> X86 reg afreg a
 mapR f (MovRR l r0 r1)              = MovRR l (f r0) (f r1)
 mapR f (MovRL x r l)                = MovRL x (f r) l
-mapR _ (Jg x l)                     = Jg x l
-mapR _ (Je x l)                     = Je x l
-mapR _ (Jge x l)                    = Jge x l
-mapR _ (Jne x l)                    = Jne x l
+mapR _ (Jcc x c l)                  = Jcc x c l
 mapR _ (J x l)                      = J x l
-mapR _ (Jl x l)                     = Jl x l
-mapR _ (Jle x l)                    = Jle x l
 mapR _ (Label x l)                  = Label x l
 mapR f (IMulRR l r0 r1)             = IMulRR l (f r0) (f r1)
 mapR f (IMulRA l r a)               = IMulRA l (f r) (f<$>a)
@@ -447,12 +435,7 @@ mapR f (VmaxsdA l xr0 xr1 a)        = VmaxsdA l xr0 xr1 (f<$>a)
 mapR f (Not l r)                    = Not l (f r)
 mapR f (And l r0 r1)                = And l (f r0) (f r1)
 mapR f (Rdrand l r)                 = Rdrand l (f r)
-mapR f (Cmovnle l r0 r1)            = Cmovnle l (f r0) (f r1)
-mapR f (Cmovnl l r0 r1)             = Cmovnl l (f r0) (f r1)
-mapR f (Cmovne l r0 r1)             = Cmovne l (f r0) (f r1)
-mapR f (Cmove l r0 r1)              = Cmove l (f r0) (f r1)
-mapR f (Cmovl l r0 r1)              = Cmovl l (f r0) (f r1)
-mapR f (Cmovle l r0 r1)             = Cmovle l (f r0) (f r1)
+mapR f (Cmov l c r0 r1)             = Cmov l c (f r0) (f r1)
 mapR _ (Fninit l)                   = Fninit l
 mapR f (Test l r0 r1)               = Test l (f r0) (f r1)
 mapR f (TestI l r i)                = TestI l (f r) i
@@ -467,12 +450,7 @@ mapR f (Neg a r)                    = Neg a (f r)
 
 fF :: (Monoid m) => (freg -> m) -> X86 reg freg a -> m
 fF _ J{}                       = mempty
-fF _ Jg{}                      = mempty
-fF _ Jge{}                     = mempty
-fF _ Je{}                      = mempty
-fF _ Jne{}                     = mempty
-fF _ Jle{}                     = mempty
-fF _ Jl{}                      = mempty
+fF _ Jcc{}                     = mempty
 fF _ Label{}                   = mempty
 fF _ IAddRR{}                  = mempty
 fF _ IAddRI{}                  = mempty
@@ -550,16 +528,11 @@ fF _ Not{}                     = mempty
 fF _ And{}                     = mempty
 fF _ Neg{}                     = mempty
 fF f (Sqrtsd _ r0 r1)          = f r0<>f r1
-fF _ Cmovne{}                  = mempty
-fF _ Cmovnle{}                 = mempty
-fF _ Cmove{}                   = mempty
-fF _ Cmovl{}                   = mempty
-fF _ Cmovle{}                  = mempty
-fF _ Cmovnl{}                  = mempty
+fF _ Cmov{}                    = mempty
 fF _ Rdrand{}                  = mempty
 
 fR :: (Monoid m) => (reg -> m) -> X86 reg freg a -> m
-fR _ Jg{}                   = mempty
+fR _ Jcc{}                  = mempty
 fR _ J{}                    = mempty
 fR f (MovAR _ a r)          = f @<> a <> f r
 fR f (MovRA _ r a)          = f r <> f @<> a
@@ -595,11 +568,6 @@ fR _ Faddp{}                = mempty
 fR _ Fscale{}               = mempty
 fR _ Fninit{}               = mempty
 fR _ Fxch{}                 = mempty
-fR _ Je{}                   = mempty
-fR _ Jne{}                  = mempty
-fR _ Jge{}                  = mempty
-fR _ Jl{}                   = mempty
-fR _ Jle{}                  = mempty
 fR _ C{}                    = mempty
 fR f (CmpRR _ r0 r1)        = f r0 <> f r1
 fR f (CmpRI _ r _)          = f r
@@ -642,17 +610,12 @@ fR _ Minsd{}                = mempty
 fR _ Vminsd{}               = mempty
 fR f (Not _ r)              = f r
 fR f (And _ r0 r1)          = f r0 <> f r1
-fR f (Cmovnle _ r0 r1)      = f r0 <> f r1
-fR f (Cmovnl _ r0 r1)       = f r0 <> f r1
-fR f (Cmovne _ r0 r1)       = f r0 <> f r1
-fR f (Cmove _ r0 r1)        = f r0 <> f r1
-fR f (Cmovl _ r0 r1)        = f r0 <> f r1
-fR f (Cmovle _ r0 r1)       = f r0 <> f r1
+fR f (Cmov _ _ r0 r1)       = f r0 <> f r1
 fR f (Rdrand _ r)           = f r
 fR f (Neg _ r)              = f r
 
 mapFR :: (afreg -> freg) -> X86 areg afreg a -> X86 areg freg a
-mapFR _ (Jg x l)                     = Jg x l
+mapFR _ (Jcc x c l)                  = Jcc x c l
 mapFR _ (J x l)                      = J x l
 mapFR _ (Label x l)                  = Label x l
 mapFR _ (MovRI l r i)                = MovRI l r i
@@ -694,11 +657,6 @@ mapFR _ (Faddp l)                    = Faddp l
 mapFR _ (Fscale l)                   = Fscale l
 mapFR _ (Fninit l)                   = Fninit l
 mapFR _ (Fxch l s)                   = Fxch l s
-mapFR _ (Je x l)                     = Je x l
-mapFR _ (Jge x l)                    = Jge x l
-mapFR _ (Jne x l)                    = Jne x l
-mapFR _ (Jl x l)                     = Jl x l
-mapFR _ (Jle x l)                    = Jle x l
 mapFR _ (CmpRI l r i)                = CmpRI l r i
 mapFR _ (Ret l)                      = Ret l
 mapFR f (Subsd l xr0 xr1)            = Subsd l (f xr0) (f xr1)
@@ -726,12 +684,7 @@ mapFR f (Vfmsub132sd l xr0 xr1 xr2)  = Vfmsub132sd l (f xr0) (f xr1) (f xr2)
 mapFR f (Vfmadd231sdA l xr0 xr1 a)   = Vfmadd231sdA l (f xr0) (f xr1) a
 mapFR f (Sqrtsd l xr0 xr1)           = Sqrtsd l (f xr0) (f xr1)
 mapFR _ (And l r0 r1)                = And l r0 r1
-mapFR _ (Cmovnle l r0 r1)            = Cmovnle l r0 r1
-mapFR _ (Cmovnl l r0 r1)             = Cmovnl l r0 r1
-mapFR _ (Cmovne l r0 r1)             = Cmovne l r0 r1
-mapFR _ (Cmove l r0 r1)              = Cmove l r0 r1
-mapFR _ (Cmovl l r0 r1)              = Cmovl l r0 r1
-mapFR _ (Cmovle l r0 r1)             = Cmovle l r0 r1
+mapFR _ (Cmov l c r0 r1)             = Cmov l c r0 r1
 mapFR _ (Rdrand l r)                 = Rdrand l r
 mapFR _ (TestI l r i)                = TestI l r i
 mapFR _ (Test l r0 r1)               = Test l r0 r1
