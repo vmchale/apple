@@ -60,21 +60,16 @@ mi32 i | i <= fromIntegral (maxBound :: Int32) && i >= fromIntegral (minBound ::
 fI64 :: Double -> Int64
 fI64 x = accursedUnutterablePerformIO $ alloca $ \bytes -> poke (castPtr bytes) x *> peek bytes
 
-opPred :: Op.FRel -> Pred
-opPred Op.FGeq = Nltus
-opPred Op.FGt  = Nleus
-opPred Op.FEq  = Eqoq
-opPred Op.FNeq = Nequq
-opPred Op.FLeq = Leos
-opPred Op.FLt  = Ltos
+opPred, nopPred :: Op.FRel -> Pred
+opPred Op.FGeq = Nltus; opPred Op.FGt  = Nleus; opPred Op.FEq  = Eqoq
+opPred Op.FNeq = Nequq; opPred Op.FLeq = Leos;  opPred Op.FLt  = Ltos
 
-nopPred :: Op.FRel -> Pred
-nopPred Op.FGeq = Ltos
-nopPred Op.FGt  = Leos
-nopPred Op.FEq  = Nequq
-nopPred Op.FNeq = Eqoq
-nopPred Op.FLt  = Nltus
-nopPred Op.FLeq = Nleus
+nopPred Op.FGeq = Ltos; nopPred Op.FGt  = Leos;  nopPred Op.FEq  = Nequq
+nopPred Op.FNeq = Eqoq; nopPred Op.FLt  = Nltus; nopPred Op.FLeq = Nleus
+
+opCc :: Op.IRel -> P
+opCc Op.IEq = E;   opCc Op.INeq = Ne; opCc Op.IGeq = Ge
+opCc Op.ILeq = Le; opCc Op.ILt = L;   opCc Op.IGt = G
 
 ir :: IR.Stmt -> WM [X86 AbsReg FAbsReg ()]
 ir (IR.MT t (IR.EAt (IR.AP m (Just (IR.KI i)) _))) | Just i8 <- mi8 i = pure [MovRA () (absReg t) (RC (absReg m) i8)]
