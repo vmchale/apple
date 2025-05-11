@@ -90,17 +90,9 @@ data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 
 
 instance Pretty AbsReg where
     pretty (IReg i) = "T" <> pretty i
-    pretty ASP      = "SP"
-    pretty LR       = "LR"
-    pretty FP       = "FP"
-    pretty CArg0    = "X0"
-    pretty CArg1    = "X1"
-    pretty CArg2    = "X2"
-    pretty CArg3    = "X3"
-    pretty CArg4    = "X4"
-    pretty CArg5    = "X5"
-    pretty CArg6    = "X6"
-    pretty CArg7    = "X7"
+    pretty CArg0 = "X0"; pretty CArg1 = "X1"; pretty CArg2 = "X2"; pretty CArg3 = "X3"
+    pretty CArg4 = "X4"; pretty CArg5 = "X5"; pretty CArg6 = "X6"; pretty CArg7 = "X7"
+    pretty ASP = "SP"; pretty LR = "LR"; pretty FP = "FP"
 
 instance P32 AbsReg where
     pw (IReg i) = "W" <> pretty i
@@ -119,17 +111,9 @@ instance Pretty FAbsReg where
     pretty FArg4 = "D4"; pretty FArg5 = "D5"; pretty FArg6 = "D6"; pretty FArg7 = "D7"
 
 toInt :: AbsReg -> Int
-toInt CArg0    = 0
-toInt CArg1    = 1
-toInt CArg2    = 2
-toInt CArg3    = 3
-toInt CArg4    = 4
-toInt CArg5    = 5
-toInt CArg6    = 6
-toInt CArg7    = 7
-toInt LR       = 8
-toInt ASP      = 9
-toInt FP       = 18
+toInt CArg0 = 0; toInt CArg1 = 1; toInt CArg2 = 2; toInt CArg3 = 3
+toInt CArg4 = 4; toInt CArg5 = 5; toInt CArg6 = 6; toInt CArg7 = 7
+toInt LR    = 8; toInt ASP   = 9; toInt FP    = 18
 toInt (IReg i) = 19+i
 
 fToInt :: FAbsReg -> Int
