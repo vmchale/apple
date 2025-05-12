@@ -124,9 +124,7 @@ hl ((n,ns), info, linfo) =
     ss = getCf<$>IS.toList ns; (L lh,_) = getCf n
     getCf = (info A.!)
 
-data S = S { f1s :: !(M.Map Double FTemp), f2s :: !(M.Map (Double, Double) F2)
-           , su :: !(M.Map FTemp FTemp)
-           }
+data S = S { f1s :: !(M.Map Double FTemp), f2s :: !(M.Map (Double, Double) F2), su :: !(M.Map FTemp FTemp) }
 
 emptyS = S M.empty M.empty M.empty
 
