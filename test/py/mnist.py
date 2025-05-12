@@ -4,7 +4,7 @@ import numpy as np
 train_images=np.load('nb/data/train-images.npy')
 train_labels=np.load('nb/data/train-labels.npy')
 
-train_images_v=apple.jit("[♭`{3∘[2,3,4]} (x::Arr (60000 × 28 × 28 × 1) float)]")(train_images)
+train_images_v=apple.jit("[♭`{[2,3,4]} (x::Arr (60000 × 28 × 28 × 1) float)]")(train_images)
 
 def init(x,y):
     return np.random.uniform(-1.,1.,(x,y))/np.sqrt(x*y)
