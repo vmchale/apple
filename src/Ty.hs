@@ -489,7 +489,7 @@ scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 φv (n0,c0) (n1,c1) s = do {n <- nI (loc n0); let t=TV n (c0<>c1) in pure (t, iTS n0 t$iTS n1 t s)}
 
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
-mgu ΦF _ _ Arrow{} Arrow{} = undefined
+mgu ΦF _ _ Arrow{} Arrow{} = error "Functions not accepted in arrays or conditionals."
 mgu CF l s (Arrow t0 t1) (Arrow t0' t1') = do
     (t0'',s0) <- mgu CF l s t0 t0'
     (t1'',s1) <- mguPrep CF l s0 t1 t1'
