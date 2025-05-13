@@ -36,31 +36,13 @@ frameC = concat . go IS.empty IS.empty
           mx DR     = filter (/=XMM0)
 
 fromInt :: Int -> Maybe X86Reg
-fromInt 1    = Just Rsi
-fromInt 2    = Just Rdx
-fromInt 3    = Just Rcx
-fromInt 4    = Just R8
-fromInt 5    = Just R9
-fromInt 6    = Just Rax
-fromInt (-1) = Just R10
-fromInt (-2) = Just R11
-fromInt _    = Nothing
+fromInt 1 = Just Rsi; fromInt 2 = Just Rdx; fromInt 3    = Just Rcx; fromInt 4    = Just R8
+fromInt 5 = Just R9;  fromInt 6 = Just Rax; fromInt (-1) = Just R10; fromInt (-2) = Just R11
+fromInt _ = Nothing
 
 fInt :: Int -> Maybe FX86Reg
-fInt 8     = Just XMM0
-fInt 9     = Just XMM1
-fInt 10    = Just XMM2
-fInt 11    = Just XMM3
-fInt 12    = Just XMM4
-fInt 13    = Just XMM5
-fInt 14    = Just XMM6
-fInt 15    = Just XMM7
-fInt (-5)  = Just XMM8
-fInt (-6)  = Just XMM9
-fInt (-7)  = Just XMM10
-fInt (-8)  = Just XMM11
-fInt (-9)  = Just XMM12
-fInt (-10) = Just XMM13
-fInt (-11) = Just XMM14
-fInt (-12) = Just XMM15
+fInt 8     = Just XMM0;  fInt 9     = Just XMM1;  fInt 10    = Just XMM2;  fInt 11    = Just XMM3
+fInt 12    = Just XMM4;  fInt 13    = Just XMM5;  fInt 14    = Just XMM6;  fInt 15    = Just XMM7
+fInt (-5)  = Just XMM8;  fInt (-6)  = Just XMM9;  fInt (-7)  = Just XMM10; fInt (-8)  = Just XMM11
+fInt (-9)  = Just XMM12; fInt (-10) = Just XMM13; fInt (-11) = Just XMM14; fInt (-12) = Just XMM15
 fInt _     = Nothing
