@@ -43,27 +43,18 @@ instance Pretty BTemp where pretty (BTemp i) = "P" <> pretty i; pretty CBRet = "
 instance Pretty Temp where
     pretty (ITemp i) = "T" <> pretty i
     pretty (ATemp i) = "AT" <> pretty i
-    pretty C0        = "CArg0"
-    pretty C1        = "CArg1"
-    pretty C2        = "CArg2"
-    pretty C3        = "CArg3"
-    pretty C4        = "CArg4"
-    pretty C5        = "CArg5"
-    pretty CRet      = "CRet"
+    pretty C0 = "CArg0"; pretty C1 = "CArg1"; pretty C2 = "CArg2"
+    pretty C3 = "CArg3"; pretty C4 = "CArg4"; pretty C5 = "CArg5"
+    pretty CRet = "CRet"
 
 instance Pretty F2Temp where
     pretty (F2Temp i) = "Y" <> pretty i
 
 instance Pretty FTemp where
     pretty (FTemp i) = "X" <> pretty i
-    pretty F0        = "FArg0"
-    pretty F1        = "FArg1"
-    pretty F2        = "FArg2"
-    pretty F3        = "FArg3"
-    pretty F4        = "FArg4"
-    pretty F5        = "FArg5"
-    pretty FRet0     = "FRet0"
-    pretty FRet1     = "FRet1"
+    pretty F0 = "FArg0"; pretty F1 = "FArg1"; pretty F2 = "FArg2"
+    pretty F3 = "FArg3"; pretty F4 = "FArg4"; pretty F5 = "FArg5"
+    pretty FRet0 = "FRet0"; pretty FRet1 = "FRet1"
 
 instance Show Temp where show=show.pretty
 instance Show FTemp where show=show.pretty
