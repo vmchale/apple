@@ -34,10 +34,10 @@ import           Q
 data X86Reg = Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15 | Rbx | Rax | Rbp | Rsp
             deriving (Eq, Ord, Enum)
 
-data FX86Reg = XMM1 | XMM2 | XMM3 | XMM4 | XMM5 | XMM6 | XMM7 | XMM8 | XMM9 | XMM10 | XMM11 | XMM12 | XMM13 | XMM14 | XMM15 | XMM0
+data FX86Reg = XMM0 | XMM1 | XMM2 | XMM3 | XMM4 | XMM5 | XMM6 | XMM7 | XMM8 | XMM9 | XMM10 | XMM11 | XMM12 | XMM13 | XMM14 | XMM15
              deriving (Eq, Ord, Enum)
 
-data F2X86 = YMM1 | YMM2 | YMM3 | YMM4 | YMM5 | YMM6 | YMM7 | YMM8 | YMM9 | YMM10 | YMM11 | YMM12 | YMM13 | YMM14 | YMM15 | YMM0
+data F2X86 = YMM0 | YMM1 | YMM2 | YMM3 | YMM4 | YMM5 | YMM6 | YMM7 | YMM8 | YMM9 | YMM10 | YMM11 | YMM12 | YMM13 | YMM14 | YMM15
            deriving (Eq, Ord, Enum)
 
 instance NFData X86Reg where rnf=rwhnf

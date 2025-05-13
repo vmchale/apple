@@ -887,10 +887,7 @@ instance RMB X86Reg where
     modRM R12 = (1, 0o4); modRM R13 = (1, 0o5); modRM R14 = (1, 0o6); modRM R15 = (1, 0o7)
 
 instance RMB FX86Reg where
-    modRM XMM0  = (0, 0o0); modRM XMM1  = (0, 0o1); modRM XMM2  = (0, 0o2); modRM XMM3  = (0, 0o3)
-    modRM XMM4  = (0, 0o4); modRM XMM5  = (0, 0o5); modRM XMM6  = (0, 0o6); modRM XMM7  = (0, 0o7)
-    modRM XMM8  = (1, 0o0); modRM XMM9  = (1, 0o1); modRM XMM10 = (1, 0o2); modRM XMM11 = (1, 0o3)
-    modRM XMM12 = (1, 0o4); modRM XMM13 = (1, 0o5); modRM XMM14 = (1, 0o6); modRM XMM15 = (1, 0o7)
+    modRM = (`quotRem` 8).fromIntegral.fromEnum
 
 cd :: (Integral a) => a -> [Word8]
 cd x = le (fromIntegral x :: Word32)
