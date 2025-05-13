@@ -5,9 +5,8 @@ module CF ( ControlAnn (..)
           , Live (..)
           ) where
 
-import qualified Data.IntSet       as IS
-import           Prettyprinter     (Pretty (pretty), braces, punctuate, (<+>))
-import           Prettyprinter.Ext
+import qualified Data.IntSet   as IS
+import           Prettyprinter (Pretty (pretty), braces, punctuate, (<+>))
 
 data Liveness = Liveness { ins, out, fins, fout :: !IS.IntSet }
 
@@ -24,15 +23,6 @@ instance Pretty Live where
     pretty (Live is os fis fos) = braces (pp (is<>fis) <+> ";" <+> pp (os<>fos))
         where pp = mconcat . punctuate "," . fmap pretty . IS.toList
 
--- | Control-flow annotations
-data ControlAnn = ControlAnn { node :: !Int
-                             , conn :: [Int]
-                             , ud   :: !UD
-                             }
+data ControlAnn = ControlAnn { node :: !Int, conn :: [Int], ud :: !UD }
 
 data UD = UD { usesNode, usesFNode, defsNode, defsFNode :: !IS.IntSet }
-
-instance Pretty UD where
-    pretty (UD u uf d df) = "←" <+> pretty (IS.toList$u<>uf) <#> "=" <+> pretty (IS.toList$d<>df)
-
-instance Show UD where show=show.pretty
