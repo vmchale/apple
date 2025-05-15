@@ -17,7 +17,6 @@ optAddr a             = a
 occ :: E reg => reg -> Addr reg -> Bool
 occ r a = toInt r `IS.member` foldMap (IS.singleton.toInt) a
 
--- remove noops
 optX86 :: (E reg, E freg, Eq reg, Eq freg) => [X86 reg freg ()] -> [X86 reg freg ()]
 optX86 = opt.mkLive
 

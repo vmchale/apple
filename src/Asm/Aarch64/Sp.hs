@@ -41,11 +41,8 @@ spillM offs m isns = (foffs, concatMapM g isns)
                 ++ void isn'
                 : catMaybes (zipWith (\a r -> if toInt r `IS.member` defs isn' then Just (Str () r a) else Nothing) as newRs)
 
-          ass :: IS.IntSet -> IM.IntMap Int
-          ass = IM.fromList . (\k -> zip k [offs,offs+8..]) . IS.toList
-
-          assgn = ass m
-          at k = IM.findWithDefault (error "Internal error.") k assgn
+          at k = IM.findWithDefault (error "Internal error.") k ass
+          ass = IM.fromList . (\k -> zip k [offs,offs+8..]) $ IS.toList m
 
           foffs = offs + 8*IS.size m
 
