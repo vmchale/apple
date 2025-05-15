@@ -560,9 +560,9 @@ asm ix st (Vfmsub231sd _ r0 r1 r2:asms) =
 asm ix st (Vfmadd231sdA _ r0 r1 a:asms) =
     mkVexA 0xb9 S6 F38 r0 r1 a:asm (ix+7) st asms
 asm ix st (Roundsd _ r0 r1 i:asms) | fits r0 && fits r1 =
-    (rrNoPre [0x66,0x0f,0x3a,0x0b] r1 r0++le (roundMode i)):asm (ix+6) st asms
+    (rrNoPre [0x66,0x0f,0x3a,0x0b] r1 r0++le (brm i)):asm (ix+6) st asms
 asm ix st (Roundsd _ r0 r1 i:asms) =
-    (0x66:mkAR [0xf,0x3a,0xb] 0 r1 r0++le (roundMode i)):asm (ix+7) st asms
+    (0x66:mkAR [0xf,0x3a,0xb] 0 r1 r0++le (brm i)):asm (ix+7) st asms
 asm ix st (Cvttsd2si _ r0 r1:asms) =
     (0xf2:mkRR [0x0f,0x2c] r1 r0):asm (ix+5) st asms
 asm ix st (Cvtsi2sd _ fr r:asms) =

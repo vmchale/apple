@@ -53,7 +53,7 @@ instance NFData CFunc where rnf=rwhnf
 
 instance Pretty CFunc where
     pretty Malloc="malloc"; pretty Free="free"
-    pretty JR="lrand48"; pretty DR="drand48"
+    pretty JR="lrand48";    pretty DR="drand48"
     pretty Exp="exp"; pretty Log="log"; pretty Pow="pow"
 
 mFree :: Maybe (Ptr a) -> IO ()

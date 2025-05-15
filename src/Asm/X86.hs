@@ -15,7 +15,7 @@ module Asm.X86 ( X86 (..)
                , prettyDebugX86
                , toInt, fToInt
                , imm8, simd2
-               , roundMode
+               , brm
                , mapR, mapFR
                , fR, fF
                , hasMa
@@ -65,9 +65,9 @@ instance Pretty F2X86 where
     pretty YMM8  = "ymm8";  pretty YMM9  = "ymm9";  pretty YMM10 = "ymm10"; pretty YMM11 = "ymm11"
     pretty YMM12 = "ymm12"; pretty YMM13 = "ymm13"; pretty YMM14 = "ymm14"; pretty YMM15 = "ymm15"
 
-instance Show X86Reg where show = show . pretty
-instance Show FX86Reg where show = show . pretty
-instance Show F2X86 where show = show . pretty
+instance Show X86Reg where show=show.pretty
+instance Show FX86Reg where show=show.pretty
+instance Show F2X86 where show=show.pretty
 
 data AbsReg = IReg !Int
             | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5
@@ -119,15 +119,12 @@ data RoundMode = RNearest | RDown | RUp | RZero
 
 instance NFData RoundMode where rnf=rwhnf
 
--- 3 bits, stored as Word8 for ease of manipulation
-roundMode :: RoundMode -> Word8
-roundMode RNearest = 0x0
-roundMode RDown    = 0x1
-roundMode RUp      = 0x2
-roundMode RZero    = 0x3
+-- 3 bits
+brm :: RoundMode -> Word8
+brm RNearest = 0x0; brm RDown = 0x1
+brm RUp      = 0x2; brm RZero = 0x3
 
-instance Pretty RoundMode where
-    pretty = pretty . roundMode
+instance Pretty RoundMode where pretty=pretty.brm
 
 data Scale = One | Two | Four | Eight deriving Eq
 
