@@ -426,7 +426,7 @@ Vec 11 [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
 
 ## Rank
 
-Rank ```{i,j∘[k,l]}`` lifts a function to operate on i, j-cells, optionally
+Rank ```{i,j∘[k,l]}`` or ``{i,j[k,l]}` lifts a function to operate on i, j-cells, optionally
 specifying axes k,l. Iteration is bottom-up; by contrast map `'` cuts across the leading
 dimension.
 
@@ -458,7 +458,7 @@ This may be confusing; Apple's rank feature was poorly designed.
 Take 0-cells (scalars) from the first array and 1-cells from the second.
 
 ```
- > (⊲)`{0,1∘[2]} ⟨0::int,1⟩ ⟨⟨2,3⟩,⟨4,5⟩⟩
+ > (⊲)`{0,1[2]} ⟨0::int,1⟩ ⟨⟨2,3⟩,⟨4,5⟩⟩
 Arr (2×3) [ [0, 2, 3]
           , [1, 4, 5] ]
 ```
