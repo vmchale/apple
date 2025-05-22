@@ -186,6 +186,10 @@ many(p)
     : many(p) p { $2 : $1 }
     | { [] }
 
+some(p)
+    : some(p) p { $2 : $1 }
+    | p { [$1] }
+
 sepBy(p,q)
     : sepBy(p,q) q p { $3 : $1 }
     | p { [$1] }
@@ -238,10 +242,11 @@ T :: { T AlexPosn }
   | name { tv $1 }
 
 R :: { (Int, Maybe [Int]) }
-  : intLit compose lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (fmap (fromInteger.int) $4))) }
-  | intLit lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (fmap (fromInteger.int) $3))) }
-  | lsqbracket sepBy(intLit,comma) rsqbracket { (length $2, Just (reverse (fmap (fromInteger.int) $2))) }
+  : intLit compose lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (map (fromInteger.int) $4))) }
+  | intLit lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (map (fromInteger.int) $3))) }
+  | lsqbracket sepBy(intLit,comma) rsqbracket { (length $2, Just (reverse (map (fromInteger.int) $2))) }
   | intLit { (fromInteger $ int $1, Nothing) }
+  | intLit some(six) { (fromInteger $ int $1, Just (reverse (map six $2))) }
 
 S :: { (Int, Maybe Int) }
   : intLit compose intLit { (fromInteger (int $1), Just (fromInteger (int $3))) }

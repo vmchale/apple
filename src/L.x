@@ -93,6 +93,7 @@ tokens :-
         ","                      { mkSym Comma }
 
         $digit+                  { tok (\p s -> alex $ TokInt p (read $ ASCII.unpack s)) }
+        $digitsubscript+         { tok (\p s -> alex $ TokIx p (parseSubscript $ mkText s)) }
     }
 
     <0,dfn> {
@@ -264,7 +265,6 @@ tokens :-
         _$digit+                 { tok (\p s -> alex $ TokInt p (negate $ read $ ASCII.unpack $ BSL.tail s)) }
         "0x"$hexit+              { tok (\p s -> alex $ TokInt p (hexP $ BSL.drop 2 s)) }
         _"0x"$hexit+             { tok (\p s -> alex $ TokInt p (negate $ hexP $ BSL.drop 3 s)) }
-        $digitsubscript+         { tok (\p s -> alex $ TokIx p (parseSubscript $ mkText s)) }
 
         ¼                        { mkFloat 0.25 }
         ½                        { mkFloat 0.5 }

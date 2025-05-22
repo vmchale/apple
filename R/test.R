@@ -26,7 +26,7 @@ stopifnot(all(run(base,15,4)==as.integer(c(3,3))))
 last7<-jit("λas.}. ([x]\\`7 (as::Vec n int))")
 stopifnot(all(run(last7,seq(0,9))==seq(3,9)))
 
-any1<-jit("(λa. (λbs. (∨)/ₒ #f bs)`{1∘[2]} (a::M bool))")
+any1<-jit("(λa. (λbs. (∨)/ₒ #f bs)`{1₂} (a::M bool))")
 stopifnot(all(run(any1,matrix(c(FALSE,FALSE,FALSE,TRUE),2))==c(FALSE,TRUE)))
 
 any<-jit("λbs. (∨)/ₒ #f bs :: bool")
