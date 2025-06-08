@@ -58,7 +58,6 @@ _ PY ar(K apple_P t, K U* x){
     R r;
 }
 
-// "fill" ABI hm https://numpy.org/doc/stable/reference/c-api/array.html#c.PyDataMem_NEW
 // https://stackoverflow.com/a/66248758/11296354
 
 Z PY apy(K apple_t t, K U x){
@@ -142,7 +141,7 @@ ZF apple_call(PYA self, PYA args, PYA kwargs) {
         }
     }
     ffi_call(cif,fp,ret,vals);
-    DO(i,argc,if(fs>>i&1){free(*(U*)vals[i]);})
+    DO(i,argc,$(fs>>i&1,free(*(U*)vals[i])))
     R apy(ty->res,ret);
 };
 
