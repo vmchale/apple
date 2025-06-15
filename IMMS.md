@@ -1,0 +1,3 @@
+- https://dinfuehr.github.io/blog/encoding-of-immediate-values-on-aarch64/
+- https://devblogs.microsoft.com/oldnewthing/20220802-00/?p=106927
+- https://alisdair.mcdiarmid.org/arm-immediate-value-encoding/
