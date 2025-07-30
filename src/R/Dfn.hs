@@ -31,7 +31,6 @@ dedfn (Dfn l e) =
         else Lam l (x l) eDone
 dedfn (Parens _ e) = dedfn e
 
--- this approach is criminally inefficient
 replaceXY :: (a -> Nm a) -- ^ x
           -> (a -> Nm a) -- ^ y
           -> E a -> (E a, Bool) -- True if it has 'y'

@@ -383,6 +383,7 @@ fill (EApp _ (Builtin _ Zip) op) (AD t lA (Just (Arr sh _)) _ _ _) [AI (AD aPX l
     | (Arrow tX (Arrow tY tC)) <- eAnn op, nind tX && nind tY && nind tC = do
     step <- aS op [(tX, ixarg aPX 1 lX), (tY, ixarg aPY 1 lY)] tC (ixarg t 1 lA)
     afor sh 0 ILt n (\i -> step (repeat i) i)
+    -- TODO: parallel/step-2?
 fill (EApp _ (Builtin _ Succ) op) (AD t lA (Just (Arr sh _)) _ _ (Just n')) [AI (AD xR lX _ _ _ _)]
     | Arrow tX (Arrow _ tZ) <- eAnn op = do
     step <- aS op [(tX, \iϵ -> AElem xR 1 lX (Tmp iϵ+1)), (tX, ixarg xR 1 lX)] tZ (ixarg t 1 lA)
@@ -1217,7 +1218,6 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ (DI n)) op) xs) t a | Just ((_, 1), (
         :[pops])
   where
     tXs=eAnn xs
-    -- TODO: array case
 aeval (EApp (Arr oSh _) (EApp _ g@(Builtin _ Rot) n) xs) t a | Just sz <- aB tXs = do
     (plN, nR) <- plEV n
     (plX, (lX, xsR)) <- plA xs

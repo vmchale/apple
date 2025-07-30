@@ -267,6 +267,7 @@ BBin :: { E AlexPosn }
      | focus braces(sepBy(intLit,comma)) { Builtin $1 (A.Focus (reverse (map (fromInteger.int) $2)))  }
      -- FIXME: not necessarily binary operator!!
      | lrank sepBy(R,comma) rbrace { Builtin $1 (Rank (reverse $2)) }
+     -- TODO: (+)₀₀ could work? lol
      | succ { Builtin $1 A.Succ }
      | pow { Builtin $1 Exp }
      | consS { Builtin $1 ConsE } | snoc { Builtin $1 A.Snoc }

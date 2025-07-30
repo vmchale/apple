@@ -80,6 +80,7 @@ aa _ [] = pure []
 
 iF :: IM.IntMap Temp -> [CS Liveness] -> [CS Liveness]
 iF a = gg where
+    -- § 16.6 Hutton trick?
     gg (RA{}:cs)                             = gg cs
     gg [s@(For l _ _ _ _ _ _ cs)]            = s { body = gg cs }:fss l
     gg [s@(Rof l _ _ _ cs)]                  = s { body = gg cs }:fss l
