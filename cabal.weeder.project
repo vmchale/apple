@@ -1,4 +1,4 @@
-packages: ./
+import: ./cabal.project
 
 package apple
   ghc-options: -fwrite-ide-info
