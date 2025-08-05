@@ -246,6 +246,7 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [ ] https://github.com/rougier/scientific-visualization-book
   - [ ] https://github.com/rougier/scientific-visualization-book/blob/master/code/scales-projections/polar-patterns.py
 - [ ] https://lodev.org/cgtutor/xortexture.html
+- [ ] https://bsky.app/profile/lbarqueira.bsky.social/post/3lvhcd3nngc26
 - [ ] https://x.com/yuruyurau/status/1873400073255800891
 - [ ] https://bsky.app/profile/sconradi.bsky.social/post/3lh7wantozs27
 - [ ] https://www-users.cse.umn.edu/~arnold/complex.html
