@@ -47,6 +47,7 @@
 - [ ] https://en.wikipedia.org/wiki/Arabic_script_in_Unicode#Punctuation_and_ornaments
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
   - [ ] ☉
+- [ ] https://www.compart.com/en/unicode/scripts/Copt
 - [ ] https://www.compart.com/en/unicode/U+1D66
   - [ ] Ϟ (koppa), Ϡ (sampi)
 ## Optimization
@@ -71,6 +72,9 @@ T16 = T13.dim[0]
 - [ ] Use `Word64` for sets of registers
 - [x] Modify state (+1) instead of using lazy list to supply e.g. temps
 # Bugs
+```
+⟨0,0⟩⊂⟨⟨1.0,1,2⟩,⟨3,1,1⟩,⟨1,3,1⟩⟩
+```
 ```
  > :ty pascal
 int(n) → Arr (n + 1 × #n) int
@@ -216,6 +220,7 @@ o → o → o
 - [ ] https://oeis.org/A227503
 - [ ] https://oeis.org/A099174
 - [ ] https://en.wikipedia.org/wiki/Chebyshev_polynomials
+- [ ] https://github.com/NPN/picoGPT-in-j/blob/main/gpt2.ijs#L5
 - [ ] https://cran.r-project.org/web/packages/glmm/index.html
 - [ ] https://www.jsoftware.com/papers/50/
   - [ ] APL "index-of" dyad: array of indices where item in right appears in
@@ -229,6 +234,8 @@ o → o → o
 - [ ] https://www.quantumcalculus.org/the-5-lines-of-cohomology/
 - [ ] https://code.jsoftware.com/wiki/User:John_Randall/FourierTransformAndPolynomialMultiplication
 - [ ] cute. https://en.wikipedia.org/wiki/Stirling_number#As_inverse_matrices
+- [ ] https://github.com/ImagineAILab/ai-by-hand-excel
+- [ ] - [ ] https://saurabhalone.com/blogs/llama3/web
 - [ ] https://rosettacode.org/wiki/Cyclotomic_polynomial#Haskell
   - [ ] synthetic division alone would be good...
 ```haskell
@@ -242,6 +249,7 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [ ] https://ed25519.cr.yp.to/
   - [ ] https://en.wikipedia.org/wiki/SHA-2#Pseudocode
 # Visual/Art
+- [ ] https://bsky.app/profile/sconradi.bsky.social/post/3lpwv4haqwu22
 - [ ] https://code.jsoftware.com/wiki/Essays/R%C3%B6ssler_Attractor
 - [ ] https://github.com/rougier/scientific-visualization-book
   - [ ] https://github.com/rougier/scientific-visualization-book/blob/master/code/scales-projections/polar-patterns.py
@@ -252,6 +260,8 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [ ] https://www-users.cse.umn.edu/~arnold/complex.html
 - [ ] https://stackoverflow.com/a/20958684/11296354
 - [ ] https://x.com/XorDev/status/1894105806267711499
+- [ ] https://iabdb.me/2021/05/28/idempotent-moving-window-is-simply-a-reduction/
+- [ ] https://www.cs.cmu.edu/~kmcrane/index.html#code
 # Rosetta Code
 - [ ] https://cses.fi/problemset/
 - [ ] https://rosettacode.org/wiki/Averages/Pythagorean_means
