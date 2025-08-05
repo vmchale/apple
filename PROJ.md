@@ -2,6 +2,9 @@
 - [ ] `uint8` or whatever bitvector for C (HasBits, IsEq, IsOrd, IsZ)
 - [x] tuples in C's FnTy
 - [½] slotted/efficient array allocations
+- [ ] "smallarray" internal construct for higher-order functions (stored in registers?)
+- [ ] integer SIMD
+- [ ] array store in REPL
 - [ ] Abstract function intermediates
   - [x] better tuple-iteration
   - [ ] write-to-destination without allocation for arrays
@@ -16,12 +19,15 @@
     - [ ] see index in debug, no need for strength reduction...
 - [ ] DNA type
 - [ ] C type
-- [ ] Einstein notation
 - [ ] specify iteration by wallpaper group...
 - [ ] simd exp by polynomial...?
 - [ ] assembly "prettyprinter" class
 - [ ] map, zip, outer as rank?
 - [ ] less ignominious sort
   - [ ] no padding?
-  - [ ] don't copy in/out from slab
+  - [ ] ~~don't copy in/out from slab~~
+  - [ ] quicksort
 - [ ] typed scatter... input matrix of indices = outputs matrix?
+- [ ] ~~Einstein notation~~
+- [x] jit cabal library idk
+- [ ] M4 SME
