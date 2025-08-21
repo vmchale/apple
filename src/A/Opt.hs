@@ -134,10 +134,10 @@ optA e@LamΠ{} | (bs, e') <- enips e = do
     e'' <- optA e'
     let pinch l ns | Arrow tC _ <- l = do
             ρ <- nextU "ρ" tC
-            let b=zipWith (\n i -> LLet (eAnn e') (n, Var tC ρ @ i)) ns [1..]
+            let b=zipWith (\n i -> LLet (eAnn e'') (n, Var tC ρ @ i)) ns [1..]
             pure (Lam l ρ, thread b)
     (lams,bΡ) <- unzip <$> traverse (uncurry pinch) bs
-    pure (thread lams $ thread bΡ e')
+    pure (thread lams $ thread bΡ e'')
   where
     x @ i | P ts <- eAnn x = Builtin (eAnn x~>ts!!(i-1)) (TAt i) $$ x
 optA (EApp l0 (EApp l1 op@(Builtin _ Minus) x) y) = do
