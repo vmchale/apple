@@ -244,42 +244,17 @@ asm ix st (Lsl _ r0 r1 s:asms) =
     let immr= (-s) `mod` 64
         imms=63-s
     in [0b11010011, 0x1 `shiftL` 6 .|. immr, imms `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
-asm ix st (Bc _ p l:asms) =
-    let lIx=get l st
-        offs=(lIx-ix) `quot` 4
-        isn=[0b01010100, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), (fromIntegral (0x7 .&. offs) `shiftL` 5) .|. bp p]
-    in isn:asm (ix+4) st asms
-asm ix st (Cbnz _ r l:asms) =
-    let lIx=get l st
-        offs=(lIx-ix) `quot` 4
-        isn=[0b10110101, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
-    in isn:asm (ix+4) st asms
-asm ix st (Cbz _ r l:asms) =
-    let lIx=get l st
-        offs=(lIx-ix) `quot` 4
-        isn=[0b10110100, fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
-    in isn:asm (ix+4) st asms
-asm ix st (Tbz _ r b l:asms) | b <= 63 =
-    let lIx=get l st
-        offs=(lIx-ix) `quot` 4
-        isn=[0b00110110, b `shiftL` 3 .|. fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
-    in isn:asm (ix+4) st asms
-asm ix st (Tbnz _ r b l:asms) | b <= 63 =
-    let lIx=get l st
-        offs=(lIx-ix) `quot` 4
-        isn=[0b00110111, b `shiftL` 3 .|. fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs) `shiftL` 5 .|. be r]
-    in isn:asm (ix+4) st asms
+asm ix st (Bc _ p l:asms) = let (o₀,o₁,o₂)=imm19 l ix st in [0b01010100, o₀, o₁, o₂ `shiftL` 5 .|. bp p]:asm (ix+4) st asms
+asm ix st (Cbnz _ r l:asms) = let (o₀,o₁,o₂)=imm19 l ix st in [0b10110101, o₀, o₁, o₂ `shiftL` 5 .|. be r]:asm (ix+4) st asms
+asm ix st (Cbz _ r l:asms) = let (o₀,o₁,o₂)=imm19 l ix st in [0b10110100, o₀, o₁, o₂ `shiftL` 5 .|. be r]:asm (ix+4) st asms
+asm ix st (Tbz _ r b l:asms) | b <= 63 = let (o₀,o₁,o₂)=imm19 l ix st in [0b00110110, b `shiftL` 3 .|. o₀, o₁, o₂ `shiftL` 5 .|. be r]:asm (ix+4) st asms
+asm ix st (Tbnz _ r b l:asms) | b <= 63 = let (o₀,o₁,o₂)=imm19 l ix st in [0b00110111, b `shiftL` 3 .|. o₀, o₁, o₂ `shiftL` 5 .|. be r]:asm (ix+4) st asms
 asm ix st (C _ l:asms) =
-    let lIx=get l st
-        offs=(lIx-(ix+4)) `quot` 4
-        isn=[0b100101 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
+    let (o₀,o₁,o₂,o₃)=imm26 l (ix+4) st
+        isn=[0b100101 `shiftL` 2 .|. o₀, o₁, o₂, o₃]
         prol=asm ix undefined [Stp () X29 X30 (Pr SP (-16))]
     in prol++isn:asm (ix+8) st (Ldp () X29 X30 (Po SP 16):asms)
-asm ix st (B _ l:asms) =
-    let lIx=get l st
-        offs=(lIx-ix) `quot` 4
-        isn=[0x5 `shiftL` 2 .|. fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)]
-    in isn:asm (ix+4) st asms
+asm ix st (B _ l:asms) = let (o₀,o₁,o₂,o₃) = imm26 l ix st in [0x5 `shiftL` 2 .|. o₀, o₁, o₂, o₃]:asm (ix+4) st asms
 asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
 asm ix st@(_, (Just (m, _, _, _), _), _) (MovRCf _ r Malloc:asms) =
     asm ix st (m4 r m++asms)
@@ -302,6 +277,15 @@ asm _ _ (isn:_) = error (show isn)
 
 m4 :: AReg -> Int -> [AArch64 AReg FAReg ()]
 m4 r a = let [w0,w1,w2,w3]=b4 a in [MovRC () r w0, MovK () r w1 16, MovK () r w2 32, MovK () r w3 48]
+
+l4 l ix st = let lIx=get l st in (lIx-ix) `quot` 4
+imm19 l ix st =
+    let offs=l4 l ix st
+        -- TODO panic if offs too big for 19 bits
+    in (fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs))
+imm26 l ix st =
+    let offs=l4 l ix st
+    in (fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs))
 
 get :: Label -> (IM.IntMap (Ptr Word8), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Int
 get l =
