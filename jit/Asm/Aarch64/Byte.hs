@@ -273,11 +273,10 @@ m4 r a = let [w0,w1,w2,w3]=b4 a in [MovRC () r w0, MovK () r w1 16, MovK () r w2
 l4 l ix st = let lIx=get l st in (lIx-ix) `quot` 4
 imm19 l ix st =
     let offs=l4 l ix st
-        -- TODO panic if offs too big for 19 bits
-    in (fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs))
+    in if offs>= -(2^(19::Int)) && offs<= 2^(19::Int)-1 then (fromIntegral (offs `lsr` 11), fromIntegral (0xff .&. (offs `lsr` 3)), fromIntegral (0x7 .&. offs)) else error"relative address does not fit in 19 bits"
 imm26 l ix st =
     let offs=l4 l ix st
-    in (fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs))
+    in if offs>= -(2^(26::Int)) && offs<= 2^(26::Int)-1 then (fromIntegral (0x3 .&. (offs `lsr` 24)), fromIntegral (0xff .&. (offs `lsr` 16)), fromIntegral (0xff .&. (offs `lsr` 8)), fromIntegral (0xff .&. offs)) else error"relative address does not fit in 26 bits"
 
 get :: Label -> (IM.IntMap (Ptr Word8), (Maybe CCtx, Maybe MCtx), M.Map Label Int) -> Int
 get l =
