@@ -241,8 +241,7 @@ asm ix st (Fneg _ d0 d1:asms) = br2 0b00011110 0b01100001 (0x1 `shiftL` 4) d0 d1
 asm ix st (Frintm _ d0 d1:asms) = br2 0b00011110 0b01100101 (0x1 `shiftL` 4) d0 d1:asm (ix+4) st asms
 asm ix st (Asr _ r0 r1 s:asms) = [0b10010011, 0x1 `shiftL` 6 .|. s, 0b111111 `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Lsl _ r0 r1 s:asms) =
-    let immr= (-s) `mod` 64
-        imms=63-s
+    let immr=(-s) `mod` 64; imms=63-s
     in [0b11010011, 0x1 `shiftL` 6 .|. immr, imms `shiftL` 2 .|. be r1 `shiftR` 3, lb r1 r0]:asm (ix+4) st asms
 asm ix st (Bc _ p l:asms) = let (o₀,o₁,o₂)=imm19 l ix st in [0b01010100, o₀, o₁, o₂ `shiftL` 5 .|. bp p]:asm (ix+4) st asms
 asm ix st (Cbnz _ r l:asms) = let (o₀,o₁,o₂)=imm19 l ix st in [0b10110101, o₀, o₁, o₂ `shiftL` 5 .|. be r]:asm (ix+4) st asms
@@ -256,20 +255,13 @@ asm ix st (C _ l:asms) =
     in prol++isn:asm (ix+8) st (Ldp () X29 X30 (Po SP 16):asms)
 asm ix st (B _ l:asms) = let (o₀,o₁,o₂,o₃) = imm26 l ix st in [0x5 `shiftL` 2 .|. o₀, o₁, o₂, o₃]:asm (ix+4) st asms
 asm ix st (Blr _ r:asms) = [0b11010110, 0b00111111, be r `shiftR` 3, (0x7 .&. be r) `shiftL` 5]:asm (ix+4) st asms
-asm ix st@(_, (Just (m, _, _, _), _), _) (MovRCf _ r Malloc:asms) =
-    asm ix st (m4 r m++asms)
-asm ix st@(_, (Just (_, f, _, _), _), _) (MovRCf _ r Free:asms) =
-    asm ix st (m4 r f++asms)
-asm ix st@(_, (Just (_, _, d, _), _),_) (MovRCf _ r DR:asms) =
-    asm ix st (m4 r d++asms)
-asm ix st@(_, (Just (_, _, _, j), _),_) (MovRCf _ r JR:asms) =
-    asm ix st (m4 r j++asms)
-asm ix st@(_, (_, Just (e, _, _)),_) (MovRCf _ r Exp:asms) =
-    asm ix st (m4 r e++asms)
-asm ix st@(_, (_, Just (_, l, _)),_) (MovRCf _ r Log:asms) =
-    asm ix st (m4 r l++asms)
-asm ix st@(_, (_, Just (_, _, p)),_) (MovRCf _ r Pow:asms) =
-    asm ix st (m4 r p++asms)
+asm ix st@(_, (Just (m, _, _, _), _), _) (MovRCf _ r Malloc:asms) = asm ix st (m4 r m++asms)
+asm ix st@(_, (Just (_, f, _, _), _), _) (MovRCf _ r Free:asms) = asm ix st (m4 r f++asms)
+asm ix st@(_, (Just (_, _, d, _), _),_) (MovRCf _ r DR:asms) = asm ix st (m4 r d++asms)
+asm ix st@(_, (Just (_, _, _, j), _),_) (MovRCf _ r JR:asms) = asm ix st (m4 r j++asms)
+asm ix st@(_, (_, Just (e, _, _)),_) (MovRCf _ r Exp:asms) = asm ix st (m4 r e++asms)
+asm ix st@(_, (_, Just (_, l, _)),_) (MovRCf _ r Log:asms) = asm ix st (m4 r l++asms)
+asm ix st@(_, (_, Just (_, _, p)),_) (MovRCf _ r Pow:asms) = asm ix st (m4 r p++asms)
 asm ix st (LdrRL _ r l:asms) =
     let p = pI$arr l st
     in asm ix st (m4 r p++asms)
