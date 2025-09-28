@@ -198,6 +198,7 @@ o → o → o
 - [ ] https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
 - [ ] https://prng.di.unimi.it/splitmix64.c
 - [ ] https://github.com/tonio-m/python_neural_network/blob/main/main.py
+- [ ] https://reich.hms.harvard.edu/software
 - [ ] https://github.com/profConradi?tab=repositories
 - [ ] factors : int -> [(int, int)]
 - [ ] https://www.infinitepartitions.com/art001.html
@@ -262,6 +263,7 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [ ] https://x.com/XorDev/status/1894105806267711499
 - [ ] https://iabdb.me/2021/05/28/idempotent-moving-window-is-simply-a-reduction/
 - [ ] https://www.cs.cmu.edu/~kmcrane/index.html#code
+- [ ] https://www.desmos.com/calculator/dotttzyypy
 # Rosetta Code
 - [ ] https://cses.fi/problemset/
 - [ ] https://rosettacode.org/wiki/Averages/Pythagorean_means
