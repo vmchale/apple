@@ -21,7 +21,8 @@ _ void c_free(PY cap){free(PyCapsule_GetPointer(cap,NULL));}
 #define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ls=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ls[i]);}
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 
-#define nyi {PyErr_SetString(PyExc_RuntimeError,"unsupported: tuple in bindings.");R NULL;}
+// TODO: __func__
+#define nyi {PyErr_SetString(PyExc_RuntimeError,"unsupported: tuple arguments in bindings.");R NULL;}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html
 ZU f_npy(K NP o) {CT(o,'d',"Error: expected an array of floats");A(rnk,n,8,x,o);F* x_f=x;U data=PyArray_DATA(o);memcpy(x_f+rnk+1,data,n*8);R x;}
@@ -39,8 +40,6 @@ NPA(npy_f,8,NPY_FLOAT64)
 NPA(npy_b,1,NPY_BOOL)
 
 Z PY apy(K apple_t,K U);
-
-#define apd(t,pd) PyArray_Descr* pd; {int n=t.pi_n;T s=alloca(3*n+1);J l;J o=0;DO(i,n,$e(t.a_pi[i].f==Rc,"tuples-of-tuples not yet implemented.");T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3) C(B_t,r="?,";l=2) C(I_t,r="i8,";l=3)};memcpy(s+o,r,l);o+=l);s[o]=0;PY rt=PyUnicode_FromString(s);PyArray_DescrConverter(rt, &pd);}
 
 // https://numpy.org/devdocs/reference/arrays.dtypes.html#specifying-and-constructing-data-types
 _ PY npy_p(K apple_P t, U x){
