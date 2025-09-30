@@ -1,3 +1,4 @@
+- [ ] cache-aware strides? (something like dynamic tiling for loop idk)
 (∃a. t a) → r ≡ ∀a. t a → r
 - [ ] `uint8` or whatever bitvector for C (HasBits, IsEq, IsOrd, IsZ)
 - [x] tuples in C's FnTy
