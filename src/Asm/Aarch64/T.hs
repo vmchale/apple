@@ -41,12 +41,8 @@ mIop Op.IAsl   = Just LslR
 mIop (Op.BI b) = mB b
 mIop _         = Nothing
 
-mFop Op.FPlus  = Just Fadd
-mFop Op.FMinus = Just Fsub
-mFop Op.FTimes = Just Fmul
-mFop Op.FDiv   = Just Fdiv
-mFop Op.FMax   = Just Fmax
-mFop Op.FMin   = Just Fmin
+mFop Op.FPlus  = Just Fadd; mFop Op.FMinus = Just Fsub; mFop Op.FTimes = Just Fmul
+mFop Op.FDiv   = Just Fdiv; mFop Op.FMax   = Just Fmax; mFop Op.FMin   = Just Fmin
 mFop _         = Nothing
 
 mf2 Op.FPlus  = Just Fadd2; mf2 Op.FMinus = Just Fsub2
@@ -58,20 +54,12 @@ mf2U Op.FSqrt = Just Fsqrt2; mf2U Op.FAbs = Just Fabs2
 mf2U Op.FNeg = Just Fneg2; mf2U _ = Nothing
 
 frel :: Op.FRel -> Cond
-frel Op.FGeq = Geq
-frel Op.FLeq = Leq
-frel Op.FGt  = Gt
-frel Op.FLt  = Lt
-frel Op.FEq  = Eq
-frel Op.FNeq = Neq
+frel Op.FGeq = Geq; frel Op.FLeq = Leq; frel Op.FGt  = Gt
+frel Op.FLt  = Lt;  frel Op.FEq  = Eq;  frel Op.FNeq = Neq
 
 iop :: Op.IRel -> Cond
-iop Op.IEq  = Eq
-iop Op.INeq = Neq
-iop Op.IGeq = Geq
-iop Op.ILeq = Leq
-iop Op.IGt  = Gt
-iop Op.ILt  = Lt
+iop Op.IEq  = Eq;  iop Op.INeq = Neq; iop Op.IGeq = Geq
+iop Op.ILeq = Leq; iop Op.IGt  = Gt;  iop Op.ILt  = Lt
 
 nR = IReg <$> nI
 nF = FReg <$> nI
