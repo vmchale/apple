@@ -3,9 +3,8 @@
 module Ty.M ( check, RE (..) ) where
 
 import           A
-import           Control.Applicative (Alternative (..))
+import           Control.Applicative (Alternative ((<|>)), asum)
 import           Control.DeepSeq     (NFData)
-import           Data.Foldable       (asum)
 import           GHC.Generics        (Generic)
 import           Prettyprinter       (Pretty (..), parens, squotes, (<+>))
 import           Sh
