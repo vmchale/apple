@@ -14,7 +14,7 @@ import           Prettyprinter (Pretty (..))
 data FUn = FSqrt | FLog | FSin | FCos | FAbs | FNeg
 
 data IP = IEven | IOdd
-data IUn = Clz | Cnt
+data IUn = Clz | IAbs
 
 data BUn = BNeg
 
@@ -68,4 +68,4 @@ instance Pretty FUn where
     pretty FNeg = "¬"
 
 instance Pretty IP where pretty IEven = "even"; pretty IOdd = "odd"
-instance Pretty IUn where pretty Clz = "clz"; pretty Cnt = "cnt"
+instance Pretty IUn where pretty Clz = "clz"; pretty IAbs = "abs"
