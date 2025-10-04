@@ -105,7 +105,8 @@ instance PS CE where
 instance Show CE where show=show.pretty
 
 instance Num CE where
-    (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; fromInteger=KI . fromInteger
+    (+) = Bin IPlus; (*) = Bin ITimes; (-) = Bin IMinus; abs = IU IAbs
+    fromInteger=KI . fromInteger
 
 type F1E=CFE FTemp Double CE; type F2E=CFE F2Temp (Double, Double) Void
 

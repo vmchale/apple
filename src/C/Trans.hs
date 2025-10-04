@@ -1684,7 +1684,7 @@ eval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
     plX <- eval x xR; plN <- eval n nR
     pure $ plX ++ plN ++ [t=:1, While () nR IGt 0 [Ifn't () (IUn IEven (Tmp nR)) [t=:(Tmp t*Tmp xR)], nR =: Bin IAsr (Tmp nR) 1, MT () xR (Tmp xR*Tmp xR)]]
 eval (EApp _ (Builtin _ T) x) t = eval x t; eval (EApp _ (Builtin _ Flat) x) t = eval x t
-eval (EApp _ (Builtin _ Abs) x) t = do {(plX,e) <- plC x; pure (plX [t=:IU IAbs e])}
+eval (EApp _ (Builtin _ Abs) x) t = do {(plX,e) <- plC x; pure (plX [t=:abs e])}
 eval (EApp _ (Builtin _ Floor) x) t = do {(plX,e) <- plD x; pure (plX [t =: CFloor e])}
 eval (EApp _ (Builtin _ Ceil) x) t = do {(plX, e) <- plD x; pure (plX [t =: CCeil e])}
 eval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do {aa <- tat e; pure [t=:unIA aa]}
