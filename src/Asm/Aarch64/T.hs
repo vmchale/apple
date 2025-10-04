@@ -537,6 +537,9 @@ eval (IR.Is p) tD = pure [MovRR () (absReg tD) (absReg p)]
 eval (IR.IU Op.Clz e) t = do
     (plE,r) <- plI e
     pure (plE [Clz () (absReg t) r])
+eval (IR.IU Op.IAbs e) t = do
+    (plE,r) <- plI e
+    pure (plE [CmpRC () r 0, Csneg () (absReg t) r r Geq])
 eval (IR.IB Op.IPlus (IR.IB Op.IAsl e0 (IR.KI i)) e1) t | Just u <- ms i = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [AddRRS () (absReg t) r1 r0 u]

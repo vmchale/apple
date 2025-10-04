@@ -262,6 +262,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | Fmin { ann :: a, dDest, dSrc1, dSrc2 :: freg }
                          | Fabs { ann :: a, dDest, dSrc :: freg }
                          | Csel { ann :: a, rDest, rSrc1, rSrc2 :: reg, cond :: Cond }
+                         | Csneg { ann :: a, rDest, rSrc1, rSrc2 :: reg, cond :: Cond }
                          | Tbnz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                          | Tbz { ann :: a, rSrc :: reg, bit :: Word8, label :: Label }
                          | Cbnz { ann :: a, rSrc :: reg, label :: Label }
@@ -350,6 +351,7 @@ mapR _ (Fmax l d0 d1 d2)     = Fmax l d0 d1 d2
 mapR _ (Fmin l d0 d1 d2)     = Fmin l d0 d1 d2
 mapR _ (Fabs l d0 d1)        = Fabs l d0 d1
 mapR f (Csel l r0 r1 r2 p)   = Csel l (f r0) (f r1) (f r2) p
+mapR f (Csneg l r0 r1 r2 p)  = Csneg l (f r0) (f r1) (f r2) p
 mapR f (Tbnz l r n p)        = Tbnz l (f r) n p
 mapR f (Tbz l r n p)         = Tbz l (f r) n p
 mapR f (Cbnz x r l)          = Cbnz x (f r) l
@@ -479,6 +481,7 @@ fR _ Fmax{}                = mempty
 fR _ Fmin{}                = mempty
 fR _ Fabs{}                = mempty
 fR f (Csel _ r0 r1 r2 _)   = f r0<>f r1<>f r2
+fR f (Csneg _ r0 r1 r2 _)  = f r0<>f r1<>f r2
 fR f (Bfc _ r _ _)         = f r
 fR _ Fcmp{}                = mempty
 fR _ Fneg{}                = mempty
@@ -560,6 +563,7 @@ mapFR f (Fmax l d0 d1 d2)     = Fmax l (f d0) (f d1) (f d2)
 mapFR f (Fmin l d0 d1 d2)     = Fmin l (f d0) (f d1) (f d2)
 mapFR f (Fabs l d0 d1)        = Fabs l (f d0) (f d1)
 mapFR _ (Csel l r0 r1 r2 p)   = Csel l r0 r1 r2 p
+mapFR _ (Csneg l r0 r1 r2 p)  = Csneg l r0 r1 r2 p
 mapFR _ (Tbnz l r n p)        = Tbnz l r n p
 mapFR _ (Tbz l r n p)         = Tbz l r n p
 mapFR _ (Cbnz x r l)          = Cbnz x r l
@@ -732,6 +736,7 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fmin _ d0 d1 d2)       = ar3 "fmin" d0 d1 d2
         p4 (Fabs _ d0 d1)          = ar2 "fabs" d0 d1
         p4 (Csel _ r0 r1 r2 p)     = ar3 "csel" r0 r1 r2 <> "," <+> pretty p
+        p4 (Csneg _ r0 r1 r2 p)    = ar3 "csneg" r0 r1 r2 <> "," <+> pretty p
         p4 (Tbnz _ r n l)          = "tbnz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l
         p4 (Tbz _ r n l)           = "tbz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l
         p4 (Cbnz _ r l)            = "cbnz" <+> pretty r <> "," <+> prettyLabel l
