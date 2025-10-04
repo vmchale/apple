@@ -1676,9 +1676,9 @@ eval (EApp _ (Builtin _ Size) xs) t | Arr sh _ <- eAnn xs = do
     rnkR <- nI
     pure $ plE [rnkR =: eRnk sh (xsR,l), SZ () t xsR (Tmp rnkR) l]
 eval (EApp _ (Builtin _ Size) xs) t | nind (eAnn xs) = pure [t=:1]
-eval (EApp _ (EApp _ (Builtin _ IntExp) (FLit _ (-1))) n) t = do
+eval (EApp _ (EApp _ (Builtin _ IntExp) (ILit _ (-1))) n) t = do
     (plRϵ,nR) <- plEV n
-    pure $ plRϵ [t=:1, Cmov () (IUn IOdd (Tmp nR)) t (KI (-1))]
+    pure $ plRϵ [t=:1, Cmov () (IUn IOdd (Tmp nR)) t (IU INeg (Tmp t))]
 eval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
     xR <- nI; nR <- nI
     plX <- eval x xR; plN <- eval n nR

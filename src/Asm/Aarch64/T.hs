@@ -230,6 +230,10 @@ ir (IR.Cmov (IR.IRel op e0 e1) t e) | c <- iop op = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     (plE,r) <- plI e
     pure $ plE $ plE0 $ plE1 [CmpRR () r0 r1, Csel () (absReg t) r (absReg t) c]
+ir (IR.Cmov (IR.IP Op.IOdd e0) t (IR.IU Op.INeg e)) = do
+    (plE0,r0) <- plI e0
+    (plE,r) <- plI e
+    pure $ plE $ plE0 [TstI () r0 (BM 1 0), Csneg () (absReg t) (absReg t) r Eq]
 ir (IR.Cset t (IR.IRel op e0 (IR.KI i))) | c <- iop op, Just u <- m12 i = do
     (plE0,r0) <- plI e0
     pure $ plE0 [CmpRC () r0 u, Cset () (absReg t) c]
