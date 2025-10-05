@@ -231,12 +231,8 @@ ir (IR.MJ (IR.IRel Op.IEq e (IR.KI 0)) l) = do
 ir (IR.MJ (IR.BU Op.BNeg p) l) = do
     (plE,r) <- plI p
     pure $ plE [Cbz () r l]
-ir (IR.MJ b@IR.IRel{} l) = do
-    (f,c) <- ib b
-    pure (f [Bc () c l])
-ir (IR.MJ b@IR.FRel{} l) = do
-    (f,c) <- ib b
-    pure (f [Bc () c l])
+ir (IR.MJ b@IR.IRel{} l) = do {(f,c) <- ib b; pure (f [Bc () c l])}
+ir (IR.MJ b@IR.FRel{} l) = do {(f,c) <- ib b; pure (f [Bc () c l])}
 ir (IR.MJ p l) = do
     (plE,r) <- plI p
     pure $ plE [Cbnz () r l]
@@ -546,15 +542,9 @@ eval (IR.IB Op.IAsl e (IR.KI i)) t = do
 eval (IR.IB Op.IAsr e (IR.KI i)) t | Just s <- ms i = do
     (plE,r) <- plI e
     pure $ plE [Asr () (absReg t) r s]
-eval (IR.IB Op.IMinus (IR.KI 0) e) t = do
-    (plE,r) <- plI e
-    pure $ plE [Neg () (absReg t) r]
-eval (IR.IB Op.ITimes (IR.KI (-1)) e) t = do
-    (plE,r) <- plI e
-    pure $ plE [Neg () (absReg t) r]
-eval (IR.IB Op.ITimes e (IR.KI (-1))) t = do
-    (plE,r) <- plI e
-    pure $ plE [Neg () (absReg t) r]
+eval (IR.IB Op.IMinus (IR.KI 0) e) t = do {(plE,r) <- plI e; pure $ plE [Neg () (absReg t) r]}
+eval (IR.IB Op.ITimes (IR.KI (-1)) e) t = do {(plE,r) <- plI e; pure $ plE [Neg () (absReg t) r]}
+eval (IR.IB Op.ITimes e (IR.KI (-1))) t = do {(plE,r) <- plI e; pure $ plE [Neg () (absReg t) r]}
 eval (IR.IB Op.IRem e0 e1) t = do
     r2 <- nR
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
