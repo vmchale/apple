@@ -32,14 +32,9 @@ mB Op.BEq  = Nothing
 f2absReg :: IR.F2 -> V2Reg FAbsReg
 f2absReg (IR.F2Temp i) = V2Reg (FReg i)
 
-mIop Op.IPlus  = Just AddRR
-mIop Op.IMinus = Just SubRR
-mIop Op.ITimes = Just MulRR
-mIop Op.IDiv   = Just Sdiv
-mIop Op.IAsr   = Just AsrR
-mIop Op.IAsl   = Just LslR
-mIop (Op.BI b) = mB b
-mIop _         = Nothing
+mIop Op.IPlus  = Just AddRR; mIop Op.IMinus = Just SubRR; mIop Op.ITimes = Just MulRR
+mIop Op.IDiv   = Just Sdiv;  mIop Op.IAsr   = Just AsrR;  mIop Op.IAsl   = Just LslR
+mIop (Op.BI b) = mB b;       mIop _         = Nothing
 
 mFop Op.FPlus  = Just Fadd; mFop Op.FMinus = Just Fsub; mFop Op.FTimes = Just Fmul
 mFop Op.FDiv   = Just Fdiv; mFop Op.FMax   = Just Fmax; mFop Op.FMin   = Just Fmin
