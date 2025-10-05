@@ -71,10 +71,8 @@ be :: Enum a => a -> Word8
 be = fromIntegral.fromEnum
 
 -- https://developer.arm.com/documentation/ddi0406/c/Application-Level-Architecture/Instruction-Details/Conditional-execution?lang=en
-bp :: Cond -> Word8
+bp, ip :: Cond -> Word8
 bp Eq=0b0000; bp Neq=0b0001; bp Gt=0b1100; bp Leq=0b1101; bp Geq=0b1010; bp Lt=0b1011
-
-ip :: Cond -> Word8
 ip = bp.inv where inv Eq=Neq; inv Neq=Eq; inv Gt=Leq; inv Geq=Lt; inv Lt=Geq; inv Leq=Gt
 
 bs :: Shift -> Word8
