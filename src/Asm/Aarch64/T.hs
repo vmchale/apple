@@ -53,6 +53,8 @@ mf2 _         = Nothing
 mf2U Op.FSqrt = Just Fsqrt2; mf2U Op.FAbs = Just Fabs2
 mf2U Op.FNeg = Just Fneg2; mf2U _ = Nothing
 
+mU Op.FNeg = Just Fneg; mU Op.FSqrt = Just Fsqrt; mU Op.FAbs = Just Fabs; mU _ = Nothing
+
 frel :: Op.FRel -> Cond
 frel Op.FGeq = Geq; frel Op.FLeq = Leq; frel Op.FGt  = Gt
 frel Op.FLt  = Lt;  frel Op.FEq  = Eq;  frel Op.FNeq = Neq
@@ -489,9 +491,6 @@ feval (IR.FB Op.FTimes e (IR.KF (-1))) t = do
 feval (IR.FB fop e0 e1) t | Just isn <- mFop fop = do
     (plE0,r0) <- plF e0; (plE1,r1) <- plF e1
     pure $ plE0 $ plE1 [isn () (fabsReg t) r0 r1]
-feval (IR.FU Op.FAbs e) t = do
-    (plE,i) <- plF e
-    pure $ plE [Fabs () (fabsReg t) i]
 feval (IR.FAt (IR.AP tS (Just (IR.KI i)) _)) tD | Just i8 <- mp i = pure [LdrD () (fabsReg tD) (RP (absReg tS) i8)]
 feval (IR.FAt (IR.AP tB (Just (IR.IB Op.IAsl eI (IR.KI 3))) _)) tD = do
     (plE,i) <- plI eI
@@ -507,12 +506,9 @@ feval (IR.FAt (IR.AP tB Nothing _)) tD =
 feval (IR.FConv e) tD = do
     (plE,r) <- plI e
     pure $ plE [Scvtf () (fabsReg tD) r]
-feval (IR.FU Op.FSqrt e) t = do
+feval (IR.FU op e) t | Just isn <- mU op = do
     (plE,r) <- plF e
-    pure $ plE [Fsqrt () (fabsReg t) r]
-feval (IR.FU Op.FNeg e) t = do
-    (plE,r) <- plF e
-    pure $ plE [Fneg () (fabsReg t) r]
+    pure $ plE [isn () (fabsReg t) r]
 feval e _             = error (show e)
 
 eval :: IR.Exp -> IR.Temp -> WM [AArch64 AbsReg FAbsReg ()]
