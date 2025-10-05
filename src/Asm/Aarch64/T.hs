@@ -181,7 +181,7 @@ ir (IR.WrB (IR.AP t (Just eI) _) (IR.KI n)) | Just u <- mu16 n = do
     i <- nR
     (plEI,rI) <- plI eI
     pure $ plEI [MovRC () i u, StrB () i (BI (absReg t) rI Zero)]
-ir (IR.WrB (IR.AP t (Just (IR.KI ix)) _) (IR.Is i)) | Just iu <- mu16 ix = do
+ir (IR.WrB (IR.AP t (Just (IR.KI ix)) _) (IR.Is i)) | Just iu <- mu16 ix =
     pure [StrB () (absReg i) (RP (absReg t) iu)]
 ir (IR.WrB (IR.AP t Nothing _) (IR.Is i)) =
     pure [StrB () (absReg i) (R (absReg t))]
@@ -203,34 +203,17 @@ ir (IR.WrF (IR.AP t (Just eI) _) e) = do
 ir (IR.WrF (IR.AP t Nothing _) e) = do
     (plE,i) <- plF e
     pure $ plE [StrD () i (R (absReg t))]
-ir (IR.MJ (IR.IRel Op.INeq e (IR.KI 0)) l) = do
-    (plE,r) <- plI e
-    pure $ plE [Cbnz () r l]
-ir (IR.MJ (IR.Is r) l) =
-    pure [Cbnz () (absReg r) l]
-ir (IR.MJ (IR.IP Op.IEven e) l) = do
-    (plE,r) <- plI e
-    pure $ plE [Tbz () r 0 l]
-ir (IR.MJ (IR.IP Op.IOdd e) l) = do
-    (plE,r) <- plI e
-    pure $ plE [Tbnz () r 0 l]
-ir (IR.MJ (IR.IRel Op.IGeq e (IR.KI 0)) l) = do
-    (plE,r) <- plI e
-    pure $ plE [Tbz () r 63 l]
-ir (IR.MJ (IR.IRel Op.ILt e (IR.KI 0)) l) = do
-    (plE,r) <- plI e
-    pure $ plE [Tbnz () r 63 l]
-ir (IR.MJ (IR.IRel Op.IEq e (IR.KI 0)) l) = do
-    (plE,r) <- plI e
-    pure $ plE [Cbz () r l]
-ir (IR.MJ (IR.BU Op.BNeg p) l) = do
-    (plE,r) <- plI p
-    pure $ plE [Cbz () r l]
+ir (IR.MJ (IR.Is r) l) = pure [Cbnz () (absReg r) l]
+ir (IR.MJ (IR.IRel Op.INeq e (IR.KI 0)) l) = do {(plE,r) <- plI e; pure $ plE [Cbnz () r l]}
+ir (IR.MJ (IR.IP Op.IEven e) l) = do {(plE,r) <- plI e; pure $ plE [Tbz () r 0 l]}
+ir (IR.MJ (IR.IP Op.IOdd e) l) = do {(plE,r) <- plI e; pure $ plE [Tbnz () r 0 l]}
+ir (IR.MJ (IR.IRel Op.IGeq e (IR.KI 0)) l) = do {(plE,r) <- plI e; pure $ plE [Tbz () r 63 l]}
+ir (IR.MJ (IR.IRel Op.ILt e (IR.KI 0)) l) = do {(plE,r) <- plI e; pure $ plE [Tbnz () r 63 l]}
+ir (IR.MJ (IR.IRel Op.IEq e (IR.KI 0)) l) = do {(plE,r) <- plI e; pure $ plE [Cbz () r l]}
+ir (IR.MJ (IR.BU Op.BNeg p) l) = do {(plE,r) <- plI p; pure $ plE [Cbz () r l]}
 ir (IR.MJ b@IR.IRel{} l) = do {(f,c) <- ib b; pure (f [Bc () c l])}
 ir (IR.MJ b@IR.FRel{} l) = do {(f,c) <- ib b; pure (f [Bc () c l])}
-ir (IR.MJ p l) = do
-    (plE,r) <- plI p
-    pure $ plE [Cbnz () r l]
+ir (IR.MJ p l) = do {(plE,r) <- plI p; pure $ plE [Cbnz () r l]}
 ir (IR.Cmov (IR.IRel op e0 e1) t e) | c <- iop op = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     (plE,r) <- plI e
