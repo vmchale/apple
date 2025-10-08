@@ -62,11 +62,12 @@ cToIRM (C.MX2 _ t e)       = pure [IR.MX2 (f2x t) (irX2 e)]
 cToIRM (C.ATT _ ts a)      = pure (gs ts 0)
   where
     gs td ϵ = concat (zipWith g td [o+ϵ|o<-toffs td])
-    g (TI r) i   = [IR.MT (ctemp r) (IR.EAt (irAt a `aeplus` i))]
-    g (TF r) i   = [IR.MX (fx r) (IR.FAt (irAt a `aeplus` i))]
-    g (TB r) i   = [IR.MT (cbtemp r) (IR.BAt (irAt a `aeplus` i))]
-    g (TA r _) i = [IR.MT (ctemp r) (IR.EAt (irAt a `aeplus` i))]
+    g (TI r) i   = [IR.MT (ctemp r) (IR.EAt (b `aeplus` i))]
+    g (TF r) i   = [IR.MX (fx r) (IR.FAt (b `aeplus` i))]
+    g (TB r) i   = [IR.MT (cbtemp r) (IR.BAt (b `aeplus` i))]
+    g (TA r _) i = [IR.MT (ctemp r) (IR.EAt (b `aeplus` i))]
     g (TΠ rs) i  = gs rs i
+    b=irAt a
 cToIRM (C.Comb _ o t r)    = pure [IR.S2 o (fx t) (f2x r)]
 cToIRM (C.DS _ r t)        = pure [IR.Fill2 (f2x r) (fx t)]
 cToIRM (C.Ins _ r t)       = pure [IR.Ins (f2x r) (fx t)]
@@ -86,11 +87,12 @@ cToIRM (C.WrP _ a b)         = pure [IR.WrB (irAt a) (irp b)]
 cToIRM (C.WrT _ a ts)        = pure (gs ts 0)
   where
     gs td ϵ = concat (zipWith g td [ϵ+o|o<-toffs td])
-    g (TI r) i   = [IR.Wr (irAt a `aeplus` i) (Reg$ctemp r)]
-    g (TF r) i   = [IR.WrF (irAt a `aeplus` i) (FReg$fx r)]
-    g (TB r) i   = [IR.WrB (irAt a `aeplus` i) (IR.Is$cbtemp r)]
-    g (TA r _) i = [IR.Wr (irAt a `aeplus` i) (Reg$ctemp r)]
+    g (TI r) i   = [IR.Wr (b `aeplus` i) (Reg$ctemp r)]
+    g (TF r) i   = [IR.WrF (b `aeplus` i) (FReg$fx r)]
+    g (TB r) i   = [IR.WrB (b `aeplus` i) (IR.Is$cbtemp r)]
+    g (TA r _) i = [IR.Wr (b `aeplus` i) (Reg$ctemp r)]
     g (TΠ rs) i  = gs rs i
+    b=irAt a
 cToIRM (Rof _ p t ec s) = do
     l <- nL
     irs <- foldMapM cToIRM s
