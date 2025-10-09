@@ -318,6 +318,7 @@ E :: { E AlexPosn }
   | il { let l=loc $1 in ALit l (map (ILit l.fromInteger) (ints $1)) }
   | name mmap E { A.Lam $2 $1 $3 }
   | tupled(name) mmap E { LamΠ $2 (snd $1) $3 }
+  -- TODO: this is blocking (a,_b) ...
   | tupled(name) { Tup (fst $1) (reverse (map (\nϵ -> Var (Nm.loc nϵ) nϵ) $ snd $1)) }
   | lam name dot E { A.Lam $1 $2 $4 }
   | lam lparen U rparen dot E { A.LamΠ $1 $3 $6 }
