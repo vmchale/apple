@@ -98,6 +98,9 @@ allT = testGroup "jit"
         (AA 2 [2,2] res) <- fpAa "test/examples/convolve.🍎"
             (AA 2 [3,3] [1..9::Double])
         res @?= [3.0,4.0,6.0,7.0::Double]
+    -- , testCase "slowft" $ do
+    --     (AA 1 [1,8] res) <- fpAa "test/examples/slowft.🍏" $ AA 1 [1,8] [ P2 (sin n) 0 | n <- [0..7] ]
+    --     map hs2 res @?= [(0.55::Double, 0::Double)]
     , testCase "conv with stride" $ do
         (AA 2 [2,2] res) <- fpAa "test/data/strideConv.🍏"
             (AA 2 [4,4] [20::Double,200,-5,23,-13,134,119,100,120,32,49,25,-120,12,9,23])

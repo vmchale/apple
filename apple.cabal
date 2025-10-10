@@ -320,7 +320,7 @@ test-suite repltest
 test-suite apple-test
     import:         warn
     type:           exitcode-stdio-1.0
-    main-is:        Spec.hs
+    main-is:        Z.hs
     hs-source-dirs: test
     ghc-options:    -threaded -rtsopts "-with-rtsopts=-N -k1k"
     build-depends:
