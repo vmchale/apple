@@ -147,13 +147,15 @@ mSh :: F -> Sh a -> Sh a -> Either (TyE a) (Subst a)
 mSh _ (SVar (Nm _ (U i) _)) sh      = Right $ Subst IM.empty IM.empty (IM.singleton i sh)
 mSh _ Nil Nil                       = Right mempty
 mSh f (Cons i sh) (Cons i' sh')     = (<>) <$> mI f i i' <*> mSh f sh sh'
-mSh f (Cat sh0 sh1) (Cat sh0' sh1') = (<>) <$> mSh f sh0 sh0' <*> mSh f sh1 sh1'
+mSh f (Cat sh0 sh1) (Cat sh0' sh1') = (<>) <$> mSh f sh0 sh0' <*> mSh f sh1 sh1' -- TODO: stringent; confessional context
 mSh f (Rev sh) (Rev sh')            = mSh f sh sh'
 mSh f (Π sh) Nil                    = mSh f sh Nil
 mSh _ Nil (Π Nil)                   = Right mempty
 mSh f (Rev sh) Nil                  = mSh f sh Nil
 mSh _ Nil (Rev Nil)                 = Right mempty
 mSh f (Cat sh0 sh1) Nil             = (<>) <$> mSh f sh0 Nil <*> mSh f sh1 Nil
+mSh f (Rev sh0) sh1                 | (is,Nil) <- unroll sh0 = mSh f (iroll (reverse is)) sh1
+mSh f sh0 (Rev sh1)                 | (is,Nil) <- unroll sh1 = mSh f sh0 (iroll (reverse is))
 mSh _ Nil (Cat Nil Nil)             = Right mempty
 mSh _ sh sh'                        = Left $ MS sh sh'
 
@@ -162,16 +164,17 @@ match :: (Typeable a, Pretty a) => T a -> T a -> Subst a
 match t t' = either throw id (maM Ua t t')
 
 maM :: F -> T a -> T a -> Either (TyE a) (Subst a)
-maM f (Li n) (Li m)              = mI f m n
-maM _ (IZ _ (Nm _ (U u) _)) I    = Right $ Subst (IM.singleton u I) IM.empty IM.empty
-maM _ (IZ _ (Nm _ (U u) _)) F    = Right $ Subst (IM.singleton u F) IM.empty IM.empty
 maM _ I I                        = Right mempty
 maM _ F F                        = Right mempty
 maM _ B B                        = Right mempty
+maM f (Li n) (Li m)              = mI f m n
+maM _ (IZ _ n) I                 = Right (sTS n I)
+maM _ (IZ _ n) F                 = Right (sTS n F)
+maM f (IZ i n) t@(Li j)          = do {s <- mI f i j; Right $ iTS n t s}
 maM _ (TV (Nm _ (U i) l) c) t    | Just e <- (l,t) `enforcesn't` c = Left e
                                  | otherwise = Right $ Subst (IM.singleton i t) IM.empty IM.empty
                                  -- FIXME invert focus
-maM f (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM f t0 t0' <*> maM ΦF t1 t1' -- TODO: use <\> over <>
+maM f (Arrow t0 t1) (Arrow t0' t1') = (<>) <$> maM f t0 t0' <*> maM ΦF t1 t1' -- TODO: use <\> over <>?
 maM f (Arr sh t) (Arr sh' t')       = (<>) <$> mSh f sh sh' <*> maM f t t'
 maM f (Arr sh t) t'                 = (<>) <$> mSh f sh Nil <*> maM f t t'
 maM f (P ts) (P ts')                = mconcat <$> zipWithM (maM f) ts ts'
@@ -284,6 +287,7 @@ ftie = IEV () <$> nN "n" ()
 
 mapTySubst f (Subst t i sh) = Subst (f t) i sh
 
+sTS (Nm _ (U i) _) t = Subst (IM.singleton i t) mempty mempty
 iTS n t = mapTySubst (insert n t)
 uTS u n = mapTySubst (IM.insert u n)
 iSh u sh s = s { sSubst = IM.insert u sh (sSubst s) }
