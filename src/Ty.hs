@@ -35,7 +35,7 @@ import           U
 
 infixl 7 \-
 infixl 6 @@
-infixr 5 <||
+infixr 4 <||
 infixr 5 <|
 
 (<|) = Cons
@@ -629,7 +629,7 @@ tydrop :: Int -> Sh a -> Sh a
 tydrop 0 sh            = sh
 tydrop n (_ `Cons` sh) = tydrop (n-1) sh
 
-del axes sh = roll t (fmap snd (filter ((`notElem` axes) . fst) (zip [1..] unrolled))) where
+del axes sh = map snd (filter ((`notElem` axes) . fst) (zip [1..] unrolled)) <|| t where
     (unrolled, t) = unroll sh
 
 trim :: Sh a -> Sh a
@@ -643,10 +643,7 @@ unroll (Cons i shϵ) = first (i :) $ unroll shϵ
 unroll s            = ([], s)
 
 iroll :: [I a] -> Sh a
-iroll = roll Nil
-
-roll :: Sh a -> [I a] -> Sh a
-roll = foldr Cons
+iroll = foldr Cons Nil
 
 i <|| sh = foldr Cons sh i
 
@@ -902,9 +899,9 @@ rwSh :: Sh a -> Sh a
 rwSh s@SVar{}     = s
 rwSh s@Nil        = s
 rwSh (i `Cons` s) = rwI i <| rwSh s
-rwSh (Cat s0 s1) | (is, Nil) <- unroll (rwSh s0), (js, Nil) <- unroll (rwSh s1) = roll Nil (is++js)
+rwSh (Cat s0 s1) | (is, Nil) <- unroll (rwSh s0), (js, Nil) <- unroll (rwSh s1) = is++js <|| Nil
                  | otherwise = Cat (rwSh s0) (rwSh s1)
-rwSh (Rev s) | (is, Nil) <- unroll (rwSh s) = roll Nil (reverse is)
+rwSh (Rev s) | (is, Nil) <- unroll (rwSh s) = reverse is <|| Nil
              | otherwise = Rev (rwSh s)
 rwSh (Π s) | Nil <- rwSh s = Nil
 rwSh (Π s) | Just i <- iunroll (rwSh s) = rwI i <| Nil
@@ -920,7 +917,7 @@ rwArr t@TV{}        = t
 rwArr t@IZ{}        = t
 rwArr (P ts)        = P (rwArr<$>ts)
 rwArr (Arr sh t)    | Nil <- rwSh sh = rwArr t
-rwArr (Arr ixes arr) | (is, Nil) <- unroll (rwSh ixes), Arr sh t <- rwArr arr = Arr (roll sh is) t
+rwArr (Arr ixes arr) | (is, Nil) <- unroll (rwSh ixes), Arr sh t <- rwArr arr = Arr (is<||sh) t
 rwArr (Arr sh t) | Arr shϵ t' <- rwArr t = Arr (rwSh$Cat sh shϵ) t'
 rwArr (Arr sh t)   = Arr (rwSh sh) (rwArr t)
 rwArr (Ρ n fs)     = Ρ n (rwArr<$>fs)
