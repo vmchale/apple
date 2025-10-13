@@ -961,6 +961,7 @@ rwArr B             = B
 rwArr F             = F
 rwArr t@Li{}        = t
 rwArr t@TV{}        = t
+rwArr t@FV{}        = t
 rwArr t@IZ{}        = t
 rwArr (P ts)        = P (rwArr<$>ts)
 rwArr (Arr sh t)    | Nil <- rwSh sh = rwArr t
