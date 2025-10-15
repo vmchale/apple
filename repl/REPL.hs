@@ -49,7 +49,7 @@ data Arch = X64 | AArch64 !MCtx
 
 data Env = Env { _lex :: !AlexUserState, ee :: [(Nm AlexPosn, E AlexPosn)], mf :: CCtx, _arch :: Arch, oh :: !Handle }
 
-lg=lift . gets
+lg=lift.gets
 
 aEe :: Nm AlexPosn -> E AlexPosn -> Env -> Env
 aEe n e (Env l ees mm a h) = Env l ((n,e):ees) mm a h
@@ -337,15 +337,14 @@ printExpr = rw $ \i eC -> do
             let efp=case a of {X64 -> eFunP i' c; AArch64 ma -> eAFunP i' (c,ma)}
             case eAnn (fmap rLi eLi) of
                 I ->
-                  do
-                      asm@(_, fp, _) <- liftIO $ efp eC -- TODO: i after tyClosed gets discarded?
-                      pErr =<< liftIO (callFFI fp retInt64 [])
-                      liftIO $ freeAsm asm
+                    do
+                        asm@(_, fp, _) <- liftIO $ efp eC -- TODO: i after tyClosed gets discarded?
+                        pErr =<< liftIO (callFFI fp retInt64 [])
+                        liftIO $ freeAsm asm
                 A.F ->
                     do
                         asm@(_, fp, _) <- liftIO $ efp eC
                         pErr.(\(CDouble x) -> x) =<< liftIO (callFFI fp retCDouble [])
-
                         liftIO $ freeAsm asm
                 A.B ->
                     do
