@@ -64,7 +64,7 @@ thread = foldr (.) id
 n !* d = IM.findWithDefault maxBound n d
 
 dec :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
-dec = IM.alter (\case {Nothing -> Nothing;Just d -> Just$!d-1})
+dec = IM.adjust pred
 
 inc :: IM.Key -> IM.IntMap Int -> IM.IntMap Int
 inc = IM.alter (\case {Nothing -> Just 1;Just d -> Just$!d+1})
