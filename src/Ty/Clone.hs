@@ -1,12 +1,13 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Ty.Clone ( cloneT ) where
-
+module Ty.Clone ( cloneSh, cloneT ) where
 
 import           A
-import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
+import           Control.Monad.Trans.State.Strict (State, StateT (StateT), gets, modify, runState, state)
+import           Data.Bifunctor                   (second)
 import           Data.Functor                     (($>))
 import qualified Data.IntMap                      as IM
+import           Data.Tuple                       (swap)
 import           Nm
 import           Sh
 import           U
@@ -54,8 +55,13 @@ cSh (Π sh)        = Π <$> cSh sh
 
 iSt u = TR u IM.empty IM.empty IM.empty
 
+run u x = second maxT (runState x (iSt u))
+
+cloneSh :: Applicative m => Sh a -> StateT Int m (Sh a)
+cloneSh sh = StateT $ \u -> pure $ run u (cSh sh)
+
 cloneT :: Int -> T a -> (Int, T a)
-cloneT u = (\(t, TR uϵ _ _ _) -> (uϵ,t)).flip runState (iSt u).cT
+cloneT u = swap.run u.cT
   where
     cT :: T a -> CM (T a)
     cT F            = pure F

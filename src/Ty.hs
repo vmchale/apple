@@ -221,10 +221,12 @@ aT s@(Subst ts _ _) (Ρ n rs) =
     case IM.lookup u ts of
         Just ty@Ρ{}  -> aT (s\-u) ty
         Just ty@TV{} -> aT (s\-u) ty
+        Just ty@FV{} -> aT (s\-u) ty
         Just ty@IZ{} -> aT (s\-u) ty
         Just ty      -> aT s ty
         Nothing      -> Ρ n (aT s<$>rs)
 aT s ty'@(TV n _) = aTi ty' n s
+aT s ty'@(FV n _) = aTi ty' n s
 aT s ty'@(IZ _ n) = aTi ty' n s
 aT _ ty = ty
 
@@ -234,6 +236,7 @@ aTi ty' n s@(Subst ts _ _) =
     case IM.lookup u ts of
         Just ty@TV{} -> aT (s\-u) ty
         Just ty@IZ{} -> aT (s\-u) ty
+        Just ty@FV{} -> aT (s\-u) ty
         Just ty@Ρ{}  -> aT (s\-u) ty
         Just ty      -> aT s ty
         Nothing      -> ty'
@@ -258,12 +261,14 @@ addPolyEnv n t = modify (\(TySt u l v) -> TySt u l (insert n t v))
 nN :: T.Text -> b -> TyM a (Nm b)
 nN n l = do {tickMaxU; st <- gets maxU; pure (Nm n (U st) l)}
 
-ft :: T.Text -> b -> TyM a (T b)
+ft, ff :: T.Text -> b -> TyM a (T b)
 ft n l = TV <$> nN n l <*> pure S.empty
+ff n l = FV <$> nN n l <*> pure S.empty
 
 fsh :: T.Text -> TyM a (Sh ())
 fsh n = SVar <$> nN n ()
 
+-- TODO: FV for e.g. =
 fc :: T.Text -> C -> TyM a (T ())
 fc n c = do {nϵ <- nN n (); pure $ TV nϵ (S.singleton c)}
 
@@ -273,8 +278,8 @@ fz = fc "a" IsZ; fb = fc "a" HasBits; fo = fc "o" IsOrd
 fn :: Integer -> TyM a (T ())
 fn n = IZ (Ix()$fromInteger n)<$>nN "n" ()
 
-ftv :: T.Text -> TyM a (T ())
-ftv n = ft n ()
+ftv, ffv :: T.Text -> TyM a (T ())
+ftv n = ft n (); ffv n = ff n ()
 
 ftvs :: [b] -> TyM a [T ()]
 ftvs xs = zipWithM (\_ -> ftv) xs [ T.singleton c | c <- ['a'..] ]
@@ -296,7 +301,6 @@ data F = Ua | CF | ΦF
 
 instance NFData F where rnf=rwhnf
 
--- LF narrow among type argument types
 -- CF check argument suitability
 -- Φ branch out (conditionals)
 
@@ -337,7 +341,7 @@ su _ i0@(IEV l _) i1@StaPlus{} = throwError$AF l i0 i1
 su _ i0@(StaMul l _ _) i1@IEV{} = throwError$AF l i0 i1
 su _ i0@(IEV l _) i1@StaMul{} = throwError$AF l i0 i1
 
--- fan out (not necessary to propagate back)
+-- fan out (do not propagate back in substitution)
 φ :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
 φ inp (Ix l _) Ix{} = do {m <- nIe l; pure (m, inp)}
 φ inp (IEV l _) IEV{} = do {m <- nIe l; pure (m, inp)}
@@ -474,6 +478,7 @@ occI IEV{}           = IS.empty
 
 occ :: T a -> IS.IntSet
 occ (TV n _)     = Nm.singleton n
+occ (FV n _)     = Nm.singleton n
 occ (IZ _ n)     = Nm.singleton n
 occ (Arrow t t') = occ t <> occ t'
 occ (Arr _ a)    = occ a -- shouldn't need shape
@@ -570,6 +575,14 @@ mgu _ _ s (IZ _ n) F = pure (F, iTS n F s)
 mgu _ _ s F (IZ _ n) = pure (F, iTS n F s)
 mgu _ _ s I (TV n _) = pure (I, iTS n I s)
 mgu _ _ s (TV n _) I = pure (I, iTS n I s)
+mgu _ _ s I (FV n _) = pure (I, iTS n I s)
+mgu _ _ s (FV n _) I = pure (I, iTS n I s)
+-- mgu _ _ s t0@(IZ _ n0) (FV n1 c) | S.null c = pure (t0, iTS n1 t0 s)
+                                 -- | HasBits `S.member` c = pure (I, iTS n1 I s)
+                                 -- | otherwise = let t=FV n1 (S.insert IsZ c) in pure (t, iTS n0 t s)
+-- mgu _ _ s (FV n0 c) t1@(IZ _ n1) | S.null c = pure (t1, iTS n0 t1 s)
+                                 -- | HasBits `S.member` c = pure (I, iTS n0 I s)
+                                 -- | otherwise = let t=FV n0 (S.insert IsZ c) in pure (t, iTS n1 t s)
 mgu _ (l,_) s t@(TV n c) F = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
 mgu _ (l,_) s F t@(TV n c) = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
@@ -582,10 +595,9 @@ mgu _ _ s t0@Li{} (TV n c) = if S.null c then pure (t0, iTS n t0 s) else pure (I
 mgu f _ s (IZ i0 n0) (IZ i1 n1) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ f$IZ i' n0 in pure (t, iTS n1 t$wI iS s)}
 -- TODO: if C HasBits, force I (Li (?))
 mgu _ _ s t0@(IZ _ n0) (TV n1 c) | n0/=n1 = if S.null c then pure (t0, iTS n1 t0 s) else let t=TV n1 (S.insert IsZ c) in pure (t, iTS n0 t s)
-                                 | otherwise = error "unexpected."
+                                 | otherwise = error"unexpected."
 mgu _ _ s (TV n0 c) t1@(IZ _ n1) | n0/=n1 = if S.null c then pure (t1, iTS n0 t1 s) else let t=TV n0 (S.insert IsZ c) in pure (t, iTS n1 t s)
-                                 | otherwise = error "unexpected."
--- FIXME ug. is higher-rank on indices 😬
+                                 | otherwise = error"unexpected."
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
 mgu _ _ s (TV n c) (TV n' c') | n == n' = do {m <- nI (loc n); let t'=TV m (c<>c') in pure (t', iTS n t' s)}
 mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
@@ -895,7 +907,7 @@ tyB _ Gen = do
     a <- ftv "a"; n <- fti "n"
     pure (a ~> (a ~> a) ~> Li n ~> vV n a, mempty)
 tyB _ Ug = do
-    a <- ftv "a"; b <- ftv "b"; n <- fti "n"
+    a <- ftv "a"; b <- ffv "b"; n <- fti "n"
     pure ((b ~> P [b,a]) ~> b ~> Li n ~> vV n a, mempty)
 tyB _ Mul = do
     a <- fz; i <- fti "i"; j <- fti "j"; k <- fti "k"
@@ -992,6 +1004,7 @@ chkE _         = Right ()
 
 enforcesn't :: (a, T a) -> S.Set C -> Maybe (TyE a)
 enforcesn't (l,t@(TV _ cϵ)) c = if c `S.isSubsetOf` cϵ then Nothing else Just (CV l t (S.findMin c))
+enforcesn't (l,t@(FV _ cϵ)) c = if c `S.isSubsetOf` cϵ then Nothing else Just (CV l t (S.findMin c))
 enforcesn't (l,t@IZ{}) c      = if HasBits `S.member` c then Just$CV l t HasBits else Nothing
 enforcesn't x c               = x `satisfiesn't` c
 
@@ -1026,11 +1039,13 @@ tyE s (EApp _ (EApp _ (Builtin l Range) lb) ub) = do
         (Li (Ix _ 0), TV n _) -> do
             k <- fti "n"
             pure (k+:Ix()1, iTS n (Li$k$>x) s4)
+        (Li (Ix _ 0), FV n _) -> error"nyi."
         _ -> (,s4)<$>ftie
     let arrTy = vV m I
     pure (EApp arrTy (EApp (ubTy0 ~> arrTy) (Builtin (lbTy0 ~> ubTy0 ~> arrTy) Range) lbϵ) ubϵ, s5)
   where iv sϵ (IZ i nm)   = let t=Li i in (iTS nm t sϵ, t)
         iv sϵ t@(TV nm _) = (iTS nm I sϵ, t) -- int satisfies all constraints
+        iv sϵ t@(FV nm _) = (iTS nm I sϵ, t)
         iv sϵ _           = (sϵ, I)
 tyE s (FLit _ x) = pure (FLit F x, s)
 tyE s (BLit _ x) = pure (BLit B x, s)
