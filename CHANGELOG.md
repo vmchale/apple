@@ -1,5 +1,14 @@
 # apple
 
+### Breaking Changes
+
+  * Drop X86 backend
+  * ⍳ changes behavior to be like APL iota, `..` (range) replaces `irange` and always steps by 1
+  * Remove `re:` in favor of infix 〃
+  * Add `tail`, `init` as syntax for `{:`, `}:`
+
+### Other
+
   * Proper type of `frange`
   * Display integer types with index in REPL
   * Allow tuples in type annotations
@@ -16,9 +25,6 @@
   * No longer segfault when `irange` is specified backwards
   * Store functions in REPL
   * Fix bug in parsing curried binary operators
-  * Remove `re:` in favor of infix 〃
-  * ⍳ changes behavior to be like APL iota, `..` (range) replaces `irange` and always steps by 1
-  * Drop support for X86 backend
   * Add sort to language
 
 # 0.3.0.0
