@@ -44,6 +44,7 @@ data T a = Arr (Sh a) (T a)
          | B -- | bool
          | Li (I a)
          | TV !(Nm a) (S.Set C)
+         | FV !(Nm a) (S.Set C)
          | IZ (I a) !(Nm a)
          | Arrow (T a) (T a)
          | P [T a]
@@ -60,6 +61,7 @@ instance PT (T a) where
     pp B             = pure B
     pp t@Li{}        = pure t
     pp (TV n c)      = TV<$>fr tl n<*>pure c
+    pp (FV n c)      = FV<$>fr tl n<*>pure c
     pp (IZ i n)      = IZ i<$>fr tl n
     pp (Arrow t₀ t₁) = Arrow<$>pp t₀<*>pp t₁
     pp (Arr sh t)    = Arr <$>pp sh<*>pp t
@@ -78,6 +80,7 @@ instance PS (T a) where
     ps _ B                      = "bool"
     ps _ (TV n c) | S.null c    = pretty n
                   | otherwise   = braces(pretty n<>"|"<>concatWith (\x y -> x<>","<>y) (pretty<$>S.toList c))
+    ps d (FV n c)               = "♯" <> ps d (TV n c)
     ps d (Arrow t0 t1)          = parensp (d>0) (ps 1 t0 <+> "→" <+> ps 0 t1)
     ps _ (P ts)                 = tupledBy " * " (pretty <$> ts)
     ps _ (Ρ n fs)               = braces (pretty n <+> pipe <+> prettyFields (IM.toList fs))

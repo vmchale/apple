@@ -21,6 +21,7 @@ main = defaultMain $ testGroup "REPL"
   , goldenRepl "bwf" "i/golden/rot.out" "i/ex/rot.🍏"
   -- https://dl.acm.org/doi/pdf/10.1145/382109.382124
   , goldenRepl "fannkuch" "i/golden/fannkuch.out" "i/ex/fannkuch.🍏"
+  , goldenRepl "shuffle" "i/golden/shuf.out" "i/ex/shuf.🍎"
   ]
   where
     goldenRepl str out src = goldenVsString str out (testRepl src)
