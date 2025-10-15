@@ -116,6 +116,7 @@ HasCallStack backtrace:
 - [ ]
 - [ ] :cmm \xs. [⟨x->1,x->2⟩]'(xs::Vec n (float, float))
 - [ ] segfault when `aso` is called pre-register allocation (arm)
+- [ ] `csneg` (conditional negation) also `cneg`
 - [ ] Should display constraints
 ```
  > :ty (+)
@@ -152,7 +153,8 @@ o → o → o
 - [ ] generating functions
 - [ ] `+//. y` in J... maybe `/.` takes `∀n. (Arr (n `Cons` Nil)) -> ...`
 - [ ] https://www.labri.fr/perso/nrougier/from-python-to-numpy/
-- [ ] neural net!
+- [x] neural net!
+- [ ] https://en.wikipedia.org/wiki/Carmichael_function#Recurrence_for_%CE%BB(n)
 - [ ] think: inner/outer product, wedge products (?)
   - [ ] permutations/indices (determinant...)
   - [x] discrete cosine transformation (gen2.) 

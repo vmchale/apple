@@ -19,7 +19,7 @@
     offset
     - [ ] see index in debug, no need for strength reduction...
 - [ ] DNA type
-- [ ] C type
+- [ ] ℂ type
 - [ ] specify iteration by wallpaper group...
 - [ ] simd exp by polynomial...?
 - [ ] assembly "prettyprinter" class

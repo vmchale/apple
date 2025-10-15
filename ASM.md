@@ -24,3 +24,5 @@ sysctl -a | rg '^hw\.optional'
 - [ ] http://graphics.stanford.edu/~seander/bithacks.html
 - [ ] https://stackoverflow.com/questions/227383/how-do-i-programmatically-return-the-max-of-two-integers-without-using-any-compa
 - [ ] https://stackoverflow.com/questions/476800/comparing-two-integers-without-any-comparison?noredirect=1&lq=1
+# AMX
+- [ ] https://github.com/corsix/amx/blob/main/Instructions.md
