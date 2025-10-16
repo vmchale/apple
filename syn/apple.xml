@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- https://docs.kde.org/stable5/en/kate/katepart/highlight.html -->
+<language name="Apple" section="Sources" version="1.0" extensions="*.piz"kateversion="2.4">
+    <highlighting>
+      <contexts>
+          <context attribute="Normal Text" lineEndContext="#stay" name="Normal Text">
+              <RegExpr String="(Arr|Nil|M|Vec|float|int|𝞈|𝟘|𝟙)" attribute="t"/>
+              <RegExpr String="(frange|itof)" attribute="b"/>
+              <RegExpr String="𝔸[0-9]+" attribute="lit"/>
+          </context>
+      </contexts>
+        <itemDatas>
+          <itemData name="t" defStyleNum="dsDataType"/>
+          <itemData name="b" defStyleNum="dsBuiltIn"/>
+          <itemData name="lit" defStyleNum="dsConstant"/>
+      </itemDatas>
+  </highlighting>
+    <general>
+        <keywords casesensitive="1"/>
+        <comment name="singleLine" start="--"/>
+    </general>
+</language>
