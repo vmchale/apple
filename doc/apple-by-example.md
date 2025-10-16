@@ -439,7 +439,7 @@ To make a scalar function apply to arrays, re-rank
 
 Sigmoid on an arbitrary-dimension array:
 
-```
+```apple
 ([1%(1+e:(_x))]`{0})
 ```
 
@@ -638,13 +638,13 @@ tests that the dot product of a vector with itself is nonnegative.
 
 Instead of
 
-```
+```apple
 {x←y;z}
 ```
 
 One can write
 
-```
+```apple
 ⸎x←y;z
 ```
 
@@ -655,13 +655,13 @@ Using the [typographical coronis](https://en.wikipedia.org/wiki/Coronis_(textual
 One can specify matrix dimensions in a type signature with unicode subscript
 digits separated by a comma.
 
-```
+```apple
 𝔯 0 1 :: M ₁₂,₁₂ float
 ```
 
 is equivalent to
 
-```
+```apple
 𝔯 0 1 :: Arr (12 × 12) float
 ```
 
@@ -695,7 +695,7 @@ One can use `⅟` for the reciprocal, viz.
 In the REPL, one can use `⏱` in place of `:bench`, i.e.
 
 ```
-⏱ [(+)/x%ℝ(:x)]\`7 (𝒻 0 999 1000)
+> ⏱ [(+)/x%ℝ(:x)]\`7 (𝒻 0 999 1000)
 ```
 
 ### Type Shorthands
@@ -731,7 +731,7 @@ $$(a_2b_3-a_3b2, a_3b1-a_1b3,a_1b_2-a_2b_1)$$
 
 In Apple, we can write:
 
-```
+```apple
 λa.λb. (-)`((*)`(1⊖a) (_1⊖b)) ((*)`(_1⊖a) (1⊖b))
 ```
 
@@ -739,7 +739,7 @@ This uses zips and rotations (no indices are mentioned); it is a new perspective
 
 ## Linear Regression
 
-```
+```apple
 λxs.λys.
 {
   Σ ← [(+)/x];
@@ -758,13 +758,13 @@ Note the `⟜` to prevent expressions from being inlined.
 
 ## Kullback-Leibler Divergence
 
-```
+```apple
 λp.λq. (+)/([x*_.(x%y)]`p q)
 ```
 
 ## Numerically Stable Geometric Mean
 
-```
+```apple
 λxs.
   ⸎ avg ← [{n ⟜ ℝ(:xs); ((+)/xs)%n}]
   ; e:(avg (_.'xs))
@@ -772,7 +772,7 @@ Note the `⟜` to prevent expressions from being inlined.
 
 ## Array Strides
 
-```
+```apple
 λds. }:((*)Λₒ 1::int ds)
 ```
 
@@ -780,7 +780,7 @@ Note the `⟜` to prevent expressions from being inlined.
 
 ## Train Neural Network
 
-```
+```apple
 λwh.λwo.λbh.λbo.
 { X ⟜ ⟨⟨0,0⟩,⟨0,1⟩,⟨1,0⟩,⟨1,1⟩⟩;
   Y ← ⟨0,1,1,0⟩;
@@ -845,7 +845,7 @@ We will [convert a permutation represented as a vector of integers into a Boolea
 
 To convert a permutation to its Boolean matrix representation:
 
-```
+```apple
 [x (=)⊗ xᶥ]
 ```
 
@@ -858,7 +858,7 @@ Arr (3×3) [ [#t, #f, #f]
 
 To convert back:
 
-```
+```apple
 (([x]@.)')
 ```
 
@@ -882,7 +882,7 @@ functional programming.
 [Hui, Iverson, and McDonnell](https://dl.acm.org/doi/10.1145/114054.114077) give
 the lovely enumeration of permutations in reduced form:
 
-```
+```apple
 λn.
 {
   fact ← [(*)/ₒ 1 (1..x)];
@@ -916,7 +916,7 @@ If a polygon has vertices at $x_n$, $y_n$, then its area is given by
 
 $$A=\frac{1}{2}\Biggl|(x_1y_2+x_2y_3+\cdots+x_ny_1)-(y_1x_2+y_2x_3+\cdots+y_nx_1)\Biggr|$$
 
-```
+```apple
 λxs.λys.
     { sum ⇐ [(+)/x]
     ; 0.5*abs.(sum((*)`xs (1⊖ys)) - sum((*)`(1⊖xs) ys))
@@ -929,7 +929,7 @@ Note the array style: `⊖`, ` (zip), and fold are enough to eschew pointful def
 
 ### Evaluation
 
-```
+```apple
 λp.λx. ~p⋅gen. 1 (*x) (𝓉p)
 ```
 
@@ -941,13 +941,13 @@ $\displaystyle \frac{p(x)}{x-a}$
 
 for $p$ a polynomial:
 
-```
+```apple
 λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 p)
 ```
 
 ## Base-n representation
 
-```
+```apple
 λa.λn. {log ← λb.λx. _.x%_.b;N ⟜ ⌊(log (ℝn) (ℝa))+1;~(ug. (λs. (s/.n, s|n)) a N)}
 ```
 
@@ -956,7 +956,7 @@ for $p$ a polynomial:
 Given a $K \times N$ matrix of $N$ obervations on $K$ variables, we can compute
 the sample covariance matrix thusly:
 
-```
+```apple
 λxs.
 {
   𝜇 ← [⸎n⟜ ℝ(:x); (+)/x%n]; rs ← 𝜇'xs;
@@ -1009,25 +1009,25 @@ Arr (5×2) [ [0.0, 1.0]
 
 ### Matrix-Vector Multiplication
 
-```
+```apple
 λA.λx. (x⋅)`{1∘[2]} (A::Arr (i × j) float)
 ```
 
 ### Filter
 
-```
+```apple
 \p.\xs. (xs˙)'p⩪xs
 ```
 
 ## [Argmax](https://numpy.org/doc/stable/reference/generated/numpy.argmax.html)
 
-```
+```apple
 [{m⟜(⋉)/x::Vec n float; (=m)@.x}]
 ```
 
 ## [Luhn Check](https://en.wikipedia.org/wiki/Luhn_algorithm)
 
-```
+```apple
 λxs.
   { digitSum ← [?x>10,.x-9,.x]
   ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
@@ -1049,7 +1049,7 @@ where $C_0=1,C_1=1,C_2=2$.
 
 We can compute them in Apple with:
 
-```
+```apple
 { Σ ← λl.λu.λf.(+)/(f'l..u)
 ; 𝓕 ⟨1::int,1,2⟩ (λC. {n⟜ 𝓉C; Σ 0 (n-1) (λi. (C˙i*C˙(n-i-1)))})
 }
@@ -1062,7 +1062,7 @@ The use of "strong induction" provides a new take on the problem where Python us
 The number of unlabeled rooted trees with at most $n$ nodes (this [appears in
 chemistry (counting alkanes)](https://www.emis.de/journals/JIS/cayley.html)).
 
-```
+```apple
 { sum ⇐ [(+)/x]; Σ ⇐ λl.λu.λf. (+)/(f'l..u)
 ; divisors ← λn. (λk. (n|k=0))§1..n
 ; 𝓕 𝔸01 (λas. {n⟜ 𝓉as; Σ 1 (n-1) (λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))/.(n-1)})
@@ -1099,7 +1099,7 @@ $$ \xi_0,~\delta_0 = 0 $$
 
 In Apple we can generate the first `N` coefficients alongside the offsets with:
 
-```
+```apple
 λxs.λys.λN.
   { sum ← [(+)/x]
   ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
@@ -1137,7 +1137,7 @@ array rather than definining pointfully.
 
 Let 𝜆₀, 𝜑₀ be the coördinates of the origin, 𝜑₁, 𝜑₂ standard parallels, `φs` and `lambdas` the longitudes and latitudes, respectively.
 
-```
+```apple
 \𝜆₀.\𝜑₀.\𝜑₁.\𝜑₂.\φs.\lambdas.
 {
   𝑛 ⟜ (sin. 𝜑₁+sin.𝜑₂)%2;
@@ -1165,7 +1165,7 @@ Let 𝜆₀, 𝜑₀ be the coördinates of the origin, 𝜑₁, 𝜑₂ standar
 
 Compute the radical of an integer $n$, $\displaystyle \prod_{p|n} p$
 
-```
+```apple
 λn.
   { ni ⟜ ⌊(√(ℝn))
   ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'2..(⌊(√(ℝn))))); pf ⇐ (isPrime #.)
@@ -1210,7 +1210,7 @@ nb/convolve.html
 
 Cliff Reiter points out that we can simulate a random walk by simply scanning an array of random values, viz.
 
-```
+```apple
 (+)Λ (𝔯 _1 1 :: Vec 200 int)
 ```
 
@@ -1236,7 +1236,7 @@ square, absolute value ourselves.
 
 Note the idiom
 
-```
+```apple
 (frange _2.5 1 700) [(x,y)]⊗ (frange _1 1 400)
   : Arr (700 × 400) (float * float)
 ```
@@ -1253,7 +1253,7 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
 
 ### CDF for Normal Distribution
 
-```
+```apple
 λz.
 {
   erf ← λz.
@@ -1269,7 +1269,7 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
 
 ### CDF for Student's t-distribution
 
-```
+```apple
 λx.λν.
 {
   gammaln ← λz. {
@@ -1313,7 +1313,7 @@ thence speeds compilation.
 
 ### CDF for F-distribution
 
-```
+```apple
 λn.λm.λx.
 {
   incΒ ← λz.λa.λb.

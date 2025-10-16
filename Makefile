@@ -20,7 +20,7 @@ ifeq ($(UNAME),Linux)
 endif
 
 docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html nb/mandel.html
-	pandoc --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
+	pandoc --syntax-definition=syn/apple.xml --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
 
 nb/%.html: nb/%.ipynb
 	jupyter nbconvert $^ --to=html

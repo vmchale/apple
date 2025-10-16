@@ -2,10 +2,13 @@
 <!-- https://docs.kde.org/stable5/en/kate/katepart/highlight.html -->
 <language name="Apple" section="Sources" version="1.0" extensions="*.piz"kateversion="2.4">
     <highlighting>
+        <!-- TODO: x, y res var  -->
       <contexts>
           <context attribute="Normal Text" lineEndContext="#stay" name="Normal Text">
               <RegExpr String="(Arr|Nil|M|Vec|float|int|𝞈|𝟘|𝟙)" attribute="t"/>
-              <RegExpr String="(frange|itof)" attribute="b"/>
+              <RegExpr String="(frange|itof|e:)" attribute="b"/>
+              <RegExpr String="_?[0-9]+" attribute="i"/>
+              <RegExpr String="_?[0-9]+\.[0-9]*" attribute="x"/>
               <RegExpr String="𝔸[0-9]+" attribute="lit"/>
           </context>
       </contexts>
@@ -13,6 +16,8 @@
           <itemData name="t" defStyleNum="dsDataType"/>
           <itemData name="b" defStyleNum="dsBuiltIn"/>
           <itemData name="lit" defStyleNum="dsConstant"/>
+          <itemData name="i" defStyleNum="dsDecVal"/>
+          <itemData name="x" defStyleNum="dsFloat"/>
       </itemDatas>
   </highlighting>
     <general>
