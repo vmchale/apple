@@ -9,6 +9,7 @@
               <RegExpr String="(frange|itof|e:)" attribute="b"/>
               <RegExpr String="_?[0-9]+" attribute="i"/>
               <RegExpr String="_?[0-9]+\.[0-9]*" attribute="x"/>
+              <!-- TODO: scientific notash -->
               <RegExpr String="𝔸[0-9]+" attribute="lit"/>
           </context>
       </contexts>
