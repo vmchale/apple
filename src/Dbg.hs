@@ -61,11 +61,11 @@ nasmD = prettyLines . fmap nasmArr
 
 dumpX86Ass :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86Ass = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry gallocOn.(\(x,_,st) -> irToX86 st x)) . ir
-    where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 16)
+    where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeysMonotonic (subtract 16)
 
 dumpAAss :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpAAss = fmap ((\(regs, fregs, _) -> pR regs <#> pR fregs).uncurry Aarch64.gallocOn.(\(x,_,st) -> irToAarch64 st x)) . ir
-    where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeys (subtract 19)
+    where pR :: Pretty b => IM.IntMap b -> Doc ann; pR = prettyDumpBinds . IM.mapKeysMonotonic (subtract 19)
 
 dumpX86G :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpX86G = fmap prettyAsm . x86G
