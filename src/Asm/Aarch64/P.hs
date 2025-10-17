@@ -50,7 +50,7 @@ as :: Word16 -> Word16
 as i | i `rem` 16 == 0 = i | otherwise = i+8
 
 pres :: IM.IntMap AReg
-pres = IM.fromList [(0, X0), (1, X1), (2, X2), (3, X3), (4, X4), (5, X5), (6, X6), (7, X7), (8, X30), (9, SP), (18, X29)]
+pres = IM.fromDistinctAscList [(0, X0), (1, X1), (2, X2), (3, X3), (4, X4), (5, X5), (6, X6), (7, X7), (8, X30), (9, SP), (18, X29)]
 
 preFs :: IM.IntMap FAReg
-preFs = IM.fromList [(10, D0), (11, D1), (12, D2), (13, D3), (14, D4), (15, D5), (16, D6), (17, D7)]
+preFs = IM.fromDistinctAscList [(10, D0), (11, D1), (12, D2), (13, D3), (14, D4), (15, D5), (16, D6), (17, D7)]

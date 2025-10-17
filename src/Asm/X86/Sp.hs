@@ -42,7 +42,7 @@ spillM offs m isns = (foffs, concatMapM g isns)
                 : catMaybes (zipWith (\a r -> if toInt r `IS.member` defs isn' then Just (MovAR () a r) else Nothing) as newRs)
 
           ass :: IS.IntSet -> IM.IntMap Int
-          ass = IM.fromList . (\k -> zip k [offs,offs+8..]) . IS.toList
+          ass = IM.fromDistinctAscList . (\k -> zip k [offs,offs+8..]) . IS.toAscList
 
           assgn = ass m
           at k = IM.findWithDefault (error "Internal error.") k assgn

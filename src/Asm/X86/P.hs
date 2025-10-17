@@ -52,7 +52,7 @@ saI :: Int64 -> Int64
 saI i | i`rem`16 == 0 = i | otherwise = i+8
 
 pres :: IM.IntMap X86Reg
-pres = IM.fromList [(0, Rdi), (1, Rsi), (2, Rdx), (3, Rcx), (4, R8), (5, R9), (6, Rax), (7, Rsp)]
+pres = IM.fromDistinctAscList [(0, Rdi), (1, Rsi), (2, Rdx), (3, Rcx), (4, R8), (5, R9), (6, Rax), (7, Rsp)]
 
 preFs :: IM.IntMap FX86Reg
-preFs = IM.fromList [(8, XMM0), (9, XMM1), (10, XMM2), (11, XMM3), (12, XMM4), (13, XMM5), (14, XMM6), (15, XMM7)]
+preFs = IM.fromDistinctAscList [(8, XMM0), (9, XMM1), (10, XMM2), (11, XMM3), (12, XMM4), (13, XMM5), (14, XMM6), (15, XMM7)]
