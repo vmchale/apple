@@ -67,4 +67,5 @@ aArr as = do
     pokeArray p bs
     pure $ case IM.toList bls of
         []             -> IM.empty
+        -- TODO: fromAscList? idk
         ((k0,l0):bls') -> IM.fromList . fmap (\(x,_,z) -> (x,z)) $ scanl' (\(_, lϵ, pϵ) (k, l) -> (k, l, pϵ `plusPtr` lϵ)) (k0, l0, p) bls'
