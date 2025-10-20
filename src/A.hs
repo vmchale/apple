@@ -395,6 +395,8 @@ data ResVar = X | Y
 instance Pretty ResVar where
     pretty X = "x"; pretty Y = "y"
 
+-- TODO: 𝓕 𝔸10 [{n⟜ 𝓉 x;n*}.x+(_1)^n}]
+-- step access in course-of-value recursion?
 data Idiom a = FoldSOfZip { seedI, opI :: E a, esI :: [E a] }
              | FoldOfZip { zopI, opI :: E a, esI :: [E a] }
              | FoldGen { seedG, ufG, fG, nG :: E a }
@@ -402,6 +404,7 @@ data Idiom a = FoldSOfZip { seedI, opI :: E a, esI :: [E a] }
              | AShLit { litSh :: [Int], esLit :: [E a] }
              | Aɴ { idArr :: E a, idIxes :: [E a] }
              | Iter { ugI, seedI, nG :: E a }
+             | Slice { idArr :: E a, begin, fin :: E a }
              deriving (Generic, Functor)
 
 instance Pretty (Idiom a) where
