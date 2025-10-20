@@ -155,6 +155,10 @@ tokens :-
         "{:?"                    { mkSym TailM }
         "}:"                     { mkSym Init }
         "}:?"                    { mkSym InitM }
+        tail                     { mkSym Tail }
+        tail\?                   { mkSym TailM }
+        init                     { mkSym Init }
+        init\?                   { mkSym Init }
         ⊲                        { mkSym Cons }
         "<|"                     { mkSym Cons }
         ⊳                        { mkSym Snoc }
