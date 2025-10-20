@@ -222,6 +222,9 @@ I :: { I AlexPosn }
   | I plus I { StaPlus $2 $1 $3 }
   | I times I { StaMul $2 $1 $3 }
 
+Ix :: { Int }
+   : intLit { fromInteger (int $1) }
+
 Sh :: { Sh AlexPosn }
    : nil { Nil }
    | I cons Sh { Sh.Cons $1 $3 }
@@ -242,15 +245,15 @@ T :: { T AlexPosn }
   | name { tv $1 }
 
 R :: { (Int, Maybe [Int]) }
-  : intLit compose lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (map (fromInteger.int) $4))) }
-  | intLit lsqbracket sepBy(intLit,comma) rsqbracket { (fromInteger $ int $1, Just (reverse (map (fromInteger.int) $3))) }
-  | lsqbracket sepBy(intLit,comma) rsqbracket { (length $2, Just (reverse (map (fromInteger.int) $2))) }
-  | intLit { (fromInteger $ int $1, Nothing) }
-  | intLit some(six) { (fromInteger $ int $1, Just (reverse (map six $2))) }
+  : Ix compose lsqbracket sepBy(Ix,comma) rsqbracket { ($1, Just (reverse $4)) }
+  | Ix lsqbracket sepBy(Ix,comma) rsqbracket { ($1, Just (reverse $3)) }
+  | lsqbracket sepBy(Ix,comma) rsqbracket { (length $2, Just (reverse $2)) }
+  | Ix { ($1, Nothing) }
+  | Ix some(six) { ($1, Just (reverse (map six $2))) }
 
 S :: { (Int, Maybe Int) }
-  : intLit compose intLit { (fromInteger (int $1), Just (fromInteger (int $3))) }
-  | intLit { (fromInteger (int $1), Nothing) }
+  : Ix compose Ix { ($1, Just $3) }
+  | Ix { ($1, Nothing) }
 
 -- binary operator
 BBin :: { E AlexPosn }
@@ -262,9 +265,9 @@ BBin :: { E AlexPosn }
      | max { Builtin $1 Max } | min { Builtin $1 Min }
      | scan { Builtin $1 Scan }
      | fold { Builtin $1 A.Fold } | quot { Builtin $1 Map }
-     | di intLit { Builtin $1 (DI (fromInteger $ int $2)) }
+     | di Ix { Builtin $1 (DI $2) }
      | lconv sepBy(S,comma) rbrace { Builtin $1 (Conv (reverse $2)) }
-     | focus braces(sepBy(intLit,comma)) { Builtin $1 (A.Focus (reverse (map (fromInteger.int) $2)))  }
+     | focus braces(sepBy(Ix,comma)) { Builtin $1 (A.Focus (reverse $2))  }
      -- FIXME: not necessarily binary operator!!
      | lrank sepBy(R,comma) rbrace { Builtin $1 (Rank (reverse $2)) }
      -- TODO: (+)₀₀ could work? lol
