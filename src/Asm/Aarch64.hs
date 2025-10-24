@@ -618,7 +618,7 @@ puxs = map go.s2 where go (r0, Just r1) = Stp2 () (V2Reg r0) (V2Reg r1) (Pr SP (
 poxs = map go.reverse.s2 where go (r0, Just r1) = Ldp2 () (V2Reg r0) (V2Reg r1) (Po SP 32); go (r, Nothing) = LdrS () (V2Reg r) (Po SP 16)
 
 ph :: (FiniteBits a, Integral a) => a -> TL.Text
-ph c = toLazyTextWith (l2 c) (hexadecimal c)
+ph c = toLazyTextWith (l2 c`rem`2) (hexadecimal c)
   where
     l2 n=finiteBitSize n-1-countLeadingZeros n
 
