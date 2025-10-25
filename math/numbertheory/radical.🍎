@@ -1,6 +1,7 @@
 λn.
   { ni ⟜ ⌊(√(ℝn))
-  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'2..(⌊(√(ℝn))))); pf ⇐ (isPrime #.)
+  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'2..(⌊(√(ℝn)))))
+    ; pf ⇐ (isPrime #.)
   ; pps ⟜  (λk. (n|k=0)) #. 2..ni
   ; ?ni^2=n
     ,.((*)/ₒ 1 (pf (pps⧺(n/.)'}:?pps)))

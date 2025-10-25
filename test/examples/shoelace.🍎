@@ -1,1 +1,4 @@
-λas.λbs. {sum ⇐ [(+)/x]; ½*abs.(sum((*)`as (1⊖bs)) - sum((*)`(1⊖as) bs))}
+λxs.λys.
+  { sum ⇐ [(+)/x]
+  ; ½*abs.(sum((*)`xs (1⊖ys)) - sum((*)`(1⊖xs) ys))
+  }

@@ -731,35 +731,21 @@ $$(a_2b_3-a_3b2, a_3b1-a_1b3,a_1b_2-a_2b_1)$$
 
 In Apple, we can write:
 
-```apple
-λa.λb. (-)`((*)`(1⊖a) (_1⊖b)) ((*)`(_1⊖a) (1⊖b))
+```{.apple include="math/elementary/cross.🍏"}
 ```
 
 This uses zips and rotations (no indices are mentioned); it is a new perspective on the problem.
 
 ## Linear Regression
 
-```apple
-λxs.λys.
-{
-  Σ ← [(+)/x];
-  n ⟜ ℝ(:xs);
-  xbar ⟜ (Σ xs) % n; ybar ⟜ (Σ ys) % n;
-  xy ⟜ Σ ((*)`xs ys);
-  x2 ⟜ Σ ((^2)'xs);
-  denom ⟜ (x2-n*(xbar^2));
-  a ← ((ybar*x2)-(xbar*xy))%denom;
-  b ← (xy-(n*xbar*ybar))%denom;
-  (a,b)
-}
+```{.apple include="test/examples/regress.🍎"}
 ```
 
 Note the `⟜` to prevent expressions from being inlined.
 
 ## Kullback-Leibler Divergence
 
-```apple
-λp.λq. (+)/([x*_.(x%y)]`p q)
+```{.apple include="test/examples/kl.🍎"}
 ```
 
 ## Numerically Stable Geometric Mean
@@ -882,14 +868,7 @@ functional programming.
 [Hui, Iverson, and McDonnell](https://dl.acm.org/doi/10.1145/114054.114077) give
 the lovely enumeration of permutations in reduced form:
 
-```apple
-λn.
-{
-  fact ← [(*)/ₒ 1 (1..x)];
-  antibase ← λk.λbs. (->1)'({: ((λqr.λb. {s ⟜ qr->2; (s|b, s/.b)}) Λₒ (0,k) bs));
-    bs ⟜ 1..n;
-  (λk. ~(antibase k bs))'⍳ (fact n-1)
-}
+```{.apple include="test/examples/r.🍏" startLine=3}
 ```
 
 ```
@@ -916,11 +895,7 @@ If a polygon has vertices at $x_n$, $y_n$, then its area is given by
 
 $$A=\frac{1}{2}\Biggl|(x_1y_2+x_2y_3+\cdots+x_ny_1)-(y_1x_2+y_2x_3+\cdots+y_nx_1)\Biggr|$$
 
-```apple
-λxs.λys.
-    { sum ⇐ [(+)/x]
-    ; 0.5*abs.(sum((*)`xs (1⊖ys)) - sum((*)`(1⊖xs) ys))
-    }
+```{.apple include="test/examples/shoelace.🍎"}
 ```
 
 Note the array style: `⊖`, ` (zip), and fold are enough to eschew pointful definitions.
@@ -929,8 +904,7 @@ Note the array style: `⊖`, ` (zip), and fold are enough to eschew pointful def
 
 ### Evaluation
 
-```apple
-λp.λx. ~p⋅gen. 1 (*x) (𝓉p)
+```{.apple include="math/poly/e.🍎"}
 ```
 
 ### [Ruffini's Rule](https://en.wikipedia.org/wiki/Synthetic_division#Regular_synthetic_division)
@@ -941,8 +915,7 @@ $\displaystyle \frac{p(x)}{x-a}$
 
 for $p$ a polynomial:
 
-```apple
-λp.λa. {:((λs.λc. (a*s+c)) Λₒ 0 p)
+```{.apple include="math/poly/ruffini.🍎" startLine=3}
 ```
 
 ## Base-n representation
@@ -956,14 +929,7 @@ for $p$ a polynomial:
 Given a $K \times N$ matrix of $N$ obervations on $K$ variables, we can compute
 the sample covariance matrix thusly:
 
-```apple
-λxs.
-{
-  𝜇 ← [⸎n⟜ ℝ(:x); (+)/x%n]; rs ← 𝜇'xs;
-  nd ⟜ [(-x)'y]`{0,1∘[2]} rs xs;
-  N ⟜ ℝ(:({.xs))-1;
-  nd [x⋅y%N]⊗ nd
-}
+```{.apple include="math/stats/covar.🍏" startLine=2}
 ```
 
 The array style gives a new take on the problem.
@@ -1009,14 +975,12 @@ Arr (5×2) [ [0.0, 1.0]
 
 ### Matrix-Vector Multiplication
 
-```apple
-λA.λx. (x⋅)`{1∘[2]} (A::Arr (i × j) float)
+```{.apple include="test/data/vmul.🍏" startLine=2}
 ```
 
 ### Filter
 
-```apple
-\p.\xs. (xs˙)'p⩪xs
+```{.apple include="test/data/filt.🍎"}
 ```
 
 ## [Argmax](https://numpy.org/doc/stable/reference/generated/numpy.argmax.html)
@@ -1027,12 +991,7 @@ Arr (5×2) [ [0.0, 1.0]
 
 ## [Luhn Check](https://en.wikipedia.org/wiki/Luhn_algorithm)
 
-```apple
-λxs.
-  { digitSum ← [?x>10,.x-9,.x]
-  ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨2,1::int⟩ 8))
-  ; 10-t|10=}.xs
-  }
+```{.apple include="test/examples/luhn.🍎" startLine=2}
 ```
 
 Note zipping with `cyc. ⟨2,1::int⟩ 8` to get alternating 2, 1, ... factors.
@@ -1049,10 +1008,7 @@ where $C_0=1,C_1=1,C_2=2$.
 
 We can compute them in Apple with:
 
-```apple
-{ Σ ← λl.λu.λf.(+)/(f'l..u)
-; 𝓕 ⟨1::int,1,2⟩ (λC. {n⟜ 𝓉C; Σ 0 (n-1) (λi. (C˙i*C˙(n-i-1)))})
-}
+```{.apple include="math/oeis/A000108.🍎" startLine=3}
 ```
 
 The use of "strong induction" provides a new take on the problem where Python uses memoization.
@@ -1062,11 +1018,7 @@ The use of "strong induction" provides a new take on the problem where Python us
 The number of unlabeled rooted trees with at most $n$ nodes (this [appears in
 chemistry (counting alkanes)](https://www.emis.de/journals/JIS/cayley.html)).
 
-```apple
-{ sum ⇐ [(+)/x]; Σ ⇐ λl.λu.λf. (+)/(f'l..u)
-; divisors ← λn. (λk. (n|k=0))§1..n
-; 𝓕 𝔸01 (λas. {n⟜ 𝓉as; Σ 1 (n-1) (λj.sum ((λd. d*as˙d)'(divisors j))*as˙(n-j))/.(n-1)})
-}
+```{.apple include="math/oeis/A000081.🍏" startLine=2}
 ```
 
 Cf. Reinhard Zumkeller's [Haskell solution](https://oeis.org/A000081) by sharing/laziness.
@@ -1099,10 +1051,9 @@ $$ \xi_0,~\delta_0 = 0 $$
 
 In Apple we can generate the first `N` coefficients alongside the offsets with:
 
-```apple
+```
 λxs.λys.λN.
-  { sum ← [(+)/x]
-  ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
+  { tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
   ; dxs ⟜ Δ xs; dys ⟜ Δ ys
   ; dts ⟜ [√(x^2+y^2)]`dxs dys
   ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)
@@ -1110,21 +1061,21 @@ In Apple we can generate the first `N` coefficients alongside the offsets with:
   ; coeffs ← λn.
     { n ⟜ ℝn; k ⟜ 2*n*𝜋%T
     ; c ⟜ T%(2*n^2*𝜋^2)
-    ; cosDiffs ⟜ (-)\~([cos.(k*x)]'pts)
-    ; sinDiffs ⟜ (-)\~([sin.(k*x)]'pts)
-    ; aₙ ← c*sum ((*)`dxss cosDiffs)
-    ; cₙ ← c*sum ((*)`dyss cosDiffs)
-    ; bₙ ← c*sum ((*)`dxss sinDiffs)
-    ; dₙ ← c*sum ((*)`dyss sinDiffs)
+    ; cosDiffs ⟜ (-)\~(cos. ∴ (k*)'pts)
+    ; sinDiffs ⟜ (-)\~(sin. ∴ (k*)'pts)
+    ; aₙ ← c*dxss⋅cosDiffs
+    ; cₙ ← c*dyss⋅cosDiffs
+    ; bₙ ← c*dxss⋅sinDiffs
+    ; dₙ ← c*dyss⋅sinDiffs
     ; (aₙ,bₙ,cₙ,dₙ)
     }
   ; dtss ⟜ (-)\~((^2)'pts)
   ; ppts ⟜ {: pts
   ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)
   ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
-  ; A ← (0.5*sum ((*)`((%)`dxs dts) dtss) + sum ((*)`𝜉 dts))%T
-  ; C ← (0.5*sum ((*)`((%)`dys dts) dtss) + sum ((*)`𝛿 dts))%T
-  ; (coeffs'(1..N),A,C)
+  ; A ← (½*((%)`dxs dts)⋅dtss + 𝜉⋅dts)%T
+  ; C ← (½*((%)`dys dts)⋅dtss + 𝛿⋅dts)%T
+  ; (coeffs'1..N,A,C)
   }
 ```
 
@@ -1137,43 +1088,21 @@ array rather than definining pointfully.
 
 Let 𝜆₀, 𝜑₀ be the coördinates of the origin, 𝜑₁, 𝜑₂ standard parallels, `φs` and `lambdas` the longitudes and latitudes, respectively.
 
-```apple
-\𝜆₀.\𝜑₀.\𝜑₁.\𝜑₂.\φs.\lambdas.
-{
-  𝑛 ⟜ (sin. 𝜑₁+sin.𝜑₂)%2;
-  𝐶 ⟜ (cos. 𝜑₁)^2+2*𝑛*sin. 𝜑₁;
-  𝜌₀ ⟜ √(𝐶-2*𝑛*sin. 𝜑₀)%𝑛;
-  albers ← \𝜑.\𝜆.
-    {
-      𝜃 ⟜ 𝑛*(𝜆-𝜆₀);
-      𝜌 ⟜ √(𝐶-2*𝑛*sin. 𝜑)%𝑛;
-      (𝜌*sin. 𝜃, 𝜌₀-𝜌*cos. 𝜃)
-    };
-  albers`φs lambdas
-}
+```{.apple include="math/geo/albers.🍏" startLine=2}
 ```
 
 ## Number Theory
 
 ### Primality Check
 
-```
-λn.¬((∨)/ₒ #f ([(n|x)=0]'2..(⌊(√(ℝn)))))
+```{.apple include="test/examples/isPrime.🍏"}
 ```
 
 ### Radical
 
 Compute the radical of an integer $n$, $\displaystyle \prod_{p|n} p$
 
-```apple
-λn.
-  { ni ⟜ ⌊(√(ℝn))
-  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=0]'2..(⌊(√(ℝn))))); pf ⇐ (isPrime #.)
-  ; pps ⟜  (λk. (n|k=0)) #. 2..ni
-  ; ?ni^2=n
-    ,.((*)/ₒ 1 (pf (pps⧺(n/.)'}:?pps)))
-    ,.((*)/ₒ 1 (pf (n ⊲ pps⧺((n/.)'pps))))
-  }
+```{.apple include="math/numbertheory/radical.🍎"}
 ```
 
 This shows the awkwardness of an array style.
@@ -1269,40 +1198,7 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
 
 ### CDF for Student's t-distribution
 
-```apple
-λx.λν.
-{
-  gammaln ← λz. {
-    zz ⟜ z-1;
-    c0 ← 0.999999999999997092;
-    𝛾 ← 607%128;
-    coeffs ← ⟨ 57.1562356658629235
-             , _59.5979603554754912
-             , 14.1360979747417471
-             , _0.491913816097620199
-             , 0.339946499848118887e-4
-             , 0.465236289270485756e-4
-             , _0.983744753048795646e-4
-             , 0.158088703224912494e-3
-             , _0.210264441724104883e-3
-             , 0.217439618115212643e-3
-             , _0.164318106536763890e-3
-             , 0.844182239838527433e-4
-             , _0.261908384015814087e-4
-             , 0.368991826595316234e-5
-             ⟩;
-    ss ← (+)/ ([y%(zz+itof x)]`(1..14) coeffs);
-    (((zz+0.5)*_.(zz+𝛾+0.5))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
-  };
-  Γ ⟜ [e:(gammaln x)];
-  f21 ← λa0.λa1.λb.λz. {
-    rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-    Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
-    term ← λn. {nn⟜ℝ n; rf a0 nn*(rf a1 nn%rf b nn)*(z^n%fact nn)};
-    Σ 50 term
-  };
-  0.5+x*Γ(0.5*(ν+1))%((√(𝜋*ν))*Γ(ν*0.5))*f21 0.5 ((ν+1)%2) 1.5 (_(x^2%ν))
-}
+```{.apple include=math/fcdf.🍎}
 ```
 
 This uses the [Lanczos approximation](https://mathworld.wolfram.com/LanczosApproximation.html) to
@@ -1313,50 +1209,7 @@ thence speeds compilation.
 
 ### CDF for F-distribution
 
-```apple
-λn.λm.λx.
-{
-  incΒ ← λz.λa.λb.
-    {
-      f21 ← λa0.λa1.λb.λz.
-        {
-          rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
-          Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
-          term ← λn. {nn⟜ℝ n; ((rf a0 nn)*(rf a1 nn)%(rf b nn))*((z^n)%(fact nn))};
-          Σ 30 term
-        };
-      ((z**a)%a)*f21 a (1-b) (a+1) z
-    };
-  Β ← λx.λy.
-    {
-      gammaln ⟜ λz.
-        {
-          zz ⟜ z-1;
-          c0 ← 0.999999999999997092;
-          𝛾 ← 607%128;
-          coeffs ← ⟨ 57.1562356658629235
-                   , _59.5979603554754912
-                   , 14.1360979747417471
-                   , _0.491913816097620199
-                   , 0.339946499848118887e-4
-                   , 0.465236289270485756e-4
-                   , _0.983744753048795646e-4
-                   , 0.158088703224912494e-3
-                   , _0.210264441724104883e-3
-                   , 0.217439618115212643e-3
-                   , _0.164318106536763890e-3
-                   , 0.844182239838527433e-4
-                   , _0.261908384015814087e-4
-                   , 0.368991826595316234e-5
-                   ⟩;
-          ss ← (+)/ ([y%(zz+ℝ x)]`(1..14) coeffs);
-          (((zz+0.5)*_.(zz+𝛾+0.5))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
-        };
-      e:(gammaln x+gammaln y-gammaln (x+y))
-    };
-  I ← λz.λa.λb. incΒ z a b%Β a b;
-  I ((n*x)%(m+n*x)) (n%2) (m%2)
-}
+```{.apple include=math/fcdf.🍎}
 ```
 
 Apple does not have imports so we have to re-type the definition of

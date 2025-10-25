@@ -7,6 +7,8 @@ MAKEFLAGS += -j
 
 HC ?= ghc
 
+DOC_SRC := $(shell rg 'include="?([^\s}"]*)' doc/apple-by-example.md -r '$$1' -o)
+
 HS_SRC := $(shell find src -type f) $(shell find lib -type f) apple.cabal
 ifeq ($(UNAME),Linux)
 	LD_VER := $(shell awk '/^[ \t]*lib-version-info:/{print $$2}' apple.cabal | sed 's/:/./g')
@@ -19,8 +21,8 @@ ifeq ($(UNAME),Linux)
 	strip $@
 endif
 
-docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html nb/mandel.html
-	pandoc --syntax-definition=syn/apple.xml --mathjax --lua-filter=include-files.lua -s $< -o $@ --toc
+docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html nb/mandel.html $(DOC_SRC)
+	pandoc --syntax-definition=syn/apple.xml --mathjax --lua-filter=include-files.lua --lua-filter=include-code-files.lua -s $< -o $@ --toc
 
 nb/%.html: nb/%.ipynb
 	jupyter nbconvert $^ --to=html

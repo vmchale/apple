@@ -1,1 +1,1 @@
-[{m⟜(⋉)/x::𝟙 float; (=m)@.x}]
+[{m⟜(⋉)/x::Vec n float; (=m)@.x}]

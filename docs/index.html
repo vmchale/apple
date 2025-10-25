@@ -857,12 +857,12 @@ class="sourceCode apple"><code class="sourceCode apple"><span id="cb78-1"><a hre
 <span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>{</span>
 <span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a>  Σ ← [(+)/x];</span>
 <span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a>  n ⟜ ℝ(:xs);</span>
-<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a>  xbar ⟜ (Σ xs) % n; ybar ⟜ (Σ ys) % n;</span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a>  xbar ⟜ Σ xs % n; ybar ⟜ Σ ys % n;</span>
 <span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a>  xy ⟜ Σ ((*)`xs ys);</span>
 <span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a>  x2 ⟜ Σ ((^<span class="dv">2</span>)&#39;xs);</span>
-<span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a>  denom ⟜ (x2-n*(xbar^<span class="dv">2</span>));</span>
-<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a>  a ← ((ybar*x2)-(xbar*xy))%denom;</span>
-<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a>  b ← (xy-(n*xbar*ybar))%denom;</span>
+<span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a>  denom ⟜ x2-n*xbar^<span class="dv">2</span>;</span>
+<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a>  a ← (ybar*x2-xbar*xy)%denom;</span>
+<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a>  b ← (xy-n*xbar*ybar)%denom;</span>
 <span id="cb78-11"><a href="#cb78-11" aria-hidden="true" tabindex="-1"></a>  (a,b)</span>
 <span id="cb78-12"><a href="#cb78-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Note the <code>⟜</code> to prevent expressions from being
@@ -962,14 +962,14 @@ not appreciated in functional programming.</p>
 <p><a href="https://dl.acm.org/doi/10.1145/114054.114077">Hui, Iverson,
 and McDonnell</a> give the lovely enumeration of permutations in reduced
 form:</p>
-<div class="sourceCode" id="cb89"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>λn.</span>
-<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a>  fact ← [(*)/ₒ <span class="dv">1</span> (<span class="dv">1</span>..x)];</span>
-<span id="cb89-4"><a href="#cb89-4" aria-hidden="true" tabindex="-1"></a>  antibase ← λk.λbs. (-&gt;<span class="dv">1</span>)&#39;({: ((λqr.λb. {s ⟜ qr-&gt;<span class="dv">2</span>; (s|b, s/.b)}) Λₒ (<span class="dv">0</span>,k) bs));</span>
-<span id="cb89-5"><a href="#cb89-5" aria-hidden="true" tabindex="-1"></a>    bs ⟜ <span class="dv">1</span>..n;</span>
-<span id="cb89-6"><a href="#cb89-6" aria-hidden="true" tabindex="-1"></a>  (λk. ~(antibase k bs))&#39;⍳ (fact n-<span class="dv">1</span>)</span>
-<span id="cb89-7"><a href="#cb89-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb89" data-startFrom="3"><pre
+class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: source-line 2;"><span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a>λn.</span>
+<span id="cb89-4"><a href="#cb89-4" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb89-5"><a href="#cb89-5" aria-hidden="true" tabindex="-1"></a>  fact ← [(*)/ₒ <span class="dv">1</span> (<span class="dv">1</span>..x)];</span>
+<span id="cb89-6"><a href="#cb89-6" aria-hidden="true" tabindex="-1"></a>  antibase ← λk.λbs. (-&gt;<span class="dv">1</span>)&#39;({: ((λqr.λb. {s ⟜ qr-&gt;<span class="dv">2</span>; (s|b, s/.b)}) Λₒ (<span class="dv">0</span>,k) bs));</span>
+<span id="cb89-7"><a href="#cb89-7" aria-hidden="true" tabindex="-1"></a>    bs ⟜ <span class="dv">1</span>..n;</span>
+<span id="cb89-8"><a href="#cb89-8" aria-hidden="true" tabindex="-1"></a>  (λk. ~(antibase k bs))&#39;⍳ (fact n-<span class="dv">1</span>)</span>
+<span id="cb89-9"><a href="#cb89-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <pre><code> &gt; r 3
 Arr (6×3) [ [0, 0, 0]
           , [0, 1, 0]
@@ -992,9 +992,9 @@ class="math inline">\(y_n\)</span>, then its area is given by</p>
 class="math display">\[A=\frac{1}{2}\Biggl|(x_1y_2+x_2y_3+\cdots+x_ny_1)-(y_1x_2+y_2x_3+\cdots+y_nx_1)\Biggr|\]</span></p>
 <div class="sourceCode" id="cb92"><pre
 class="sourceCode apple"><code class="sourceCode apple"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>λxs.λys.</span>
-<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>    { sum ⇐ [(+)/x]</span>
-<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>    ; <span class="dv">0</span>.<span class="dv">5</span>*abs.(sum((*)`xs (<span class="dv">1</span>⊖ys)) - sum((*)`(<span class="dv">1</span>⊖xs) ys))</span>
-<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>  { sum ⇐ [(+)/x]</span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>  ; ½*abs.(sum((*)`xs (<span class="dv">1</span>⊖ys)) - sum((*)`(<span class="dv">1</span>⊖xs) ys))</span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
 <p>Note the array style: <code>⊖</code>, ` (zip), and fold are enough to
 eschew pointful definitions.</p>
 <h2 id="polynomials">Polynomials</h2>
@@ -1008,8 +1008,8 @@ Rule</a></h3>
 <p><span class="math inline">\(\displaystyle
 \frac{p(x)}{x-a}\)</span></p>
 <p>for <span class="math inline">\(p\)</span> a polynomial:</p>
-<div class="sourceCode" id="cb94"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a>λp.λa. {:((λs.λc. (a*s+c)) Λₒ <span class="dv">0</span> p)</span></code></pre></div>
+<div class="sourceCode" id="cb94" data-startFrom="3"><pre
+class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: source-line 2;"><span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a>λp.λa. {:((λs.λc. (a*s+c)) Λₒ <span class="dv">0</span> p)</span></code></pre></div>
 <h2 id="base-n-representation">Base-n representation</h2>
 <div class="sourceCode" id="cb95"><pre
 class="sourceCode apple"><code class="sourceCode apple"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>λa.λn. {log ← λb.λx. _.x%_.b;N ⟜ ⌊(log (ℝn) (ℝa))+<span class="dv">1</span>;~(ug. (λs. (s/.n, s|n)) a N)}</span></code></pre></div>
@@ -1018,14 +1018,14 @@ class="sourceCode apple"><code class="sourceCode apple"><span id="cb95-1"><a hre
 <span class="math inline">\(N\)</span> obervations on <span
 class="math inline">\(K\)</span> variables, we can compute the sample
 covariance matrix thusly:</p>
-<div class="sourceCode" id="cb96"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a>λxs.</span>
-<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a>  𝜇 ← [⸎n⟜ ℝ(:x); (+)/x%n]; rs ← 𝜇&#39;xs;</span>
-<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a>  nd ⟜ [(-x)&#39;y]`{<span class="dv">0</span>,<span class="dv">1</span>∘[<span class="dv">2</span>]} rs xs;</span>
-<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>  N ⟜ ℝ(:({.xs))-<span class="dv">1</span>;</span>
-<span id="cb96-6"><a href="#cb96-6" aria-hidden="true" tabindex="-1"></a>  nd [x⋅y%N]⊗ nd</span>
-<span id="cb96-7"><a href="#cb96-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb96" data-startFrom="2"><pre
+class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: source-line 1;"><span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>λxs.</span>
+<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a>  𝜇 ← [(+)/x%ℝ(:x)]; rs ← 𝜇&#39;xs;</span>
+<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>  nd ⟜ [(-x)&#39;y]`{<span class="dv">0</span>,<span class="dv">1</span>∘[<span class="dv">2</span>]} rs xs;</span>
+<span id="cb96-6"><a href="#cb96-6" aria-hidden="true" tabindex="-1"></a>  N ⟜ ℝ(:({.xs))-<span class="dv">1</span>;</span>
+<span id="cb96-7"><a href="#cb96-7" aria-hidden="true" tabindex="-1"></a>  nd [x⋅y%N]⊗ nd</span>
+<span id="cb96-8"><a href="#cb96-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>The array style gives a new take on the problem.</p>
 <h2 id="array">Array</h2>
 <p>To take all but the last 6 elements:</p>
@@ -1046,23 +1046,23 @@ Arr (5×2) [ [0.0, 1.0]
           , [6.0, 7.0]
           , [8.0, 9.0] ]</code></pre>
 <h3 id="matrix-vector-multiplication">Matrix-Vector Multiplication</h3>
-<div class="sourceCode" id="cb102"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a>λA.λx. (x⋅)`{<span class="dv">1</span>∘[<span class="dv">2</span>]} (A::<span class="dt">Arr</span> (i × j) <span class="dt">float</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb102" data-startFrom="2"><pre
+class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: source-line 1;"><span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>λA.λx. (x⋅)`{<span class="dv">1</span>∘[<span class="dv">2</span>]} (A::<span class="dt">Arr</span> (i × j) <span class="dt">float</span>)</span></code></pre></div>
 <h3 id="filter">Filter</h3>
 <div class="sourceCode" id="cb103"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>\p.\xs. (xs˙)&#39;p⩪xs</span></code></pre></div>
+class="sourceCode apple"><code class="sourceCode apple"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>\p.\xs. (p⩪xs)⊂xs</span></code></pre></div>
 <h2 id="argmax"><a
 href="https://numpy.org/doc/stable/reference/generated/numpy.argmax.html">Argmax</a></h2>
 <div class="sourceCode" id="cb104"><pre
 class="sourceCode apple"><code class="sourceCode apple"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a>[{m⟜(⋉)/x::<span class="dt">Vec</span> n <span class="dt">float</span>; (=m)@.x}]</span></code></pre></div>
 <h2 id="luhn-check"><a
 href="https://en.wikipedia.org/wiki/Luhn_algorithm">Luhn Check</a></h2>
-<div class="sourceCode" id="cb105"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a>λxs.</span>
-<span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a>  { digitSum ← [?x&gt;<span class="dv">10</span>,.x-<span class="dv">9</span>,.x]</span>
-<span id="cb105-3"><a href="#cb105-3" aria-hidden="true" tabindex="-1"></a>  ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (cyc. ⟨<span class="dv">2</span>,<span class="dv">1</span>::<span class="dt">int</span>⟩ <span class="dv">8</span>))</span>
-<span id="cb105-4"><a href="#cb105-4" aria-hidden="true" tabindex="-1"></a>  ; <span class="dv">10</span>-t|<span class="dv">10</span>=}.xs</span>
-<span id="cb105-5"><a href="#cb105-5" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<div class="sourceCode" id="cb105" data-startFrom="2"><pre
+class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: source-line 1;"><span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a>λxs.</span>
+<span id="cb105-3"><a href="#cb105-3" aria-hidden="true" tabindex="-1"></a>  { digitSum ← [?x&gt;<span class="dv">10</span>,.x-<span class="dv">9</span>,.x]</span>
+<span id="cb105-4"><a href="#cb105-4" aria-hidden="true" tabindex="-1"></a>  ; t ← (+)/ [digitSum (x*y)]`(~(}:xs)) (}: (<span class="cn">𝔸21</span>⊙<span class="dv">8</span>))</span>
+<span id="cb105-5"><a href="#cb105-5" aria-hidden="true" tabindex="-1"></a>  ; <span class="dv">10</span>-t|<span class="dv">10</span>=}.xs</span>
+<span id="cb105-6"><a href="#cb105-6" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
 <p>Note zipping with <code>cyc. ⟨2,1::int⟩ 8</code> to get alternating
 2, 1, … factors.</p>
 <h2 id="combinatorics">Combinatorics</h2>
@@ -1073,10 +1073,10 @@ href="https://www.whitman.edu/mathematics/cgt_online/book/section03.05.html">sat
 class="math display">\[C_n=\sum_{i=0}^{n-1}C_iC_{n-i-1}\]</span></p>
 <p>where <span class="math inline">\(C_0=1,C_1=1,C_2=2\)</span>.</p>
 <p>We can compute them in Apple with:</p>
-<div class="sourceCode" id="cb106"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a>{ Σ ← λl.λu.λf.(+)/(f&#39;l..u)</span>
-<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a>; 𝓕 ⟨<span class="dv">1</span>::<span class="dt">int</span>,<span class="dv">1</span>,<span class="dv">2</span>⟩ (λC. {n⟜ 𝓉C; Σ <span class="dv">0</span> (n-<span class="dv">1</span>) (λi. (C˙i*C˙(n-i-<span class="dv">1</span>)))})</span>
-<span id="cb106-3"><a href="#cb106-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb106" data-startFrom="3"><pre
+class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: source-line 2;"><span id="cb106-3"><a href="#cb106-3" aria-hidden="true" tabindex="-1"></a>{ Σ ⇐ λl.λu.λf.(+)/ₒ <span class="dv">0</span> (f&#39;l..u)</span>
+<span id="cb106-4"><a href="#cb106-4" aria-hidden="true" tabindex="-1"></a>; 𝓕 ⟨<span class="dv">1</span>::<span class="dt">int</span>,<span class="dv">1</span>,<span class="dv">2</span>⟩ (λC. {n⟜ 𝓉C; Σ <span class="dv">0</span> (n-<span class="dv">1</span>) (λi. (C˙i*C˙(n-i-<span class="dv">1</span>)))})</span>
+<span id="cb106-5"><a href="#cb106-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>The use of “strong induction” provides a new take on the problem
 where Python uses memoization.</p>
 <h3 id="a000081">A000081</h3>
@@ -1084,11 +1084,11 @@ where Python uses memoization.</p>
 class="math inline">\(n\)</span> nodes (this <a
 href="https://www.emis.de/journals/JIS/cayley.html">appears in chemistry
 (counting alkanes)</a>).</p>
-<div class="sourceCode" id="cb107"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a>{ sum ⇐ [(+)/x]; Σ ⇐ λl.λu.λf. (+)/(f&#39;l..u)</span>
-<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>; divisors ← λn. (λk. (n|k=<span class="dv">0</span>))§<span class="dv">1</span>..n</span>
-<span id="cb107-3"><a href="#cb107-3" aria-hidden="true" tabindex="-1"></a>; 𝓕 <span class="cn">𝔸01</span> (λas. {n⟜ 𝓉as; Σ <span class="dv">1</span> (n-<span class="dv">1</span>) (λj.sum ((λd. d*as˙d)&#39;(divisors j))*as˙(n-j))/.(n-<span class="dv">1</span>)})</span>
-<span id="cb107-4"><a href="#cb107-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb107" data-startFrom="2"><pre
+class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: source-line 1;"><span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>{ sum ⇐ [(+)/ₒ <span class="dv">0</span> x]; Σ ⇐ λl.λu.λf. sum (f&#39;l..u)</span>
+<span id="cb107-3"><a href="#cb107-3" aria-hidden="true" tabindex="-1"></a>; divisors ← λn. (λk. (n|k=<span class="dv">0</span>))§⍳ n</span>
+<span id="cb107-4"><a href="#cb107-4" aria-hidden="true" tabindex="-1"></a>; 𝓕 <span class="cn">𝔸01</span> (λas. {n⟜ 𝓉as; Σ <span class="dv">1</span> (n-<span class="dv">1</span>) (λj.sum ((λd. d*as˙d)&#39;(divisors j))*as˙(n-j))/.(n-<span class="dv">1</span>)})</span>
+<span id="cb107-5"><a href="#cb107-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Cf. Reinhard Zumkeller’s <a href="https://oeis.org/A000081">Haskell
 solution</a> by sharing/laziness.</p>
 <h2 id="elliptic-fourier-series">Elliptic Fourier Series</h2>
@@ -1122,33 +1122,31 @@ and Giardnia</a>, the coefficients are given by:</p>
 <p><span class="math display">\[ \xi_0,~\delta_0 = 0 \]</span></p>
 <p>In Apple we can generate the first <code>N</code> coefficients
 alongside the offsets with:</p>
-<div class="sourceCode" id="cb108"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a>λxs.λys.λN.</span>
-<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a>  { sum ← [(+)/x]</span>
-<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a>  ; tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]</span>
-<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>  ; dxs ⟜ Δ xs; dys ⟜ Δ ys</span>
-<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a>  ; dts ⟜ [√(x^<span class="dv">2</span>+y^<span class="dv">2</span>)]`dxs dys</span>
-<span id="cb108-6"><a href="#cb108-6" aria-hidden="true" tabindex="-1"></a>  ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)</span>
-<span id="cb108-7"><a href="#cb108-7" aria-hidden="true" tabindex="-1"></a>  ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λₒ <span class="dv">0</span> dts; T ⟜}. pts</span>
-<span id="cb108-8"><a href="#cb108-8" aria-hidden="true" tabindex="-1"></a>  ; coeffs ← λn.</span>
-<span id="cb108-9"><a href="#cb108-9" aria-hidden="true" tabindex="-1"></a>    { n ⟜ ℝn; k ⟜ <span class="dv">2</span>*n*𝜋%T</span>
-<span id="cb108-10"><a href="#cb108-10" aria-hidden="true" tabindex="-1"></a>    ; c ⟜ T%(<span class="dv">2</span>*n^<span class="dv">2</span>*𝜋^<span class="dv">2</span>)</span>
-<span id="cb108-11"><a href="#cb108-11" aria-hidden="true" tabindex="-1"></a>    ; cosDiffs ⟜ (-)\~([cos.(k*x)]&#39;pts)</span>
-<span id="cb108-12"><a href="#cb108-12" aria-hidden="true" tabindex="-1"></a>    ; sinDiffs ⟜ (-)\~([sin.(k*x)]&#39;pts)</span>
-<span id="cb108-13"><a href="#cb108-13" aria-hidden="true" tabindex="-1"></a>    ; aₙ ← c*sum ((*)`dxss cosDiffs)</span>
-<span id="cb108-14"><a href="#cb108-14" aria-hidden="true" tabindex="-1"></a>    ; cₙ ← c*sum ((*)`dyss cosDiffs)</span>
-<span id="cb108-15"><a href="#cb108-15" aria-hidden="true" tabindex="-1"></a>    ; bₙ ← c*sum ((*)`dxss sinDiffs)</span>
-<span id="cb108-16"><a href="#cb108-16" aria-hidden="true" tabindex="-1"></a>    ; dₙ ← c*sum ((*)`dyss sinDiffs)</span>
-<span id="cb108-17"><a href="#cb108-17" aria-hidden="true" tabindex="-1"></a>    ; (aₙ,bₙ,cₙ,dₙ)</span>
-<span id="cb108-18"><a href="#cb108-18" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb108-19"><a href="#cb108-19" aria-hidden="true" tabindex="-1"></a>  ; dtss ⟜ (-)\~((^<span class="dv">2</span>)&#39;pts)</span>
-<span id="cb108-20"><a href="#cb108-20" aria-hidden="true" tabindex="-1"></a>  ; ppts ⟜ {: pts</span>
-<span id="cb108-21"><a href="#cb108-21" aria-hidden="true" tabindex="-1"></a>  ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)</span>
-<span id="cb108-22"><a href="#cb108-22" aria-hidden="true" tabindex="-1"></a>  ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)</span>
-<span id="cb108-23"><a href="#cb108-23" aria-hidden="true" tabindex="-1"></a>  ; A ← (<span class="dv">0</span>.<span class="dv">5</span>*sum ((*)`((%)`dxs dts) dtss) + sum ((*)`𝜉 dts))%T</span>
-<span id="cb108-24"><a href="#cb108-24" aria-hidden="true" tabindex="-1"></a>  ; C ← (<span class="dv">0</span>.<span class="dv">5</span>*sum ((*)`((%)`dys dts) dtss) + sum ((*)`𝛿 dts))%T</span>
-<span id="cb108-25"><a href="#cb108-25" aria-hidden="true" tabindex="-1"></a>  ; (coeffs&#39;(<span class="dv">1</span>..N),A,C)</span>
-<span id="cb108-26"><a href="#cb108-26" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<pre><code>λxs.λys.λN.
+  { tieSelf ← [({.x)⊳x]; Δ ← [(-)\~(tieSelf x)]
+  ; dxs ⟜ Δ xs; dys ⟜ Δ ys
+  ; dts ⟜ [√(x^2+y^2)]`dxs dys
+  ; dxss ⟜ ((%)`dxs dts); dyss ⟜ ((%)`dys dts)
+  ; pxs ← (+)Λ dxs; pys ← (+)Λ dys; pts ⟜ (+)Λₒ 0 dts; T ⟜}. pts
+  ; coeffs ← λn.
+    { n ⟜ ℝn; k ⟜ 2*n*𝜋%T
+    ; c ⟜ T%(2*n^2*𝜋^2)
+    ; cosDiffs ⟜ (-)\~(cos. ∴ (k*)&#39;pts)
+    ; sinDiffs ⟜ (-)\~(sin. ∴ (k*)&#39;pts)
+    ; aₙ ← c*dxss⋅cosDiffs
+    ; cₙ ← c*dyss⋅cosDiffs
+    ; bₙ ← c*dxss⋅sinDiffs
+    ; dₙ ← c*dyss⋅sinDiffs
+    ; (aₙ,bₙ,cₙ,dₙ)
+    }
+  ; dtss ⟜ (-)\~((^2)&#39;pts)
+  ; ppts ⟜ {: pts
+  ; 𝜉 ← (-)`pxs ((*)`((%)`dxs dts) ppts)
+  ; 𝛿 ← (-)`pys ((*)`((%)`dys dts) ppts)
+  ; A ← (½*((%)`dxs dts)⋅dtss + 𝜉⋅dts)%T
+  ; C ← (½*((%)`dys dts)⋅dtss + 𝛿⋅dts)%T
+  ; (coeffs&#39;1..N,A,C)
+  }</code></pre>
 <p>Note the array style, e.g. <code>(-)\~</code> to define successive
 differences on an array rather than definining pointfully.</p>
 <h2 id="geography">Geography</h2>
@@ -1157,23 +1155,24 @@ href="https://mathworld.wolfram.com/AlbersEqual-AreaConicProjection.html">Albers
 <p>Let 𝜆₀, 𝜑₀ be the coördinates of the origin, 𝜑₁, 𝜑₂ standard
 parallels, <code>φs</code> and <code>lambdas</code> the longitudes and
 latitudes, respectively.</p>
-<div class="sourceCode" id="cb109"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a>\𝜆₀.\𝜑₀.\𝜑₁.\𝜑₂.\φs.\lambdas.</span>
-<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb109-3"><a href="#cb109-3" aria-hidden="true" tabindex="-1"></a>  𝑛 ⟜ (sin. 𝜑₁+sin.𝜑₂)%<span class="dv">2</span>;</span>
-<span id="cb109-4"><a href="#cb109-4" aria-hidden="true" tabindex="-1"></a>  𝐶 ⟜ (cos. 𝜑₁)^<span class="dv">2</span>+<span class="dv">2</span>*𝑛*sin. 𝜑₁;</span>
-<span id="cb109-5"><a href="#cb109-5" aria-hidden="true" tabindex="-1"></a>  𝜌₀ ⟜ √(𝐶-<span class="dv">2</span>*𝑛*sin. 𝜑₀)%𝑛;</span>
-<span id="cb109-6"><a href="#cb109-6" aria-hidden="true" tabindex="-1"></a>  albers ← \𝜑.\𝜆.</span>
-<span id="cb109-7"><a href="#cb109-7" aria-hidden="true" tabindex="-1"></a>    {</span>
-<span id="cb109-8"><a href="#cb109-8" aria-hidden="true" tabindex="-1"></a>      𝜃 ⟜ 𝑛*(𝜆-𝜆₀);</span>
-<span id="cb109-9"><a href="#cb109-9" aria-hidden="true" tabindex="-1"></a>      𝜌 ⟜ √(𝐶-<span class="dv">2</span>*𝑛*sin. 𝜑)%𝑛;</span>
-<span id="cb109-10"><a href="#cb109-10" aria-hidden="true" tabindex="-1"></a>      (𝜌*sin. 𝜃, 𝜌₀-𝜌*cos. 𝜃)</span>
-<span id="cb109-11"><a href="#cb109-11" aria-hidden="true" tabindex="-1"></a>    };</span>
-<span id="cb109-12"><a href="#cb109-12" aria-hidden="true" tabindex="-1"></a>  albers`φs lambdas</span>
-<span id="cb109-13"><a href="#cb109-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb109" data-startFrom="2"><pre
+class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: source-line 1;"><span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a>\𝜆₀.\𝜑₀.\𝜑₁.\𝜑₂.\φs.\lambdas.</span>
+<span id="cb109-3"><a href="#cb109-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb109-4"><a href="#cb109-4" aria-hidden="true" tabindex="-1"></a>  𝑛 ⟜ (sin. 𝜑₁+sin.𝜑₂)%<span class="dv">2</span>;</span>
+<span id="cb109-5"><a href="#cb109-5" aria-hidden="true" tabindex="-1"></a>  𝐶 ⟜ (cos. 𝜑₁)^<span class="dv">2</span>+<span class="dv">2</span>*𝑛*sin. 𝜑₁;</span>
+<span id="cb109-6"><a href="#cb109-6" aria-hidden="true" tabindex="-1"></a>  𝜌₀ ⟜ √(𝐶-<span class="dv">2</span>*𝑛*sin. 𝜑₀)%𝑛;</span>
+<span id="cb109-7"><a href="#cb109-7" aria-hidden="true" tabindex="-1"></a>  albers ← \𝜑.\𝜆.</span>
+<span id="cb109-8"><a href="#cb109-8" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb109-9"><a href="#cb109-9" aria-hidden="true" tabindex="-1"></a>      𝜃 ⟜ 𝑛*(𝜆-𝜆₀);</span>
+<span id="cb109-10"><a href="#cb109-10" aria-hidden="true" tabindex="-1"></a>      𝜌 ⟜ √(𝐶-<span class="dv">2</span>*𝑛*sin. 𝜑)%𝑛;</span>
+<span id="cb109-11"><a href="#cb109-11" aria-hidden="true" tabindex="-1"></a>      (𝜌*sin. 𝜃, 𝜌₀-𝜌*cos. 𝜃)</span>
+<span id="cb109-12"><a href="#cb109-12" aria-hidden="true" tabindex="-1"></a>    };</span>
+<span id="cb109-13"><a href="#cb109-13" aria-hidden="true" tabindex="-1"></a>  albers`φs lambdas</span>
+<span id="cb109-14"><a href="#cb109-14" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <h2 id="number-theory">Number Theory</h2>
 <h3 id="primality-check">Primality Check</h3>
-<pre><code>λn.¬((∨)/ₒ #f ([(n|x)=0]&#39;2..(⌊(√(ℝn)))))</code></pre>
+<div class="sourceCode" id="cb110"><pre
+class="sourceCode apple"><code class="sourceCode apple"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a>λn.¬((∨)/ₒ #f ([(n|x)=<span class="dv">0</span>]&#39;<span class="dv">2</span>..(⌊(√(ℝn)))))</span></code></pre></div>
 <h3 id="radical">Radical</h3>
 <p>Compute the radical of an integer <span
 class="math inline">\(n\)</span>, <span
@@ -1181,12 +1180,13 @@ class="math inline">\(\displaystyle \prod_{p|n} p\)</span></p>
 <div class="sourceCode" id="cb111"><pre
 class="sourceCode apple"><code class="sourceCode apple"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>λn.</span>
 <span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>  { ni ⟜ ⌊(√(ℝn))</span>
-<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a>  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=<span class="dv">0</span>]&#39;<span class="dv">2</span>..(⌊(√(ℝn))))); pf ⇐ (isPrime #.)</span>
-<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a>  ; pps ⟜  (λk. (n|k=<span class="dv">0</span>)) #. <span class="dv">2</span>..ni</span>
-<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a>  ; ?ni^<span class="dv">2</span>=n</span>
-<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a>    ,.((*)/ₒ <span class="dv">1</span> (pf (pps⧺(n/.)&#39;}:?pps)))</span>
-<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a>    ,.((*)/ₒ <span class="dv">1</span> (pf (n ⊲ pps⧺((n/.)&#39;pps))))</span>
-<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a>  ; isPrime ← λn.¬((∨)/ₒ #f ([n|x=<span class="dv">0</span>]&#39;<span class="dv">2</span>..(⌊(√(ℝn)))))</span>
+<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a>    ; pf ⇐ (isPrime #.)</span>
+<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a>  ; pps ⟜  (λk. (n|k=<span class="dv">0</span>)) #. <span class="dv">2</span>..ni</span>
+<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a>  ; ?ni^<span class="dv">2</span>=n</span>
+<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a>    ,.((*)/ₒ <span class="dv">1</span> (pf (pps⧺(n/.)&#39;}:?pps)))</span>
+<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a>    ,.((*)/ₒ <span class="dv">1</span> (pf (n ⊲ pps⧺(n/.)&#39;pps)))</span>
+<span id="cb111-9"><a href="#cb111-9" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
 <p>This shows the awkwardness of an array style.</p>
 <h2 id="python-extension-module">Python Extension Module</h2>
 <h3 id="sample-normal-distribution">Sample Normal Distribution</h3>
@@ -39592,39 +39592,48 @@ class="sourceCode apple"><code class="sourceCode apple"><span id="cb114-1"><a hr
 <h3 id="cdf-for-students-t-distribution">CDF for Student’s
 t-distribution</h3>
 <div class="sourceCode" id="cb115"><pre
-class="sourceCode apple"><code class="sourceCode apple"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a>λx.λν.</span>
+class="sourceCode apple"><code class="sourceCode apple"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a>λn.λm.λx.</span>
 <span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a>  gammaln ← λz. {</span>
-<span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a>    zz ⟜ z-<span class="dv">1</span>;</span>
-<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a>    c0 ← <span class="dv">0</span>.<span class="dv">999999999999997092</span>;</span>
-<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a>    𝛾 ← <span class="dv">607</span>%<span class="dv">128</span>;</span>
-<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a>    coeffs ← ⟨ <span class="dv">57</span>.<span class="dv">1562356658629235</span></span>
-<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">_59</span>.<span class="dv">5979603554754912</span></span>
-<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">14</span>.<span class="dv">1360979747417471</span></span>
-<span id="cb115-10"><a href="#cb115-10" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">_0</span>.<span class="dv">491913816097620199</span></span>
-<span id="cb115-11"><a href="#cb115-11" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">0</span>.<span class="dv">339946499848118887</span>e-<span class="dv">4</span></span>
-<span id="cb115-12"><a href="#cb115-12" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">0</span>.<span class="dv">465236289270485756</span>e-<span class="dv">4</span></span>
-<span id="cb115-13"><a href="#cb115-13" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">_0</span>.<span class="dv">983744753048795646</span>e-<span class="dv">4</span></span>
-<span id="cb115-14"><a href="#cb115-14" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">0</span>.<span class="dv">158088703224912494</span>e-<span class="dv">3</span></span>
-<span id="cb115-15"><a href="#cb115-15" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">_0</span>.<span class="dv">210264441724104883</span>e-<span class="dv">3</span></span>
-<span id="cb115-16"><a href="#cb115-16" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">0</span>.<span class="dv">217439618115212643</span>e-<span class="dv">3</span></span>
-<span id="cb115-17"><a href="#cb115-17" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">_0</span>.<span class="dv">164318106536763890</span>e-<span class="dv">3</span></span>
-<span id="cb115-18"><a href="#cb115-18" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">0</span>.<span class="dv">844182239838527433</span>e-<span class="dv">4</span></span>
-<span id="cb115-19"><a href="#cb115-19" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">_0</span>.<span class="dv">261908384015814087</span>e-<span class="dv">4</span></span>
-<span id="cb115-20"><a href="#cb115-20" aria-hidden="true" tabindex="-1"></a>             , <span class="dv">0</span>.<span class="dv">368991826595316234</span>e-<span class="dv">5</span></span>
-<span id="cb115-21"><a href="#cb115-21" aria-hidden="true" tabindex="-1"></a>             ⟩;</span>
-<span id="cb115-22"><a href="#cb115-22" aria-hidden="true" tabindex="-1"></a>    ss ← (+)/ ([y%(zz+<span class="bu">itof</span> x)]`(<span class="dv">1</span>..<span class="dv">14</span>) coeffs);</span>
-<span id="cb115-23"><a href="#cb115-23" aria-hidden="true" tabindex="-1"></a>    (((zz+<span class="dv">0</span>.<span class="dv">5</span>)*_.(zz+𝛾+<span class="dv">0</span>.<span class="dv">5</span>))-(zz+𝛾+<span class="dv">0</span>.<span class="dv">5</span>))+_.((√(<span class="dv">2</span>*𝜋))*(c0+ss))</span>
-<span id="cb115-24"><a href="#cb115-24" aria-hidden="true" tabindex="-1"></a>  };</span>
-<span id="cb115-25"><a href="#cb115-25" aria-hidden="true" tabindex="-1"></a>  Γ ⟜ [<span class="bu">e:</span>(gammaln x)];</span>
-<span id="cb115-26"><a href="#cb115-26" aria-hidden="true" tabindex="-1"></a>  f21 ← λa0.λa1.λb.λz. {</span>
-<span id="cb115-27"><a href="#cb115-27" aria-hidden="true" tabindex="-1"></a>    rf ← [(*)/ₒ <span class="dv">1</span> (𝒻 x (x+y-<span class="dv">1</span>) (⌊y))]; fact ← rf <span class="dv">1</span>;</span>
-<span id="cb115-28"><a href="#cb115-28" aria-hidden="true" tabindex="-1"></a>    Σ ← λN.λa. (+)/ₒ <span class="dv">0</span> (a&#39;⍳N);</span>
-<span id="cb115-29"><a href="#cb115-29" aria-hidden="true" tabindex="-1"></a>    term ← λn. {nn⟜ℝ n; rf a0 nn*(rf a1 nn%rf b nn)*(z^n%fact nn)};</span>
-<span id="cb115-30"><a href="#cb115-30" aria-hidden="true" tabindex="-1"></a>    Σ <span class="dv">50</span> term</span>
-<span id="cb115-31"><a href="#cb115-31" aria-hidden="true" tabindex="-1"></a>  };</span>
-<span id="cb115-32"><a href="#cb115-32" aria-hidden="true" tabindex="-1"></a>  <span class="dv">0</span>.<span class="dv">5</span>+x*Γ(<span class="dv">0</span>.<span class="dv">5</span>*(ν+<span class="dv">1</span>))%((√(𝜋*ν))*Γ(ν*<span class="dv">0</span>.<span class="dv">5</span>))*f21 <span class="dv">0</span>.<span class="dv">5</span> ((ν+<span class="dv">1</span>)%<span class="dv">2</span>) <span class="dv">1</span>.<span class="dv">5</span> (_(x^<span class="dv">2</span>%ν))</span>
-<span id="cb115-33"><a href="#cb115-33" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a>  incΒ ← λz.λa.λb.</span>
+<span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a>      f21 ← λa0.λa1.λb.λz.</span>
+<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a>          rf ← [(*)/ₒ <span class="dv">1</span> (𝒻 x (x+y-<span class="dv">1</span>) (⌊y))]; fact ← rf <span class="dv">1</span>;</span>
+<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>          Σ ← λlb.λub.λa. (+)/ₒ <span class="dv">0</span> (a&#39;lb..ub);</span>
+<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a>          Σ <span class="dv">0</span> <span class="dv">30</span> (λn. {nn⟜ℝ n; (rf a0 nn*(rf a1 nn)%rf b nn)*(z^n%fact nn)})</span>
+<span id="cb115-10"><a href="#cb115-10" aria-hidden="true" tabindex="-1"></a>        };</span>
+<span id="cb115-11"><a href="#cb115-11" aria-hidden="true" tabindex="-1"></a>      (z**a%a)*f21 a (<span class="dv">1</span>-b) (a+<span class="dv">1</span>) z</span>
+<span id="cb115-12"><a href="#cb115-12" aria-hidden="true" tabindex="-1"></a>    };</span>
+<span id="cb115-13"><a href="#cb115-13" aria-hidden="true" tabindex="-1"></a>  Β ← λx.λy.</span>
+<span id="cb115-14"><a href="#cb115-14" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb115-15"><a href="#cb115-15" aria-hidden="true" tabindex="-1"></a>      gammaln ⟜ λz.</span>
+<span id="cb115-16"><a href="#cb115-16" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb115-17"><a href="#cb115-17" aria-hidden="true" tabindex="-1"></a>          zz ⟜ z-<span class="dv">1</span>;</span>
+<span id="cb115-18"><a href="#cb115-18" aria-hidden="true" tabindex="-1"></a>          c0 ← <span class="dv">0</span>.<span class="dv">999999999999997092</span>;</span>
+<span id="cb115-19"><a href="#cb115-19" aria-hidden="true" tabindex="-1"></a>          𝛾 ← <span class="dv">607</span>%<span class="dv">128</span>;</span>
+<span id="cb115-20"><a href="#cb115-20" aria-hidden="true" tabindex="-1"></a>          coeffs ← ⟨ <span class="dv">57</span>.<span class="dv">1562356658629235</span></span>
+<span id="cb115-21"><a href="#cb115-21" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_59</span>.<span class="dv">5979603554754912</span></span>
+<span id="cb115-22"><a href="#cb115-22" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">14</span>.<span class="dv">1360979747417471</span></span>
+<span id="cb115-23"><a href="#cb115-23" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">491913816097620199</span></span>
+<span id="cb115-24"><a href="#cb115-24" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">339946499848118887</span>e-<span class="dv">4</span></span>
+<span id="cb115-25"><a href="#cb115-25" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">465236289270485756</span>e-<span class="dv">4</span></span>
+<span id="cb115-26"><a href="#cb115-26" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">983744753048795646</span>e-<span class="dv">4</span></span>
+<span id="cb115-27"><a href="#cb115-27" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">158088703224912494</span>e-<span class="dv">3</span></span>
+<span id="cb115-28"><a href="#cb115-28" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">210264441724104883</span>e-<span class="dv">3</span></span>
+<span id="cb115-29"><a href="#cb115-29" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">217439618115212643</span>e-<span class="dv">3</span></span>
+<span id="cb115-30"><a href="#cb115-30" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">164318106536763890</span>e-<span class="dv">3</span></span>
+<span id="cb115-31"><a href="#cb115-31" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">844182239838527433</span>e-<span class="dv">4</span></span>
+<span id="cb115-32"><a href="#cb115-32" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">261908384015814087</span>e-<span class="dv">4</span></span>
+<span id="cb115-33"><a href="#cb115-33" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">368991826595316234</span>e-<span class="dv">5</span></span>
+<span id="cb115-34"><a href="#cb115-34" aria-hidden="true" tabindex="-1"></a>                   ⟩;</span>
+<span id="cb115-35"><a href="#cb115-35" aria-hidden="true" tabindex="-1"></a>          ss ← (+)/ ([y%(zz+ℝ x)]`(<span class="dv">1</span>..<span class="dv">14</span>) coeffs);</span>
+<span id="cb115-36"><a href="#cb115-36" aria-hidden="true" tabindex="-1"></a>          (((zz+<span class="dv">0</span>.<span class="dv">5</span>)*_.(zz+𝛾+<span class="dv">0</span>.<span class="dv">5</span>))-(zz+𝛾+<span class="dv">0</span>.<span class="dv">5</span>))+_.((√(<span class="dv">2</span>*𝜋))*(c0+ss))</span>
+<span id="cb115-37"><a href="#cb115-37" aria-hidden="true" tabindex="-1"></a>        };</span>
+<span id="cb115-38"><a href="#cb115-38" aria-hidden="true" tabindex="-1"></a>      <span class="bu">e:</span>(gammaln x+gammaln y-gammaln (x+y))</span>
+<span id="cb115-39"><a href="#cb115-39" aria-hidden="true" tabindex="-1"></a>    };</span>
+<span id="cb115-40"><a href="#cb115-40" aria-hidden="true" tabindex="-1"></a>  I ← λz.λa.λb. incΒ z a b%Β a b;</span>
+<span id="cb115-41"><a href="#cb115-41" aria-hidden="true" tabindex="-1"></a>  I ((n*x)%(m+n*x)) (n%<span class="dv">2</span>) (m%<span class="dv">2</span>)</span>
+<span id="cb115-42"><a href="#cb115-42" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>This uses the <a
 href="https://mathworld.wolfram.com/LanczosApproximation.html">Lanczos
 approximation</a> to compute the gamma function; it is not built-in to
@@ -39640,42 +39649,41 @@ class="sourceCode apple"><code class="sourceCode apple"><span id="cb116-1"><a hr
 <span id="cb116-5"><a href="#cb116-5" aria-hidden="true" tabindex="-1"></a>      f21 ← λa0.λa1.λb.λz.</span>
 <span id="cb116-6"><a href="#cb116-6" aria-hidden="true" tabindex="-1"></a>        {</span>
 <span id="cb116-7"><a href="#cb116-7" aria-hidden="true" tabindex="-1"></a>          rf ← [(*)/ₒ <span class="dv">1</span> (𝒻 x (x+y-<span class="dv">1</span>) (⌊y))]; fact ← rf <span class="dv">1</span>;</span>
-<span id="cb116-8"><a href="#cb116-8" aria-hidden="true" tabindex="-1"></a>          Σ ← λN.λa. (+)/ₒ <span class="dv">0</span> (a&#39;⍳N);</span>
-<span id="cb116-9"><a href="#cb116-9" aria-hidden="true" tabindex="-1"></a>          term ← λn. {nn⟜ℝ n; ((rf a0 nn)*(rf a1 nn)%(rf b nn))*((z^n)%(fact nn))};</span>
-<span id="cb116-10"><a href="#cb116-10" aria-hidden="true" tabindex="-1"></a>          Σ <span class="dv">30</span> term</span>
-<span id="cb116-11"><a href="#cb116-11" aria-hidden="true" tabindex="-1"></a>        };</span>
-<span id="cb116-12"><a href="#cb116-12" aria-hidden="true" tabindex="-1"></a>      ((z**a)%a)*f21 a (<span class="dv">1</span>-b) (a+<span class="dv">1</span>) z</span>
-<span id="cb116-13"><a href="#cb116-13" aria-hidden="true" tabindex="-1"></a>    };</span>
-<span id="cb116-14"><a href="#cb116-14" aria-hidden="true" tabindex="-1"></a>  Β ← λx.λy.</span>
-<span id="cb116-15"><a href="#cb116-15" aria-hidden="true" tabindex="-1"></a>    {</span>
-<span id="cb116-16"><a href="#cb116-16" aria-hidden="true" tabindex="-1"></a>      gammaln ⟜ λz.</span>
-<span id="cb116-17"><a href="#cb116-17" aria-hidden="true" tabindex="-1"></a>        {</span>
-<span id="cb116-18"><a href="#cb116-18" aria-hidden="true" tabindex="-1"></a>          zz ⟜ z-<span class="dv">1</span>;</span>
-<span id="cb116-19"><a href="#cb116-19" aria-hidden="true" tabindex="-1"></a>          c0 ← <span class="dv">0</span>.<span class="dv">999999999999997092</span>;</span>
-<span id="cb116-20"><a href="#cb116-20" aria-hidden="true" tabindex="-1"></a>          𝛾 ← <span class="dv">607</span>%<span class="dv">128</span>;</span>
-<span id="cb116-21"><a href="#cb116-21" aria-hidden="true" tabindex="-1"></a>          coeffs ← ⟨ <span class="dv">57</span>.<span class="dv">1562356658629235</span></span>
-<span id="cb116-22"><a href="#cb116-22" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_59</span>.<span class="dv">5979603554754912</span></span>
-<span id="cb116-23"><a href="#cb116-23" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">14</span>.<span class="dv">1360979747417471</span></span>
-<span id="cb116-24"><a href="#cb116-24" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">491913816097620199</span></span>
-<span id="cb116-25"><a href="#cb116-25" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">339946499848118887</span>e-<span class="dv">4</span></span>
-<span id="cb116-26"><a href="#cb116-26" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">465236289270485756</span>e-<span class="dv">4</span></span>
-<span id="cb116-27"><a href="#cb116-27" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">983744753048795646</span>e-<span class="dv">4</span></span>
-<span id="cb116-28"><a href="#cb116-28" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">158088703224912494</span>e-<span class="dv">3</span></span>
-<span id="cb116-29"><a href="#cb116-29" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">210264441724104883</span>e-<span class="dv">3</span></span>
-<span id="cb116-30"><a href="#cb116-30" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">217439618115212643</span>e-<span class="dv">3</span></span>
-<span id="cb116-31"><a href="#cb116-31" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">164318106536763890</span>e-<span class="dv">3</span></span>
-<span id="cb116-32"><a href="#cb116-32" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">844182239838527433</span>e-<span class="dv">4</span></span>
-<span id="cb116-33"><a href="#cb116-33" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">261908384015814087</span>e-<span class="dv">4</span></span>
-<span id="cb116-34"><a href="#cb116-34" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">368991826595316234</span>e-<span class="dv">5</span></span>
-<span id="cb116-35"><a href="#cb116-35" aria-hidden="true" tabindex="-1"></a>                   ⟩;</span>
-<span id="cb116-36"><a href="#cb116-36" aria-hidden="true" tabindex="-1"></a>          ss ← (+)/ ([y%(zz+ℝ x)]`(<span class="dv">1</span>..<span class="dv">14</span>) coeffs);</span>
-<span id="cb116-37"><a href="#cb116-37" aria-hidden="true" tabindex="-1"></a>          (((zz+<span class="dv">0</span>.<span class="dv">5</span>)*_.(zz+𝛾+<span class="dv">0</span>.<span class="dv">5</span>))-(zz+𝛾+<span class="dv">0</span>.<span class="dv">5</span>))+_.((√(<span class="dv">2</span>*𝜋))*(c0+ss))</span>
-<span id="cb116-38"><a href="#cb116-38" aria-hidden="true" tabindex="-1"></a>        };</span>
-<span id="cb116-39"><a href="#cb116-39" aria-hidden="true" tabindex="-1"></a>      <span class="bu">e:</span>(gammaln x+gammaln y-gammaln (x+y))</span>
-<span id="cb116-40"><a href="#cb116-40" aria-hidden="true" tabindex="-1"></a>    };</span>
-<span id="cb116-41"><a href="#cb116-41" aria-hidden="true" tabindex="-1"></a>  I ← λz.λa.λb. incΒ z a b%Β a b;</span>
-<span id="cb116-42"><a href="#cb116-42" aria-hidden="true" tabindex="-1"></a>  I ((n*x)%(m+n*x)) (n%<span class="dv">2</span>) (m%<span class="dv">2</span>)</span>
-<span id="cb116-43"><a href="#cb116-43" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb116-8"><a href="#cb116-8" aria-hidden="true" tabindex="-1"></a>          Σ ← λlb.λub.λa. (+)/ₒ <span class="dv">0</span> (a&#39;lb..ub);</span>
+<span id="cb116-9"><a href="#cb116-9" aria-hidden="true" tabindex="-1"></a>          Σ <span class="dv">0</span> <span class="dv">30</span> (λn. {nn⟜ℝ n; (rf a0 nn*(rf a1 nn)%rf b nn)*(z^n%fact nn)})</span>
+<span id="cb116-10"><a href="#cb116-10" aria-hidden="true" tabindex="-1"></a>        };</span>
+<span id="cb116-11"><a href="#cb116-11" aria-hidden="true" tabindex="-1"></a>      (z**a%a)*f21 a (<span class="dv">1</span>-b) (a+<span class="dv">1</span>) z</span>
+<span id="cb116-12"><a href="#cb116-12" aria-hidden="true" tabindex="-1"></a>    };</span>
+<span id="cb116-13"><a href="#cb116-13" aria-hidden="true" tabindex="-1"></a>  Β ← λx.λy.</span>
+<span id="cb116-14"><a href="#cb116-14" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb116-15"><a href="#cb116-15" aria-hidden="true" tabindex="-1"></a>      gammaln ⟜ λz.</span>
+<span id="cb116-16"><a href="#cb116-16" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb116-17"><a href="#cb116-17" aria-hidden="true" tabindex="-1"></a>          zz ⟜ z-<span class="dv">1</span>;</span>
+<span id="cb116-18"><a href="#cb116-18" aria-hidden="true" tabindex="-1"></a>          c0 ← <span class="dv">0</span>.<span class="dv">999999999999997092</span>;</span>
+<span id="cb116-19"><a href="#cb116-19" aria-hidden="true" tabindex="-1"></a>          𝛾 ← <span class="dv">607</span>%<span class="dv">128</span>;</span>
+<span id="cb116-20"><a href="#cb116-20" aria-hidden="true" tabindex="-1"></a>          coeffs ← ⟨ <span class="dv">57</span>.<span class="dv">1562356658629235</span></span>
+<span id="cb116-21"><a href="#cb116-21" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_59</span>.<span class="dv">5979603554754912</span></span>
+<span id="cb116-22"><a href="#cb116-22" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">14</span>.<span class="dv">1360979747417471</span></span>
+<span id="cb116-23"><a href="#cb116-23" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">491913816097620199</span></span>
+<span id="cb116-24"><a href="#cb116-24" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">339946499848118887</span>e-<span class="dv">4</span></span>
+<span id="cb116-25"><a href="#cb116-25" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">465236289270485756</span>e-<span class="dv">4</span></span>
+<span id="cb116-26"><a href="#cb116-26" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">983744753048795646</span>e-<span class="dv">4</span></span>
+<span id="cb116-27"><a href="#cb116-27" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">158088703224912494</span>e-<span class="dv">3</span></span>
+<span id="cb116-28"><a href="#cb116-28" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">210264441724104883</span>e-<span class="dv">3</span></span>
+<span id="cb116-29"><a href="#cb116-29" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">217439618115212643</span>e-<span class="dv">3</span></span>
+<span id="cb116-30"><a href="#cb116-30" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">164318106536763890</span>e-<span class="dv">3</span></span>
+<span id="cb116-31"><a href="#cb116-31" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">844182239838527433</span>e-<span class="dv">4</span></span>
+<span id="cb116-32"><a href="#cb116-32" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">_0</span>.<span class="dv">261908384015814087</span>e-<span class="dv">4</span></span>
+<span id="cb116-33"><a href="#cb116-33" aria-hidden="true" tabindex="-1"></a>                   , <span class="dv">0</span>.<span class="dv">368991826595316234</span>e-<span class="dv">5</span></span>
+<span id="cb116-34"><a href="#cb116-34" aria-hidden="true" tabindex="-1"></a>                   ⟩;</span>
+<span id="cb116-35"><a href="#cb116-35" aria-hidden="true" tabindex="-1"></a>          ss ← (+)/ ([y%(zz+ℝ x)]`(<span class="dv">1</span>..<span class="dv">14</span>) coeffs);</span>
+<span id="cb116-36"><a href="#cb116-36" aria-hidden="true" tabindex="-1"></a>          (((zz+<span class="dv">0</span>.<span class="dv">5</span>)*_.(zz+𝛾+<span class="dv">0</span>.<span class="dv">5</span>))-(zz+𝛾+<span class="dv">0</span>.<span class="dv">5</span>))+_.((√(<span class="dv">2</span>*𝜋))*(c0+ss))</span>
+<span id="cb116-37"><a href="#cb116-37" aria-hidden="true" tabindex="-1"></a>        };</span>
+<span id="cb116-38"><a href="#cb116-38" aria-hidden="true" tabindex="-1"></a>      <span class="bu">e:</span>(gammaln x+gammaln y-gammaln (x+y))</span>
+<span id="cb116-39"><a href="#cb116-39" aria-hidden="true" tabindex="-1"></a>    };</span>
+<span id="cb116-40"><a href="#cb116-40" aria-hidden="true" tabindex="-1"></a>  I ← λz.λa.λb. incΒ z a b%Β a b;</span>
+<span id="cb116-41"><a href="#cb116-41" aria-hidden="true" tabindex="-1"></a>  I ((n*x)%(m+n*x)) (n%<span class="dv">2</span>) (m%<span class="dv">2</span>)</span>
+<span id="cb116-42"><a href="#cb116-42" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Apple does not have imports so we have to re-type the definition of
 the gamma function each time.</p>
 </body>
