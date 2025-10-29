@@ -7,7 +7,7 @@ language.
 
 The compiler will bail out with arcane error messages rather than
 produce an incorrect result (some cases are not implemented), except that the Python/R extension modules do not
-enforce type safety and thus may mysteriously segfault or produce unpredictable corrupt results.
+enforce dimension inferred from types and may mysteriously produce unpredictable corrupt results.
 
 ## Compiler-As-a-Library
 
@@ -54,8 +54,7 @@ lags NumPy.
 
 There are no imports.
 
-Recursive functions are not allowed. The DSL is still useful in that it compiles array
-constructs for the host languages.
+Recursive functions are not allowed.
 
 ## Dimension As a Functor
 
@@ -91,6 +90,13 @@ Proposition failed!
           , 0.762478867048601
           , 6.026206825450409e-3
           , 0.5633419282435523 ] ]
+```
+
+Test cases are generated based on inferred type, i.e. nonempty vectors.
+
+```
+ > :ty \x. [(+)/(*)`x y] x x > 2.0
+Vec (i + 1) float → bool
 ```
 
 ## Installation
