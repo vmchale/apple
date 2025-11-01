@@ -92,7 +92,7 @@ Proposition failed!
           , 0.5633419282435523 ] ]
 ```
 
-Test cases are generated based on inferred type, i.e. nonempty vectors.
+Test cases are generated based on inferred type, nonempty vectors in this case.
 
 ```
  > :ty \x. [(+)/(*)`x y] x x > 2.0
