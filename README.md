@@ -26,7 +26,7 @@ Arr (4) [4.0, 5.0, 6.0, 7.0]
 ```python
 >>> import apple
 >>> import numpy as np
->>> sliding_mean=apple.jit('([(+)/x%ℝ(:x)]\`7)')
+>>> sliding_mean=apple.jit('([(+)/x%ℝ(:x)]\\`7)')
 >>> sliding_mean(np.arange(0,10,dtype=np.float64))
 array([3., 4., 5., 6.])
 ```
