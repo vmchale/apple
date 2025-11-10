@@ -211,7 +211,7 @@ simplify ᴋ s@(St _ _ _ _ _ _ _ wk@(Wk _ _ _ stϵ) st _) =
 -- decrement degree
 ddg :: K -> Int -> St -> St
 ddg ᴋ m s | m `IS.member` pre (wkls s) = s
-        | otherwise =
+          | otherwise =
     let d = degs s; s' = s { degs = dec m d }
     in if d IM.! m == ᴋ
         then let s'' = enMv (m:adj m s) s'
@@ -238,7 +238,7 @@ ok ᴋ t r s = t `IS.member` pre (wkls s) || degs s IM.! t < ᴋ || (t,r) `S.mem
 conserv :: K -> [Int] -> St -> Bool
 conserv ᴋ is s =
     let d = degs s
-        k = length (filter (\n -> (n !* d)>=ᴋ) is)
+        k = length (filter (\n -> n !* d >= ᴋ) is)
     in k<ᴋ
 
 {-# SCC getAlias #-}
