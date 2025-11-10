@@ -152,6 +152,7 @@ allT = testGroup "jit"
     , testCase "pearson r" $ do { res <- fpVvf "math/stats/r.🍎" [1,2,3,4,5,6,7::Double] [10,9,2.5,6,4,3,2::Double]; res @?= -0.8285038835884277 }
     , testCase "cosim" $ do { res <- fpVvf "math/cosim.🍏" [2,45,7,2::Double] [2,54,13,15::Double]; res @?= 0.9726896390141451 }
     , testCase "foldl" $ do { res <- fpVf "test/data/cfLeft.🍏" (4:replicate 5 (8::Double)); res ≈ sqrt 17 }
+    , testCase "pipeline" $ do { res <- fpVf "examples/⍝/201306.🍏" [19, -3,7.6,22::Double]; res @?= 25.0 }
     , testCase "cov" $
         let x = AA 2 [2,3] [-2.1,-1,4.3,3,1.1,0.12::Double]
         in do { (AA 2 [2,2] res) <- fpAa "math/stats/covar.🍏" x ; res @?= [11.71,-4.286,-4.286,2.144133::Double] }

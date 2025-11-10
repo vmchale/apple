@@ -1,0 +1,2 @@
+-- not conformant https://apl.quest/2013/6/
+(λ(x,y).abs. (x::float-y))∴((λ(x₀,y₀).λ(x₁,y₁).(x₀⋉x₁,y₀⋊y₁))/)∴([(x,x)]')
