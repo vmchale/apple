@@ -5,7 +5,7 @@
                   ) where
 
 import Control.Exception (Exception)
-import Control.Monad.Except (ExceptT, runExceptT, throwError)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Control.Monad.Trans.Class (lift)
 import Control.DeepSeq (NFData)
 import Data.Bifunctor (first, second)
@@ -378,7 +378,7 @@ E :: { E AlexPosn }
 tv x = TV x S.empty
 
 parseErr :: Tok -> [String] -> Parse a
-parseErr tok = throwError . Unexpected tok
+parseErr tok = throwE . Unexpected tok
 
 data Bnd = L | LL | D
 
