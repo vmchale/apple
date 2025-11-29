@@ -356,17 +356,16 @@ E :: { E AlexPosn }
   | E E tensor E { EApp (eAnn $1) (EApp (eAnn $4) (EApp (eAnn $2) (Builtin $3 Outer) $2) $1) $4 }
   | trans { Builtin $1 T }
   | r { Builtin $1 R }
-  | sin { Builtin $1 Sin }
-  | cos { Builtin $1 Cos }
+  | sin { Builtin $1 Sin } | cos { Builtin $1 Cos }
   | tan { Builtin $1 Tan }
   | cyc { Builtin $1 A.Cyc }
   | tilde { Builtin $1 RevE }
   | up { Builtin $1 Sort }
   | odd { Builtin $1 Odd } | even { Builtin $1 Even }
   | drop { Builtin $1 Drop } | take { Builtin $1 Take }
-  | abs { Builtin $1 Abs }
   | flat { Builtin $1 Flat }
   | addd { Builtin $1 AddDim }
+  | abs { Builtin $1 Abs }
   | not { Builtin $1 N }
   | sks { Builtin $1 S } | skk { Builtin $1 K }
 
