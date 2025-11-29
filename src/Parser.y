@@ -236,8 +236,8 @@ T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }
   | vec I T { Arr ($2 `Sh.Cons` Nil) $3 }
   | matrix six comma six T { Arr ((Ix (loc $2) (six $2)) `Sh.Cons` (Ix (loc $4) (six $4)) `Sh.Cons` Nil) $5 }
-  | matrix T {% do {i <- lift $ freshName "i"; j <- lift $ freshName "j"; pure $ Arr (IVar $1 i `Sh.Cons` IVar $1 j `Sh.Cons` Nil) $2 } }
-  | vector T {% do {i <- lift $ freshName "n"; pure (Arr (IVar $1 i `Sh.Cons` Nil) $2) } }
+  | matrix T {% do {i <- fresh "i"; j <- fresh "j"; pure $ Arr (IVar $1 i `Sh.Cons` IVar $1 j `Sh.Cons` Nil) $2 } }
+  | vector T {% do {i <- fresh "n"; pure (Arr (IVar $1 i `Sh.Cons` Nil) $2) } }
   | int { I } | bool { A.B } | float { F }
   | parens(T) { $1 }
   | T arrow T { A.Arrow $1 $3 }
@@ -314,7 +314,7 @@ E :: { E AlexPosn }
   | parens(inv) { EApp $1 (Builtin $1 Div) (FLit $1 1) }
   | parens(BBin) { Parens (eAnn $1) $1 }
   | lparen E BBin rparen { Parens $1 (EApp $1 $3 $2) }
-  | lparen BBin E rparen {% do { n <- lift $ freshName "x"; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Nm.loc n) n)) $3)) } }
+  | lparen BBin E rparen {% do { n <- fresh "x"; pure (A.Lam $1 n (EApp $1 (EApp $1 $2 (Var (Nm.loc n) n)) $3)) } }
   | E BBin E { EApp (eAnn $1) (EApp (eAnn $3) $2 $1) $3 }
   | parens(E) { Parens (eAnn $1) $1 }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
@@ -413,6 +413,8 @@ parseWithMaxCtx st b = fmap (first fst3) (parseAll st b) where fst3 (x, _, _) = 
 
 runParseSt :: Parse a -> AlexUserState -> BSL.ByteString -> Either ParseE (AlexUserState, a)
 runParseSt parser u bs = liftErr $ withAlexSt bs u (runExceptT parser)
+
+fresh = lift.freshName
 
 liftErr :: Either String (b, Either ParseE c) -> Either ParseE (b, c)
 liftErr (Left err)            = Left (LexErr err)
