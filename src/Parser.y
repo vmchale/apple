@@ -319,13 +319,10 @@ E :: { E AlexPosn }
   | parens(E) { Parens (eAnn $1) $1 }
   | larr sepBy(E,comma) rarr { ALit $1 (reverse $2) }
   | il { let l=loc $1 in ALit l (map (ILit l.fromInteger) (ints $1)) }
-  | name mmap E { A.Lam $2 $1 $3 }
-  | tupled(name) mmap E { LamΠ $2 (snd $1) $3 }
-  -- TODO: this is blocking (a,_b) ...
-  | tupled(name) { Tup (fst $1) (reverse (map (\nϵ -> Var (Nm.loc nϵ) nϵ) $ snd $1)) }
   | lam name dot E { A.Lam $1 $2 $4 }
   | lam lparen U rparen dot E { A.LamΠ $1 $3 $6 }
   | tupled(E) { Tup (fst $1) (reverse (snd $1)) }
+  | E mmap E {% pat $1 $2 <*> pure $3 }
   | lbrace many(flipSeq(B,semicolon)) E rbrace { mkLet $1 (reverse $2) $3 }
   | coronis many(flipSeq(B,semicolon)) E { mkLet $1 (reverse $2) $3 }
   | lsqbracket E rsqbracket { Dfn $1 $2 }
@@ -377,6 +374,13 @@ E :: { E AlexPosn }
 
 tv x = TV x S.empty
 
+pat :: E AlexPosn -> AlexPosn -> Parse (E AlexPosn -> E AlexPosn)
+pat (Tup _ es) l = do {ns <- traverse (unV l) es; pure (A.LamΠ l ns)}
+pat e l          = A.Lam l <$> unV l e
+
+unV l (Var _ n) = pure n
+unV l e         = throwE (Malformed l e)
+
 parseErr :: Tok -> [String] -> Parse a
 parseErr tok = throwE . Unexpected tok
 
@@ -388,14 +392,14 @@ mkLet l ((L, b):bs) e   = Let l b (mkLet l bs e)
 mkLet l ((LL, b):bs) e  = LLet l b (mkLet l bs e)
 mkLet l ((D, b):bs) e   = Def l b (mkLet l bs e)
 
-data ParseE = Unexpected Tok [String] | LexErr String deriving (Generic)
+data ParseE = Unexpected Tok [String] | LexErr String | Malformed !AlexPosn (E AlexPosn) deriving (Generic)
 
 instance Pretty ParseE where
     pretty (Unexpected tok valid) = pretty (loc tok) <+> "Unexpected" <+> pretty tok <> "." <+> "Expected one of" <+> concatWith (\x y -> x <> "," <+> y) (squotes.pretty<$>valid)
     pretty (LexErr str)           = pretty (T.pack str)
+    pretty (Malformed l e)        = pretty l <+> "'" <+> pretty e <+> "cannot be bound by a ↦"
 
-instance Show ParseE where
-    show = show . pretty
+instance Show ParseE where show = show . pretty
 
 instance Exception ParseE
 
