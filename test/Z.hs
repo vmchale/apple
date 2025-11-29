@@ -52,6 +52,7 @@ rTy = testGroup "Regression tests"
     [ tyF "test/data/polymorphic.🍎"
     , tyF "test/examples/regress.🍎"
     , tyF "test/examples/xor.🍎"
+    , tyF "color/c.🍎"
     ]
 
 allT :: TestTree
