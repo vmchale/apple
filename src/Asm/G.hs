@@ -301,7 +301,7 @@ sspill ᴋ s | Just (m, nSp) <- IS.minView (sp$wkls s) = freezeMoves ᴋ m $ map
 {-# SCC assign #-}
 assign :: (Ord reg) => IM.IntMap reg -> [reg] -> St -> (St, IM.IntMap reg)
 assign iC colors s = (\(x,_,z) -> (x,z)) $ go (s, colors, iC) where
-    go (sϵ@(St _ _ _ _ (Ns ns _ _) _ _ _ [] _), _, c) = (sϵ, undefined, thread [ IM.insert n (c IM.! getAlias n sϵ) | n <- IS.toList ns ] c)
+    go (sϵ@(St _ _ _ _ (Ns ns _ _) _ _ _ [] _), _, c) = (sϵ, undefined, IM.fromAscList [(n, c IM.! getAlias n sϵ) | n <- IS.toAscList ns ]<>c)
     go (sϵ@(St _ _ al _ _ _ _ _ (n:ns) _), okϵ, cs) =
         let ok0 = okϵ `dSet` [ cs IM.! getAlias w sϵ | w <- al !. n, getAlias w sϵ `IS.member` (colN (ɴs sϵ) `IS.union` pre (wkls sϵ)) ]
             s0 = sϵ { stack = ns }
