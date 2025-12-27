@@ -195,7 +195,7 @@ f <~ bs = do
             let (st', n) = newIdent (AlexPn 0 0 0) (T.pack f) (setM i st)
                 x' = parseE st bs
             in lift $ do {modify (aEe n x'); modify (setL st')}
-    where setM i' (_, mm, im) = (i', mm, im)
+    where setM i' (_, mm, im, d) = (i', mm, im, d)
 
 iCtx :: String -> String -> Repl ()
 iCtx f fp = do

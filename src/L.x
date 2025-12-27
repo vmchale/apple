@@ -16,7 +16,6 @@
              , AlexUserState
              ) where
 
-import Control.Arrow ((&&&))
 import Control.DeepSeq (NFData (rnf), rwhnf)
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as BSL
@@ -61,9 +60,8 @@ $sub = [$subscript $digitsubscript]
 
 tokens :-
 
-    <0> "["                      { mkSym LSqBracket `andBegin` dfn } -- FIXME: this doesn't allow nested
-
-    <0> {
+    <0,dfn> {
+        "["                      { tok (\p _ -> lsq (TokSym p LSqBracket)) }
         `$white*"{"              { mkSym LRank `andBegin` braces }
         (⨳|\#)$white*"{"         { mkSym LConv `andBegin` braces }
     }
@@ -71,21 +69,18 @@ tokens :-
     <dfn> {
         x                        { mkRes VarX }
         y                        { mkRes VarY }
-        `$white*"{"              { mkSym LRank `andBegin` dbraces }
-        (⨳|\#)$white*"{"         { mkSym LConv `andBegin` dbraces }
     }
 
-    <braces,dbraces> {
+    <braces> {
         "["                      { mkSym LSqBracket }
         "]"                      { mkSym RSqBracket }
         ∘                        { mkSym Compose }
         o                        { mkSym Compose }
     }
 
-    <braces>  "}"                { mkSym RBrace `andBegin` 0 }
-    <dbraces> "}"                { mkSym RBrace `andBegin` dfn }
+    <braces>  "}"                { tok (\p _ -> brace (TokSym p RBrace)) }
 
-    <0,dfn,braces,dbraces> {
+    <0,dfn,braces> {
         $white+                  ;
 
         "--".*                   ;
@@ -207,7 +202,7 @@ tokens :-
         ⊂                        { mkSym Sub }
         〃                       { mkSym Ditto }
 
-        "]"                      { mkSym RSqBracket `andBegin` 0 }
+        "]"                      { tok (\p _ -> rsq (TokSym p RSqBracket)) }
 
         ".."                     { mkB BuiltinRange }
         frange                   { mkB BuiltinFRange }
@@ -337,16 +332,28 @@ deriving instance Generic AlexPosn
 
 deriving instance NFData AlexPosn
 
-type AlexUserState = (Int, M.Map T.Text Int, IM.IntMap (Nm AlexPosn))
+type AlexUserState = (Int, M.Map T.Text Int, IM.IntMap (Nm AlexPosn), Int)
 
 alexInitUserState :: AlexUserState
-alexInitUserState = (0, mempty, mempty)
-
-gets_alex :: (AlexState -> a) -> Alex a
-gets_alex f = Alex (Right . (id &&& f))
+alexInitUserState = (0, mempty, mempty, 0)
 
 get_pos :: Alex AlexPosn
-get_pos = gets_alex alex_pos
+get_pos = Alex $ \st -> Right (st, alex_pos st)
+
+lsq, rsq :: a -> Alex a
+lsq ret = Alex $ \st ->
+    let (max', names, uniqs, db) = alex_ust st
+        db' = db+1
+    in Right (st { alex_ust = (max', names, uniqs, db'), alex_scd = dfn }, ret)
+rsq ret = Alex $ \st ->
+    let (max', names, uniqs, db) = alex_ust st
+        db' = db-1
+    in Right (st { alex_ust = (max', names, uniqs, db'), alex_scd = if db'==0 then 0 else dfn }, ret)
+
+brace :: a -> Alex a
+brace ret = Alex $ \st ->
+    let ust@(max', names, uniqs, db) = alex_ust st
+    in Right (st { alex_ust = ust, alex_scd = if db==0 then 0 else dfn }, ret)
 
 alexEOF = EOF <$> get_pos
 
@@ -557,9 +564,9 @@ pSub i =
 freshName :: T.Text -> Alex (Nm AlexPosn)
 freshName t = do
     pos <- get_pos
-    (i, ns, us) <- alexGetUserState
+    (i, ns, us, d) <- alexGetUserState
     let (j, n) = freshIdent pos t i
-    alexSetUserState (j, ns, us) $> (n$>pos)
+    alexSetUserState (j, ns, us, d) $> (n$>pos)
 
 newIdentAlex :: AlexPosn -> T.Text -> Alex (Nm AlexPosn)
 newIdentAlex pos t = do
@@ -571,11 +578,11 @@ freshIdent :: AlexPosn -> T.Text -> Int -> (Int, Nm AlexPosn)
 freshIdent pos t max' = let i=max'+1; nm=Nm t (U i) pos in (i, nm)
 
 newIdent :: AlexPosn -> T.Text -> AlexUserState -> (AlexUserState, Nm AlexPosn)
-newIdent pos t pre@(max', ns, us) =
+newIdent pos t pre@(max', ns, us, d) =
     case M.lookup t ns of
         Just i  -> (pre, Nm t (U i) pos)
         Nothing -> let i = max'+1; nNm = Nm t (U i) pos
-                   in ((i, M.insert t i ns, IM.insert i nNm us), nNm)
+                   in ((i, M.insert t i ns, IM.insert i nNm us, d), nNm)
 
 withAlexSt :: BSL.ByteString -> AlexUserState -> Alex a -> Either String (AlexUserState, a)
 withAlexSt inp ust (Alex f) = first alex_ust <$> f

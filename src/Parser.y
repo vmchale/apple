@@ -409,7 +409,7 @@ type Parse = ExceptT ParseE Alex
 parseAll = runParseSt parseE
 
 parseWithMaxCtx :: AlexUserState -> BSL.ByteString -> Either ParseE (Int, E AlexPosn)
-parseWithMaxCtx st b = fmap (first fst3) (parseAll st b) where fst3 (x, _, _) = x
+parseWithMaxCtx st b = fmap (first fst4) (parseAll st b) where fst4 (x, _, _, _) = x
 
 runParseSt :: Parse a -> AlexUserState -> BSL.ByteString -> Either ParseE (AlexUserState, a)
 runParseSt parser u bs = liftErr $ withAlexSt bs u (runExceptT parser)
