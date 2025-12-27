@@ -58,7 +58,6 @@ import           Parser
 import           Parser.Rw
 import           Prettyprinter                    (Doc, Pretty (..))
 import           Prettyprinter.Ext
-import           R.Dfn
 import           R.R
 import           Ty
 import           Ty.M
@@ -85,13 +84,10 @@ instance Pretty a => Pretty (Err a) where
     pretty (TyErr err) = pretty err
     pretty (RErr err)  = pretty err
 
-rwP st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
+rwP st = fmap (uncurry rG.second rewrite) . parseWithMaxCtx st
 
 parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either ParseE (E AlexPosn, Int)
-parseRenameCtx st = fmap (uncurry renameECtx.second rewrite) . parseWithMaxCtx st
-
-renameECtx :: Int -> E a -> (E a, Int)
-renameECtx i ast = rG i (dedfn ast)
+parseRenameCtx st = fmap (uncurry rG.second rewrite) . parseWithMaxCtx st
 
 parseRename :: BSL.ByteString -> Either ParseE (E AlexPosn, Int)
 parseRename = parseRenameCtx alexInitUserState

@@ -137,7 +137,6 @@ library
         Parser.Rw
         Q
         R
-        R.Dfn
         R.R
         Ty.Clone
 
