@@ -74,95 +74,62 @@ liftR t = do
 
 {-# INLINABLE rE #-}
 rE :: (HasRs s, Monad m) => E a -> StateT s m (E a)
-rE (Lam l n e) = doLocal $ do
+rE = fmap fst.r undefined undefined
+
+{-# INLINABLE r #-}
+r :: (HasRs s, Monad m) => (a -> Nm a) -> (a -> Nm a) ->  E a -> StateT s m (E a, Bool)
+r x y (Lam l n e) = doLocal $ do
     n' <- freshen n
-    Lam l n' <$> rE e
-rE (LamΠ l n e) = doLocal $ do
-    ns' <- traverse freshen n
-    LamΠ l ns' <$> rE e
-rE (Let l (n, eϵ) e) = do
-    eϵ' <- rE eϵ
+    first (Lam l n') <$> r x y e
+r x y (LamΠ l n e) = doLocal $ do
+    n' <- traverse freshen n
+    first (LamΠ l n') <$> r x y e
+r x y (Let l (n, eb) e) = do
+    (eb',bb) <- r x y eb
     n' <- freshen n
-    Let l (n', eϵ') <$> rE e
-rE (Def l (n, eϵ) e) = do
-    eϵ' <- rE eϵ
+    (eϵ',b) <- r x y e
+    pure (Let l (n', eb') eϵ', b||bb)
+r x y (Def l (n, eb) eϵ) = do
+    (eb',bb) <- r x y eb
     n' <- freshen n
-    Def l (n', eϵ') <$> rE e
-rE (LLet l (n, eϵ) e) = do
-    eϵ' <- rE eϵ
+    (eϵ',b) <- r x y eϵ
+    pure (Def l (n', eb') eϵ', b||bb)
+r x y (LLet l (n, eb) eϵ) = do
+    (eb',bb) <- r x y eb
     n' <- freshen n
-    LLet l (n', eϵ') <$> rE e
-rE (Dfn l e) = do
+    (eϵ',b) <- r x y eϵ
+    pure (LLet l (n', eb') eϵ', b||bb)
+r _ _ (Dfn l e) = do
     x@(Nm nX uX _) <- dummyName l "x"
     y@(Nm nY uY _) <- dummyName l "y"
     (e', hasY) <- r (Nm nX uX) (Nm nY uY) e
     pure $ if hasY
-        then Lam l x (Lam l y e')
-        else Lam l x e'
-  where
-    r x _ (ResVar lϵ X)  = pure (Var lϵ (x lϵ), False)
-    r _ y (ResVar lϵ Y)  = pure (Var lϵ (y lϵ), True)
-    r _ _ eϵ@Builtin{}   = pure (eϵ, False)
-    r _ _ eϵ@BLit{}      = pure (eϵ, False)
-    r _ _ eϵ@ILit{}      = pure (eϵ, False)
-    r _ _ eϵ@FLit{}      = pure (eϵ, False)
-    r x y (ALit lϵ es)   = do {(es',b) <- unzip <$> traverse (r x y) es; pure (ALit lϵ es', or b)}
-    r x y (Tup lϵ es)    = do {(es',b) <- unzip <$> traverse (r x y) es; pure (Tup lϵ es', or b)}
-    r _ _ (Var lϵ n)     = (\n' -> (Var lϵ n', False)) <$> replaceVar n
-    r x y (EApp lϵ e0 e1) = do
-        (e0',b0) <- r x y e0
-        (e1',b1) <- r x y e1
-        pure (EApp lϵ e0' e1', b0||b1)
-    r x y (Cond lϵ p e0 e1) = do
-        (p',b0) <- r x y p
-        (e0',b1) <- r x y e0
-        (e1',b2) <- r x y e1
-        pure (Cond lϵ p' e0' e1', b0||b1||b2)
-    r x y (Ann lϵ eϵ t) = do
-        (e',b) <- r x y eϵ
-        t' <- liftR t
-        pure (Ann lϵ e' t', b)
-    r x y (Lam lϵ n eϵ) = doLocal $ do
-        n' <- freshen n
-        first (Lam lϵ n') <$> r x y eϵ
-    r x y (LamΠ lϵ n eϵ) = doLocal $ do
-        n' <- traverse freshen n
-        first (LamΠ lϵ n') <$> r x y eϵ
-    r x y (Let lϵ (n, eb) eϵ) = do
-        (eb',bb) <- r x y eb
-        n' <- freshen n
-        (eϵ',b) <- r x y eϵ
-        pure (Let lϵ (n', eb') eϵ', b||bb)
-    r x y (Def lϵ (n, eb) eϵ) = do
-        (eb',bb) <- r x y eb
-        n' <- freshen n
-        (eϵ',b) <- r x y eϵ
-        pure (Def lϵ (n', eb') eϵ', b||bb)
-    r x y (LLet lϵ (n, eb) eϵ) = do
-        (eb',bb) <- r x y eb
-        n' <- freshen n
-        (eϵ',b) <- r x y eϵ
-        pure (LLet lϵ (n', eb') eϵ', b||bb)
-    r _ _ (Dfn lϵ eϵ) = do
-        x@(Nm nX uX _) <- dummyName lϵ "x"
-        y@(Nm nY uY _) <- dummyName lϵ "y"
-        (e', hasY) <- r (Nm nX uX) (Nm nY uY) eϵ
-        pure $ if hasY
-            then (Lam lϵ x (Lam lϵ y e'), False)
-            else (Lam lϵ x e', False)
-    r x y (Parens _ eϵ) = r x y eϵ
-    r _ _ Id{} = error"internal error: idioms should not be present when desugaring dfns"
-rE e@Builtin{} = pure e; rE e@BLit{} = pure e
-rE e@FLit{} = pure e; rE e@ILit{} = pure e
-rE (ALit l es) = ALit l <$> traverse rE es
-rE (Tup l es) = Tup l <$> traverse rE es
-rE (EApp l e e') = EApp l <$> rE e <*> rE e'
-rE (Cond l e e' e'') = Cond l <$> rE e <*> rE e' <*> rE e''
-rE (Var l n) = Var l <$> replaceVar n
-rE (Ann l e t) = Ann l <$> rE e <*> liftR t
-rE (Id l idm) = Id l <$> rId idm
-rE (Parens _ e) = rE e
-rE ResVar{} = error"internal error? Bare implicit variable."
+        then (Lam l x (Lam l y e'), False)
+        else (Lam l x e', False)
+r _ _ eϵ@Builtin{} = pure (eϵ, False)
+r _ _ eϵ@BLit{} = pure (eϵ, False)
+r _ _ eϵ@ILit{} = pure (eϵ, False)
+r _ _ eϵ@FLit{} = pure (eϵ, False)
+r x y (ALit l es)   = do {(es',b) <- unzip <$> traverse (r x y) es; pure (ALit l es', or b)}
+r x y (Tup l es)    = do {(es',b) <- unzip <$> traverse (r x y) es; pure (Tup l es', or b)}
+r x y (EApp l e0 e1) = do
+    (e0',b0) <- r x y e0
+    (e1',b1) <- r x y e1
+    pure (EApp l e0' e1', b0||b1)
+r x y (Cond l p e0 e1) = do
+    (p',b0) <- r x y p
+    (e0',b1) <- r x y e0
+    (e1',b2) <- r x y e1
+    pure (Cond l p' e0' e1', b0||b1||b2)
+r x y (Ann l e t) = do
+    (e',b) <- r x y e
+    t' <- liftR t
+    pure (Ann l e' t', b)
+r _ _ (Var l n)     = (\n' -> (Var l n', False)) <$> replaceVar n
+r _ _ (Id l idm) = (\idm' -> (Id l idm', error"internal error: idioms not expected to be present when desugaring dfns")) <$> rId idm
+r x y (Parens _ e) = r x y e
+r x _ (ResVar l X)  = pure (Var l (x l), False)
+r _ y (ResVar l Y)  = pure (Var l (y l), True)
 
 rId (AShLit is es)          = AShLit is <$> traverse rE es
 rId (U2 seeds gs c f n)     = U2 <$> traverse rE seeds <*> traverse rE gs <*> rE c <*> rE f <*> rE n
