@@ -252,6 +252,12 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [ ] https://ed25519.cr.yp.to/
   - [ ] https://en.wikipedia.org/wiki/SHA-2#Pseudocode
 # Visual/Art
+- [ ] https://2earth.github.io/website/20250202.html
+- [ ]
+  - [ ] https://www.i.h.kyoto-u.ac.jp/users/tsuiki/icube/fractal/H-fractal-e.html
+  - [ ] https://www.i.h.kyoto-u.ac.jp/users/tsuiki/icube/fractal/T-fractal-e.html
+  - [ ] https://www.i.h.kyoto-u.ac.jp/users/tsuiki/icube/fractal/H-fractal-e.html
+  - [ ] https://www.i.h.kyoto-u.ac.jp/users/tsuiki/icube/fractal/projections.html
 - [ ] https://bsky.app/profile/sconradi.bsky.social/post/3lpwv4haqwu22
 - [ ] https://code.jsoftware.com/wiki/Essays/R%C3%B6ssler_Attractor
 - [ ] https://github.com/rougier/scientific-visualization-book
