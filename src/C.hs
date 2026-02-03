@@ -31,7 +31,7 @@ type Label=Word; type AsmData = IM.IntMap [Word8]
 data Temp = ITemp !Int | ATemp !Int
           | C0 | C1 | C2 | C3 | C4 | C5 | CRet deriving Eq
 
-data BTemp = BTemp !Int | CBRet deriving Eq
+data BTemp = BTemp !Int | CBRet
 
 data FTemp = FTemp !Int
            | F0 | F1 | F2 | F3 | F4 | F5 | FRet0 | FRet1 deriving Eq
