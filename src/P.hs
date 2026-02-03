@@ -31,6 +31,7 @@ import qualified Asm.Aarch64.Opt                  as Aarch64
 import qualified Asm.Aarch64.P                    as Aarch64
 import           Asm.Aarch64.T
 import           Asm.M
+import           Asm.Pr
 import           Asm.X86
 import           Asm.X86.Opt
 import qualified Asm.X86.P                        as X86
@@ -46,6 +47,7 @@ import           Control.Monad.Trans.State.Strict (evalState, state)
 import           Data.Bifunctor                   (first, second)
 import qualified Data.ByteString.Lazy             as BSL
 import qualified Data.Text                        as T
+import qualified Data.Text.Lazy.Builder           as B
 import           Data.Typeable                    (Typeable)
 import           GHC.Generics                     (Generic)
 import           I
@@ -57,7 +59,6 @@ import           L
 import           Parser
 import           Parser.Rw
 import           Prettyprinter                    (Doc, Pretty (..))
-import           Prettyprinter.Ext
 import           R.R
 import           Ty
 import           Ty.M
@@ -101,9 +102,9 @@ tyExpr = fmap (pretty.eAnn.fst).tyParse
 getTy :: BSL.ByteString -> Either (Err AlexPosn) (T ())
 getTy = fmap (eAnn.fst) . checkCtx <=< tyParse
 
-as :: T.Text -> BSL.ByteString -> Doc ann
+as :: T.Text -> BSL.ByteString -> B.Builder
 as f = prolegomena.either throw (second aso).aarch64
-    where prolegomena (d,i) = ".p2align 2\n\n.data\n\n" <> pAD d <#> ".text\n\n.global " <> pSym f <#> pSym f <> ":" <#> pAsm i
+    where prolegomena (d,i) = ".p2align 2\n\n.data\n\n" <> pAD d <#> ".text\n\n.global " <> pSym (B.fromText f) <#> pSym (B.fromText f) <> ":" <#> pAsm i
 
 -- TODO: Call internal
 aso (MovRCf () r0 f:Blr () r1:asms) | r0 == r1 = Bl () f:aso asms

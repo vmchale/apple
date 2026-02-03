@@ -21,46 +21,47 @@ module Asm.Aarch64 ( AArch64 (..)
                    ) where
 
 import           Asm.M
+import           Asm.Pr
 import           Control.DeepSeq            (NFData (..), rwhnf)
-import           Data.Bits                  (FiniteBits, countLeadingZeros, finiteBitSize)
 import           Data.Copointed
 import           Data.Int                   (Int16)
-import qualified Data.Text.Lazy             as TL
-import           Data.Text.Lazy.Builder     (toLazyTextWith)
-import           Data.Text.Lazy.Builder.Int (hexadecimal)
+import qualified Data.Text.Lazy.Builder     as B
+import           Data.Text.Lazy.Builder.Int (decimal, hexadecimal)
 import           Data.Word                  (Word16, Word8)
 import           GHC.Generics               (Generic)
-import           Prettyprinter              (Doc, Pretty (..), brackets, (<+>))
-import           Prettyprinter.Ext
+import           Prettyprinter              (Doc, Pretty (pretty), space)
+import           Prettyprinter.Ext          (prettyLines)
 import           Q
 import           System.Info                (os)
 
 -- https://developer.arm.com/documentation/102374/0101/Registers-in-AArch64---other-registers
 data AReg = X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 | X8 | X9 | X10 | X11 | X12 | X13 | X14 | X15 | X16 | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 | X25 | X26 | X27 | X28 | X29 | X30 | SP deriving (Eq, Ord, Enum, Generic)
 
-instance Pretty AReg where
-    pretty X0 = "x0"; pretty X1 = "x1"; pretty X2 = "x2"; pretty X3 = "x3"; pretty X4 = "x4"; pretty X5 = "x5"; pretty X6 = "x6"; pretty X7 = "x7"
-    pretty X8 = "x8"; pretty X9 = "x9"; pretty X10 = "x10"; pretty X11 = "x11"; pretty X12 = "x12"; pretty X13 = "x13"; pretty X14 = "x14"; pretty X15 = "x15"
-    pretty X16 = "x16"; pretty X17 = "x17"; pretty X18 = "x18"; pretty X19 = "x19"; pretty X20 = "x20"; pretty X21 = "x21"; pretty X22 = "x22"; pretty X23 = "x23"
-    pretty X24 = "x24"; pretty X25 = "x25"; pretty X26 = "x26"; pretty X27 = "x27"; pretty X28 = "x28"; pretty X29 = "x29"; pretty X30 = "x30"; pretty SP = "sp"
+instance Pr AReg where
+    pr X0 = "x0"; pr X1 = "x1"; pr X2 = "x2"; pr X3 = "x3"; pr X4 = "x4"; pr X5 = "x5"; pr X6 = "x6"; pr X7 = "x7"
+    pr X8 = "x8"; pr X9 = "x9"; pr X10 = "x10"; pr X11 = "x11"; pr X12 = "x12"; pr X13 = "x13"; pr X14 = "x14"; pr X15 = "x15"
+    pr X16 = "x16"; pr X17 = "x17"; pr X18 = "x18"; pr X19 = "x19"; pr X20 = "x20"; pr X21 = "x21"; pr X22 = "x22"; pr X23 = "x23"
+    pr X24 = "x24"; pr X25 = "x25"; pr X26 = "x26"; pr X27 = "x27"; pr X28 = "x28"; pr X29 = "x29"; pr X30 = "x30"; pr SP = "sp"
 
-instance Show AReg where show = show.pretty
+instance Show AReg where show = show.pr
+instance Pretty AReg where pretty=embed.pr
 
 data FAReg = D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | D9 | D10 | D11 | D12 | D13 | D14 | D15 | D16 | D17 | D18 | D19 | D20 | D21 | D22 | D23 | D24 | D25 | D26 | D27 | D28 | D29 | D30 | D31 deriving (Eq, Ord, Enum, Generic)
 
-instance Pretty FAReg where
-    pretty D0 = "d0"; pretty D1 = "d1"; pretty D2 = "d2"; pretty D3 = "d3"; pretty D4 = "d4"; pretty D5 = "d5"; pretty D6 = "d6"; pretty D7 = "d7"
-    pretty D8 = "d8"; pretty D9 = "d9"; pretty D10 = "d10"; pretty D11 = "d11"; pretty D12 = "d12"; pretty D13 = "d13"; pretty D14 = "d14"; pretty D15 = "d15"
-    pretty D16 = "d16"; pretty D17 = "d17"; pretty D18 = "d18"; pretty D19 = "d19"; pretty D20 = "d20"; pretty D21 = "d21"; pretty D22 = "d22"; pretty D23 = "d23"
-    pretty D24 = "d24"; pretty D25 = "d25"; pretty D26 = "d26"; pretty D27 = "d27"; pretty D28 = "d28"; pretty D29 = "d29"; pretty D30 = "d30"; pretty D31 = "d31"
+instance Pr FAReg where
+    pr D0 = "d0"; pr D1 = "d1"; pr D2 = "d2"; pr D3 = "d3"; pr D4 = "d4"; pr D5 = "d5"; pr D6 = "d6"; pr D7 = "d7"
+    pr D8 = "d8"; pr D9 = "d9"; pr D10 = "d10"; pr D11 = "d11"; pr D12 = "d12"; pr D13 = "d13"; pr D14 = "d14"; pr D15 = "d15"
+    pr D16 = "d16"; pr D17 = "d17"; pr D18 = "d18"; pr D19 = "d19"; pr D20 = "d20"; pr D21 = "d21"; pr D22 = "d22"; pr D23 = "d23"
+    pr D24 = "d24"; pr D25 = "d25"; pr D26 = "d26"; pr D27 = "d27"; pr D28 = "d28"; pr D29 = "d29"; pr D30 = "d30"; pr D31 = "d31"
 
-instance Show FAReg where show=show.pretty
+instance Show FAReg where show=show.pr
+instance Pretty FAReg where pretty=embed.pr
 
 newtype V2Reg a = V2Reg { simd2 :: a } deriving (Eq, Ord, Enum, NFData, Functor)
 
 class SIMD a where
-    pv :: a -> Doc ann
-    pq :: a -> Doc ann
+    pv :: a -> B.Builder
+    pq :: a -> B.Builder
 
 instance SIMD (V2Reg FAReg) where
     pv (V2Reg D0) = "v0"; pv (V2Reg D1) = "v1"; pv (V2Reg D2) = "v2"; pv (V2Reg D3) = "v3"; pv (V2Reg D4) = "v4"; pv (V2Reg D5) = "v5"; pv (V2Reg D6) = "v6"; pv (V2Reg D7) = "v7"
@@ -77,7 +78,7 @@ instance NFData AReg where
 instance NFData FAReg where
 
 class P32 a where
-    pw :: a -> Doc ann
+    pw :: a -> B.Builder
 
 instance P32 AReg where
     pw X0 = "w0"; pw X1 = "w1"; pw X2 = "w2"; pw X3 = "w3"; pw X4 = "w4"; pw X5 = "w5"; pw X6 = "w6"; pw X7 = "w7"
@@ -88,27 +89,27 @@ instance P32 AReg where
 data AbsReg = IReg !Int | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5 | CArg6 | CArg7 | LR | FP | ASP
 -- r0-r7 used for return values as well
 
-instance Pretty AbsReg where
-    pretty (IReg i) = "T" <> pretty i
-    pretty CArg0 = "X0"; pretty CArg1 = "X1"; pretty CArg2 = "X2"; pretty CArg3 = "X3"
-    pretty CArg4 = "X4"; pretty CArg5 = "X5"; pretty CArg6 = "X6"; pretty CArg7 = "X7"
-    pretty ASP = "SP"; pretty LR = "LR"; pretty FP = "FP"
+instance Pr AbsReg where
+    pr (IReg i) = "T" <> decimal i
+    pr CArg0 = "X0"; pr CArg1 = "X1"; pr CArg2 = "X2"; pr CArg3 = "X3"
+    pr CArg4 = "X4"; pr CArg5 = "X5"; pr CArg6 = "X6"; pr CArg7 = "X7"
+    pr ASP = "SP"; pr LR = "LR"; pr FP = "FP"
 
 instance P32 AbsReg where
-    pw (IReg i) = "W" <> pretty i
+    pw (IReg i) = "W" <> decimal i
     pw CArg0 = "W0"; pw CArg1 = "W1"; pw CArg2 = "W2"; pw CArg3 = "W3"
     pw CArg4 = "W4"; pw CArg5 = "W5"; pw CArg6 = "W6"; pw CArg7 = "W7"
 
 type F2Abs = V2Reg FAbsReg
 
-instance SIMD F2Abs where pq (V2Reg (FReg i)) = "~Q" <> pretty i; pv (V2Reg (FReg i)) = "~V" <> pretty i
+instance SIMD F2Abs where pq (V2Reg (FReg i)) = "~Q" <> decimal i; pv (V2Reg (FReg i)) = "~V" <> decimal i
 
 data FAbsReg = FReg !Int | FArg0 | FArg1 | FArg2 | FArg3 | FArg4 | FArg5 | FArg6 | FArg7 deriving Eq
 
-instance Pretty FAbsReg where
-    pretty (FReg i) = "F" <> pretty i
-    pretty FArg0 = "D0"; pretty FArg1 = "D1"; pretty FArg2 = "D2"; pretty FArg3 = "D3"
-    pretty FArg4 = "D4"; pretty FArg5 = "D5"; pretty FArg6 = "D6"; pretty FArg7 = "D7"
+instance Pr FAbsReg where
+    pr (FReg i) = "F" <> decimal i
+    pr FArg0 = "D0"; pr FArg1 = "D1"; pr FArg2 = "D2"; pr FArg3 = "D3"
+    pr FArg4 = "D4"; pr FArg5 = "D5"; pr FArg6 = "D6"; pr FArg7 = "D7"
 
 toInt :: AbsReg -> Int
 toInt CArg0 = 0; toInt CArg1 = 1; toInt CArg2 = 2; toInt CArg3 = 3
@@ -125,48 +126,48 @@ data Shift = Zero | Three | Four
 
 instance NFData Shift where rnf=rwhnf
 
-instance Pretty Shift where
-    pretty Zero = "#0"; pretty Three = "#3"; pretty Four = "#4"
+instance Pr Shift where
+    pr Zero = "#0"; pr Three = "#3"; pr Four = "#4"
 
 data ISl = IZero | Twelve
 
 instance NFData ISl where rnf=rwhnf
 
-instance Pretty ISl where pretty IZero = "#0"; pretty Twelve="#0xc"
+instance Pr ISl where pr IZero = "#0"; pr Twelve="#0xc"
 
 -- left: shift left by this much
 data BM = BM { ims, left :: !Word8 }
 
 instance NFData BM where rnf (BM i ls) = rnf i `seq` rnf ls
 
-instance Pretty BM where
-    pretty (BM m l) = "0b" <> pretty (replicate (fromIntegral m) '1' ++ replicate (fromIntegral l) '0')
+instance Pr BM where
+    pr (BM m l) = "0b" <> B.fromString (replicate (fromIntegral m) '1' ++ replicate (fromIntegral l) '0')
 
 data Addr reg = R reg | RP reg Word16 | BI reg reg Shift | Po reg Int16 | Pr reg Int16 deriving (Functor, Foldable, Generic)
 
 instance NFData a => NFData (Addr a) where
 
-instance Pretty reg => Pretty (Addr reg) where
-    pretty (Po r 0)      = brackets (pretty r)
-    pretty (Po r u)      = brackets (pretty r) <> "," <+> hexd u
-    pretty (Pr r 0)      = brackets (pretty r)
-    pretty (Pr r u)      = brackets (pretty r <> "," <+> hexd u) <> "!"
-    pretty (R r)         = brackets (pretty r)
-    pretty (RP r 0)      = brackets (pretty r)
-    pretty (RP r u)      = brackets (pretty r <> "," <+> hexd u)
-    pretty (BI b i Zero) = brackets (pretty b <> "," <+> pretty i)
-    pretty (BI b i s)    = brackets (pretty b <> "," <+> pretty i <> "," <+> "LSL" <+> pretty s)
+instance Pr reg => Pr (Addr reg) where
+    pr (Po r 0)      = brackets (pr r)
+    pr (Po r u)      = brackets (pr r) <> "," <+> hexd u
+    pr (Pr r 0)      = brackets (pr r)
+    pr (Pr r u)      = brackets (pr r <> "," <+> hexd u) <> "!"
+    pr (R r)         = brackets (pr r)
+    pr (RP r 0)      = brackets (pr r)
+    pr (RP r u)      = brackets (pr r <> "," <+> hexd u)
+    pr (BI b i Zero) = brackets (pr b <> "," <+> pr i)
+    pr (BI b i s)    = brackets (pr b <> "," <+> pr i <> "," <+> "LSL" <+> pr s)
 
 data Cond = Eq | Neq | Geq | Lt | Gt | Leq
 
 instance NFData Cond where rnf=rwhnf
 
-instance Pretty Cond where
-    pretty Eq = "EQ"; pretty Neq = "NE"; pretty Geq = "GE"
-    pretty Lt = "LT"; pretty Gt = "GT"; pretty Leq = "LE"
+instance Pr Cond where
+    pr Eq = "EQ"; pr Neq = "NE"; pr Geq = "GE"
+    pr Lt = "LT"; pr Gt = "GT"; pr Leq = "LE"
 
-pSym :: Pretty a => a -> Doc ann
-pSym = case os of {"linux" -> id; "darwin" -> ("_"<>)}.pretty
+pSym :: B.Builder -> B.Builder
+pSym = case os of {"linux" -> id; "darwin" -> ("_"<>)}
 
 -- https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions
 data AArch64 reg freg a = Label { ann :: a, label :: Label }
@@ -617,37 +618,32 @@ puxs, poxs :: [freg] -> [AArch64 AReg freg ()]
 puxs = map go.s2 where go (r0, Just r1) = Stp2 () (V2Reg r0) (V2Reg r1) (Pr SP (-32)); go (r, Nothing) = StrS () (V2Reg r) (Pr SP (-16))
 poxs = map go.reverse.s2 where go (r0, Just r1) = Ldp2 () (V2Reg r0) (V2Reg r1) (Po SP 32); go (r, Nothing) = LdrS () (V2Reg r) (Po SP 16)
 
-ph :: (FiniteBits a, Integral a) => a -> TL.Text
-ph c = toLazyTextWith (l2 c`rem`2) (hexadecimal c)
-  where
-    l2 n=finiteBitSize n-1-countLeadingZeros n
-
-hexd :: (FiniteBits a, Integral a) => a -> Doc ann
-hexd n | n < 0 = pretty ("#-0x"<>ph (-n))
-       | otherwise = pretty ("#0x"<>ph n)
+hexd :: (Integral a) => a -> B.Builder
+hexd n | n < 0 = "#-0x"<>hexadecimal (-n)
+       | otherwise = "#0x"<>hexadecimal n
 
 pvd v = pv v <> ".2d"
 pvv v = pv v <> ".16b"; pvs v = pv v <> ".8b"
 
-ar2 isn r0 r1 = isn <+> pretty r0 <> "," <+> pretty r1; aw r a = pw r <> "," <+> pretty a
-ar3 isn r0 r1 r2 = isn <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2
-ar4 isn r0 r1 r2 r3 = isn <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2 <> "," <+> pretty r3
-ri r u = pretty r <> "," <+> hexd u
-r2i r0 r1 u = pretty r0 <> "," <+> pretty r1 <> "," <+> hexd u
+ar2 isn r0 r1 = isn <+> pr r0 <> "," <+> pr r1; aw r a = pw r <> "," <+> pr a
+ar3 isn r0 r1 r2 = isn <+> pr r0 <> "," <+> pr r1 <> "," <+> pr r2
+ar4 isn r0 r1 r2 r3 = isn <+> pr r0 <> "," <+> pr r1 <> "," <+> pr r2 <> "," <+> pr r3
+ri r u = pr r <> "," <+> hexd u
+r2i r0 r1 u = pr r0 <> "," <+> pr r1 <> "," <+> hexd u
 av2 q0 q1 = pvd q0 <> "," <+> pvd q1
 v3 q0 q1 q2 = pvd q0 <> "," <+> pvd q1 <> "," <+> pvd q2
-qa q0 q1 a = pq q0 <> "," <+> pq q1 <> "," <+> pretty a
+qa q0 q1 a = pq q0 <> "," <+> pq q1 <> "," <+> pr a
 
-instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch64 reg freg a) where
-    pretty (Label _ l)            = prettyLabel l <> ":"
-    pretty isn = i4 (p4 isn)
+instance (Pr reg, Pr freg, SIMD (V2Reg freg), P32 reg) => Pr (AArch64 reg freg a) where
+    pr (Label _ l)            = prettyLabel l <> ":"
+    pr isn = i4 (p4 isn)
       where
         p4 Label{}                 = error "shouldn't happen."
         p4 (B _ l)                 = "b" <+> prettyLabel l
-        p4 (Blr _ r)               = "blr" <+> pretty r
-        p4 (Bl _ l)                = "bl" <+> pSym l
-        p4 (C _ l)                 = "call" <+> pretty l
-        p4 (Bc _ c l)              = "b." <> pretty c <+> prettyLabel l
+        p4 (Blr _ r)               = "blr" <+> pr r
+        p4 (Bl _ l)                = "bl" <+> pSym (pr l)
+        p4 (C _ l)                 = "call" <+> decimal l
+        p4 (Bc _ c l)              = "b." <> pr c <+> prettyLabel l
         p4 (MovQQ _ v0 v1)         = "mov" <+> pvv v0 <> "," <+> pvv v1
         p4 (FMovXX _ xr0 xr1)      = ar2 "fmov" xr0 xr1
         p4 (FMovDR _ d r)          = ar2 "fmov" d r
@@ -659,26 +655,26 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (StrB _ r a)            = "strb" <+> aw r a
         p4 (LdrD _ xr a)           = ar2 "ldr" xr a
         p4 (StrD _ xr a)           = ar2 "str" xr a
-        p4 (AddRRS _ rD rS rS' s)  = ar3 "add" rD rS rS' <> "," <+> "LSL" <+> "#" <> pretty s
+        p4 (AddRRS _ rD rS rS' s)  = ar3 "add" rD rS rS' <> "," <+> "LSL" <+> "#" <> decimal s
         p4 (AddRR _ rD rS rS')     = ar3 "add" rD rS rS'
         p4 (SubRR _ rD rS rS')     = ar3 "sub" rD rS rS'
         p4 (AndRR _ rD rS rS')     = ar3 "and" rD rS rS'
         p4 (OrRR _ rD rS rS')      = ar3 "orr" rD rS rS'
         p4 (Eor _ rD rS rS')       = ar3 "eor" rD rS rS'
         p4 (Eon _ rD rS rS')       = ar3 "eon" rD rS rS'
-        p4 (EorI _ rD rS i)        = ar2 "eor" rD rS <> "," <+> pretty i
+        p4 (EorI _ rD rS i)        = ar2 "eor" rD rS <> "," <+> pr i
         p4 (ZeroR _ rD)            = ar3 "eor" rD rD rD
         p4 (MulRR _ rD rS rS')     = ar3 "mul" rD rS rS'
         p4 (SubRC _ rD rS u IZero) = "sub" <+> r2i rD rS u
-        p4 (SubRC _ rD rS u s)     = "sub" <+> r2i rD rS u <> "," <+> pretty s
+        p4 (SubRC _ rD rS u s)     = "sub" <+> r2i rD rS u <> "," <+> pr s
         p4 (SubsRC _ rD rS u)      = "subs" <+> r2i rD rS u
         p4 (AddRC _ rD rS u IZero) = "add" <+> r2i rD rS u
-        p4 (AddRC _ rD rS u s)     = "add" <+> r2i rD rS u <> "," <+> pretty s
+        p4 (AddRC _ rD rS u s)     = "add" <+> r2i rD rS u <> "," <+> pr s
         p4 (Lsl _ rD rS u)         = "lsl" <+> r2i rD rS u
         p4 (Asr _ rD rS u)         = "asr" <+> r2i rD rS u
         p4 (AsrR _ rD r0 r1)       = ar3 "asr" rD r0 r1
         p4 (LslR _ rD r0 r1)       = ar3 "lsl" rD r0 r1
-        p4 (CmpRC _ r u)           = "cmp" <+> pretty r <> "," <+> hexd u
+        p4 (CmpRC _ r u)           = "cmp" <+> pr r <> "," <+> hexd u
         p4 (CmpRR _ r0 r1)         = ar2 "cmp" r0 r1
         p4 (Neg _ rD rS)           = ar2 "neg" rD rS
         p4 (Fmul _ rD r0 r1)       = ar3 "fmul" rD r0 r1
@@ -694,14 +690,14 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fneg2 _ xD xS)         = "fneg" <+> av2 xD xS
         p4 (Fadd2 _ xD x0 x1)      = "fadd" <+> v3 xD x0 x1
         p4 (Fsub2 _ xD x0 x1)      = "fsub" <+> v3 xD x0 x1
-        p4 (Faddp _ dD v0)         = "faddp" <+> pretty dD <> "," <+> pvd v0
-        p4 (Fmaxp _ dD v0)         = "fmaxp" <+> pretty dD <> "," <+> pvd v0
-        p4 (Fminp _ dD v0)         = "fminp" <+> pretty dD <> "," <+> pvd v0
+        p4 (Faddp _ dD v0)         = "faddp" <+> pr dD <> "," <+> pvd v0
+        p4 (Fmaxp _ dD v0)         = "fmaxp" <+> pr dD <> "," <+> pvd v0
+        p4 (Fminp _ dD v0)         = "fminp" <+> pr dD <> "," <+> pvd v0
         p4 (EorS _ vD v0 v1)       = "eor" <+> pvv vD <> "," <+> pvv v0 <> "," <+> pvv v1
         p4 (ZeroS _ v)             = "eor" <+> pvv v <> "," <+> pvv v <> "," <+> pvv v
         p4 (ZeroD _ d)             = let q=V2Reg d in "eor" <+> pvs q <> "," <> pvs q <> "," <+> pvs q
         p4 (EorD _ d0 d1 d2)       = "eor" <+> pvs (V2Reg d0) <> "," <+> pvs (V2Reg d1) <> "," <+> pvs (V2Reg d2)
-        p4 (FcmpZ _ xr)            = "fcmp" <+> pretty xr <> "," <+> "#0.0"
+        p4 (FcmpZ _ xr)            = "fcmp" <+> pr xr <> "," <+> "#0.0"
         p4 (Fneg _ d0 d1)          = ar2 "fneg" d0 d1
         p4 Ret{}                   = "ret"
         p4 RetL{}                  = "ret"
@@ -709,15 +705,15 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Fcvtms _ r d)          = ar2 "fcvtms" r d
         p4 (Fcvtps _ r d)          = ar2 "fcvtps" r d
         p4 (Fcvtas _ r d)          = ar2 "fcvtas" r d
-        p4 (MovK _ r i s)          = "movk" <+> ri r i <> "," <+> "LSL" <+> "#" <> pretty s
-        p4 (MovZ _ r i s)          = "movz" <+> ri r i <> "," <+> "LSL" <+> "#" <> pretty s
+        p4 (MovK _ r i s)          = "movk" <+> ri r i <> "," <+> "LSL" <+> "#" <> decimal s
+        p4 (MovZ _ r i s)          = "movz" <+> ri r i <> "," <+> "LSL" <+> "#" <> decimal s
         p4 (Fcmp _ d0 d1)          = ar2 "fcmp" d0 d1
         p4 (Stp _ r0 r1 a)         = ar3 "stp" r0 r1 a
         p4 (Ldp _ r0 r1 a)         = ar3 "ldp" r0 r1 a
         p4 (Ldp2 _ q0 q1 a)        = "ldp" <+> qa q0 q1 a
         p4 (Stp2 _ q0 q1 a)        = "stp" <+> qa q0 q1 a
-        p4 (LdrS _ q a)            = "ldr" <+> pq q <> "," <+> pretty a
-        p4 (StrS _ q a)            = "str" <+> pq q <> "," <+> pretty a
+        p4 (LdrS _ q a)            = "ldr" <+> pq q <> "," <+> pr a
+        p4 (StrS _ q a)            = "str" <+> pq q <> "," <+> pr a
         p4 (StpD _ d0 d1 a)        = ar3 "stp" d0 d1 a
         p4 (LdpD _ d0 d1 a)        = ar3 "ldp" d0 d1 a
         p4 (Fmadd _ d0 d1 d2 d3)   = ar4 "fmadd" d0 d1 d2 d3
@@ -729,31 +725,32 @@ instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch6
         p4 (Sdiv _ rD rS rS')      = ar3 "sdiv" rD rS rS'
         p4 (Fsqrt _ d0 d1)         = ar2 "fsqrt" d0 d1
         p4 (Frintm _ d0 d1)        = ar2 "frintm" d0 d1
-        p4 (MrsR _ r)              = "mrs" <+> pretty r <> "," <+> "rndr"
+        p4 (MrsR _ r)              = "mrs" <+> pr r <> "," <+> "rndr"
         p4 (MovRCf _ r cf)         = ar2 "mov" r cf
-        p4 (LdrRL _ r l)           = "ldr" <+> pretty r <> "," <+> "=arr_" <> pretty l
+        p4 (LdrRL _ r l)           = "ldr" <+> pr r <> "," <+> "=arr_" <> decimal l
         p4 (Fmax _ d0 d1 d2)       = ar3 "fmax" d0 d1 d2
         p4 (Fmin _ d0 d1 d2)       = ar3 "fmin" d0 d1 d2
         p4 (Fabs _ d0 d1)          = ar2 "fabs" d0 d1
-        p4 (Csel _ r0 r1 r2 p)     = ar3 "csel" r0 r1 r2 <> "," <+> pretty p
-        p4 (Csneg _ r0 r1 r2 p)    = ar3 "csneg" r0 r1 r2 <> "," <+> pretty p
-        p4 (Tbnz _ r n l)          = "tbnz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l
-        p4 (Tbz _ r n l)           = "tbz" <+> pretty r <> "," <+> "#" <> pretty n <> "," <+> prettyLabel l
-        p4 (Cbnz _ r l)            = "cbnz" <+> pretty r <> "," <+> prettyLabel l
-        p4 (Cbz _ r l)             = "cbz" <+> pretty r <> "," <+> prettyLabel l
-        p4 (Fcsel _ d0 d1 d2 p)    = ar3 "fcsel" d0 d1 d2 <> "," <+> pretty p
-        p4 (TstI _ r i)            = "tst" <+> pretty r <> "," <+> pretty i
+        p4 (Csel _ r0 r1 r2 p)     = ar3 "csel" r0 r1 r2 <> "," <+> pr p
+        p4 (Csneg _ r0 r1 r2 p)    = ar3 "csneg" r0 r1 r2 <> "," <+> pr p
+        p4 (Tbnz _ r n l)          = "tbnz" <+> pr r <> "," <+> "#" <> decimal n <> "," <+> prettyLabel l
+        p4 (Tbz _ r n l)           = "tbz" <+> pr r <> "," <+> "#" <> decimal n <> "," <+> prettyLabel l
+        p4 (Cbnz _ r l)            = "cbnz" <+> pr r <> "," <+> prettyLabel l
+        p4 (Cbz _ r l)             = "cbz" <+> pr r <> "," <+> prettyLabel l
+        p4 (Fcsel _ d0 d1 d2 p)    = ar3 "fcsel" d0 d1 d2 <> "," <+> pr p
+        p4 (TstI _ r i)            = "tst" <+> pr r <> "," <+> pr i
         p4 (Cset _ r c)            = ar2 "cset" r c
-        p4 (Bfc _ r l w)           = "bfc" <+> pretty r <> "," <+> pretty l <> "," <+> pretty w
-        p4 (Dup _ v r)             = "dup" <+> pvd v <> "," <+> pretty r
-        p4 (Ins _ v i r)           = "ins" <+> pvd v <> brackets (pretty i) <> "," <+> pretty r
-        p4 (DupD _ v0 v1 i)        = "dup" <+> pvd v0 <> "," <+> pvd v1 <> brackets (pretty i)
+        p4 (Bfc _ r l w)           = "bfc" <+> pr r <> "," <+> decimal l <> "," <+> decimal w
+        p4 (Dup _ v r)             = "dup" <+> pvd v <> "," <+> pr r
+        p4 (Ins _ v i r)           = "ins" <+> pvd v <> brackets (decimal i) <> "," <+> pr r
+        p4 (DupD _ v0 v1 i)        = "dup" <+> pvd v0 <> "," <+> pvd v1 <> brackets (decimal i)
         p4 (Clz _ r0 r1)           = ar2 "clz" r0 r1
 
-instance (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pretty
+instance (Pr reg, Pr freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pr
+instance (Pr reg, Pr freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch64 reg freg a) where pretty=embed.pr
 
-prettyLive :: (Pretty reg, Pretty freg, SIMD (V2Reg freg), P32 reg, Pretty o) => AArch64 reg freg o -> Doc ann
-prettyLive r = pretty r <+> pretty (ann r)
+prettyLive :: (Pr reg, Pr freg, SIMD (V2Reg freg), P32 reg, Pretty o) => AArch64 reg freg o -> Doc ann
+prettyLive r = embed (pr r) <> space <> pretty (ann r)
 
-prettyDebug :: (Pretty freg, Pretty reg, SIMD (V2Reg freg), P32 reg, Pretty o) => [AArch64 reg freg o] -> Doc ann
+prettyDebug :: (Pr freg, Pr reg, SIMD (V2Reg freg), P32 reg, Pretty o) => [AArch64 reg freg o] -> Doc ann
 prettyDebug = prettyLines . fmap prettyLive

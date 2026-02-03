@@ -76,6 +76,7 @@ library
         Nm
         P
         Parser
+        Asm.Pr
         Prettyprinter.Ext
         Sh
         Ty
@@ -170,7 +171,7 @@ library
         , mtl                  >=2.2.2
         , prettyprinter        >=1.7.0
         , split                >=0.2.0.0
-        , text
+        , text                 >=1.2.0.0
         , transformers
 
 library as

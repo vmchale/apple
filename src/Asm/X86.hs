@@ -22,12 +22,15 @@ module Asm.X86 ( X86 (..)
                ) where
 
 import           Asm.M
-import           Control.DeepSeq   (NFData (rnf), rwhnf)
+import           Asm.Pr
+import           Control.DeepSeq            (NFData (rnf), rwhnf)
 import           Data.Copointed
-import           Data.Int          (Int32, Int64, Int8)
-import           Data.Word         (Word8)
-import           GHC.Generics      (Generic)
-import           Prettyprinter     (Doc, Pretty (..), brackets, colon, (<+>))
+import           Data.Int                   (Int32, Int64, Int8)
+import qualified Data.Text.Lazy.Builder     as B
+import           Data.Text.Lazy.Builder.Int (decimal)
+import           Data.Word                  (Word8)
+import           GHC.Generics               (Generic)
+import           Prettyprinter              (Doc, Pretty (..), space)
 import           Prettyprinter.Ext
 import           Q
 
@@ -47,27 +50,30 @@ instance NFData F2X86 where rnf=rwhnf
 simd2 :: FX86Reg -> F2X86
 simd2 = toEnum.fromEnum
 
-instance Pretty X86Reg where
-    pretty Rax = "rax"; pretty Rbx = "rbx"; pretty Rcx = "rcx"; pretty Rdx = "rdx"
-    pretty Rsi = "rsi"; pretty Rdi = "rdi"; pretty R8  = "r8";  pretty R9  = "r9"
-    pretty R10 = "r10"; pretty R11 = "r11"; pretty R12 = "r12"; pretty R13 = "r13"
-    pretty R14 = "r14"; pretty R15 = "r15"; pretty Rsp = "rsp"; pretty Rbp = "rbp"
+instance Pr X86Reg where
+    pr Rax = "rax"; pr Rbx = "rbx"; pr Rcx = "rcx"; pr Rdx = "rdx"
+    pr Rsi = "rsi"; pr Rdi = "rdi"; pr R8  = "r8";  pr R9  = "r9"
+    pr R10 = "r10"; pr R11 = "r11"; pr R12 = "r12"; pr R13 = "r13"
+    pr R14 = "r14"; pr R15 = "r15"; pr Rsp = "rsp"; pr Rbp = "rbp"
 
-instance Pretty FX86Reg where
-    pretty XMM0  = "xmm0"; pretty XMM1   = "xmm1"; pretty XMM2   = "xmm2"; pretty XMM3   = "xmm3"
-    pretty XMM4  = "xmm4"; pretty XMM5   = "xmm5"; pretty XMM6   = "xmm6"; pretty XMM7   = "xmm7"
-    pretty XMM8  = "xmm8"; pretty XMM9   = "xmm9"; pretty XMM10  = "xmm10"; pretty XMM11 = "xmm11"
-    pretty XMM12 = "xmm12"; pretty XMM13 = "xmm13"; pretty XMM14 = "xmm14"; pretty XMM15 = "xmm15"
+instance Pr FX86Reg where
+    pr XMM0  = "xmm0"; pr XMM1   = "xmm1"; pr XMM2   = "xmm2"; pr XMM3   = "xmm3"
+    pr XMM4  = "xmm4"; pr XMM5   = "xmm5"; pr XMM6   = "xmm6"; pr XMM7   = "xmm7"
+    pr XMM8  = "xmm8"; pr XMM9   = "xmm9"; pr XMM10  = "xmm10"; pr XMM11 = "xmm11"
+    pr XMM12 = "xmm12"; pr XMM13 = "xmm13"; pr XMM14 = "xmm14"; pr XMM15 = "xmm15"
 
-instance Pretty F2X86 where
-    pretty YMM0  = "ymm0";  pretty YMM1  = "ymm1";  pretty YMM2  = "ymm2";  pretty YMM3  = "ymm3"
-    pretty YMM4  = "ymm4";  pretty YMM5  = "ymm5";  pretty YMM6  = "ymm6";  pretty YMM7  = "ymm7"
-    pretty YMM8  = "ymm8";  pretty YMM9  = "ymm9";  pretty YMM10 = "ymm10"; pretty YMM11 = "ymm11"
-    pretty YMM12 = "ymm12"; pretty YMM13 = "ymm13"; pretty YMM14 = "ymm14"; pretty YMM15 = "ymm15"
+instance Pr F2X86 where
+    pr YMM0  = "ymm0";  pr YMM1  = "ymm1";  pr YMM2  = "ymm2";  pr YMM3  = "ymm3"
+    pr YMM4  = "ymm4";  pr YMM5  = "ymm5";  pr YMM6  = "ymm6";  pr YMM7  = "ymm7"
+    pr YMM8  = "ymm8";  pr YMM9  = "ymm9";  pr YMM10 = "ymm10"; pr YMM11 = "ymm11"
+    pr YMM12 = "ymm12"; pr YMM13 = "ymm13"; pr YMM14 = "ymm14"; pr YMM15 = "ymm15"
 
-instance Show X86Reg where show=show.pretty
-instance Show FX86Reg where show=show.pretty
-instance Show F2X86 where show=show.pretty
+instance Show X86Reg where show=show.pr
+instance Show FX86Reg where show=show.pr
+instance Show F2X86 where show=show.pr
+
+instance Pretty X86Reg where pretty=embed.pr
+instance Pretty FX86Reg where pretty=embed.pr
 
 data AbsReg = IReg !Int
             | CArg0 | CArg1 | CArg2 | CArg3 | CArg4 | CArg5
@@ -83,21 +89,21 @@ data FAbsReg = FReg !Int
 
 data X2Abs = F2Reg !Int deriving (Eq, Ord)
 
-instance Pretty AbsReg where
-    pretty CArg0 = "rdi"; pretty CArg1 = "rsi"; pretty CArg2 = "rdx";  pretty CArg3 = "rcx"
-    pretty CArg4 = "r8";  pretty CArg5  = "r9"; pretty CRet   = "rax"; pretty SP    = "rsp"
-    pretty BP    = "rbp"
-    pretty Quot  = "rax"; pretty Rem   = "rdx"
-    pretty (IReg i) = "^r" <> pretty i
+instance Pr AbsReg where
+    pr CArg0 = "rdi"; pr CArg1 = "rsi"; pr CArg2 = "rdx";  pr CArg3 = "rcx"
+    pr CArg4 = "r8";  pr CArg5  = "r9"; pr CRet   = "rax"; pr SP    = "rsp"
+    pr BP    = "rbp"
+    pr Quot  = "rax"; pr Rem   = "rdx"
+    pr (IReg i) = "^r" <> decimal i
 
-instance Pretty FAbsReg where
-    pretty FArg0 = "xmm0"; pretty FArg1 = "xmm1"; pretty FArg2 = "xmm2"; pretty FArg3 = "xmm3"
-    pretty FArg4 = "xmm4"; pretty FArg5 = "xmm5"; pretty FArg6 = "xmm6"; pretty FArg7 = "xmm7"
-    pretty FRet0 = "xmm0"; pretty FRet1 = "xmm1"
-    pretty (FReg i) = "^xmm" <> pretty i
+instance Pr FAbsReg where
+    pr FArg0 = "xmm0"; pr FArg1 = "xmm1"; pr FArg2 = "xmm2"; pr FArg3 = "xmm3"
+    pr FArg4 = "xmm4"; pr FArg5 = "xmm5"; pr FArg6 = "xmm6"; pr FArg7 = "xmm7"
+    pr FRet0 = "xmm0"; pr FRet1 = "xmm1"
+    pr (FReg i) = "^xmm" <> decimal i
 
-instance Pretty X2Abs where
-    pretty (F2Reg i) = "ymm" <> pretty i
+instance Pr X2Abs where
+    pr (F2Reg i) = "ymm" <> decimal i
 
 toInt CArg0 = 0; toInt CArg1 = 1; toInt CArg2 = 2; toInt CArg3 = 3
 toInt CArg4 = 4; toInt CArg5 = 5; toInt CRet  = 6
@@ -112,8 +118,8 @@ fToInt (FReg i) = 16+i
 
 newtype ST = ST Int8 deriving (NFData)
 
-instance Pretty ST where
-    pretty (ST i) = "st" <> pretty i
+instance Pr ST where
+    pr (ST i) = "st" <> decimal i
 
 data RoundMode = RNearest | RDown | RUp | RZero
 
@@ -124,20 +130,20 @@ brm :: RoundMode -> Word8
 brm RNearest = 0x0; brm RDown = 0x1
 brm RUp      = 0x2; brm RZero = 0x3
 
-instance Pretty RoundMode where pretty=pretty.brm
+instance Pr RoundMode where pr=decimal.brm
 
 data Scale = One | Two | Four | Eight deriving Eq
 
-instance Pretty Scale where
-    pretty One  = "1"; pretty Two   = "2"
-    pretty Four = "4"; pretty Eight = "8"
+instance Pr Scale where
+    pr One  = "1"; pr Two   = "2"
+    pr Four = "4"; pr Eight = "8"
 
 data Pred = Eqoq | Ltos | Leos | Unordq | Nequq | Nltus | Nleus | Ordq
 
-instance Pretty Pred where
-     pretty Eqoq   = "EQ_OQ";   pretty Ltos  = "LT_OS";  pretty Leos  = "LE_OS"
-     pretty Unordq = "UNORD_Q"; pretty Nequq = "NEQ_UQ"; pretty Nltus = "NLT_US"
-     pretty Nleus  = "NLE_US";  pretty Ordq  = "ORD_Q"
+instance Pr Pred where
+     pr Eqoq   = "EQ_OQ";   pr Ltos  = "LT_OS";  pr Leos  = "LE_OS"
+     pr Unordq = "UNORD_Q"; pr Nequq = "NEQ_UQ"; pr Nltus = "NLT_US"
+     pr Nleus  = "NLE_US";  pr Ordq  = "ORD_Q"
 
 hasMa :: [X86 reg freg a] -> Bool
 hasMa = any g where g Call{} = True; g _ = False
@@ -155,24 +161,24 @@ instance NFData Scale where rnf=rwhnf
 
 instance NFData reg => NFData (Addr reg) where
 
-pix c | c < 0 = pretty c | otherwise = "+" <> pretty c
+pix c | c < 0 = decimal c | otherwise = "+" <> decimal c
 
-instance Pretty reg => Pretty (Addr reg) where
-    pretty (R r)           = brackets (pretty r)
-    pretty (RC r c)        = brackets (pretty r <> pix c)
-    pretty (RC32 r c)      = brackets (pretty r <> pix c)
-    pretty (RS b One i)    = brackets (pretty b <> "+" <> pretty i)
-    pretty (RS b s i)      = brackets (pretty b <> "+" <> pretty s <> "*" <> pretty i)
-    pretty (RSD b One i d) = brackets (pretty b <> pretty i <> pix d)
-    pretty (RSD b s i d)   = brackets (pretty b <> "+" <> pretty s <> "*" <> pretty i <> pix d)
+instance Pr reg => Pr (Addr reg) where
+    pr (R r)           = brackets (pr r)
+    pr (RC r c)        = brackets (pr r <> pix c)
+    pr (RC32 r c)      = brackets (pr r <> pix c)
+    pr (RS b One i)    = brackets (pr b <> "+" <> pr i)
+    pr (RS b s i)      = brackets (pr b <> "+" <> pr s <> "*" <> pr i)
+    pr (RSD b One i d) = brackets (pr b <> pr i <> pix d)
+    pr (RSD b s i d)   = brackets (pr b <> "+" <> pr s <> "*" <> pr i <> pix d)
 
 data P = Ne | E | L | Le | Ge | G
 
 instance NFData P where rnf=rwhnf
 
-instance Pretty P where
-    pretty Ne="ne"; pretty E="e";   pretty L="l"
-    pretty Le="le"; pretty Ge="ge"; pretty G="g"
+instance Pr P where
+    pr Ne="ne"; pr E="e";   pr L="l"
+    pr Le="le"; pr Ge="ge"; pr G="g"
 
 pm Ne="ne"; pm E="e";   pm L="l"
 pm Le="le"; pm Ge="nl"; pm G="nle"
@@ -263,102 +269,103 @@ instance (NFData a, NFData reg, NFData freg) => NFData (X86 reg freg a) where
 
 instance Copointed (X86 reg freg) where copoint = ann
 
-instance (Pretty reg, Pretty freg) => Pretty (X86 reg freg a) where
-    pretty (J _ l)                       = i4 ("jmp" <+> prettyLabel l)
-    pretty (Label _ l)                   = prettyLabel l <> colon
-    pretty (CmpRR _ r0 r1)               = i4 ("cmp" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (MovRR _ r0 r1)               = i4 ("mov" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (MovRL _ r l)                 = i4 ("mov" <+> pretty r <> "," <+> "arr_" <> pretty l)
-    pretty (MovRI _ r i)                 = i4 ("mov" <+> pretty r <> "," <+> pretty i)
-    pretty (XorRR _ r0 r1)               = i4 ("xor" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (MovqXR _ r0 r1)              = i4 ("movq" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (IAddRR _ r0 r1)              = i4 ("add" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (IAddRI _ r i)                = i4 ("add" <+> pretty r <> "," <+> pretty i)
-    pretty (ISubRR _ r0 r1)              = i4 ("sub" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (ISubRI _ r i)                = i4 ("sub" <+> pretty r <> "," <+> pretty i)
-    pretty (IMulRR _ r0 r1)              = i4 ("imul" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (IMulRA _ r a)                = i4 ("imul" <+> pretty r <> "," <+> pretty a)
-    pretty (Jcc _ p l)                   = i4 ("j" <> pretty p <+> prettyLabel l)
-    pretty Ret{}                         = i4 "ret"
-    pretty (Vdivsd _ rD r0 r1)           = i4 ("vdivsd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Movapd _ r0 r1)              = i4 ("movapd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cvttsd2si _ r0 r1)           = i4 ("cvttsd2si" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vmulsd _ rD r0 r1)           = i4 ("vmulsd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vaddsd _ rD r0 r1)           = i4 ("vaddsd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (VaddsdA _ rD r a)            = i4 ("vaddsd" <+> pretty rD <> "," <+> pretty r <> "," <+> pretty a)
-    pretty (Vsubsd _ rD r0 r1)           = i4 ("vsubsd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cvtsi2sd _ r0 r1)            = i4 ("cvtsi2sd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Roundsd _ r0 r1 m)           = i4 ("roundsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty m)
-    pretty (CmpRI _ r i)                 = i4 ("cmp" <+> pretty r <> "," <+> pretty i)
-    pretty (Divsd _ r0 r1)               = i4 ("divsd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Mulsd _ r0 r1)               = i4 ("mulsd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Addsd _ r0 r1)               = i4 ("addsd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Subsd _ r0 r1)               = i4 ("subsd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (MovRA _ r a)                 = i4 ("mov" <+> pretty r <> "," <+> pretty a)
-    pretty (MovAR _ a r)                 = i4 ("mov" <+> pretty a <> "," <+> pretty r)
-    pretty (MovAI32 _ a i)               = i4 ("mov qword" <+> pretty a <> "," <+> pretty i)
-    pretty (MovqXA _ x a)                = i4 ("movq" <+> pretty x <> "," <+> pretty a)
-    pretty (MovqAX _ a x)                = i4 ("movq" <+> pretty a <> "," <+> pretty x)
-    pretty (Fld _ a)                     = i4 ("fld qword" <+> pretty a)
-    pretty Fyl2x{}                       = i4 "fyl2x"
-    pretty (Fstp _ a)                    = i4 ("fstp qword" <+> pretty a)
-    pretty F2xm1{}                       = i4 "f2xm1"
-    pretty Fldl2e{}                      = i4 "fldl2e"
-    pretty Fldln2{}                      = i4 "fldln2"
-    pretty Fld1{}                        = i4 "fld1"
-    pretty Fsin{}                        = i4 "fsin"
-    pretty Fcos{}                        = i4 "fcos"
-    pretty Fprem{}                       = i4 "fprem"
-    pretty Faddp{}                       = i4 "faddp"
-    pretty Fscale{}                      = i4 "fscale"
-    pretty Fninit{}                      = i4 "fninit"
-    pretty (Fxch _ st)                   = i4 ("fxch" <+> pretty st)
-    pretty (FldS _ st)                   = i4 ("fld" <+> pretty st)
-    pretty Fmulp{}                       = i4 "fmulp"
-    pretty (Vfmadd231sd _ rD r0 r1)      = i4 ("vfmadd231sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vfmnadd231sd _ rD r0 r1)     = i4 ("vfmnadd231sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vfmadd213sd _ rD r0 r1)      = i4 ("vfmadd213sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vfmsub231sd _ rD r0 r1)      = i4 ("vfsubd231sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vfmsub213sd _ rD r0 r1)      = i4 ("vfsubd213sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vfmsub132sd _ rD r0 r1)      = i4 ("vfsubd132sd" <+> pretty rD <> "," <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vfmadd231sdA _ rD r a)       = i4 ("vfmadd231sd" <+> pretty rD <> "," <+> pretty r <> "," <+> pretty a)
-    pretty (Push _ r)                    = i4 ("push" <+> pretty r)
-    pretty (Pop _ r)                     = i4 ("pop" <+> pretty r)
-    pretty (IDiv _ r)                    = i4 ("idiv" <+> pretty r)
-    pretty (Call _ f)                    = i4 ("call" <+> pretty f <+> "wrt ..plt")
-    pretty (Sal _ r i)                   = i4 ("sal" <+> pretty r <> "," <+> pretty i)
-    pretty (Sar _ r i)                   = i4 ("sar" <+> pretty r <> "," <+> pretty i)
-    pretty (Sqrtsd _ r0 r1)              = i4 ("sqrtsd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Maxsd _ r0 r1)               = i4 ("maxsd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vmaxsd _ r0 r1 r2)           = i4 ("vmaxsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2)
-    pretty (VmaxsdA _ r0 r1 a)           = i4 ("vmaxsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty a)
-    pretty (Minsd _ r0 r1)               = i4 ("minsd" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Vminsd _ r0 r1 r2)           = i4 ("vminsd" <+> pretty r0 <> "," <+> pretty r1 <> "," <+> pretty r2)
-    pretty (Not _ r)                     = i4 ("not" <+> pretty r)
-    pretty (And _ r0 r1)                 = i4 ("and" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Cmov _ p r0 r1)              = i4 ("cmov" <> pm p <+> pretty r0 <> "," <+> pretty r1)
-    pretty (Rdrand _ r)                  = i4 ("rdrand" <+> pretty r)
-    pretty (Test _ r0 r1)                = i4 ("test" <+> pretty r0 <> "," <+> pretty r1)
-    pretty (TestI _ r0 i)                = i4 ("test" <+> pretty r0 <> "," <+> pretty i)
-    pretty (MovqRX _ r xr)               = i4 ("movq" <+> pretty r <> "," <+> pretty xr)
-    pretty (Vcmppd _ xr0 xr1 xr2 Eqoq)   = i4 ("vcmpeqpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-    pretty (Vcmppd _ xr0 xr1 xr2 Ltos)   = i4 ("vcmpltpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-    pretty (Vcmppd _ xr0 xr1 xr2 Leos)   = i4 ("vcmplepd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-    pretty (Vcmppd _ xr0 xr1 xr2 Unordq) = i4 ("vcmpunordpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-    pretty (Vcmppd _ xr0 xr1 xr2 Nequq)  = i4 ("vcmpneqpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-    pretty (Vcmppd _ xr0 xr1 xr2 Nltus)  = i4 ("vcmpnltpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-    pretty (Vcmppd _ xr0 xr1 xr2 Nleus)  = i4 ("vcmpnlepd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-    pretty (Vcmppd _ xr0 xr1 xr2 Ordq)   = i4 ("vcmpordpd" <+> pretty xr0 <> "," <+> pretty xr1 <> "," <+> pretty xr2)
-    pretty (C _ l)                       = i4 ("call" <+> prettyLabel l)
-    pretty RetL{}                        = i4 "ret"
-    pretty (Neg _ r)                     = i4 ("neg" <+> pretty r)
+instance (Pr reg, Pr freg) => Pr (X86 reg freg a) where
+    pr (J _ l)                       = i4 ("jmp" <+> prettyLabel l)
+    pr (Label _ l)                   = prettyLabel l <> ":"
+    pr (CmpRR _ r0 r1)               = i4 ("cmp" <+> pr r0 <> "," <+> pr r1)
+    pr (MovRR _ r0 r1)               = i4 ("mov" <+> pr r0 <> "," <+> pr r1)
+    pr (MovRL _ r l)                 = i4 ("mov" <+> pr r <> "," <+> "arr_" <> decimal l)
+    pr (MovRI _ r i)                 = i4 ("mov" <+> pr r <> "," <+> decimal i)
+    pr (XorRR _ r0 r1)               = i4 ("xor" <+> pr r0 <> "," <+> pr r1)
+    pr (MovqXR _ r0 r1)              = i4 ("movq" <+> pr r0 <> "," <+> pr r1)
+    pr (IAddRR _ r0 r1)              = i4 ("add" <+> pr r0 <> "," <+> pr r1)
+    pr (IAddRI _ r i)                = i4 ("add" <+> pr r <> "," <+> decimal i)
+    pr (ISubRR _ r0 r1)              = i4 ("sub" <+> pr r0 <> "," <+> pr r1)
+    pr (ISubRI _ r i)                = i4 ("sub" <+> pr r <> "," <+> decimal i)
+    pr (IMulRR _ r0 r1)              = i4 ("imul" <+> pr r0 <> "," <+> pr r1)
+    pr (IMulRA _ r a)                = i4 ("imul" <+> pr r <> "," <+> pr a)
+    pr (Jcc _ p l)                   = i4 ("j" <> pr p <+> prettyLabel l)
+    pr Ret{}                         = i4 "ret"
+    pr (Vdivsd _ rD r0 r1)           = i4 ("vdivsd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Movapd _ r0 r1)              = i4 ("movapd" <+> pr r0 <> "," <+> pr r1)
+    pr (Cvttsd2si _ r0 r1)           = i4 ("cvttsd2si" <+> pr r0 <> "," <+> pr r1)
+    pr (Vmulsd _ rD r0 r1)           = i4 ("vmulsd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Vaddsd _ rD r0 r1)           = i4 ("vaddsd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (VaddsdA _ rD r a)            = i4 ("vaddsd" <+> pr rD <> "," <+> pr r <> "," <+> pr a)
+    pr (Vsubsd _ rD r0 r1)           = i4 ("vsubsd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Cvtsi2sd _ r0 r1)            = i4 ("cvtsi2sd" <+> pr r0 <> "," <+> pr r1)
+    pr (Roundsd _ r0 r1 m)           = i4 ("roundsd" <+> pr r0 <> "," <+> pr r1 <> "," <+> pr m)
+    pr (CmpRI _ r i)                 = i4 ("cmp" <+> pr r <> "," <+> decimal i)
+    pr (Divsd _ r0 r1)               = i4 ("divsd" <+> pr r0 <> "," <+> pr r1)
+    pr (Mulsd _ r0 r1)               = i4 ("mulsd" <+> pr r0 <> "," <+> pr r1)
+    pr (Addsd _ r0 r1)               = i4 ("addsd" <+> pr r0 <> "," <+> pr r1)
+    pr (Subsd _ r0 r1)               = i4 ("subsd" <+> pr r0 <> "," <+> pr r1)
+    pr (MovRA _ r a)                 = i4 ("mov" <+> pr r <> "," <+> pr a)
+    pr (MovAR _ a r)                 = i4 ("mov" <+> pr a <> "," <+> pr r)
+    pr (MovAI32 _ a i)               = i4 ("mov qword" <+> pr a <> "," <+> decimal i)
+    pr (MovqXA _ x a)                = i4 ("movq" <+> pr x <> "," <+> pr a)
+    pr (MovqAX _ a x)                = i4 ("movq" <+> pr a <> "," <+> pr x)
+    pr (Fld _ a)                     = i4 ("fld qword" <+> pr a)
+    pr Fyl2x{}                       = i4 "fyl2x"
+    pr (Fstp _ a)                    = i4 ("fstp qword" <+> pr a)
+    pr F2xm1{}                       = i4 "f2xm1"
+    pr Fldl2e{}                      = i4 "fldl2e"
+    pr Fldln2{}                      = i4 "fldln2"
+    pr Fld1{}                        = i4 "fld1"
+    pr Fsin{}                        = i4 "fsin"
+    pr Fcos{}                        = i4 "fcos"
+    pr Fprem{}                       = i4 "fprem"
+    pr Faddp{}                       = i4 "faddp"
+    pr Fscale{}                      = i4 "fscale"
+    pr Fninit{}                      = i4 "fninit"
+    pr (Fxch _ st)                   = i4 ("fxch" <+> pr st)
+    pr (FldS _ st)                   = i4 ("fld" <+> pr st)
+    pr Fmulp{}                       = i4 "fmulp"
+    pr (Vfmadd231sd _ rD r0 r1)      = i4 ("vfmadd231sd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Vfmnadd231sd _ rD r0 r1)     = i4 ("vfmnadd231sd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Vfmadd213sd _ rD r0 r1)      = i4 ("vfmadd213sd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Vfmsub231sd _ rD r0 r1)      = i4 ("vfsubd231sd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Vfmsub213sd _ rD r0 r1)      = i4 ("vfsubd213sd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Vfmsub132sd _ rD r0 r1)      = i4 ("vfsubd132sd" <+> pr rD <> "," <+> pr r0 <> "," <+> pr r1)
+    pr (Vfmadd231sdA _ rD r a)       = i4 ("vfmadd231sd" <+> pr rD <> "," <+> pr r <> "," <+> pr a)
+    pr (Push _ r)                    = i4 ("push" <+> pr r)
+    pr (Pop _ r)                     = i4 ("pop" <+> pr r)
+    pr (IDiv _ r)                    = i4 ("idiv" <+> pr r)
+    pr (Call _ f)                    = i4 ("call" <+> pr f <+> "wrt ..plt")
+    pr (Sal _ r i)                   = i4 ("sal" <+> pr r <> "," <+> decimal i)
+    pr (Sar _ r i)                   = i4 ("sar" <+> pr r <> "," <+> decimal i)
+    pr (Sqrtsd _ r0 r1)              = i4 ("sqrtsd" <+> pr r0 <> "," <+> pr r1)
+    pr (Maxsd _ r0 r1)               = i4 ("maxsd" <+> pr r0 <> "," <+> pr r1)
+    pr (Vmaxsd _ r0 r1 r2)           = i4 ("vmaxsd" <+> pr r0 <> "," <+> pr r1 <> "," <+> pr r2)
+    pr (VmaxsdA _ r0 r1 a)           = i4 ("vmaxsd" <+> pr r0 <> "," <+> pr r1 <> "," <+> pr a)
+    pr (Minsd _ r0 r1)               = i4 ("minsd" <+> pr r0 <> "," <+> pr r1)
+    pr (Vminsd _ r0 r1 r2)           = i4 ("vminsd" <+> pr r0 <> "," <+> pr r1 <> "," <+> pr r2)
+    pr (Not _ r)                     = i4 ("not" <+> pr r)
+    pr (And _ r0 r1)                 = i4 ("and" <+> pr r0 <> "," <+> pr r1)
+    pr (Cmov _ p r0 r1)              = i4 ("cmov" <> pm p <+> pr r0 <> "," <+> pr r1)
+    pr (Rdrand _ r)                  = i4 ("rdrand" <+> pr r)
+    pr (Test _ r0 r1)                = i4 ("test" <+> pr r0 <> "," <+> pr r1)
+    pr (TestI _ r0 i)                = i4 ("test" <+> pr r0 <> "," <+> decimal i)
+    pr (MovqRX _ r xr)               = i4 ("movq" <+> pr r <> "," <+> pr xr)
+    pr (Vcmppd _ xr0 xr1 xr2 Eqoq)   = i4 ("vcmpeqpd" <+> pr xr0 <> "," <+> pr xr1 <> "," <+> pr xr2)
+    pr (Vcmppd _ xr0 xr1 xr2 Ltos)   = i4 ("vcmpltpd" <+> pr xr0 <> "," <+> pr xr1 <> "," <+> pr xr2)
+    pr (Vcmppd _ xr0 xr1 xr2 Leos)   = i4 ("vcmplepd" <+> pr xr0 <> "," <+> pr xr1 <> "," <+> pr xr2)
+    pr (Vcmppd _ xr0 xr1 xr2 Unordq) = i4 ("vcmpunordpd" <+> pr xr0 <> "," <+> pr xr1 <> "," <+> pr xr2)
+    pr (Vcmppd _ xr0 xr1 xr2 Nequq)  = i4 ("vcmpneqpd" <+> pr xr0 <> "," <+> pr xr1 <> "," <+> pr xr2)
+    pr (Vcmppd _ xr0 xr1 xr2 Nltus)  = i4 ("vcmpnltpd" <+> pr xr0 <> "," <+> pr xr1 <> "," <+> pr xr2)
+    pr (Vcmppd _ xr0 xr1 xr2 Nleus)  = i4 ("vcmpnlepd" <+> pr xr0 <> "," <+> pr xr1 <> "," <+> pr xr2)
+    pr (Vcmppd _ xr0 xr1 xr2 Ordq)   = i4 ("vcmpordpd" <+> pr xr0 <> "," <+> pr xr1 <> "," <+> pr xr2)
+    pr (C _ l)                       = i4 ("call" <+> prettyLabel l)
+    pr RetL{}                        = i4 "ret"
+    pr (Neg _ r)                     = i4 ("neg" <+> pr r)
 
-instance (Pretty reg, Pretty freg) => Show (X86 reg freg a) where show = show . pretty
+instance (Pr reg, Pr freg) => Show (X86 reg freg a) where show = show.pr
+instance (Pr reg, Pr freg) => Pretty (X86 reg freg a) where pretty=pretty.B.toLazyText.pr
 
-prettyLive :: (Pretty reg, Pretty freg, Pretty o) => X86 reg freg o -> Doc ann
-prettyLive r = pretty r <+> pretty (ann r)
+prettyLive :: (Pr reg, Pr freg, Pretty o) => X86 reg freg o -> Doc ann
+prettyLive r = embed (pr r) <> space <> pretty (ann r)
 
-prettyDebugX86 :: (Pretty freg, Pretty reg, Pretty o) => [X86 reg freg o] -> Doc ann
+prettyDebugX86 :: (Pr freg, Pr reg, Pretty o) => [X86 reg freg o] -> Doc ann
 prettyDebugX86 = prettyLines . fmap prettyLive
 
 mapR :: (areg -> reg) -> X86 areg afreg a -> X86 reg afreg a

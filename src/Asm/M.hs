@@ -1,12 +1,11 @@
 module Asm.M ( CFunc (..)
              , WM
              , Label
+             , pCFunc
              , nI
              , nL
              , foldMapA
-             , prettyLabel
-             , i4
-             , pAsm, prettyAsm
+             , prettyAsm
              , aArr, mFree
              ) where
 
@@ -15,12 +14,13 @@ import           Control.Monad.Trans.State.Strict (State, state)
 import           Data.Foldable                    (fold, traverse_)
 import qualified Data.IntMap                      as IM
 import           Data.List                        (scanl')
+import qualified Data.Text                        as T
 import           Data.Word                        (Word8)
 import           Foreign.Marshal.Alloc            (free)
 import           Foreign.Marshal.Array            (mallocArray, pokeArray)
 import           Foreign.Ptr                      (Ptr, plusPtr)
 import qualified IR
-import           Prettyprinter                    (Doc, Pretty (pretty), indent)
+import           Prettyprinter                    (Doc, Pretty (pretty))
 import           Prettyprinter.Ext
 
 type WM = State IR.WSt
@@ -30,16 +30,11 @@ type Label = Word
 foldMapA :: (Applicative f, Traversable t, Monoid m) => (a -> f m) -> t a -> f m
 foldMapA = (fmap fold .) . traverse
 
-prettyLabel :: Label -> Doc ann
-prettyLabel l = "apple_" <> pretty l
-
-i4 = indent 4
+pAsm :: Pretty isn => [isn] -> Doc ann
+pAsm = prettyLines.fmap pretty
 
 prettyAsm :: (Pretty isn) => (IR.AsmData, [isn]) -> Doc ann
 prettyAsm (ds,is) = pAD ds <#> pAsm is
-
-pAsm :: Pretty isn => [isn] -> Doc ann
-pAsm = prettyLines.fmap pretty
 
 nI :: WM Int
 nI = state (\(IR.WSt l i) -> (i, IR.WSt l (i+1)))
@@ -51,10 +46,12 @@ data CFunc = Malloc | Free | JR | DR | Exp | Log | Pow
 
 instance NFData CFunc where rnf=rwhnf
 
-instance Pretty CFunc where
-    pretty Malloc="malloc"; pretty Free="free"
-    pretty JR="lrand48";    pretty DR="drand48"
-    pretty Exp="exp"; pretty Log="log"; pretty Pow="pow"
+pCFunc :: CFunc -> T.Text
+pCFunc Malloc="malloc"; pCFunc Free="free"
+pCFunc JR="lrand48";    pCFunc DR="drand48"
+pCFunc Exp="exp"; pCFunc Log="log"; pCFunc Pow="pow"
+
+instance Pretty CFunc where pretty=pretty.pCFunc
 
 mFree :: Maybe (Ptr a) -> IO ()
 mFree = traverse_ free

@@ -25,6 +25,8 @@ import           Asm.Aarch64.T
 import           Asm.L
 import           Asm.LI
 import           Asm.M
+import           Asm.Pr                     hiding ((<#>), (<+>))
+import qualified Asm.Pr                     as Asm
 import qualified Asm.X86                    as X86
 import           Asm.X86.P
 import           Asm.X86.Trans
@@ -38,7 +40,7 @@ import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.IntMap                as IM
 import qualified Data.IntSet                as IS
 import qualified Data.Text                  as T
-import           Data.Text.Lazy.Builder     (toLazyText)
+import           Data.Text.Lazy.Builder     (fromText, toLazyText)
 import           Data.Text.Lazy.Builder.Int (hexadecimal)
 import           Data.Tree                  (drawTree)
 import           Data.Tuple                 (swap)
@@ -51,8 +53,8 @@ import           Prettyprinter              (Doc, Pretty (..), comma, concatWith
 import           Prettyprinter.Ext
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
-nasm f = (\(d,i) -> "section .data\n\n" <> nasmD (IM.toList d) <#> i) . second ((prolegomena <#>).pAsm) . either throw id . x86G
-    where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> pretty f <#> pretty f <> ":"
+nasm f = (\(d,i) -> "section .data\n\n" <> nasmD (IM.toList d) <#> i) . second (embed.(prolegomena Asm.<#>).pAsm) . either throw id . x86G
+    where prolegomena = "section .text\n\nextern malloc\n\nextern free\n\nglobal " <> fromText f Asm.<#> fromText f <> ":"
 
 nasmD :: [(Int, [Word8])] -> Doc ann
 nasmD = prettyLines . fmap nasmArr
