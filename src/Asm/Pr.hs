@@ -2,7 +2,7 @@ module Asm.Pr ( Pr (..)
               , brackets
               , embed
               , i4
-              , prettyLabel
+              , prLabel
               , pAD
               , pAsm
               , prLines
@@ -33,8 +33,8 @@ class Pr a where
 brackets :: B.Builder -> B.Builder
 brackets x = "[" <> x <> "]"
 
-prettyLabel :: Label -> B.Builder
-prettyLabel l = "apple_" <> decimal l
+prLabel :: Label -> B.Builder
+prLabel l = "apple_" <> decimal l
 
 instance Pr CFunc where pr=B.fromText . pCFunc
 
