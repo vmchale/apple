@@ -33,7 +33,7 @@ import           Hs.FFI
 import           JIT
 import           L
 import           Nm
-import           Prettyprinter                    (Doc, Pretty, align, brackets, concatWith, hardline, list, pretty, space, tupled, (<+>))
+import           Prettyprinter                    (Doc, Pretty, align, brackets, concatWith, hardline, list, pretty, space, tupled, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Prettyprinter.Render.Text        (renderIO)
 import           QC
@@ -236,7 +236,7 @@ qc = ty $ \i e -> do
             res <- liftIO $ g (100::Int)
             case res of
                 Nothing -> putDocLn "Passed, 100."
-                Just ex -> putDocLn ("Proposition failed!" <> hardline <> pretty ex)
+                Just ex -> putDocLn ("Proposition failed!" <> hardline <> vsep (pretty<$>ex))
             liftIO (freeAsm asm)
 
   where cb 0=False; cb 1=True
