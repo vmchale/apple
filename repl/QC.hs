@@ -27,8 +27,8 @@ dim = chooseInt64 (0, 20)
 
 data RSubst = RSubst { iS :: IM.IntMap Int64, sS :: IM.IntMap (Int64, [Int64]) }
 
-mapI f (RSubst i s) = RSubst (f i) s
-mapS g (RSubst i s) = RSubst i (g s)
+iIns n d = modify (\(RSubst i s) -> RSubst (IM.insert n d i) s)
+sIns n sh = modify (\(RSubst i s) -> RSubst i (IM.insert n sh s))
 
 type ShM = StateT RSubst Gen
 
@@ -38,17 +38,17 @@ gg (Ix _ i `Cons` sh) = bimap (+1) (fromIntegral i:)<$>gg sh
 gg (IVar _ (Nm _ (U n) _) `Cons` sh) = do
     iSt <- gets iS
     case IM.lookup n iSt of
-        Nothing -> do {d <- lift dim; modify (mapI (IM.insert n d)); bimap (+1) (d:)<$>gg sh}
+        Nothing -> do {d <- lift dim; iIns n d; bimap (+1) (d:)<$>gg sh}
         Just d  -> bimap (+1) (d:)<$>gg sh
 gg (StaPlus _ (IVar _ (Nm _ (U n) _)) (Ix _ i) `Cons` sh) | i' <- fromIntegral i = do
     iSt <- gets iS
     case IM.lookup n iSt of
-        Nothing -> do {d <- lift$chooseInt64 (0,10); modify (mapI (IM.insert n d)); bimap (+1) ((d+i'):)<$>gg sh}
+        Nothing -> do {d <- lift$chooseInt64 (0,10); iIns n d; bimap (+1) ((d+i'):)<$>gg sh}
         Just d  -> bimap (+1) ((d+i'):)<$>gg sh
 gg (SVar (Nm _ (U n) _)) = do
     sSt <- gets sS
     case IM.lookup n sSt of
-        Nothing -> do {r <- lift rnk; ds <- lift$vectorOf (fromIntegral r) dim; modify (mapS (IM.insert n (r,ds))) $> (r,ds)}
+        Nothing -> do {r <- lift rnk; ds <- lift$vectorOf (fromIntegral r) dim; sIns n (r,ds) $> (r,ds)}
         Just s  -> pure s
 
 data ValP = ArrDp !(Ptr AF) | ArrIp !(Ptr AI) | ArrBp !(Ptr (Apple AB))
