@@ -1856,6 +1856,9 @@ feval (EApp _ (EApp _ (Builtin _ IntExp) x) n) t = do
 feval (EApp _ (Builtin _ f) e) t | Just ff <- mFun f = do
     (plE,eC) <- plD e
     pure $ plE [MX () t (FUn ff eC)]
+feval (EApp _ (Builtin _ Tan) e) t = do
+    (plE,r) <- plF e; t₀ <- nF; t₁ <- nF
+    pure $ plE [MX () t₀ (FUn FSin (FTmp r)), MX () t₁ (FUn FCos (FTmp r)), MX () t (FTmp t₀/FTmp t₁)]
 feval (EApp _ (Builtin _ ItoF) e) t = do
     (pl,iE) <- plC e
     pure $ pl [MX () t (IE iE)]

@@ -108,6 +108,10 @@ plI :: IR.Exp -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()],
 plI (IR.Reg t) = pure (id, absReg t)
 plI e          = do {i <- nI; pl <- eval e (IR.ITemp i); pure ((pl++), IReg i)}
 
+plP :: IR.Exp -> WM ([AArch64 AbsReg FAbsReg ()] -> [AArch64 AbsReg FAbsReg ()], AbsReg)
+plP (IR.Is t) = pure (id, absReg t)
+plP e         = do {i <- nI; pl <- eval e (IR.ITemp i); pure ((pl++), IReg i)}
+
 ir :: IR.Stmt -> WM [AArch64 AbsReg FAbsReg ()]
 ir (IR.R l)      = pure [RetL () l]
 ir (IR.L l)      = pure [Label () l]
@@ -565,7 +569,9 @@ eval (IR.BAt (IR.AP rB (Just e) _)) t = do
     (plE,i) <- plI e
     pure $ plE [LdrB () (absReg t) (BI (absReg rB) i Zero)]
 eval (IR.LA n) t = pure [LdrRL () (absReg t) n]
-eval (IR.BU Op.BNeg (IR.Is r)) t = pure [EorI () (absReg t) (absReg r) (BM 1 0)]
+eval (IR.BU Op.BNeg e) t = do
+    (pl,i) <- plP e
+    pure $ pl [EorI () (absReg t) i (BM 1 0)]
 eval e _            = error (show e)
 
 ms :: Integral a => a -> Maybe Word8
