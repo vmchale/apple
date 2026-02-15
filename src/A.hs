@@ -21,7 +21,7 @@ import qualified Data.Set          as S
 import qualified Data.Text         as T
 import           GHC.Generics      (Generic)
 import           Nm
-import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, concatWith, encloseSep, flatAlt, group, hsep, lbrace, lbracket, parens, pipe,
+import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, concatWith, encloseSep, flatAlt, group, hsep, lbrace, lbracket, line, parens, pipe,
                                     punctuate, rbrace, rbracket, tupled, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Sh
@@ -250,9 +250,9 @@ prettyTyped = pt where
     pt (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)  = parens (pt e0 <> "Λₒ" <+> pt e1 <+> pt e2)
     pt (EApp _ e0@(Builtin _ op) e1) | isBinOp op             = parens (pt e1 <+> pt e0)
     pt e@EApp{} | es <- spine e                               = parens (group (align (vsep (pt <$> toList es))))
-    pt (Let t (n, e) e')                                      = parens (braces (ptn n <+> "←" <+> pt e <> ";" <+> pt e') <+> pretty t)
-    pt (LLet t (n, e) e')                                     = parens (braces (ptn n <+> "⟜" <+> pt e <> ";" <+> pt e') <+> pretty t)
-    pt (Def t (n, e) e')                                      = parens (braces (ptn n <+> "⇐" <+> pt e <> ";" <+> pt e') <+> pretty t)
+    pt e@Let{}                                                = pBt e
+    pt e@Def{}                                                = pBt e
+    pt e@LLet{}                                               = pBt e
     pt (Tup _ es)                                             = tupled (pt <$> es)
     pt e@(ALit t _)                                           = pretty e<::>t
 
@@ -288,17 +288,28 @@ isBinOp b | Just{} <- fi b = True
 
 data B = L | D | Λ
 
+unbind :: E a -> ([(B, Nm a, E a)], E a)
+unbind (Let _ (n,e) e')  = first ((L,n,e):) $ unbind e'
+unbind (LLet _ (n,e) e') = first ((Λ,n,e):) $ unbind e'
+unbind (Def _ (n,e) e')  = first ((D,n,e):) $ unbind e'
+unbind e                 = ([], e)
+
+pArr L="←"; pArr D="⟜"; pArr Λ="⟜"
+
 pBs :: [(B, Nm a, E a)] -> E a -> Doc ann
 pBs [] e            = pretty e
-pBs ((b,n,e):bs) e' = pretty n <+> pArr b <+> pretty e <?> ";" <+> pBs bs e' where pArr L="←"; pArr D="⟜"; pArr Λ="⟜"
+pBs ((b,n,e):bs) e' = pretty n <+> pArr b <+> pretty e <?> ";" <+> pBs bs e'
 
-pB=align.braces.uncurry pBs.unbind
-  where
-    unbind :: E a -> ([(B, Nm a, E a)], E a)
-    unbind (Let _ (n,e) e')  = first ((L,n,e):) $ unbind e'
-    unbind (LLet _ (n,e) e') = first ((Λ,n,e):) $ unbind e'
-    unbind (Def _ (n,e) e')  = first ((D,n,e):) $ unbind e'
-    unbind e                 = ([], e)
+-- map (\(b,n,e) -> pretty n <+> pArr b <+> pretty e) and then fillSep?
+
+pBts :: [(B, Nm (T a), E (T a))] -> E (T a) -> Doc ann
+pBts [] e            = prettyTyped e
+pBts ((b,n,e):bs) e' = ptn n <+> pArr b <+> prettyTyped e <?> ";" <+> pBts bs e'
+
+bc x = flatAlt ("{" <+> x <> line <> "}") ("{" <> x <> "}")
+
+pB=align.bc.uncurry pBs.unbind
+pBt=align.bc.uncurry pBts.unbind
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] }
          | Var { eAnn :: a, eVar :: Nm a }
