@@ -1,5 +1,7 @@
 - [ ] gray code enc<->dec roundtrip
 - [ ] amgm is between its arguments
+- [ ] λA. (([x] @. A) != _1) = (∨)/A
+- [ ] λA. (([¬x] @. A) = _1) = (∧)/A
 - [ ] [(+)/x%ℝ(:x)]'([x]\`7 (frange 0 9 10)) equal to [(+)/x%ℝ(:x)]\` 7
 - [ ] ~`{1∘[2]}⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩ vs ~'⟨⟨0,1⟩,⟨1,0::int⟩,⟨2,4⟩⟩
 - [ ] |: ((2 ⊖)`{1} ⟨⟨1,2⟩,⟨3,4⟩,⟨5,6.0⟩⟩)
@@ -23,7 +25,7 @@ also tail/init ^
 
 # Identity-fill
 
-(\n. [?x=n,.1::int,.0]'(⍳9))'⍳ 0 9
+(\n. [?x=n,.1::int,.0]'(⍳9))'0..9
 
 # Identities
 
