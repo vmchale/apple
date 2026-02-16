@@ -8,7 +8,7 @@ module Prettyprinter.Ext ( (<#>), (<?>), (<!>)
                          , ptxt
                          , aText
                          , prettyDumpBinds
-                         , tlhex2
+                         , hex2
                          , pAD
                          ) where
 
@@ -18,8 +18,8 @@ import qualified Data.Text.Lazy             as TL
 import           Data.Text.Lazy.Builder     (toLazyTextWith)
 import           Data.Text.Lazy.Builder.Int (hexadecimal)
 import           Data.Void                  (Void, absurd)
-import           Prettyprinter              (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, concatWith, encloseSep, flatAlt, group, hardline,
-                                             indent, layoutSmart, parens, softline', space, vsep, (<+>))
+import           Prettyprinter              (Doc, LayoutOptions (..), PageWidth (AvailablePerLine), Pretty (..), SimpleDocStream, align, concatWith, encloseSep, fillCat, flatAlt,
+                                             group, hardline, indent, layoutSmart, parens, punctuate, softline', space, vsep, (<+>))
 import           Prettyprinter.Render.Text  (renderStrict)
 
 infixr 6 <#>
@@ -64,13 +64,10 @@ prettyBind (i, j) = pretty i <+> "→" <+> pretty j
 prettyDumpBinds :: Pretty b => IM.IntMap b -> Doc a
 prettyDumpBinds b = vsep (prettyBind <$> IM.toList b)
 
-hex2 :: Integral a => a -> Doc ann
-hex2 = pretty.tlhex2
-
-tlhex2 :: Integral a => a -> TL.Text
-tlhex2 i | i < 16 = toLazyTextWith 2 ("0" <> hexadecimal i)
+hex2 :: Integral a => a -> TL.Text
+hex2 i | i < 16 = toLazyTextWith 2 ("0" <> hexadecimal i)
          | otherwise = toLazyTextWith 2 (hexadecimal i)
 
 -- FIXME: this is probably wrong for arm/endianness
-pAD ds = prettyLines ((\(n,dd) -> "arr_" <> pretty n <> ":" <+> ".byte" <+> p8 dd) <$> IM.toList ds)
-  where p8 (w0:ws) = "0x"<>hex2 w0<>","<>p8 ws; p8 [] = ""
+pAD ds = prettyLines ((\(n,dd) -> "arr_" <> pretty n <> ":" <+> ".byte" <+> align (fillCat (punctuate "," (pretty.hex2<$>dd)))) <$> IM.toList ds)
+  -- where p8 (w0:ws) = "0x"<>hex2 w0<>","<>p8 ws; p8 [] = ""

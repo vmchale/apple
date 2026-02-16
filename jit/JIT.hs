@@ -91,7 +91,7 @@ rightPad n str = T.take n (str <> T.replicate n " ")
 
 present :: Pretty a => (a, BS.ByteString) -> T.Text
 present (x, b) = rightPad 45 (ptxt x) <> he b
-    where he = T.unwords.fmap (TL.toStrict . tlhex2).BS.unpack
+    where he = T.unwords.fmap (TL.toStrict . hex2).BS.unpack
 
 π :: (a, b, c, d) -> (b, c, d)
 π (_,y,z,w) = (y,z,w)
