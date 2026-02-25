@@ -22,7 +22,7 @@ We can define the rising factorial to work on real numbers like so:
 float → float → float
 ```
 
-See the familiar factorial:
+`rf 1` is then the factorial:
 
 ```apple
  > rf 1'frange 1 7 7
@@ -59,3 +59,25 @@ $$
                  &=\frac{2ze^{-z^2}}{\sqrt{\pi}} {}_1F_1\left(1;\frac{3}{2};z^2\right)
     \end{align*}
 $$
+
+The former has convergence problems [@shaw2002]. Simplifying the latter:
+
+```{.apple include="math/erf.🍏" startLine=2}
+```
+
+# Normal Distribution CDF
+
+The CDF for the standard normal distribution $N(0,1)$ can be calculated as $\displaystyle\frac{1}{2}\left(1+\text{erf}\left(\frac{z}{\sqrt{2}}\right)\right)$ [@hui]:
+
+```apple
+λz.
+{
+  erf ← λz.
+        { ffact ← [(*)/ₒ 1 (𝒻 1 x (⌊x))]
+        ; Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
+        ; (2%√𝜋)*Σ 30 (λn. {nf⟜ℝn; ((_1^n)*z^(2*n+1))%(ffact nf*(2*nf+1))})
+        };
+  zz ⟜ z%√2;
+  0.5*(1+erf(zz))
+}
+```
