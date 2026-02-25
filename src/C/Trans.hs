@@ -141,6 +141,7 @@ hasS (Lam _ _ e)       = hasS e
 hasS Var{}             = True
 hasS FLit{}            = True
 hasS Cond{}            = False
+hasS Id{}              = False
 hasS (LLet _ (_,e) e') = hasS e&&hasS e'
 hasS (Builtin _ b)     = bS b
   where
