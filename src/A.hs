@@ -63,7 +63,7 @@ instance PT (T a) where
     pp (TV n c)      = TV<$>fr tl n<*>pure c
     pp (IZ i n)      = IZ i<$>fr tl n
     pp (Arrow t₀ t₁) = Arrow<$>pp t₀<*>pp t₁
-    pp (Arr sh t)    = Arr sh<$>pp t
+    pp (Arr sh t)    = Arr <$>pp sh<*>pp t
     pp (P ts)        = P<$>traverse pp ts
     pp (Ρ n ts)      = Ρ<$>fr tl n<*>traverse pp ts
 
