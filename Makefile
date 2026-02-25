@@ -21,8 +21,13 @@ ifeq ($(UNAME),Linux)
 	strip $@
 endif
 
-docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html nb/mandel.html $(DOC_SRC)
-	pandoc --syntax-definition=syn/apple.xml --mathjax --lua-filter=include-files.lua --lua-filter=include-code-files.lua -s $< -o $@ --toc
+PANDOC_FLAGS := --toc --syntax-definition=syn/apple.xml --mathjax --lua-filter=include-files.lua --lua-filter=include-code-files.lua -s
+
+docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html nb/mandel.html syn/apple.xml $(DOC_SRC)
+	pandoc $(PANDOC_FLAGS) $< -o $@
+
+docs/stats.html: doc/stats.md doc/stats.bib syn/apple.xml
+	pandoc --citeproc $(PANDOC_FLAGS) $< -o $@
 
 nb/%.html: nb/%.ipynb
 	jupyter nbconvert $^ --to=html
