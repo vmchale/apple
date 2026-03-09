@@ -243,7 +243,7 @@ conserv ᴋ is s =
 
 {-# SCC getAlias #-}
 getAlias :: Int -> St -> Int
-getAlias i s = case IM.lookup i (alias s) of {Just i' -> getAlias i' s; Nothing -> i}
+getAlias i s | Just i' <- IM.lookup i (alias s) = getAlias i' s | otherwise = i
 
 {-# SCC combine #-}
 combine :: K -> Int -> Int -> St -> St
