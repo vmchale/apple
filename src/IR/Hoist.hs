@@ -105,7 +105,7 @@ lm cs = A.array (0, maximum ns) (zip ns (liveness<$>ls))
 data CM = LL !Label | FM !FTemp !Double | F2M !F2 !(Double, Double)
 
 nh :: LM Label
-nh = state (\u -> (u, u+1))
+nh = state (\u -> (u,u+1))
 
 hl :: (Loop, AnnTbl, LTbl) -> LM (LLoop, [(N, Maybe N, CM)])
 hl ((n,ns), info, linfo) =
@@ -205,4 +205,4 @@ et g ss = loopHeads [] IM.empty
         flattree = IM.insert n (concatMap toList cs)
 
     hasEdge :: Node -> Node -> Bool
-    hasEdge n0 n1 = case IM.lookup n0 g of {Nothing -> False; Just ns -> n1 `IS.member` ns}
+    hasEdge n0 n1 | Just ns <- IM.lookup n0 g = n1 `IS.member` ns | otherwise = False
