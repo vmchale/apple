@@ -1,0 +1,8 @@
+-- abramowitz stegun + Horner's method: https://16bpp.net/blog/post/faster-asin-was-hiding-in-plain-sight/
+λx. {
+  z⟜ abs. x;
+  as ⟜ ⟨1.57079635050,_0.2145988016,0.0889789874,_0.0501743046,0.0308918810,_0.0170881256,0.00667000901,_0.0012624911⟩;
+  Ho ← gen. 1 (z*) 8;
+  p⟜ 𝜋%2-√(1-z)*(Ho⋅as);
+  ?x<0,._p,.p
+}
