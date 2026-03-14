@@ -79,6 +79,7 @@ allT = testGroup "jit"
     , testCase "catalan" $ do { res <- fpIi "math/combinatorics/catalan.🍎" 10 ; res @?= 16796 }
     , testCase "bell" $ do { res <- fpIv "math/combinatorics/bell.🍎" 6; res @?= [1::Int64,1,2,5,15,52]}
     , testCase "base" $ do { res <- fpIiv "examples/base.🍏" 15 3; res @?= [1,2,0::Int64] }
+    , testCase "asin" $ do { res <- fpFf "math/asin.🍎" (-0.75); assertBool "within range (abramowitz-stegun)" (abs (res-asin (-0.75)) < 2.6e-8) }
     , testCase "7-day sliding average" $ do { res <- fpVv "test/examples/weekMean.🍎" [0..7::Double] ; res @?= [3,4::Double] }
     , testCase "bessel1" $ do { res <- fpIff "math/bessel.🍏" 1 3 ; res @?= bessel1 1 3 }
     , testCase "amgm (iter)" $ do { res <- fpFff "math/amgm.🍏" 1 (sqrt 2) ; res @?= agm 1 (sqrt 2) }
