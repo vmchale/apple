@@ -14,7 +14,7 @@ typedef PyObject* PY;typedef PyArrayObject* NP;typedef const PY PYA;
 
 #define ZF Z PY
 
-_ void c_free(PY cap){free(PyCapsule_GetPointer(cap,NULL));}
+_ O c_free(PY cap){free(PyCapsule_GetPointer(cap,NULL));}
 
 // CD - copy dims AD - apple dimensionate
 #define CD(rnk,x,ls) J* i_p=x;J rnk=i_p[0];npy_intp* ls=malloc(SZ(npy_intp)*rnk);DO(i,rnk,ls[i]=(npy_intp)i_p[i+1]);
@@ -101,7 +101,7 @@ TS JO {
     U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;T ts;
 } JO;
 
-_ void cache_dealloc(JO* self) {
+_ O cache_dealloc(JO* self) {
     munmap(self->bc,self->c_sz);
     free(self->sa);freety(self->ty);free(self->ffi);free(self->ts);
 }

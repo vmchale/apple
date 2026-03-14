@@ -13,7 +13,7 @@ TS JF {U bc;S c_sz;FnTy* ty;U sa;ffi_cif* ffi;T ts;} JF;
 
 #define nyi {printf("unsupported: tuple in bindings.");R NIL;}
 
-_ int jit_gc(void *data, size_t len) {
+_ int jit_gc(U data, size_t len) {
     JF* j=(JF*)data;
     munmap(j->bc,j->c_sz);
     free(j->sa);freety(j->ty);free(j->ffi);free(j->ts);
@@ -45,7 +45,7 @@ Z Janet jr(K apple_t t, K U x){
     R r;
 }
 
-Z Janet apple_call(void *x, int32_t argc, Janet *argv) {
+Z Janet apple_call(U x, int32_t argc, Janet *argv) {
     JF *jit = (JF *)x;
     FnTy* ty=jit->ty;
     int aarg=ty->argc;
@@ -72,7 +72,7 @@ Z Janet apple_call(void *x, int32_t argc, Janet *argv) {
     R r;
 }
 
-Z void jit_ts(U jit, JanetBuffer* buf) {JF* c=(JF*)jit;janet_buffer_push_cstring(buf,c->ts);}
+Z O jit_ts(U jit, JanetBuffer* buf) {JF* c=(JF*)jit;janet_buffer_push_cstring(buf,c->ts);}
 
 G JanetAbstractType jit_t = {
     .name = "jit",
