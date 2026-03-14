@@ -249,10 +249,7 @@ tokens :-
         "sin."                   { mkB BuiltinSin }
         "cos."                   { mkB BuiltinCos }
         "tan."                   { mkB BuiltinTan }
-<<<<<<< HEAD
-=======
         "refl."                  { mkB BuiltinRefl }
->>>>>>> ab560206 (decent asin)
         "odd."                   { mkB BuiltinOdd }
         "even."                  { mkB BuiltinEven }
         "take#"                  { mkB BuiltinTake }
