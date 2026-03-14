@@ -18,7 +18,7 @@ data IUn = Clz | IAbs | INeg
 
 data BUn = BNeg
 
-data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp
+data FBin = FPlus | FMinus | FTimes | FDiv | FMax | FMin | FExp | CpySgn
 
 data BBin = AndB | OrB | XorB | BEq
 
@@ -59,13 +59,14 @@ instance Pretty FBin where
     pretty FExp   = "^"
     pretty FMax   = "max"
     pretty FMin   = "min"
+    pretty CpySgn = "copysgn"
 
 instance Pretty FUn where
     pretty FSqrt = "sqrt"
     pretty FLog  = "log"
     pretty FSin  = "sin"; pretty FCos  = "cos"
     pretty FAbs  = "abs"
-    pretty FNeg = "neg"
+    pretty FNeg  = "neg"
 
 instance Pretty IP where pretty IEven = "even"; pretty IOdd = "odd"
 instance Pretty IUn where pretty Clz = "clz"; pretty IAbs = "abs"; pretty INeg = "neg"

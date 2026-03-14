@@ -128,6 +128,7 @@ asm ix st (Faddp _ d v:asms) = br2 0b01111110 0b1110000 0b110110 d v:asm (ix+4) 
 asm ix st (Fmaxp _ d v:asms) = br2 0b01111110 0b1110000 0b111110 d v:asm (ix+4) st asms
 asm ix st (Fminp _ d v:asms) = br2 0b01111110 0b11110000 0b111110 d v:asm (ix+4) st asms
 asm ix st (EorS _ v0 v1 v2:asms) = br3 0b01101110 0x1 0x7 v0 v1 v2:asm (ix+4) st asms
+asm ix st (Sgn _ v0 v1 v2:asms) = br3 0b01101110 0x5 0x7 v0 v1 v2:asm (ix+4) st asms
 asm ix st (EorD _ v0 v1 v2:asms) = br3 0b00101110 0x1 0x7 v0 v1 v2:asm (ix+4) st asms
 asm ix st (ZeroS x v:asms) = asm ix st (EorS x v v v:asms)
 asm ix st (ZeroD x v:asms) = asm ix st (EorD x v v v:asms)

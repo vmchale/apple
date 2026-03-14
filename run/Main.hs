@@ -18,7 +18,7 @@ namesStr :: StateT Env IO [String]
 namesStr = gets ((++bn) . fmap (T.unpack.name.fst) . ee)
 
 bn :: [String]
-bn = ["frange", "itof", "gen.", "di.", "sin.", "cos.", "rand.", "cyc.", "odd.", "even.", "abs.", "ug.", "take#", "drop#"]
+bn = ["frange", "itof", "gen.", "di.", "sin.", "cos.", "rand.", "cyc.", "odd.", "even.", "abs.", "ug.", "take#", "drop#", "refl."]
 
 runRepl :: Repl x -> IO x
 runRepl x = do

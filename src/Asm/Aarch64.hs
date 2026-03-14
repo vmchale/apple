@@ -273,6 +273,7 @@ data AArch64 reg freg a = Label { ann :: a, label :: Label }
                          | TstI { ann :: a, rSrc1 :: reg, imm :: BM }
                          | EorI { ann :: a, rDest, rSrc :: reg, imm :: BM }
                          | Bfc { ann :: a, rDest :: reg, lsb :: Word8, width :: Word8 }
+                         | Sgn { ann :: a, dDest, dSrc1 :: freg, vSrc2 :: V2Reg freg }
                          | Clz { ann :: a, rDest, rSrc :: reg }
                          deriving (Functor, Generic)
 
@@ -386,6 +387,7 @@ mapR _ (DupD l v0 v1 i)      = DupD l v0 v1 i
 mapR _ (ZeroD l q)           = ZeroD l q
 mapR _ (EorD l v0 v1 v2)     = EorD l v0 v1 v2
 mapR f (Clz l r0 r1)         = Clz l (f r0) (f r1)
+mapR _ (Sgn l r0 r1 r2)      = Sgn l r0 r1 r2
 
 fR :: Monoid m => (areg -> m) -> AArch64 areg afreg a -> m
 fR _ Label{}               = mempty
@@ -493,6 +495,7 @@ fR f (TstI _ r _)          = f r
 fR f (StpD _ _ _ a)        = f@<>a
 fR f (LdpD _ _ _ a)        = f@<>a
 fR f (Clz _ r0 r1)         = f r0<>f r1
+fR _ Sgn{}                 = mempty
 
 mapFR :: (afreg -> freg) -> AArch64 areg afreg a -> AArch64 areg freg a
 mapFR _ (Label x l)           = Label x l
@@ -600,6 +603,7 @@ mapFR f (DupD l v0 v1 i)      = DupD l (f<$>v0) (f<$>v1) i
 mapFR f (ZeroD l d)           = ZeroD l (f d)
 mapFR f (EorD l d0 d1 d2)     = EorD l (f d0) (f d1) (f d2)
 mapFR _ (Clz l r0 r1)         = Clz l r0 r1
+mapFR f (Sgn l d0 d1 v2)      = Sgn l (f d0) (f d1) (f<$>v2)
 
 s2 :: [a] -> [(a, Maybe a)]
 s2 (r0:r1:rs) = (r0, Just r1):s2 rs
@@ -745,6 +749,7 @@ instance (Pr reg, Pr freg, SIMD (V2Reg freg), P32 reg) => Pr (AArch64 reg freg a
         p4 (Ins _ v i r)           = "ins" <+> pvd v <> brackets (decimal i) <> "," <+> pr r
         p4 (DupD _ v0 v1 i)        = "dup" <+> pvd v0 <> "," <+> pvd v1 <> brackets (decimal i)
         p4 (Clz _ r0 r1)           = ar2 "clz" r0 r1
+        p4 (Sgn _ d0 d1 v2)        = "bit" <+> pvv (V2Reg d0) <> "," <+> pvv (V2Reg d1) <> "," <+> pvv v2
 
 instance (Pr reg, Pr freg, SIMD (V2Reg freg), P32 reg) => Show (AArch64 reg freg a) where show=show.pr
 instance (Pr reg, Pr freg, SIMD (V2Reg freg), P32 reg) => Pretty (AArch64 reg freg a) where pretty=embed.pr

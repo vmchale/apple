@@ -81,12 +81,8 @@ optF2 (FB FDiv e0 e1) =
 optF2 e = e
 
 f1c :: FUn -> Double -> Double
-f1c FLog  = log
-f1c FSqrt = sqrt
-f1c FCos  = cos
-f1c FSin  = sin
-f1c FAbs  = abs
-f1c FNeg  = negate
+f1c FLog = log; f1c FSqrt = sqrt;   f1c FCos  = cos; f1c FSin = sin
+f1c FAbs = abs; f1c FNeg  = negate
 
 optF :: FE -> FE
 optF (FAt p) = FAt (optP p)

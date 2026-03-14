@@ -176,6 +176,7 @@ import Sh
     abs { TokB $$ BuiltinAbs }
     sks { TokB $$ BuiltinS }
     skk { TokB $$ BuiltinK }
+    refl { TokB $$ BuiltinRefl }
 
 %right semicolon mmap
 %nonassoc leq geq gt lt neq eq
@@ -367,7 +368,7 @@ E :: { E AlexPosn }
   | addd { Builtin $1 AddDim }
   | abs { Builtin $1 Abs }
   | not { Builtin $1 N }
-  | sks { Builtin $1 S } | skk { Builtin $1 K }
+  | sks { Builtin $1 S } | skk { Builtin $1 K } | refl { Builtin $1 Refl }
 
 {
 

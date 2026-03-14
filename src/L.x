@@ -249,6 +249,10 @@ tokens :-
         "sin."                   { mkB BuiltinSin }
         "cos."                   { mkB BuiltinCos }
         "tan."                   { mkB BuiltinTan }
+<<<<<<< HEAD
+=======
+        "refl."                  { mkB BuiltinRefl }
+>>>>>>> ab560206 (decent asin)
         "odd."                   { mkB BuiltinOdd }
         "even."                  { mkB BuiltinEven }
         "take#"                  { mkB BuiltinTake }
@@ -481,7 +485,8 @@ data Builtin = BuiltinFRange | BuiltinIota | BuiltinRange | BuiltinIi
              | BuiltinTrue | BuiltinFalse
              | BuiltinGen | BuiltinUg | BuiltinScan | BuiltinCons | BuiltinNil
              | BuiltinMMul | BuiltinArr | BuiltinV | BuiltinInt | BuiltinFloat | BuiltinT
-             | BuiltinR | BuiltinSin | BuiltinCos | BuiltinScanS | BuiltinTan
+             | BuiltinR | BuiltinScanS
+             | BuiltinSin | BuiltinCos | BuiltinTan | BuiltinRefl
              | BuiltinVMul | BuiltinCyc | BuiltinOdd | BuiltinEven | BuiltinAbs
              | BuiltinD | BuiltinVec | BuiltinM | BuiltinBool
              | BuiltinTake | BuiltinDrop | BuiltinS | BuiltinK
@@ -521,6 +526,7 @@ instance Pretty Builtin where
     pretty BuiltinSin    = "sin."
     pretty BuiltinCos    = "cos."
     pretty BuiltinTan    = "tan."
+    pretty BuiltinRefl   = "refl."
     pretty BuiltinCyc    = "cyc."
     pretty BuiltinOdd    = "odd."
     pretty BuiltinEven   = "even."

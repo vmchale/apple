@@ -597,6 +597,18 @@ One can define the logarithm in any base from the natural logarithm `_.`, viz.
 3.0
 ```
 
+### Odd Functions
+
+```
+ > :ty refl.
+(float → float) → float → float
+```
+
+Computes odd functions from the positive half. [Arcsine](https://16bpp.net/blog/post/faster-asin-was-hiding-in-plain-sight/):
+
+```{.apple include=math/fasin.🍏 startLine=2}
+```
+
 ## REPL Functionality
 
 ### Load

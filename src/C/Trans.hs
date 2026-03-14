@@ -1810,7 +1810,7 @@ frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; fr
 
 mFop :: Builtin -> Maybe FBin
 mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp
-mFop Max=Just FMax; mFop Min=Just FMin; mFop _=Nothing
+mFop Max=Just FMax; mFop Min=Just FMin; mFop CS=Just CpySgn;mFop _=Nothing
 
 mB :: Builtin -> Maybe BBin
 mB And=Just AndB;mB Or=Just OrB;mB Xor=Just XorB; mB Eq=Just BEq; mB _=Nothing

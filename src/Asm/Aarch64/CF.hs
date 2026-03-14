@@ -184,6 +184,7 @@ uses (Ins _ _ _ r)        = singleton r
 uses DupD{}               = IS.empty
 uses ZeroD{}              = IS.empty
 uses EorD{}               = IS.empty
+uses Sgn{}                = IS.empty
 uses (Clz _ _ r)          = singleton r
 
 defs FMovXX{}            = IS.empty
@@ -292,6 +293,7 @@ defs DupD{}              = IS.empty
 defs Ins{}               = IS.empty
 defs ZeroD{}             = IS.empty
 defs EorD{}              = IS.empty
+defs Sgn{}               = IS.empty
 defs (Clz _ r _)         = singleton r
 
 defsF :: (E freg) => AArch64 reg freg ann -> IS.IntSet
@@ -403,6 +405,7 @@ defsF (DupD _ v _ _)     = singleton v
 defsF (Ins _ v _ _)      = singleton v
 defsF (ZeroD _ v)        = singleton v
 defsF (EorD _ v _ _)     = singleton v
+defsF (Sgn _ v _ _)      = singleton v
 defsF Clz{}              = IS.empty
 
 usesF :: (E freg, Eq freg) => AArch64 reg freg ann -> IS.IntSet
@@ -411,6 +414,7 @@ usesF (EorS _ q0 q1 q2)    | q0==q1&&q1==q2 = IS.empty
 usesF (EorS _ _ q1 q2)     = fromList [q1,q2]
 usesF (EorD _ d0 d1 d2)    | d0==d1&&d1==d2 = IS.empty
 usesF (EorD _ _ d1 d2)     = fromList [d1,d2]
+usesF (Sgn _ _ d1 v2)      = fromList [d1,simd2 v2]
 usesF MovRR{}              = IS.empty
 usesF MovRC{}              = IS.empty
 usesF Ldr{}                = IS.empty

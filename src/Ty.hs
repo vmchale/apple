@@ -738,6 +738,9 @@ tyB _ Neg = do {n <- fz; pure (n~>n, mempty)}; tyB _ Abs = do {n <- fz; pure (n~
 tyB _ Sqrt = pure (F~>F, mempty); tyB _ Log = pure (F~>F, mempty)
 tyB _ Div = pure (F~>F~>F, mempty); tyB _ Mod = pure (I~>I~>I, mempty)
 tyB _ Exp = pure (F~>F~>F, mempty); tyB _ IDiv = pure (I~>I~>I, mempty)
+tyB _ Sin = pure (F ~> F, mempty); tyB _ Cos = pure (F ~> F, mempty)
+tyB _ Tan = pure (F ~> F, mempty)
+tyB _ Refl = pure ((F~>F)~>F~>F,mempty)
 tyB _ Outer = do
     sh0 <- fsh "sh0"; sh1 <- fsh "sh1"
     a <- ftv "a"; b <- ftv "b"; c <- ftv "c"
@@ -853,9 +856,6 @@ tyB _ Mul = do
 tyB _ VMul = do
     a <- fz; i <- fti "i"; j <- fti "j"
     pure (Arr (i <| j <| Nil) a ~> vV j a ~> vV i a, mempty)
-tyB _ Sin = pure (F ~> F, mempty)
-tyB _ Cos = pure (F ~> F, mempty)
-tyB _ Tan = pure (F ~> F, mempty)
 tyB _ Ices = do
     a <- ftv "a"; i <- fti "i"; n <- ftie
     pure ((a ~> B) ~> vV i a ~> vV n I, mempty)
