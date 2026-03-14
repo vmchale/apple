@@ -161,7 +161,6 @@ instance Pretty Builtin where
     pretty Sin        = "sin."
     pretty Cos        = "cos."
     pretty Tan        = "tan."
-    pretty ASin       = "asin."
     pretty Gte        = "≥"
     pretty Gt         = ">"
     pretty Lt         = "<"
@@ -223,7 +222,7 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              | TAt !Int | Last | LastM | ConsE | Snoc
              | Mul | VMul | Outer | RevE | R
              | Head | HeadM | Tail | Init | TailM | InitM
-             | Sin | Cos | Tan | ASin | Abs | Even | Odd
+             | Sin | Cos | Tan | Abs | Even | Odd
              | Rot | Cyc | A1 | I1 | IOf | Del | DelM
              | And | Or | Xor | N | Sr | Sl | C | Dot
              | Take | Drop | Ug | Sort
