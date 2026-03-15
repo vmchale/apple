@@ -8,7 +8,6 @@ module P ( Err (..), FErr (..)
          , tyExpr
          , tyC
          , getTy
-         , parseRename
          , rwP
          , opt
          , ir
@@ -86,12 +85,6 @@ instance Pretty a => Pretty (Err a) where
     pretty (RErr err)  = pretty err
 
 rwP st = fmap (uncurry rG.second rewrite) . parseWithMaxCtx st
-
-parseRenameCtx :: AlexUserState -> BSL.ByteString -> Either ParseE (E AlexPosn, Int)
-parseRenameCtx st = fmap (uncurry rG.second rewrite) . parseWithMaxCtx st
-
-parseRename :: BSL.ByteString -> Either ParseE (E AlexPosn, Int)
-parseRename = parseRenameCtx alexInitUserState
 
 tyC :: Int -> E a -> Either (Err a) (E (T ()), Int)
 tyC u = (\(e,uϵ) -> (,uϵ)<$>checkM e) <=< first TyErr . tyClosed u
@@ -176,7 +169,7 @@ parseInline bsl =
 
 tyParseCtx :: AlexUserState -> BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 tyParseCtx st bsl =
-    case parseRenameCtx st bsl of
+    case rwP st bsl of
         Left err       -> Left $ PErr err
         Right (ast, m) -> first TyErr $ tyClosed m ast
 
