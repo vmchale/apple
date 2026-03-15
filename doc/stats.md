@@ -9,39 +9,9 @@ bibliography: doc/stats.bib
 # Gamma Function
 
 We use the Lanczos approximation as described in @num, extended to work on
-negative numbers by
+negative numbers:
 
-$$\Gamma(1-z)=\displaystyle\frac{\pi}{\Gamma(z)\sin(\pi z)}$$
-
-<!-- For $z \leq \frac{1}{2}$,  -->
-
-```apple
-λz.
-  { gammaln ← λz.
-    {
-      zz ⟜ z-1;
-      c0 ← 0.999999999999997092;
-      𝛾 ← 607%128;
-      coeffs ← ⟨ 57.1562356658629235
-               , _59.5979603554754912
-               , 14.1360979747417471
-               , _0.491913816097620199
-               , 0.339946499848118887e-4
-               , 0.465236289270485756e-4
-               , _0.983744753048795646e-4
-               , 0.158088703224912494e-3
-               , _0.210264441724104883e-3
-               , 0.217439618115212643e-3
-               , _0.164318106536763890e-3
-               , 0.844182239838527433e-4
-               , _0.261908384015814087e-4
-               , 0.368991826595316234e-5
-               ⟩;
-      ss ← (+)/([y%(zz+itof x)]`(1..14) coeffs);
-      ((zz+0.5)*_.(zz+𝛾+0.5)-(zz+𝛾+0.5))+_.(√(2*𝜋)*(c0+ss))
-    };
-    e:(?z≥0.5,.gammaln z,._.𝜋-_.(sin.(𝜋*z))-gammaln(1-z))
-  }
+```{.apple include="math/gamma.🍏"}
 ```
 
 # Hypergeometric Functions
@@ -107,17 +77,7 @@ The former has convergence problems [@shaw2002]. Simplifying the latter:
 
 The CDF for the standard normal distribution $N(0,1)$ can be calculated as $\displaystyle\frac{1}{2}\left(1+\text{erf}\left(\frac{z}{\sqrt{2}}\right)\right)$:
 
-```apple
-λz.
-{
-  erf ← λz.
-        { ffact ← [(*)/ₒ 1 (𝒻 1 x (⌊x))]
-        ; Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
-        ; (2%√𝜋)*Σ 30 (λn. {nf⟜ℝn; ((_1^n)*z^(2*n+1))%(ffact nf*(2*nf+1))})
-        };
-  zz ⟜ z%√2;
-  0.5*(1+erf(zz))
-}
+```{.apple include="math/ncdf.🍎"}
 ```
 
 # t-Distribution CDF
@@ -127,3 +87,10 @@ For $\nu$ degrees of freedom we have [@amos]:
 $$\frac{1}{2}+x\frac{\Gamma(\frac{1}{2}(\nu+1))}{\sqrt{\pi\nu}\Gamma(\frac{\nu}{2})}{}_2F_1\left(\frac{1}{2},\frac{1}{2}(\nu+1);\frac{3}{2};-\frac{x^2}{\nu}\right)$$
 
 for $|x|<\sqrt{\nu}$ ($_2F_1$ converges if and only if $|z|<1$).
+
+Hence:
+
+```{.apple include="math/tcdf.🍎"}
+```
+
+# References
