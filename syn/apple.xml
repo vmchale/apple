@@ -7,9 +7,8 @@
           <context attribute="Normal Text" lineEndContext="#stay" name="Normal Text">
               <RegExpr String="(Arr|Nil|M|Vec|float|int|𝞈|𝟘|𝟙)" attribute="t"/>
               <RegExpr String="(frange|itof|e:)" attribute="b"/>
+              <RegExpr String="_?[0-9]+\.[0-9]*(e-?[0-9]+)?" attribute="x"/>
               <RegExpr String="_?[0-9]+" attribute="i"/>
-              <RegExpr String="_?[0-9]+\.[0-9]*" attribute="x"/>
-              <!-- TODO: scientific notash -->
               <RegExpr String="𝔸[0-9]+" attribute="lit"/>
           </context>
       </contexts>
