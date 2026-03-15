@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
 
--- | AST
 module A ( T (..)
          , (~>)
          , C (..)

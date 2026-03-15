@@ -71,8 +71,7 @@ instance Pretty a => Show (FErr a) where show=show.pretty
 
 data Err a = PErr ParseE | TyErr (TyE a) | RErr RE deriving (Generic)
 
-instance Pretty a => Show (Err a) where
-    show = show . pretty
+instance Pretty a => Show (Err a) where show = show.pretty
 
 instance (Pretty a, Typeable a) => Exception (Err a) where
 instance (Pretty a, Typeable a) => Exception (FErr a) where
@@ -80,8 +79,7 @@ instance (Pretty a, Typeable a) => Exception (FErr a) where
 instance NFData a => NFData (Err a) where
 
 instance Pretty a => Pretty (Err a) where
-    pretty (PErr err)  = pretty err
-    pretty (TyErr err) = pretty err
+    pretty (PErr err)  = pretty err; pretty (TyErr err) = pretty err
     pretty (RErr err)  = pretty err
 
 rwP st = fmap (uncurry rG.second rewrite) . parseWithMaxCtx st
@@ -115,10 +113,8 @@ eAarch64 i = fmap (second (Aarch64.opt . uncurry Aarch64.gallocFrame).(\(x,aa,st
 ex86G :: Int -> E a -> Either (Err a) (IR.AsmData, [X86 X86Reg FX86Reg ()])
 ex86G i = wallocE i (uncurry X86.gallocFrame)
 
-eDumpX86 :: Int -> E a -> Either (Err a) (Doc ann)
+eDumpX86, eDumpAarch64 :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpX86 i = fmap prettyAsm . ex86G i
-
-eDumpAarch64 :: Int -> E a -> Either (Err a) (Doc ann)
 eDumpAarch64 i = fmap prettyAsm . eAarch64 i
 
 walloc f = fmap (second (optX86.optX86.f) . (\(x,aa,st) -> (aa,irToX86 st x))) . ir
