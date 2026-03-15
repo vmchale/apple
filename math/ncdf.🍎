@@ -1,10 +1,9 @@
 λz.
 {
   erf ← λz.
-    {
-      ffact ← [(*)/ₒ 1 (𝒻 1 x (⌊x))];
-      Hoa ← λN.λa. {xs ← gen. z [_1*x*(z^2)] (N+1); (+)/ₒ 0 ((%)`xs (a'⍳N))};
-      (2%√𝜋)*Hoa 30 (λn. {nf⟜ℝn; (ffact nf*(2*nf+1))})
+    { ffact ← [(*)/ₒ 1 (𝒻 1 x (⌊x))]
+    ; Hoa ← λN.λa. {xs ← gen. z [_1*x*(z^2)] (N+1); (+)/ₒ 0 ((%)`xs (a'⍳N))}
+    ; (2%√𝜋)*Hoa 30 (λn. {nf⟜ℝn; (ffact nf*(2*nf+1))})
     };
   zz ⟜ z%√2;
   0.5*(1+erf(zz))
