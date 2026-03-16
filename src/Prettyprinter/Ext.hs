@@ -47,7 +47,7 @@ tupledBy :: Doc ann -> [Doc ann] -> Doc ann
 tupledBy sep = group . encloseSep (flatAlt "( " "(") (flatAlt " )" ")") sep
 
 appleLO :: LayoutOptions
-appleLO = LayoutOptions (AvailablePerLine 180 1.0)
+appleLO = LayoutOptions (AvailablePerLine 80 1.0)
 
 smartA :: Doc a -> SimpleDocStream a
 smartA = layoutSmart appleLO

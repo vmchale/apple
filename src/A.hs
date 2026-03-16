@@ -20,8 +20,8 @@ import qualified Data.Set          as S
 import qualified Data.Text         as T
 import           GHC.Generics      (Generic)
 import           Nm
-import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, concatWith, encloseSep, flatAlt, group, hsep, lbrace, lbracket, line, parens, pipe,
-                                    punctuate, rbrace, rbracket, tupled, vsep, (<+>))
+import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, concatWith, encloseSep, fillSep, flatAlt, group, hardline, hsep, lbrace, lbracket,
+                                    line, parens, pipe, punctuate, rbrace, rbracket, tupled, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Sh
 
@@ -33,7 +33,7 @@ instance Pretty C where pretty IsOrd = "IsOrd"; pretty IsEq = "IsEq"; pretty Has
 
 instance Show C where show=show.pretty
 
-tupledArr = group . encloseSep (flatAlt "⟨ " "⟨") (flatAlt " ⟩" "⟩") ", "
+tupledArr = group.align.encloseSep (flatAlt "⟨ " "⟨") (flatAlt " ⟩" "⟩") ", "
 
 infixr 0 ~>
 (~>) = Arrow
@@ -233,6 +233,11 @@ x<::>y = parens (x <+> ":" <+> pretty y)
 ptn :: Nm (T a) -> Doc ann
 ptn n@(Nm _ _ t) = pretty n<::>t
 
+gt :: E (T a) -> ([([Nm (T a)], T a)], E (T a))
+gt (Lam (Arrow tC _) n e)   = first (([n], tC):) $ gt e
+gt (LamΠ (Arrow tC _) ns e) = first ((ns, tC):) $ gt e
+gt e                        = ([], e)
+
 prettyTyped :: E (T a) -> Doc ann
 prettyTyped = pt where
     pt (Var t n)                                              = pretty n<::>t
@@ -242,15 +247,14 @@ prettyTyped = pt where
     pt (BLit t True)                                          = "#t"<::>t
     pt (BLit t False)                                         = "#f"<::>t
     pt (Cond t p e0 e1)                                       = parens ("?" <+> pt p <+> ",." <+> pt e0 <+> pt e1) <+> colon <+> pretty t
-    pt (Lam _ n e)                                            = "λ" <> ptn n <> "." <!> pt e
-    pt (LamΠ (Arrow tC _) ns e)                               = "λ" <> parens (tupled(pretty<$>ns)<::>tC) <> "." <!> pt e
+    pt e | (ns@(_:_),e') <- gt e                              = group ("λ" <> foldMap (\case ([n],_) -> ptn n; (n,tC) -> tupled (pretty<$>n) <::>tC) ns <> "." <!> pt e')
     pt (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)  = parens (pt e0 <> "/ₒ" <+> pt e1 <+> pt e2)
     pt (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)  = parens (pt e0 <> "/*" <+> pt e1 <+> pt e2)
     pt (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)  = parens (pt e0 <> "/l" <+> pt e1 <+> pt e2)
     pt (EApp t (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)  = parens (pt e1 <+> parens (pt e0) <> "⊗" <+> pt e2 <+> ":" <+> pretty t)
     pt (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)  = parens (pt e0 <> "Λₒ" <+> pt e1 <+> pt e2)
     pt (EApp _ e0@(Builtin _ op) e1) | isBinOp op             = parens (pt e1 <+> pt e0)
-    pt e@EApp{} | es <- spine e                               = parens (group (align (vsep (pt <$> toList es))))
+    pt e@EApp{} | es <- spine e                               = parens (group (align (fillSep (pt <$> toList es))))
     pt e@Let{}                                                = pBt e
     pt e@Def{}                                                = pBt e
     pt e@LLet{}                                               = pBt e
@@ -297,19 +301,18 @@ unbind e                 = ([], e)
 
 pArr L="←"; pArr D="⟜"; pArr Λ="⟜"
 
-pBs :: [(B, Nm a, E a)] -> E a -> Doc ann
 pBs [] e            = pretty e
-pBs ((b,n,e):bs) e' = pretty n <+> pArr b <+> pretty e <?> ";" <+> pBs bs e'
-
--- map (\(b,n,e) -> pretty n <+> pArr b <+> pretty e) and then fillSep?
+pBs ((b,n,e):bs) e' = ssep (pretty n <+> pArr b <+> pretty e) (pBs bs e')
 
 pBts :: [(B, Nm (T a), E (T a))] -> E (T a) -> Doc ann
 pBts [] e            = prettyTyped e
-pBts ((b,n,e):bs) e' = ptn n <+> pArr b <+> prettyTyped e <?> ";" <+> pBts bs e'
+pBts ((b,n,e):bs) e' = ssep (ptn n <+> pArr b <+> prettyTyped e) (pBts bs e')
+
+ssep x y = flatAlt (x <> hardline <> ";" <+> y) (x <> ";" <> y)
 
 bc x = flatAlt ("{" <+> x <> line <> "}") ("{" <> x <> "}")
 
-pB=align.bc.uncurry pBs.unbind
+pB=group.align.bc.uncurry pBs.unbind
 pBt=align.bc.uncurry pBts.unbind
 
 data E a = ALit { eAnn :: a, arrLit :: [E a] }
@@ -335,9 +338,13 @@ data E a = ALit { eAnn :: a, arrLit :: [E a] }
 
 instance Pretty (E a) where pretty=ps 0
 
+gg :: E a -> ([[Nm a]], E a)
+gg (Lam _ n e)   = first ([n]:) $ gg e
+gg (LamΠ _ ns e) = first (ns:) $ gg e
+gg e             = ([], e)
+
 instance PS (E a) where
-    ps d (Lam _ n e)                                              = parensp (d>1) ("λ" <> pretty n <> "." <+> ps 2 e)
-    ps d (LamΠ _ ns e)                                            = parensp (d>1) ("λ" <> tupled(pretty<$>ns) <> "." <+> ps 2 e)
+    ps d e | (ns@(_:_),e') <- gg e                                = group (parensp (d>1) ("λ" <> foldMap (\case [n] -> pretty n <> "."; n -> tupled (pretty<$>n) <> ".") ns <!> ps 2 e'))
     ps _ (Var _ n)                                                = pretty n
     ps _ (Builtin _ op) | isBinOp op                              = parens (pretty op)
     ps _ (Builtin _ b)                                            = pretty b
@@ -349,7 +356,7 @@ instance PS (E a) where
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)    = parens (pretty e0 <> "/l" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)    = parens (pretty e0 <> "/*" <+> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ ScanS) e0) e1) e2)    = parens (pretty e0 <+> "Λₒ" <+> pretty e1 <+> pretty e2)
-    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <+> "`" <+> pretty e1 <+> pretty e2)
+    ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Zip) e0) e1) e2)      = parens (pretty e0 <> "`" <> pretty e1 <+> pretty e2)
     ps _ (EApp _ (EApp _ (EApp _ (Builtin _ Outer) e0) e1) e2)    = parens (pretty e1 <+> ps 10 e0 <> "⊗" <+> pretty e2)
     ps _ (EApp _ (Builtin _ Outer) e0)                            = parens (pretty e0 <> "⊗")
     ps _ (EApp _ (EApp _ (Builtin _ op@Rank{}) e0) e1)            = parens (ps 10 e0 <+> pretty op <+> ps 10 e1)
