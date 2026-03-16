@@ -175,10 +175,10 @@ writeF e [] r = (Nothing,)<$>eeval e r
 
 aSD :: E (T ()) -> [(T (), ArrAcc, Temp)] -> T () -> ArrAcc -> Temp -> CM [CS ()]
 aSD f as rT rAt td = do
-    (args, rArgs) <- unzip <$> traverse (\(t,r,xd) -> second ((:[xd=:(Tmp xd+KI (bT t))]).($undefined)) <$> arg t (\_ -> r)) as
+    (args, rArgs) <- unzip <$> traverse (\(t,r,xd) -> second ((:[xd+=KI (bT t)]).($undefined)) <$> arg t (\_ -> r)) as
     (r, wR) <- rW rT (\_ -> rAt)
     ss <- writeRF f args r
-    pure (concat rArgs++ss++[wR undefined, td=:(Tmp td+KI (bT rT))])
+    pure (concat rArgs++ss++[wR undefined, td+=KI (bT rT)])
 
 aS :: E (T ()) -> [(T (), Temp -> Int64 -> ArrAcc)] -> T () -> (Temp -> Int64 -> ArrAcc) -> CM ([Temp] -> Temp -> [CS ()])
 aS f as rT rAt = do
@@ -412,8 +412,8 @@ rfill (EApp _ (Builtin _ Map) f) (AD t lA _ _ _ (Just n)) [AI (AD xR lX (Just (A
     x <- nF2; y <- nF2; x₀ <- nF; y₀ <- nF
     ss <- write2 f [x] y
     s1 <- writeRF f [FT x₀] (FT y₀)
-    let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+16):ss++[Wr2F () (Raw td 0 lA 8) (FTmp y), td=:(Tmp td+16)]
-        step1=MX () x₀ (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+8):s1++[WrF () (Raw td 0 lA 8) (FTmp y₀), td=:(Tmp td+8)]
+    let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd+=16:ss++[Wr2F () (Raw td 0 lA 8) (FTmp y), td+=16]
+        step1=MX () x₀ (FAt (Raw xRd 0 lX 8)):xRd+=8:s1++[WrF () (Raw td 0 lA 8) (FTmp y₀), td+=8]
         loop=r2of xSh i n step step1
     pure [xRd=:DP xR 1,td=:DP t 1, loop]
 rfill (EApp _ (Builtin _ Map) op) (AD t lA (Just (Arr sh _)) _ _ (Just n)) [AI (AD xR l _ _ _ _)] | Arrow tD tC <- eAnn op, nind tD = do
@@ -1138,8 +1138,8 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t a | Arrow 
     x <- nF2; y <- nF2; z <- nF2; x0 <- nF; y0 <- nF; z0 <- nF
     ss <- write2 op [x,y] z
     s1 <- writeRF op (FT<$>[x0,y0]) (FT z0)
-    let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+16):MX2 () y (FAt (Raw yRd 0 lY 8)):yRd=:(Tmp yRd+16):ss++[Wr2F () (Raw td 0 (Just a) 8) (FTmp z), td=:(Tmp td+16)]
-        step1=MX () x0 (FAt (Raw xRd 0 lX 8)):xRd=:(Tmp xRd+8):MX () y0 (FAt (Raw yRd 0 lY 8)):yRd=:(Tmp yRd+8):s1++[WrF () (Raw td 0 (Just a) 8) (FTmp z0), td=:(Tmp td+8)]
+    let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd+=16:MX2 () y (FAt (Raw yRd 0 lY 8)):yRd+=16:ss++[Wr2F () (Raw td 0 (Just a) 8) (FTmp z), td+=16]
+        step1=MX () x0 (FAt (Raw xRd 0 lX 8)):xRd+=8:MX () y0 (FAt (Raw yRd 0 lY 8)):yRd+=8:s1++[WrF () (Raw td 0 (Just a) 8) (FTmp z0), td+=8]
         loop=r2of xSh i (Tmp nR) step step1
     pure (plEX$plEY$nR=:ev tXs (xR,lX):v8 oSh t a (Tmp nR)++xRd=:DP xR 1:yRd=:DP yR 1:td=:DP t 1:[loop])
 aeval (EApp oTy@(Arr sh _) (EApp _ g@(EApp _ (Builtin _ Zip) op) xs) ys) t a | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
@@ -1945,14 +1945,14 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr pSh _) <- eAnn p, Arr _ F 
     ss1 <- writeRF op (FT<$>[acc,x0,y0]) (FT acc)
     ss <- write2 op [acc2, x, y] acc2
     seed <- writeRF zop (FT<$>[x0,y0]) (FT acc)
-    let step1 = MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8):MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8):ss1
-        step = MX2 () x (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+16):MX2 () y (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+16):ss
-        loop = R2of () (pr1 pSh) i (Tmp szR) step step1
-    pure $
-        plPP$plQ
+    let step1 = MX () x0 (FAt (Raw pD 0 lP 8)):pD+=8:MX () y0 (FAt (Raw qD 0 lQ 8)):qD+=8:ss1
+        step = MX2 () x (FAt (Raw pD 0 lP 8)):pD+=16:MX2 () y (FAt (Raw qD 0 lQ 8)):qD+=16:ss
+        loop = r2of pSh i (Tmp szR) step step1
+    pure
+        $plPP$plQ
         $szR=:ev tyP (pR,lP)
-        :pD=:DP pR 1:MX () x0 (FAt (Raw pD 0 lP 8)):pD=:(Tmp pD+8)
-        :qD=:DP qR 1:MX () y0 (FAt (Raw qD 0 lQ 8)):qD=:(Tmp qD+8)
+        :pD=:DP pR 1:MX () x0 (FAt (Raw pD 0 lP 8)):pD+=8
+        :qD=:DP qR 1:MX () y0 (FAt (Raw qD 0 lQ 8)):qD+=8
         :seed
         ++[szR=:(Tmp szR-1), vseed acc acc2, loop, Comb () c0 acc0 acc2, MX () acc (FTmp acc+FTmp acc0)]
   where
