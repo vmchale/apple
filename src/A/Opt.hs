@@ -51,7 +51,7 @@ optA e@Var{}               = pure e
 optA (EApp _ (Builtin _ Refl) f) = do
     f' <- optA f;
     z <- nextU "z" F;x <- nextU "x" F
-    pure $ λ x (LLet F (z, Builtin (F~>F) Abs$$Var F x) (fop CS (Var F z) (Var F x)))
+    pure $ λ x (LLet F (z, Builtin (F~>F) Abs$$Var F x) (fop CS (f'$$Var F z) (Var F x)))
 optA (Builtin t (Rank rs)) = pure (Builtin t (Rank (g<$>rs))) where g r@(_,Just{})=r; g (cr,Nothing)=(cr, Just [1..cr])
 -- TODO: nicer to do fold-of-seed
 optA (Builtin ty Dot)      | Arrow tA (Arrow _ tN) <- ty = do
@@ -148,7 +148,7 @@ optA (EApp l0 (EApp l1 op@(Builtin _ Minus) x) y) = do
     x0 <- optA x; y0 <- optA y
     pure $ case (x0,y0) of
         (FLit _ x', FLit _ y')                                           -> FLit F (x'-y')
-        (ILit I x', ILit I y')                                           -> ILit I (x'-y')
+        (ILit _ x', ILit _ y')                                           -> ILit I (x'-y')
         -- ((1.0+kk)-2.0)
         (EApp l0ϵ s@(EApp _ (Builtin _ Minus) _) (FLit _ x'), FLit _ y') -> EApp l0ϵ s (FLit F (x'+y'))
         (x', ILit _ 0)                                                   -> x'
@@ -157,7 +157,7 @@ optA (EApp l0 (EApp l1 op@(Builtin _ Plus) x) y) = do
     x0 <- optA x; y0 <- optA y
     pure $ case (x0,y0) of
         (FLit _ x', FLit _ y')                                           -> FLit F (x'+y')
-        (ILit I x', ILit I y')                                           -> ILit I (x'+y')
+        (ILit _ x', ILit _ y')                                           -> ILit I (x'+y')
         (EApp l0ϵ a@(EApp _ (Builtin _ Minus) _) (ILit li m), ILit _  n) -> EApp l0ϵ a (ILit li (m-n))
         (x', ILit _ 0)                                                   -> x'
         (ILit _ 0, x')                                                   -> x'
@@ -188,8 +188,8 @@ optA (EApp l (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) = do
 optA (EApp l (Builtin _ Io) n) = do
     n' <- optA n
     k <- nextU "k" I
-    -- FIXME: when we use eMinus, ePlus w/ literal maybe optimize?
-    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ ILit I 0 $$ λ k (v k `iPlus` ILit I 1) $$ (n' `iPlus` ILit I 1)
+    n1 <- optA (n' `iPlus` ILit I 1)
+    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ ILit I 0 $$ λ k (v k `iPlus` ILit I 1) $$ n1
 optA (EApp l (EApp _ (Builtin _ Range) start) end) = do
     start' <- optA start; end' <- optA end
     k <- nextU "k" I
