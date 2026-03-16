@@ -1,7 +1,6 @@
 module Main (main) where
 
 import           Control.DeepSeq                  (NFData (..), rwhnf)
-import           Control.Exception                (Exception, throw)
 import           Criterion.Main
 import qualified Data.ByteString.Lazy             as BSL
 import           Data.Functor                     (($>))
@@ -12,14 +11,12 @@ import           Foreign.Marshal.Alloc            (free, mallocBytes)
 import           Foreign.Ptr                      (FunPtr, Ptr)
 import           Foreign.Storable                 (Storable (..))
 import           Hs.A
-import           I
 import           JIT
 import qualified Math.Hypergeometric              as Hyper
 import qualified Math.SpecialFunction             as Math
 import           Statistics.Distribution          (cumulative)
 import           Statistics.Distribution.StudentT (studentT)
 import           System.Info                      (arch)
-import           Ty
 
 risingFactorial :: Integral a => a -> a -> a
 risingFactorial x n = product [x..(x+n-1)]
@@ -82,15 +79,6 @@ main = do
                       , bench "arm (mnist)" $ nf aarch64 m
                       , bench "arm (fcdf)" $ nf aarch64 ꜰ
                       , bench "arm (A)" $ nf aarch64 ᴀ
-                      ]
-                      -- TODO: thunks after type checking?
-                , env (fmap yeet erfParsed) $ \ast ->
-                  bgroup "ty"
-                      [ bench "tyClosed" $ nf (\(e, m) -> tyClosed m e) ast
-                      ]
-                , env (fmap yeet erfTy) $ \e ->
-                  bgroup "inline"
-                      [ bench "inline" $ nf (\(ast, i) -> fst (inline i ast)) e
                       ]
                 , bgroup "erf"
                       [ bench "erf (libm)" $ nf erf (1 :: Double)
@@ -175,16 +163,11 @@ main = do
                       , bench "softmax" $ nfIO (do {p <- withForeignPtr m6 $ \mPtr -> softmax mPtr; free p})
                       ]
                 ]
-    where erfSrc = BSL.readFile "math/erf.🍏"
-          gamma = BSL.readFile "math/gamma.🍏"
+    where gamma = BSL.readFile "math/gamma.🍏"
           mnist = BSL.readFile "test/examples/stepMnist.🍏"
           fcdf = BSL.readFile "math/fcdf.🍎"
           offA = BSL.readFile "test/examples/ellipticFourier.🍎"
           files = (,,,) <$> mnist <*> gamma <*> fcdf <*> offA
-          erfParsed = parseRename <$> erfSrc
-          erfTy = tyParse <$> erfSrc
-          yeet :: (Exception e) => Either e a -> a
-          yeet = either throw id
           xs = replicate 500 (0.002 :: Double)
           ys = replicate 500 (0.002 :: Double)
           penv = (,) <$> aA (AA 1 [500] xs) <*> aA (AA 1 [500] ys)

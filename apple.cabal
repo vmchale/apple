@@ -71,7 +71,6 @@ library
         B
         CGen
         Hs.A
-        I
         L
         Nm
         P
@@ -125,6 +124,7 @@ library
         Class.E
         Data.Copointed
         E
+        I
         IR
         IR.C
         IR.CF
