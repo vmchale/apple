@@ -51,7 +51,7 @@ optA e@Var{}               = pure e
 optA (EApp _ (Builtin _ Refl) f) = do
     f' <- optA f;
     z <- nextU "z" F;x <- nextU "x" F
-    pure $ λ x (LLet F (z, Builtin (F~>F) Abs$$Var F x) (Builtin (F~>F~>F) CS$$(f'$$Var F z)$$Var F x))
+    pure $ λ x (LLet F (z, Builtin (F~>F) Abs$$Var F x) (fop CS (Var F z) (Var F x)))
 optA (Builtin t (Rank rs)) = pure (Builtin t (Rank (g<$>rs))) where g r@(_,Just{})=r; g (cr,Nothing)=(cr, Just [1..cr])
 -- TODO: nicer to do fold-of-seed
 optA (Builtin ty Dot)      | Arrow tA (Arrow _ tN) <- ty = do
