@@ -61,6 +61,7 @@ addF n f = modify (\(CSt t ar as l v b d d2 π a fs aas ts) -> CSt t ar as l v b
 
 bI n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=ITemp t in (r, CSt (t+1) ar as l (insert n r v) b d d2 π a f aas ts))
 bD n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=FTemp t in (r, CSt (t+1) ar as l v b (insert n r d) d2 π a f aas ts))
+bD2 n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=F2Temp t in (r, CSt (t+1) ar as l v b d (insert n r d2) π a f aas ts))
 bB n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=BTemp t in (r, CSt (t+1) ar as l v (insert n r b) d d2 π a f aas ts))
 bp n e = do {r <- πts e; addΠ n r $> r}
 
@@ -1859,9 +1860,7 @@ cond p e0 e1 t | nind (eAnn e0) = do
     pure (plPP ++ [If () (Is pR) plE0 plE1])
 
 f2eval :: E (T ()) -> F2Temp -> CM [CS ()]
-f2eval (LLet _ b e) t = do
-    ss <- llet b
-    (ss++) <$> f2eval e t
+f2eval (LLet _ (n,e') e) t = do {eR <- bD2 n; (++) <$> f2eval e' eR <*> f2eval e t}
 f2eval (Var _ x) t = do {tϵ <- gets (getT2 x); pure $ case tϵ of Right t2 -> [MX2 () t (FTmp t2)]; Left t1 -> [DS () t t1]}
 f2eval (EApp _ (EApp _ (Builtin _ Plus) e0) (EApp _ (EApp _ (Builtin _ Times) e1) e2)) t = do
     (pl0,t0) <- plD2 e0; (pl1,t1) <- plD2 e1; (pl2,t2) <- plD2 e2
