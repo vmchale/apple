@@ -1944,7 +1944,7 @@ feval (Id _ (FoldOfZip zop op [p])) acc | tyP@(Arr pSh F) <- eAnn p, Just c <- f
     seed <- writeRF zop [FT x₀] (FT acc)
     let step = MX2 () x (FAt (Raw pD 0 lP 8)):pD+=16:ss
         step₁ = MX () x₀ (FAt (Raw pD 0 lP 8)):pD+=8:ss₁
-        loop = r2of pSh i (Tmp szR) step step₁
+        loop = R2of () (pr1 pSh) i (Tmp szR) step step₁
     pure
         $plPP
         $szR=:ev tyP (pR,lP)
@@ -1963,7 +1963,7 @@ feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr pSh _) <- eAnn p, Arr _ F 
     seed <- writeRF zop (FT<$>[x0,y0]) (FT acc)
     let step1 = MX () x0 (FAt (Raw pD 0 lP 8)):pD+=8:MX () y0 (FAt (Raw qD 0 lQ 8)):qD+=8:ss1
         step = MX2 () x (FAt (Raw pD 0 lP 8)):pD+=16:MX2 () y (FAt (Raw qD 0 lQ 8)):qD+=16:ss
-        loop = r2of pSh i (Tmp szR) step step1
+        loop = R2of () (pr1 pSh) i (Tmp szR) step step1
     pure
         $plPP$plQ
         $szR=:ev tyP (pR,lP)
