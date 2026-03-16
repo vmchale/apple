@@ -1935,7 +1935,25 @@ feval (Id _ (FoldOfZip zop op [EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) g) n
     gs <- writeRF g [x] x
     ll <- arof1 ySh nE $ yRd+=KI qSz:mt (Raw yRd 0 lY qSz) y:gs++ss
     pure $ plYs $ plY $ plU plSeed ++ plN [yRd=:DP yR 1, ll]
-feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr pSh _) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, hasS op, Just vseed <- fc c0 = do
+feval (Id _ (FoldOfZip zop op [p])) acc | tyP@(Arr pSh F) <- eAnn p, Just c <- fca op, Just vseed <- fc c, hasS op = do
+    acc₂ <- nF2; acc₁ <- nF; x <- nF2; x₀ <- nF
+    i <- nI; szR <- nI; pD <- nI
+    (plPP, (lP, pR)) <- plA p
+    ss₁ <- writeRF op (FT<$>[acc,x₀]) (FT acc)
+    ss <- write2 op [acc₂,x] acc₂
+    seed <- writeRF zop [FT x₀] (FT acc)
+    let step = MX2 () x (FAt (Raw pD 0 lP 8)):pD+=16:ss
+        step₁ = MX () x₀ (FAt (Raw pD 0 lP 8)):pD+=8:ss₁
+        loop = r2of pSh i (Tmp szR) step step₁
+    pure
+        $plPP
+        $szR=:ev tyP (pR,lP)
+        :pD=:DP pR 1:MX () x₀ (FAt (Raw pD 0 lP 8)):pD+=8
+        :seed
+        ++[szR=:(Tmp szR-1), vseed acc acc₂, loop, Comb () c acc₁ acc₂, MX () acc (FTmp acc+FTmp acc₁)]
+  where
+    fca (Lam _ _ (Lam _ _ (EApp _ (EApp _ (Builtin _ b) _) _))) | fS b = mFop b; fca _ = Nothing
+feval (Id _ (FoldOfZip zop op [p, q])) acc | tyP@(Arr pSh _) <- eAnn p, Arr _ F <- eAnn q, Just (c0,_) <- fz op, Just vseed <- fc c0, hasS op = do
     acc0 <- nF; acc2 <- nF2; x <- nF2; y <- nF2; x0 <- nF; y0 <- nF
     i <- nI; szR <- nI
     (plPP, (lP, pR)) <- plA p; (plQ, (lQ, qR)) <- plA q
