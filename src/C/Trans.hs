@@ -132,9 +132,7 @@ fc FMax = Just (\x₀ x -> DS () x x₀); fc FMin = Just (\x₀ x -> DS () x x�
 fc _ = Nothing
 
 fS :: Builtin -> Bool
-fS Times = True; fS Plus = True
-fS Max = True; fS Min = True
-fS _ = False
+fS Times = True; fS Plus = True; fS Max = True; fS Min = True; fS _ = False
 
 hasS :: E a -> Bool
 hasS (EApp _ e0 e1)    = hasS e0&&hasS e1
