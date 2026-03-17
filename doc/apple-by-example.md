@@ -606,7 +606,7 @@ One can define the logarithm in any base from the natural logarithm `_.`, viz.
 
 Computes odd functions from the positive half. [Arcsine](https://16bpp.net/blog/post/faster-asin-was-hiding-in-plain-sight/):
 
-```{.apple include=math/fasin.🍏 startLine=2}
+```{.apple include=examples/fasin.🍏 startLine=2}
 ```
 
 ## REPL Functionality
