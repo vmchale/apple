@@ -195,7 +195,7 @@ optA (EApp l (EApp _ (Builtin _ Range) start) end) = do
     k <- nextU "k" I
     n <- optA $ (end' `iMinus` start') `iPlus` ILit I 1
     pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ start' $$ λ k (v k `iPlus` ILit I 1) $$ n
-optA (EApp l0 (EApp l1 ho0@(Builtin _ Fold) op) e) = do
+optA (EApp l0 (EApp _ ho0@(Builtin _ Fold) op) e) = do
     e' <- optA e; op' <- optA op
     case e' of
         (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) f) n) ->
@@ -222,7 +222,7 @@ optA (EApp l0 (EApp l1 ho0@(Builtin _ Fold) op) e) = do
                     opϵ = λ x0 (λ x1 (λ x2 (EApp cod (op'$$vx0) (EApp dom2 (f$$vx1) vx2))))
                     f'' = λ x0' (λ x1' (EApp dom2 (f'$$vx0') vx1'))
                 pure $ Id l0 $ FoldOfZip f'' opϵ [xs,ys]
-        _ -> pure $ EApp l0 (EApp l1 ho0 op') e'
+        _ -> pure (ho0$$op'$$e')
 optA (EApp l0 (EApp _ (Builtin _ Succ) f) (EApp _ (EApp _ (Builtin _ Map) g) xs))
     | (Arrow gDom _) <- eAnn g = do
         f' <- optA f; g' <- optA g; g'' <- rE g
