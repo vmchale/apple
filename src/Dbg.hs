@@ -49,8 +49,20 @@ import           IR
 import           IR.Hoist
 import           L
 import           P
-import           Prettyprinter              (Doc, Pretty (..), comma, concatWith, punctuate, space, (<+>))
+import           Parser
+import           Parser.Rw
+import           Prettyprinter              (Doc, Pretty (..), SimpleDocStream, comma, concatWith, hardline, punctuate, space, (<+>))
 import           Prettyprinter.Ext
+import           Prettyprinter.Render.Text  (renderIO)
+import           System.IO                  (stderr, stdout)
+
+fmt :: BSL.ByteString -> IO ()
+fmt s = do
+    case second rewrite <$> parseWithMaxCtx alexInitUserState s of
+        Right (_, e') -> renderIO stdout (pp e')
+        Left err      -> renderIO stderr (pp err)
+  where pp :: Pretty a => a -> SimpleDocStream ann
+        pp=smartA.(<>hardline).pretty
 
 nasm :: T.Text -> BSL.ByteString -> Doc ann
 nasm f = (\(d,i) -> "section .data\n\n" <> nasmD (IM.toList d) <#> i) . second (embed.(prolegomena Asm.<#>).pAsm) . either throw id . x86G
