@@ -70,7 +70,7 @@ Z PY apy(K apple_t t, K U x){
 }
 
 ZF apple_typeof(PYA self, PYA args) {
-    const T inp;PyArg_ParseTuple(args, "s", &inp);
+    T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
         T res = apple_printty(inp,&err);
     PyE(res,err);
@@ -79,7 +79,7 @@ ZF apple_typeof(PYA self, PYA args) {
 }
 
 ZF apple_asm(PYA self, PYA args) {
-    const T inp;PyArg_ParseTuple(args, "s", &inp);
+    T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
         T res = apple_dumpasm(inp,&err);
     PyE(res,err);
@@ -88,7 +88,7 @@ ZF apple_asm(PYA self, PYA args) {
 }
 
 ZF apple_ir(PYA self, PYA args) {
-    const T inp;PyArg_ParseTuple(args, "s", &inp);
+    T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
         T res = apple_dumpir(inp,&err);
     PyE(res,err);
@@ -158,7 +158,7 @@ static PyTypeObject JOT = {
 };
 
 ZF apple_jit(PYA self, PYA args) {
-    const T inp;PyArg_ParseTuple(args, "s", &inp);
+    T inp;PyArg_ParseTuple(args, "s", &inp);
     T err;
     FnTy* ty=apple_ty(inp,&err);
     PyE(ty,err);
