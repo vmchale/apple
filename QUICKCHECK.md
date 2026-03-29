@@ -26,6 +26,7 @@ also tail/init ^
 # Identity-fill
 
 (\n. [?x=n,.1::int,.0]'(⍳9))'0..9
+(⍳4) [?x=y,.1::int,.0]⊗ (⍳4)
 
 # Identities
 
