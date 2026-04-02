@@ -19,8 +19,6 @@ type Movs = IM.IntMap MS
 type GS = MS
 type GL = IM.IntMap [Int]
 
--- TODO: might work as lazy lists idk (deletion)
--- difference would still be annoying though...
 data Wk = Wk { pre, sp, fr, simp :: IS.IntSet }
 
 iSp r w = w { sp = IS.insert r (sp w) }; iFr r w = w { fr = IS.insert r (fr w) }
