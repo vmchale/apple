@@ -1,0 +1,2 @@
+:store fannkuch [{n ⟜ {.x; l ←𝓉x; (~(0..(n-1)) ⧺ (n..(l-1))) ⊂ x}]
+fannkuch (𝔸42153 :: Vec 5 int)
