@@ -12,11 +12,11 @@ module A ( T (..)
          , rLi
          ) where
 
+import           A.C
 import           Control.DeepSeq   (NFData (rnf))
 import           Data.Bifunctor    (first)
 import           Data.Foldable     (toList)
 import qualified Data.IntMap       as IM
-import qualified Data.Set          as S
 import qualified Data.Text         as T
 import           GHC.Generics      (Generic)
 import           Nm
@@ -24,14 +24,6 @@ import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, c
                                     line, parens, pipe, punctuate, rbrace, rbracket, tupled, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Sh
-
-data C = IsOrd | IsEq | HasBits | IsZ deriving (Eq, Ord)
-
-instance NFData C where rnf x=seq x ()
-
-instance Pretty C where pretty IsOrd = "IsOrd"; pretty IsEq = "IsEq"; pretty HasBits = "HasBits"; pretty IsZ = "IsNum"
-
-instance Show C where show=show.pretty
 
 tupledArr = group.align.encloseSep (flatAlt "⟨ " "⟨") (flatAlt " ⟩" "⟩") ", "
 
@@ -43,8 +35,8 @@ data T a = Arr (Sh a) (T a)
          | I -- | int
          | B -- | bool
          | Li (I a)
-         | TV !(Nm a) (S.Set C)
-         | FV !(Nm a) (S.Set C)
+         | TV !(Nm a) Cs
+         | FV !(Nm a) Cs
          | IZ (I a) !(Nm a)
          | Arrow (T a) (T a)
          | P [T a]
@@ -78,8 +70,8 @@ instance PS (T a) where
     ps _ (Li i)                 = "int" <> parens (pretty i)
     ps _ (IZ i _)               = "num" <> parens (pretty i)
     ps _ B                      = "bool"
-    ps _ (TV n c) | S.null c    = pretty n
-                  | otherwise   = braces(pretty n<>"|"<>concatWith (\x y -> x<>","<>y) (pretty<$>S.toList c))
+    ps _ (TV n c) | nullC c     = pretty n
+                  | otherwise   = braces(pretty n<>"|"<>pcs c)
     ps d (FV n c)               = "♯" <> ps d (TV n c)
     ps d (Arrow t0 t1)          = parensp (d>0) (ps 1 t0 <+> "→" <+> ps 0 t1)
     ps _ (P ts)                 = tupledBy " * " (pretty <$> ts)
@@ -87,7 +79,7 @@ instance PS (T a) where
 
 rLi :: T a -> T a
 rLi Li{}          = I
-rLi (IZ _ n)      = TV n (S.singleton IsZ)
+rLi (IZ _ n)      = TV n (bitC IsZ)
 rLi (Arrow t0 t1) = Arrow (rLi t0) (rLi t1)
 rLi (Arr sh t)    = Arr sh (rLi t)
 rLi (Ρ n ts)      = Ρ n (rLi <$> ts)

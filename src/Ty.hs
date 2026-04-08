@@ -8,6 +8,7 @@ module Ty ( TyE
           ) where
 
 import           A
+import           A.C
 import           Control.DeepSeq                  (NFData (rnf), rwhnf)
 import           Control.Exception                (Exception, throw)
 import           Control.Monad                    (when, zipWithM, zipWithM_)
@@ -61,7 +62,7 @@ data TyE a = IllScoped a !(Nm a)
            | MS !(Sh a) !(Sh a)
            | MI !F !(I a) !(I a)
            | Doesn'tSatisfy a (T a) !C
-           | CV a (T a) !C
+           | CV a (T a) !Cs
            | NegIx a Int
            | AF !a !(I a) !(I a)
            deriving (Generic)
@@ -262,15 +263,15 @@ nN :: T.Text -> b -> TyM a (Nm b)
 nN n l = do {tickMaxU; st <- gets maxU; pure (Nm n (U st) l)}
 
 ft, ff :: T.Text -> b -> TyM a (T b)
-ft n l = TV <$> nN n l <*> pure S.empty
-ff n l = FV <$> nN n l <*> pure S.empty
+ft n l = TV <$> nN n l <*> pure 0
+ff n l = FV <$> nN n l <*> pure 0
 
 fsh :: T.Text -> TyM a (Sh ())
 fsh n = SVar <$> nN n ()
 
 -- TODO: FV for e.g. =
 fc :: T.Text -> C -> TyM a (T ())
-fc n c = do {nϵ <- nN n (); pure $ TV nϵ (S.singleton c)}
+fc n c = do {nϵ <- nN n (); pure $ TV nϵ (bitC c)}
 
 fz, fb, fo :: TyM a (T ())
 fz = fc "a" IsZ; fb = fc "a" HasBits; fo = fc "o" IsOrd
@@ -493,7 +494,7 @@ scalar f (l,_) s n = snd <$> mgSh f l s n Nil
 
 scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
-σ ΦF (Li IEV{}) = I; σ ΦF (IZ IEV{} t) = TV t (S.singleton IsZ); σ _ t = t
+σ ΦF (Li IEV{}) = I; σ ΦF (IZ IEV{} t) = TV t (bitC IsZ); σ _ t = t
 
 φv (n0,c0) (n1,c1) s = do {n <- nI (loc n0); let t=TV n (c0<>c1) in pure (t, iTS n0 t$iTS n1 t s)}
 
@@ -590,19 +591,18 @@ mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ f$
                               -- constraints arise from >, +, &. so we should not propagate index constraints
 mgu f _ s (Li i0) (IZ i1 n) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ f$Li i' in pure (t, iTS n t$wI iS s)}
 mgu f _ s (IZ i0 n0) (Li i1) = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ f$Li i' in pure (t, iTS n0 t$wI iS s)}
-mgu _ _ s (TV n c) t1@Li{} = if S.null c then pure (t1, iTS n t1 s) else pure (I, iTS n I s)
-mgu _ _ s t0@Li{} (TV n c) = if S.null c then pure (t0, iTS n t0 s) else pure (I, iTS n I s)
+mgu _ _ s (TV n c) t1@Li{} = if nullC c then pure (t1, iTS n t1 s) else pure (I, iTS n I s)
+mgu _ _ s t0@Li{} (TV n c) = if nullC c then pure (t0, iTS n t0 s) else pure (I, iTS n I s)
 mgu f _ s (IZ i0 n0) (IZ i1 n1) | n0/=n1 = do {(i',iS) <- mguI f (iSubst s) i0 i1; let t=σ f$IZ i' n0 in pure (t, iTS n1 t$wI iS s)}
--- TODO: if C HasBits, force I (Li (?))
-mgu _ _ s t0@(IZ _ n0) (TV n1 c) | n0/=n1 = if S.null c then pure (t0, iTS n1 t0 s) else let t=TV n1 (S.insert IsZ c) in pure (t, iTS n0 t s)
+mgu _ _ s t0@(IZ _ n0) (TV n1 c) | n0/=n1 = if nullC c then pure (t0, iTS n1 t0 s) else let t=TV n1 (insC IsZ c) in pure (t, iTS n0 t s)
                                  | otherwise = error"unexpected."
-mgu _ _ s (TV n0 c) t1@(IZ _ n1) | n0/=n1 = if S.null c then pure (t1, iTS n0 t1 s) else let t=TV n0 (S.insert IsZ c) in pure (t, iTS n1 t s)
+mgu _ _ s (TV n0 c) t1@(IZ _ n1) | n0/=n1 = if nullC c then pure (t1, iTS n0 t1 s) else let t=TV n0 (insC IsZ c) in pure (t, iTS n1 t s)
                                  | otherwise = error"unexpected."
 -- "LF" for universal variables should be for function argument (à la ug.)... go with the type var
 mgu _ _ s (TV n c) (TV n' c') | n == n' = do {m <- nI (loc n); let t'=TV m (c<>c') in pure (t', iTS n t' s)}
 mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
-    | c' `S.isSubsetOf` c = pure (t, iTS n1 t s)
-    | c `S.isSubsetOf` c' = pure (t', iTS n0 t' s)
+    | c' `isSubsetOfC` c = pure (t, iTS n1 t s)
+    | c `isSubsetOfC` c' = pure (t', iTS n0 t' s)
     | otherwise = φv (n0,c) (n1,c') s
 mgu f l s (TV n c) (Arr i (TV n' c')) | n'==n = scalar f l s i >>= φv (n,c) (n',c')
 mgu f l s (Arr i (TV n c)) (TV n' c') | n'==n = scalar f l s i >>= φv (n,c) (n',c')
@@ -1002,15 +1002,15 @@ chkE :: T () -> Either (TyE a) ()
 chkE t@Arrow{} = if hasE t then Left (ExistentialArg t) else Right ()
 chkE _         = Right ()
 
-enforcesn't :: (a, T a) -> S.Set C -> Maybe (TyE a)
-enforcesn't (l,t@(TV _ cϵ)) c = if c `S.isSubsetOf` cϵ then Nothing else Just (CV l t (S.findMin c))
-enforcesn't (l,t@(FV _ cϵ)) c = if c `S.isSubsetOf` cϵ then Nothing else Just (CV l t (S.findMin c))
-enforcesn't (l,t@IZ{}) c      = if HasBits `S.member` c then Just$CV l t HasBits else Nothing
+enforcesn't :: (a, T a) -> Cs -> Maybe (TyE a)
+enforcesn't (l,t@(TV _ cϵ)) c = CV l t <$> c \\ cϵ
+enforcesn't (l,t@(FV _ cϵ)) c = CV l t <$> c \\ cϵ
+enforcesn't (l,t@IZ{}) c      = if HasBits `memberC` c then Just$CV l t (bitC HasBits) else Nothing
 enforcesn't x c               = x `satisfiesn't` c
 
 satisfiesn't :: (a, T a) -- ^ Not a type variable
-             -> S.Set C -> Maybe (TyE a)
-satisfiesn't (l,t) = listToMaybe . mapMaybe s . S.toList
+             -> Cs -> Maybe (TyE a)
+satisfiesn't (l,t) = listToMaybe . mapMaybeC s
     where s = case t of
             I       -> const Nothing
             Li{}    -> const Nothing

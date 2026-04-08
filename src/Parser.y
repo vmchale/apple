@@ -17,6 +17,7 @@ import GHC.Generics (Generic)
 import qualified Nm
 import Nm hiding (loc)
 import A
+import A.C
 import L
 import Prettyprinter (Pretty (pretty), (<+>), concatWith, squotes)
 import Sh
@@ -371,7 +372,7 @@ E :: { E AlexPosn }
 
 {
 
-tv x = TV x S.empty
+tv x = TV x 0
 
 pat :: E AlexPosn -> AlexPosn -> Parse (E AlexPosn -> E AlexPosn)
 pat (Tup _ es) l = do {ns <- traverse (unV l) es; pure (A.LamΠ l ns)}
