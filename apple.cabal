@@ -88,6 +88,7 @@ library
 
     hs-source-dirs:     src
     other-modules:
+        A.C
         A.Eta
         A.Opt
         A.S
