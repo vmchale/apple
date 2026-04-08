@@ -4,7 +4,6 @@
                   , ParseE (..)
                   ) where
 
-import Control.Exception (Exception)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Control.Monad.Trans.Class (lift)
 import Control.DeepSeq (NFData)
@@ -398,10 +397,6 @@ instance Pretty ParseE where
     pretty (Unexpected tok valid) = pretty (loc tok) <+> "Unexpected" <+> pretty tok <> "." <+> "Expected one of" <+> concatWith (\x y -> x <> "," <+> y) (squotes.pretty<$>valid)
     pretty (LexErr str)           = pretty (T.pack str)
     pretty (Malformed l e)        = pretty l <+> "'" <+> pretty e <+> "cannot be bound by a ↦"
-
-instance Show ParseE where show = show . pretty
-
-instance Exception ParseE
 
 instance NFData ParseE where
 
