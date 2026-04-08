@@ -578,14 +578,16 @@ mgu _ _ s I (TV n _) = pure (I, iTS n I s)
 mgu _ _ s (TV n _) I = pure (I, iTS n I s)
 mgu _ _ s I (FV n _) = pure (I, iTS n I s)
 mgu _ _ s (FV n _) I = pure (I, iTS n I s)
--- mgu _ _ s t0@(IZ _ n0) (FV n1 c) | S.null c = pure (t0, iTS n1 t0 s)
-                                 -- | HasBits `S.member` c = pure (I, iTS n1 I s)
-                                 -- | otherwise = let t=FV n1 (S.insert IsZ c) in pure (t, iTS n0 t s)
--- mgu _ _ s (FV n0 c) t1@(IZ _ n1) | S.null c = pure (t1, iTS n0 t1 s)
-                                 -- | HasBits `S.member` c = pure (I, iTS n0 I s)
-                                 -- | otherwise = let t=FV n0 (S.insert IsZ c) in pure (t, iTS n1 t s)
-mgu _ (l,_) s t@(TV n c) F = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
-mgu _ (l,_) s F t@(TV n c) = if HasBits `S.member` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
+-- mgu _ _ s t0@(IZ _ n0) (FV n1 c) | nullC c = pure (t0, iTS n1 t0 s)
+                                 -- | HasBits `memberC` c = pure (I, iTS n1 I s)
+                                 -- | otherwise = let t=FV n1 (insC IsZ c) in pure (t, iTS n0 t s)
+-- mgu _ _ s (FV n0 c) t1@(IZ _ n1) | nullC c = pure (t1, iTS n0 t1 s)
+                                 -- | HasBits `memberC` c = pure (I, iTS n0 I s)
+                                 -- | otherwise = let t=FV n0 (insC IsZ c) in pure (t, iTS n1 t s)
+mgu _ (l,_) s t@(TV n c) F = if HasBits `memberC` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
+mgu _ (l,_) s F t@(TV n c) = if HasBits `memberC` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
+-- mgu _ (l,_) s t@(FV n c) F = if HasBits `memberC` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
+-- mgu _ (l,_) s F t@(FV n c) = if HasBits `memberC` c then throwError$Doesn'tSatisfy l t HasBits else pure (F, iTS n F s)
 mgu _ _ s t@(IZ (Ix _ i0) n0) (IZ (Ix _ i1) n1) | i0==i1&&n0==n1 = pure (t, s)
 mgu f _ s (Li i0) (Li i1) = do {(i', iS) <- mguI f (iSubst s) i0 i1; pure (σ f$Li i', wI iS s)}
                               -- constraints arise from >, +, &. so we should not propagate index constraints
@@ -606,8 +608,13 @@ mgu _ _ s t@(TV n0 c) t'@(TV n1 c')
     | otherwise = φv (n0,c) (n1,c') s
 mgu f l s (TV n c) (Arr i (TV n' c')) | n'==n = scalar f l s i >>= φv (n,c) (n',c')
 mgu f l s (Arr i (TV n c)) (TV n' c') | n'==n = scalar f l s i >>= φv (n,c) (n',c')
-mgu f l s (TV n c) (Arr i (TV n' c')) | IsZ `S.member` c = scalar f l s i >>= φv (n,c) (n',c')
-mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `S.member` c' = scalar f l s i >>= φv (n,c) (n',c')
+mgu f l s (TV n c) (Arr i (TV n' c')) | IsZ `memberC` c = scalar f l s i >>= φv (n,c) (n',c')
+mgu f l s (Arr i (TV n c)) (TV n' c') | IsZ `memberC` c' = scalar f l s i >>= φv (n,c) (n',c')
+-- mgu f _ s t@(FV n c) (TV n' c') | c' `isSubsetOfC` c = pure (t, iTS n' t s)
+                                -- | otherwise = φf (n,c) (n',c') s
+-- mgu f _ s (TV n c) t'@(FV n' c') | c `isSubsetOfC` c' = pure (t', iTS n t' s)
+                                 -- | otherwise = φf (n',c') (n,c) s
+-- FIXME: these allow FVs under arrows...
 mgu _ (l,_) s t'@(TV (Nm _ (U i) _) c) t | i `IS.member` occ t = throwError $ OT l t' t
                                          | otherwise = case (l,t) `satisfiesn't` c of Nothing -> pure (t, uTS i t s); Just e -> throwError e
 mgu _ (l,_) s t t'@(TV (Nm _ (U i) _) c) | i `IS.member` occ t = throwError $ OT l t' t
