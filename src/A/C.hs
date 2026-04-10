@@ -26,7 +26,7 @@ pcs cs = concatWith (\x y -> x<>","<>y) [ pretty c | c <- [IsOrd .. IsZ], c `mem
 
 instance Pretty Cs where pretty = braces.pcs
 
-data C = IsOrd | IsEq | HasBits | IsZ deriving (Eq, Ord, Enum)
+data C = IsOrd | IsEq | HasBits | IsZ deriving (Eq, Enum)
 
 instance NFData C where rnf x=seq x ()
 
