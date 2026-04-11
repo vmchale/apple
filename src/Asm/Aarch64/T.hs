@@ -449,9 +449,9 @@ feval (IR.FU Op.FLog e) t = do
     plE <- feval e IR.F0
     pure $ plE ++ [puL, AddRC () FP ASP 16 IZero, MovRCf () r Log, Blr () r, FMovXX () (fabsReg t) FArg0, poL]
 feval (IR.FB Op.CpySgn e0 e1) t = do
-    m <- nR; v <- V2Reg<$>nF
+    m <- nR; v <- nQ
     plE0 <- feval e0 t; (plE1,r1) <- plF e1
-    pure $ plE0 ++ plE1 [MovRC () m 1, Lsl () m m 63, Ins () v 0 m, Sgn () (fabsReg t) r1 v]
+    pure $ plE0 ++ plE1 [MovZ () m (1 `shiftR` 15) 48, Ins () v 0 m, Sgn () (fabsReg t) r1 v]
 feval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
     (plE0,i0) <- plF e0; (plE1,i1) <- plF e1; (plE2,i2) <- plF e2
     pure $ plE0 $ plE1 $ plE2 [Fmadd () (fabsReg t) i1 i2 i0]
