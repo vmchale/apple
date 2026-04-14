@@ -15,6 +15,7 @@
 
 // http://adv-r.had.co.nz/C-interface.html
 
+#define jX(n,a) {int j;for(j=0;j<n;j++){a;}}
 #define ERR(p,msg) if(p==NULL){SEXP er=mkString(msg);free(msg);R er;}
 #define E(msg) {SEXP er=mkString(msg);R er;}
 #define An(x,n,t,ra) J* i_p=x;J n=i_p[1];SEXP ra=PROTECT(allocVector(t,n));
@@ -34,20 +35,20 @@ _ O clear(SEXP jit) {
 }
 
 _ SEXP rfv(K U x) {An(x,n,REALSXP,r);F* x_f=x;memcpy(REAL(r),x_f+2,n*8);UNPROTECT(1);R r;}
-_ SEXP riv(K U x) {An(x,n,INTSXP,r);int* is=INTEGER(r);DO(i,n,is[i]=(int)i_p[i+2]);UNPROTECT(1);R r;}
-_ SEXP rbv(K U x) {An(x,n,LGLSXP,r);B* b_p=x+16;int* bs=LOGICAL(r);DO(i,n,bs[i]=(int)b_p[i]);UNPROTECT(1);R r;}
+_ SEXP riv(K U x) {An(x,n,INTSXP,r);int* is=INTEGER(r);iX(n,is[i]=(int)i_p[i+2]);UNPROTECT(1);R r;}
+_ SEXP rbv(K U x) {An(x,n,LGLSXP,r);B* b_p=x+16;int* bs=LOGICAL(r);iX(n,bs[i]=(int)b_p[i]);UNPROTECT(1);R r;}
 
 // vector
 _ U frv(r x) {J dim=length(x);double* d=REAL(x);V(dim,d,ret);R ret;}
-_ U fiv(r x) {J dim=length(x);J* ret=(J*)R_alloc(8,dim+2);J rnk=1;ret[0]=rnk;ret[1]=dim;int* is=INTEGER(x);DO(i,dim,ret[i+2]=(J)is[i]);R ret;}
-_ U fbv(r x) {J dim=length(x);B* ret=(B*)R_alloc(1,dim+16);J* i_p=(J*)ret;J rnk=1;i_p[0]=rnk;i_p[1]=dim;int* bs=LOGICAL(x);DO(i,dim,ret[i+16]=(B)bs[i]);R ret;}
+_ U fiv(r x) {J dim=length(x);J* ret=(J*)R_alloc(8,dim+2);J rnk=1;ret[0]=rnk;ret[1]=dim;int* is=INTEGER(x);iX(dim,ret[i+2]=(J)is[i]);R ret;}
+_ U fbv(r x) {J dim=length(x);B* ret=(B*)R_alloc(1,dim+16);J* i_p=(J*)ret;J rnk=1;i_p[0]=rnk;i_p[1]=dim;int* bs=LOGICAL(x);iX(dim,ret[i+16]=(B)bs[i]);R ret;}
 
 #define RD2(r,d,m,n) int* d=INTEGER(getAttrib(r,R_DimSymbol));J m=d[0];J n=d[1];
 #define AD2(x,m,n) J* x_i=x;J m=x_i[1],n=x_i[2]
 #define AM(r,S,x,m,n) RD2(r,l,m,n);U x=malloc(24+m*n*S);{J* x_i=x;x_i[0]=2;x_i[1]=m;x_i[2]=n;}
 #define AR(x,T,r,m,n) AD2(x,m,n);SEXP r=PROTECT(allocMatrix(T,m,n));
-#define FC2(p,d,T,m,n) DO(i,m,DO(j,n,p[i*n+j]=(T)d[j*m+i]))
-#define CF2(d,p,T,m,n) DO(i,m,DO(j,n,d[j*m+i]=(T)p[i*n+j]))
+#define FC2(p,d,T,m,n) iX(m,jX(n,p[i*n+j]=(T)d[j*m+i]))
+#define CF2(d,p,T,m,n) iX(m,jX(n,d[j*m+i]=(T)p[i*n+j]))
 
 _ U frm(r a){AM(a,8,x,m,n);F* x_f=x+24;double* d=REAL(a);FC2(x_f,d,F,m,n);R x;}
 _ U frb(r a){AM(a,1,x,m,n);B* x_b=x+24;int* b=LOGICAL(a);FC2(x_b,b,B,m,n);R x;}
@@ -122,7 +123,7 @@ SEXP run_R(SEXP args){
         )
     }
     ffi_call(cif,fp,ret,vals);
-    DO(i,argc,$(fs>>i&1, free(*(U*)vals[i])))
+    iX(argc,$(fs>>i&1, free(*(U*)vals[i])))
     ArgTy(ty->res,
         r=ScalarReal(*(F*)ret),
         r=ScalarInteger((int)(*(J*)ret)),

@@ -30,7 +30,7 @@ TS FnTy {int argc; apple_t* args; apple_t res;} FnTy;
 // expect flat
 _ O free_t(apple_t x){if(x.f==Pi){free(x.ty.APi.a_pi);}}
 
-_ O freety(FnTy* x){DO(i,x->argc,free_t(x->args[i]));free(x->args);free_t(x->res);free(x);}
+_ O freety(FnTy* x){iX(x->argc,free_t(x->args[i]));free(x->args);free_t(x->res);free(x);}
 
 // NULL on error
 FnTy* apple_ty(K char*, T*);

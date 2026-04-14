@@ -17,8 +17,8 @@ typedef PyObject* PY;typedef PyArrayObject* NP;typedef const PY PYA;
 _ O c_free(PY cap){free(PyCapsule_GetPointer(cap,NULL));}
 
 // CD - copy dims AD - apple dimensionate
-#define CD(rnk,x,ls) J* i_p=x;J rnk=i_p[0];npy_intp* ls=malloc(SZ(npy_intp)*rnk);DO(i,rnk,ls[i]=(npy_intp)i_p[i+1]);
-#define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ls=PyArray_DIMS(py);DO(i,r,x_i[i+1]=(J)ls[i]);}
+#define CD(rnk,x,ls) J* i_p=x;J rnk=i_p[0];npy_intp* ls=malloc(SZ(npy_intp)*rnk);iX(rnk,ls[i]=(npy_intp)i_p[i+1]);
+#define AD(r,x,py) {J* x_i=x;x_i[0]=r;npy_intp* ls=PyArray_DIMS(py);iX(r,x_i[i+1]=(J)ls[i]);}
 #define A(r,n,w,x,py) J r=PyArray_NDIM(py);J n=PyArray_SIZE(py);U x=malloc(8+8*r+n*w);AD(r,x,py)
 
 // TODO: __func__
@@ -44,7 +44,7 @@ Z PY apy(K apple_t,K U);
 // https://numpy.org/devdocs/reference/arrays.dtypes.html#specifying-and-constructing-data-types
 _ PY npy_p(K apple_P t, U x){
     PyArray_Descr* pd;
-    {int n=t.pi_n;T s=alloca(3*n+1);J l;J o=0;DO(i,n,$e(t.a_pi[i].f==Rc,"tuples-of-tuples not yet implemented.");T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3) C(B_t,r="?,";l=2) C(I_t,r="i8,";l=3)};memcpy(s+o,r,l);o+=l);s[o]=0;PyArray_DescrConverter(PyUnicode_FromString(s), &pd);}
+    {int n=t.pi_n;T s=alloca(3*n+1);J l;J o=0;iX(n,$e(t.a_pi[i].f==Rc,"tuples-of-tuples not yet implemented.");T r;switch(t.a_pi[i].ty.aa){C(F_t,r="f8,";l=3) C(B_t,r="?,";l=2) C(I_t,r="i8,";l=3)};memcpy(s+o,r,l);o+=l);s[o]=0;PyArray_DescrConverter(PyUnicode_FromString(s), &pd);}
     CD(rnk,x,ls);
     CA(rnk,x,ls,pd);
 }
@@ -52,7 +52,7 @@ _ PY npy_p(K apple_P t, U x){
 _ PY ar(K apple_P t, K U* x){
     int n=t.pi_n;
     PY r=PyTuple_New(n);
-    SA(U,ret);DO(i,n,ret[0]=x[i];PyTuple_SetItem(r,i,apy(t.a_pi[i],ret)))
+    SA(U,ret);iX(n,ret[0]=x[i];PyTuple_SetItem(r,i,apy(t.a_pi[i],ret)))
     // libffi passes pointers as pointers-to-pointers
     R r;
 }
@@ -140,7 +140,7 @@ ZF apple_call(PYA self, PYA args, PYA kwargs) {
         }
     }
     ffi_call(cif,fp,ret,vals);
-    DO(i,argc,$(fs>>i&1,free(*(U*)vals[i])))
+    iX(argc,$(fs>>i&1,free(*(U*)vals[i])))
     R apy(ty->res,ret);
 };
 

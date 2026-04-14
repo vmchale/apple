@@ -18,7 +18,7 @@ ffi_cif* apple_ffi(FnTy* ty) {
     int argc=ty->argc;
     ffi_type** args=malloc(sizeof(ffi_type*)*argc);
     apple_t* argv=ty->args;
-    DO(i,argc,F(args[i],argv[i]))
+    iX(argc,F(args[i],argv[i]))
     ffi_type* ret;F(ret,ty->res);
     ffi_prep_cif(cif,FFI_DEFAULT_ABI,(unsigned int)argc,ret,args);
     R cif;
