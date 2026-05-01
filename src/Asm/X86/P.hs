@@ -2,6 +2,7 @@ module Asm.X86.P ( gallocFrame, gallocOn ) where
 
 import           Asm.Ar.P
 import           Asm.G
+import           Asm.G.Set
 import           Asm.LI
 import           Asm.X86
 import           Asm.X86.Frame
@@ -44,9 +45,11 @@ gallocOn u = go u 16 pres True
                         (Right regs, Left x) ->
                             let (uϵ', offs', isns') = spillX uϵ offs x isns
                             in go uϵ' offs' (IM.insert (-16) Rbp pres') False isns'
-                    regsM = alloc aIsns ((if i then (++[Rbp]) else id) [Rcx .. Rax]) (IM.keysSet pres') pres'
-                    fregsM = allocF aFIsns [XMM1 .. XMM15] (IM.keysSet preFs) preFs
+                    regsM = alloc (pair aIsns) ((if i then (++[Rbp]) else id) [Rcx .. Rax]) (IM.keysSet pres') pres'
+                    fregsM = allocF (pair aFIsns) [XMM1 .. XMM15] (IM.keysSet preFs) preFs
                     (aIsns, aFIsns) = bundle isns
+                    pair = map (fmap (third3 (fmap (uncurry MV))))
+                    third3 f ~(x,y,z) = (x,y,f z)
 
 saI :: Int64 -> Int64
 saI i | i`rem`16 == 0 = i | otherwise = i+8

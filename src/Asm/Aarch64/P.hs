@@ -6,6 +6,7 @@ import           Asm.Aarch64.Guess
 import           Asm.Aarch64.Sp
 import           Asm.Ar.P
 import           Asm.G
+import           Asm.G.Set
 import           Asm.LI
 import qualified Data.IntMap       as IM
 import qualified Data.Set          as S
@@ -42,9 +43,11 @@ gallocOn u = go u 0 pres True
                             let (uϵ', offs', isns') = spill uϵ offs s isns
                             in go uϵ' offs' pres' False isns'
                     -- https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms#Respect-the-purpose-of-specific-CPU-registers
-                    regsM = alloc aIsns (filter (/= X18) [X0 .. X28]) (IM.keysSet pres') pres'
-                    fregsM = allocF aFIsns [D0 .. D30] (IM.keysSet preFs) preFs
+                    regsM = alloc (pair aIsns) (filter (/= X18) [X0 .. X28]) (IM.keysSet pres') pres'
+                    fregsM = allocF (pair aFIsns) [D0 .. D30] (IM.keysSet preFs) preFs
                     (aIsns, aFIsns) = bundle isns
+                    pair = map (fmap (third3 (fmap (uncurry MV))))
+                    third3 f ~(x,y,z) = (x,y,f z)
 
 as :: Word16 -> Word16
 as i | i `rem` 16 == 0 = i | otherwise = i+8
