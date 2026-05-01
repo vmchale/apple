@@ -104,6 +104,7 @@ library
         Asm.BB
         Asm.CF
         Asm.G
+        Asm.G.Set
         Asm.L
         Asm.LI
         Asm.X86.B
