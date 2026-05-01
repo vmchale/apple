@@ -5,7 +5,7 @@ import           Asm.M
 import           B
 import           Control.Monad.Trans.State.Strict (runState)
 import           Data.Bifunctor                   (second)
-import           Data.Bits                        (shiftR, (.&.))
+import           Data.Bits                        (shiftR, shiftL, (.&.))
 import           Data.Tuple                       (swap)
 import           Data.Word                        (Word16, Word64, Word8)
 import           GHC.Float                        (castDoubleToWord64)
@@ -451,7 +451,7 @@ feval (IR.FU Op.FLog e) t = do
 feval (IR.FB Op.CpySgn e0 e1) t = do
     m <- nR; v <- nQ
     plE0 <- feval e0 t; (plE1,r1) <- plF e1
-    pure $ plE0 ++ plE1 [MovZ () m (1 `shiftR` 15) 48, Ins () v 0 m, Sgn () (fabsReg t) r1 v]
+    pure $ plE0 ++ plE1 [MovZ () m (1 `shiftL` 15) 48, Ins () v 0 m, Sgn () (fabsReg t) r1 v]
 feval (IR.FB Op.FPlus e0 (IR.FB Op.FTimes e1 e2)) t = do
     (plE0,i0) <- plF e0; (plE1,i1) <- plF e1; (plE2,i2) <- plF e2
     pure $ plE0 $ plE1 $ plE2 [Fmadd () (fabsReg t) i1 i2 i0]
