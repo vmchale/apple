@@ -247,7 +247,7 @@ prettyTyped = pt where
     pt (BLit t True)                                          = "#t"<::>t
     pt (BLit t False)                                         = "#f"<::>t
     pt (Cond t p e0 e1)                                       = parens ("?" <+> pt p <+> ",." <+> pt e0 <+> pt e1) <+> colon <+> pretty t
-    pt e | (ns@(_:_),e') <- gt e                              = group ("λ" <> foldMap (\case ([n],_) -> ptn n; (n,tC) -> tupled (pretty<$>n) <::>tC) ns <> "." <!> pt e')
+    pt e | (ns@(_:_),e') <- gt e                              = group (fl (\case ([n],_) -> ptn n; (n,tC) -> tupled (pretty<$>n) <::>tC) ns <!> pt e')
     pt (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) e0) e1) e2)  = parens (pt e0 <> "/ₒ" <+> pt e1 <+> pt e2)
     pt (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) e0) e1) e2)  = parens (pt e0 <> "/*" <+> pt e1 <+> pt e2)
     pt (EApp _ (EApp _ (EApp _ (Builtin _ Foldl) e0) e1) e2)  = parens (pt e0 <> "/l" <+> pt e1 <+> pt e2)
@@ -343,8 +343,10 @@ gg (Lam _ n e)   = first ([n]:) $ gg e
 gg (LamΠ _ ns e) = first (ns:) $ gg e
 gg e             = ([], e)
 
+fl p = foldMap (\na -> "λ" <> p na <> ".")
+
 instance PS (E a) where
-    ps d e | (ns@(_:_),e') <- gg e                                = group (parensp (d>1) ("λ" <> foldMap (\case [n] -> pretty n <> "."; n -> tupled (pretty<$>n) <> ".") ns <!> ps 2 e'))
+    ps d e | (ns@(_:_),e') <- gg e                                = group (parensp (d>1) (fl (\case [n] -> pretty n; n -> tupled (pretty<$>n)) ns <!> ps 2 e'))
     ps _ (Var _ n)                                                = pretty n
     ps _ (Builtin _ op) | isBinOp op                              = parens (pretty op)
     ps _ (Builtin _ b)                                            = pretty b
