@@ -46,7 +46,7 @@ gallocOn u = go u 0 pres True
                     regsM = alloc (pair aIsns) (filter (/= X18) [X0 .. X28]) (IM.keysSet pres') pres'
                     fregsM = allocF (pair aFIsns) [D0 .. D30] (IM.keysSet preFs) preFs
                     (aIsns, aFIsns) = bundle isns
-                    pair = map (fmap (third3 (fmap (uncurry MV))))
+                    pair = map (fmap (third3 (fmap pack)))
                     third3 f ~(x,y,z) = (x,y,f z)
 
 as :: Word16 -> Word16

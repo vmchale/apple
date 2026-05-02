@@ -1,4 +1,4 @@
-module Asm.G.Set ( M (..)
+module Asm.G.Set ( M, pack, unpack
                  , MS
                  , minsert
                  , del
@@ -8,6 +8,7 @@ module Asm.G.Set ( M (..)
                  , one
                  , intersect
                  , minView
+                 , mlist
                  , toList
                  ) where
 
@@ -15,35 +16,38 @@ import           Data.Bifunctor (bimap)
 import           Data.Bits      (shiftL, shiftR, testBit, (.&.), (.|.))
 import qualified Data.IntSet    as IS
 
-data M = MV !Int !Int
+newtype M = MV Int -- !Int !Int
 newtype MS = MS { und :: IS.IntSet }
 
 -- assumes 64-bit
-pack :: M -> Int
-pack (MV x y)= x `shiftL` 32 .|. s (0xffffffff .&. y)
+pack :: (Int, Int) -> M
+pack (x, y)= MV (x `shiftL` 32 .|. s (0xffffffff .&. y))
     where s = if testBit y 63 then (1 `shiftL` 31 .|.) else id
 
-unpack :: Int -> M
-unpack x = MV (x `shiftR` 32) (s (0xffffffff .&. x))
+unpackI :: Int -> (Int, Int)
+unpackI x = (x `shiftR` 32,  s (0xffffffff .&. x))
     where s = if testBit x 31 then negate else id
+
+unpack :: M -> (Int, Int)
+unpack (MV x) = unpackI x
 
 instance Semigroup MS where (MS x) <> (MS y) = MS (x<>y)
 instance Monoid MS where mempty = MS mempty
 
 minsert :: M -> MS -> MS
-minsert x (MS xs) = MS (IS.insert (pack x) xs)
+minsert (MV x) (MS xs) = MS (IS.insert x xs)
 
 del :: M -> MS -> MS
-del x (MS xs) = MS (IS.delete (pack x) xs)
+del (MV x) (MS xs) = MS (IS.delete x xs)
 
 one :: M -> MS
-one x = MS (IS.singleton (pack x))
+one (MV x) = MS (IS.singleton x)
 
 member :: M -> MS -> Bool
-member x (MS xs) = pack x `IS.member` xs
+member (MV x) (MS xs) = x `IS.member` xs
 
 notMember :: M -> MS -> Bool
-notMember x (MS xs) = pack x `IS.notMember` xs
+notMember (MV x) (MS xs) = x `IS.notMember` xs
 
 isEmpty :: MS -> Bool
 isEmpty (MS x) = IS.null x
@@ -51,8 +55,11 @@ isEmpty (MS x) = IS.null x
 intersect :: MS -> MS -> MS
 intersect (MS x) (MS y) = MS (x `IS.intersection` y)
 
-toList :: MS -> [M]
-toList = map unpack . IS.toList . und
+mlist :: MS -> [M]
+mlist = map MV . IS.toList . und
+
+toList :: MS -> [(Int, Int)]
+toList = map unpackI . IS.toList . und
 
 minView :: MS -> Maybe (M, MS)
-minView (MS k) = bimap unpack MS <$> IS.minView k
+minView (MS k) = bimap MV MS <$> IS.minView k

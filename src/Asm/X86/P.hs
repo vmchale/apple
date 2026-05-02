@@ -48,7 +48,7 @@ gallocOn u = go u 16 pres True
                     regsM = alloc (pair aIsns) ((if i then (++[Rbp]) else id) [Rcx .. Rax]) (IM.keysSet pres') pres'
                     fregsM = allocF (pair aFIsns) [XMM1 .. XMM15] (IM.keysSet preFs) preFs
                     (aIsns, aFIsns) = bundle isns
-                    pair = map (fmap (third3 (fmap (uncurry MV))))
+                    pair = map (fmap (third3 (fmap pack)))
                     third3 f ~(x,y,z) = (x,y,f z)
 
 saI :: Int64 -> Int64

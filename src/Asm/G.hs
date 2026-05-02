@@ -173,15 +173,16 @@ build l st@(St ml as al mv ns ds i wk s a) (isn:isns) | Just mIx <- thd3 (copoin
 {-# SCC addEdge #-}
 addEdge :: Int -> Int -> St -> St
 addEdge u v st@(St ml as al mv ns ds i wk s a) =
-    if MV u v `notMember` as && u /= v
+    if uv `notMember` as && u /= v
         then
-            let as' = minsert (MV u v) $ minsert (MV v u) as
+            let as' = minsert uv $ minsert (pack (v, u)) as
                 preC = pre wk
                 uC = u `IS.notMember` preC; vC = v `IS.notMember` preC
                 al' = (if uC then u !: v else id)$(if vC then v !: u else id) al
                 ds' = (if uC then inc u else id)$(if vC then inc v else id) ds
             in St ml as' al' mv ns ds' i wk s a
         else st
+  where uv=pack (u, v)
 
 {-# SCC mkWorklist #-}
 mkWorklist :: K -> St -> St
@@ -219,7 +220,7 @@ ddg ᴋ m s | m `IS.member` pre (wkls s) = s
 -- enable moves
 enMv :: [Int] -> St -> St
 enMv ns = thread (fmap g ns) where
-    g n st = let ms = toList (nodeMoves n st) in thread (fmap h ms) st
+    g n st = let ms = mlist (nodeMoves n st) in thread (fmap h ms) st
         where h m stϵ | m `member` actv(mvS stϵ) = mvActvWl m st
                       | otherwise = st
 
@@ -230,7 +231,7 @@ addWkl ᴋ u st | u `IS.notMember` pre (wkls st) && not (isMR u st) && u !* degs
 
 {-# SCC ok #-}
 ok :: K -> Int -> Int -> St -> Bool
-ok ᴋ t r s = t `IS.member` pre (wkls s) || degs s IM.! t < ᴋ || MV t r `member` aS s
+ok ᴋ t r s = t `IS.member` pre (wkls s) || degs s IM.! t < ᴋ || pack (t, r) `member` aS s
 
 {-# SCC conserv #-}
 conserv :: K -> [Int] -> St -> Bool
@@ -261,9 +262,9 @@ freeze ᴋ s | Just (u, _) <- IS.minView (fr$wkls s) =
 
 {-# SCC freezeMoves #-}
 freezeMoves :: K -> Int -> St -> St
-freezeMoves ᴋ u st = thread (fmap g (toList$nodeMoves u st)) st where
-    g m@(MV x y) s =
-        let y' = getAlias y s; v = if y' == getAlias u s then getAlias x s else y'
+freezeMoves ᴋ u st = thread (fmap g (mlist$nodeMoves u st)) st where
+    g m s =
+        let (x,y)=unpack m; y' = getAlias y s; v = if y' == getAlias u s then getAlias x s else y'
             st0 = mvActvFrz m s
         in if isEmpty (nodeMoves v st0) && v !* degs st0 < ᴋ
             then mvFrSimp v st0
@@ -281,14 +282,15 @@ dSet x ys = filter (`S.notMember` yϵ) x where yϵ = S.fromList ys
 
 {-# SCC coalesce #-}
 coalesce :: K -> St -> St
-coalesce ᴋ s | Just (m@(MV x y), nWl) <- minView (wl$mvS s) =
-    let y' = getAlias y s
+coalesce ᴋ s | Just (m, nWl) <- minView (wl$mvS s) =
+    let (x,y) = unpack m
+        y' = getAlias y s
         preS = pre (wkls s)
         (u, v) = if y' `IS.member` preS then (y',x') else (x',y') where x' = getAlias x s
         s0 = setWl nWl s
     in case () of
         _ | u == v -> addWkl ᴋ u $ iCoal m s0
-          | v `IS.member` preS || MV u v `member` aS s0 -> addWkl ᴋ v $ addWkl ᴋ u $ iConstr m s0
+          | v `IS.member` preS || pack (u, v) `member` aS s0 -> addWkl ᴋ v $ addWkl ᴋ u $ iConstr m s0
           | let av = adj v s0 in if u `IS.member` preS then all (\t -> ok ᴋ t u s0) av else conserv ᴋ (adj u s0 ++ av) s0 ->
               addWkl ᴋ u $ combine ᴋ u v $ iCoal m s0
           | otherwise -> actvIns m s0
