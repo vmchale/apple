@@ -18,8 +18,7 @@ import           Data.Function                    (on)
 import           Data.Functor                     (void, ($>))
 import qualified Data.IntMap                      as IM
 import qualified Data.IntSet                      as IS
-import           Data.Maybe                       (fromMaybe, listToMaybe, mapMaybe)
-import qualified Data.Set                         as S
+import           Data.Maybe                       (fromMaybe, listToMaybe)
 import qualified Data.Text                        as T
 import           Data.Typeable                    (Typeable)
 import           GHC.Generics                     (Generic)
