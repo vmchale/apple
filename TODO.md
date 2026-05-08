@@ -14,9 +14,11 @@
 - [ ] special case for `𝔯 0 1 :: float` etc.
 - [ ] `𝔯 0 1 :: Arr sh int` special case, apply bitmask over array?
 - [x] folds/scans shouldn't take seeds
+- [ ] ELF?
+  - [ ] https://intuitiveexplanations.com/tech/kalyn#linker
 - [ ] allow type signatures in lambdas?
 - [x] mko executable - compile expression into .o file, with some name
-- [ ] random number generation
+- [x] random number generation
 - [x] lift constants out of loops (precompute)
 - [x] tuples idk.
   - [ ] float tuple return
@@ -47,6 +49,9 @@
 - [ ] https://en.wikipedia.org/wiki/Arabic_script_in_Unicode#Punctuation_and_ornaments
 - [ ] https://commons.wikimedia.org/wiki/Unicode_circle_shaped_symbols
   - [ ] ☉
+- [ ] https://www.gnu.org/software/freefont/ranges/math.html
+  - [ ] 𝚤
+  - [ ] 𝚥
 - [ ] https://www.compart.com/en/unicode/scripts/Copt
 - [ ] https://www.compart.com/en/unicode/U+1D66
   - [ ] Ϟ (koppa), Ϡ (sampi)
@@ -94,17 +99,6 @@ Arr (10 × 9) float
 ```
 has universally quantified return type, should be existential!
 ```
- > (#f⊳)'⟨⟨#f,#f⟩,⟨#t,#f⟩,⟨#t,#t⟩,⟨#f,#t⟩⟩
-Arr (4×3) [ [#f, #f, #f]
-          , [#t, #f, #f]
-          , [#t, #t, #f]
-          , [#f, #t, #f] ]
- > (#f⊲)'⟨⟨#f,#f⟩,⟨#t,#f⟩,⟨#t,#t⟩,⟨#f,#t⟩⟩
-Arr arepl: src/Hs/A.hs:35:15-34: Non-exhaustive patterns in \case
-
-HasCallStack backtrace:
-  bracket, called at libraries/haskeline/System/Console/Haskeline/InputT.hs:157:33 in haskeline-0.8.2.1-c961:System.Console.Haskeline.InputT
-```
 ```
  > \xs.\rs. [(-y)'x]`{1∘[2],0} xs (rs::Vec 2 float)
 λxs. (λrs. ((λx. (λy. (λx. x - y) ' x)) `{1∘[2],0} xs) rs)
@@ -113,7 +107,6 @@ HasCallStack backtrace:
 λxs. (λrs. ((λx. (λy. (λx. x - x) ' y)) `{0,1∘[2]} rs) xs)
     : Arr (2 × j) float → Vec 2 float → Arr (2 × j) float
 ```
-- [ ]
 - [ ] :cmm \xs. [⟨x->1,x->2⟩]'(xs::Vec n (float, float))
 - [ ] segfault when `aso` is called pre-register allocation (arm)
 - [ ] `csneg` (conditional negation) also `cneg`
@@ -129,7 +122,6 @@ o → o → o
   actually in `xmm0`/`xmm1` or whatever
 - [ ] `fsin` instruction requires reduction module 2pi or w/e
 - [ ] beta-reduction with 'rand' or w/e (needs to be llet ... in)
-- [ ] Pass over to ensure everything is monomorphized
 - [ ] `itof (:xs)` - would prefer w/o parens?
 - [x] it would be nice to write `_x%y` instead of `(_x)%y` (parse precedence)
 - [ ] match doesn't check constraints on annotations
@@ -157,7 +149,7 @@ o → o → o
 - [ ] https://en.wikipedia.org/wiki/Carmichael_function#Recurrence_for_%CE%BB(n)
 - [ ] think: inner/outer product, wedge products (?)
   - [ ] permutations/indices (determinant...)
-  - [x] discrete cosine transformation (gen2.) 
+  - [x] discrete cosine transformation (gen2.)
     - [ ] outer-ix idiom?
 - [ ] https://en.wikipedia.org/wiki/Arithmetic–geometric_mean#Complete_elliptic_integral_K(sinα)
 - [ ] https://github.com/justin2004/image-processing#image-processing-with-apl
@@ -274,6 +266,6 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [ ] https://www.desmos.com/calculator/dotttzyypy
 # Rosetta Code
 - [ ] https://cses.fi/problemset/
-- [ ] https://rosettacode.org/wiki/Averages/Pythagorean_means
+- [x] https://rosettacode.org/wiki/Averages/Pythagorean_means
 # Debug
 - [ ] sanity check negative dims

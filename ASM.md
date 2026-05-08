@@ -17,6 +17,8 @@
 sysctl hw.optional.arm.FEAT_FP16
 sysctl -a | rg '^hw\.optional'
 ```
+- [ ] ld1, ld2, ld3, ld4 look fun
+SET JUMP DEST?? by and-ing destination with bit of some condition
 # Min/max
 - [ ] http://web.archive.org/web/20130821015554/http://bob.allegronetwork.com/prog/tricks.html
   - [ ] quick absolute value

@@ -32,3 +32,11 @@ also tail/init ^
 
 n choose k = (n-1) choose (k-1) + (n-1) choose k
 https://en.wikipedia.org/wiki/Stirling_numbers_of_the_second_kind#Recurrence_relation
+
+# Take/Drop
+
+drop ← λn.λxs. {l⟜𝓉 xs;(n .. l-1)⊂xs}
+take ← λn.λxs. (1..n) ⊂ xs
+
+take 7 [{. ([x] \`7 x)]
+drop 6 [{.\`7 x]

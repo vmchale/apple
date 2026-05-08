@@ -283,6 +283,7 @@ tokens :-
         ⅞                        { mkFloat 0.875 }
 
         𝔸$digit+                 { tok (\p s -> alex $ TokAdLit p (ad $ BSL.drop 4 s)) }
+        -- boolean as arrays? lol 𝔹tftfttf
 
         @float                   { tok (\p s -> alex $ TokFloat p (read $ ASCII.unpack s)) }
         _@float                  { tok (\p s -> alex $ TokFloat p (negate $ read $ ASCII.unpack $ BSL.tail s)) }

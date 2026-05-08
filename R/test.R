@@ -58,7 +58,6 @@ x<-runif(128,0,1);y<-runif(128,0,1)
 dp<-jit("[(+)/(*)`(x::Vec n float) y]")
 (x%*%y)[,1]
 run(dp,x,y)
-# LOL stopifnot((x%*%y)[,1]==sum(x*y))
 
 B<-matrix(runif(4096,0,1),64);C<-matrix(runif(4096,0,1),64)
 m6<-jit("[(x::(Arr (64×64) 𝞈))%.(y::Arr (64×64) 𝞈)]")

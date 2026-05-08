@@ -1199,7 +1199,7 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
 {
   erf ← λz.
     {
-      ffact ← [(*)/ₒ 1 (𝒻 1 x (⌊x))];
+      ffact ← [(*)/ₒ 1 (frange 1 x (⌊x))];
       Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
       (2%√𝜋)*Σ 30 (λn. {nf⟜ℝn; ((_1^n)*z^(2*n+1))%((ffact nf)*(2*nf+1))})
     };
