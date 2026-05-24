@@ -89,6 +89,7 @@ ev (Arr (Ix _ i `Cons` _) _) _ = KI$fromIntegral i; ev _ (xR, lX) = EAt (ADim xR
 ec (Arr (_ `Cons` Ix _ j `Cons` _) _) _ = KI$fromIntegral j; ec _ (xR, lX) = EAt (ADim xR 1 lX)
 
 for (i `Cons` _) = For () (nz i) 1
+for _            = For () Z 1
 
 rof sh = Rof () (nzSh sh); rof1 sh = Rof () (n1 sh)
 fort (Arr sh _) = for sh; fort _ = For () E.Z 1
