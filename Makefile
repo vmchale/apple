@@ -28,6 +28,7 @@ docs: docs/index.html docs/stats.html docs/stats.pdf docs/nb/lorenz.html docs/nb
 
 docs/nb/index.html: docs/nb/index.md
 	pandoc -s $< -o $@
+	minhtml --minify-css $@ -o $@
 
 docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html nb/mandel.html syn/apple.xml $(DOC_SRC)
 	pandoc $(PANDOC_FLAGS) $(PANDOC_HTML) --lua-filter=include-files.lua $< -o $@
