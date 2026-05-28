@@ -24,6 +24,11 @@ endif
 PANDOC_FLAGS := --toc --syntax-definition=syn/apple.xml --lua-filter=include-code-files.lua
 PANDOC_HTML := --mathjax -s
 
+docs: docs/index.html docs/stats.html docs/stats.pdf docs/nb/lorenz.html docs/nb/brownian.html docs/nb/orbit_apple.html docs/nb/quasicrystals.html docs/nb/mandel.html docs/nb/index.html
+
+docs/nb/index.html: docs/nb/index.md
+	pandoc -s $< -o $@
+
 docs/index.html: doc/apple-by-example.md nb/hist.html nb/convolve.html nb/randomWalk.html nb/lorenz.html nb/mandel.html syn/apple.xml $(DOC_SRC)
 	pandoc $(PANDOC_FLAGS) $(PANDOC_HTML) --lua-filter=include-files.lua $< -o $@
 
@@ -32,6 +37,10 @@ docs/stats.pdf: doc/stats.md doc/stats.bib syn/apple.xml
 
 docs/stats.html: doc/stats.md doc/stats.bib syn/apple.xml
 	pandoc --citeproc $(PANDOC_FLAGS) $(PANDOC_HTML) $< -o $@
+
+docs/nb/%.html: nb/%.ipynb
+	jupyter nbconvert $< --to=html --output-dir=$(dir $@)
+	minhtml --minify-css $@ -o $@
 
 nb/%.html: nb/%.ipynb
 	jupyter nbconvert $^ --to=html
