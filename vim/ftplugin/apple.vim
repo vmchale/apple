@@ -35,7 +35,7 @@ setlocal makeprg=atc\ %
 setlocal errorformat=%Eatc:\ %f:%l:%c:%m
 setlocal errorformat+=atc:\ %f:%l:%c\ %m
 setlocal errorformat+=%Eatc:\ %f:%m\ %trror\ at\ line\ %l\\,\ column\ %c
-setlocal errorformat+=%Eatc:\ %f:%m\ %trror\ at\ line\ %l\\,\ column\ %c
+setlocal errorformat+=%Eatc:\ %f:%m
 
 function! ATCheck()
     exec 'silent make'
