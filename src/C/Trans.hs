@@ -1608,9 +1608,6 @@ peval (Id _ (FoldGen seed g f n)) t = do
     uss <- writeRF g [PT x] (PT x)
     fss <- writeRF f [PT acc, PT x] (PT acc)
     pure $ plSeed $ plN ([MB () acc (Is seedR), MB () x (Is seedR)] ++ uss ++ [Rof () E.Z k (nE-1) (fss++uss), MB () t (Is acc)])
-peval (EApp _ (Builtin _ N) e0) t = do
-    (pl,e0R) <- plP e0
-    pure $ pl [MB () t (BU BNeg e0R)]
 peval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e, (Arrow tX _) <- eAnn op, isB tX = do
     x <- nBT; szR <- nI
     (plE, (l, aP)) <- plA e
@@ -1636,19 +1633,6 @@ peval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
     fss <- writeRF f (PT t:xs) (PT t)
     pure $ plU ++ plN (plSeeds ++ [For () E.Z 1 k 0 ILt nE (fss++usss)])
-peval e@(EApp _ (Builtin _ TAt{}) Var{}) t = do
-    aa <- tat e
-    pure [MB () t (unBA aa)]
-peval (EApp _ (Builtin _ (TAt i)) (Tup _ es)) t = peval (es!!(i-1)) t
-peval (EApp _ (Builtin _ (TAt i)) e) t = do
-    (ss, as) <- plΠ e
-    pure (ss++[MB () t (unBA (as!!(i-1)))])
-peval (Id _ (FoldGen seed g f n)) t = do
-    x <- nBT; acc <- nBT; k <- nI
-    (plSeed,seedR) <- plBV seed; (plN,nE) <- plC n
-    uss <- writeRF g [PT x] (PT x)
-    fss <- writeRF f [PT acc, PT x] (PT acc)
-    pure $ plSeed $ plN ([MB () acc (Is seedR), MB () x (Is seedR)] ++ uss ++ [Rof () E.Z k (nE-1) (fss++uss), MB () t (Is acc)])
 peval e _ = nyi e
 
 eval :: E (T ()) -> Temp -> CM [CS ()]
