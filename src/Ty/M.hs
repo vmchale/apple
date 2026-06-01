@@ -88,19 +88,12 @@ ata (P t)            = ata ||> t
 ata _                = Nothing
 
 dynI :: I a -> Bool
-dynI Ix{}      = False
-dynI IV{}      = True
-dynI IEV{}     = True
-dynI StaPlus{} = True
-dynI StaMul{}  = True
+dynI Ix{} = False; dynI _ = True
 
 dynSh :: Sh a -> Bool
-dynSh SVar{}      = True
 dynSh Nil         = False
 dynSh (Cons i sh) = dynI i || dynSh sh
-dynSh Rev{}       = True
-dynSh Cat{}       = True
-dynSh Π{}         = True
+dynSh _           = True
 
 (||>) :: (Traversable t, Alternative f) => (a -> f b) -> t a -> f b
 f ||> xs = asum (f <$> xs)
