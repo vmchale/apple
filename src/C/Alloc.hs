@@ -43,7 +43,7 @@ ffit il (Ss ms aaϵ) sh = fst <$> find (\(lϵ, sh') -> lϵ `notMember` (ms@@il) 
 
 ilt :: I a -> I a -> Bool
 ilt (Ix _ i) (Ix _ j)                     = i <= j
-ilt (IVar _ i) (IVar _ i')                = i == i'
+ilt (IV _ i) (IV _ i')                    = i == i'
 ilt (StaPlus _ i0 i1) (StaPlus _ i0' i1') | ilt i0 i0' && ilt i1 i1' = True
 ilt (StaMul _ i0 i1) (StaMul _ i0' i1')   | ilt i0 i0' && ilt i1 i1' = True
 ilt _ _                                   = False

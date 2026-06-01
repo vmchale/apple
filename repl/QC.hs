@@ -35,12 +35,12 @@ type ShM = StateT RSubst Gen
 gg :: Sh a -> ShM (Int64, [Int64])
 gg Nil = pure (0, [])
 gg (Ix _ i `Cons` sh) = bimap (+1) (fromIntegral i:)<$>gg sh
-gg (IVar _ (Nm _ (U n) _) `Cons` sh) = do
+gg (IV _ (Nm _ (U n) _) `Cons` sh) = do
     iSt <- gets iS
     case IM.lookup n iSt of
         Nothing -> do {d <- lift dim; iIns n d; bimap (+1) (d:)<$>gg sh}
         Just d  -> bimap (+1) (d:)<$>gg sh
-gg (StaPlus _ (IVar _ (Nm _ (U n) _)) (Ix _ i) `Cons` sh) | i' <- fromIntegral i = do
+gg (StaPlus _ (IV _ (Nm _ (U n) _)) (Ix _ i) `Cons` sh) | i' <- fromIntegral i = do
     iSt <- gets iS
     case IM.lookup n iSt of
         Nothing -> do {d <- lift$chooseInt64 (0,10); iIns n d; bimap (+1) ((d+i'):)<$>gg sh}

@@ -24,7 +24,7 @@ check = cM
 
 ex :: I a -> Bool
 ex IEV{}             = True
-ex IVar{}            = False
+ex IV{}              = False
 ex (StaPlus _ i0 i1) = ex i0||ex i1
 ex (StaMul _ i0 i1)  = ex i0||ex i1
 ex Ix{}              = False
@@ -89,7 +89,7 @@ ata _                = Nothing
 
 dynI :: I a -> Bool
 dynI Ix{}      = False
-dynI IVar{}    = True
+dynI IV{}      = True
 dynI IEV{}     = True
 dynI StaPlus{} = True
 dynI StaMul{}  = True

@@ -42,8 +42,8 @@ instance Pretty (I a) where pretty=ps 0.ppt
 
 pg True=group.parens; pg False=id
 
-pv i@Ix{}         = Just (Just i, mempty)
-pv i@IVar{}       = Just (Nothing, pretty i)
+pv i@Ix{} = Just (Just i, mempty)
+pv i@IV{} = Just (Nothing, pretty i)
 pv (StaMul _ i j) = do
     (i',vs₀) <- pv i
     (j',vs₁) <- pv j
@@ -59,21 +59,21 @@ el = LC (\(CT _ _ z _) -> T.singleton z) (\(CT v i e s) -> CT v i (succ e) s)
 
 instance PT (I a) where
     pp i@Ix{}          = pure i
-    pp (IVar x n)      = IVar x<$>fr il n
+    pp (IV x n)        = IV x<$>fr il n
     pp (IEV x n)       = IEV x<$>fr el n
     pp (StaPlus x i j) = StaPlus x<$>pp i<*>pp j
     pp (StaMul x i j)  = StaMul x<$>pp i<*>pp j
 
 instance PS (I a) where
     ps _ (Ix _ i)        = pretty i
-    ps _ (IVar _ n)      = pretty n
+    ps _ (IV _ n)        = pretty n
     ps _ ip              | Just (i,d) <- pv ip = maybe mempty pretty i <> d
     ps d (StaPlus _ i j) = parensp (d>5) (ps 6 i <+> "+" <+> ps 6 j)
     ps d (StaMul _ i j)  = parensp (d>7) (ps 8 i <> "*" <> ps 8 j)
     ps _ (IEV _ n)       = "#" <> pretty n
 
 data I a = Ix { ia :: a, ii :: !Int }
-         | IVar { ia :: a, ixn :: !(Nm a) }
+         | IV { ia :: a, ixn :: !(Nm a) }
          | IEV { ia :: a , ie :: !(Nm a) } -- existential
          | StaPlus { ia :: a, ix0, ix1 :: I a }
          | StaMul { ia :: a, ix0, ix1 :: I a }

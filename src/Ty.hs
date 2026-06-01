@@ -129,8 +129,8 @@ wI iS (Subst t i sh) = Subst t (iS<>i) sh
 mI :: F -> I a -> I a -> Either (TyE a) (Subst a)
 mI f i0@(Ix _ i) i1@(Ix _ j) | i == j = Right mempty
                              | otherwise = Left $ MI f i0 i1
-mI _ (IVar _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
-mI _ ix (IVar _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
+mI _ (IV _ (Nm _ (U i) _)) ix = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
+mI _ ix (IV _ (Nm _ (U i) _)) = Right $ Subst IM.empty (IM.singleton i ix) IM.empty
 mI ΦF IEV{} _ = Right mempty
 mI ΦF _ IEV{} = Right mempty
 mI _ (IEV _ n) (IEV _ n') | n == n' = Right mempty
@@ -197,11 +197,11 @@ shSubst s@(Subst ts is ss) sh'@(SVar (Nm _ (U u) _)) =
 
 infixr 4 !>
 (!>) :: IM.IntMap (I a) -> I a -> I a
-(!>) ixes ix'@(IVar _ (Nm _ (U u) _)) =
+(!>) ixes ix'@(IV _ (Nm _ (U u) _)) =
     case IM.lookup u ixes of
-        Just ix@IVar{} -> IM.delete u ixes !> ix
-        Just ix        -> ixes !>ix
-        Nothing        -> ix'
+        Just ix@IV{} -> IM.delete u ixes !> ix
+        Just ix      -> ixes !>ix
+        Nothing      -> ix'
 (!>) ixes (StaPlus l ix ix') = StaPlus l (ixes !> ix) (ixes !> ix')
 (!>) ixes (StaMul l ix ix') = StaMul l (ixes !> ix) (ixes !> ix')
 (!>) _ ix@Ix{} = ix
@@ -280,7 +280,7 @@ ftvs :: [b] -> TyM a [T ()]
 ftvs xs = zipWithM (\_ -> ftv) xs [ T.singleton c | c <- ['a'..] ]
 
 fti :: T.Text -> TyM a (I ())
-fti n = IVar () <$> nN n ()
+fti n = IV () <$> nN n ()
 
 ftie :: TyM a (I ())
 ftie = IEV () <$> nN "n" ()
@@ -320,9 +320,9 @@ su s i0@(Ix l i) i1@(Ix _ j) | i==j = pure s
                              | otherwise = throwError $ AF l i0 i1
 su s i0@(IEV l n) i1@(IEV _ m) | n==m = pure s
                                | otherwise = throwError $ AF l i0 i1
-su s (IVar _ n0) (IVar _ n1) | n0==n1 = pure s
-su s ix@(IVar _ (Nm _ u _)) ix' = ci u ix' ix s
-su s ix ix'@(IVar _ (Nm _ u _)) = ci u ix ix' s
+su s (IV _ n0) (IV _ n1) | n0==n1 = pure s
+su s ix@(IV _ (Nm _ u _)) ix' = ci u ix' ix s
+su s ix ix'@(IV _ (Nm _ u _)) = ci u ix ix' s
 su s i0@(StaPlus l i (Ix _ k)) i1@(Ix lk j) | j >= k = su s i (Ix lk (j-k))
                                             | otherwise = throwError $ AF l i0 i1
 su s i0@(Ix l i) i1@(StaPlus _ j (Ix _ k)) | i >= k = su s j (Ix l (i-k))
@@ -345,20 +345,20 @@ su _ i0@(IEV l _) i1@StaMul{} = throwError$AF l i0 i1
 φ inp Ix{} j@IEV{} = pure (j, inp)
 φ inp (IEV l _) StaPlus{} = (,inp) <$> nIe l
 φ inp (IEV l _) StaMul{} = (,inp) <$> nIe l
-φ inp i0@(Ix _ i) (StaPlus _ (IVar _ n) (Ix l j)) | i>=j = let i'=Ix l (i-j) in pure (i0, insert n i' inp)
-φ inp (StaPlus _ (IVar _ n) (Ix l i)) i1@(Ix _ j) | j>=i = let i'=Ix l (j-i) in pure (i1, insert n i' inp)
-φ inp i@(IVar _ n0) (IVar _ n1) | n0==n1 = pure (i, inp)
-φ inp i0@(IVar _ (Nm _ u _)) i1 = (i1,) <$> ci u i1 i0 inp
-φ inp i0 i1@(IVar _ (Nm _ u _)) = (i0,) <$> ci u i0 i1 inp
+φ inp i0@(Ix _ i) (StaPlus _ (IV _ n) (Ix l j)) | i>=j = let i'=Ix l (i-j) in pure (i0, insert n i' inp)
+φ inp (StaPlus _ (IV _ n) (Ix l i)) i1@(Ix _ j) | j>=i = let i'=Ix l (j-i) in pure (i1, insert n i' inp)
+φ inp i@(IV _ n0) (IV _ n1) | n0==n1 = pure (i, inp)
+φ inp i0@(IV _ (Nm _ u _)) i1 = (i1,) <$> ci u i1 i0 inp
+φ inp i0 i1@(IV _ (Nm _ u _)) = (i0,) <$> ci u i0 i1 inp
 φ inp (StaPlus _ i0 (Ix _ n)) (StaPlus _ i1 (Ix _ m)) | n==m = φ inp i0 i1
 
 ui :: ISubst a -> I a -> I a -> UM a (I a, ISubst a)
 ui inp i@(Ix _ n) (Ix _ m) | n==m = pure (i, inp)
-ui inp i@(IVar _ n0) (IVar _ n1) | n0==n1 = pure (i, inp)
-ui inp i0 i1@(IVar _ (Nm _ u _)) = (i0,) <$> ci u i0 i1 inp
-ui inp i0@(IVar _ (Nm _ u _)) i1 = (i1,) <$> ci u i1 i0 inp
-ui inp (StaPlus _ (IVar l n) (Ix _ i)) (Ix _ j) | j>=i = let t=Ix l (j-i) in pure (t, insert n t inp)
-ui inp (Ix _ i) (StaPlus _ (IVar l n) (Ix _ j)) | i>=j = let t=Ix l (i-j) in pure (t, insert n t inp)
+ui inp i@(IV _ n0) (IV _ n1) | n0==n1 = pure (i, inp)
+ui inp i0 i1@(IV _ (Nm _ u _)) = (i0,) <$> ci u i0 i1 inp
+ui inp i0@(IV _ (Nm _ u _)) i1 = (i1,) <$> ci u i1 i0 inp
+ui inp (StaPlus _ (IV l n) (Ix _ i)) (Ix _ j) | j>=i = let t=Ix l (j-i) in pure (t, insert n t inp)
+ui inp (Ix _ i) (StaPlus _ (IV l n) (Ix _ j)) | i>=j = let t=Ix l (i-j) in pure (t, insert n t inp)
 ui inp (StaPlus l i₀ j₀) (StaPlus _ i₁ j₁) = do
     (i',s) <- ui inp i₀ i₁
     (j',s') <- uc s j₀ j₁
@@ -367,7 +367,7 @@ ui inp i@(IEV _ n0) (IEV _ n1) | n0==n1 = pure (i, inp)
 ui inp (Ix l n) (StaMul _ (Ix _ m) i) | (k,0) <- n `quotRem` m = ui inp (Ix l k) i
 ui inp (StaMul _ (Ix _ n) i) (Ix l m) | (k,0) <- n `quotRem` m = ui inp i (Ix l k)
 ui s (StaMul l n mi@(Ix l₀ m)) (StaPlus _ i (Ix l₁ j)) = do
-    k <- IVar l <$> nI l
+    k <- IV l <$> nI l
     (_,s0) <- ui s n (k+:Ix l₀ (c`div`m))
     (_,s1) <- uc s0 i (StaMul l₀ mi k+:Ix l₁ (c-j))
     pure (StaMul l mi k+:Ix l₀ c, s1)
@@ -467,7 +467,7 @@ occSh (Π sh)        = occSh sh
 
 occI :: I a -> IS.IntSet
 occI Ix{}            = IS.empty
-occI (IVar _ n)      = Nm.singleton n
+occI (IV _ n)        = Nm.singleton n
 occI (StaPlus _ i j) = occI i <> occI j
 occI (StaMul _ i j)  = occI i <> occI j
 occI IEV{}           = IS.empty

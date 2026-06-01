@@ -218,7 +218,7 @@ flipSeq(p,q)
 
 I :: { I AlexPosn }
   : intLit { Ix (loc $1) (fromInteger $ int $1) }
-  | name { IVar (Nm.loc $1) $1 }
+  | name { IV (Nm.loc $1) $1 }
   | I plus I { StaPlus $2 $1 $3 }
   | I times I { StaMul $2 $1 $3 }
 
@@ -236,8 +236,8 @@ T :: { T AlexPosn }
   : arr Sh T { Arr $2 $3 }
   | vec I T { Arr ($2 `Sh.Cons` Nil) $3 }
   | matrix six comma six T { Arr ((Ix (loc $2) (six $2)) `Sh.Cons` (Ix (loc $4) (six $4)) `Sh.Cons` Nil) $5 }
-  | matrix T {% do {i <- fresh "i"; j <- fresh "j"; pure $ Arr (IVar $1 i `Sh.Cons` IVar $1 j `Sh.Cons` Nil) $2 } }
-  | vector T {% do {i <- fresh "n"; pure (Arr (IVar $1 i `Sh.Cons` Nil) $2) } }
+  | matrix T {% do {i <- fresh "i"; j <- fresh "j"; pure $ Arr (IV $1 i `Sh.Cons` IV $1 j `Sh.Cons` Nil) $2 } }
+  | vector T {% do {i <- fresh "n"; pure (Arr (IV $1 i `Sh.Cons` Nil) $2) } }
   | int { I } | bool { A.B } | float { F }
   | parens(T) { $1 }
   | T arrow T { A.Arrow $1 $3 }
