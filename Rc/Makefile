@@ -8,8 +8,8 @@ HS_LIBDIR := $(shell ghc-pkg-$(GHC_VER) field rts dynamic-library-dirs | awk 'NR
 
 ifeq ($(UNAME),Darwin)
 	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | awk 'NR==2 {print $$1}')
-	CFLAGS := -I /Library/Frameworks/R.framework/Versions/$(R_VER)-arm64/Headers
-	LDFLAGS := -L /usr/local/lib -rpath /usr/local/lib -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR) -rpath $(HS_LIBDIR) /Library/Frameworks/R.framework/Versions/$(R_VER)-arm64/R
+	CFLAGS := -I /Library/Frameworks/R.framework/Versions/$(R_VER)/Headers
+	LDFLAGS := -L /usr/local/lib -rpath /usr/local/lib -lHSrts-1.0.2-ghc$(GHC_VER) -L $(HS_LIBDIR) -rpath $(HS_LIBDIR) /Library/Frameworks/R.framework/Versions/$(R_VER)/R
 else
 	HS_INCLUDE_DIR := $(shell ghc-pkg-$(GHC_VER) field rts include-dirs | awk 'NR==1 {print $$2}')
 endif
