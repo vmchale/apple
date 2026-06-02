@@ -661,7 +661,6 @@ tS f s (t:ts) = do{(tϵ, next) <- f s t; first (tϵ:) <$> tS f next ts}
 vx = (<| Nil)
 vV i = Arr (vx i)
 
-
 mm, tyBoo, tyOrdBinRel, tyEqBinRel, tyNumBinOp :: TyM a (T (), Subst a)
 mm = do {n <- fo;  pure (n ~> n ~> n, mempty)}
 tyBoo = do {n <- fb; pure (n ~> n ~> n, mempty)}
