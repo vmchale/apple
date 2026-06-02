@@ -4,10 +4,9 @@ module Ty.Clone ( cloneT ) where
 
 
 import           A
-import           Control.Monad.Trans.State.Strict (State, gets, runState)
+import           Control.Monad.Trans.State.Strict (State, gets, modify, runState, state)
+import           Data.Functor                     (($>))
 import qualified Data.IntMap                      as IM
-import           Lens.Micro                       (Lens')
-import           Lens.Micro.Mtl                   (modifying, use)
 import           Nm
 import           Sh
 import           U
@@ -16,44 +15,42 @@ data TR = TR { maxT :: Int, boundTV, boundSh, boundIx :: IM.IntMap Int }
 
 type CM = State TR
 
-maxTLens :: Lens' TR Int
-maxTLens f (TR m t s i) = (\x -> TR x t s i) <$> f m
+next :: CM Int
+next = state (\(TR m t s i) -> let m'=m+1 in (m', TR m' t s i))
 
-boundTVLens, boundShLens, boundIxLens :: Lens' TR (IM.IntMap Int)
-boundTVLens f (TR m t s i) = (\x -> TR m x s i) <$> f t
-boundShLens f (TR m t s i) = (\x -> TR m t x i) <$> f s
-boundIxLens f (TR m t s i) = TR m t s <$> f i
+data TRLens = TRLens { setM :: Int -> Int -> CM (), field :: TR -> IM.IntMap Int }
+
+ttl, tsl, til :: TRLens
+ttl = TRLens (\i j -> modify (\(TR u t s ix) -> TR u (IM.insert i j t) s ix)) boundTV
+tsl = TRLens (\i j -> modify (\(TR u t s ix) -> TR u t (IM.insert i j s) ix)) boundSh
+til = TRLens (\i j -> modify (\(TR u t s ix) -> TR u t s (IM.insert i j ix))) boundIx
 
 -- for clone
-freshen :: Lens' TR (IM.IntMap Int) -- ^ TVars, shape var, etc.
+freshen :: (Int -> Int -> CM ()) -- ^ TVars, shape var, etc.
         -> Nm a -> CM (Nm a)
-freshen lens (Nm n (U i) l) = do
-    modifying maxTLens (+1)
-    j <- gets maxT
-    modifying lens (IM.insert i j)
-    pure $ Nm n (U j) l
+freshen set (Nm n (U i) l) = do j <- next; set i j $> Nm n (U j) l
 
-tryReplaceInT :: Lens' TR (IM.IntMap Int) -> Nm a -> CM (Nm a)
+tryReplaceInT :: TRLens -> Nm a -> CM (Nm a)
 tryReplaceInT lens n@(Nm t (U i) l) = do
-    st <- use lens
+    st <- gets (field lens)
     case IM.lookup i st of
         Just j  -> pure (Nm t (U j) l)
-        Nothing -> freshen lens n
+        Nothing -> freshen (setM lens) n
 
-cloneIx :: I a -> CM (I a)
-cloneIx i@Ix{}           = pure i
-cloneIx (StaPlus l i i') = StaPlus l <$> cloneIx i <*> cloneIx i'
-cloneIx (StaMul l i i')  = StaMul l <$> cloneIx i <*> cloneIx i'
-cloneIx (IV l n)         = IV l <$> tryReplaceInT boundIxLens n
-cloneIx (IEV l n)        = IEV l <$> tryReplaceInT boundIxLens n
+cIx :: I a -> CM (I a)
+cIx i@Ix{}           = pure i
+cIx (StaPlus l i i') = StaPlus l <$> cIx i <*> cIx i'
+cIx (StaMul l i i')  = StaMul l <$> cIx i <*> cIx i'
+cIx (IV l n)         = IV l <$> tryReplaceInT til n
+cIx (IEV l n)        = IEV l <$> tryReplaceInT til n
 
-cloneSh :: Sh a -> CM (Sh a)
-cloneSh Nil           = pure Nil
-cloneSh (Cons i sh)   = Cons <$> cloneIx i <*> cloneSh sh
-cloneSh (SVar n)      = SVar <$> tryReplaceInT boundShLens n
-cloneSh (Rev sh)      = Rev <$> cloneSh sh
-cloneSh (Cat sh0 sh1) = Cat <$> cloneSh sh0 <*> cloneSh sh1
-cloneSh (Π sh)        = Π <$> cloneSh sh
+cSh :: Sh a -> CM (Sh a)
+cSh Nil           = pure Nil
+cSh (Cons i sh)   = Cons <$> cIx i <*> cSh sh
+cSh (SVar n)      = SVar <$> tryReplaceInT tsl n
+cSh (Rev sh)      = Rev <$> cSh sh
+cSh (Cat sh0 sh1) = Cat <$> cSh sh0 <*> cSh sh1
+cSh (Π sh)        = Π <$> cSh sh
 
 iSt u = TR u IM.empty IM.empty IM.empty
 
@@ -64,9 +61,9 @@ cloneT u = (\(t, TR uϵ _ _ _) -> (uϵ,t)).flip runState (iSt u).cT
     cT F            = pure F
     cT I            = pure I
     cT B            = pure B
-    cT (Li ix)      = Li <$> cloneIx ix
+    cT (Li ix)      = Li <$> cIx ix
     cT (Arrow t t') = Arrow <$> cT t <*> cT t'
-    cT (Arr sh t)   = Arr <$> cloneSh sh <*> cT t
-    cT (TV n c)     = TV <$> tryReplaceInT boundTVLens n<*>pure c
+    cT (Arr sh t)   = Arr <$> cSh sh <*> cT t
+    cT (TV n c)     = TV <$> tryReplaceInT ttl n<*>pure c
     cT (P ts)       = P <$> traverse cT ts
-    cT (IZ ix n)    = IZ <$> cloneIx ix <*> tryReplaceInT boundTVLens n
+    cT (IZ ix n)    = IZ <$> cIx ix <*> tryReplaceInT ttl n
