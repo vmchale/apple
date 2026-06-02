@@ -661,14 +661,13 @@ tS f s (t:ts) = do{(tϵ, next) <- f s t; first (tϵ:) <$> tS f next ts}
 vx = (<| Nil)
 vV i = Arr (vx i)
 
-tyNumBinOp :: TyM a (T (), Subst a)
-tyNumBinOp = do {n<-fz; pure (n~>n~>n, mempty)}
 
-mm, tyBoo, tyOrdBinRel, tyEqBinRel :: TyM a (T (), Subst a)
+mm, tyBoo, tyOrdBinRel, tyEqBinRel, tyNumBinOp :: TyM a (T (), Subst a)
 mm = do {n <- fo;  pure (n ~> n ~> n, mempty)}
 tyBoo = do {n <- fb; pure (n ~> n ~> n, mempty)}
 tyOrdBinRel = do {n <- fo; pure (n ~> n ~> B, mempty)}
 tyEqBinRel = do {n <- fc "e" IsEq; pure (n ~> n ~> B, mempty)}
+tyNumBinOp = do {n<-fz; pure (n~>n~>n, mempty)}
 
 del, sel :: [Int] -> Sh a -> Sh a
 sel axes sh = iroll (fmap snd (filter ((`elem` axes) . fst) (zip [1..] unrolled))) where
