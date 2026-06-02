@@ -492,6 +492,55 @@ scalarStep f l s n t t' = do {s'<- scalar f l s n; mguPrep f l s' t t'}
 
 φv (n0,c0) (n1,c1) s = do {n <- nI (loc n0); let t=TV n (c0<>c1) in pure (t, iTS n0 t$iTS n1 t s)}
 
+oie :: I a -> IS.IntSet
+oie (IEV _ n)       = Nm.singleton n
+oie (StaPlus _ i j) = oie i<>oie j
+oie (StaMul _ i j)  = oie i<>oie j
+oie Ix{}            = IS.empty
+oie IV{}            = IS.empty
+
+oesh :: Sh a -> IS.IntSet
+oesh (i `Cons` sh) = oie i <> oesh sh
+oesh Nil           = IS.empty
+oesh SVar{}        = IS.empty
+oesh (Rev sh)      = oesh sh
+oesh (Cat sh0 sh1) = oesh sh0<>oesh sh1
+oesh (Π sh)        = oesh sh
+
+oet :: T a -> IS.IntSet
+oet (Arr sh a)    = oesh sh<>oet a
+oet (Arrow t0 t1) = oet t0<>oet t1
+oet (Ρ _ ts)      = oet@<>ts
+oet (P ts)        = oet@<>ts
+oet (IZ i _)      = oie i
+oet (Li i)        = oie i
+oet _             = IS.empty
+
+ei :: IS.IntSet -> IM.IntMap (I a) -> I a -> UM a (I a, IM.IntMap (I a))
+ei m c ix@(IEV l (Nm _ (U i) x)) | i `IS.member` m = pure (ix, c)
+                                 | Just ix' <- c IM.!? i = pure (ix', c)
+                                 | otherwise = do {n' <- nI x; let t=IV l n' in pure (t, IM.singleton i t)}
+ei _ _ i@IV{}          = pure (i, IM.empty)
+ei _ _ i@Ix{}          = pure (i, IM.empty)
+ei m c (StaPlus x i j) = do {(i',c0) <- ei m c i; (j',c1) <- ei m c0 j; pure (StaPlus x i' j', c1)}
+ei m c (StaMul x i j)  = do {(i',c0) <- ei m c i; (j',c1) <- ei m c0 j; pure (StaMul x i' j', c1)}
+
+esh :: IS.IntSet -> IM.IntMap (I a) -> Sh a -> UM a (Sh a, IM.IntMap (I a))
+esh m ix (i `Cons` sh) = do {(i',ix') <- ei m ix i; (sh',ix'') <- esh m ix' sh; pure (i' `Cons` sh', ix'')}
+esh _ ix Nil           = pure (Nil, ix)
+esh _ ix sh@SVar{}     = pure (sh, ix)
+esh m ix (Rev sh)      = first Rev <$> esh m ix sh
+esh m ix (Π sh)        = first Π <$> esh m ix sh
+esh m ix (Cat sh0 sh1) = do {(sh0',ix') <- esh m ix sh0; (sh1',ix'') <- esh m ix' sh1; pure (Cat sh0' sh1', ix'')}
+
+-- (∃a. t a) → r ≡ ∀a. t a → r
+et :: T a -> UM a (T a, IM.IntMap (I a))
+et (Arrow (Arr sh a) t) = let o=oet t in do {(sh',ix) <- esh o IM.empty sh; pure (Arr sh' a ~> t, ix)}
+et t                    = pure (t, IM.empty)
+
+rwIE :: T a -> UM a (T a)
+rwIE t = do {(t',ix) <- et t; pure $ aT (Subst IM.empty ix IM.empty) t'}
+
 mgu :: F -> (a, E a) -> Subst a -> T a -> T a -> UM a (T a, Subst a)
 mgu ΦF _ _ Arrow{} Arrow{} = error "Functions not accepted in arrays or conditionals."
 mgu CF l s (Arrow t0 t1) (Arrow t0' t1') = do
