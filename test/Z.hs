@@ -61,6 +61,7 @@ allT = testGroup "jit"
     , testCase "dotprod" $ do { res <- fpVvf "test/examples/dotprod.🍏" [1,2,3::Double] [2,4,6] ; res @?= 28 }
     , testCase "euclidean" $ do { res <- fpVvf "test/examples/dist.🍎" [0,0,0::Double] [3,4,5] ; res @?= sqrt 50 }
     , testCase "ncdf" $ do { res <- fpFf "math/ncdf.🍎" 2 ; res .?= ncdf 2 }
+    , testCase "ncdf (doc)" $ do { res <- fpFf "test/data/ncdfDoc.🍏" 2 ; res .?= ncdf 2 }
     , testCase "erf" $ do { res <- fpFf "math/erf.🍏" 2 ; res .?= erf 2 }
     , testCase "primes" $ do { res <- fpIv "test/data/primes.🍏" 30; res @?= [T,T,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,T,F,F,F,T,F,F,F,F,F,T,F] }
     , testCase "primes-up-to" $ do { res <- fpIv "test/examples/primes.🍎" 100; res @?= [2::Int64,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97] }

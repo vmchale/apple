@@ -1194,18 +1194,7 @@ Apple is capable of statistical computing, via the program suggested by [Ewart S
 
 ### CDF for Normal Distribution
 
-```apple
-λz.
-{
-  erf ← λz.
-    {
-      ffact ← [(*)/ₒ 1 (frange 1 x (⌊x))];
-      Σ ← λN.λa. (+)/ₒ 0 (a'⍳N);
-      (2%√𝜋)*Σ 30 (λn. {nf⟜ℝn; ((_1^n)*z^(2*n+1))%((ffact nf)*(2*nf+1))})
-    };
-  zz ⟜ z%(√2);
-  0.5*(1+erf(zz))
-}
+```{.apple include=test/data/ncdfDoc.🍏}
 ```
 
 ### CDF for Student's t-distribution
