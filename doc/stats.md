@@ -75,7 +75,7 @@ The former has convergence problems [@shaw2002]. Simplifying the latter:
 
 # Normal Distribution CDF
 
-The CDF for the standard normal distribution $N(0,1)$ can be calculated as $\displaystyle\frac{1}{2}\left(1+\text{erf}\left(\frac{z}{\sqrt{2}}\right)\right)$:
+The CDF for the standard normal distribution $N(0,1)$ can be calculated as $\displaystyle\frac{1}{2}\left(1+\text{erf}\left(\frac{z}{\sqrt{2}}\right)\right)$, viz.
 
 ```{.apple include="math/ncdf.🍎"}
 ```
@@ -92,5 +92,8 @@ Hence:
 
 ```{.apple include="math/tcdf.🍎"}
 ```
+
+Apple is an array calculator and has no imports; we have to include the
+$\Gamma$ function each time.
 
 # References
