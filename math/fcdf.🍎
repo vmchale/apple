@@ -4,9 +4,10 @@
     {
       f21 ← λa0.λa1.λb.λz.
         {
-          rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))]; fact ← rf 1;
+          facts ⟜ (*) Λₒ 1 (frange 1 30 30);
+          rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))];
           Σ ← λlb.λub.λa. (+)/ₒ 0 (a'lb..ub);
-          Σ 0 30 (λn. {nn⟜ℝ n; (rf a0 nn*(rf a1 nn)%rf b nn)*(z^n%fact nn)})
+          Σ 0 30 (λn. {nn⟜ℝ n; (rf a0 nn*(rf a1 nn)%rf b nn)*(z^n%facts˙n)})
         };
       (z**a%a)*f21 a (1-b) (a+1) z
     };
