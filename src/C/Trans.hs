@@ -65,7 +65,6 @@ bD2 n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=F2Temp t in (r, 
 bB n = state (\(CSt t ar as l v b d d2 π a f aas ts) -> let r=BTemp t in (r, CSt (t+1) ar as l v (insert n r b) d d2 π a f aas ts))
 bp n e = do {r <- πts e; addΠ n r $> r}
 
-{-# SCC getT2 #-}
 getT2 :: Nm a -> CSt -> Either FTemp F2Temp
 getT2 n (CSt _ _ _ _ _ _ d d2 _ _ _ _ _) = case Nm.lookup n d2 of {Just f2 -> Right f2; Nothing -> Left$getT d n}
 
@@ -88,8 +87,7 @@ ev, ec :: T a -> (Temp, Maybe AL) -> CE
 ev (Arr (Ix _ i `Cons` _) _) _ = KI$fromIntegral i; ev _ (xR, lX) = EAt (ADim xR 0 lX)
 ec (Arr (_ `Cons` Ix _ j `Cons` _) _) _ = KI$fromIntegral j; ec _ (xR, lX) = EAt (ADim xR 1 lX)
 
-for (i `Cons` _) = For () (nz i) 1
-for _            = For () Z 1
+for (i `Cons` _) = For () (nz i) 1; for _ = For () Z 1
 
 rof sh = Rof () (nzSh sh); rof1 sh = Rof () (n1 sh)
 fort (Arr sh _) = for sh; fort _ = For () E.Z 1
@@ -2167,8 +2165,8 @@ gpt (TΠ rs)=rs
   where
     catt = mapMaybe g where g (TA _ l)=l; g _=Nothing
 
-unsupported = error "Requires statically known rank."
-usi = error "Requires statically known dimensions."
+unsupported = error"Requires statically known rank."
+usi = error"Requires statically known dimensions."
 
 qmap f g h k ~(x,y,z,w) = (f x, g y, h z, k w)
 
