@@ -95,6 +95,7 @@ function" />
       color: #606060;
     }
     code {
+      white-space: pre-wrap;
       font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
       font-size: 85%;
       margin: 0;
@@ -158,7 +159,6 @@ function" />
     #TOC a:not(:hover) {
       text-decoration: none;
     }
-    code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
     div.columns{display: flex; gap: min(4vw, 1.5em);}
     div.column{flex: auto; overflow-x: auto;}
@@ -369,18 +369,20 @@ class="sourceCode apple"><code class="sourceCode apple" style="counter-reset: so
 <h1 id="normal-distribution-cdf">Normal Distribution CDF</h1>
 <p>The CDF for the standard normal distribution <span
 class="math inline">\(N(0,1)\)</span> can be calculated as <span
-class="math inline">\(\displaystyle\frac{1}{2}\left(1+\text{erf}\left(\frac{z}{\sqrt{2}}\right)\right)\)</span>:</p>
+class="math inline">\(\displaystyle\frac{1}{2}\left(1+\text{erf}\left(\frac{z}{\sqrt{2}}\right)\right)\)</span>,
+viz.</p>
 <div class="sourceCode" id="cb7"><pre
 class="sourceCode apple"><code class="sourceCode apple"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>λz.</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>{</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  erf ← λz.</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    { ffact ← [(*)/ₒ <span class="dv">1</span> (𝒻 <span class="dv">1</span> x (⌊x))]</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    ; Hoa ← λN.λa. {xs ← gen. z [<span class="dv">_1</span>*x*(z^<span class="dv">2</span>)] (N+<span class="dv">1</span>); (+)/ₒ <span class="dv">0</span> ((%)`xs (a&#39;⍳N))}</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    ; (<span class="dv">2</span>%√𝜋)*Hoa <span class="dv">30</span> (λn. {nf⟜ℝn; (ffact nf*(<span class="dv">2</span>*nf+<span class="dv">1</span>))})</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    };</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  zz ⟜ z%√<span class="dv">2</span>;</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.5</span>*(<span class="dv">1</span>+erf(zz))</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  -- FIXME: trying to use a scan-table of factorials gives wrong results...</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    { ffact ← [(*)/ₒ <span class="dv">1</span> (𝒻 <span class="dv">1</span> x (⌊x))]</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    ; Hoa ← λN.λa. {xs ← gen. z [<span class="dv">_1</span>*x*(z^<span class="dv">2</span>)] (N+<span class="dv">1</span>); (+)/ₒ <span class="dv">0</span> ((%)`xs (a&#39;⍳N))}</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    ; (<span class="dv">2</span>%√𝜋)*Hoa <span class="dv">30</span> (λn. {nf⟜ℝn; (ffact nf*(<span class="dv">2</span>*nf+<span class="dv">1</span>))})</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    };</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  zz ⟜ z%√<span class="dv">2</span>;</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.5</span>*(<span class="dv">1</span>+erf(zz))</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <h1 id="t-distribution-cdf">t-Distribution CDF</h1>
 <p>For <span class="math inline">\(\nu\)</span> degrees of freedom we
 have <span class="citation" data-cites="amos">(Amos 1964)</span>:</p>
@@ -422,6 +424,8 @@ class="sourceCode apple"><code class="sourceCode apple"><span id="cb8-1"><a href
 <span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>  };</span>
 <span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.5</span>+x*<span class="bu">e:</span>(gammaln(<span class="fl">0.5</span>*(ν+<span class="dv">1</span>))-gammaln(ν*<span class="fl">0.5</span>))%(√(𝜋*ν))*f21 ½ ((ν+<span class="dv">1</span>)%<span class="dv">2</span>) <span class="fl">1.5</span> (_(x^<span class="dv">2</span>%ν))</span>
 <span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>Apple is an array calculator and has no imports; we have to include
+the <span class="math inline">\(\Gamma\)</span> function each time.</p>
 <h1 class="unnumbered" id="references">References</h1>
 <div id="refs" class="references csl-bib-body hanging-indent"
 role="list">
