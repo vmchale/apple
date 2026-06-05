@@ -8,7 +8,7 @@ import           System.FilePath  ((</>))
 import           System.Info      (arch)
 import           System.IO.Temp   (withSystemTempDirectory)
 import           System.Process   (proc, readCreateProcess)
-import           Test.Tasty       (DependencyType (AllFinish), TestTree, defaultMain, sequentialTestGroup)
+import           Test.Tasty       (DependencyType (AllFinish), TestTree, defaultMain, dependentTestGroup)
 import           Test.Tasty.HUnit (testCase, (@?=))
 
 readCc :: FilePath
@@ -34,7 +34,7 @@ main :: IO ()
 main = do
     pwd <- getCurrentDirectory
     defaultMain $
-        sequentialTestGroup "link object files" AllFinish
+        dependentTestGroup "link object files" AllFinish
             [ ccOut pwd "test/examples/shoelace.🍎" "aaf" sys "6.000000"
             , ccOut pwd "test/data/predictionStep.🍏" "aafa" sys "1 4\n0.716413,0.721679,0.727807,0.731693\n"
             , ccOut pwd "test/data/map.🍏" "aaa" sys "2 2,2\n1.000000,2.000000,2.000000,2.000000\n"
