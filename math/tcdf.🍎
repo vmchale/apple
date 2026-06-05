@@ -23,10 +23,8 @@
     (((zz+0.5)*_.(zz+𝛾+0.5))-(zz+𝛾+0.5))+_.((√(2*𝜋))*(c0+ss))
   };
   f21 ← λa0.λa1.λb.λz. {
-    facts ⟜ (*) Λₒ 1 (frange 1 50 50);
-    rfb ⟜ (*) Λₒ 1 (frange b (b+49) 50);
-    rfa0 ⟜ (*) Λₒ 1 (frange a0 (a0+49) 50);
-    rfa1 ⟜ (*) Λₒ 1 (frange a1 (a1+49) 50);
+    rfs ← λN. (*) Λₒ 1 (frange N (N+49) 50);
+    facts ⟜ rfs 1;rfb ⟜ rfs b; rfa0 ← rfs a0; rfa1 ⟜ rfs a1;
     Σ ← λlb.λub.λa. (+)/ₒ 0 (a'(lb..ub));
     Σ 0 50 (λn. rfa0˙n*(rfa1˙n%rfb˙n)*(z^n%facts˙n))
   };
