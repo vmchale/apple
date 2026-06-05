@@ -96,10 +96,7 @@ ZF apple_ir(PYA self, PYA args) {
     free(res); R py;
 }
 
-TS JO {
-    PyObject_HEAD
-    U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;T ts;
-} JO;
+TS JO {PyObject_HEAD U bc;S c_sz;FnTy* ty; U sa;ffi_cif* ffi;T ts;} JO;
 
 _ O cache_dealloc(JO* self) {
     munmap(self->bc,self->c_sz);
