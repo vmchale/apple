@@ -24,9 +24,11 @@
   };
   f21 ← λa0.λa1.λb.λz. {
     facts ⟜ (*) Λₒ 1 (frange 1 50 50);
-    rf ← [(*)/ₒ 1 (𝒻 x (x+y-1) (⌊y))];
+    rfb ⟜ (*) Λₒ 1 (frange b (b+49) 50);
+    rfa0 ⟜ (*) Λₒ 1 (frange a0 (a0+49) 50);
+    rfa1 ⟜ (*) Λₒ 1 (frange a1 (a1+49) 50);
     Σ ← λlb.λub.λa. (+)/ₒ 0 (a'(lb..ub));
-    Σ 0 50 (λn. {nn⟜ℝ n; rf a0 nn*(rf a1 nn%rf b nn)*(z^n%facts˙n)})
+    Σ 0 50 (λn. rfa0˙n*(rfa1˙n%rfb˙n)*(z^n%facts˙n))
   };
   0.5+x*e:(gammaln(0.5*(ν+1))-gammaln(ν*0.5))%(√(𝜋*ν))*f21 ½ ((ν+1)%2) 1.5 (_(x^2%ν))
 }
