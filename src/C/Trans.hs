@@ -194,12 +194,11 @@ infixr 8 .%
 (.%) :: (a -> b -> c) -> (d -> a) -> b -> d -> c
 (.%) f g x y = f (g y) x
 
-arg :: T () -> Ix'd -> CM (RT, Temp -> CS ())
+arg, rW :: T () -> Ix'd -> CM (RT, Temp -> CS ())
 arg ty at | nind ty = do
     t <- rtemp ty
     pure (t, (mt.%at) t)
 
-rW :: T () -> Ix'd -> CM (RT, Temp -> CS ())
 rW ty at | nind ty = do
     t <- rtemp ty
     pure (t, (wt.%at) t)
