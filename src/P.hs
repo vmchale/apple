@@ -45,7 +45,9 @@ import           Control.Monad                    ((<=<))
 import           Control.Monad.Trans.State.Strict (evalState, state)
 import           Data.Bifunctor                   (first, second)
 import qualified Data.ByteString.Lazy             as BSL
+import           Data.Foldable                    (traverse_)
 import qualified Data.Text                        as T
+import qualified Data.Text.IO                     as TIO
 import qualified Data.Text.Lazy.Builder           as B
 import           Data.Typeable                    (Typeable)
 import           GHC.Generics                     (Generic)
@@ -177,8 +179,8 @@ tc fp = do
 tyParse :: BSL.ByteString -> Either (Err AlexPosn) (E (T ()), Int)
 tyParse = tyParseCtx alexInitUserState
 
-refcard :: String
-refcard = concat
+refcard :: IO ()
+refcard = traverse_ TIO.putStrLn
     [ lOption "Λ" "scan" "√" "sqrt"
     , lOption "⋉"  "max" "⋊"  "min"
     , lOption "⍳" "iota" "⌊, ⌈" "floor, ceiling"
@@ -219,7 +221,9 @@ refcard = concat
     ]
   where
     lOption op0 desc0 op1 desc1 =
-        padstr 14 op0 ++ padstr 25 desc0 ++ padstr 14 op1 ++ desc1 ++ "\n"
+        padstr 14 op0 <> padstr 25 desc0 <> padstr 14 op1 <> desc1
 
-padstr :: Int -> String -> String
-padstr n str = take n $ str ++ repeat ' '
+padstr :: Int -> T.Text -> T.Text
+padstr n str | l>n = str
+             | otherwise = str<>T.replicate (n-l) " "
+  where l=T.length str

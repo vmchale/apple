@@ -71,7 +71,7 @@ loop = do
         Just []                -> loop
         Just (":h":_)          -> showHelp *> loop
         Just (":help":_)       -> showHelp *> loop
-        Just ("\\l":_)         -> liftIO (putStr refcard) *> loop
+        Just ("\\l":_)         -> liftIO (TIO.putStr refcard) *> loop
         Just (":ty":e)         -> tyExprR (unwords e) *> loop
         Just [":q"]            -> pure ()
         Just [":quit"]         -> pure ()
@@ -108,7 +108,7 @@ graph :: String -> Repl ()
 graph s = putDocLn $ either pretty id (dumpX86Ass (ubs s))
 
 showHelp :: Repl ()
-showHelp = liftIO $ putStr $ concat
+showHelp = liftIO $ TIO.putStr $ mconcat
     [ helpOption ":help, :h" "" "Show this help"
     , helpOption ":yank, :y" "<fn> <file>" "Read file"
     , helpOption ":store, :st" "<name> <expression>" "Add to environment"
@@ -123,9 +123,9 @@ showHelp = liftIO $ putStr $ concat
     -- TODO: dump debug state
     ]
 
-helpOption :: String -> String -> String -> String
+helpOption :: T.Text -> T.Text -> T.Text -> T.Text
 helpOption cmd args desc =
-    padstr 15 cmd ++ padstr 14 args ++ desc ++ "\n"
+    padstr 15 cmd <> padstr 14 args <> desc <> "\n"
 
 ubs :: String -> BSL.ByteString
 ubs = encodeUtf8 . TL.pack
