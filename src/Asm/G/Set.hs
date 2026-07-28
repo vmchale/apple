@@ -14,6 +14,7 @@ module Asm.G.Set ( M, pack, unpack
 
 import           Data.Bifunctor (bimap)
 import           Data.Bits      (shiftL, shiftR, testBit, (.&.), (.|.))
+import           Data.Int       (Int32)
 import qualified Data.IntSet    as IS
 
 newtype M = MV Int -- !Int !Int
@@ -25,8 +26,8 @@ pack (x, y)= MV (x `shiftL` 32 .|. s (0xffffffff .&. y))
     where s = if testBit y 63 then (1 `shiftL` 31 .|.) else id
 
 unpackI :: Int -> (Int, Int)
-unpackI x = (x `shiftR` 32,  s (0xffffffff .&. x))
-    where s = if testBit x 31 then negate else id
+unpackI x = (x `shiftR` 32,  s x)
+    where s = negate.fromIntegral.negate.(fromIntegral::Int->Int32)
 
 unpack :: M -> (Int, Int)
 unpack (MV x) = unpackI x
