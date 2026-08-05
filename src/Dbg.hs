@@ -4,8 +4,7 @@ module Dbg ( dumpAAbs
            , dumpX86G
            , dumpX86Abs
            , dumpX86Liveness
-           , dumpC
-           , dumpCI
+           , dumpC, dumpCI, dumpFI
            , dumpIR
            , dumpDomTree
            , dumpLoop
@@ -90,6 +89,9 @@ dumpAAbs = fmap (prettyAsm.(\(x,aa,st) -> (aa,snd (irToAarch64 st x)))) . ir
 
 dumpC :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpC = fmap (prettyCS.swap).cmm
+
+dumpFI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
+dumpFI = fmap (prettyCI.f.C.writeC).opt where f (cs,_,_,t) = frees t cs
 
 dumpCI :: BSL.ByteString -> Either (Err AlexPosn) (Doc ann)
 dumpCI = fmap (prettyCI.live.f.C.writeC).opt where f (cs,_,_,_) = cs
