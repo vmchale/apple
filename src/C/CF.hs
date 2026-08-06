@@ -119,8 +119,7 @@ tieBody h f ss = do
             in ((hi:), ss'')
         Nothing -> (id, [])
 
--- | Pair 'CS with a unique node name and a list of all possible
--- destinations.
+-- | Pair 'CS' with a unique node name and a list of all possible destinations.
 addCF :: [CS a] -> FreshM [CS ControlAnn]
 addCF [] = pure []
 addCF ((Def _ l ss):stmts) = do
