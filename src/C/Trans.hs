@@ -991,6 +991,18 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr x
         :Ma () oSh a t rnkE (nXe*nE) xSz:Wr () (ADim t 0 (Just a)) nE:CpyD () (ADim t 1 (Just a)) (ADim seedR 0 lSeed) xRnkE
         :Ma () xSh lX x xRnkE nXe xSz:CpyD () (ADim x 0 (Just lX)) (ADim seedR 0 lSeed) xRnkE:cpy (AElem x xRnkE (Just lX) 0) (AElem seedR xRnkE lSeed 0) nXe xSz
         :l1++[loop]
+-- FIXME: when good type system is in place, we want guaranteed same rank/dim
+aeval (Id (Arr sh tE) (Iter f x n)) t a | Just sz <- nSz tE = do
+    (plN, nE) <- plC n
+    (oR, lO, plO) <- maa x
+    (y, lY, ss) <- writeA f [TA t (Just a)]
+    rnk <- nI; nR <- nI
+    let rnkE=Tmp rnk;nXe=Tmp nR
+    loop <- afor1 sh 1 ILt nE $ \_ -> ss++[cpy (AElem t rnkE (Just a) 0) (AElem y rnkE lY 0) nXe sz]
+    pure $ plN$plO
+        ++rnk=:eRnk sh (oR,lO):SZ () nR oR rnkE lO:rnk=:rnkE
+        :Ma () sh a t rnkE nXe sz:CpyD () (ADim t 0 (Just a)) (ADim oR 0 lO) rnkE:cpy (AElem t rnkE (Just a) 0) (AElem oR rnkE lO 0) nXe sz
+        :[loop]
 -- also (%.)/(re: 5 ⟨⟨1,1⟩,⟨1,0::int⟩⟩) would be nice
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just (ty,sz) <- aN tSeed = do
     (plN, nE) <- plC n
