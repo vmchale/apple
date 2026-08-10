@@ -141,7 +141,7 @@ o → o → o
 - [ ] https://mathworld.wolfram.com/MotzkinNumber.html
 - [ ] perceptual hash
   - [ ] median lol (indexing?)
-- [ ] FFT
+- [x] FFT
 - [ ] generating functions
 - [ ] `+//. y` in J... maybe `/.` takes `∀n. (Arr (n `Cons` Nil)) -> ...`
 - [ ] https://www.labri.fr/perso/nrougier/from-python-to-numpy/
@@ -269,3 +269,5 @@ shortDiv p1 (_:p2) = unfoldr go (length p1 - length p2, p1)
 - [x] https://rosettacode.org/wiki/Averages/Pythagorean_means
 # Debug
 - [ ] sanity check negative dims
+# Claude bugs
+- [ ] ⊂ with computed indices zeroes half the result, ⟜-bound pair-zips read garbage
