@@ -979,18 +979,30 @@ aeval (EApp (Arr sh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | seedTy
     pure (plN$vSz sh t a nE πsz++plS++td=:DP t 1:[loop])
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Gen) seed) op) n) t a | Arr xSh tX <- eAnn seed, Just xSz <- nSz tX = do
     (plN, nE) <- plC n
-    (seedR, lSeed, plSeed) <- maa seed
+    (oR, lO, plO) <- maa seed
     x <- nI; lX <- nextArr x
     (y, lY, ss) <- writeA op [TA x (Just lX)]
-    rnk <- nI; rnkX <- nI; nX <- nI
+    rnk <- nI; rnkX <- nI; nX <- nI; k <- nI
     let xRnkE=Tmp rnkX; rnkE=Tmp rnk; nXe=Tmp nX
         l1=ss++[cpy (AElem y xRnkE lY 0) (AElem x xRnkE (Just lX) 0) nXe xSz, cpy (AElem t rnkE (Just a) 0) (AElem y xRnkE lY 0) nXe xSz]
-    loop <- afor oSh 1 ILt nE $ \k -> cpy (AElem x xRnkE (Just lX) 0) (AElem y xRnkE lY 0) (Tmp nX) xSz:ss++[cpy (AElem t rnkE (Just a) (Tmp k*nXe)) (AElem y xRnkE lY 0) nXe xSz]
-    pure $plN$plSeed
-        ++rnkX=:eRnk xSh (seedR,lSeed):SZ () nX seedR xRnkE lSeed:rnk=:(xRnkE+1)
-        :Ma () oSh a t rnkE (nXe*nE) xSz:Wr () (ADim t 0 (Just a)) nE:CpyD () (ADim t 1 (Just a)) (ADim seedR 0 lSeed) xRnkE
-        :Ma () xSh lX x xRnkE nXe xSz:CpyD () (ADim x 0 (Just lX)) (ADim seedR 0 lSeed) xRnkE:cpy (AElem x xRnkE (Just lX) 0) (AElem seedR xRnkE lSeed 0) nXe xSz
+        loop = For () E.Z 1 k 1 ILt nE (cpy (AElem x xRnkE (Just lX) 0) (AElem y xRnkE lY 0) (Tmp nX) xSz:ss++[cpy (AElem t rnkE (Just a) (Tmp k*nXe)) (AElem y xRnkE lY 0) nXe xSz])
+    pure $plN$plO
+        ++rnkX=:eRnk xSh (oR,lO):SZ () nX oR xRnkE lO:rnk=:(xRnkE+1)
+        :Ma () oSh a t rnkE (nXe*nE) xSz:Wr () (ADim t 0 (Just a)) nE:CpyD () (ADim t 1 (Just a)) (ADim oR 0 lO) xRnkE
+        :Ma () xSh lX x xRnkE nXe xSz:CpyD () (ADim x 0 (Just lX)) (ADim oR 0 lO) xRnkE:cpy (AElem x xRnkE (Just lX) 0) (AElem oR xRnkE lO 0) nXe xSz
         :l1++[loop]
+-- FIXME: when good type system is in place, we want guaranteed same rank/dim
+aeval (Id (Arr sh tE) (Iter f x n)) t a | Just sz <- nSz tE = do
+    (plN, nE) <- plC n
+    (oR, lO, plO) <- maa x
+    (y, lY, ss) <- writeA f [TA t (Just a)]
+    rnk <- nI; nR <- nI; i <- nI
+    let rnkE=Tmp rnk;nXe=Tmp nR
+        loop = For () E.Z 1 i 1 ILt nE (ss++[cpy (AElem t rnkE (Just a) 0) (AElem y rnkE lY 0) nXe sz])
+    pure $ plN$plO
+        ++rnk=:eRnk sh (oR,lO):SZ () nR oR rnkE lO:rnk=:rnkE
+        :Ma () sh a t rnkE nXe sz:CpyD () (ADim t 0 (Just a)) (ADim oR 0 lO) rnkE:cpy (AElem t rnkE (Just a) 0) (AElem oR rnkE lO 0) nXe sz
+        :[loop]
 -- also (%.)/(re: 5 ⟨⟨1,1⟩,⟨1,0::int⟩⟩) would be nice
 aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Fib) seed) op) n) t a | Just (ty,sz) <- aN tSeed = do
     (plN, nE) <- plC n
@@ -1119,14 +1131,16 @@ aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ (Rank [(0, _), (cr, Just ixs)
     let oRnk=KI$yRnk+opRnk-fromIntegral cr
     (x, pAX) <- arg tX (\ixϵ -> AElem xR (KI xRnk) lX (Tmp ixϵ) xSz)
     (oDims, complts, ds, pinchC, slopP, copyCell) <- loopCell cr ixs (yR, lY) yRnk ySz
+    -- [ref:ssa] arrays must be allocated only once (like SSA)
+    (z0R, lZ0, ss0) <- writeA op [rt x, TA slopP Nothing]
     (zR, lZ, ss) <- writeA op [rt x, TA slopP Nothing]
     loop <- aall1 complts (Tmp<$>oDims) $ \ix -> pAX ix:copyCell++ss++aiR (td,Just a) (zR,lZ,KI opRnk) (Tmp zSz) cSz
-    (dots, doss) <- plDim opRnk (zR, lZ)
+    (dots, doss) <- plDim opRnk (z0R, lZ0)
     pure (plX$plY$pinchC$
         [tϵ=:0 | tϵ <- complts]
         ++mt (AElem xR (KI xRnk) lX 0 xSz) x
         :ds++copyCell
-        ++ss++doss
+        ++ss0++doss
         ++PlProd () zSz (Tmp<$>dots)
         :PlProd () oSz (Tmp<$>(zSz:oDims))
             :md oSh t a oRnk (Tmp oSz) (Tmp<$>(oDims++dots)) cSz
