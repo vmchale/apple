@@ -2178,7 +2178,7 @@ tat (EApp _ (Builtin _ (TAt i)) (Var _ n)) = do
     (plN,nR) <- plC n
     ats <- frts ts
     plS <- πr x ats
-    -- TODO: array labels would be lost here, is that a problem?
+    -- FIXME: array labels would be lost here
     (_, ss) <- writeF f [TΠ ats] (ΠT (tr<$>ts))
     i <- nI
     let loop=For () E.Z 1 i 1 ILt nR (ss++mvts ats ts)
