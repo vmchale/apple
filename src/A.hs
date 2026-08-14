@@ -20,7 +20,7 @@ import qualified Data.IntMap       as IM
 import qualified Data.Text         as T
 import           GHC.Generics      (Generic)
 import           Nm
-import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, concatWith, encloseSep, fillSep, flatAlt, group, hardline, hsep, lbrace, lbracket,
+import           Prettyprinter     (Doc, Pretty (..), align, braces, brackets, colon, comma, encloseSep, fillSep, flatAlt, group, hardline, hsep, lbrace, lbracket,
                                     line, parens, pipe, punctuate, rbrace, rbracket, tupled, vsep, (<+>))
 import           Prettyprinter.Ext
 import           Sh
