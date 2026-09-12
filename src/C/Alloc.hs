@@ -75,12 +75,13 @@ aa ts (c@(Ma a sh l t rnk _ _):cs) = do
             Nothing -> (c:)
             Just l' -> (Aa a l t (ts!l'):).(Wr a (ARnk t (Just l)) rnk:)
     next <$> aa ts cs
-aa ts (c@(For _ _ _ _ _ _ _ csϵ ):cs) = do
+aa ts (c@(For _ _ _ _ _ _ _ csϵ):cs) = do
     csϵ' <- aa ts csϵ
     (c { body = csϵ' }:) <$> aa ts cs
-aa ts (c@(Rof _ _ _ _ csϵ ):cs) = do
+aa ts (c@(Rof _ _ _ _ csϵ):cs) = do
     csϵ' <- aa ts csϵ
     (c { body = csϵ' }:) <$> aa ts cs
+-- TODO: R2of etc.
 aa ts (c:cs) = (c:)<$>aa ts cs
 aa _ []      = pure []
 
