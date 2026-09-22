@@ -9,7 +9,6 @@ module Asm.G.Set ( M, pack, unpack
                  , intersect
                  , minView
                  , mlist
-                 , toList
                  ) where
 
 import           Data.Bifunctor (bimap)
@@ -58,9 +57,6 @@ intersect (MS x) (MS y) = MS (x `IS.intersection` y)
 
 mlist :: MS -> [M]
 mlist = map MV . IS.toList . und
-
-toList :: MS -> [(Int, Int)]
-toList = map unpackI . IS.toList . und
 
 minView :: MS -> Maybe (M, MS)
 minView (MS k) = bimap MV MS <$> IS.minView k
