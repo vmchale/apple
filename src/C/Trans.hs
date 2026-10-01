@@ -1549,6 +1549,11 @@ peval (EApp _ (EApp _ (Builtin (Arrow I _) op) e0) e1) t | Just iop <- rel op = 
 peval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t | Just fop' <- frel op = do
     (plE0,e0e) <- plD e0; (plE1, e1e) <- plD e1
     pure $ plE0 $ plE1 [Cset () (FRel fop' e0e e1e) t]
+peval e@(EApp _ (EApp _ (Builtin (Arrow P{} _) op) e0) e1) t = do
+    (plE0,as0) <- plΠ e0; (plE1,as1) <- plΠ e1
+    case πrel op as0 as1 of
+        Just iss -> pure (plE0++plE1++[MB () t iss])
+        Nothing  -> nyi e
 peval (EApp _ (EApp _ (Builtin (Arrow (Arr _ ty) _) Eq) e0) e1) t | Arr sh _ <- eAnn e0, nind ty =do
     (plX0, (lX0, x0R)) <- plA e0; (plX1, (lX1, x1R)) <- plA e1
     rnkR <- nI; szR <- nI
@@ -1802,6 +1807,17 @@ eval e _          = nyi e
 
 frel :: Builtin -> Maybe FRel
 frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; frel Lt=Just FLt; frel Gt=Just FGt; frel _=Nothing
+
+-- FIXME use If... or Ifn't here
+πrel :: Builtin -> TStore -> TStore -> Maybe PE
+πrel op [TI t₀] [TI t₁]         = do iop <- rel op; Just (IRel iop (Tmp t₀) (Tmp t₁))
+πrel op [TF x₀] [TF x₁]         = do fop <- frel op; Just (FRel fop (FTmp x₀) (FTmp x₁))
+πrel Eq [TB t₀] [TB t₁]         = Just (Boo BEq (Is t₀) (Is t₁))
+πrel Neq [TB t₀] [TB t₁]        = Just (Boo XorB (Is t₀) (Is t₁))
+πrel Gt [TB t₀] [TB t₁]         = Just (Boo AndB (Is t₀) (BU BNeg$Is t₁))
+πrel Gte [TB t₀] [TB t₁]        = Just (Boo OrB (Is t₀) (BU BNeg$Is t₁))
+πrel Eq (TI t₀:tt₀) (TI t₁:tt₁) = Boo AndB (IRel IEq (Tmp t₀) (Tmp t₁)) <$> πrel Eq tt₀ tt₁
+πrel Gt (TI t₀:tt₀) (TI t₁:tt₁) = do πs <- πrel Gt tt₀ tt₁; Just (Boo OrB (IRel IGt (Tmp t₀) (Tmp t₁)) (Boo AndB (IRel IEq (Tmp t₀) (Tmp t₁)) πs))
 
 mFop :: Builtin -> Maybe FBin
 mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp

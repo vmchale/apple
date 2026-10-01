@@ -556,6 +556,9 @@ eval (IR.IB op e0 e1) t | Just isn <- mIop op = do
 eval (IR.IRel rel e0 e1) t | c <- iop rel = do
     (plE0,r0) <- plI e0; (plE1,r1) <- plI e1
     pure $ plE0 $ plE1 [CmpRR () r0 r1, Cset () (absReg t) c]
+eval (IR.FRel rel e0 e1) t | c <- frel rel = do
+    (plE0,x0) <- plF e0; (plE1,x1) <- plF e1
+    pure $ plE0 $ plE1 [Fcmp () x0 x1, Cset () (absReg t) c]
 eval (IR.IRFloor e) t = do {(plE,r) <- plF e; pure (plE [Fcvtms () (absReg t) r])}
 eval (IR.IRCeil e) t = do {(plE,r) <- plF e; pure (plE [Fcvtps () (absReg t) r])}
 eval (IR.EAt (IR.AP tB (Just (IR.KI i)) _)) tD | Just p <- mp i = pure [Ldr () (absReg tD) (RP (absReg tB) p)]
