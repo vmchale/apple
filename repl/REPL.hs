@@ -108,7 +108,7 @@ graph :: String -> Repl ()
 graph s = putDocLn $ either pretty id (dumpX86Ass (ubs s))
 
 showHelp :: Repl ()
-showHelp = liftIO $ traverse_ TIO.putStrLn $
+showHelp = liftIO $ traverse_ TIO.putStrLn
     [ helpOption ":help, :h" "" "Show this help"
     , helpOption ":yank, :y" "<fn> <file>" "Read file"
     , helpOption ":store, :st" "<name> <expression>" "Add to environment"
