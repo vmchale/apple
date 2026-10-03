@@ -79,25 +79,22 @@ infix 9 +=
 rel :: Builtin -> Maybe IRel
 rel Eq=Just IEq; rel Neq=Just INeq; rel Lt=Just ILt; rel Gt=Just IGt; rel Lte=Just ILeq; rel Gte=Just IGeq; rel _=Nothing
 
-eRnk :: Sh a -> (Temp, Maybe AL) -> CE
-eRnk sh (xR, lX) | Just i <- staRnk sh = KI i
-                 | otherwise = EAt (ARnk xR lX)
+frel :: Builtin -> Maybe FRel
+frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; frel Lt=Just FLt; frel Gt=Just FGt; frel _=Nothing
 
-ev, ec :: T a -> (Temp, Maybe AL) -> CE
-ev (Arr (Ix _ i `Cons` _) _) _ = KI$fromIntegral i; ev _ (xR, lX) = EAt (ADim xR 0 lX)
-ec (Arr (_ `Cons` Ix _ j `Cons` _) _) _ = KI$fromIntegral j; ec _ (xR, lX) = EAt (ADim xR 1 lX)
+mFop :: Builtin -> Maybe FBin
+mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp
+mFop Max=Just FMax; mFop Min=Just FMin; mFop CS=Just CpySgn;mFop _=Nothing
 
-for (i `Cons` _) = For () (nz i) 1; for _ = For () Z 1
+mB :: Builtin -> Maybe BBin
+mB And=Just AndB;mB Or=Just OrB;mB Xor=Just XorB; mB Eq=Just BEq; mB _=Nothing
 
-rof sh = Rof () (nzSh sh); rof1 sh = Rof () (n1 sh)
-fort (Arr sh _) = for sh; fort _ = For () E.Z 1
-forc (Arr sh _) = For () (nec sh) 1; forc _ = For () E.Z 1
+mOp :: Builtin -> Maybe IBin
+mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem
+mOp Sl=Just IAsl;mOp Sr=Just IAsr;mOp A.IDiv=Just Op.IDiv;mOp a=BI<$>mB a
 
-f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh)
-f2ors sh = F2or () (psh sh); r2of sh = R2of () (psh sh)
-
-mIFs :: [E a] -> Maybe [Word8]
-mIFs = fmap concat.traverse b where b (BLit _ True)=Just [1]; b (BLit _ False)=Just [0]; b (FLit _ d)=Just (le$castDoubleToWord64 d); b (ILit _ n)=Just$le(fromIntegral n::Int64); b (Tup _ xs)=mIFs xs; b _=Nothing
+mFun :: Builtin -> Maybe FUn
+mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun Neg=Just FNeg; mFun _=Nothing
 
 writeC :: E (T ()) -> ([CS ()], LSt, AsmData, IM.IntMap Temp)
 writeC = π.flip runState (CSt 0 (AL 0) 0 0 IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty) . writeCM . fmap rLi where π (s, CSt t _ _ l _ _ _ _ _ _ _ aa a) = (s, LSt l t, aa, a)
@@ -118,6 +115,26 @@ writeCM eϵ = do
              | isArr (eAnn e) = do {(i,l,r) <- maa e; pure$r++[CRet =: Tmp i]++case l of {Just m -> [RA () m]; Nothing -> []}}
              | P [F,F] <- eAnn e = do {f0 <- nF; f1 <- nF; (++[MX () FRet0 (FTmp f0), MX () FRet1 (FTmp f1)]) <$> πr e [TF f0, TF f1]}
              | ty@P{} <- eAnn e, b64 <- bT ty, (n,0) <- b64 `quotRem` 8 = do {t <- nI; a <- nextArr CRet; (_,_,ls,pl) <- πe e t; pure (sac t b64:pl++MaB () a CRet (KI b64):CpyE () (TupM CRet (Just a)) (TupM t Nothing) (KI n) 8:popc b64:RA () a:(RA ()<$>ls))}
+
+ev, ec :: T a -> (Temp, Maybe AL) -> CE
+ev (Arr (Ix _ i `Cons` _) _) _ = KI$fromIntegral i; ev _ (xR, lX) = EAt (ADim xR 0 lX)
+ec (Arr (_ `Cons` Ix _ j `Cons` _) _) _ = KI$fromIntegral j; ec _ (xR, lX) = EAt (ADim xR 1 lX)
+
+for (i `Cons` _) = For () (nz i) 1; for _ = For () Z 1
+
+rof sh = Rof () (nzSh sh); rof1 sh = Rof () (n1 sh)
+fort (Arr sh _) = for sh; fort _ = For () E.Z 1
+forc (Arr sh _) = For () (nec sh) 1; forc _ = For () E.Z 1
+
+f2or sh = F2or () (pr sh); f2orc sh = F2or () (pc sh)
+f2ors sh = F2or () (psh sh); r2of sh = R2of () (psh sh)
+
+eRnk :: Sh a -> (Temp, Maybe AL) -> CE
+eRnk sh (xR, lX) | Just i <- staRnk sh = KI i
+                 | otherwise = EAt (ARnk xR lX)
+
+mIFs :: [E a] -> Maybe [Word8]
+mIFs = fmap concat.traverse b where b (BLit _ True)=Just [1]; b (BLit _ False)=Just [0]; b (FLit _ d)=Just (le$castDoubleToWord64 d); b (ILit _ n)=Just$le(fromIntegral n::Int64); b (Tup _ xs)=mIFs xs; b _=Nothing
 
 rtemp :: T a -> CM RT
 rtemp F=FT<$>nF; rtemp I=IT<$>nI; rtemp B=PT<$>nBT; rtemp (P ts)=ΠT<$>traverse rtemp ts
@@ -1544,13 +1561,13 @@ peval (EApp _ (Builtin _ Even) e0) t = do
     (pl,eR) <- plEV e0
     pure $ pl [Cset () (IUn IEven (Tmp eR)) t]
 peval (EApp _ (EApp _ (Builtin _ op) (Tup _ e0s)) (Tup _ e1s)) t = rels op e0s e1s t
-peval (EApp _ (EApp _ (Builtin (Arrow Arr{} _) op) e0) e1) t = rels op [e0] [e1] t
-peval (EApp _ (EApp _ (Builtin (Arrow I _) op) e0) e1) t = rels op [e0] [e1] t
-peval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t = rels op [e0] [e1] t
+peval (EApp _ (EApp _ (Builtin (Arrow Arr{} _) op) e0) e1) t = p2 op e0 e1 t
+peval (EApp _ (EApp _ (Builtin (Arrow I _) op) e0) e1) t = p2 op e0 e1 t
+peval (EApp _ (EApp _ (Builtin (Arrow F _) op) e0) e1) t = p2 op e0 e1 t
 peval (EApp _ (EApp _ (Builtin _ op) e0) e1) t | Just boo <- mB op = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
     pure $ pl0 $ pl1 [MB () t (Boo boo e0R e1R)]
-peval (EApp _ (EApp _ (Builtin (Arrow B _) op) e0) e1) t = rels op [e0] [e1] t
+peval (EApp _ (EApp _ (Builtin (Arrow B _) op) e0) e1) t = p2 op e0 e1 t
 peval (EApp _ (Builtin _ N) e0) t = do
     (pl,e0R) <- plP e0
     pure $ pl [MB () t (BU BNeg e0R)]
@@ -1773,42 +1790,50 @@ eval (Id _ (FoldGen seed g f n)) t = do
     pure $ plSeed $ plN ([acc=:Tmp seedR, x=:Tmp seedR] ++ uss ++ [Rof () E.Z k (nE-1) (fss++uss), t=:Tmp acc])
 eval e _          = nyi e
 
-frel :: Builtin -> Maybe FRel
-frel Gte=Just FGeq; frel Lte=Just FLeq; frel Eq=Just FEq; frel Neq=Just FNeq; frel Lt=Just FLt; frel Gt=Just FGt; frel _=Nothing
-
 splop :: Builtin -> Builtin
 splop Lte = Lt; splop Lt = Lt; splop Gte = Gt; splop Gt = Gt
 
--- TODO: make sure we don't mess up allocations per-branch
-rels :: Builtin -> [E (T ())] -> [E (T ())] -> BTemp -> CM [CS ()]
-rels op [e0] [e1] t | I <- eAnn e0, Just iop <- rel op = do
+p2 :: Builtin -> E (T ()) -> E (T ()) -> BTemp -> CM [CS ()]
+p2 op e0 e1 t | I <- eAnn e0, Just iop <- rel op = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     pure $ plE0 $ plE1 [Cset () (IRel iop e0e e1e) t]
-rels op [e0] [e1] t | F <- eAnn e0, Just fop <- frel op = do
+p2 op e0 e1 t | F <- eAnn e0, Just fop <- frel op = do
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     pure $ plE0 $ plE1 [Cset () (FRel fop e0e e1e) t]
-rels Eq [e0] [e1] t | B <- eAnn e0 = do
+p2 Eq e0 e1 t | B <- eAnn e0 = do
     (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
     pure $ plE0 $ plE1 [MB () t (Boo BEq e0e e1e)]
-rels Neq [e0] [e1] t | B <- eAnn e0 = do
+p2 Neq e0 e1 t | B <- eAnn e0 = do
     (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
     pure $ plE0 $ plE1 [MB () t (Boo XorB e0e e1e)]
-rels Gt [e0] [e1] t = do
+p2 Gt e0 e1 t = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
     pure $ pl0 $ pl1 [MB () t (Boo AndB e0R (BU BNeg e1R))]
-rels Gte [e0] [e1] t = do
+p2 Gte e0 e1 t = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
     pure $ pl0 $ pl1 [MB () t (Boo OrB e0R (BU BNeg e1R))]
-rels Lt [e0] [e1] t = do
+p2 Lt e0 e1 t = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
     pure $ pl0 $ pl1 [MB () t (Boo AndB (BU BNeg e0R) e1R)]
-rels Lte [e0] [e1] t = do
+p2 Lte e0 e1 t = do
     (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
     pure $ pl0 $ pl1 [MB () t (Boo OrB (BU BNeg e0R) e1R)]
-rels Eq (e0:e0s) (e1:e1s) t | I <- eAnn e0 = do
-    (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
-    ss <- rels Eq e0s e1s t
-    pure $ plE0 $ plE1 [If () (IRel IEq e0e e1e) ss [MB () t false]]
+p2 Eq e0 e1 t | (Arr sh ty) <- eAnn e0, nind ty = do
+    (plX0, (lX0, x0R)) <- plA e0; (plX1, (lX1, x1R)) <- plA e1
+    rnkR <- nI; szR <- nI
+    i <- nI; j <- nI
+    x0Rd <- nI; x1Rd <- nI
+    let eqDim = Cset () (IRel IEq (EAt (ADim x0R (Tmp i) lX0)) (EAt (ADim x1R (Tmp i) lX1))) t
+        eCond = case ty of
+            F -> FRel FEq (FAt (Raw x0Rd (Tmp j) lX0 8)) (FAt (Raw x1Rd (Tmp j) lX1 8))
+            I -> IRel IEq (EAt (Raw x0Rd (Tmp j) lX0 8)) (EAt (Raw x1Rd (Tmp j) lX1 8))
+            B -> Boo BEq (PAt (Raw x0Rd (Tmp j) lX0 1)) (PAt (Raw x1Rd (Tmp j) lX1 1))
+    pure $ plX0 $ plX1 $ rnkR=:eRnk sh (x0R,lX0):MB () t true:i=:0:WT () (Boo AndB (Is t) (IRel ILt (Tmp i) (Tmp rnkR))) [eqDim, i+=1]:SZ () szR x0R (Tmp rnkR) lX0:x0Rd=:DP x0R (Tmp rnkR):x1Rd=:DP x1R (Tmp rnkR):j=:0:[WT () (Boo AndB (Is t) (IRel ILt (Tmp j) (Tmp szR))) [Cset () eCond t, j+=1]]
+p2 Neq e0 e1 t | Arr{} <- eAnn e0 = do t₀ <- nBT; ss <- p2 Eq e0 e1 t₀; pure (ss++[MB () t (BU BNeg (Is t₀))])
+
+-- TODO: make sure we don't mess up allocations per-branch
+rels :: Builtin -> [E (T ())] -> [E (T ())] -> BTemp -> CM [CS ()]
+rels op [e0] [e1] t = p2 op e0 e1 t
 rels Eq (e0:e0s) (e1:e1s) t | B <- eAnn e0 = do
     (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
     ss <- rels Eq e0s e1s t
@@ -1833,6 +1858,14 @@ rels Lte (e0:e0s) (e1:e1s) t | B <- eAnn e0 = do
     (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
     ss <- rels Lte e0s e1s t
     pure $ plE0 $ plE1 [If () (Boo AndB (BU BNeg e0e) e1e) [MB () t true] [If () (Boo BEq e0e e1e) ss [MB () t false]]]
+rels Eq (e0:e0s) (e1:e1s) t | I <- eAnn e0 = do
+    (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
+    ss <- rels Eq e0s e1s t
+    pure $ plE0 $ plE1 [If () (IRel IEq e0e e1e) ss [MB () t false]]
+rels Eq (e0:e0s) (e1:e1s) t | F <- eAnn e0 = do
+    (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
+    ss <- rels Eq e0s e1s t
+    pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t false]]
 rels Neq (e0:e0s) (e1:e1s) t | I <- eAnn e0 = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     ss <- rels Neq e0s e1s t
@@ -1841,21 +1874,6 @@ rels Neq (e0:e0s) (e1:e1s) t | F <- eAnn e0 = do
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     ss <- rels Neq e0s e1s t
     pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t true]]
-rels Eq (e0:e0s) (e1:e1s) t | F <- eAnn e0 = do
-    (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
-    ss <- rels Eq e0s e1s t
-    pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t false]]
-rels Eq [e0] [e1] t | (Arr sh ty) <- eAnn e0, nind ty = do
-    (plX0, (lX0, x0R)) <- plA e0; (plX1, (lX1, x1R)) <- plA e1
-    rnkR <- nI; szR <- nI
-    i <- nI; j <- nI
-    x0Rd <- nI; x1Rd <- nI
-    let eqDim = Cset () (IRel IEq (EAt (ADim x0R (Tmp i) lX0)) (EAt (ADim x1R (Tmp i) lX1))) t
-        eCond = case ty of
-            F -> FRel FEq (FAt (Raw x0Rd (Tmp j) lX0 8)) (FAt (Raw x1Rd (Tmp j) lX1 8))
-            I -> IRel IEq (EAt (Raw x0Rd (Tmp j) lX0 8)) (EAt (Raw x1Rd (Tmp j) lX1 8))
-            B -> Boo BEq (PAt (Raw x0Rd (Tmp j) lX0 1)) (PAt (Raw x1Rd (Tmp j) lX1 1))
-    pure $ plX0 $ plX1 $ rnkR=:eRnk sh (x0R,lX0):MB () t true:i=:0:WT () (Boo AndB (Is t) (IRel ILt (Tmp i) (Tmp rnkR))) [eqDim, i+=1]:SZ () szR x0R (Tmp rnkR) lX0:x0Rd=:DP x0R (Tmp rnkR):x1Rd=:DP x1R (Tmp rnkR):j=:0:[WT () (Boo AndB (Is t) (IRel ILt (Tmp j) (Tmp szR))) [Cset () eCond t, j+=1]]
 rels op (e0:e0s) (e1:e1s) t | I <- eAnn e0, Just iop <- rel (splop op) = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     ss <- rels op e0s e1s t
@@ -1867,20 +1885,6 @@ rels op (e0:e0s) (e1:e1s) t | F <- eAnn e0, Just fop <- frel (splop op) = do
 
 true, false :: PE
 true=BConst True; false=BConst False
-
-mFop :: Builtin -> Maybe FBin
-mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp
-mFop Max=Just FMax; mFop Min=Just FMin; mFop CS=Just CpySgn;mFop _=Nothing
-
-mB :: Builtin -> Maybe BBin
-mB And=Just AndB;mB Or=Just OrB;mB Xor=Just XorB; mB Eq=Just BEq; mB _=Nothing
-
-mOp :: Builtin -> Maybe IBin
-mOp Plus=Just IPlus;mOp Times=Just ITimes;mOp Minus=Just IMinus; mOp Mod=Just IRem
-mOp Sl=Just IAsl;mOp Sr=Just IAsr;mOp A.IDiv=Just Op.IDiv;mOp a=BI<$>mB a
-
-mFun :: Builtin -> Maybe FUn
-mFun Sqrt=Just FSqrt; mFun Log=Just FLog; mFun Sin=Just FSin; mFun Cos=Just FCos; mFun Abs=Just FAbs; mFun Neg=Just FNeg; mFun _=Nothing
 
 mFEval :: E (T ()) -> Maybe (CM F1E)
 mFEval (FLit _ d) = Just (pure $ ConstF d)
