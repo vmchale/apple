@@ -362,6 +362,44 @@ r00 (EApp _ (Builtin _ (Rank is)) f) | all ((==0).fst) is = Just (f, [])
 r00 (EApp _ f e) | Arr{} <- eAnn e = second (e:) <$> r00 f
 r00 _ = Nothing
 
+plC :: E (T ()) -> CM ([CS ()] -> [CS ()], CE)
+plC (ILit _ i) = pure (id, KI$fromIntegral i)
+plC e          = second Tmp <$> plEV e
+
+plD2 :: E (T ()) -> CM ([CS ()] -> [CS ()], F2Temp)
+plD2 (Var F x) = do {tϵ <- gets (getT2 x); case tϵ of {Right t2 -> pure (id, t2); Left t1 -> do {t <- nF2; pure ((DS () t t1:), t)}}}
+plD2 e         = do {t <- nF2; pl <- f2eval e t; pure ((pl++), t)}
+
+plD :: E (T ()) -> CM ([CS ()] -> [CS ()], F1E)
+plD (FLit _ x) = pure (id, ConstF x)
+plD e          = second FTmp <$> plF e
+
+plP :: E (T ()) -> CM ([CS ()] -> [CS ()], PE)
+plP (BLit _ b) = pure (id, BConst b)
+plP e          = second Is <$> plBV e
+
+plBV :: E (T ()) -> CM ([CS ()] -> [CS ()], BTemp)
+plBV (Var B x) = do {st <- gets pvars; pure (id, getT st x)}
+plBV e         = do {t <- nBT; pl <- peval e t; pure ((pl++), t)}
+
+plEV :: E (T ()) -> CM ([CS ()] -> [CS ()], Temp)
+plEV (Var I x) = do {st <- gets vars; pure (id, getT st x)}
+plEV e         = do {t <- nI; pl <- eval e t; pure ((pl++), t)}
+
+plF :: E (T ()) -> CM ([CS ()] -> [CS ()], FTemp)
+plF (Var F x) = do {st <- gets dvars; pure (id, getT st x)}
+plF e         = do {t <- nF; pl <- feval e t; pure ((pl++), t)}
+
+plA :: E (T ()) -> CM ([CS ()] -> [CS ()], (Maybe AL, Temp))
+plA (Var _ x) = do {st <- gets avars; pure (id, getT st x)}
+plA e         = do {(t,lX,plX) <- maa e; pure ((plX++), (lX, t))}
+
+plΠ :: E (T ()) -> CM ([CS ()], TStore)
+plΠ e = do {as <- πts e; ss <- πr e as; pure (ss,as)}
+
+plAs :: [E (T ())] -> CM ([CS ()] -> [CS ()], [(Maybe AL, Temp)])
+plAs = fmap (first thread.unzip).traverse plA
+
 unroll :: T () -> [T ()]
 unroll (Arrow t t') = t:unroll t'
 unroll t            = [t]
@@ -1498,44 +1536,6 @@ plR e = case eAnn e of
     F   -> second FT <$> plF e
     B   -> second PT <$> plBV e
     P{} -> bimap (\cs -> (cs++)) (ΠT . map tr) <$> plΠ e
-
-plC :: E (T ()) -> CM ([CS ()] -> [CS ()], CE)
-plC (ILit _ i) = pure (id, KI$fromIntegral i)
-plC e          = second Tmp <$> plEV e
-
-plD2 :: E (T ()) -> CM ([CS ()] -> [CS ()], F2Temp)
-plD2 (Var F x) = do {tϵ <- gets (getT2 x); case tϵ of {Right t2 -> pure (id, t2); Left t1 -> do {t <- nF2; pure ((DS () t t1:), t)}}}
-plD2 e         = do {t <- nF2; pl <- f2eval e t; pure ((pl++), t)}
-
-plD :: E (T ()) -> CM ([CS ()] -> [CS ()], F1E)
-plD (FLit _ x) = pure (id, ConstF x)
-plD e          = second FTmp <$> plF e
-
-plP :: E (T ()) -> CM ([CS ()] -> [CS ()], PE)
-plP (BLit _ b) = pure (id, BConst b)
-plP e          = second Is <$> plBV e
-
-plBV :: E (T ()) -> CM ([CS ()] -> [CS ()], BTemp)
-plBV (Var B x) = do {st <- gets pvars; pure (id, getT st x)}
-plBV e         = do {t <- nBT; pl <- peval e t; pure ((pl++), t)}
-
-plEV :: E (T ()) -> CM ([CS ()] -> [CS ()], Temp)
-plEV (Var I x) = do {st <- gets vars; pure (id, getT st x)}
-plEV e         = do {t <- nI; pl <- eval e t; pure ((pl++), t)}
-
-plF :: E (T ()) -> CM ([CS ()] -> [CS ()], FTemp)
-plF (Var F x) = do {st <- gets dvars; pure (id, getT st x)}
-plF e         = do {t <- nF; pl <- feval e t; pure ((pl++), t)}
-
-plA :: E (T ()) -> CM ([CS ()] -> [CS ()], (Maybe AL, Temp))
-plA (Var _ x) = do {st <- gets avars; pure (id, getT st x)}
-plA e         = do {(t,lX,plX) <- maa e; pure ((plX++), (lX, t))}
-
-plΠ :: E (T ()) -> CM ([CS ()], TStore)
-plΠ e = do {as <- πts e; ss <- πr e as; pure (ss,as)}
-
-plAs :: [E (T ())] -> CM ([CS ()] -> [CS ()], [(Maybe AL, Temp)])
-plAs = fmap (first thread.unzip).traverse plA
 
 peval :: E (T ()) -> BTemp -> CM [CS ()]
 peval (LLet _ b e) t = do
