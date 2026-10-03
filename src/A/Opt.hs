@@ -360,6 +360,8 @@ optA (LLet l (n, e') e) = do
     pure $ LLet l (n, e'Opt) eOpt
 optA (Id l idm) = Id l <$> optI idm
 optA (Cond l p e0 e1) = Cond l <$> optA p <*> optA e0 <*> optA e1
+optA e@Dfn{}= er e; optA e@ResVar{}=er e
+optA e@Parens{}= er e; optA e@Ann{}=er e; optA e@Def{}=er e
 
 optI (FoldSOfZip seed op es) = FoldSOfZip <$> optA seed <*> optA op <*> traverse optA es
 optI (FoldOfZip zop op es)   = FoldOfZip <$> optA zop <*> optA op <*> traverse optA es
@@ -368,3 +370,5 @@ optI (U2 seed f u g n)       = U2 <$> traverse optA seed <*> traverse optA f <*>
 optI (AShLit ds es)          = AShLit ds <$> traverse optA es
 optI (Aɴ e ix)               = Aɴ <$> optA e <*> traverse optA ix
 optI (Iter f x n)            = Iter <$> optA f <*> optA x <*> optA n
+
+er e = error("Internal error: "++show e++"should have been desugared by this stage.")
