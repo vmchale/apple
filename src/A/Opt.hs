@@ -12,6 +12,8 @@ import           Sh
 infixl 6 `iMinus`
 infixl 6 `iPlus`
 
+int = ILit I
+
 fop op e0 = EApp F (EApp (F ~> F) (Builtin (F ~> F ~> F) op) e0)
 eMinus = fop Minus; eDiv = fop Div; ePlus = fop Plus
 
@@ -78,17 +80,17 @@ optA (EApp oTy (EApp _ (Builtin _ Re) e) n) | tX <- eAnn e = do
     let idX=λ x (v x)
     optA $ Builtin (tX~>(tX~>tX)~>I~>oTy) Gen$$e$$idX$$n
 optA e@Builtin{}           = pure e
-optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ ILit I (toInteger sz)
-optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ ILit I (toInteger i)
-optA (EApp oTy@(Arr (Ix _ i `Cons` Nil) _) (Builtin _ Ix'd) _) = optA $ Builtin (I~>oTy) Io $$ ILit I (fromIntegral i-1)
-optA (EApp oTy (Builtin _ Ix'd) e) = optA $ Builtin (I~>oTy) Io $$ ((Builtin (eAnn e~>I) Dim $$ e) `iMinus` ILit I 1)
+optA (EApp _ (Builtin _ Size) xs) | Arr sh _ <- eAnn xs, Just sz <- mSz sh = pure $ int (toInteger sz)
+optA (EApp _ (Builtin _ Dim) xs) | Arr (Ix _ i `Cons` _) _ <- eAnn xs = pure $ int (toInteger i)
+optA (EApp oTy@(Arr (Ix _ i `Cons` Nil) _) (Builtin _ Ix'd) _) = optA $ Builtin (I~>oTy) Io $$ int (fromIntegral i-1)
+optA (EApp oTy (Builtin _ Ix'd) e) = optA $ Builtin (I~>oTy) Io $$ ((Builtin (eAnn e~>I) Dim $$ e) `iMinus` int 1)
 optA (EApp l (Builtin l₁ Head) e) =
     optA $ Id l (Aɴ e [ILit l₁ 0])
 optA (EApp l (Builtin _ Last) e) = do
     e' <- optA e
     case e' of
         (EApp _ (EApp _ (EApp _ (Builtin _ Gen) seed) f) n) -> pure $ Id l (Iter f seed n)
-        _                                                   -> optA $ Id l (Aɴ e' [EApp I (Builtin undefined Dim) e' `iMinus` ILit I 1])
+        _                                                   -> optA $ Id l (Aɴ e' [EApp I (Builtin undefined Dim) e' `iMinus` int 1])
 optA (EApp l (EApp _ (Builtin _ A1) e) n) =
     optA $ Id l (Aɴ e [n])
 optA (Id l0 (Aɴ e ns)) = do
@@ -188,13 +190,13 @@ optA (EApp l (EApp _ (EApp _ (Builtin _ FRange) start) end) nSteps) = do
 optA (EApp l (Builtin _ Io) n) = do
     n' <- optA n
     k <- nextU "k" I
-    n1 <- optA (n' `iPlus` ILit I 1)
-    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ ILit I 0 $$ λ k (v k `iPlus` ILit I 1) $$ n1
+    n1 <- optA (n' `iPlus` int 1)
+    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ int 0 $$ λ k (v k `iPlus` int 1) $$ n1
 optA (EApp l (EApp _ (Builtin _ Range) start) end) = do
     start' <- optA start; end' <- optA end
     k <- nextU "k" I
-    n <- optA $ (end' `iMinus` start') `iPlus` ILit I 1
-    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ start' $$ λ k (v k `iPlus` ILit I 1) $$ n
+    n <- optA $ (end' `iMinus` start') `iPlus` int 1
+    pure $ Builtin (I~>(I~>I)~>I~>l) Gen $$ start' $$ λ k (v k `iPlus` int 1) $$ n
 optA (EApp l0 (EApp _ ho0@(Builtin _ Fold) op) e) = do
     e' <- optA e; op' <- optA op
     case e' of
