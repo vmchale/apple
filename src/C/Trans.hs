@@ -470,7 +470,6 @@ rfill (Builtin _ AddDim) (AD t lA _ (Just rnk) (Just sz) _) [AI (AD xR lX _ (Jus
 afor sh el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
 afor1 sh el c eu ss = do {i <- nI; pure (ff 1 i el c eu (ss i))} where
     ff = For() (n1 sh)
-afort (Arr sh _) el c eu ss = do {i <- nI; pure (for sh i el c eu (ss i))}
 afors sh el c eu ss = do {i <- nI; pure (ff 1 i el c eu (ss i))} where
     ff = For() (nzSh sh)
 arof sh n ss = do {i <- nI; pure (rof sh i n ss)}; arof1 sh n ss = do {k <- nI; pure (rof1 sh k n ss)}
@@ -2098,16 +2097,14 @@ feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | tXs@(Arr sh 
         loop=for sh k 0 ILt (Tmp szR) step
         plSz = case tIx tXs of {Just (_, is) -> szR=:KI (product is); Nothing -> SZ () szR xsR (Tmp rnkR) lX}
     pure $ plE $ plAcc ++ [rnkR =: eRnk sh (xsR, lX), plSz, xsRd=:DP xsR (Tmp rnkR), loop]
-feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX = do
+feval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX, tArr@(Arr sh _) <- eAnn e = do
     szR <- nI
     (plE, (l, eR)) <- plA e
     plAcc <- feval seed acc
     (x, wX) <- arg tX (ve eR l xSz)
     ss <- writeRF op [FT acc, x] (FT acc)
-    loop <- afort tArr 0 ILt (Tmp szR) (\i -> wX i:ss)
+    loop <- afor sh 0 ILt (Tmp szR) (\i -> wX i:ss)
     pure $ plE $ plAcc++szR =: ev tArr (eR,l):[loop]
-  where
-    tArr=eAnn e
 feval (Id _ (Iter f x n)) t = do
     (plN,nR) <- plC n
     plX <- feval x t
