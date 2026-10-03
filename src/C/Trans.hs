@@ -1609,22 +1609,6 @@ peval (Id _ (FoldGen seed g f n)) t = do
     uss <- writeRF g [PT x] (PT x)
     fss <- writeRF f [PT acc, PT x] (PT acc)
     pure $ plSeed $ plN ([MB () acc (Is seedR), MB () x (Is seedR)] ++ uss ++ [Rof () E.Z k (nE-1) (fss++uss), MB () t (Is acc)])
-peval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e, (Arrow tX _) <- eAnn op, isB tX = do
-    x <- nBT; szR <- nI
-    (plE, (l, aP)) <- plA e
-    ss <- writeRF op [PT acc, PT x] (PT acc)
-    loop <- afor1 xSh 1 ILt (Tmp szR) (\i -> MB () x (PAt (AElem aP 1 l (Tmp i) 1)):ss)
-    pure $ plE$szR =: ev tXs (aP,l):MB () acc (PAt (AElem aP 1 l 0 1)):[loop]
-peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tY _)) <- eAnn op, Just szY <- nSz tY = do
-    szR <- nI
-    (plE, (l, aP)) <- plA e
-    plAcc <- peval seed acc
-    (x, wX) <- arg tY (ve aP l szY)
-    ss <- writeRF op [PT acc, x] (PT acc)
-    loop <- afort tXs 0 ILt (Tmp szR) (\i -> wX i:ss)
-    pure $ plE $ plAcc++szR=:ev (eAnn e) (aP,l):[loop]
-  where
-    tXs=eAnn e
 peval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     plU <- peval c t
     (plN,nE) <- plC n
