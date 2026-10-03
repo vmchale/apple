@@ -403,11 +403,11 @@ fill (EApp _ (Builtin _ Succ) op) (AD t lA (Just (Arr sh _)) _ _ (Just n')) [AI 
     | Arrow tX (Arrow _ tZ) <- eAnn op = do
     step <- aS op [(tX, \iϵ -> AElem xR 1 lX (Tmp iϵ+1)), (tX, ixarg xR 1 lX)] tZ (ixarg t 1 lA)
     afor sh 0 ILt n' (\i -> step (repeat i) i)
-fill (EApp _ (Builtin _ ScanS) op) (AD t lA _ _ _ (Just n)) [NA acc, AI (AD aP l (Just tXs) _ _ _)]
+fill (EApp _ (Builtin _ ScanS) op) (AD t lA _ _ _ (Just n)) [NA acc, AI (AD aP l (Just (Arr sh _)) _ _ _)]
     | Arrow tX (Arrow tY _) <- eAnn op, Just xSz <- nSz tX, Just ySz <- nSz tY = do
     (x, wX) <- arg tY (ve aP l ySz)
     ss <- writeRF op [acc, x] acc
-    afort tXs 0 ILt n (\i -> wt (AElem t 1 lA (Tmp i) xSz) acc:wX i:ss)
+    afor sh 0 ILt n (\i -> wt (AElem t 1 lA (Tmp i) xSz) acc:wX i:ss)
 
 fv (AD xR lX _ _ (Just sz) (Just n)) (AD yR lY _ _ _ _) i j = [cpy (AElem xR 1 lX i) (AElem yR 1 lY j) n sz]
 
@@ -1577,16 +1577,14 @@ peval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | tXs@(Arr xSh _) <- eAnn e, (
     ss <- writeRF op [PT acc, PT x] (PT acc)
     loop <- afor1 xSh 1 ILt (Tmp szR) (\i -> MB () x (PAt (AElem aP 1 l (Tmp i) 1)):ss)
     pure $ plE$szR =: ev tXs (aP,l):MB () acc (PAt (AElem aP 1 l 0 1)):[loop]
-peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tY _)) <- eAnn op, Just szY <- nSz tY = do
+peval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tY _)) <- eAnn op, Just szY <- nSz tY, Arr sh _ <- eAnn e = do
     szR <- nI
     (plE, (l, aP)) <- plA e
     plAcc <- peval seed acc
     (x, wX) <- arg tY (ve aP l szY)
     ss <- writeRF op [PT acc, x] (PT acc)
-    loop <- afort tXs 0 ILt (Tmp szR) (\i -> wX i:ss)
+    loop <- afor sh 0 ILt (Tmp szR) (\i -> wX i:ss)
     pure $ plE $ plAcc++szR=:ev (eAnn e) (aP,l):[loop]
-  where
-    tXs=eAnn e
 peval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
     plU <- peval c t
     (plN,nE) <- plC n
@@ -1645,13 +1643,13 @@ eval (EApp _ (EApp _ (Builtin _ Fold) op) e) acc | (Arr sh _) <- eAnn e, (Arrow 
     pure $ plE$szR =: ev tXs (aP,l):acc =: EAt (AElem aP 1 l 0 8):[loop]
   where
     tXs=eAnn e
-eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX, tArr <- eAnn e = do
+eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldS) op) seed) e) acc | (Arrow _ (Arrow tX _)) <- eAnn op, Just xSz <- nSz tX, tArr@(Arr sh _) <- eAnn e = do
     szR <- nI
     (plE, (l, eR)) <- plA e
     plAcc <- eval seed acc
     (x, wX) <- arg tX (ve eR l xSz)
     ss <- writeRF op [IT acc, x] (IT acc)
-    loop <- afort tArr 0 ILt (Tmp szR) (\i -> wX i:ss)
+    loop <- afor sh 0 ILt (Tmp szR) (\i -> wX i:ss)
     pure $ plE$plAcc++szR =: ev tArr (eR,l):[loop]
 eval (EApp _ (EApp _ (EApp _ (Builtin _ FoldA) op) seed) xs) acc | tXs@(Arr sh _) <- eAnn xs, (Arrow _ (Arrow I _)) <- eAnn op = do
     x <- nI
