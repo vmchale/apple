@@ -227,6 +227,8 @@ data Builtin = Plus | Minus | Times | Div | IntExp | Exp | Log
              deriving (Generic)
              -- TODO: (feuilleter, stagger, ...) reshape...?
 
+instance Show Builtin where show=show.pretty
+
 (<::>) :: Doc ann -> T b -> Doc ann
 x<::>y = parens (x <+> ":" <+> pretty y)
 

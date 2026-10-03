@@ -1811,6 +1811,7 @@ p2 Eq e0 e1 t | (Arr sh ty) <- eAnn e0, nind ty = do
             B -> Boo BEq (PAt (Raw x0Rd (Tmp j) lX0 1)) (PAt (Raw x1Rd (Tmp j) lX1 1))
     pure $ plX0 $ plX1 $ rnkR=:eRnk sh (x0R,lX0):MB () t true:i=:0:WT () (Boo AndB (Is t) (IRel ILt (Tmp i) (Tmp rnkR))) [eqDim, i+=1]:SZ () szR x0R (Tmp rnkR) lX0:x0Rd=:DP x0R (Tmp rnkR):x1Rd=:DP x1R (Tmp rnkR):j=:0:[WT () (Boo AndB (Is t) (IRel ILt (Tmp j) (Tmp szR))) [Cset () eCond t, j+=1]]
 p2 Neq e0 e1 t | Arr{} <- eAnn e0 = do t₀ <- nBT; ss <- p2 Eq e0 e1 t₀; pure (ss++[MB () t (BU BNeg (Is t₀))])
+p2 op e0 e1 _ = nyi (op,e0,e1)
 
 -- TODO: make sure we don't mess up allocations per-branch
 rels :: Builtin -> [E (T ())] -> [E (T ())] -> BTemp -> CM [CS ()]
