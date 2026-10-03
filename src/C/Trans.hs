@@ -1866,6 +1866,10 @@ rels Eq (e0:e0s) (e1:e1s) t | F <- eAnn e0 = do
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     ss <- rels Eq e0s e1s t
     pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t false]]
+rels Eq (e0:e0s) (e1:e1s) t | Arr{} <- eAnn e0 = do
+    ss <- rels Eq e0s e1s t
+    b <- nBT; plB <- p2 Eq e0 e1 b
+    pure $ plB++[If () (Is b) ss [MB () t false]]
 rels Neq (e0:e0s) (e1:e1s) t | I <- eAnn e0 = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     ss <- rels Neq e0s e1s t
@@ -1874,6 +1878,10 @@ rels Neq (e0:e0s) (e1:e1s) t | F <- eAnn e0 = do
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     ss <- rels Neq e0s e1s t
     pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t true]]
+rels Neq (e0:e0s) (e1:e1s) t | Arr{} <- eAnn e0 = do
+    ss <- rels Neq e0s e1s t
+    b <- nBT; plB <- p2 Eq e0 e1 b
+    pure $ plB++[If () (Is b) ss [MB () t true]]
 rels op (e0:e0s) (e1:e1s) t | I <- eAnn e0, Just iop <- rel (splop op) = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     ss <- rels op e0s e1s t
