@@ -824,6 +824,17 @@ aeval (EApp (Arr oSh _) (EApp _ (Builtin _ Map) f) xs) t a
         :i=:0:j=:0:loop
         :[pops])
    | otherwise = unsupported
+aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t a | Arrow F (Arrow F F) <- eAnn op, tXs@(Arr xSh _) <- eAnn xs, hasS op = do
+    nR <- nI; i <- nI
+    (plEX, (lX, xR)) <- plA xs; (plEY, (lY, yR)) <- plA ys
+    xRd <- nI; yRd <- nI; td <- nI
+    x <- nF2; y <- nF2; z <- nF2; x0 <- nF; y0 <- nF; z0 <- nF
+    ss <- write2 op [x,y] z
+    s1 <- writeRF op (FT<$>[x0,y0]) (FT z0)
+    let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd+=16:MX2 () y (FAt (Raw yRd 0 lY 8)):yRd+=16:ss++[Wr2F () (Raw td 0 (Just a) 8) (FTmp z), td+=16]
+        step1=MX () x0 (FAt (Raw xRd 0 lX 8)):xRd+=8:MX () y0 (FAt (Raw yRd 0 lY 8)):yRd+=8:s1++[WrF () (Raw td 0 (Just a) 8) (FTmp z0), td+=8]
+        loop=r2of xSh i (Tmp nR) step step1
+    pure (plEX$plEY$nR=:ev tXs (xR,lX):v8 oSh t a (Tmp nR)++xRd=:DP xR 1:yRd=:DP yR 1:td=:DP t 1:[loop])
 aeval (EApp oTy@(Arr sh _) (EApp _ g@(EApp _ (Builtin _ Zip) op) xs) ys) t a | (Arrow tX (Arrow tY tC)) <- eAnn op, Just zSz <- nSz tC, nind tX && nind tY = do
     nR <- nI
     (plEX, (lX, aPX)) <- plA xs; (plEY, (lY, aPY)) <- plA ys
@@ -1455,17 +1466,6 @@ aeval (EApp oTy@(Arr oSh tX) (Builtin _ Sort) x) t a | Just lt <- cr tX = do
   where
     cr I=Just (\(IT r0) (IT r1) -> IRel ILt (Tmp r0) (Tmp r1)); cr F=Just (\(FT x0) (FT x1) -> FRel FLt (FTmp x0) (FTmp x1)); cr _=Nothing
     ε at=case tX of F -> WrF () at (let (_,ub)=floatRange (undefined::Double) in ConstF (- (encodeFloat (2^(12::Int)-1) ub))); I -> Wr () at (KI minBound)
-aeval (EApp (Arr oSh _) (EApp _ (EApp _ (Builtin _ Zip) op) xs) ys) t a | Arrow F (Arrow F F) <- eAnn op, tXs@(Arr xSh _) <- eAnn xs, hasS op = do
-    nR <- nI; i <- nI
-    (plEX, (lX, xR)) <- plA xs; (plEY, (lY, yR)) <- plA ys
-    xRd <- nI; yRd <- nI; td <- nI
-    x <- nF2; y <- nF2; z <- nF2; x0 <- nF; y0 <- nF; z0 <- nF
-    ss <- write2 op [x,y] z
-    s1 <- writeRF op (FT<$>[x0,y0]) (FT z0)
-    let step=MX2 () x (FAt (Raw xRd 0 lX 8)):xRd+=16:MX2 () y (FAt (Raw yRd 0 lY 8)):yRd+=16:ss++[Wr2F () (Raw td 0 (Just a) 8) (FTmp z), td+=16]
-        step1=MX () x0 (FAt (Raw xRd 0 lX 8)):xRd+=8:MX () y0 (FAt (Raw yRd 0 lY 8)):yRd+=8:s1++[WrF () (Raw td 0 (Just a) 8) (FTmp z0), td+=8]
-        loop=r2of xSh i (Tmp nR) step step1
-    pure (plEX$plEY$nR=:ev tXs (xR,lX):v8 oSh t a (Tmp nR)++xRd=:DP xR 1:yRd=:DP yR 1:td=:DP t 1:[loop])
 aeval (Id (Arr sh at) (AShLit ns es)) t a | Just (ty,sz) <- nr at, Just{} <- traverse (nr.eAnn) es = do
     let rnk=genericLength ns; n=fromIntegral$product ns
     tt <- rtemp ty
@@ -1606,15 +1606,6 @@ peval (Id _ (FoldGen seed g f n)) t = do
     uss <- writeRF g [PT x] (PT x)
     fss <- writeRF f [PT acc, PT x] (PT acc)
     pure $ plSeed $ plN ([MB () acc (Is seedR), MB () x (Is seedR)] ++ uss ++ [Rof () E.Z k (nE-1) (fss++uss), MB () t (Is acc)])
-peval (Id _ (U2 seeds gs c f n)) t | Just e <- traverse (rr.eAnn) seeds = do
-    plU <- peval c t
-    (plN,nE) <- plC n
-    k <- nI
-    xs <- traverse (rtemp.fst) e
-    plSeeds <- concat <$> zipWithM eeval seeds xs
-    usss <- concat <$> zipWithM (\g x -> writeRF g [x] x) gs xs
-    fss <- writeRF f (PT t:xs) (PT t)
-    pure $ plU ++ plN (plSeeds ++ [For () E.Z 1 k 0 ILt nE (fss++usss)])
 peval e _ = nyi e
 
 eval :: E (T ()) -> Temp -> CM [CS ()]
