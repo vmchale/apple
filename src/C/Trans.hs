@@ -1794,41 +1794,57 @@ rels Neq [e0] [e1] t | B <- eAnn e0 = do
     (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
     pure $ plE0 $ plE1 [MB () t (Boo XorB e0e e1e)]
 rels Gt [e0] [e1] t = do
-    (pl0,e0R) <- plP e0; (pl1,e1R) <- plP (EApp B (Builtin (B~>B) N) e1)
-    pure $ pl0 $ pl1 [MB () t (Boo AndB e0R e1R)]
+    (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
+    pure $ pl0 $ pl1 [MB () t (Boo AndB e0R (BU BNeg e1R))]
 rels Gte [e0] [e1] t = do
-    (pl0,e0R) <- plP e0; (pl1,e1R) <- plP (EApp B (Builtin (B~>B) N) e1)
-    pure $ pl0 $ pl1 [MB () t (Boo OrB e0R e1R)]
+    (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
+    pure $ pl0 $ pl1 [MB () t (Boo OrB e0R (BU BNeg e1R))]
 rels Lt [e0] [e1] t = do
-    (pl0,e0R) <- plP (EApp B (Builtin (B~>B) N) e0); (pl1,e1R) <- plP e1
-    pure $ pl0 $ pl1 [MB () t (Boo AndB e0R e1R)]
+    (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
+    pure $ pl0 $ pl1 [MB () t (Boo AndB (BU BNeg e0R) e1R)]
 rels Lte [e0] [e1] t = do
-    (pl0,e0R) <- plP (EApp B (Builtin (B~>B) N) e0); (pl1,e1R) <- plP e1
-    pure $ pl0 $ pl1 [MB () t (Boo OrB e0R e1R)]
+    (pl0,e0R) <- plP e0; (pl1,e1R) <- plP e1
+    pure $ pl0 $ pl1 [MB () t (Boo OrB (BU BNeg e0R) e1R)]
 rels Eq (e0:e0s) (e1:e1s) t | I <- eAnn e0 = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     ss <- rels Eq e0s e1s t
-    pure $ plE0 $ plE1 [If () (IRel IEq e0e e1e) ss [MB () t (BConst False)]]
+    pure $ plE0 $ plE1 [If () (IRel IEq e0e e1e) ss [MB () t false]]
 rels Eq (e0:e0s) (e1:e1s) t | B <- eAnn e0 = do
     (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
     ss <- rels Eq e0s e1s t
-    pure $ plE0 $ plE1 [If () (Boo BEq e0e e1e) ss [MB () t (BConst False)]]
+    pure $ plE0 $ plE1 [If () (Boo BEq e0e e1e) ss [MB () t false]]
 rels Neq (e0:e0s) (e1:e1s) t | B <- eAnn e0 = do
     (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
     ss <- rels Eq e0s e1s t
-    pure $ plE0 $ plE1 [If () (Boo XorB e0e e1e) ss [MB () t (BConst True)]]
+    pure $ plE0 $ plE1 [If () (Boo XorB e0e e1e) ss [MB () t true]]
+rels Gt (e0:e0s) (e1:e1s) t | B <- eAnn e0 = do
+    (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
+    ss <- rels Gt e0s e1s t
+    pure $ plE0 $ plE1 [If () (Boo AndB e0e (BU BNeg e1e)) [MB () t true] [If () (Boo BEq e0e e1e) ss [MB () t false]]]
+rels Gte (e0:e0s) (e1:e1s) t | B <- eAnn e0 = do
+    (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
+    ss <- rels Gte e0s e1s t
+    pure $ plE0 $ plE1 [If () (Boo AndB e0e (BU BNeg e1e)) [MB () t true] [If () (Boo BEq e0e e1e) ss [MB () t false]]]
+rels Lt (e0:e0s) (e1:e1s) t | B <- eAnn e0 = do
+    (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
+    ss <- rels Lt e0s e1s t
+    pure $ plE0 $ plE1 [If () (Boo AndB (BU BNeg e0e) e1e) [MB () t true] [If () (Boo BEq e0e e1e) ss [MB () t false]]]
+rels Lte (e0:e0s) (e1:e1s) t | B <- eAnn e0 = do
+    (plE0,e0e) <- plP e0; (plE1,e1e) <- plP e1
+    ss <- rels Lte e0s e1s t
+    pure $ plE0 $ plE1 [If () (Boo AndB (BU BNeg e0e) e1e) [MB () t true] [If () (Boo BEq e0e e1e) ss [MB () t false]]]
 rels Neq (e0:e0s) (e1:e1s) t | I <- eAnn e0 = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     ss <- rels Neq e0s e1s t
-    pure $ plE0 $ plE1 [If () (IRel IEq e0e e1e) ss [MB () t (BConst True)]]
+    pure $ plE0 $ plE1 [If () (IRel IEq e0e e1e) ss [MB () t true]]
 rels Neq (e0:e0s) (e1:e1s) t | F <- eAnn e0 = do
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     ss <- rels Neq e0s e1s t
-    pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t (BConst True)]]
+    pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t true]]
 rels Eq (e0:e0s) (e1:e1s) t | F <- eAnn e0 = do
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     ss <- rels Eq e0s e1s t
-    pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t (BConst False)]]
+    pure $ plE0 $ plE1 [If () (FRel FEq e0e e1e) ss [MB () t false]]
 rels Eq [e0] [e1] t | (Arr sh ty) <- eAnn e0, nind ty = do
     (plX0, (lX0, x0R)) <- plA e0; (plX1, (lX1, x1R)) <- plA e1
     rnkR <- nI; szR <- nI
@@ -1839,15 +1855,18 @@ rels Eq [e0] [e1] t | (Arr sh ty) <- eAnn e0, nind ty = do
             F -> FRel FEq (FAt (Raw x0Rd (Tmp j) lX0 8)) (FAt (Raw x1Rd (Tmp j) lX1 8))
             I -> IRel IEq (EAt (Raw x0Rd (Tmp j) lX0 8)) (EAt (Raw x1Rd (Tmp j) lX1 8))
             B -> Boo BEq (PAt (Raw x0Rd (Tmp j) lX0 1)) (PAt (Raw x1Rd (Tmp j) lX1 1))
-    pure $ plX0 $ plX1 $ rnkR=:eRnk sh (x0R,lX0):MB () t (BConst True):i=:0:WT () (Boo AndB (Is t) (IRel ILt (Tmp i) (Tmp rnkR))) [eqDim, i+=1]:SZ () szR x0R (Tmp rnkR) lX0:x0Rd=:DP x0R (Tmp rnkR):x1Rd=:DP x1R (Tmp rnkR):j=:0:[WT () (Boo AndB (Is t) (IRel ILt (Tmp j) (Tmp szR))) [Cset () eCond t, j+=1]]
+    pure $ plX0 $ plX1 $ rnkR=:eRnk sh (x0R,lX0):MB () t true:i=:0:WT () (Boo AndB (Is t) (IRel ILt (Tmp i) (Tmp rnkR))) [eqDim, i+=1]:SZ () szR x0R (Tmp rnkR) lX0:x0Rd=:DP x0R (Tmp rnkR):x1Rd=:DP x1R (Tmp rnkR):j=:0:[WT () (Boo AndB (Is t) (IRel ILt (Tmp j) (Tmp szR))) [Cset () eCond t, j+=1]]
 rels op (e0:e0s) (e1:e1s) t | I <- eAnn e0, Just iop <- rel (splop op) = do
     (plE0,e0e) <- plC e0; (plE1,e1e) <- plC e1
     ss <- rels op e0s e1s t
-    pure $ plE0 $ plE1 [If () (IRel iop e0e e1e) [MB () t (BConst True)] [If () (IRel IEq e0e e1e) ss [MB () t (BConst False)]]]
+    pure $ plE0 $ plE1 [If () (IRel iop e0e e1e) [MB () t true] [If () (IRel IEq e0e e1e) ss [MB () t false]]]
 rels op (e0:e0s) (e1:e1s) t | F <- eAnn e0, Just fop <- frel (splop op) = do
     (plE0,e0e) <- plD e0; (plE1,e1e) <- plD e1
     ss <- rels op e0s e1s t
-    pure $ plE0 $ plE1 [If () (FRel fop e0e e1e) [MB () t (BConst True)] [If () (FRel FEq e0e e1e) ss [MB () t (BConst False)]]]
+    pure $ plE0 $ plE1 [If () (FRel fop e0e e1e) [MB () t true] [If () (FRel FEq e0e e1e) ss [MB () t false]]]
+
+true, false :: PE
+true=BConst True; false=BConst False
 
 mFop :: Builtin -> Maybe FBin
 mFop Plus=Just FPlus; mFop Times=Just FTimes; mFop Minus=Just FMinus; mFop Div=Just FDiv; mFop Exp=Just FExp
