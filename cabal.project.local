@@ -1,1 +1,4 @@
 multi-repl: True
+
+package apple
+  ghc-options: -fmax-pmcheck-models=180
